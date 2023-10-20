@@ -1,9 +1,8 @@
-#include <iostream>
-
 #include "Util/Util.h"
+#include "Util/Log.h"
 
-int main(int argc, char** argv)
+int main(UNUSED int argc, UNUSED char** argv)
 {
-    std::cout << "Hello, World!" << std::endl;
+    LOG_INFO("{}", "Everything Works!\n");
     return 0;
 }

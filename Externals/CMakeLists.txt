@@ -44,6 +44,8 @@ target_compile_options(imgui PRIVATE -w)
 target_compile_options(imgui PRIVATE -O3)
 # Debug output
 target_compile_options(imgui PRIVATE -g)
+# Enable CPU vectorisation (SSE or better)
+target_compile_options(imgui PRIVATE -march=native)
 # Link libraries
 target_link_libraries(imgui Vulkan::Vulkan SDL2::SDL2)
 
@@ -61,5 +63,7 @@ target_compile_options(simdjson PRIVATE -w)
 target_compile_options(simdjson PRIVATE -O3)
 # Debug output
 target_compile_options(simdjson PRIVATE -g)
+# Enable CPU vectorisation (SSE or better)
+target_compile_options(simdjson PRIVATE -march=native)
 # SIMD JSON libs
 target_link_libraries(simdjson)

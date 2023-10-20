@@ -3,8 +3,8 @@
 
 #include <SDL2/SDL.h>
 
-#include "GLM.h"
 #include "Util.h"
+#include "../Externals/GLM.h"
 
 namespace Engine
 {

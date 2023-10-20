@@ -22,8 +22,9 @@ namespace Logger
         Args&&... args
     )
     {
+        // Pretty format for additional data
         fmt::print(stderr, "[{}] [{}] [{}:{}] ", type, time, file, line);
-        fmt::print(stderr, format, args...);
+        fmt::print(stderr, fmt::runtime(format), args...);
     }
 }
 
@@ -45,14 +46,12 @@ namespace Logger
     while (0)
 
 // Regular loggers
-
 #define LOG_INFO(format, ...)    IMPL_LOG("INFO",    format, __VA_ARGS__)
 #define LOG_DEBUG(format, ...)   IMPL_LOG("DEBUG",   format, __VA_ARGS__)
 #define LOG_WARNING(format, ...) IMPL_LOG("WARNING", format, __VA_ARGS__)
 #define LOG_GL(format, ...)      IMPL_LOG("GL",      format, __VA_ARGS__)
 
 // Error loggers
-
 #define LOG_ERROR(format, ...) IMPL_LOG_EXIT("ERROR", format, __VA_ARGS__)
 
 #endif

@@ -17,9 +17,9 @@ namespace Engine
         // Get resource directory
         const std::string& GetResources();
         // Get file name from path
-        std::string GetName(const std::string_view path);
+        static std::string GetName(const std::string_view path);
         // Get directory from path
-        std::string GetDirectory(const std::string_view path);
+        static std::string GetDirectory(const std::string_view path);
     private:
         // Resource directory
         std::string m_resDir;

@@ -11,7 +11,7 @@ namespace filesystem = std::filesystem;
 void Files::SetResources(const std::string_view relPath)
 {
     // Set resource path
-    m_resDir = filesystem::absolute(relPath).u8string();
+    m_resDir = filesystem::absolute(relPath).string();
 }
 
 const std::string& Files::GetResources()
@@ -23,13 +23,13 @@ const std::string& Files::GetResources()
 std::string Files::GetName(const std::string_view path)
 {
     // Return name
-    return filesystem::path(path).filename().u8string();
+    return filesystem::path(path).filename().string();
 }
 
 std::string Files::GetDirectory(const std::string_view path)
 {
     // Get directory
-    auto directory = filesystem::path(path).parent_path().u8string();
+    auto directory = filesystem::path(path).parent_path().string();
     // Get separator
     auto separator = static_cast<char>(filesystem::path::preferred_separator);
     // Add and return

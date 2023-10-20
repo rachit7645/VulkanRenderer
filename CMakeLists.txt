@@ -17,30 +17,30 @@ find_package(assimp REQUIRED)
 find_package(fmt    REQUIRED)
 
 # Add sub-projects
-add_subdirectory(External/)
+add_subdirectory(Externals/)
 
 # Main executable
 add_executable(VulkanRenderer
     # Main sources
 	Source/Main.cpp
     # Utility Sources
-	Source/util/Files.cpp
-	Source/util/Inputs.cpp
-	Source/util/Time.cpp
+	Source/Util/Files.cpp
+	Source/Util/Inputs.cpp
+	Source/Util/Time.cpp
 	# External sources
-	Source/external/GLM.cpp
+	Source/Externals/GLM.cpp
 )
 
 # Precompiled Headers
 target_precompile_headers(VulkanRenderer PRIVATE
 	# ImGui Headers
-    External/imgui/imgui.h
-    External/imgui/imgui_internal.h
-    External/imgui/backends/imgui_impl_sdl2.h
-    External/imgui/backends/imgui_impl_opengl3.h
-    External/imgui/misc/cpp/imgui_stdlib.h
+    Externals/imgui/imgui.h
+    Externals/imgui/imgui_internal.h
+    Externals/imgui/backends/imgui_impl_sdl2.h
+    Externals/imgui/backends/imgui_impl_opengl3.h
+    Externals/imgui/misc/cpp/imgui_stdlib.h
     # STB Headers
-    External/stb/stb_image.h
+    Externals/stb/stb_image.h
 	# Assimp Headers
     <assimp/Importer.hpp>
     <assimp/scene.h>
@@ -62,7 +62,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <glm/geometric.hpp>
     <glm/gtc/matrix_transform.hpp>
     # SIMD JSON Headers
-    External/simdjson/singleheader/simdjson.h
+    Externals/simdjson/singleheader/simdjson.h
     # C++ STL Headers
     <unordered_map>
     <vector>
@@ -93,5 +93,7 @@ target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable debug output
 target_compile_options(VulkanRenderer PRIVATE -g)
+# Enable CPU vectorisation (SSE or better)
+target_compile_options(VulkanRenderer PRIVATE -march=native)
 # Link libraries
 target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2 fmt::fmt assimp imgui simdjson)
