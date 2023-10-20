@@ -1,3 +1,6 @@
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan/vulkan.h>
+
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
