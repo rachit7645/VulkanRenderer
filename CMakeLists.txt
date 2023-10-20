@@ -23,6 +23,9 @@ add_subdirectory(Externals/)
 add_executable(VulkanRenderer
     # Main sources
 	Source/Main.cpp
+	# Engine sources
+	Source/Engine/AppInstance.cpp
+	Source/Engine/Window.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Inputs.cpp

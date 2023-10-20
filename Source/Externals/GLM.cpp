@@ -1,11 +1,16 @@
 #include "GLM.h"
 
-glm::vec2 glm::ai_cast(const aiVector2D& vector)
+namespace glm
 {
-    return glm::vec2(vector.x, vector.y);
-}
+    vec2 ai_cast(const aiVector2D& vector)
+    {
+        // Convert
+        return {vector.x, vector.y};
+    }
 
-glm::vec3 glm::ai_cast(const aiVector3D& vector)
-{
-    return glm::vec3(vector.x, vector.y, vector.z);
+    glm::vec3 ai_cast(const aiVector3D& vector)
+    {
+        // Convert
+        return {vector.x, vector.y, vector.z};
+    }
 }

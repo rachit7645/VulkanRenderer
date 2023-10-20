@@ -4,9 +4,14 @@
 #include <fmt/format.h>
 #include <fmt/chrono.h>
 
-using std::chrono::system_clock;
+// Aliases
+using TimeClock = std::chrono::system_clock;
 
-std::string Util::GetTime()
+namespace Util
 {
-    return fmt::format("{:%H:%M:%S}", system_clock::now());
+    std::string GetTime()
+    {
+        // Format time
+        return fmt::format("{:%H:%M:%S}", TimeClock::now());
+    }
 }
