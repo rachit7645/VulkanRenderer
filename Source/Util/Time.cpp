@@ -4,14 +4,17 @@
 #include <fmt/format.h>
 #include <fmt/chrono.h>
 
+// Shorten chrono
+namespace Chrono = std::chrono;
+
 // Aliases
-using TimeClock = std::chrono::system_clock;
+using TimeClock = Chrono::system_clock;
 
 namespace Util
 {
     std::string GetTime()
     {
         // Format time
-        return fmt::format("{:%H:%M:%S}", TimeClock::now());
+        return fmt::format("{:%T}", TimeClock::now());
     }
 }

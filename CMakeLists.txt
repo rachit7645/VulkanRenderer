@@ -30,6 +30,8 @@ add_executable(VulkanRenderer
 	Source/Util/Files.cpp
 	Source/Util/Inputs.cpp
 	Source/Util/Time.cpp
+	# Vulkan source
+	Source/Vulkan/Extensions.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 )

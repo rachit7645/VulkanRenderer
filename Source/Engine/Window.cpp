@@ -1,3 +1,4 @@
+#include <SDL_vulkan.h>
 #include "Window.h"
 
 #include "../Util/Log.h"
@@ -27,7 +28,14 @@ namespace Engine
         if (SDL_Init(SDL_INIT_VIDEO) != 0)
         {
             // Log error
-            LOG_ERROR("SDL_Init Failed\n{}\n", SDL_GetError());
+            LOG_ERROR("SDL_Init Failed: {}\n", SDL_GetError());
+        }
+
+        // Load vulkan library
+        if (SDL_Vulkan_LoadLibrary(nullptr) != 0)
+        {
+            // Log error
+            LOG_ERROR("SDL_Vulkan_LoadLibrary Failed: {}\n", SDL_GetError());
         }
 
         // Create handle
@@ -80,6 +88,7 @@ namespace Engine
     Window::~Window()
     {
         // CLose SDL
+        SDL_Vulkan_UnloadLibrary();
         SDL_DestroyWindow(handle);
         SDL_Quit();
         // Log
