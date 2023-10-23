@@ -83,6 +83,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <chrono>
     <sstream>
 	<span>
+	<optional>
     # C STL Headers
     <cstdint>
     <cstddef>

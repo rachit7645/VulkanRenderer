@@ -100,7 +100,7 @@ namespace Vk
         messenger = nullptr;
     }
 
-    VkBool32 VKAPI_CALL ValidationLayers::DebugCallback
+    VKAPI_ATTR VkBool32 VKAPI_CALL ValidationLayers::DebugCallback
     (
         UNUSED VkDebugUtilsMessageSeverityFlagBitsEXT severity,
         UNUSED VkDebugUtilsMessageTypeFlagsEXT type,
