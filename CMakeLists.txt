@@ -56,6 +56,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <fmt/core.h>
     <fmt/format.h>
     <fmt/chrono.h>
+	<fmt/color.h>
     # GLM Headers
     <glm/vec2.hpp>
     <glm/vec3.hpp>
@@ -81,6 +82,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <fstream>
     <chrono>
     <sstream>
+	<span>
     # C STL Headers
     <cstdint>
     <cstddef>

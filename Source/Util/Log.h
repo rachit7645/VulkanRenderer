@@ -4,54 +4,84 @@
 #include <string>
 #include <string_view>
 #include <cstdlib>
+
 #include <fmt/format.h>
+#include <fmt/color.h>
 
 #include "Files.h"
 #include "Time.h"
+
+// TODO: Convert all loggers to templates
 
 namespace Logger
 {
     template<typename... Args>
     void Log
     (
+        const fmt::color& fgColor,
+        const fmt::color& bgColor,
         const std::string_view type,
         const std::string_view time,
         const std::string_view file,
-        int line,
+        size_t line,
         fmt::string_view format,
         Args&&... args
     )
     {
-        // Pretty format for additional data
-        fmt::print(stderr, "[{}] [{}] [{}:{}] ", type, time, file, line);
-        fmt::print(stderr, fmt::runtime(format), args...);
+        // Format & print additional data
+        fmt::print
+        (
+            stderr,
+            fmt::fg(fgColor) | fmt::bg(bgColor),
+            "[{}] [{}] [{}:{}] ",
+            type, time, file, line
+        );
+
+        // Format & print
+        fmt::print
+        (
+            stderr,
+            fmt::fg(fgColor) | fmt::bg(bgColor),
+            format,
+            args...
+        );
     }
 }
 
 // Implementation
 
-#define IMPL_LOG(type, format, ...) \
+#define IMPL_LOG(fgColor, bgColor, type, format, ...) \
     do \
     { \
-        Logger::Log(type, Util::GetTime(), Engine::Files::GetInstance().GetName(__FILE__), __LINE__, FMT_STRING(format), __VA_ARGS__); \
+        Logger::Log \
+        ( \
+            fgColor, \
+            bgColor, \
+            type, \
+            Util::GetTime(), \
+            Engine::Files::GetInstance().GetName(__FILE__), \
+            __LINE__, \
+            FMT_STRING(format), \
+            __VA_ARGS__ \
+        ); \
     } \
     while (0)
 
-#define IMPL_LOG_EXIT(type, format, ...) \
+#define IMPL_LOG_EXIT(fgColor, bgColor, type, format, ...) \
     do \
     { \
-        IMPL_LOG(type, format, __VA_ARGS__); \
+        IMPL_LOG(fgColor, bgColor, type, format, __VA_ARGS__); \
         std::exit(-1); \
     } \
     while (0)
 
 // Regular loggers
-#define LOG_INFO(format, ...)    IMPL_LOG("INFO",    format, __VA_ARGS__)
-#define LOG_DEBUG(format, ...)   IMPL_LOG("DEBUG",   format, __VA_ARGS__)
-#define LOG_WARNING(format, ...) IMPL_LOG("WARNING", format, __VA_ARGS__)
-#define LOG_VK(format, ...)      IMPL_LOG("VULKAN",  format, __VA_ARGS__)
+#define LOG_INFO(format, ...)    IMPL_LOG(fmt::color::green,  fmt::color::black, "INFO",    format, __VA_ARGS__)
+#define LOG_DEBUG(format, ...)   IMPL_LOG(fmt::color::cyan,   fmt::color::black, "DEBUG",   format, __VA_ARGS__)
+#define LOG_WARNING(format, ...) IMPL_LOG(fmt::color::yellow, fmt::color::black, "WARNING", format, __VA_ARGS__)
+#define LOG_VK(format, ...)      IMPL_LOG(fmt::color::orange, fmt::color::black, "VULKAN",  format, __VA_ARGS__)
 
 // Error loggers
-#define LOG_ERROR(format, ...) IMPL_LOG_EXIT("ERROR", format, __VA_ARGS__)
+#define LOG_ERROR(format, ...) IMPL_LOG_EXIT(fmt::color::red, fmt::color::black, "ERROR", format, __VA_ARGS__)
 
 #endif

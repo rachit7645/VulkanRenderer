@@ -13,7 +13,7 @@ namespace Engine
         // Initialise vulkan
         InitVulkan();
         // Log
-        LOG_DEBUG("{}\n", "App instance initialised!");
+        LOG_INFO("{}\n", "App instance initialised!");
     }
 
     void AppInstance::Run()
@@ -90,7 +90,7 @@ namespace Engine
         }
 
         // Log
-        LOG_DEBUG("{}\n", "Successfully initialised Vulkan instance!");
+        LOG_INFO("{}\n", "Successfully initialised Vulkan instance!");
     }
 
     AppInstance::~AppInstance()
@@ -102,6 +102,6 @@ namespace Engine
         // Destroy vulkan instance
         vkDestroyInstance(m_vkInstance, nullptr);
         // Log
-        LOG_DEBUG("{}\n", "App instance destroyed!");
+        LOG_INFO("{}\n", "App instance destroyed!");
     }
 }
