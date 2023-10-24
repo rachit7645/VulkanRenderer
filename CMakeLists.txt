@@ -33,12 +33,16 @@ add_executable(VulkanRenderer
 	# Vulkan source
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
+	Source/Vulkan/Context.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 )
 
 # Precompiled Headers
 target_precompile_headers(VulkanRenderer PRIVATE
+	# SDL headers
+	<SDL2/SDL.h>
+	<SDL2/SDL_vulkan.h>
 	# ImGui Headers
     Externals/imgui/imgui.h
     Externals/imgui/imgui_internal.h
@@ -71,6 +75,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     # SIMD JSON Headers
     Externals/simdjson/singleheader/simdjson.h
     # C++ STL Headers
+	<map>
     <unordered_map>
     <vector>
     <random>
@@ -105,4 +110,4 @@ target_compile_options(VulkanRenderer PRIVATE -g)
 # Enable CPU vectorisation (SSE or better)
 target_compile_options(VulkanRenderer PRIVATE -march=native)
 # Link libraries
-target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2 fmt::fmt assimp imgui simdjson)
+target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2main SDL2::SDL2 fmt::fmt assimp imgui simdjson)
