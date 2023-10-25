@@ -8,6 +8,7 @@
 
 #include "ValidationLayers.h"
 #include "QueueFamilyIndices.h"
+#include "Extensions.h"
 
 namespace Vk
 {
@@ -33,8 +34,12 @@ namespace Vk
         // Create a logical device
         void CreateLogicalDevice();
 
+        // Extensions
+        std::unique_ptr<Vk::Extensions> m_extensions = nullptr;
+        #ifdef ENGINE_DEBUG
         // Vulkan validation layers
         std::unique_ptr<Vk::ValidationLayers> m_layers = nullptr;
+        #endif
         // Surface
         VkSurfaceKHR m_surface = {};
         // Physical device (GPU)

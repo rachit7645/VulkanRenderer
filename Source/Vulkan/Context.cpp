@@ -9,21 +9,26 @@
 
 namespace Vk
 {
+    #ifdef ENGINE_DEBUG
     // Layers
     const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
+    #endif
 
     Context::Context(SDL_Window* window)
+        : m_extensions(std::make_unique<Vk::Extensions>())
     {
         // Create vulkan instance
         CreateVKInstance(window);
         // Load extensions
-        Vk::Extensions::GetInstance().LoadFunctions(vkInstance);
+        m_extensions->LoadFunctions(vkInstance);
+        #ifdef ENGINE_DEBUG
         // Load validation layers
         if (m_layers->SetupMessenger(vkInstance) != VK_SUCCESS)
         {
             // Log
             LOG_ERROR("{}\n", "Failed to set up debug messenger!");
         }
+        #endif
         // Create surface
         CreateSurface(window);
         // Grab a GPU
@@ -49,7 +54,7 @@ namespace Vk
         };
 
         // Get extensions
-        auto extensions = Vk::Extensions::GetInstance().LoadExtensions(window);
+        auto extensions = m_extensions->LoadInstanceExtensions(window);
         // Create extensions string
         std::string extDbg = fmt::format("Loaded vulkan instance extensions: {}\n", extensions.size());
         for (auto&& extension : extensions)
@@ -60,18 +65,29 @@ namespace Vk
         // Log
         LOG_DEBUG("{}", extDbg);
 
+        #ifdef ENGINE_DEBUG
         // Request validation layers
         m_layers = std::make_unique<Vk::ValidationLayers>(VALIDATION_LAYERS);
+        #endif
 
         // Instance creation info
         VkInstanceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            #ifdef ENGINE_DEBUG
             .pNext                   = (VkDebugUtilsMessengerCreateInfoEXT*) &m_layers->messengerInfo,
+            #else
+            .pNext                   = nullptr,
+            #endif
             .flags                   = 0,
             .pApplicationInfo        = &appInfo,
+            #ifdef ENGINE_DEBUG
             .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
             .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
+            #else
+            .enabledLayerCount       = 0,
+            .ppEnabledLayerNames     = nullptr,
+            #endif
             .enabledExtensionCount   = static_cast<u32>(extensions.size()),
             .ppEnabledExtensionNames = extensions.data(),
         };
@@ -123,7 +139,7 @@ namespace Vk
         vkEnumeratePhysicalDevices(vkInstance, &deviceCount, devices.data());
 
         // Debug list
-        std::string dbgPhyDevices = std::format("Available physical devices: {}\n", deviceCount);
+        std::string dbgPhyDevices = fmt::format("Available physical devices: {}\n", deviceCount);
         // Devices data
         auto properties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties>(deviceCount);
         auto features   = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures>(deviceCount);
@@ -325,12 +341,12 @@ namespace Vk
     {
         // Destroy surface
         vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
+        #ifdef ENGINE_DEBUG
         // Destroy validation layers
         m_layers->DestroyMessenger(vkInstance);
+        #endif
         // Destroy logical device
         vkDestroyDevice(m_logicalDevice, nullptr);
-        // Destroy extensions
-        Vk::Extensions::GetInstance().Destroy();
         // Destroy vulkan instance
         vkDestroyInstance(vkInstance, nullptr);
         // Log

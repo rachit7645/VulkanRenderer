@@ -5,6 +5,7 @@
 
 namespace Vk
 {
+#ifdef ENGINE_DEBUG
     ValidationLayers::ValidationLayers(const std::vector<const char*>& layers)
     {
         // Check for availability
@@ -100,6 +101,7 @@ namespace Vk
         messenger = nullptr;
     }
 
+    // TODO: Improve validation layer debug callback
     VKAPI_ATTR VkBool32 VKAPI_CALL ValidationLayers::DebugCallback
     (
         UNUSED VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -117,4 +119,5 @@ namespace Vk
         // Return
         return VK_TRUE;
     }
+#endif
 }

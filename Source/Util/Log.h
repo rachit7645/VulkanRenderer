@@ -77,9 +77,16 @@ namespace Logger
 
 // Regular loggers
 #define LOG_INFO(format, ...)    IMPL_LOG(fmt::color::green,  fmt::color::black, "INFO",    format, __VA_ARGS__)
-#define LOG_DEBUG(format, ...)   IMPL_LOG(fmt::color::cyan,   fmt::color::black, "DEBUG",   format, __VA_ARGS__)
 #define LOG_WARNING(format, ...) IMPL_LOG(fmt::color::yellow, fmt::color::black, "WARNING", format, __VA_ARGS__)
-#define LOG_VK(format, ...)      IMPL_LOG(fmt::color::orange, fmt::color::black, "VULKAN",  format, __VA_ARGS__)
+
+// Debug loggers
+#ifdef ENGINE_DEBUG
+    #define LOG_DEBUG(format, ...)   IMPL_LOG(fmt::color::cyan,   fmt::color::black, "DEBUG",   format, __VA_ARGS__)
+    #define LOG_VK(format, ...)      IMPL_LOG(fmt::color::orange, fmt::color::black, "VULKAN",  format, __VA_ARGS__)
+#else
+    #define LOG_DEBUG(format, ...)
+    #define LOG_VK(format, ...)
+#endif
 
 // Error loggers
 #define LOG_ERROR(format, ...) IMPL_LOG_EXIT(fmt::color::red, fmt::color::black, "ERROR", format, __VA_ARGS__)

@@ -2,11 +2,15 @@
 
 #include <SDL_vulkan.h>
 
+#include "ExtensionState.h"
 #include "../Util/Util.h"
 #include "../Util/Log.h"
 
 namespace Vk
 {
+    // Internal extension function pointers (Global state, I know)
+    inline ExtensionState g_ExtensionState = {};
+
     // Template to load function
     template <typename T>
     T LoadExtension(VkInstance& instance, std::string_view name)
@@ -25,14 +29,7 @@ namespace Vk
         return extension;
     }
 
-    Extensions& Extensions::GetInstance()
-    {
-        // Create singleton and return
-        static Extensions extensions;
-        return extensions;
-    }
-
-    std::vector<const char*> Extensions::LoadExtensions(SDL_Window* window)
+    std::vector<const char*> Extensions::LoadInstanceExtensions(SDL_Window* window)
     {
         // Extensions count (from SDL)
         u32 extensionCount = 0;
@@ -76,32 +73,46 @@ namespace Vk
     void Extensions::LoadFunctions(VkInstance& instance)
     {
         // Get function loader
-        p_vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) SDL_Vulkan_GetVkGetInstanceProcAddr();
+        g_ExtensionState.p_vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
         // Check for errors
-        if (p_vkGetInstanceProcAddr == nullptr)
+        if (g_ExtensionState.p_vkGetInstanceProcAddr == nullptr)
         {
             // LOG
             LOG_ERROR("Failed to load function {}: \n", "vkGetInstanceProcAddr", SDL_GetError());
         }
         // Log
-        LOG_DEBUG("Loaded function {} [address={}]\n", "vkGetInstanceProcAddr", reinterpret_cast<void*>(p_vkGetInstanceProcAddr));
+        LOG_DEBUG
+        (
+            "Loaded function {} [address={}]\n",
+            "vkGetInstanceProcAddr",
+            reinterpret_cast<void*>(g_ExtensionState.p_vkGetInstanceProcAddr)
+        );
 
         // Load debug message functions
-        p_vkCreateDebugUtilsMessengerEXT  = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT >(instance, "vkCreateDebugUtilsMessengerEXT");
-        p_vkDestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>(instance, "vkDestroyDebugUtilsMessengerEXT");
+        g_ExtensionState.p_vkCreateDebugUtilsMessengerEXT = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT>
+        (
+            instance,
+            "vkCreateDebugUtilsMessengerEXT"
+        );
+        // God this looks very weird
+        g_ExtensionState.p_vkDestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>
+        (
+            instance,
+            "vkDestroyDebugUtilsMessengerEXT"
+        );
     }
 
-    void Extensions::Destroy()
+    Extensions::~Extensions()
     {
         // Reset
-        GetInstance() = {};
+        g_ExtensionState = {};
     }
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance, const char* pName)
 {
     // Get function
-    PFN_vkGetInstanceProcAddr fn = Vk::Extensions::GetInstance().p_vkGetInstanceProcAddr;
+    PFN_vkGetInstanceProcAddr fn = Vk::g_ExtensionState.p_vkGetInstanceProcAddr;
     // Call
     return fn(instance, pName);
 }
@@ -115,7 +126,7 @@ VkResult vkCreateDebugUtilsMessengerEXT
 )
 {
     // Get function
-    PFN_vkCreateDebugUtilsMessengerEXT fn = Vk::Extensions::GetInstance().p_vkCreateDebugUtilsMessengerEXT;
+    PFN_vkCreateDebugUtilsMessengerEXT fn = Vk::g_ExtensionState.p_vkCreateDebugUtilsMessengerEXT;
     // Call
     return fn(instance, pCreateInfo, pAllocator, pMessenger);
 }
@@ -128,7 +139,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT
 )
 {
     // Get function
-    PFN_vkDestroyDebugUtilsMessengerEXT fn = Vk::Extensions::GetInstance().p_vkDestroyDebugUtilsMessengerEXT;
+    PFN_vkDestroyDebugUtilsMessengerEXT fn = Vk::g_ExtensionState.p_vkDestroyDebugUtilsMessengerEXT;
     // Call
     fn(instance, messenger, pAllocator);
 }

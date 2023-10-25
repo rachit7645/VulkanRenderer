@@ -7,6 +7,7 @@
 
 namespace Vk
 {
+#ifdef ENGINE_DEBUG
     class ValidationLayers
     {
     public:
@@ -35,6 +36,7 @@ namespace Vk
             void* pUserData
         );
     };
+#endif
 }
 
 #endif

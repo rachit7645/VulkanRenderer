@@ -101,15 +101,20 @@ target_precompile_headers(VulkanRenderer PRIVATE
 
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE External/)
-# Define _DEBUG in debug mode
-target_compile_definitions(VulkanRenderer PRIVATE _DEBUG)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # -O3 optimisations
 target_compile_options(VulkanRenderer PRIVATE -O3)
-# Enable debug output
-target_compile_options(VulkanRenderer PRIVATE -g)
 # Enable CPU vectorisation (SSE or better)
 target_compile_options(VulkanRenderer PRIVATE -march=native)
+
+# Debug config
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+	# Engine Debug Mode
+	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
+	# Enable debug output
+	target_compile_options(VulkanRenderer PRIVATE -g)
+endif()
+
 # Link libraries
 target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2main SDL2::SDL2 fmt::fmt assimp imgui simdjson)
