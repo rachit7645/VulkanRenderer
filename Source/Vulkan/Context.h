@@ -7,7 +7,7 @@
 #include <SDL2/SDL_vulkan.h>
 
 #include "ValidationLayers.h"
-#include "QueueFamilyIndex.h"
+#include "QueueFamilyIndices.h"
 
 namespace Vk
 {
@@ -24,21 +24,27 @@ namespace Vk
     private:
         // Create vulkan instance
         void CreateVKInstance(SDL_Window* window);
+        // Create platform dependent surface
+        void CreateSurface(SDL_Window* window);
         // Pick a GPU
         void PickPhysicalDevice();
         // Get queue families
-        static Vk::QueueFamilyIndex FindQueueFamilies(VkPhysicalDevice device);
+        Vk::QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
         // Create a logical device
         void CreateLogicalDevice();
 
         // Vulkan validation layers
         std::unique_ptr<Vk::ValidationLayers> m_layers = nullptr;
+        // Surface
+        VkSurfaceKHR m_surface = {};
         // Physical device (GPU)
         VkPhysicalDevice m_physicalDevice = {};
         // Queue families
-        Vk::QueueFamilyIndex m_queueFamilies = {};
+        Vk::QueueFamilyIndices m_queueFamilies = {};
         // Logical device
         VkDevice m_logicalDevice = {};
+        // Queue
+        VkQueue m_graphicsQueue = {};
     };
 }
 

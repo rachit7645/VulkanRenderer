@@ -57,7 +57,7 @@ namespace Engine
         }
 
         // Log handle address
-        LOG_INFO("Succesfully created window handle! [address={}]\n", reinterpret_cast<void*>(handle));
+        LOG_INFO("Succesfully created window handle! [handle={}]\n", reinterpret_cast<void*>(handle));
 
         // For sanity, raise handle
         SDL_RaiseWindow(handle);

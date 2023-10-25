@@ -2,6 +2,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <set>
 
 #include "Extensions.h"
 #include "../Util/Log.h"
@@ -23,6 +24,8 @@ namespace Vk
             // Log
             LOG_ERROR("{}\n", "Failed to set up debug messenger!");
         }
+        // Create surface
+        CreateSurface(window);
         // Grab a GPU
         PickPhysicalDevice();
         // Setup logical device
@@ -81,7 +84,25 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("Successfully initialised Vulkan instance! [instance={}]\n", reinterpret_cast<void*>(vkInstance));
+        LOG_INFO("Successfully initialised Vulkan instance! [handle={}]\n", reinterpret_cast<void*>(vkInstance));
+    }
+
+    void Context::CreateSurface(SDL_Window* window)
+    {
+        // Create surface using SDL
+        if (SDL_Vulkan_CreateSurface(window, vkInstance, &m_surface) != SDL_TRUE)
+        {
+            // Log
+            LOG_ERROR
+            (
+                "Failed to create surface! [window={}] [instance={}]\n",
+                reinterpret_cast<void*>(window),
+                reinterpret_cast<void*>(vkInstance)
+            );
+        }
+
+        // Log
+        LOG_INFO("Initialised vulkan surface! [handle={}]\n", reinterpret_cast<void*>(m_surface));
     }
 
     void Context::PickPhysicalDevice()
@@ -133,12 +154,16 @@ namespace Vk
                 propertySet.deviceID
             ));
 
+            // Get queue
+            auto queue = FindQueueFamilies(device);
+
             // Calculate score parts
             usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 10000;
-            usize API         = propertySet.apiVersion;
-            usize queue       = FindQueueFamilies(device).graphicsFamily.has_value();
+            // Calculate score multipliers
+            bool isQueueValid = queue.IsComplete() && queue.IsPerformant();
+
             // Calculate score
-            usize score = queue * (discreteGPU + API);
+            usize score = isQueueValid * discreteGPU;
             scores.emplace(score, device);
         }
 
@@ -160,39 +185,62 @@ namespace Vk
         LOG_INFO("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
     }
 
-    Vk::QueueFamilyIndex Context::FindQueueFamilies(VkPhysicalDevice device)
+    Vk::QueueFamilyIndices Context::FindQueueFamilies(VkPhysicalDevice device)
     {
         // Indices
-        Vk::QueueFamilyIndex indices = {};
+        Vk::QueueFamilyIndices indices = {};
 
         // Get queue family count
         u32 queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties
         (
-        device,
-        &queueFamilyCount,
-        nullptr
+            device,
+            &queueFamilyCount,
+            nullptr
         );
 
         // Get queue families
         auto queueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties
         (
-        device,
-        &queueFamilyCount,
-        queueFamilies.data()
+            device,
+            &queueFamilyCount,
+            queueFamilies.data()
         );
 
         // Loop over queue families
         for (usize i = 0; auto&& family : queueFamilies)
         {
-            // Find a family with graphics support
+            // Check for presentation support
+            VkBool32 presentSupport = VK_FALSE;
+            vkGetPhysicalDeviceSurfaceSupportKHR
+            (
+                device,
+                i,
+                m_surface,
+                &presentSupport
+            );
+
+            if (presentSupport == VK_TRUE)
+            {
+                // Found present family! (hopefully it's the same as the graphics family)
+                indices.presentFamily = i;
+            }
+
+            // Check if family has graphics support
             if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
-                // Set index
+                // Found graphics family!
                 indices.graphicsFamily = i;
+            }
+
+            // Check for completeness
+            if (indices.IsComplete() && indices.IsPerformant())
+            {
+                // Found all the queue families we need
                 break;
             }
+
             // Go to next family index
             ++i;
         }
@@ -206,19 +254,29 @@ namespace Vk
         // Get queue
         m_queueFamilies = FindQueueFamilies(m_physicalDevice);
 
-        // Queue data
+        // Queue priority
         constexpr f32 queuePriority = 1.0f;
 
-        // Queue creation info
-        VkDeviceQueueCreateInfo queueCreateInfo =
+        // Queues data
+        std::set<u32> uniqueQueueFamilies = {m_queueFamilies.graphicsFamily.value(), m_queueFamilies.presentFamily.value()};
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+        // Create queue creation data
+        for (auto&& queueFamily : uniqueQueueFamilies)
         {
-            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .queueFamilyIndex = m_queueFamilies.graphicsFamily.value(),
-            .queueCount = 1,
-            .pQueuePriorities = &queuePriority
-        };
+            // Queue creation info
+            VkDeviceQueueCreateInfo queueCreateInfo =
+            {
+                .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                .pNext            = nullptr,
+                .flags            = 0,
+                .queueFamilyIndex = queueFamily,
+                .queueCount       = 1,
+                .pQueuePriorities = &queuePriority
+            };
+            // Add to vector
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
 
         // Vulkan device features
         VkPhysicalDeviceFeatures deviceFeatures = {};
@@ -229,8 +287,8 @@ namespace Vk
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .queueCreateInfoCount    = 1,
-            .pQueueCreateInfos       = &queueCreateInfo,
+            .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
+            .pQueueCreateInfos       = queueCreateInfos.data(),
             .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
             .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
             .enabledExtensionCount   = 0,
@@ -252,10 +310,21 @@ namespace Vk
 
         // Log
         LOG_INFO("Successfully created vulkan logical device! [address={}]\n", reinterpret_cast<void*>(m_logicalDevice));
+
+        // Get queue
+        vkGetDeviceQueue
+        (
+            m_logicalDevice,
+            m_queueFamilies.presentFamily.value(),
+            0,
+            &m_graphicsQueue
+        );
     }
 
     Context::~Context()
     {
+        // Destroy surface
+        vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
         // Destroy validation layers
         m_layers->DestroyMessenger(vkInstance);
         // Destroy logical device

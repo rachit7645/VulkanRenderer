@@ -34,6 +34,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
 	Source/Vulkan/Context.cpp
+	Source/Vulkan/QueueFamilyIndices.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 )
@@ -89,6 +90,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <sstream>
 	<span>
 	<optional>
+	<set>
     # C STL Headers
     <cstdint>
     <cstddef>
