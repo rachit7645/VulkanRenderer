@@ -39,6 +39,8 @@ namespace Vk
 
         // Create swap
         void CreateSwapChain(SDL_Window* window);
+        // Create image views
+        void CreateImageViews();
 
         // Choose surface format
         VkSurfaceFormatKHR ChooseSurfaceFormat(const Vk::SwapChainInfo& swapChainInfo);
@@ -55,6 +57,7 @@ namespace Vk
         #endif
         // Surface
         VkSurfaceKHR m_surface = {};
+
         // Physical device (GPU)
         VkPhysicalDevice m_physicalDevice = {};
         // Queue families
@@ -63,6 +66,7 @@ namespace Vk
         VkDevice m_logicalDevice = {};
         // Queue
         VkQueue m_graphicsQueue = {};
+
         // Swap chain
         VkSwapchainKHR m_swapChain = {};
         // Swap chain images
@@ -71,6 +75,8 @@ namespace Vk
         VkFormat m_swapChainImageFormat = {};
         // Extent
         VkExtent2D m_swapChainExtent = {};
+        // Swap chain image views
+        std::vector<VkImageView> m_swapChainImageViews = {};
     };
 }
 

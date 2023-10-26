@@ -43,6 +43,8 @@ namespace Vk
         CreateLogicalDevice();
         // Create swap chain
         CreateSwapChain(window);
+        // Create image views for swap chain
+        CreateImageViews();
         // Log
         LOG_INFO("{}\n", "Initialised vulkan context!");
     }
@@ -382,6 +384,56 @@ namespace Vk
         LOG_INFO("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(m_swapChain));
     }
 
+    void Context::CreateImageViews()
+    {
+        // Resize
+        m_swapChainImageViews.resize(m_swapChainImages.size());
+
+        // Loop over all swap chain images
+        for (usize i = 0; i < m_swapChainImages.size(); ++i)
+        {
+            // Image view creation data
+            VkImageViewCreateInfo createInfo =
+            {
+                .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext            = nullptr,
+                .flags            = 0,
+                .image            = m_swapChainImages[i],
+                .viewType         = VK_IMAGE_VIEW_TYPE_2D,
+                .format           = m_swapChainImageFormat,
+                .components       = {
+                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+                },
+                .subresourceRange = {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                }
+            };
+            // Create image view
+            if (vkCreateImageView(
+                    m_logicalDevice,
+                    &createInfo,
+                    nullptr,
+                    &m_swapChainImageViews[i]
+                ) != VK_SUCCESS)
+            {
+                // Log
+                LOG_ERROR
+                (
+                    "Failed to create image view #{}! [device={}] [image={}]",
+                    i, reinterpret_cast<void*>(m_logicalDevice),
+                    reinterpret_cast<void*>(m_swapChainImages[i])
+                );
+            }
+        }
+    }
+
     VkSurfaceFormatKHR Context::ChooseSurfaceFormat(const SwapChainInfo& swapChainInfo)
     {
         // Formats
@@ -456,18 +508,28 @@ namespace Vk
 
     Context::~Context()
     {
+        // Destroy swap chain images
+        for (auto&& imageView : m_swapChainImageViews)
+        {
+            // Delete
+            vkDestroyImageView(m_logicalDevice, imageView, nullptr);
+        }
+
         // Destroy swap chain
         vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, nullptr);
         // Destroy surface
         vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
+
         #ifdef ENGINE_DEBUG
         // Destroy validation layers
         m_layers->DestroyMessenger(vkInstance);
         #endif
+
         // Destroy logical device
         vkDestroyDevice(m_logicalDevice, nullptr);
         // Destroy vulkan instance
         vkDestroyInstance(vkInstance, nullptr);
+
         // Log
         LOG_INFO("{}\n", "Destroyed vulkan context!");
     }

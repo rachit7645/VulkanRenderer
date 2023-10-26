@@ -102,7 +102,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 )
 
 # Library includes
-target_include_directories(VulkanRenderer PRIVATE External/)
+target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # -O3 optimisations
