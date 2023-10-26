@@ -35,6 +35,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/ValidationLayers.cpp
 	Source/Vulkan/Context.cpp
 	Source/Vulkan/QueueFamilyIndices.cpp
+	Source/Vulkan/SwapChainInfo.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 )
@@ -91,6 +92,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<span>
 	<optional>
 	<set>
+	<tuple>
     # C STL Headers
     <cstdint>
     <cstddef>

@@ -2,17 +2,23 @@
 
 #include <map>
 #include <unordered_map>
-#include <set>
+#include <limits>
 
 #include "Extensions.h"
 #include "../Util/Log.h"
+#include "../Externals/GLM.h"
 
 namespace Vk
 {
+    // TODO: Figure out a good way to move both of these vectors to their respective classes
+
     #ifdef ENGINE_DEBUG
     // Layers
     const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
     #endif
+
+    // Required device extensions
+    const std::vector<const char*> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
 
     Context::Context(SDL_Window* window)
         : m_extensions(std::make_unique<Vk::Extensions>())
@@ -35,6 +41,8 @@ namespace Vk
         PickPhysicalDevice();
         // Setup logical device
         CreateLogicalDevice();
+        // Create swap chain
+        CreateSwapChain(window);
         // Log
         LOG_INFO("{}\n", "Initialised vulkan context!");
     }
@@ -170,17 +178,8 @@ namespace Vk
                 propertySet.deviceID
             ));
 
-            // Get queue
-            auto queue = FindQueueFamilies(device);
-
-            // Calculate score parts
-            usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 10000;
-            // Calculate score multipliers
-            bool isQueueValid = queue.IsComplete() && queue.IsPerformant();
-
-            // Calculate score
-            usize score = isQueueValid * discreteGPU;
-            scores.emplace(score, device);
+            // Add score
+            scores.emplace(CalculateScore(device, propertySet), device);
         }
 
         // Log string
@@ -201,84 +200,47 @@ namespace Vk
         LOG_INFO("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
     }
 
-    Vk::QueueFamilyIndices Context::FindQueueFamilies(VkPhysicalDevice device)
+    usize Context::CalculateScore(VkPhysicalDevice device, VkPhysicalDeviceProperties propertySet)
     {
-        // Indices
-        Vk::QueueFamilyIndices indices = {};
+        // Get queue
+        auto queue = QueueFamilyIndices(device, m_surface);
 
-        // Get queue family count
-        u32 queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties
-        (
-            device,
-            &queueFamilyCount,
-            nullptr
-        );
+        // Calculate score parts
+        usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 10000;
 
-        // Get queue families
-        auto queueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties
-        (
-            device,
-            &queueFamilyCount,
-            queueFamilies.data()
-        );
+        // Calculate score multipliers
+        bool isQueueValid   = queue.IsComplete();
+        bool hasExtensions  = m_extensions->CheckDeviceExtensionSupport(device, REQUIRED_EXTENSIONS);
 
-        // Loop over queue families
-        for (usize i = 0; auto&& family : queueFamilies)
+        // Need extensions to calculate these
+        bool isSwapChainAdequate = true;
+
+        // Calculate
+        if (hasExtensions)
         {
-            // Check for presentation support
-            VkBool32 presentSupport = VK_FALSE;
-            vkGetPhysicalDeviceSurfaceSupportKHR
-            (
-                device,
-                i,
-                m_surface,
-                &presentSupport
-            );
-
-            if (presentSupport == VK_TRUE)
-            {
-                // Found present family! (hopefully it's the same as the graphics family)
-                indices.presentFamily = i;
-            }
-
-            // Check if family has graphics support
-            if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-            {
-                // Found graphics family!
-                indices.graphicsFamily = i;
-            }
-
-            // Check for completeness
-            if (indices.IsComplete() && indices.IsPerformant())
-            {
-                // Found all the queue families we need
-                break;
-            }
-
-            // Go to next family index
-            ++i;
+            // Make sure we have valid presentation and surface formats
+            auto swapChainInfo = SwapChainInfo(device, m_surface);
+            isSwapChainAdequate = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
         }
 
-        // Return
-        return indices;
+        // Calculate score
+        return hasExtensions * isQueueValid * isSwapChainAdequate * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
     {
         // Get queue
-        m_queueFamilies = FindQueueFamilies(m_physicalDevice);
+        m_queueFamilies = QueueFamilyIndices(m_physicalDevice, m_surface);
 
         // Queue priority
         constexpr f32 queuePriority = 1.0f;
 
         // Queues data
-        std::set<u32> uniqueQueueFamilies = {m_queueFamilies.graphicsFamily.value(), m_queueFamilies.presentFamily.value()};
+        auto uniqueQueueFamilies = m_queueFamilies.GetUniqueFamilies();
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
         // Create queue creation data
-        for (auto&& queueFamily : uniqueQueueFamilies)
+        for (auto queueFamily : uniqueQueueFamilies)
         {
             // Queue creation info
             VkDeviceQueueCreateInfo queueCreateInfo =
@@ -305,10 +267,15 @@ namespace Vk
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
+        #ifdef ENGINE_DEBUG
             .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
             .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
-            .enabledExtensionCount   = 0,
-            .ppEnabledExtensionNames = nullptr,
+        #else
+            .enabledLayerCount       = 0,
+            .ppEnabledLayerNames     = nullptr,
+        #endif
+            .enabledExtensionCount   = static_cast<u32>(REQUIRED_EXTENSIONS.size()),
+            .ppEnabledExtensionNames = REQUIRED_EXTENSIONS.data(),
             .pEnabledFeatures        = &deviceFeatures
         };
 
@@ -325,20 +292,172 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("Successfully created vulkan logical device! [address={}]\n", reinterpret_cast<void*>(m_logicalDevice));
+        LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(m_logicalDevice));
 
         // Get queue
         vkGetDeviceQueue
         (
             m_logicalDevice,
-            m_queueFamilies.presentFamily.value(),
+            m_queueFamilies.graphicsFamily.value(),
             0,
             &m_graphicsQueue
         );
     }
 
+    void Context::CreateSwapChain(SDL_Window* window)
+    {
+        // Get swap chain info
+        auto swapChainInfo = SwapChainInfo(m_physicalDevice, m_surface);
+        // Get swap chain config data
+        VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapChainInfo);
+        VkPresentModeKHR   presentMode   = ChoosePresentationMode(swapChainInfo);
+        VkExtent2D         extent        = ChooseSwapExtent(window, swapChainInfo);
+
+        // Get image count
+        u32 imageCount = glm::max
+        (
+            swapChainInfo.capabilities.minImageCount + 1,
+            swapChainInfo.capabilities.maxImageCount
+        );
+
+        // Swap chain creation data
+        VkSwapchainCreateInfoKHR createInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .surface               = m_surface,
+            .minImageCount         = imageCount,
+            .imageFormat           = surfaceFormat.format,
+            .imageColorSpace       = surfaceFormat.colorSpace,
+            .imageExtent           = extent,
+            .imageArrayLayers      = 1,
+            .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr,
+            .preTransform          = swapChainInfo.capabilities.currentTransform,
+            .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .presentMode           = presentMode,
+            .clipped               = VK_TRUE,
+            .oldSwapchain          = VK_NULL_HANDLE
+        };
+
+        // Create swap chain
+        if (vkCreateSwapchainKHR(
+                m_logicalDevice,
+                &createInfo,
+                nullptr,
+                &m_swapChain
+            ) != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(m_logicalDevice));
+        }
+
+        // Get image count
+        vkGetSwapchainImagesKHR
+        (
+            m_logicalDevice,
+            m_swapChain,
+            &imageCount,
+            nullptr
+        );
+        // Resize
+        m_swapChainImages.resize(imageCount);
+        // Get the images
+        vkGetSwapchainImagesKHR
+        (
+            m_logicalDevice,
+            m_swapChain,
+            &imageCount,
+            m_swapChainImages.data()
+        );
+
+        // Store other properties
+        m_swapChainImageFormat = surfaceFormat.format;
+        m_swapChainExtent      = extent;
+
+        // Log
+        LOG_INFO("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(m_swapChain));
+    }
+
+    VkSurfaceFormatKHR Context::ChooseSurfaceFormat(const SwapChainInfo& swapChainInfo)
+    {
+        // Formats
+        const auto& formats = swapChainInfo.formats;
+
+        // Search
+        for (auto&& availableFormat : formats)
+        {
+            // Check
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
+                availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
+            {
+                // Found preferred format!
+                return availableFormat;
+            }
+        }
+
+        // By default, return the first format
+        return formats[0];
+    }
+
+    VkPresentModeKHR Context::ChoosePresentationMode(const SwapChainInfo& swapChainInfo)
+    {
+        // Presentation modes
+        const auto& presentModes = swapChainInfo.presentModes;
+
+        // Check all presentation modes
+        for (auto&& presentMode : presentModes)
+        {
+            // Check for mailbox
+            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+                // Found it!
+                return presentMode;
+            }
+        }
+
+        // FIFO is guaranteed to be supported
+        return VK_PRESENT_MODE_FIFO_KHR;
+    }
+
+    VkExtent2D Context::ChooseSwapExtent(SDL_Window* window, const SwapChainInfo& swapChainInfo)
+    {
+        // Surface capability data
+        const auto& capabilities = swapChainInfo.capabilities;
+
+        // Some platforms set swap extents themselves
+        if (capabilities.currentExtent.width != std::numeric_limits<u32>::max())
+        {
+            // Just give back the original swap extent
+            return capabilities.currentExtent;
+        }
+
+        // Window pixel size
+        glm::ivec2 size = {};
+        SDL_Vulkan_GetDrawableSize(window, &size.x, &size.y);
+
+        // Get min and max
+        auto minSize = glm::ivec2(capabilities.minImageExtent.width, capabilities.minImageExtent.height);
+        auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
+
+        // Clamp
+        auto actualExtent = glm::clamp(size, minSize, maxSize);
+
+        // Return
+        return
+        {
+            .width  = static_cast<u32>(actualExtent.x),
+            .height = static_cast<u32>(actualExtent.y),
+        };
+    }
+
     Context::~Context()
     {
+        // Destroy swap chain
+        vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, nullptr);
         // Destroy surface
         vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
         #ifdef ENGINE_DEBUG

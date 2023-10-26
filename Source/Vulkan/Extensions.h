@@ -1,7 +1,7 @@
 #ifndef EXTENSION_LOADER_H
 #define EXTENSION_LOADER_H
 
-#include <string>
+#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace Vk
@@ -15,6 +15,8 @@ namespace Vk
         std::vector<const char*> LoadInstanceExtensions(SDL_Window* window);
         // Load functions
         void LoadFunctions(VkInstance& instance);
+        // Get extensions for device
+        bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions);
     };
 }
 

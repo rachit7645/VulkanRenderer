@@ -102,6 +102,42 @@ namespace Vk
         );
     }
 
+    bool Extensions::CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions)
+    {
+        // Get device extension count
+        u32 extensionCount = 0;
+        vkEnumerateDeviceExtensionProperties
+        (
+            device,
+            nullptr,
+            &extensionCount,
+            nullptr
+        );
+
+        // Get extensions
+        auto availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
+        vkEnumerateDeviceExtensionProperties
+        (
+            device,
+            nullptr,
+            &extensionCount,
+            availableExtensions.data()
+        );
+
+        // Set of unique extensions
+        auto _requiredExtensions = std::set<std::string_view>(requiredExtensions.begin(), requiredExtensions.end());
+
+        // Check each extension
+        for (auto&& extension : availableExtensions)
+        {
+            // Erase
+            _requiredExtensions.erase(extension.extensionName);
+        }
+
+        // Check if all required extensions were found
+        return _requiredExtensions.empty();
+    }
+
     Extensions::~Extensions()
     {
         // Reset
@@ -117,7 +153,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instan
     return fn(instance, pName);
 }
 
-VkResult vkCreateDebugUtilsMessengerEXT
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT
 (
     VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
