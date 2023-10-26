@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(libs VERSION 0.1.0)
+project(libs)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
@@ -42,16 +42,20 @@ target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
 target_compile_options(imgui PRIVATE -w)
 # -O3 optimisations
 target_compile_options(imgui PRIVATE -O3)
-# Debug output
-target_compile_options(imgui PRIVATE -g)
 # Enable CPU vectorisation (SSE or better)
 target_compile_options(imgui PRIVATE -march=native)
+
+# Debug config
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+	# Enable debug output
+	target_compile_options(imgui PRIVATE -g)
+endif()
+
 # Link libraries
 target_link_libraries(imgui Vulkan::Vulkan SDL2::SDL2)
 
 # SIMD JSON source files
 add_library(simdjson SHARED simdjson/singleheader/simdjson.cpp)
-
 # SIMD JSON precompiled headers
 target_precompile_headers(simdjson PRIVATE simdjson/singleheader/simdjson.h)
 
@@ -61,9 +65,14 @@ target_include_directories(simdjson PUBLIC simdjson/singleheader/)
 target_compile_options(simdjson PRIVATE -w)
 # -O3 optimisations
 target_compile_options(simdjson PRIVATE -O3)
-# Debug output
-target_compile_options(simdjson PRIVATE -g)
 # Enable CPU vectorisation (SSE or better)
 target_compile_options(simdjson PRIVATE -march=native)
+
+# Debug config
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+	# Enable debug output
+	target_compile_options(simdjson PRIVATE -g)
+endif()
+
 # SIMD JSON libs
 target_link_libraries(simdjson)

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.25)
 project(VulkanRenderer)
 
-# Output executable/libraries to main build directory
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+# Install location
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin/)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
@@ -18,6 +18,7 @@ find_package(fmt    REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
+add_subdirectory(Assets/Shaders/)
 
 # Main executable
 add_executable(VulkanRenderer
@@ -118,5 +119,23 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	target_compile_options(VulkanRenderer PRIVATE -g)
 endif()
 
+# Add shader dependency
+add_dependencies(VulkanRenderer Shaders)
+
 # Link libraries
 target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2main SDL2::SDL2 fmt::fmt assimp imgui simdjson)
+
+# Install
+install(
+	TARGETS VulkanRenderer imgui simdjson
+	ARCHIVE DESTINATION ${INSTALL_DIR}
+	LIBRARY DESTINATION ${INSTALL_DIR}
+	RUNTIME DESTINATION ${INSTALL_DIR}
+)
+
+# Copy required DLLs
+install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
+install(FILES $<TARGET_RUNTIME_DLLS:imgui>          DESTINATION ${INSTALL_DIR})
+install(FILES $<TARGET_RUNTIME_DLLS:simdjson>       DESTINATION ${INSTALL_DIR})
+
+# Copy other directories
