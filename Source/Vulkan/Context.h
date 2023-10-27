@@ -11,6 +11,7 @@
 #include "QueueFamilyIndices.h"
 #include "SwapChainInfo.h"
 #include "../Util/Util.h"
+#include "PipelineBuilder.h"
 
 namespace Vk
 {
@@ -49,6 +50,9 @@ namespace Vk
         // Choose swap extent
         VkExtent2D ChooseSwapExtent(SDL_Window* window, const Vk::SwapChainInfo& swapChainInfo);
 
+        // Create graphics pipeline
+        void CreateGraphicsPipeline();
+
         // Extensions
         std::unique_ptr<Vk::Extensions> m_extensions = nullptr;
         #ifdef ENGINE_DEBUG
@@ -63,7 +67,7 @@ namespace Vk
         // Queue families
         Vk::QueueFamilyIndices m_queueFamilies = {};
         // Logical device
-        VkDevice m_logicalDevice = {};
+        VkDevice m_device = {};
         // Queue
         VkQueue m_graphicsQueue = {};
 
@@ -77,6 +81,8 @@ namespace Vk
         VkExtent2D m_swapChainExtent = {};
         // Swap chain image views
         std::vector<VkImageView> m_swapChainImageViews = {};
+        // Pipeline object
+        VkPipeline m_pipeline = {};
     };
 }
 

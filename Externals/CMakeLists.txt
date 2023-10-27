@@ -35,7 +35,7 @@ target_precompile_headers(imgui PRIVATE
 # SDL2 Includes
 target_include_directories(imgui PRIVATE ${SDL2_INCLUDE_DIRS})
 # ImGUI Includes
-target_include_directories(imgui PUBLIC imgui/ imgui/backends imgui/misc)
+target_include_directories(imgui PUBLIC ImGui/ ImGui/backends ImGui/misc)
 # ImGui Defines
 target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
 # Disable warnings

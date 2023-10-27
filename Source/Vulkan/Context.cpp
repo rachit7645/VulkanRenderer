@@ -27,6 +27,7 @@ namespace Vk
         CreateVKInstance(window);
         // Load extensions
         m_extensions->LoadFunctions(vkInstance);
+
         #ifdef ENGINE_DEBUG
         // Load validation layers
         if (m_layers->SetupMessenger(vkInstance) != VK_SUCCESS)
@@ -35,16 +36,22 @@ namespace Vk
             LOG_ERROR("{}\n", "Failed to set up debug messenger!");
         }
         #endif
+
         // Create surface
         CreateSurface(window);
         // Grab a GPU
         PickPhysicalDevice();
         // Setup logical device
         CreateLogicalDevice();
+
         // Create swap chain
         CreateSwapChain(window);
         // Create image views for swap chain
         CreateImageViews();
+
+        // Create graphics pipeline
+        CreateGraphicsPipeline();
+
         // Log
         LOG_INFO("{}\n", "Initialised vulkan context!");
     }
@@ -286,7 +293,7 @@ namespace Vk
             m_physicalDevice,
             &createInfo,
             nullptr,
-            &m_logicalDevice
+            &m_device
         ) != VK_SUCCESS)
         {
             // Log
@@ -294,12 +301,12 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(m_logicalDevice));
+        LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(m_device));
 
         // Get queue
         vkGetDeviceQueue
         (
-            m_logicalDevice,
+            m_device,
             m_queueFamilies.graphicsFamily.value(),
             0,
             &m_graphicsQueue
@@ -347,20 +354,20 @@ namespace Vk
 
         // Create swap chain
         if (vkCreateSwapchainKHR(
-                m_logicalDevice,
+                m_device,
                 &createInfo,
                 nullptr,
                 &m_swapChain
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(m_logicalDevice));
+            LOG_ERROR("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(m_device));
         }
 
         // Get image count
         vkGetSwapchainImagesKHR
         (
-            m_logicalDevice,
+            m_device,
             m_swapChain,
             &imageCount,
             nullptr
@@ -370,7 +377,7 @@ namespace Vk
         // Get the images
         vkGetSwapchainImagesKHR
         (
-            m_logicalDevice,
+            m_device,
             m_swapChain,
             &imageCount,
             m_swapChainImages.data()
@@ -417,7 +424,7 @@ namespace Vk
             };
             // Create image view
             if (vkCreateImageView(
-                    m_logicalDevice,
+                    m_device,
                     &createInfo,
                     nullptr,
                     &m_swapChainImageViews[i]
@@ -427,7 +434,7 @@ namespace Vk
                 LOG_ERROR
                 (
                     "Failed to create image view #{}! [device={}] [image={}]",
-                    i, reinterpret_cast<void*>(m_logicalDevice),
+                    i, reinterpret_cast<void*>(m_device),
                     reinterpret_cast<void*>(m_swapChainImages[i])
                 );
             }
@@ -506,17 +513,69 @@ namespace Vk
         };
     }
 
+    void Context::CreateGraphicsPipeline()
+    {
+        // Custom functions
+        auto SetDynamicStates = [this] (PipelineBuilder& pipelineBuilder)
+        {
+            // Set viewport config
+            pipelineBuilder.viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(m_swapChainExtent.width),
+                .height   = static_cast<f32>(m_swapChainExtent.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
+
+            // Set scissor config
+            pipelineBuilder.scissor =
+            {
+                .offset = {0, 0},
+                .extent = m_swapChainExtent
+            };
+
+            // Create viewport creation info
+            pipelineBuilder.viewportInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                .pNext         = nullptr,
+                .flags         = 0,
+                .viewportCount = 1,
+                .pViewports    = &pipelineBuilder.viewport,
+                .scissorCount  = 1,
+                .pScissors     = &pipelineBuilder.scissor
+            };
+        };
+
+        // Build pipeline
+        m_pipeline = Vk::PipelineBuilder::Create(m_device)
+                        .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+                        .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+                        .SetDynamicStates({VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, SetDynamicStates)
+                        .SetVertexInputState()
+                        .SetIAState()
+                        .SetRasterizerState(VK_CULL_MODE_BACK_BIT)
+                        .SetMSAAState()
+                        .SetBlendState()
+                        .CreatePipelineLayout()
+                        .Build();
+
+        (void) m_pipeline;
+    }
+
     Context::~Context()
     {
         // Destroy swap chain images
         for (auto&& imageView : m_swapChainImageViews)
         {
             // Delete
-            vkDestroyImageView(m_logicalDevice, imageView, nullptr);
+            vkDestroyImageView(m_device, imageView, nullptr);
         }
 
         // Destroy swap chain
-        vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, nullptr);
+        vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
         // Destroy surface
         vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
 
@@ -526,7 +585,7 @@ namespace Vk
         #endif
 
         // Destroy logical device
-        vkDestroyDevice(m_logicalDevice, nullptr);
+        vkDestroyDevice(m_device, nullptr);
         // Destroy vulkan instance
         vkDestroyInstance(vkInstance, nullptr);
 

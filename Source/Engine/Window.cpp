@@ -61,6 +61,9 @@ namespace Engine
 
         // For sanity, raise handle
         SDL_RaiseWindow(handle);
+
+        // FIXME: This needs to be done here for now
+        Files::GetInstance().SetResources("Assets/");
     }
 
     bool Window::PollEvents()
