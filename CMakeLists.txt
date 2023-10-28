@@ -39,6 +39,8 @@ add_executable(VulkanRenderer
 	Source/Vulkan/SwapChainInfo.cpp
 	Source/Vulkan/ShaderModule.cpp
     Source/Vulkan/PipelineBuilder.cpp
+	# Renderer sources
+	Source/Renderer/RenderManager.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 )

@@ -5,8 +5,8 @@
 namespace Engine
 {
     AppInstance::AppInstance()
-        : m_window(std::make_unique<Window>()),
-          m_vkContext(std::make_unique<Vk::Context>(m_window->handle))
+        : m_window(std::make_shared<Window>()),
+          m_renderer(m_window)
     {
         // Log
         LOG_INFO("{}\n", "App instance initialised!");
@@ -16,6 +16,15 @@ namespace Engine
     {
         while (true)
         {
+            // Begin
+            m_renderer.BeginFrame();
+            m_renderer.BeginRenderPass();
+            // Render
+            m_renderer.Render();
+            // End
+            m_renderer.EndRenderPass();
+            m_renderer.EndFrame();
+
             // Poll events
             if (m_window->PollEvents()) break;
         }

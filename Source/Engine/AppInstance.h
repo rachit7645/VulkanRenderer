@@ -4,7 +4,8 @@
 #include <memory>
 
 #include "Window.h"
-#include "../Vulkan/Context.h"
+#include "Vulkan/Context.h"
+#include "Renderer/RenderManager.h"
 
 namespace Engine
 {
@@ -20,9 +21,9 @@ namespace Engine
         void Run();
     private:
         // Window
-        std::unique_ptr<Engine::Window> m_window = nullptr;
-        // Vulkan context
-        std::unique_ptr<Vk::Context> m_vkContext = nullptr;
+        std::shared_ptr<Engine::Window> m_window = nullptr;
+        // Renderer
+        Renderer::RenderManager m_renderer;
     };
 }
 

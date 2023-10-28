@@ -25,6 +25,29 @@ namespace Vk
 
         // Vulkan instance
         VkInstance vkInstance = {};
+        // Logical device
+        VkDevice device = {};
+        // Pipeline object
+        VkPipeline pipeline = {};
+
+        // Swap chain
+        VkSwapchainKHR swapChain = {};
+        // Extent
+        VkExtent2D swapChainExtent = {};
+        // Swap chain framebuffers
+        std::vector<VkFramebuffer> swapChainFrameBuffers = {};
+
+        // Render pass
+        VkRenderPass renderPass = {};
+        // Command buffer
+        VkCommandBuffer commandBuffer = {};
+
+        // Semaphores
+        VkSemaphore imageAvailable = {};
+        VkSemaphore renderFinished = {};
+        // Fences
+        VkFence inFlight = {};
+
     private:
         // Create vulkan instance
         void CreateVKInstance(SDL_Window* window);
@@ -34,7 +57,7 @@ namespace Vk
         // Pick a GPU
         void PickPhysicalDevice();
         // Calculate score
-        usize CalculateScore(VkPhysicalDevice device, VkPhysicalDeviceProperties propertySet);
+        usize CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet);
         // Create a logical device
         void CreateLogicalDevice();
 
@@ -54,6 +77,15 @@ namespace Vk
         void CreateRenderPass();
         // Create graphics pipeline
         void CreateGraphicsPipeline();
+        // Create swap chain framebuffers
+        void CreateFramebuffers();
+
+        // Creates command pool
+        void CreateCommandPool();
+        // Create graphics command buffer
+        void CreateCommandBuffer();
+        // Create synchronisation objects
+        void CreateSyncObjects();
 
         // Extensions
         std::unique_ptr<Vk::Extensions> m_extensions = nullptr;
@@ -68,28 +100,21 @@ namespace Vk
         VkPhysicalDevice m_physicalDevice = {};
         // Queue families
         Vk::QueueFamilyIndices m_queueFamilies = {};
-        // Logical device
-        VkDevice m_device = {};
         // Queue
         VkQueue m_graphicsQueue = {};
 
-        // Swap chain
-        VkSwapchainKHR m_swapChain = {};
         // Swap chain images
         std::vector<VkImage> m_swapChainImages = {};
         // Image format
         VkFormat m_swapChainImageFormat = {};
-        // Extent
-        VkExtent2D m_swapChainExtent = {};
         // Swap chain image views
         std::vector<VkImageView> m_swapChainImageViews = {};
 
-        // Render pass
-        VkRenderPass m_renderPass = {};
-        // Pipeline object
-        VkPipeline m_pipeline = {};
         // Pipeline layout
         VkPipelineLayout m_pipelineLayout = {};
+
+        // Command pool
+        VkCommandPool m_commandPool = {};
     };
 }
 

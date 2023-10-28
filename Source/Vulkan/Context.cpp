@@ -5,20 +5,20 @@
 #include <limits>
 
 #include "Extensions.h"
-#include "../Util/Log.h"
-#include "../Externals/GLM.h"
+#include "Util/Log.h"
+#include "Externals/GLM.h"
+#include "Renderer/RenderConstants.h"
 
 namespace Vk
 {
     // TODO: Figure out a good way to move both of these vectors to their respective classes
 
+    // Required device extensions
+    const std::vector<const char*> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
     #ifdef ENGINE_DEBUG
     // Layers
     const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
     #endif
-
-    // Required device extensions
-    const std::vector<const char*> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
 
     Context::Context(SDL_Window* window)
         : m_extensions(std::make_unique<Vk::Extensions>())
@@ -53,6 +53,15 @@ namespace Vk
         CreateRenderPass();
         // Create graphics pipeline
         CreateGraphicsPipeline();
+        // Create framebuffers
+        CreateFramebuffers();
+
+        // Create global command pool
+        CreateCommandPool();
+        // Creates command buffer
+        CreateCommandBuffer();
+        // Create sync objects
+        CreateSyncObjects();
 
         // Log
         LOG_INFO("{}\n", "Initialised vulkan context!");
@@ -167,17 +176,17 @@ namespace Vk
 
 
         // Get information about physical devices
-        for (auto&& device : devices)
+        for (auto&& currentDevice : devices)
         {
             // Get data
             VkPhysicalDeviceProperties propertySet;
-            vkGetPhysicalDeviceProperties(device, &propertySet);
+            vkGetPhysicalDeviceProperties(currentDevice, &propertySet);
             VkPhysicalDeviceFeatures featureSet;
-            vkGetPhysicalDeviceFeatures(device, &featureSet);
+            vkGetPhysicalDeviceFeatures(currentDevice, &featureSet);
 
             // Load data
-            properties.emplace(device, propertySet);
-            features.emplace(device, featureSet);
+            properties.emplace(currentDevice, propertySet);
+            features.emplace(currentDevice, featureSet);
 
             // Add to string
             dbgPhyDevices.append(fmt::format
@@ -190,7 +199,7 @@ namespace Vk
             ));
 
             // Add score
-            scores.emplace(CalculateScore(device, propertySet), device);
+            scores.emplace(CalculateScore(currentDevice, propertySet), currentDevice);
         }
 
         // Log string
@@ -211,17 +220,17 @@ namespace Vk
         LOG_INFO("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
     }
 
-    usize Context::CalculateScore(VkPhysicalDevice device, VkPhysicalDeviceProperties propertySet)
+    usize Context::CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet)
     {
         // Get queue
-        auto queue = QueueFamilyIndices(device, m_surface);
+        auto queue = QueueFamilyIndices(logicalDevice, m_surface);
 
         // Calculate score parts
         usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 10000;
 
         // Calculate score multipliers
         bool isQueueValid   = queue.IsComplete();
-        bool hasExtensions  = m_extensions->CheckDeviceExtensionSupport(device, REQUIRED_EXTENSIONS);
+        bool hasExtensions  = m_extensions->CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -230,7 +239,7 @@ namespace Vk
         if (hasExtensions)
         {
             // Make sure we have valid presentation and surface formats
-            auto swapChainInfo = SwapChainInfo(device, m_surface);
+            auto swapChainInfo = SwapChainInfo(logicalDevice, m_surface);
             isSwapChainAdequate = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
         }
 
@@ -295,7 +304,7 @@ namespace Vk
             m_physicalDevice,
             &createInfo,
             nullptr,
-            &m_device
+            &device
         ) != VK_SUCCESS)
         {
             // Log
@@ -303,12 +312,12 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(m_device));
+        LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(device));
 
         // Get queue
         vkGetDeviceQueue
         (
-            m_device,
+            device,
             m_queueFamilies.graphicsFamily.value(),
             0,
             &m_graphicsQueue
@@ -356,21 +365,21 @@ namespace Vk
 
         // Create swap chain
         if (vkCreateSwapchainKHR(
-                m_device,
+                device,
                 &createInfo,
                 nullptr,
-                &m_swapChain
+                &swapChain
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(m_device));
+            LOG_ERROR("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(device));
         }
 
         // Get image count
         vkGetSwapchainImagesKHR
         (
-            m_device,
-            m_swapChain,
+            device,
+            swapChain,
             &imageCount,
             nullptr
         );
@@ -379,18 +388,18 @@ namespace Vk
         // Get the images
         vkGetSwapchainImagesKHR
         (
-            m_device,
-            m_swapChain,
+            device,
+            swapChain,
             &imageCount,
             m_swapChainImages.data()
         );
 
         // Store other properties
         m_swapChainImageFormat = surfaceFormat.format;
-        m_swapChainExtent      = extent;
+        swapChainExtent      = extent;
 
         // Log
-        LOG_INFO("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(m_swapChain));
+        LOG_INFO("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(swapChain));
     }
 
     void Context::CreateImageViews()
@@ -426,7 +435,7 @@ namespace Vk
             };
             // Create image view
             if (vkCreateImageView(
-                    m_device,
+                    device,
                     &createInfo,
                     nullptr,
                     &m_swapChainImageViews[i]
@@ -436,7 +445,7 @@ namespace Vk
                 LOG_ERROR
                 (
                     "Failed to create image view #{}! [device={}] [image={}]",
-                    i, reinterpret_cast<void*>(m_device),
+                    i, reinterpret_cast<void*>(device),
                     reinterpret_cast<void*>(m_swapChainImages[i])
                 );
             }
@@ -569,18 +578,18 @@ namespace Vk
 
         // Create render pass
         if (vkCreateRenderPass(
-                m_device,
+                device,
                 &createInfo,
                 nullptr,
-                &m_renderPass
+                &renderPass
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create render pass! [device={}]\n", reinterpret_cast<void*>(m_device));
+            LOG_ERROR("Failed to create render pass! [device={}]\n", reinterpret_cast<void*>(device));
         }
 
         // Log
-        LOG_INFO("Created render pass! [handle={}]\n", reinterpret_cast<void*>(m_renderPass));
+        LOG_INFO("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
     }
 
     void Context::CreateGraphicsPipeline()
@@ -593,8 +602,8 @@ namespace Vk
             {
                 .x        = 0.0f,
                 .y        = 0.0f,
-                .width    = static_cast<f32>(m_swapChainExtent.width),
-                .height   = static_cast<f32>(m_swapChainExtent.height),
+                .width    = static_cast<f32>(swapChainExtent.width),
+                .height   = static_cast<f32>(swapChainExtent.height),
                 .minDepth = 0.0f,
                 .maxDepth = 1.0f
             };
@@ -603,7 +612,7 @@ namespace Vk
             pipelineBuilder.scissor =
             {
                 .offset = {0, 0},
-                .extent = m_swapChainExtent
+                .extent = swapChainExtent
             };
 
             // Create viewport creation info
@@ -623,7 +632,7 @@ namespace Vk
         std::tuple<VkPipeline, VkPipelineLayout> pipelineData = {};
 
         // Build pipeline
-        pipelineData = Vk::PipelineBuilder::Create(m_device, m_renderPass)
+        pipelineData = Vk::PipelineBuilder::Create(device, renderPass)
                         .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
                         .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
                         .SetDynamicStates({VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, SetDynamicStates)
@@ -635,27 +644,178 @@ namespace Vk
                         .Build();
 
         // Retrieve members
-        std::tie(m_pipeline, m_pipelineLayout) = pipelineData;
+        std::tie(pipeline, m_pipelineLayout) = pipelineData;
+    }
+
+    void Context::CreateFramebuffers()
+    {
+        // Resize
+        swapChainFrameBuffers.resize(m_swapChainImageViews.size());
+
+        // For each image view
+        for (usize i = 0; i < m_swapChainImageViews.size(); ++i)
+        {
+            // Framebuffer info
+            VkFramebufferCreateInfo framebufferInfo =
+            {
+                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext           = nullptr,
+                .flags           = 0,
+                .renderPass      = renderPass,
+                .attachmentCount = 1,
+                .pAttachments    = &m_swapChainImageViews[i],
+                .width           = swapChainExtent.width,
+                .height          = swapChainExtent.height,
+                .layers          = 1
+            };
+
+            // Create framebuffer
+            if (vkCreateFramebuffer(
+                    device,
+                    &framebufferInfo,
+                    nullptr,
+                    &swapChainFrameBuffers[i]
+                ) != VK_SUCCESS)
+            {
+                // Log
+                LOG_ERROR
+                (
+                    "Failed to create framebuffer #{}! [image={}]\n",
+                    i, reinterpret_cast<void*>(&m_swapChainImageViews[i])
+                );
+            }
+        }
+
+        // Log
+        LOG_INFO("{}\n", "Created framebuffers!");
+    }
+
+    void Context::CreateCommandPool()
+    {
+        // Command pool info
+        VkCommandPoolCreateInfo createInfo =
+        {
+            .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .pNext            = nullptr,
+            .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+            .queueFamilyIndex = m_queueFamilies.graphicsFamily.value()
+        };
+
+        // Create command pool
+        if (vkCreateCommandPool(
+                device,
+                &createInfo,
+                nullptr,
+                &m_commandPool
+            ) != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR("Failed to create command pool! [device={}]\n", reinterpret_cast<void*>(device));
+        }
+
+        // Log
+        LOG_INFO("Created command pool! [handle={}]\n", reinterpret_cast<void*>(m_commandPool));
+    }
+
+    void Context::CreateCommandBuffer()
+    {
+        // Allocation info
+        VkCommandBufferAllocateInfo allocInfo
+        {
+            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .commandPool        = m_commandPool,
+            .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = 1
+        };
+
+        // Allocate command buffer
+        if (vkAllocateCommandBuffers(
+                device,
+                &allocInfo,
+                &commandBuffer
+            ) != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR
+            (
+                "Failed to allocate command buffer(s)! [CommandPool={}]\n",
+                reinterpret_cast<void*>(m_commandPool)
+            );
+        }
+
+        // Log
+        LOG_INFO("Created command buffer! [handle={}]\n", reinterpret_cast<void*>(commandBuffer));
+    }
+
+    void Context::CreateSyncObjects()
+    {
+        // Semaphore info
+        VkSemaphoreCreateInfo semaphoreInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        // Fence info
+        VkFenceCreateInfo fenceInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT
+        };
+
+        // Create sync objects
+        if
+        (
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailable) != VK_SUCCESS ||
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinished) != VK_SUCCESS ||
+            vkCreateFence(device, &fenceInfo, nullptr, &inFlight) != VK_SUCCESS
+        )
+        {
+            // Log
+            LOG_ERROR("{}\n", "Failed to create sync objects!");
+        }
+
+        // Log
+        LOG_INFO("{}\n", "Created synchronisation objects!");
     }
 
     Context::~Context()
     {
+        // Destroy semaphores
+        vkDestroySemaphore(device, imageAvailable, nullptr);
+        vkDestroySemaphore(device, renderFinished, nullptr);
+        // Destroy fences
+        vkDestroyFence(device, inFlight, nullptr);
+
+        // Destroy command pool
+        vkDestroyCommandPool(device, m_commandPool, nullptr);
+
+        // Destroy framebuffers
+        for (auto&& framebuffer : swapChainFrameBuffers)
+        {
+            // Destroy
+            vkDestroyFramebuffer(device, framebuffer, nullptr);
+        }
+
         // Destroy pipeline
-        vkDestroyPipeline(m_device, m_pipeline, nullptr);
+        vkDestroyPipeline(device, pipeline, nullptr);
         // Destroy pipeline layout
-        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
         // Destroy render pass
-        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+        vkDestroyRenderPass(device, renderPass, nullptr);
 
         // Destroy swap chain images
         for (auto&& imageView : m_swapChainImageViews)
         {
             // Delete
-            vkDestroyImageView(m_device, imageView, nullptr);
+            vkDestroyImageView(device, imageView, nullptr);
         }
 
         // Destroy swap chain
-        vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+        vkDestroySwapchainKHR(device, swapChain, nullptr);
         // Destroy surface
         vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
 
@@ -665,7 +825,7 @@ namespace Vk
         #endif
 
         // Destroy logical device
-        vkDestroyDevice(m_device, nullptr);
+        vkDestroyDevice(device, nullptr);
         // Destroy vulkan instance
         vkDestroyInstance(vkInstance, nullptr);
 
