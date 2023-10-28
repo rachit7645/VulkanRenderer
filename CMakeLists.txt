@@ -48,6 +48,9 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	# SDL headers
 	<SDL2/SDL.h>
 	<SDL2/SDL_vulkan.h>
+	# Vulkan headers
+	<vulkan/vulkan.h>
+	<vulkan/vulkan_core.h>
 	# ImGui Headers
     Externals/imgui/imgui.h
     Externals/imgui/imgui_internal.h

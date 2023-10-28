@@ -12,12 +12,12 @@ namespace Vk
     {
     public:
         // Initialise pipeline builder
-        static PipelineBuilder Create(VkDevice device);
+        static PipelineBuilder Create(VkDevice device, VkRenderPass renderPass);
         // Destroy pipeline data
         ~PipelineBuilder();
 
         // Build pipeline
-        VkPipeline Build();
+        std::tuple<VkPipeline, VkPipelineLayout> Build();
 
         // Attach shader to pipeline
         PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
@@ -40,16 +40,13 @@ namespace Vk
         // Set color blending state
         PipelineBuilder& SetBlendState();
 
-        // Create pipeline layout object
-        PipelineBuilder& CreatePipelineLayout();
-
         // Shader stages
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
 
         // Dynamic states
         std::vector<VkDynamicState> dynamicStates = {};
         // Dynamic states info
-        VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};
+        VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
 
         // Viewport state
         VkPipelineViewportStateCreateInfo viewportInfo = {};
@@ -74,10 +71,12 @@ namespace Vk
 
     private:
         // Private constructor
-        explicit PipelineBuilder(VkDevice device);
+        explicit PipelineBuilder(VkDevice device, VkRenderPass renderPass);
 
         // Pipeline device
         VkDevice m_device = {};
+        // Render pass
+        VkRenderPass m_renderPass = {};
     };
 }
 

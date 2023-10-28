@@ -50,6 +50,8 @@ namespace Vk
         // Choose swap extent
         VkExtent2D ChooseSwapExtent(SDL_Window* window, const Vk::SwapChainInfo& swapChainInfo);
 
+        // Creates the default render pass
+        void CreateRenderPass();
         // Create graphics pipeline
         void CreateGraphicsPipeline();
 
@@ -81,8 +83,13 @@ namespace Vk
         VkExtent2D m_swapChainExtent = {};
         // Swap chain image views
         std::vector<VkImageView> m_swapChainImageViews = {};
+
+        // Render pass
+        VkRenderPass m_renderPass = {};
         // Pipeline object
         VkPipeline m_pipeline = {};
+        // Pipeline layout
+        VkPipelineLayout m_pipelineLayout = {};
     };
 }
 

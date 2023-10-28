@@ -49,6 +49,8 @@ namespace Vk
         // Create image views for swap chain
         CreateImageViews();
 
+        // Create render pass
+        CreateRenderPass();
         // Create graphics pipeline
         CreateGraphicsPipeline();
 
@@ -513,6 +515,74 @@ namespace Vk
         };
     }
 
+    void Context::CreateRenderPass()
+    {
+        // Color attachment
+        VkAttachmentDescription colorAttachment =
+        {
+            .flags          = 0,
+            .format         = m_swapChainImageFormat,
+            .samples        = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+
+        // Color attachment ref
+        VkAttachmentReference colorAttachmentRef =
+        {
+            .attachment = 0,
+            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        };
+
+        // Subpass description
+        VkSubpassDescription subpass =
+        {
+            .flags                   = 0,
+            .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
+            .inputAttachmentCount    = 0,
+            .pInputAttachments       = nullptr,
+            .colorAttachmentCount    = 1,
+            .pColorAttachments       = &colorAttachmentRef,
+            .pResolveAttachments     = nullptr,
+            .pDepthStencilAttachment = nullptr,
+            .preserveAttachmentCount = 0,
+            .pPreserveAttachments    = nullptr
+        };
+
+        // Render pass creation info
+        VkRenderPassCreateInfo createInfo =
+        {
+            .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            .pNext           = nullptr,
+            .flags           = 0,
+            .attachmentCount = 1,
+            .pAttachments    = &colorAttachment,
+            .subpassCount    = 1,
+            .pSubpasses      = &subpass,
+            .dependencyCount = 0,
+            .pDependencies   = nullptr
+        };
+
+        // Create render pass
+        if (vkCreateRenderPass(
+                m_device,
+                &createInfo,
+                nullptr,
+                &m_renderPass
+            ) != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR("Failed to create render pass! [device={}]\n", reinterpret_cast<void*>(m_device));
+        }
+
+        // Log
+        LOG_INFO("Created render pass! [handle={}]\n", reinterpret_cast<void*>(m_renderPass));
+    }
+
     void Context::CreateGraphicsPipeline()
     {
         // Custom functions
@@ -549,8 +619,11 @@ namespace Vk
             };
         };
 
+        // Pipeline data tuple
+        std::tuple<VkPipeline, VkPipelineLayout> pipelineData = {};
+
         // Build pipeline
-        m_pipeline = Vk::PipelineBuilder::Create(m_device)
+        pipelineData = Vk::PipelineBuilder::Create(m_device, m_renderPass)
                         .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
                         .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
                         .SetDynamicStates({VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, SetDynamicStates)
@@ -559,14 +632,21 @@ namespace Vk
                         .SetRasterizerState(VK_CULL_MODE_BACK_BIT)
                         .SetMSAAState()
                         .SetBlendState()
-                        .CreatePipelineLayout()
                         .Build();
 
-        (void) m_pipeline;
+        // Retrieve members
+        std::tie(m_pipeline, m_pipelineLayout) = pipelineData;
     }
 
     Context::~Context()
     {
+        // Destroy pipeline
+        vkDestroyPipeline(m_device, m_pipeline, nullptr);
+        // Destroy pipeline layout
+        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        // Destroy render pass
+        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+
         // Destroy swap chain images
         for (auto&& imageView : m_swapChainImageViews)
         {

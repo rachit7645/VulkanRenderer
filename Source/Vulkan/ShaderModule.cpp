@@ -47,7 +47,7 @@ namespace Vk
         }
 
         // Log
-        LOG_DEBUG("Created shader module {} [handle={}]\n", path, reinterpret_cast<void*>(shaderModule));
+        LOG_INFO("Created shader module {} [handle={}]\n", path, reinterpret_cast<void*>(shaderModule));
 
         // Return
         return shaderModule;

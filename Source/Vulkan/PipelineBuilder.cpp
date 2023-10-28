@@ -4,21 +4,98 @@
 
 namespace Vk
 {
-    PipelineBuilder PipelineBuilder::Create(VkDevice device)
+    // TODO: Make everything more customisable
+
+    PipelineBuilder PipelineBuilder::Create(VkDevice device, VkRenderPass renderPass)
     {
         // Create
-        return PipelineBuilder(device);
+        return PipelineBuilder(device, renderPass);
     }
 
-    PipelineBuilder::PipelineBuilder(VkDevice device)
-        : m_device(device)
+    PipelineBuilder::PipelineBuilder(VkDevice device, VkRenderPass renderPass)
+        : m_device(device),
+          m_renderPass(renderPass)
     {
     }
 
-    VkPipeline PipelineBuilder::Build()
+    std::tuple<VkPipeline, VkPipelineLayout> PipelineBuilder::Build()
     {
-        // We'll be right back
-        return VK_NULL_HANDLE;
+        // Pipeline layout create info
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+        {
+            .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            .pNext                  = nullptr,
+            .flags                  = 0,
+            .setLayoutCount         = 0,
+            .pSetLayouts            = nullptr,
+            .pushConstantRangeCount = 0,
+            .pPushConstantRanges    = nullptr
+        };
+
+        // Pipeline layout handle
+        VkPipelineLayout pipelineLayout = {};
+
+        // Create pipeline layout
+        if (vkCreatePipelineLayout(
+                m_device,
+                &pipelineLayoutInfo,
+                nullptr,
+                &pipelineLayout
+            ) != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR("Failed to create pipeline layout! [device={}]\n", reinterpret_cast<void*>(m_device));
+        }
+
+        // Log
+        LOG_INFO("Created pipeline layout! [handle={}]\n", reinterpret_cast<void*>(pipelineLayout));
+
+        // Pipeline creation info
+        VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+        {
+            .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+            .pNext               = nullptr,
+            .flags               = 0,
+            .stageCount          = static_cast<u32>(shaderStageCreateInfos.size()),
+            .pStages             = shaderStageCreateInfos.data(),
+            .pVertexInputState   = &vertexInputInfo                       ,
+            .pInputAssemblyState = &inputAssemblyInfo,
+            .pTessellationState  = nullptr,
+            .pViewportState      = &viewportInfo,
+            .pRasterizationState = &rasterizationInfo,
+            .pMultisampleState   = &msaaStateInfo,
+            .pDepthStencilState  = nullptr,
+            .pColorBlendState    = &colorBlendInfo,
+            .pDynamicState       = &dynamicStateInfo,
+            .layout              = pipelineLayout,
+            .renderPass          = m_renderPass,
+            .subpass             = 0,
+            .basePipelineHandle  = VK_NULL_HANDLE,
+            .basePipelineIndex   = -1
+        };
+
+        // Pipeline object
+        VkPipeline pipeline = {};
+
+        // Create pipeline
+        if (vkCreateGraphicsPipelines(
+                m_device,
+                nullptr,
+                1,
+                &pipelineCreateInfo,
+                nullptr,
+                &pipeline
+            ) != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR("Failed to create pipeline! [device={}]\n", reinterpret_cast<void*>(m_device));
+        }
+
+        // Log
+        LOG_INFO("Created pipeline object! [handle={}]\n", reinterpret_cast<void*>(pipeline));
+
+        // Return
+        return {pipeline, pipelineLayout};
     }
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
@@ -55,7 +132,7 @@ namespace Vk
         dynamicStates = vkDynamicStates;
 
         // Set dynamic states creation info
-        dynamicStateCreateInfo =
+        dynamicStateInfo =
         {
             .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
             .pNext             = nullptr,
@@ -151,14 +228,38 @@ namespace Vk
 
     PipelineBuilder& PipelineBuilder::SetBlendState()
     {
-        // Create blending state for attachments
+        // Create blend attachment state (no alpha)
+        VkPipelineColorBlendAttachmentState colorBlendAttachment =
+        {
+            .blendEnable         = VK_FALSE,
+            .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+            .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+            .colorBlendOp        = VK_BLEND_OP_ADD,
+            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+            .alphaBlendOp        = VK_BLEND_OP_ADD,
+            .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT |
+                                   VK_COLOR_COMPONENT_G_BIT |
+                                   VK_COLOR_COMPONENT_B_BIT |
+                                   VK_COLOR_COMPONENT_A_BIT
+        };
 
-        // Return
-        return *this;
-    }
+        // Add to states
+        colorBlendStates.emplace_back(colorBlendAttachment);
 
-    PipelineBuilder& PipelineBuilder::CreatePipelineLayout()
-    {
+        // Set blend state creation info
+        colorBlendInfo =
+        {
+            .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            .pNext           = nullptr,
+            .flags           = 0,
+            .logicOpEnable   = VK_FALSE,
+            .logicOp         = VK_LOGIC_OP_COPY,
+            .attachmentCount = static_cast<u32>(colorBlendStates.size()),
+            .pAttachments    = colorBlendStates.data(),
+            .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f}
+        };
+
         // Return
         return *this;
     }
@@ -169,7 +270,7 @@ namespace Vk
         for (auto&& stage : shaderStageCreateInfos)
         {
             // Log
-            LOG_DEBUG("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
+            LOG_INFO("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
             // Destroy
             vkDestroyShaderModule(m_device, stage.module, nullptr);
         }
