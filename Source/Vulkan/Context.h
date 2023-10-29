@@ -27,6 +27,8 @@ namespace Vk
         VkInstance vkInstance = {};
         // Logical device
         VkDevice device = {};
+        // Queue
+        VkQueue graphicsQueue = {};
         // Pipeline object
         VkPipeline pipeline = {};
 
@@ -100,8 +102,6 @@ namespace Vk
         VkPhysicalDevice m_physicalDevice = {};
         // Queue families
         Vk::QueueFamilyIndices m_queueFamilies = {};
-        // Queue
-        VkQueue m_graphicsQueue = {};
 
         // Swap chain images
         std::vector<VkImage> m_swapChainImages = {};

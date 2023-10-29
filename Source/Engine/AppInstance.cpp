@@ -24,10 +24,15 @@ namespace Engine
             // End
             m_renderer.EndRenderPass();
             m_renderer.EndFrame();
+            // Present
+            m_renderer.Present();
 
             // Poll events
             if (m_window->PollEvents()) break;
         }
+
+        // Wait for the logical device to finish tasks
+        m_renderer.WaitForLogicalDevice();
     }
 
     AppInstance::~AppInstance()

@@ -7,7 +7,6 @@
 #include "Extensions.h"
 #include "Util/Log.h"
 #include "Externals/GLM.h"
-#include "Renderer/RenderConstants.h"
 
 namespace Vk
 {
@@ -320,7 +319,7 @@ namespace Vk
             device,
             m_queueFamilies.graphicsFamily.value(),
             0,
-            &m_graphicsQueue
+            &graphicsQueue
         );
     }
 
@@ -559,7 +558,19 @@ namespace Vk
             .pResolveAttachments     = nullptr,
             .pDepthStencilAttachment = nullptr,
             .preserveAttachmentCount = 0,
-            .pPreserveAttachments    = nullptr
+           . pPreserveAttachments    = nullptr
+        };
+
+        // Subpass dependency info
+        VkSubpassDependency dependency =
+        {
+            .srcSubpass      = VK_SUBPASS_EXTERNAL,
+            .dstSubpass      = 0,
+            .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask   = 0,
+            .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dependencyFlags = 0
         };
 
         // Render pass creation info
@@ -572,8 +583,8 @@ namespace Vk
             .pAttachments    = &colorAttachment,
             .subpassCount    = 1,
             .pSubpasses      = &subpass,
-            .dependencyCount = 0,
-            .pDependencies   = nullptr
+            .dependencyCount = 1,
+            .pDependencies   = &dependency
         };
 
         // Create render pass

@@ -8,7 +8,7 @@
 namespace Renderer
 {
     RenderManager::RenderManager(const std::shared_ptr<Engine::Window>& window)
-        : m_vkContext(std::make_shared<Vk::Context>(window->handle))
+        : m_vkContext(std::make_unique<Vk::Context>(window->handle))
     {
     }
 
@@ -69,7 +69,7 @@ namespace Renderer
         };
 
         // Get image index
-        auto imageIndex = AcquireSwapChainImage();
+        AcquireSwapChainImage();
 
         // Render pass begin info
         VkRenderPassBeginInfo renderPassInfo =
@@ -77,7 +77,7 @@ namespace Renderer
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .pNext           = nullptr,
             .renderPass      = m_vkContext->renderPass,
-            .framebuffer     = m_vkContext->swapChainFrameBuffers[imageIndex],
+            .framebuffer     = m_vkContext->swapChainFrameBuffers[m_imageIndex],
             .renderArea      = {
                 .offset = {0, 0},
                 .extent = m_vkContext->swapChainExtent
@@ -144,21 +144,19 @@ namespace Renderer
         // Wait for previous frame
         vkWaitForFences
         (
-        m_vkContext->device,
-        1,
-        &m_vkContext->inFlight,
-        VK_TRUE,
-        std::numeric_limits<u64>::max()
+            m_vkContext->device,
+            1,
+            &m_vkContext->inFlight,
+            VK_TRUE,
+            std::numeric_limits<u64>::max()
         );
 
         // Reset fence
         vkResetFences(m_vkContext->device, 1, &m_vkContext->inFlight);
     }
 
-    u32 RenderManager::AcquireSwapChainImage()
+    void RenderManager::AcquireSwapChainImage()
     {
-        // Image index
-        u32 imageIndex = 0;
         // Query
         vkAcquireNextImageKHR
         (
@@ -167,10 +165,64 @@ namespace Renderer
             std::numeric_limits<u64>::max(),
             m_vkContext->imageAvailable,
             VK_NULL_HANDLE,
-            &imageIndex
+            &m_imageIndex
         );
-        // Return
-        return imageIndex;
+    }
+
+    void RenderManager::SubmitQueue()
+    {
+        // Pipeline stage flags
+        VkPipelineStageFlags waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+        // Queue submit info
+        VkSubmitInfo submitInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext                = nullptr,
+            .waitSemaphoreCount   = 1,
+            .pWaitSemaphores      = &m_vkContext->imageAvailable,
+            .pWaitDstStageMask    = &waitStages,
+            .commandBufferCount   = 1,
+            .pCommandBuffers      = &m_vkContext->commandBuffer,
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores    = &m_vkContext->renderFinished
+        };
+
+        // Submit queue
+        if (vkQueueSubmit(
+                m_vkContext->graphicsQueue,
+                1,
+                &submitInfo,
+                m_vkContext->inFlight
+            ) != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR
+            (
+                "Failed to submit draw command buffer! [CommandBuffer={}] [Queue={}]\n",
+                reinterpret_cast<void*>(m_vkContext->commandBuffer),
+                reinterpret_cast<void*>(m_vkContext->graphicsQueue)
+            );
+        }
+    }
+
+    void RenderManager::Present()
+    {
+        // Presentation info
+        VkPresentInfoKHR presentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext              = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores    = &m_vkContext->renderFinished,
+            .swapchainCount     = 1,
+            .pSwapchains        = &m_vkContext->swapChain,
+            .pImageIndices      = &m_imageIndex,
+            .pResults           = nullptr
+        };
+
+        // Present
+        vkQueuePresentKHR(m_vkContext->graphicsQueue, &presentInfo);
     }
 
     void RenderManager::EndRenderPass()
@@ -191,5 +243,14 @@ namespace Renderer
                 reinterpret_cast<void*>(m_vkContext->commandBuffer)
             );
         }
+
+        // Submit queue
+        SubmitQueue();
+    }
+
+    void RenderManager::WaitForLogicalDevice()
+    {
+        // Wait
+        vkDeviceWaitIdle(m_vkContext->device);
     }
 }

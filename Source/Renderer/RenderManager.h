@@ -27,14 +27,24 @@ namespace Renderer
         void BeginRenderPass();
         // End render pass
         void EndRenderPass();
+
+        // Present
+        void Present();
+
+        void WaitForLogicalDevice();
+
     private:
         // Wait for previous frame
         void WaitForFrame();
         // Acquire swap chain image
-        u32 AcquireSwapChainImage();
+        void AcquireSwapChainImage();
+        // Submit queue
+        void SubmitQueue();
 
         // Vulkan context
-        std::shared_ptr<Vk::Context> m_vkContext = nullptr;
+        std::unique_ptr<Vk::Context> m_vkContext = nullptr;
+        // Image index
+        u32 m_imageIndex = 0;
     };
 }
 
