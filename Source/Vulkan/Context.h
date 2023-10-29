@@ -10,8 +10,7 @@
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainInfo.h"
-#include "../Util/Util.h"
-#include "PipelineBuilder.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -29,8 +28,6 @@ namespace Vk
         VkDevice device = {};
         // Queue
         VkQueue graphicsQueue = {};
-        // Pipeline object
-        VkPipeline pipeline = {};
 
         // Swap chain
         VkSwapchainKHR swapChain = {};
@@ -109,9 +106,6 @@ namespace Vk
         VkFormat m_swapChainImageFormat = {};
         // Swap chain image views
         std::vector<VkImageView> m_swapChainImageViews = {};
-
-        // Pipeline layout
-        VkPipelineLayout m_pipelineLayout = {};
 
         // Command pool
         VkCommandPool m_commandPool = {};

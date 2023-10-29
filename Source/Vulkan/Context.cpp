@@ -50,8 +50,6 @@ namespace Vk
 
         // Create render pass
         CreateRenderPass();
-        // Create graphics pipeline
-        CreateGraphicsPipeline();
         // Create framebuffers
         CreateFramebuffers();
 
@@ -228,8 +226,8 @@ namespace Vk
         usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 10000;
 
         // Calculate score multipliers
-        bool isQueueValid   = queue.IsComplete();
-        bool hasExtensions  = m_extensions->CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
+        bool isQueueValid  = queue.IsComplete();
+        bool hasExtensions = m_extensions->CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -395,7 +393,7 @@ namespace Vk
 
         // Store other properties
         m_swapChainImageFormat = surfaceFormat.format;
-        swapChainExtent      = extent;
+        swapChainExtent        = extent;
 
         // Log
         LOG_INFO("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(swapChain));
@@ -558,7 +556,7 @@ namespace Vk
             .pResolveAttachments     = nullptr,
             .pDepthStencilAttachment = nullptr,
             .preserveAttachmentCount = 0,
-           . pPreserveAttachments    = nullptr
+            .pPreserveAttachments    = nullptr
         };
 
         // Subpass dependency info
@@ -601,61 +599,6 @@ namespace Vk
 
         // Log
         LOG_INFO("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
-    }
-
-    void Context::CreateGraphicsPipeline()
-    {
-        // Custom functions
-        auto SetDynamicStates = [this] (PipelineBuilder& pipelineBuilder)
-        {
-            // Set viewport config
-            pipelineBuilder.viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(swapChainExtent.width),
-                .height   = static_cast<f32>(swapChainExtent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
-
-            // Set scissor config
-            pipelineBuilder.scissor =
-            {
-                .offset = {0, 0},
-                .extent = swapChainExtent
-            };
-
-            // Create viewport creation info
-            pipelineBuilder.viewportInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                .pNext         = nullptr,
-                .flags         = 0,
-                .viewportCount = 1,
-                .pViewports    = &pipelineBuilder.viewport,
-                .scissorCount  = 1,
-                .pScissors     = &pipelineBuilder.scissor
-            };
-        };
-
-        // Pipeline data tuple
-        std::tuple<VkPipeline, VkPipelineLayout> pipelineData = {};
-
-        // Build pipeline
-        pipelineData = Vk::PipelineBuilder::Create(device, renderPass)
-                        .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-                        .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-                        .SetDynamicStates({VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR}, SetDynamicStates)
-                        .SetVertexInputState()
-                        .SetIAState()
-                        .SetRasterizerState(VK_CULL_MODE_BACK_BIT)
-                        .SetMSAAState()
-                        .SetBlendState()
-                        .Build();
-
-        // Retrieve members
-        std::tie(pipeline, m_pipelineLayout) = pipelineData;
     }
 
     void Context::CreateFramebuffers()
@@ -811,10 +754,6 @@ namespace Vk
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
 
-        // Destroy pipeline
-        vkDestroyPipeline(device, pipeline, nullptr);
-        // Destroy pipeline layout
-        vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
         // Destroy render pass
         vkDestroyRenderPass(device, renderPass, nullptr);
 

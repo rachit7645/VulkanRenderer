@@ -8,7 +8,8 @@
 namespace Renderer
 {
     RenderManager::RenderManager(const std::shared_ptr<Engine::Window>& window)
-        : m_vkContext(std::make_unique<Vk::Context>(window->handle))
+        : m_vkContext(std::make_shared<Vk::Context>(window->handle)),
+          m_renderPipeline(std::make_shared<RenderPipeline>(m_vkContext))
     {
     }
 
@@ -99,7 +100,7 @@ namespace Renderer
         (
              m_vkContext->commandBuffer,
              VK_PIPELINE_BIND_POINT_GRAPHICS,
-             m_vkContext->pipeline
+             m_renderPipeline->pipeline
         );
 
         // Viewport

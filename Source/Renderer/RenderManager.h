@@ -4,6 +4,7 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
+#include "RenderPipeline.h"
 #include "Vulkan/Context.h"
 #include "Engine/Window.h"
 #include "Util/Util.h"
@@ -30,9 +31,8 @@ namespace Renderer
 
         // Present
         void Present();
-
+        // Wait for gpu to finish
         void WaitForLogicalDevice();
-
     private:
         // Wait for previous frame
         void WaitForFrame();
@@ -42,7 +42,10 @@ namespace Renderer
         void SubmitQueue();
 
         // Vulkan context
-        std::unique_ptr<Vk::Context> m_vkContext = nullptr;
+        std::shared_ptr<Vk::Context> m_vkContext = nullptr;
+        // Render pipeline
+        std::shared_ptr<Renderer::RenderPipeline> m_renderPipeline = nullptr;
+
         // Image index
         u32 m_imageIndex = 0;
     };

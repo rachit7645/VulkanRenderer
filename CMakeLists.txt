@@ -41,6 +41,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/PipelineBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
+	Source/Renderer/RenderPipeline.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 )
