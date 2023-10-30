@@ -16,13 +16,13 @@ namespace Engine
         ~Window();
 
         // Function to process SDL Events
-        bool PollEvents();
+        [[nodiscard]] bool PollEvents();
 
         // SDL window handle
         SDL_Window* handle = nullptr;
-    private:
         // Window size
-        glm::ivec2 m_size = {1280, 768};
+        glm::ivec2 size = {1280, 768};
+    private:
         // SDL event
         SDL_Event m_event = {};
     };

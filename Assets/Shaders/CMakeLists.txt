@@ -13,9 +13,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 find_program(GLSL_COMPILER NAMES glslc HINTS Vulkan::glslc)
 
-# Shader binary location
+# Shader locations
 set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPIRV_BINARY_DIR  ${CMAKE_CURRENT_BINARY_DIR})
+
+# Debug config
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+	# Debug shader flags
+	set(SHADER_FLAGS -g -O)
+else()
+	# Release shader flags
+	set(SHADER_FLAGS -O)
+endif()
 
 # Shader files
 file(GLOB SHADER_SOURCES
@@ -33,7 +42,7 @@ foreach(Shader ${SHADER_SOURCES})
     add_custom_command(
         OUTPUT ${SPIRV}
         COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_BINARY_DIR}"
-        COMMAND ${GLSL_COMPILER} ${Shader} -o ${SPIRV}
+        COMMAND ${GLSL_COMPILER} ${Shader} -o ${SPIRV} ${SHADER_FLAGS}
         DEPENDS ${Shader}
         COMMENT "Building GLSL shader ${Shader}"
     )

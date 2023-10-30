@@ -7,8 +7,9 @@
 
 namespace Renderer
 {
-    RenderManager::RenderManager(const std::shared_ptr<Engine::Window>& window)
-        : m_vkContext(std::make_shared<Vk::Context>(window->handle)),
+    RenderManager::RenderManager(std::shared_ptr<Engine::Window> window)
+        : m_window(std::move(window)),
+          m_vkContext(std::make_shared<Vk::Context>(m_window->handle)),
           m_renderPipeline(std::make_shared<RenderPipeline>(m_vkContext))
     {
     }
@@ -18,7 +19,7 @@ namespace Renderer
         // Draw triangle
         vkCmdDraw
         (
-            m_vkContext->commandBuffer,
+            m_vkContext->commandBuffers[currentFrame],
             3,
             1,
             0,
@@ -28,10 +29,11 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
-        // Wait for previous frame to be finished (we only have 1 frame in flight rn)
+        // Wait for previous frame to be finished
         WaitForFrame();
+
         // Reset command buffer
-        vkResetCommandBuffer(m_vkContext->commandBuffer, 0);
+        vkResetCommandBuffer(m_vkContext->commandBuffers[currentFrame], 0);
 
         // Begin info
         VkCommandBufferBeginInfo beginInfo =
@@ -43,34 +45,31 @@ namespace Renderer
         };
 
         // Begin recording commands
-        if (vkBeginCommandBuffer(m_vkContext->commandBuffer, &beginInfo) != VK_SUCCESS)
+        if (vkBeginCommandBuffer(
+                m_vkContext->commandBuffers[currentFrame],
+                &beginInfo
+            ) != VK_SUCCESS)
         {
             // Log
             LOG_ERROR
             (
                 "Failed to begin recording commands! [CommandBuffer={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffer)
+                reinterpret_cast<void*>(m_vkContext->commandBuffers[currentFrame])
             );
         }
-    }
 
-    void RenderManager::BeginRenderPass()
-    {
         // Clear color (weird ahh notation)
         VkClearValue clearValue =
         {.color =
             {.float32 =
                 {
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
+                    Renderer::CLEAR_COLOR.r,
+                    Renderer::CLEAR_COLOR.g,
+                    Renderer::CLEAR_COLOR.b,
+                    Renderer::CLEAR_COLOR.a
                 }
             }
         };
-
-        // Get image index
-        AcquireSwapChainImage();
 
         // Render pass begin info
         VkRenderPassBeginInfo renderPassInfo =
@@ -90,7 +89,7 @@ namespace Renderer
         // Begin render pass
         vkCmdBeginRenderPass
         (
-            m_vkContext->commandBuffer,
+            m_vkContext->commandBuffers[currentFrame],
             &renderPassInfo,
             VK_SUBPASS_CONTENTS_INLINE
         );
@@ -98,9 +97,9 @@ namespace Renderer
         // Bind pipeline
         vkCmdBindPipeline
         (
-             m_vkContext->commandBuffer,
-             VK_PIPELINE_BIND_POINT_GRAPHICS,
-             m_renderPipeline->pipeline
+            m_vkContext->commandBuffers[currentFrame],
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_renderPipeline->pipeline
         );
 
         // Viewport
@@ -117,7 +116,7 @@ namespace Renderer
         // Set viewport
         vkCmdSetViewport
         (
-            m_vkContext->commandBuffer,
+            m_vkContext->commandBuffers[currentFrame],
             0,
             1,
             &viewport
@@ -133,7 +132,7 @@ namespace Renderer
         // Set scissor
         vkCmdSetScissor
         (
-            m_vkContext->commandBuffer,
+            m_vkContext->commandBuffers[currentFrame],
             0,
             1,
             &scissor
@@ -147,13 +146,16 @@ namespace Renderer
         (
             m_vkContext->device,
             1,
-            &m_vkContext->inFlight,
+            &m_vkContext->inFlightFences[currentFrame],
             VK_TRUE,
             std::numeric_limits<u64>::max()
         );
 
+        // Get image index
+        AcquireSwapChainImage();
+
         // Reset fence
-        vkResetFences(m_vkContext->device, 1, &m_vkContext->inFlight);
+        vkResetFences(m_vkContext->device, 1, &m_vkContext->inFlightFences[currentFrame]);
     }
 
     void RenderManager::AcquireSwapChainImage()
@@ -164,7 +166,7 @@ namespace Renderer
             m_vkContext->device,
             m_vkContext->swapChain,
             std::numeric_limits<u64>::max(),
-            m_vkContext->imageAvailable,
+            m_vkContext->imageAvailableSemaphores[currentFrame],
             VK_NULL_HANDLE,
             &m_imageIndex
         );
@@ -172,8 +174,12 @@ namespace Renderer
 
     void RenderManager::SubmitQueue()
     {
+        // Waiting semaphores
+        VkSemaphore waitSemaphores[] = {m_vkContext->imageAvailableSemaphores[currentFrame]};
+        // Signal semaphores
+        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[currentFrame]};
         // Pipeline stage flags
-        VkPipelineStageFlags waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
         // Queue submit info
         VkSubmitInfo submitInfo =
@@ -181,12 +187,12 @@ namespace Renderer
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext                = nullptr,
             .waitSemaphoreCount   = 1,
-            .pWaitSemaphores      = &m_vkContext->imageAvailable,
-            .pWaitDstStageMask    = &waitStages,
+            .pWaitSemaphores      = waitSemaphores,
+            .pWaitDstStageMask    = waitStages,
             .commandBufferCount   = 1,
-            .pCommandBuffers      = &m_vkContext->commandBuffer,
+            .pCommandBuffers      = &m_vkContext->commandBuffers[currentFrame],
             .signalSemaphoreCount = 1,
-            .pSignalSemaphores    = &m_vkContext->renderFinished
+            .pSignalSemaphores    = signalSemaphores
         };
 
         // Submit queue
@@ -194,14 +200,14 @@ namespace Renderer
                 m_vkContext->graphicsQueue,
                 1,
                 &submitInfo,
-                m_vkContext->inFlight
+                m_vkContext->inFlightFences[currentFrame]
             ) != VK_SUCCESS)
         {
             // Log
             LOG_ERROR
             (
                 "Failed to submit draw command buffer! [CommandBuffer={}] [Queue={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffer),
+                reinterpret_cast<void*>(m_vkContext->commandBuffers[currentFrame]),
                 reinterpret_cast<void*>(m_vkContext->graphicsQueue)
             );
         }
@@ -209,39 +215,56 @@ namespace Renderer
 
     void RenderManager::Present()
     {
+        // Swap chains
+        VkSwapchainKHR swapChains[] = {m_vkContext->swapChain};
+        // Signal semaphores
+        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[currentFrame]};
+
         // Presentation info
         VkPresentInfoKHR presentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext              = nullptr,
             .waitSemaphoreCount = 1,
-            .pWaitSemaphores    = &m_vkContext->renderFinished,
+            .pWaitSemaphores    = signalSemaphores,
             .swapchainCount     = 1,
-            .pSwapchains        = &m_vkContext->swapChain,
+            .pSwapchains        = swapChains,
             .pImageIndices      = &m_imageIndex,
             .pResults           = nullptr
         };
 
         // Present
-        vkQueuePresentKHR(m_vkContext->graphicsQueue, &presentInfo);
-    }
+        auto result = vkQueuePresentKHR(m_vkContext->graphicsQueue, &presentInfo);
 
-    void RenderManager::EndRenderPass()
-    {
-        // End render pass
-        vkCmdEndRenderPass(m_vkContext->commandBuffer);
+        // Check swapchain
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+        {
+            // Swap chain is out of date, rebuild
+            m_vkContext->RecreateSwapChain(m_window);
+        }
+        else if (result != VK_SUCCESS)
+        {
+            // Log
+            LOG_ERROR("Failed to acquire swap chain image! [result={:X}]\n", static_cast<int>(result));
+        }
+
+        // Set frame index
+        currentFrame = (currentFrame + 1) % Vk::MAX_FRAMES_IN_FLIGHT;
     }
 
     void RenderManager::EndFrame()
     {
+        // End render pass
+        vkCmdEndRenderPass(m_vkContext->commandBuffers[currentFrame]);
+
         // Finish recording command buffer
-        if (vkEndCommandBuffer(m_vkContext->commandBuffer) != VK_SUCCESS)
+        if (vkEndCommandBuffer(m_vkContext->commandBuffers[currentFrame]) != VK_SUCCESS)
         {
             // Log
             LOG_ERROR
             (
                 "Failed to record command buffer! [handle={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffer)
+                reinterpret_cast<void*>(m_vkContext->commandBuffers[currentFrame])
             );
         }
 

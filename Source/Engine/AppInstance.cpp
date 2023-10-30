@@ -16,23 +16,26 @@ namespace Engine
     {
         while (true)
         {
-            // Begin
-            m_renderer.BeginFrame();
-            m_renderer.BeginRenderPass();
             // Render
-            m_renderer.Render();
-            // End
-            m_renderer.EndRenderPass();
-            m_renderer.EndFrame();
-            // Present
-            m_renderer.Present();
-
+            DrawFrame();
             // Poll events
             if (m_window->PollEvents()) break;
         }
 
         // Wait for the logical device to finish tasks
         m_renderer.WaitForLogicalDevice();
+    }
+
+    void AppInstance::DrawFrame()
+    {
+        // Begin
+        m_renderer.BeginFrame();
+        // Render
+        m_renderer.Render();
+        // End
+        m_renderer.EndFrame();
+        // Present
+        m_renderer.Present();
     }
 
     AppInstance::~AppInstance()

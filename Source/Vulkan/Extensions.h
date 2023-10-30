@@ -12,11 +12,11 @@ namespace Vk
         // Destructor
         ~Extensions();
         // Load extensions for instance
-        std::vector<const char*> LoadInstanceExtensions(SDL_Window* window);
+        [[nodiscard]] std::vector<const char*> LoadInstanceExtensions(SDL_Window* window);
         // Load functions
         void LoadFunctions(VkInstance& instance);
         // Get extensions for device
-        bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions);
+        [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions);
     };
 }
 

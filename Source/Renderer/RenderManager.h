@@ -15,7 +15,7 @@ namespace Renderer
     {
     public:
         // Constructor
-        explicit RenderManager(const std::shared_ptr<Engine::Window>& window);
+        explicit RenderManager(std::shared_ptr<Engine::Window> window);
 
         // Render frame
         void Render();
@@ -24,10 +24,6 @@ namespace Renderer
         void BeginFrame();
         // End frame
         void EndFrame();
-        // Begin render pass
-        void BeginRenderPass();
-        // End render pass
-        void EndRenderPass();
 
         // Present
         void Present();
@@ -41,6 +37,8 @@ namespace Renderer
         // Submit queue
         void SubmitQueue();
 
+        // Pointer to window
+        std::shared_ptr<Engine::Window> m_window = nullptr;
         // Vulkan context
         std::shared_ptr<Vk::Context> m_vkContext = nullptr;
         // Render pipeline
@@ -48,6 +46,8 @@ namespace Renderer
 
         // Image index
         u32 m_imageIndex = 0;
+        // Frame index
+        usize currentFrame = 0;
     };
 }
 

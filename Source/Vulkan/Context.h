@@ -2,6 +2,8 @@
 #define VK_CONTEXT_H
 
 #include <memory>
+#include <array>
+#include <vector>
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
@@ -11,9 +13,13 @@
 #include "QueueFamilyIndices.h"
 #include "SwapChainInfo.h"
 #include "Util/Util.h"
+#include "Engine/Window.h"
 
 namespace Vk
 {
+    // Maximum frames in flight at a time
+    constexpr usize MAX_FRAMES_IN_FLIGHT = 2;
+
     class Context
     {
     public:
@@ -21,6 +27,9 @@ namespace Vk
         explicit Context(SDL_Window* window);
         // Destroy vulkan context
         ~Context();
+
+        // Recreate swap chain
+        void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window);
 
         // Vulkan instance
         VkInstance vkInstance = {};
@@ -39,13 +48,13 @@ namespace Vk
         // Render pass
         VkRenderPass renderPass = {};
         // Command buffer
-        VkCommandBuffer commandBuffer = {};
+        std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {};
 
         // Semaphores
-        VkSemaphore imageAvailable = {};
-        VkSemaphore renderFinished = {};
+        std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
+        std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
         // Fences
-        VkFence inFlight = {};
+        std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
 
     private:
         // Create vulkan instance
@@ -56,7 +65,7 @@ namespace Vk
         // Pick a GPU
         void PickPhysicalDevice();
         // Calculate score
-        usize CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet);
+        [[nodiscard]] usize CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet);
         // Create a logical device
         void CreateLogicalDevice();
 
@@ -66,25 +75,26 @@ namespace Vk
         void CreateImageViews();
 
         // Choose surface format
-        VkSurfaceFormatKHR ChooseSurfaceFormat(const Vk::SwapChainInfo& swapChainInfo);
+        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat(const Vk::SwapChainInfo& swapChainInfo);
         // Choose surface presentation mode
-        VkPresentModeKHR ChoosePresentationMode(const Vk::SwapChainInfo& swapChainInfo);
+        [[nodiscard]] VkPresentModeKHR ChoosePresentationMode(const Vk::SwapChainInfo& swapChainInfo);
         // Choose swap extent
-        VkExtent2D ChooseSwapExtent(SDL_Window* window, const Vk::SwapChainInfo& swapChainInfo);
+        [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window, const Vk::SwapChainInfo& swapChainInfo);
 
         // Creates the default render pass
         void CreateRenderPass();
-        // Create graphics pipeline
-        void CreateGraphicsPipeline();
         // Create swap chain framebuffers
         void CreateFramebuffers();
 
         // Creates command pool
         void CreateCommandPool();
         // Create graphics command buffer
-        void CreateCommandBuffer();
+        void CreateCommandBuffers();
         // Create synchronisation objects
         void CreateSyncObjects();
+
+        // Destroy current swap chain
+        void DestroySwapChain();
 
         // Extensions
         std::unique_ptr<Vk::Extensions> m_extensions = nullptr;

@@ -2,12 +2,11 @@
 #include "Window.h"
 
 #include "../Util/Log.h"
-#include "../Util/Util.h"
 
 namespace Engine
 {
     // Window flags
-    constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN;
+    constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
 
     Window::Window()
     {
@@ -44,8 +43,8 @@ namespace Engine
             "Rachit's Engine",
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED,
-            m_size.x,
-            m_size.y,
+            size.x,
+            size.y,
             SDL_WINDOW_FLAGS
         );
 
@@ -61,6 +60,7 @@ namespace Engine
 
         // For sanity, raise handle
         SDL_RaiseWindow(handle);
+        SDL_SetWindowMinimumSize(handle, 1, 1);
 
         // FIXME: This needs to be done here for now
         Files::GetInstance().SetResources("Assets/");

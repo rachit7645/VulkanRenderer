@@ -15,7 +15,7 @@ namespace Vk
         explicit ValidationLayers(const std::vector<const char*>& layers);
 
         // Setup messenger
-        VkResult SetupMessenger(VkInstance instance);
+        [[nodiscard]] VkResult SetupMessenger(VkInstance instance);
         // Destroy messenger
         void DestroyMessenger(VkInstance instance);
 
@@ -25,7 +25,7 @@ namespace Vk
         VkDebugUtilsMessengerEXT messenger = {};
     private:
         // Check if all layers are present
-        static bool CheckLayers(const std::vector<const char*>& layers);
+        [[nodiscard]] bool CheckLayers(const std::vector<const char*>& layers);
 
         // Debug Callback
         static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback

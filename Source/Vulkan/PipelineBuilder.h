@@ -12,7 +12,7 @@ namespace Vk
     {
     public:
         // Initialise pipeline builder
-        static PipelineBuilder Create(VkDevice device, VkRenderPass renderPass);
+        [[nodiscard]] static PipelineBuilder Create(VkDevice device, VkRenderPass renderPass);
         // Destroy pipeline data
         ~PipelineBuilder();
 
@@ -20,25 +20,25 @@ namespace Vk
         std::tuple<VkPipeline, VkPipelineLayout> Build();
 
         // Attach shader to pipeline
-        PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
+        [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
 
         // Set dynamic state objects
-        PipelineBuilder& SetDynamicStates
+        [[nodiscard]] PipelineBuilder& SetDynamicStates
         (
             const std::vector<VkDynamicState>& vkDynamicStates,
             const std::function<void(PipelineBuilder&)>& SetDynStates
         );
 
         // Set vertex input state
-        PipelineBuilder& SetVertexInputState();
+        [[nodiscard]] PipelineBuilder& SetVertexInputState();
         // Set IA info
-        PipelineBuilder& SetIAState();
+        [[nodiscard]] PipelineBuilder& SetIAState();
         // Set rasterizer state
-        PipelineBuilder& SetRasterizerState(VkCullModeFlagBits vkCullMode);
+        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits vkCullMode);
         // Set MSAA state
-        PipelineBuilder& SetMSAAState();
+        [[nodiscard]] PipelineBuilder& SetMSAAState();
         // Set color blending state
-        PipelineBuilder& SetBlendState();
+        [[nodiscard]] PipelineBuilder& SetBlendState();
 
         // Shader stages
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};

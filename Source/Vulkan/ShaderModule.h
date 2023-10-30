@@ -10,7 +10,7 @@
 namespace Vk
 {
     // Creates a shader module
-    VkShaderModule CreateShaderModule(VkDevice device, const std::string_view path);
+    [[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, const std::string_view path);
 }
 
 #endif

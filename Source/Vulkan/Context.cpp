@@ -56,12 +56,25 @@ namespace Vk
         // Create global command pool
         CreateCommandPool();
         // Creates command buffer
-        CreateCommandBuffer();
+        CreateCommandBuffers();
         // Create sync objects
         CreateSyncObjects();
 
         // Log
         LOG_INFO("{}\n", "Initialised vulkan context!");
+    }
+
+    void Context::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window)
+    {
+        // Wait for gpu to finish
+        vkDeviceWaitIdle(device);
+        // Clean up old swap chain
+        DestroySwapChain();
+
+        // Create new swap chain
+        CreateSwapChain(window->handle);
+        CreateImageViews();
+        CreateFramebuffers();
     }
 
     void Context::CreateVKInstance(SDL_Window* window)
@@ -671,7 +684,7 @@ namespace Vk
         LOG_INFO("Created command pool! [handle={}]\n", reinterpret_cast<void*>(m_commandPool));
     }
 
-    void Context::CreateCommandBuffer()
+    void Context::CreateCommandBuffers()
     {
         // Allocation info
         VkCommandBufferAllocateInfo allocInfo
@@ -680,14 +693,14 @@ namespace Vk
             .pNext              = nullptr,
             .commandPool        = m_commandPool,
             .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = 1
+            .commandBufferCount = static_cast<u32>(commandBuffers.size())
         };
 
         // Allocate command buffer
         if (vkAllocateCommandBuffers(
                 device,
                 &allocInfo,
-                &commandBuffer
+                commandBuffers.data()
             ) != VK_SUCCESS)
         {
             // Log
@@ -699,7 +712,7 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("Created command buffer! [handle={}]\n", reinterpret_cast<void*>(commandBuffer));
+        LOG_INFO("{}\n", "Created command buffers!");
     }
 
     void Context::CreateSyncObjects()
@@ -720,42 +733,36 @@ namespace Vk
             .flags = VK_FENCE_CREATE_SIGNALED_BIT
         };
 
-        // Create sync objects
-        if
-        (
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailable) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinished) != VK_SUCCESS ||
-            vkCreateFence(device, &fenceInfo, nullptr, &inFlight) != VK_SUCCESS
-        )
+        // For each frame in flight
+        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
         {
-            // Log
-            LOG_ERROR("{}\n", "Failed to create sync objects!");
+            if
+            (
+                vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+                    &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+                    &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+                vkCreateFence(device, &fenceInfo, nullptr,
+                    &inFlightFences[i]) != VK_SUCCESS
+            )
+            {
+                // Log
+                LOG_ERROR("{}\n", "Failed to create sync objects!");
+            }
         }
 
         // Log
         LOG_INFO("{}\n", "Created synchronisation objects!");
     }
 
-    Context::~Context()
+    void Context::DestroySwapChain()
     {
-        // Destroy semaphores
-        vkDestroySemaphore(device, imageAvailable, nullptr);
-        vkDestroySemaphore(device, renderFinished, nullptr);
-        // Destroy fences
-        vkDestroyFence(device, inFlight, nullptr);
-
-        // Destroy command pool
-        vkDestroyCommandPool(device, m_commandPool, nullptr);
-
         // Destroy framebuffers
         for (auto&& framebuffer : swapChainFrameBuffers)
         {
             // Destroy
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
-
-        // Destroy render pass
-        vkDestroyRenderPass(device, renderPass, nullptr);
 
         // Destroy swap chain images
         for (auto&& imageView : m_swapChainImageViews)
@@ -766,6 +773,27 @@ namespace Vk
 
         // Destroy swap chain
         vkDestroySwapchainKHR(device, swapChain, nullptr);
+    }
+
+    Context::~Context()
+    {
+        // Destroy swap chain objects
+        DestroySwapChain();
+
+        // Destroy sync objects
+        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+        {
+            // Destroy semaphores
+            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+            // Destroy fences
+            vkDestroyFence(device, inFlightFences[i], nullptr);
+        }
+
+        // Destroy command pool
+        vkDestroyCommandPool(device, m_commandPool, nullptr);
+        // Destroy render pass
+        vkDestroyRenderPass(device, renderPass, nullptr);
         // Destroy surface
         vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
 

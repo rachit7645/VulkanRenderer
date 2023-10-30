@@ -7,11 +7,7 @@
 #include <cmath>
 
 // Unused macro
-#ifdef __CLION_IDE__
 #define UNUSED [[maybe_unused]]
-#else
-#define UNUSED __attribute__((unused))
-#endif
 
 // Signed integer types
 using s8  = std::int8_t;

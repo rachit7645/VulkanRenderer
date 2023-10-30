@@ -20,6 +20,9 @@ namespace Engine
         // Run application
         void Run();
     private:
+        // Draws the frame
+        void DrawFrame();
+
         // Window
         std::shared_ptr<Engine::Window> m_window = nullptr;
         // Renderer
