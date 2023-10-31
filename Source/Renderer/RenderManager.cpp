@@ -16,15 +16,26 @@ namespace Renderer
 
     void RenderManager::Render()
     {
+        // Make sure swap chain is valid
+        if (!IsSwapchainValid()) return;
+
+        // Begin
+        BeginFrame();
+
         // Draw triangle
         vkCmdDraw
         (
-            m_vkContext->commandBuffers[currentFrame],
+            m_vkContext->commandBuffers[m_currentFrame],
             3,
             1,
             0,
             0
         );
+
+        // End
+        EndFrame();
+        // Present
+        Present();
     }
 
     void RenderManager::BeginFrame()
@@ -33,7 +44,7 @@ namespace Renderer
         WaitForFrame();
 
         // Reset command buffer
-        vkResetCommandBuffer(m_vkContext->commandBuffers[currentFrame], 0);
+        vkResetCommandBuffer(m_vkContext->commandBuffers[m_currentFrame], 0);
 
         // Begin info
         VkCommandBufferBeginInfo beginInfo =
@@ -46,7 +57,7 @@ namespace Renderer
 
         // Begin recording commands
         if (vkBeginCommandBuffer(
-                m_vkContext->commandBuffers[currentFrame],
+                m_vkContext->commandBuffers[m_currentFrame],
                 &beginInfo
             ) != VK_SUCCESS)
         {
@@ -54,7 +65,7 @@ namespace Renderer
             LOG_ERROR
             (
                 "Failed to begin recording commands! [CommandBuffer={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffers[currentFrame])
+                reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame])
             );
         }
 
@@ -89,7 +100,7 @@ namespace Renderer
         // Begin render pass
         vkCmdBeginRenderPass
         (
-            m_vkContext->commandBuffers[currentFrame],
+            m_vkContext->commandBuffers[m_currentFrame],
             &renderPassInfo,
             VK_SUBPASS_CONTENTS_INLINE
         );
@@ -97,7 +108,7 @@ namespace Renderer
         // Bind pipeline
         vkCmdBindPipeline
         (
-            m_vkContext->commandBuffers[currentFrame],
+            m_vkContext->commandBuffers[m_currentFrame],
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_renderPipeline->pipeline
         );
@@ -116,7 +127,7 @@ namespace Renderer
         // Set viewport
         vkCmdSetViewport
         (
-            m_vkContext->commandBuffers[currentFrame],
+            m_vkContext->commandBuffers[m_currentFrame],
             0,
             1,
             &viewport
@@ -132,7 +143,7 @@ namespace Renderer
         // Set scissor
         vkCmdSetScissor
         (
-            m_vkContext->commandBuffers[currentFrame],
+            m_vkContext->commandBuffers[m_currentFrame],
             0,
             1,
             &scissor
@@ -146,7 +157,7 @@ namespace Renderer
         (
             m_vkContext->device,
             1,
-            &m_vkContext->inFlightFences[currentFrame],
+            &m_vkContext->inFlightFences[m_currentFrame],
             VK_TRUE,
             std::numeric_limits<u64>::max()
         );
@@ -155,18 +166,18 @@ namespace Renderer
         AcquireSwapChainImage();
 
         // Reset fence
-        vkResetFences(m_vkContext->device, 1, &m_vkContext->inFlightFences[currentFrame]);
+        vkResetFences(m_vkContext->device, 1, &m_vkContext->inFlightFences[m_currentFrame]);
     }
 
     void RenderManager::AcquireSwapChainImage()
     {
         // Query
-        vkAcquireNextImageKHR
+        m_swapchainStatus[0] = vkAcquireNextImageKHR
         (
             m_vkContext->device,
             m_vkContext->swapChain,
             std::numeric_limits<u64>::max(),
-            m_vkContext->imageAvailableSemaphores[currentFrame],
+            m_vkContext->imageAvailableSemaphores[m_currentFrame],
             VK_NULL_HANDLE,
             &m_imageIndex
         );
@@ -175,9 +186,9 @@ namespace Renderer
     void RenderManager::SubmitQueue()
     {
         // Waiting semaphores
-        VkSemaphore waitSemaphores[] = {m_vkContext->imageAvailableSemaphores[currentFrame]};
+        VkSemaphore waitSemaphores[] = {m_vkContext->imageAvailableSemaphores[m_currentFrame]};
         // Signal semaphores
-        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[currentFrame]};
+        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[m_currentFrame]};
         // Pipeline stage flags
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
@@ -190,7 +201,7 @@ namespace Renderer
             .pWaitSemaphores      = waitSemaphores,
             .pWaitDstStageMask    = waitStages,
             .commandBufferCount   = 1,
-            .pCommandBuffers      = &m_vkContext->commandBuffers[currentFrame],
+            .pCommandBuffers      = &m_vkContext->commandBuffers[m_currentFrame],
             .signalSemaphoreCount = 1,
             .pSignalSemaphores    = signalSemaphores
         };
@@ -200,14 +211,14 @@ namespace Renderer
                 m_vkContext->graphicsQueue,
                 1,
                 &submitInfo,
-                m_vkContext->inFlightFences[currentFrame]
+                m_vkContext->inFlightFences[m_currentFrame]
             ) != VK_SUCCESS)
         {
             // Log
             LOG_ERROR
             (
                 "Failed to submit draw command buffer! [CommandBuffer={}] [Queue={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffers[currentFrame]),
+                reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame]),
                 reinterpret_cast<void*>(m_vkContext->graphicsQueue)
             );
         }
@@ -218,7 +229,7 @@ namespace Renderer
         // Swap chains
         VkSwapchainKHR swapChains[] = {m_vkContext->swapChain};
         // Signal semaphores
-        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[currentFrame]};
+        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[m_currentFrame]};
 
         // Presentation info
         VkPresentInfoKHR presentInfo =
@@ -234,42 +245,67 @@ namespace Renderer
         };
 
         // Present
-        auto result = vkQueuePresentKHR(m_vkContext->graphicsQueue, &presentInfo);
-
-        // Check swapchain
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-        {
-            // Swap chain is out of date, rebuild
-            m_vkContext->RecreateSwapChain(m_window);
-        }
-        else if (result != VK_SUCCESS)
-        {
-            // Log
-            LOG_ERROR("Failed to acquire swap chain image! [result={:X}]\n", static_cast<int>(result));
-        }
+        m_swapchainStatus[1] = vkQueuePresentKHR(m_vkContext->graphicsQueue, &presentInfo);
 
         // Set frame index
-        currentFrame = (currentFrame + 1) % Vk::MAX_FRAMES_IN_FLIGHT;
+        m_currentFrame = (m_currentFrame + 1) % Vk::MAX_FRAMES_IN_FLIGHT;
     }
 
     void RenderManager::EndFrame()
     {
         // End render pass
-        vkCmdEndRenderPass(m_vkContext->commandBuffers[currentFrame]);
+        vkCmdEndRenderPass(m_vkContext->commandBuffers[m_currentFrame]);
 
         // Finish recording command buffer
-        if (vkEndCommandBuffer(m_vkContext->commandBuffers[currentFrame]) != VK_SUCCESS)
+        if (vkEndCommandBuffer(m_vkContext->commandBuffers[m_currentFrame]) != VK_SUCCESS)
         {
             // Log
             LOG_ERROR
             (
                 "Failed to record command buffer! [handle={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffers[currentFrame])
+                reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame])
             );
         }
 
         // Submit queue
         SubmitQueue();
+    }
+
+    bool RenderManager::IsSwapchainValid()
+    {
+        // Flag
+        bool toRecreate = false;
+
+        // Loop
+        for (auto status : m_swapchainStatus)
+        {
+            // Check swapchain
+            if (status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR || m_window->wasResized)
+            {
+                // We'll have to recreate the swap buffers now
+                toRecreate = true;
+            }
+            else if (status != VK_SUCCESS)
+            {
+                // Log
+                LOG_ERROR("Swap chain validation failed! [status={:X}]\n", static_cast<int>(status));
+            }
+        }
+
+        // If we have to recreate
+        if (toRecreate)
+        {
+            // Recreate
+            m_vkContext->RecreateSwapChain(m_window);
+            m_window->wasResized = false;
+            // Reset
+            m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
+            // Return
+            return false;
+        }
+
+        // No issues
+        return true;
     }
 
     void RenderManager::WaitForLogicalDevice()

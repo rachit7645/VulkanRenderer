@@ -19,7 +19,9 @@ namespace Renderer
 
         // Render frame
         void Render();
-
+        // Wait for gpu to finish
+        void WaitForLogicalDevice();
+    private:
         // Begin frame
         void BeginFrame();
         // End frame
@@ -27,15 +29,15 @@ namespace Renderer
 
         // Present
         void Present();
-        // Wait for gpu to finish
-        void WaitForLogicalDevice();
-    private:
         // Wait for previous frame
         void WaitForFrame();
         // Acquire swap chain image
         void AcquireSwapChainImage();
         // Submit queue
         void SubmitQueue();
+
+        // Check if swap chain is valid
+        bool IsSwapchainValid();
 
         // Pointer to window
         std::shared_ptr<Engine::Window> m_window = nullptr;
@@ -47,7 +49,9 @@ namespace Renderer
         // Image index
         u32 m_imageIndex = 0;
         // Frame index
-        usize currentFrame = 0;
+        usize m_currentFrame = 0;
+        // Status
+        std::array<VkResult, 2> m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
     };
 }
 

@@ -3,31 +3,12 @@
 #include <SDL_vulkan.h>
 
 #include "ExtensionState.h"
-#include "../Util/Util.h"
-#include "../Util/Log.h"
+#include "ExtensionLoader.h"
 
 namespace Vk
 {
     // Internal extension function pointers (Global state, I know)
     inline ExtensionState g_ExtensionState = {};
-
-    // Template to load function
-    template <typename T>
-    T LoadExtension(VkInstance& instance, std::string_view name)
-    {
-        // Load and return
-        auto extension = reinterpret_cast<T>(vkGetInstanceProcAddr(instance, name.data()));
-        // Make sure we were able to load extension
-        if (extension == nullptr)
-        {
-            // Log
-            LOG_ERROR("Failed to load function \"{}\" for instance {} \n", name, reinterpret_cast<const void*>(&instance));
-        }
-        // Log
-        LOG_DEBUG("Loaded function {} [address={}]\n", name, reinterpret_cast<void*>(extension));
-        // Return
-        return extension;
-    }
 
     std::vector<const char*> Extensions::LoadInstanceExtensions(SDL_Window* window)
     {
@@ -70,7 +51,7 @@ namespace Vk
         return extensionStrings;
     }
 
-    void Extensions::LoadFunctions(VkInstance& instance)
+    void Extensions::LoadProcLoader()
     {
         // Get function loader
         g_ExtensionState.p_vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
@@ -87,14 +68,21 @@ namespace Vk
             "vkGetInstanceProcAddr",
             reinterpret_cast<void*>(g_ExtensionState.p_vkGetInstanceProcAddr)
         );
+    }
 
-        // Load debug message functions
+    void Extensions::LoadInstanceFunctions(VkInstance instance)
+    {
+        // Load instance loader
+        LoadProcLoader();
+
+        // Load debug utils creation function
         g_ExtensionState.p_vkCreateDebugUtilsMessengerEXT = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT>
         (
             instance,
             "vkCreateDebugUtilsMessengerEXT"
         );
-        // God this looks very weird
+
+        // Load debug utils destruction function
         g_ExtensionState.p_vkDestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>
         (
             instance,
@@ -136,6 +124,10 @@ namespace Vk
 
         // Check if all required extensions were found
         return _requiredExtensions.empty();
+    }
+
+    void Extensions::LoadDeviceFunctions(VkDevice device)
+    {
     }
 
     Extensions::~Extensions()

@@ -25,7 +25,7 @@ namespace Vk
         // Create vulkan instance
         CreateVKInstance(window);
         // Load extensions
-        m_extensions->LoadFunctions(vkInstance);
+        m_extensions->LoadInstanceFunctions(vkInstance);
 
         #ifdef ENGINE_DEBUG
         // Load validation layers
@@ -71,6 +71,8 @@ namespace Vk
         // Clean up old swap chain
         DestroySwapChain();
 
+        // Wait
+        window->WaitForRestoration();
         // Create new swap chain
         CreateSwapChain(window->handle);
         CreateImageViews();
@@ -320,6 +322,9 @@ namespace Vk
             // Log
             LOG_ERROR("Failed to create logical device! [Physical Device = {}]\n", reinterpret_cast<void*>(m_physicalDevice));
         }
+
+        // Get functions
+        m_extensions->LoadDeviceFunctions(device);
 
         // Log
         LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(device));

@@ -17,25 +17,13 @@ namespace Engine
         while (true)
         {
             // Render
-            DrawFrame();
+            m_renderer.Render();
             // Poll events
             if (m_window->PollEvents()) break;
         }
 
         // Wait for the logical device to finish tasks
         m_renderer.WaitForLogicalDevice();
-    }
-
-    void AppInstance::DrawFrame()
-    {
-        // Begin
-        m_renderer.BeginFrame();
-        // Render
-        m_renderer.Render();
-        // End
-        m_renderer.EndFrame();
-        // Present
-        m_renderer.Present();
     }
 
     AppInstance::~AppInstance()

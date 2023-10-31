@@ -1,12 +1,13 @@
 #include <SDL_vulkan.h>
 #include "Window.h"
 
-#include "../Util/Log.h"
+#include "Util/Log.h"
+#include "Renderer/RenderConstants.h"
 
 namespace Engine
 {
     // Window flags
-    constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
+    constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
 
     Window::Window()
     {
@@ -24,7 +25,7 @@ namespace Engine
         );
 
         // Initialise SDL2
-        if (SDL_Init(SDL_INIT_VIDEO) != 0)
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
         {
             // Log error
             LOG_ERROR("SDL_Init Failed: {}\n", SDL_GetError());
@@ -74,18 +75,66 @@ namespace Engine
             // Check event type
             switch (m_event.type)
             {
-                // Event to quit
-                case SDL_QUIT:
-                    return true;
+            // Event to quit
+            case SDL_QUIT:
+                return true;
 
-                // Default event handler
-                default:
-                    continue;
+            case SDL_WINDOWEVENT:
+                switch (m_event.display.event)
+                {
+                // Resize event
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                case SDL_WINDOWEVENT_RESIZED:
+                    // Set flag
+                    wasResized = true;
+                    // Set size
+                    ScaleWindowSize();
+                    break;
+                }
+                break;    
+
+            // Default event handler
+            default:
+                continue;
             }
         }
 
         // Return
         return false;
+    }
+
+    void Window::ScaleWindowSize()
+    {
+        // New size
+        size = {m_event.window.data1, m_event.window.data2};
+        // Ratio
+        auto ratio = static_cast<f32>(size.x) / static_cast<f32>(size.y);
+        // If size is in right ratio exit
+        if (std::abs(ratio - Renderer::ASPECT_RATIO) < 0.01f) return;
+
+        // Get width
+        auto width = size.x;
+        // Get height from width
+        auto height = static_cast<s32>(std::round(static_cast<f32>(width) / Renderer::ASPECT_RATIO));
+
+        // Set size
+        size = {width, height};
+        SDL_SetWindowSize(handle, size.x, size.y);
+
+        // Log
+        LOG_INFO("Resizing! [size=[{}, {}]]\n", size.x, size.y);
+    }
+
+    void Window::WaitForRestoration()
+    {
+        // Loop
+        while (true)
+        {
+            // Poll events (LEAKS MEMORY WHEN EXITING)
+            if (PollEvents()) std::exit(-1);
+            // Check if not minimised
+            if (!(SDL_GetWindowFlags(handle) & SDL_WINDOW_MINIMIZED)) break;
+        }
     }
 
     Window::~Window()
