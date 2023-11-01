@@ -22,11 +22,14 @@ namespace Renderer
         // Begin
         BeginFrame();
 
+        // Bind buffer
+        m_vkContext->vertexBuffer->BindBuffer(m_vkContext->commandBuffers[m_currentFrame]);
+
         // Draw triangle
         vkCmdDraw
         (
             m_vkContext->commandBuffers[m_currentFrame],
-            3,
+            m_vkContext->vertexBuffer->vertexCount,
             1,
             0,
             0
@@ -280,7 +283,7 @@ namespace Renderer
         for (auto status : m_swapchainStatus)
         {
             // Check swapchain
-            if (status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR || m_window->wasResized)
+            if (status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR)
             {
                 // We'll have to recreate the swap buffers now
                 toRecreate = true;
@@ -297,7 +300,6 @@ namespace Renderer
         {
             // Recreate
             m_vkContext->RecreateSwapChain(m_window);
-            m_window->wasResized = false;
             // Reset
             m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
             // Return

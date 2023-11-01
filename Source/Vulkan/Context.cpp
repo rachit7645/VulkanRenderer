@@ -8,24 +8,33 @@
 #include "Util/Log.h"
 #include "Externals/GLM.h"
 
+// Usings
+using Renderer::Vertex;
+
 namespace Vk
 {
-    // TODO: Figure out a good way to move both of these vectors to their respective classes
+    // TODO: Figure out a good way to move these vectors to their respective classes
 
-    // Required device extensions
-    const std::vector<const char*> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
     #ifdef ENGINE_DEBUG
     // Layers
-    const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
+    static const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
     #endif
+    // Required device extensions
+    static const std::vector<const char*> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
+    // Vertex data
+    static const std::vector<Vertex> VERTICES =
+    {
+        Vertex({ 0.0f, -0.5f},  {1.0f, 0.0f, 0.0f}),
+        Vertex({ 0.5f,  0.5f},  {0.0f, 1.0f, 0.0f}),
+        Vertex({-0.5f,  0.5f},  {0.0f, 0.0f, 1.0f})
+    };
 
     Context::Context(SDL_Window* window)
-        : m_extensions(std::make_unique<Vk::Extensions>())
     {
         // Create vulkan instance
         CreateVKInstance(window);
         // Load extensions
-        m_extensions->LoadInstanceFunctions(vkInstance);
+        m_extensions.LoadInstanceFunctions(vkInstance);
 
         #ifdef ENGINE_DEBUG
         // Load validation layers
@@ -55,6 +64,10 @@ namespace Vk
 
         // Create global command pool
         CreateCommandPool();
+
+        // Create vertex buffer
+        vertexBuffer = std::make_unique<Vk::VertexBuffer>(device, m_phyMemProperties, VERTICES);
+
         // Creates command buffer
         CreateCommandBuffers();
         // Create sync objects
@@ -94,7 +107,7 @@ namespace Vk
         };
 
         // Get extensions
-        auto extensions = m_extensions->LoadInstanceExtensions(window);
+        auto extensions = m_extensions.LoadInstanceExtensions(window);
         // Create extensions string
         std::string extDbg = fmt::format("Loaded vulkan instance extensions: {}\n", extensions.size());
         for (auto&& extension : extensions)
@@ -115,7 +128,7 @@ namespace Vk
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             #ifdef ENGINE_DEBUG
-            .pNext                   = (VkDebugUtilsMessengerCreateInfoEXT*) &m_layers->messengerInfo,
+            .pNext                   = reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&m_layers->messengerInfo),
             #else
             .pNext                   = nullptr,
             #endif
@@ -228,6 +241,9 @@ namespace Vk
         // Set GPU
         m_physicalDevice = bestDevice;
 
+        // Get memory properties
+        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_phyMemProperties);
+
         // Log
         LOG_INFO("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
     }
@@ -242,7 +258,7 @@ namespace Vk
 
         // Calculate score multipliers
         bool isQueueValid  = queue.IsComplete();
-        bool hasExtensions = m_extensions->CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
+        bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -324,7 +340,7 @@ namespace Vk
         }
 
         // Get functions
-        m_extensions->LoadDeviceFunctions(device);
+        m_extensions.LoadDeviceFunctions(device);
 
         // Log
         LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(device));
@@ -784,6 +800,8 @@ namespace Vk
     {
         // Destroy swap chain objects
         DestroySwapChain();
+        // Destroy vertex buffer
+        vertexBuffer->DestroyBuffer(device);
 
         // Destroy sync objects
         for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)

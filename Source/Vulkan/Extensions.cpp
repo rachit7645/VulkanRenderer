@@ -4,6 +4,7 @@
 
 #include "ExtensionState.h"
 #include "ExtensionLoader.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -126,7 +127,7 @@ namespace Vk
         return _requiredExtensions.empty();
     }
 
-    void Extensions::LoadDeviceFunctions(VkDevice device)
+    void Extensions::LoadDeviceFunctions(UNUSED VkDevice device)
     {
     }
 

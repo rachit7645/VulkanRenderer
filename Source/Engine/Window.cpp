@@ -79,20 +79,6 @@ namespace Engine
             case SDL_QUIT:
                 return true;
 
-            case SDL_WINDOWEVENT:
-                switch (m_event.display.event)
-                {
-                // Resize event
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
-                case SDL_WINDOWEVENT_RESIZED:
-                    // Set flag
-                    wasResized = true;
-                    // Set size
-                    ScaleWindowSize();
-                    break;
-                }
-                break;    
-
             // Default event handler
             default:
                 continue;
@@ -101,28 +87,6 @@ namespace Engine
 
         // Return
         return false;
-    }
-
-    void Window::ScaleWindowSize()
-    {
-        // New size
-        size = {m_event.window.data1, m_event.window.data2};
-        // Ratio
-        auto ratio = static_cast<f32>(size.x) / static_cast<f32>(size.y);
-        // If size is in right ratio exit
-        if (std::abs(ratio - Renderer::ASPECT_RATIO) < 0.01f) return;
-
-        // Get width
-        auto width = size.x;
-        // Get height from width
-        auto height = static_cast<s32>(std::round(static_cast<f32>(width) / Renderer::ASPECT_RATIO));
-
-        // Set size
-        size = {width, height};
-        SDL_SetWindowSize(handle, size.x, size.y);
-
-        // Log
-        LOG_INFO("Resizing! [size=[{}, {}]]\n", size.x, size.y);
     }
 
     void Window::WaitForRestoration()

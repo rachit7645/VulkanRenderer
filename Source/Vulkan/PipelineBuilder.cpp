@@ -1,6 +1,10 @@
 #include "PipelineBuilder.h"
 #include "ShaderModule.h"
 #include "Util/Log.h"
+#include "Renderer/Vertex.h"
+
+// Usings
+using Renderer::Vertex;
 
 namespace Vk
 {
@@ -14,7 +18,9 @@ namespace Vk
 
     PipelineBuilder::PipelineBuilder(VkDevice device, VkRenderPass renderPass)
         : m_device(device),
-          m_renderPass(renderPass)
+          m_renderPass(renderPass),
+          m_bindings(Vertex::GetBindingDescription()),
+          m_attribs(Vertex::GetVertexAttribDescription())
     {
     }
 
@@ -156,10 +162,10 @@ namespace Vk
             .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .pNext                           = nullptr,
             .flags                           = 0,
-            .vertexBindingDescriptionCount   = 0,
-            .pVertexBindingDescriptions      = nullptr,
-            .vertexAttributeDescriptionCount = 0,
-            .pVertexAttributeDescriptions    = nullptr
+            .vertexBindingDescriptionCount   = 1,
+            .pVertexBindingDescriptions      = &m_bindings,
+            .vertexAttributeDescriptionCount = static_cast<u32>(m_attribs.size()),
+            .pVertexAttributeDescriptions    = m_attribs.data()
         };
 
         // Return

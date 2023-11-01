@@ -14,6 +14,7 @@
 #include "SwapChainInfo.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
+#include "VertexBuffer.h"
 
 namespace Vk
 {
@@ -47,6 +48,8 @@ namespace Vk
 
         // Render pass
         VkRenderPass renderPass = {};
+        // Vertex buffer
+        std::unique_ptr<Vk::VertexBuffer> vertexBuffer = nullptr;
         // Command buffer
         std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {};
 
@@ -55,7 +58,6 @@ namespace Vk
         std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
         // Fences
         std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
-
     private:
         // Create vulkan instance
         void CreateVKInstance(SDL_Window* window);
@@ -97,7 +99,7 @@ namespace Vk
         void DestroySwapChain();
 
         // Extensions
-        std::unique_ptr<Vk::Extensions> m_extensions = nullptr;
+        Vk::Extensions m_extensions = {};
         #ifdef ENGINE_DEBUG
         // Vulkan validation layers
         std::unique_ptr<Vk::ValidationLayers> m_layers = nullptr;
@@ -107,6 +109,8 @@ namespace Vk
 
         // Physical device (GPU)
         VkPhysicalDevice m_physicalDevice = {};
+        // Physical device memory properties
+        VkPhysicalDeviceMemoryProperties m_phyMemProperties = {};
         // Queue families
         Vk::QueueFamilyIndices m_queueFamilies = {};
 

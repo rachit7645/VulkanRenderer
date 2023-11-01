@@ -6,6 +6,8 @@
 #include <functional>
 #include <vulkan/vulkan.h>
 
+#include "Renderer/Vertex.h"
+
 namespace Vk
 {
     class PipelineBuilder
@@ -77,6 +79,10 @@ namespace Vk
         VkDevice m_device = {};
         // Render pass
         VkRenderPass m_renderPass = {};
+
+        // Vertex info
+        VkVertexInputBindingDescription m_bindings = {};
+        Renderer::Vertex::VertexAttribs m_attribs  = {};
     };
 }
 
