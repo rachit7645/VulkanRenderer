@@ -1,8 +1,7 @@
 #ifndef VALIDATION_LAYERS_H
 #define VALIDATION_LAYERS_H
 
-#include <array>
-
+#include <span>
 #include <vulkan/vulkan.h>
 
 namespace Vk
@@ -12,7 +11,7 @@ namespace Vk
     {
     public:
         // Constructor
-        explicit ValidationLayers(const std::vector<const char*>& layers);
+        explicit ValidationLayers(const std::span<const char* const> layers);
 
         // Setup messenger
         [[nodiscard]] VkResult SetupMessenger(VkInstance instance);
@@ -25,7 +24,7 @@ namespace Vk
         VkDebugUtilsMessengerEXT messenger = {};
     private:
         // Check if all layers are present
-        [[nodiscard]] bool CheckLayers(const std::vector<const char*>& layers);
+        [[nodiscard]] bool CheckLayers(const std::span<const char* const> layers);
 
         // Debug Callback
         static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback

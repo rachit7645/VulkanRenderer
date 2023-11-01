@@ -1,7 +1,5 @@
 #include "RenderManager.h"
 
-#include <limits>
-
 #include "RenderConstants.h"
 #include "Util/Log.h"
 
@@ -26,11 +24,12 @@ namespace Renderer
         m_vkContext->vertexBuffer->BindBuffer(m_vkContext->commandBuffers[m_currentFrame]);
 
         // Draw triangle
-        vkCmdDraw
+        vkCmdDrawIndexed
         (
             m_vkContext->commandBuffers[m_currentFrame],
-            m_vkContext->vertexBuffer->vertexCount,
+            m_vkContext->vertexBuffer->indexCount,
             1,
+            0,
             0,
             0
         );

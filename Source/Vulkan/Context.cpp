@@ -10,6 +10,7 @@
 
 // Usings
 using Renderer::Vertex;
+using Renderer::Index;
 
 namespace Vk
 {
@@ -17,16 +18,25 @@ namespace Vk
 
     #ifdef ENGINE_DEBUG
     // Layers
-    static const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
+    constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
     #endif
+
     // Required device extensions
-    static const std::vector<const char*> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
-    // Vertex data
-    static const std::vector<Vertex> VERTICES =
+    constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
+
+    // Vertex data (FIXME: HORRIBLE HARD CODING)
+    constexpr std::array<Vertex, 4> VERTICES =
     {
-        Vertex({ 0.0f, -0.5f},  {1.0f, 0.0f, 0.0f}),
-        Vertex({ 0.5f,  0.5f},  {0.0f, 1.0f, 0.0f}),
-        Vertex({-0.5f,  0.5f},  {0.0f, 0.0f, 1.0f})
+        Vertex({-0.5f, -0.5f},  {1.0f, 0.0f, 0.0f}),
+        Vertex({ 0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}),
+        Vertex({ 0.5f,  0.5f},  {0.0f, 0.0f, 1.0f}),
+        Vertex({-0.5f,  0.5f},  {1.0f, 1.0f, 1.0f})
+    };
+    // Index data (FIXME: HORRIBLE HARD CODING)
+    constexpr std::array<Index, 6> INDICES =
+    {
+        0, 1, 2, // First triangle
+        2, 3, 0  // Second triangle
     };
 
     Context::Context(SDL_Window* window)
@@ -66,7 +76,15 @@ namespace Vk
         CreateCommandPool();
 
         // Create vertex buffer
-        vertexBuffer = std::make_unique<Vk::VertexBuffer>(device, m_phyMemProperties, VERTICES);
+        vertexBuffer = std::make_unique<Vk::VertexBuffer>
+        (
+            device,
+            m_commandPool,
+            graphicsQueue,
+            m_phyMemProperties,
+            VERTICES,
+            INDICES
+        );
 
         // Creates command buffer
         CreateCommandBuffers();
@@ -515,6 +533,8 @@ namespace Vk
             // Check for mailbox
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
+                // Log
+                LOG_INFO("{}\n", "Using mailbox presentation!");
                 // Found it!
                 return presentMode;
             }

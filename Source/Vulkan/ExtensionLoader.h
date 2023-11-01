@@ -6,6 +6,12 @@
 
 #include "Util/Log.h"
 
+/*
+ * There is absolutely no reason for this to be written in this way. Just absolutely none.
+ * I just wanted to experiment with constraints and concepts.
+ * Please forgive my sins.
+ */
+
 namespace Vk
 {
     // Template to check type
@@ -19,7 +25,7 @@ namespace Vk
     // Template to load function
     template <typename PFN, typename Param1Type, LoaderType<Param1Type> Loader>
         requires (std::is_pointer_v<PFN>) && (HasLoader<Param1Type>) && (Loader != nullptr)
-    PFN LoadExtension(Param1Type param1, std::string_view name)
+    [[nodiscard]] PFN LoadExtension(Param1Type param1, std::string_view name)
     {
         // Load and return
         auto extension = reinterpret_cast<PFN>(Loader(param1, name.data()));
@@ -37,7 +43,7 @@ namespace Vk
 
     // Instance loader
     template <typename T>
-    T LoadExtension(VkInstance instance, std::string_view name)
+    [[nodiscard]] T LoadExtension(VkInstance instance, std::string_view name)
     {
         // Load
         return LoadExtension<T, VkInstance, vkGetInstanceProcAddr>(instance, name);
@@ -45,7 +51,7 @@ namespace Vk
 
     // Device loader
     template <typename T>
-    T LoadExtension(VkDevice device, std::string_view name)
+    [[nodiscard]] T LoadExtension(VkDevice device, std::string_view name)
     {
         // Load
         return LoadExtension<T, VkDevice, vkGetDeviceProcAddr>(device, name);

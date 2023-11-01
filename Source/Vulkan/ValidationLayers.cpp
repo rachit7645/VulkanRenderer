@@ -1,12 +1,11 @@
 #include "ValidationLayers.h"
 
 #include "../Util/Log.h"
-#include "../Util/Util.h"
 
 namespace Vk
 {
 #ifdef ENGINE_DEBUG
-    ValidationLayers::ValidationLayers(const std::vector<const char*>& layers)
+    ValidationLayers::ValidationLayers(const std::span<const char* const> layers)
     {
         // Check for availability
         if (!CheckLayers(layers))
@@ -45,7 +44,7 @@ namespace Vk
         );
     }
 
-    bool ValidationLayers::CheckLayers(const std::vector<const char*>& layers)
+    bool ValidationLayers::CheckLayers(const std::span<const char* const> layers)
     {
         // Get layer count
         u32 layerCount = 0;
@@ -57,41 +56,23 @@ namespace Vk
 
         // Create layers string
         std::string layerDbg = fmt::format("Available vulkan validation layers: {}\n", layerCount);
+        // Create unique layers set
+        auto requiredLayers = std::set<std::string_view>(layers.begin(), layers.end());
+
         // Go over all layer properties
         for (auto&& layerProperties : availableLayers)
         {
             // Add to string
             layerDbg.append(fmt::format("- {}\n", layerProperties.layerName));
-        }
-
-        // Check all required layers
-        for (auto&& layer : layers)
-        {
-            // Flag
-            auto layerFound = false;
-
-            // Try to find required layer
-            for (auto&& layerProperties : availableLayers)
-            {
-                if (strcmp(layer, layerProperties.layerName) == 0)
-                {
-                    layerFound = true;
-                    break;
-                }
-            }
-
-            // If any layer was not found
-            if (!layerFound)
-            {
-                return false;
-            }
+            // Remove from set
+            requiredLayers.erase(layerProperties.layerName);
         }
 
         // Log
         LOG_DEBUG("{}", layerDbg);
 
         // Found all the layers!
-        return true;
+        return requiredLayers.empty();
     }
 
     void ValidationLayers::DestroyMessenger(VkInstance instance)

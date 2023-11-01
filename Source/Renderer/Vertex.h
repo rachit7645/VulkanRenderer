@@ -29,6 +29,9 @@ namespace Renderer
         static VkVertexInputBindingDescription GetBindingDescription();
         static VertexAttribs GetVertexAttribDescription();
     };
+
+    // Index data
+    using Index = u16;
 }
 
 #endif

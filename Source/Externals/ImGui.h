@@ -3,10 +3,10 @@
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 
-#include "imgui/imgui_internal.h"
-#include "imgui/imgui.h"
-#include "imgui/backends/imgui_impl_sdl2.h"
-#include "imgui/backends/imgui_impl_opengl3.h"
-#include "imgui/misc/cpp/imgui_stdlib.h"
+#include "ImGui/imgui_internal.h"
+#include "ImGui/imgui.h"
+#include "ImGui/backends/imgui_impl_sdl2.h"
+#include "ImGui/backends/imgui_impl_vulkan.h"
+#include "ImGui/misc/cpp/imgui_stdlib.h"
 
 #endif

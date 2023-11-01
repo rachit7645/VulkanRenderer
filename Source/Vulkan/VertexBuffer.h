@@ -15,26 +15,71 @@ namespace Vk
         VertexBuffer
         (
             VkDevice device,
+            VkCommandPool commandPool,
+            VkQueue queue,
             const VkPhysicalDeviceMemoryProperties& memProperties,
-            const std::vector<Renderer::Vertex>& vertices
+            const std::span<const Renderer::Vertex> vertices,
+            const std::span<const Renderer::Index> indices
         );
         // Bind buffer
         void BindBuffer(VkCommandBuffer commandBuffer);
         // Destroys the buffer
         void DestroyBuffer(VkDevice device);
-        // Buffer handle
-        VkBuffer handle = {};
-        // Buffer memory
-        VkDeviceMemory memory = {};
+
+        // Vertex buffer handle
+        VkBuffer vertexHandle = {};
+        // Vertex buffer memory
+        VkDeviceMemory vertexMemory = {};
+
+        // Vertex buffer handle
+        VkBuffer indexHandle = {};
+        // Vertex buffer memory
+        VkDeviceMemory indexMemory = {};
+
         // Vertex count
-        u32 vertexCount = 0;
+        UNUSED u32 vertexCount = 0;
+        // Index count
+        u32 indexCount = 0;
+        // Index type
+        VkIndexType indexType = std::is_same_v<Renderer::Index, u32> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
     private:
+        // Init buffer
+        template<typename T>
+        void InitBuffer
+        (
+            VkDevice device,
+            VkCommandPool commandPool,
+            VkQueue queue,
+            VkBuffer& buffer,
+            VkDeviceMemory& bufferMemory,
+            VkBufferUsageFlags usage,
+            const VkPhysicalDeviceMemoryProperties& memProperties,
+            const std::span<const T> data
+        );
+
         // Creates the buffer
-        void CreateBuffer(VkDevice device);
-        // Allocate memory
-        void AllocateMemory(VkDevice device, const VkPhysicalDeviceMemoryProperties& memProperties);
-        // Load data
-        void LoadData(VkDevice device, const std::vector<Renderer::Vertex>& vertices);
+        void CreateBuffer
+        (
+            VkDevice device,
+            VkDeviceSize size,
+            VkBufferUsageFlags usage,
+            VkMemoryPropertyFlags properties,
+            const VkPhysicalDeviceMemoryProperties& memProperties,
+            VkBuffer& outBuffer,
+            VkDeviceMemory& outBufferMemory
+        );
+
+        // Copy from src to dst buffer
+        void CopyBuffer
+        (
+            VkBuffer srcBuffer,
+            VkBuffer dstBuffer,
+            VkDeviceSize size,
+            VkDevice device,
+            VkCommandPool commandPool,
+            VkQueue queue
+        );
+
         // Find memory type
         u32 FindMemoryType
         (
@@ -42,6 +87,9 @@ namespace Vk
             VkMemoryPropertyFlags properties,
             const VkPhysicalDeviceMemoryProperties& memProperties
         );
+
+        // Internal deletion function
+        void DeleteBuffer(VkDevice device, VkBuffer buffer, VkDeviceMemory bufferMemory);
     };
 }
 

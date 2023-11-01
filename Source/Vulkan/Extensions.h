@@ -1,7 +1,7 @@
 #ifndef EXTENSIONS_H
 #define EXTENSIONS_H
 
-#include <vector>
+#include <span>
 #include <vulkan/vulkan.h>
 
 namespace Vk
@@ -16,7 +16,7 @@ namespace Vk
         // Load functions
         void LoadInstanceFunctions(VkInstance instance);
         // Get extensions for device
-        [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions);
+        [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions);
         // Load device functions
         void LoadDeviceFunctions(VkDevice device);
     private:

@@ -91,7 +91,7 @@ namespace Vk
         );
     }
 
-    bool Extensions::CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions)
+    bool Extensions::CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions)
     {
         // Get device extension count
         u32 extensionCount = 0;

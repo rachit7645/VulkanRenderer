@@ -31,7 +31,7 @@ add_executable(VulkanRenderer
 	Source/Util/Files.cpp
 	Source/Util/Inputs.cpp
 	Source/Util/Time.cpp
-	# Vulkan source
+	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
 	Source/Vulkan/Context.cpp
@@ -57,11 +57,11 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<vulkan/vulkan.h>
 	<vulkan/vulkan_core.h>
 	# ImGui Headers
-    Externals/imgui/imgui.h
-    Externals/imgui/imgui_internal.h
-    Externals/imgui/backends/imgui_impl_sdl2.h
-    Externals/imgui/backends/imgui_impl_opengl3.h
-    Externals/imgui/misc/cpp/imgui_stdlib.h
+    Externals/ImGui/imgui.h
+    Externals/ImGui/imgui_internal.h
+    Externals/ImGui/backends/imgui_impl_sdl2.h
+    Externals/ImGui/backends/imgui_impl_vulkan.h
+    Externals/ImGui/misc/cpp/imgui_stdlib.h
     # STB Headers
     Externals/stb/stb_image.h
 	# Assimp Headers
