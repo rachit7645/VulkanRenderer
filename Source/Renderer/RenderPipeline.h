@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Vulkan/Context.h"
+#include "BasicShaderPushConstant.h"
 
 namespace Renderer
 {
@@ -20,6 +21,8 @@ namespace Renderer
         VkPipeline pipeline = {};
         // Layout
         VkPipelineLayout pipelineLayout = {};
+        // Push constant
+        std::array<Renderer::BasicShaderPushConstant, Vk::MAX_FRAMES_IN_FLIGHT> pushConstants = {};
     private:
         VkDevice m_device = {};
     };

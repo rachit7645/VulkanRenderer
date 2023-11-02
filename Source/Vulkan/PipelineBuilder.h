@@ -23,14 +23,12 @@ namespace Vk
 
         // Attach shader to pipeline
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
-
         // Set dynamic state objects
         [[nodiscard]] PipelineBuilder& SetDynamicStates
         (
             const std::vector<VkDynamicState>& vkDynamicStates,
             const std::function<void(PipelineBuilder&)>& SetDynStates
         );
-
         // Set vertex input state
         [[nodiscard]] PipelineBuilder& SetVertexInputState();
         // Set IA info
@@ -41,6 +39,8 @@ namespace Vk
         [[nodiscard]] PipelineBuilder& SetMSAAState();
         // Set color blending state
         [[nodiscard]] PipelineBuilder& SetBlendState();
+        // Add push constant
+        [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
 
         // Shader stages
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
@@ -70,6 +70,9 @@ namespace Vk
         std::vector<VkPipelineColorBlendAttachmentState> colorBlendStates = {};
         // Blend states info
         VkPipelineColorBlendStateCreateInfo colorBlendInfo = {};
+
+        // Push constant data
+        std::vector<VkPushConstantRange> pushConstantRanges = {};
 
     private:
         // Private constructor

@@ -56,6 +56,7 @@ namespace Renderer
                        .SetRasterizerState(VK_CULL_MODE_BACK_BIT)
                        .SetMSAAState()
                        .SetBlendState()
+                       .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, (u32) sizeof(BasicShaderPushConstant))
                        .Build();
 
         // Retrieve members

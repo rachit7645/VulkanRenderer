@@ -27,6 +27,9 @@ namespace Renderer
         // End frame
         void EndFrame();
 
+        // Update
+        void Update();
+
         // Present
         void Present();
         // Wait for previous frame

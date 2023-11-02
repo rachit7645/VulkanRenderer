@@ -9,6 +9,9 @@
 // Unused macro
 #define UNUSED [[maybe_unused]]
 
+// Vulkan data
+#define VULKAN_GLSL_DATA alignas(16)
+
 // Signed integer types
 using s8  = std::int8_t;
 using s16 = std::int16_t;

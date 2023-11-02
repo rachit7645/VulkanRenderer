@@ -34,8 +34,8 @@ namespace Vk
             .flags                  = 0,
             .setLayoutCount         = 0,
             .pSetLayouts            = nullptr,
-            .pushConstantRangeCount = 0,
-            .pPushConstantRanges    = nullptr
+            .pushConstantRangeCount = static_cast<u32>(pushConstantRanges.size()),
+            .pPushConstantRanges    = pushConstantRanges.data()
         };
 
         // Pipeline layout handle
@@ -200,7 +200,7 @@ namespace Vk
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode             = VK_POLYGON_MODE_FILL,
             .cullMode                = vkCullMode,
-            .frontFace               = VK_FRONT_FACE_CLOCKWISE,
+            .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .depthBiasEnable         = VK_FALSE,
             .depthBiasConstantFactor = 0.0f,
             .depthBiasClamp          = 0.0f,
@@ -265,6 +265,23 @@ namespace Vk
             .pAttachments    = colorBlendStates.data(),
             .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f}
         };
+
+        // Return
+        return *this;
+    }
+
+    PipelineBuilder& PipelineBuilder::AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size)
+    {
+        // Push constant range
+        VkPushConstantRange pushConstant =
+        {
+            .stageFlags = stages,
+            .offset     = offset,
+            .size       = size
+        };
+
+        // Add to vector
+        pushConstantRanges.emplace_back(pushConstant);
 
         // Return
         return *this;

@@ -32,6 +32,7 @@ namespace Vk
         Vertex({ 0.5f,  0.5f},  {0.0f, 0.0f, 1.0f}),
         Vertex({-0.5f,  0.5f},  {1.0f, 1.0f, 1.0f})
     };
+
     // Index data (FIXME: HORRIBLE HARD CODING)
     constexpr std::array<Index, 6> INDICES =
     {

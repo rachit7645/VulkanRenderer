@@ -2,6 +2,7 @@
 
 #include "RenderConstants.h"
 #include "Util/Log.h"
+#include "Util/Maths.h"
 
 namespace Renderer
 {
@@ -19,9 +20,21 @@ namespace Renderer
 
         // Begin
         BeginFrame();
+        // Update
+        Update();
 
         // Bind buffer
         m_vkContext->vertexBuffer->BindBuffer(m_vkContext->commandBuffers[m_currentFrame]);
+
+        // Load
+        vkCmdPushConstants
+        (
+            m_vkContext->commandBuffers[m_currentFrame],
+            m_renderPipeline->pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0, sizeof(BasicShaderPushConstant),
+            reinterpret_cast<void*>(&m_renderPipeline->pushConstants[m_currentFrame])
+        );
 
         // Draw triangle
         vkCmdDrawIndexed
@@ -38,6 +51,41 @@ namespace Renderer
         EndFrame();
         // Present
         Present();
+    }
+
+    void RenderManager::Update()
+    {
+        // Get current push constant
+        auto& pushConstant = m_renderPipeline->pushConstants[m_currentFrame];
+
+        // Staring time
+        static auto startTime = std::chrono::high_resolution_clock::now();
+        // Current time
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        // Durations
+        f32 time = std::chrono::duration<f32, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        // View Matrix
+        auto view = glm::lookAt
+        (
+            glm::vec3(2.0f, 2.0f, 2.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f)
+        );
+        // Projection matrix
+        auto proj = glm::perspective
+        (
+            FOV,
+            static_cast<f32>(m_vkContext->swapChainExtent.width) / static_cast<f32>(m_vkContext->swapChainExtent.height),
+            PLANES.x,
+            PLANES.y
+        );
+        // Flip projection
+        proj[1][1] *= -1;
+
+        // Create model matrix
+        pushConstant.modelMatrix = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        pushConstant.modelMatrix = proj * view * pushConstant.modelMatrix; // FIXME: Currently cheating here lmao
     }
 
     void RenderManager::BeginFrame()
