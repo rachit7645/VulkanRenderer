@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="VulkanRenderer" pattern="file[VulkanRenderer]:Assets/Shaders//*||file[VulkanRenderer]:Source//*||file:.gitignore||file:.gitmodules||file:CMakeLists.txt||file:LICENSE" />
+</component>

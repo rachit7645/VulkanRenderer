@@ -1,8 +1,25 @@
+/*
+ * Copyright 2023 Rachit Khandelwal
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 #include "RenderManager.h"
 
 #include "RenderConstants.h"
 #include "Util/Log.h"
 #include "Util/Maths.h"
+#include "RenderPipeline.h"
 
 namespace Renderer
 {
@@ -32,7 +49,7 @@ namespace Renderer
             m_vkContext->commandBuffers[m_currentFrame],
             m_renderPipeline->pipelineLayout,
             VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(BasicShaderPushConstant),
+            0, sizeof(decltype(m_renderPipeline->pushConstants[m_currentFrame])),
             reinterpret_cast<void*>(&m_renderPipeline->pushConstants[m_currentFrame])
         );
 
@@ -68,9 +85,9 @@ namespace Renderer
         // View Matrix
         auto view = glm::lookAt
         (
-            glm::vec3(2.0f, 2.0f, 2.0f),
+            glm::vec3(0.0f, 0.0f, 2.5f),
             glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f)
+            glm::vec3(0.0f, 1.0f, 0.0f)
         );
         // Projection matrix
         auto proj = glm::perspective
@@ -84,7 +101,13 @@ namespace Renderer
         proj[1][1] *= -1;
 
         // Create model matrix
-        pushConstant.modelMatrix = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        pushConstant.modelMatrix = Maths::CreateModelMatrix<glm::mat4>
+        (
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 100.0f * time * glm::radians(90.0f), 0.0f),
+            glm::vec3(1.4f, 1.4f, 1.4f)
+        );
+
         pushConstant.modelMatrix = proj * view * pushConstant.modelMatrix; // FIXME: Currently cheating here lmao
     }
 

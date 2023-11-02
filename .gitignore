@@ -1,6 +1,5 @@
 /Bin/
 /Build/
-/.idea/
-/External/stb/
-/External/imgui/
-/External/simdjson/
+/Externals/stb/
+/Externals/ImGui/
+/Externals/simdjson/
