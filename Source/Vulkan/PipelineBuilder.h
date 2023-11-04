@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ namespace Vk
         ~PipelineBuilder();
 
         // Build pipeline
-        std::tuple<VkPipeline, VkPipelineLayout> Build();
+        std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout> Build();
 
         // Attach shader to pipeline
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
@@ -57,6 +57,8 @@ namespace Vk
         [[nodiscard]] PipelineBuilder& SetBlendState();
         // Add push constant
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
+        // Add descriptor set binding
+        [[nodiscard]] PipelineBuilder& AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages);
 
         // Shader stages
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
@@ -89,6 +91,8 @@ namespace Vk
 
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
+        // Descriptor data
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSets = {};
 
     private:
         // Private constructor

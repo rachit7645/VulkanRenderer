@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ namespace Vk
         if (m_layers->SetupMessenger(vkInstance) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("{}\n", "Failed to set up debug messenger!");
+            Logger::Error("{}\n", "Failed to set up debug messenger!");
         }
         #endif
 
@@ -109,7 +109,7 @@ namespace Vk
         CreateSyncObjects();
 
         // Log
-        LOG_INFO("{}\n", "Initialised vulkan context!");
+        Logger::Info("{}\n", "Initialised vulkan context!");
     }
 
     void Context::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window)
@@ -151,7 +151,7 @@ namespace Vk
             extDbg.append(fmt::format("- {}\n", extension));
         }
         // Log
-        LOG_DEBUG("{}", extDbg);
+        Logger::Debug("{}", extDbg);
 
         #ifdef ENGINE_DEBUG
         // Request validation layers
@@ -184,11 +184,11 @@ namespace Vk
         if (vkCreateInstance(&createInfo, nullptr, &vkInstance) != VK_SUCCESS)
         {
             // Vulkan initialisation failed, abort
-            LOG_ERROR("{}\n", "Failed to initialise vulkan instance!");
+            Logger::Error("{}\n", "Failed to initialise vulkan instance!");
         }
 
         // Log
-        LOG_INFO("Successfully initialised Vulkan instance! [handle={}]\n", reinterpret_cast<void*>(vkInstance));
+        Logger::Info("Successfully initialised Vulkan instance! [handle={}]\n", reinterpret_cast<void*>(vkInstance));
     }
 
     void Context::CreateSurface(SDL_Window* window)
@@ -197,7 +197,7 @@ namespace Vk
         if (SDL_Vulkan_CreateSurface(window, vkInstance, &m_surface) != SDL_TRUE)
         {
             // Log
-            LOG_ERROR
+            Logger::Error
             (
                 "Failed to create surface! [window={}] [instance={}]\n",
                 reinterpret_cast<void*>(window),
@@ -206,7 +206,7 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("Initialised vulkan surface! [handle={}]\n", reinterpret_cast<void*>(m_surface));
+        Logger::Info("Initialised vulkan surface! [handle={}]\n", reinterpret_cast<void*>(m_surface));
     }
 
     void Context::PickPhysicalDevice()
@@ -219,7 +219,7 @@ namespace Vk
         if (deviceCount == 0)
         {
             // Log
-            LOG_ERROR("No physical devices found! [instance = {}]\n", reinterpret_cast<void*>(vkInstance));
+            Logger::Error("No physical devices found! [instance = {}]\n", reinterpret_cast<void*>(vkInstance));
         }
 
         // Physical devices
@@ -263,7 +263,7 @@ namespace Vk
         }
 
         // Log string
-        LOG_DEBUG("{}", dbgPhyDevices);
+        Logger::Debug("{}", dbgPhyDevices);
 
         // Best GPU => Highest score
         auto [highestScore, bestDevice] = *scores.rbegin();
@@ -271,7 +271,7 @@ namespace Vk
         if (highestScore == 0)
         {
             // Log
-            LOG_ERROR("Failed to load physical device! [name=\"{}\"]", properties[bestDevice].deviceName);
+            Logger::Error("Failed to load physical device! [name=\"{}\"]", properties[bestDevice].deviceName);
         }
         // Set GPU
         m_physicalDevice = bestDevice;
@@ -280,7 +280,7 @@ namespace Vk
         vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_phyMemProperties);
 
         // Log
-        LOG_INFO("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
+        Logger::Info("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
     }
 
     usize Context::CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet)
@@ -371,14 +371,14 @@ namespace Vk
         ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create logical device! [Physical Device = {}]\n", reinterpret_cast<void*>(m_physicalDevice));
+            Logger::Error("Failed to create logical device! [Physical Device = {}]\n", reinterpret_cast<void*>(m_physicalDevice));
         }
 
         // Get functions
         m_extensions.LoadDeviceFunctions(device);
 
         // Log
-        LOG_INFO("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(device));
+        Logger::Info("Successfully created vulkan logical device! [handle={}]\n", reinterpret_cast<void*>(device));
 
         // Get queue
         vkGetDeviceQueue
@@ -438,7 +438,7 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(device));
+            Logger::Error("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(device));
         }
 
         // Get image count
@@ -465,7 +465,7 @@ namespace Vk
         swapChainExtent        = extent;
 
         // Log
-        LOG_INFO("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(swapChain));
+        Logger::Info("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(swapChain));
     }
 
     void Context::CreateImageViews()
@@ -508,7 +508,7 @@ namespace Vk
                 ) != VK_SUCCESS)
             {
                 // Log
-                LOG_ERROR
+                Logger::Error
                 (
                     "Failed to create image view #{}! [device={}] [image={}]",
                     i, reinterpret_cast<void*>(device),
@@ -551,7 +551,7 @@ namespace Vk
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
                 // Log
-                LOG_INFO("{}\n", "Using mailbox presentation!");
+                Logger::Info("{}\n", "Using mailbox presentation!");
                 // Found it!
                 return presentMode;
             }
@@ -665,11 +665,11 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create render pass! [device={}]\n", reinterpret_cast<void*>(device));
+            Logger::Error("Failed to create render pass! [device={}]\n", reinterpret_cast<void*>(device));
         }
 
         // Log
-        LOG_INFO("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
+        Logger::Info("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
     }
 
     void Context::CreateFramebuffers()
@@ -703,7 +703,7 @@ namespace Vk
                 ) != VK_SUCCESS)
             {
                 // Log
-                LOG_ERROR
+                Logger::Error
                 (
                     "Failed to create framebuffer #{}! [image={}]\n",
                     i, reinterpret_cast<void*>(&m_swapChainImageViews[i])
@@ -712,7 +712,7 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("{}\n", "Created framebuffers!");
+        Logger::Info("{}\n", "Created framebuffers!");
     }
 
     void Context::CreateCommandPool()
@@ -735,11 +735,11 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create command pool! [device={}]\n", reinterpret_cast<void*>(device));
+            Logger::Error("Failed to create command pool! [device={}]\n", reinterpret_cast<void*>(device));
         }
 
         // Log
-        LOG_INFO("Created command pool! [handle={}]\n", reinterpret_cast<void*>(m_commandPool));
+        Logger::Info("Created command pool! [handle={}]\n", reinterpret_cast<void*>(m_commandPool));
     }
 
     void Context::CreateCommandBuffers()
@@ -762,7 +762,7 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR
+            Logger::Error
             (
                 "Failed to allocate command buffer(s)! [CommandPool={}]\n",
                 reinterpret_cast<void*>(m_commandPool)
@@ -770,7 +770,7 @@ namespace Vk
         }
 
         // Log
-        LOG_INFO("{}\n", "Created command buffers!");
+        Logger::Info("{}\n", "Created command buffers!");
     }
 
     void Context::CreateSyncObjects()
@@ -805,12 +805,12 @@ namespace Vk
             )
             {
                 // Log
-                LOG_ERROR("{}\n", "Failed to create sync objects!");
+                Logger::Error("{}\n", "Failed to create sync objects!");
             }
         }
 
         // Log
-        LOG_INFO("{}\n", "Created synchronisation objects!");
+        Logger::Info("{}\n", "Created synchronisation objects!");
     }
 
     void Context::DestroySwapChain()
@@ -868,6 +868,6 @@ namespace Vk
         vkDestroyInstance(vkInstance, nullptr);
 
         // Log
-        LOG_INFO("{}\n", "Destroyed vulkan context!");
+        Logger::Info("{}\n", "Destroyed vulkan context!");
     }
 }

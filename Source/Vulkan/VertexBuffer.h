@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,8 +19,11 @@
 
 #include <span>
 #include <vulkan/vulkan.h>
+
+#include "Buffer.h"
 #include "Renderer/Vertex.h"
 #include "Util/Util.h"
+
 
 namespace Vk
 {
@@ -37,20 +40,16 @@ namespace Vk
             const std::span<const Renderer::Vertex> vertices,
             const std::span<const Renderer::Index> indices
         );
+
         // Bind buffer
         void BindBuffer(VkCommandBuffer commandBuffer);
         // Destroys the buffer
         void DestroyBuffer(VkDevice device);
 
-        // Vertex buffer handle
-        VkBuffer vertexHandle = {};
-        // Vertex buffer memory
-        VkDeviceMemory vertexMemory = {};
-
-        // Vertex buffer handle
-        VkBuffer indexHandle = {};
-        // Vertex buffer memory
-        VkDeviceMemory indexMemory = {};
+        // Vertex buffer
+        Vk::Buffer vertexBuffer;
+        // Index buffer
+        Vk::Buffer indexBuffer;
 
         // Vertex count
         UNUSED u32 vertexCount = 0;
@@ -66,46 +65,11 @@ namespace Vk
             VkDevice device,
             VkCommandPool commandPool,
             VkQueue queue,
-            VkBuffer& buffer,
-            VkDeviceMemory& bufferMemory,
+            Vk::Buffer& buffer,
             VkBufferUsageFlags usage,
             const VkPhysicalDeviceMemoryProperties& memProperties,
             const std::span<const T> data
         );
-
-        // Creates the buffer
-        void CreateBuffer
-        (
-            VkDevice device,
-            VkDeviceSize size,
-            VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties,
-            const VkPhysicalDeviceMemoryProperties& memProperties,
-            VkBuffer& outBuffer,
-            VkDeviceMemory& outBufferMemory
-        );
-
-        // Copy from src to dst buffer
-        void CopyBuffer
-        (
-            VkBuffer srcBuffer,
-            VkBuffer dstBuffer,
-            VkDeviceSize size,
-            VkDevice device,
-            VkCommandPool commandPool,
-            VkQueue queue
-        );
-
-        // Find memory type
-        u32 FindMemoryType
-        (
-            u32 typeFilter,
-            VkMemoryPropertyFlags properties,
-            const VkPhysicalDeviceMemoryProperties& memProperties
-        );
-
-        // Internal deletion function
-        void DeleteBuffer(VkDevice device, VkBuffer buffer, VkDeviceMemory bufferMemory);
     };
 }
 

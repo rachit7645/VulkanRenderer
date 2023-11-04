@@ -40,6 +40,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/ShaderModule.cpp
     Source/Vulkan/PipelineBuilder.cpp
 	Source/Vulkan/VertexBuffer.cpp
+	Source/Vulkan/Buffer.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/RenderPipeline.cpp

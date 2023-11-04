@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "Window.h"
 
 #include "Util/Log.h"
+#include "Util/Files.h"
 #include "Renderer/RenderConstants.h"
 
 namespace Engine
@@ -32,7 +33,7 @@ namespace Engine
         SDL_GetVersion(&version);
 
         // Log it
-        LOG_INFO
+        Logger::Info
         (
             "Initializing SDL2 version: {}.{}.{}\n",
             static_cast<usize>(version.major),
@@ -44,14 +45,14 @@ namespace Engine
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
         {
             // Log error
-            LOG_ERROR("SDL_Init Failed: {}\n", SDL_GetError());
+            Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
         }
 
         // Load vulkan library
         if (SDL_Vulkan_LoadLibrary(nullptr) != 0)
         {
             // Log error
-            LOG_ERROR("SDL_Vulkan_LoadLibrary Failed: {}\n", SDL_GetError());
+            Logger::Error("SDL_Vulkan_LoadLibrary Failed: {}\n", SDL_GetError());
         }
 
         // Create handle
@@ -69,11 +70,11 @@ namespace Engine
         if (handle == nullptr)
         {
             // Log error
-            LOG_ERROR("SDL_CreateWindow Failed\n{}\n", SDL_GetError());
+            Logger::Error("SDL_CreateWindow Failed\n{}\n", SDL_GetError());
         }
 
         // Log handle address
-        LOG_INFO("Succesfully created window handle! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Info("Succesfully created window handle! [handle={}]\n", reinterpret_cast<void*>(handle));
 
         // For sanity, raise handle
         SDL_RaiseWindow(handle);
@@ -124,6 +125,6 @@ namespace Engine
         SDL_DestroyWindow(handle);
         SDL_Quit();
         // Log
-        LOG_INFO("{}\n", "Window destroyed!");
+        Logger::Info("{}\n", "Window destroyed!");
     }
 }

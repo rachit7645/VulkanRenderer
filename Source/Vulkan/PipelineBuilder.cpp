@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,16 +40,42 @@ namespace Vk
     {
     }
 
-    std::tuple<VkPipeline, VkPipelineLayout> PipelineBuilder::Build()
+    std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout> PipelineBuilder::Build()
     {
+        // Descriptor set layout info
+        VkDescriptorSetLayoutCreateInfo layoutInfo =
+        {
+            .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext        = nullptr,
+            .flags        = 0,
+            .bindingCount = static_cast<u32>(descriptorSets.size()),
+            .pBindings    = descriptorSets.data()
+        };
+
+        // Create
+        VkDescriptorSetLayout descriptorLayout = {};
+        if (vkCreateDescriptorSetLayout(
+                m_device,
+                &layoutInfo,
+                nullptr,
+                &descriptorLayout
+            ) != VK_SUCCESS)
+        {
+            // Log
+            Logger::Error("Failed to create descriptor layout! [device={}]\n", reinterpret_cast<void*>(m_device));
+        }
+
+        // Log
+        Logger::Info("Created descriptor layout! [handle={}]\n", reinterpret_cast<void*>(descriptorLayout));
+
         // Pipeline layout create info
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = 0,
-            .pSetLayouts            = nullptr,
+            .setLayoutCount         = 1,
+            .pSetLayouts            = &descriptorLayout,
             .pushConstantRangeCount = static_cast<u32>(pushConstantRanges.size()),
             .pPushConstantRanges    = pushConstantRanges.data()
         };
@@ -66,11 +92,11 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create pipeline layout! [device={}]\n", reinterpret_cast<void*>(m_device));
+            Logger::Error("Failed to create pipeline layout! [device={}]\n", reinterpret_cast<void*>(m_device));
         }
 
         // Log
-        LOG_INFO("Created pipeline layout! [handle={}]\n", reinterpret_cast<void*>(pipelineLayout));
+        Logger::Info("Created pipeline layout! [handle={}]\n", reinterpret_cast<void*>(pipelineLayout));
 
         // Pipeline creation info
         VkGraphicsPipelineCreateInfo pipelineCreateInfo =
@@ -110,14 +136,14 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create pipeline! [device={}]\n", reinterpret_cast<void*>(m_device));
+            Logger::Error("Failed to create pipeline! [device={}]\n", reinterpret_cast<void*>(m_device));
         }
 
         // Log
-        LOG_INFO("Created pipeline object! [handle={}]\n", reinterpret_cast<void*>(pipeline));
+        Logger::Info("Created pipeline object! [handle={}]\n", reinterpret_cast<void*>(pipeline));
 
         // Return
-        return {pipeline, pipelineLayout};
+        return {pipeline, pipelineLayout, descriptorLayout};
     }
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
@@ -215,8 +241,8 @@ namespace Vk
             .depthClampEnable        = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode             = VK_POLYGON_MODE_FILL,
-            .cullMode                = VK_CULL_MODE_NONE,
-            .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE, // TODO: REMEMBER TO CHANGE THIS LATER
+            .cullMode                = vkCullMode,
+            .frontFace               = VK_FRONT_FACE_CLOCKWISE, // TODO: REMEMBER TO CHANGE THIS LATER
             .depthBiasEnable         = VK_FALSE,
             .depthBiasConstantFactor = 0.0f,
             .depthBiasClamp          = 0.0f,
@@ -303,13 +329,32 @@ namespace Vk
         return *this;
     }
 
+    PipelineBuilder& PipelineBuilder::AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages)
+    {
+        // Binding
+        VkDescriptorSetLayoutBinding layoutBinding =
+        {
+            .binding            = binding,
+            .descriptorType     = type,
+            .descriptorCount    = 1,
+            .stageFlags         = stages,
+            .pImmutableSamplers = nullptr
+        };
+
+        // Add to vector
+        descriptorSets.emplace_back(layoutBinding);
+
+        // Return
+        return *this;
+    }
+
     PipelineBuilder::~PipelineBuilder()
     {
         // Loop over all shader stages
         for (auto&& stage : shaderStageCreateInfos)
         {
             // Log
-            LOG_INFO("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
+            Logger::Info("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
             // Destroy
             vkDestroyShaderModule(m_device, stage.module, nullptr);
         }

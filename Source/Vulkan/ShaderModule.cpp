@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -59,11 +59,11 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR("Failed to create shader module for shader binary {}!\n", path);
+            Logger::Error("Failed to create shader module for shader binary {}!\n", path);
         }
 
         // Log
-        LOG_INFO("Created shader module {} [handle={}]\n", path, reinterpret_cast<void*>(shaderModule));
+        Logger::Info("Created shader module {} [handle={}]\n", path, reinterpret_cast<void*>(shaderModule));
 
         // Return
         return shaderModule;

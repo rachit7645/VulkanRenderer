@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ namespace Renderer
         // Dynamic states
         auto dynStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
         // Pipeline data tuple
-        std::tuple<VkPipeline, VkPipelineLayout> pipelineData = {};
+        std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout> pipelineData = {};
 
         // Build pipeline
         pipelineData = Vk::PipelineBuilder::Create(vkContext->device, vkContext->renderPass)
@@ -69,14 +69,15 @@ namespace Renderer
                        .SetDynamicStates(dynStates, SetDynamicStates)
                        .SetVertexInputState()
                        .SetIAState()
-                       .SetRasterizerState(VK_CULL_MODE_BACK_BIT)
+                       .SetRasterizerState(VK_CULL_MODE_NONE)
                        .SetMSAAState()
                        .SetBlendState()
-                       .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, (u32) sizeof(BasicShaderPushConstant))
+                       .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
+                       .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
                        .Build();
 
         // Retrieve members
-        std::tie(pipeline, pipelineLayout) = pipelineData;
+        std::tie(pipeline, pipelineLayout, descriptorLayout) = pipelineData;
     }
 
     RenderPipeline::~RenderPipeline()
@@ -85,5 +86,7 @@ namespace Renderer
         vkDestroyPipeline(m_device, pipeline, nullptr);
         // Destroy pipeline layout
         vkDestroyPipelineLayout(m_device, pipelineLayout, nullptr);
+        // Destroy descriptor set layout
+        vkDestroyDescriptorSetLayout(m_device, descriptorLayout, nullptr);
     }
 }

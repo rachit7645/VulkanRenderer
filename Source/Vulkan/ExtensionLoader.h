@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -49,10 +49,10 @@ namespace Vk
         if (extension == nullptr)
         {
             // Log
-            LOG_ERROR("Failed to load function \"{}\" for {} \n", name, reinterpret_cast<const void*>(param1));
+            Logger::Error("Failed to load function \"{}\" for {} \n", name, reinterpret_cast<const void*>(param1));
         }
         // Log
-        LOG_DEBUG("Loaded function {} [address={}]\n", name, reinterpret_cast<void*>(extension));
+        Logger::Debug("Loaded function {} [address={}]\n", name, reinterpret_cast<void*>(extension));
         // Return
         return extension;
     }

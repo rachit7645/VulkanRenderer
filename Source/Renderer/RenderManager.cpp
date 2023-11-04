@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -101,14 +101,14 @@ namespace Renderer
         proj[1][1] *= -1;
 
         // Create model matrix
-        pushConstant.modelMatrix = Maths::CreateModelMatrix<glm::mat4>
+        pushConstant.model = Maths::CreateModelMatrix<glm::mat4>
         (
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 100.0f * time * glm::radians(90.0f), 0.0f),
             glm::vec3(1.4f, 1.4f, 1.4f)
         );
 
-        pushConstant.modelMatrix = proj * view * pushConstant.modelMatrix; // FIXME: Currently cheating here lmao
+        pushConstant.model = proj * view * pushConstant.model; // FIXME: Currently cheating here lmao
     }
 
     void RenderManager::BeginFrame()
@@ -135,7 +135,7 @@ namespace Renderer
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR
+            Logger::Error
             (
                 "Failed to begin recording commands! [CommandBuffer={}]\n",
                 reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame])
@@ -288,7 +288,7 @@ namespace Renderer
             ) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR
+            Logger::Error
             (
                 "Failed to submit draw command buffer! [CommandBuffer={}] [Queue={}]\n",
                 reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame]),
@@ -333,7 +333,7 @@ namespace Renderer
         if (vkEndCommandBuffer(m_vkContext->commandBuffers[m_currentFrame]) != VK_SUCCESS)
         {
             // Log
-            LOG_ERROR
+            Logger::Error
             (
                 "Failed to record command buffer! [handle={}]\n",
                 reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame])
@@ -361,7 +361,7 @@ namespace Renderer
             else if (status != VK_SUCCESS)
             {
                 // Log
-                LOG_ERROR("Swap chain validation failed! [status={:X}]\n", static_cast<int>(status));
+                Logger::Error("Swap chain validation failed! [status={:X}]\n", static_cast<int>(status));
             }
         }
 

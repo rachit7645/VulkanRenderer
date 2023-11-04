@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ namespace Vk
         if (extensionsLoaded == SDL_FALSE)
         {
             // Extension load failed, exit
-            LOG_ERROR("Failed to load extensions!: {}\n", SDL_GetError());
+            Logger::Error("Failed to load extensions!: {}\n", SDL_GetError());
         }
 
         // Convert to vector
@@ -76,10 +76,10 @@ namespace Vk
         if (g_ExtensionState.p_vkGetInstanceProcAddr == nullptr)
         {
             // LOG
-            LOG_ERROR("Failed to load function {}: \n", "vkGetInstanceProcAddr", SDL_GetError());
+            Logger::Error("Failed to load function {}: \n", "vkGetInstanceProcAddr", SDL_GetError());
         }
         // Log
-        LOG_DEBUG
+        Logger::Debug
         (
             "Loaded function {} [address={}]\n",
             "vkGetInstanceProcAddr",

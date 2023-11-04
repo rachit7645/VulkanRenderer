@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ namespace Engine
         if (!bin.is_open())
         {
             // Log
-            LOG_ERROR("Failed to load shader binary {}!\n", path);
+            Logger::Error("Failed to load shader binary {}!\n", path);
         }
 
         // Get file size

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ namespace Vk
         if (!CheckLayers(layers))
         {
             // Log
-            LOG_ERROR("{}\n", "Validation layers not found!");
+            Logger::Error("{}\n", "Validation layers not found!");
         }
 
         // Creation data
@@ -85,7 +85,7 @@ namespace Vk
         }
 
         // Log
-        LOG_DEBUG("{}", layerDbg);
+        Logger::Debug("{}", layerDbg);
 
         // Found all the layers!
         return requiredLayers.empty();
@@ -111,7 +111,7 @@ namespace Vk
         if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
         {
             // Log
-            LOG_VK("{}\n", pCallbackData->pMessage);
+            Logger::Vulkan("{}\n", pCallbackData->pMessage);
         }
         // Return
         return VK_TRUE;

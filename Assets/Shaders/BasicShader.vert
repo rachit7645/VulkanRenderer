@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *   Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,12 +16,18 @@
 
 #version 460
 
+/*layout(binding = 0, set = 0) uniform SharedDataBuffer
+{
+    mat4 view;
+    mat4 proj;
+} Shared;*/
+
 // Push constant buffer
-layout(push_constant) uniform MeshConstantsBuffer
+layout(push_constant) uniform ConstantsBuffer
 {
     // Model matrix
-    mat4 modelMatrix;
-} MeshConstants;
+    mat4 model;
+} Constants;
 
 // Vertex inputs
 layout(location = 0) in vec2 position;
@@ -34,7 +40,7 @@ layout(location = 0) out vec3 fragColor;
 void main()
 {
     // Get position
-    gl_Position = MeshConstants.modelMatrix * vec4(position, 0.0f, 1.0f);
+    gl_Position = /*Shared.proj * Shared.view */ Constants.model * vec4(position, 0.0f, 1.0f);
     // Get vertex color
     fragColor = color;
 }

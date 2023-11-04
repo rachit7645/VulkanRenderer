@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ namespace Engine
           m_renderer(m_window)
     {
         // Log
-        LOG_INFO("{}\n", "App instance initialised!");
+        Logger::Info("{}\n", "App instance initialised!");
     }
 
     void AppInstance::Run()
@@ -45,6 +45,6 @@ namespace Engine
     AppInstance::~AppInstance()
     {
         // Log
-        LOG_INFO("{}\n", "App instance destroyed!");
+        Logger::Info("{}\n", "App instance destroyed!");
     }
 }

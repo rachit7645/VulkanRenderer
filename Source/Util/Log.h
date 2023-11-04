@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,92 +19,226 @@
 
 #include <string>
 #include <string_view>
+#include <source_location>
 #include <cstdlib>
 
 #include <fmt/format.h>
 #include <fmt/color.h>
 
-#include "Files.h"
 #include "Time.h"
-
-// TODO: Convert all loggers to templates
+#include "Util.h"
 
 namespace Logger
 {
-    template<typename... Args>
-    void Log
-    (
-        const fmt::color& fgColor,
-        const fmt::color& bgColor,
-        const std::string_view type,
-        const std::string_view time,
-        const std::string_view file,
-        size_t line,
-        fmt::string_view format,
-        Args&&... args
-    )
+    // Internal namespace
+    namespace Detail
     {
-        // Format & print additional data
-        fmt::print
-        (
-            stderr,
-            fmt::fg(fgColor) | fmt::bg(bgColor),
-            "[{}] [{}] [{}:{}] ",
-            type, time, file, line
-        );
+        // Get file name from directory
+        constexpr std::string_view GetFileName(std::string_view fileName)
+        {
+            // Get last slash
+            usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);
 
-        // Format & print
-        fmt::print
+            // Check
+            if (lastSlash != std::string_view::npos)
+            {
+                // Return name
+                return fileName.substr(lastSlash + 1);
+            }
+            else
+            {
+                // Return already fine name
+                return fileName;
+            }
+        }
+
+        template <typename... Args>
+        void Log
         (
-            stderr,
-            fmt::fg(fgColor) | fmt::bg(bgColor),
-            format,
-            args...
-        );
+            const fmt::color& fgColor,
+            const fmt::color& bgColor,
+            const std::string_view type,
+            const std::source_location location,
+            const std::string_view format,
+            Args&& ... args
+        )
+        {
+            // Format & print additional data
+            fmt::print
+            (
+                stderr,
+                fmt::fg(fgColor) | fmt::bg(bgColor),
+                std::string("[{}] [{}] [{}:{}] ") + format.data(),
+                type,
+                Util::GetTime(),
+                GetFileName(location.file_name()),
+                location.line(),
+                args...
+            );
+        }
+
+        // Error logger
+        template <s32 ErrorCode, typename... Args>
+        [[noreturn]] void LogAndExit
+        (
+            const fmt::color& fgColor,
+            const fmt::color& bgColor,
+            const std::string_view type,
+            const std::source_location location,
+            const std::string_view format,
+            Args&& ... args
+        )
+        {
+            // Call regular logger
+            Log
+            (
+                fgColor,
+                bgColor,
+                type,
+                location,
+                format,
+                args...
+            );
+            // Exit
+            std::exit(ErrorCode);
+        }
     }
+
+    // Info logger
+    template <typename... Args>
+    struct Info
+    {
+        explicit Info
+        (
+            const std::string_view format,
+            Args&&... args,
+			const std::source_location location = std::source_location::current()
+        )
+        {
+            // Log
+            Detail::Log
+            (
+                fmt::color::green,
+                fmt::color::black,
+                "INFO",
+                location,
+                format,
+                args...
+            );
+        }
+    };
+
+    // Warning logger
+    template <typename... Args>
+    struct Warning
+    {
+        explicit Warning
+        (
+            const std::string_view format,
+            Args&&... args,
+			const std::source_location location = std::source_location::current()
+        )
+        {
+            // Log
+            Detail::Log
+            (
+                fmt::color::yellow,
+                fmt::color::black,
+                "WARNING",
+                location,
+                format,
+                args...
+            );
+        }
+    };
+
+    // Debug logger
+    template <typename... Args>
+    struct Debug
+    {
+        explicit Debug
+        (
+            const std::string_view format,
+            Args&&... args,
+			const std::source_location location = std::source_location::current()
+        )
+        {
+            #ifdef ENGINE_DEBUG
+            // Log
+            Detail::Log
+            (
+                fmt::color::cyan,
+                fmt::color::black,
+                "DEBUG",
+                location,
+                format,
+                args...
+            );
+            #endif
+        }
+    };
+
+    // Vulkan logger
+    template <typename... Args>
+    struct Vulkan
+    {
+        explicit Vulkan
+        (
+            const std::string_view format,
+            Args&&... args,
+			const std::source_location location = std::source_location::current()
+        )
+        {
+            #ifdef ENGINE_DEBUG
+            // Log
+            Detail::Log
+            (
+                fmt::color::orange,
+                fmt::color::black,
+                "VULKAN",
+                location,
+                format,
+                args...
+            );
+            #endif
+        }
+    };
+
+    // Error logger
+    template <typename... Args>
+    struct Error
+    {
+        [[noreturn]] explicit Error
+        (
+            const std::string_view format,
+            Args&&... args,
+			const std::source_location location = std::source_location::current()
+        )
+        {
+            // Log
+            Detail::LogAndExit<EXIT_FAILURE>
+            (
+                fmt::color::red,
+                fmt::color::black,
+                "ERROR",
+                location,
+                format,
+                args...
+            );
+        }
+    };
+
+    // Deduction guides
+    template <typename... Args>
+    Info(std::string_view, Args&&...) -> Info<Args...>;
+    template <typename... Args>
+    Warning(std::string_view, Args&&...) -> Warning<Args...>;
+    template <typename... Args>
+    Debug(std::string_view, Args&&...) -> Debug<Args...>;
+    template <typename... Args>
+    Vulkan(std::string_view, Args&&...) -> Vulkan<Args...>;
+    template <typename... Args>
+    Error(std::string_view, Args&&...) -> Error<Args...>;
 }
-
-// Implementation
-
-#define IMPL_LOG(fgColor, bgColor, type, format, ...) \
-    do \
-    { \
-        Logger::Log \
-        ( \
-            fgColor, \
-            bgColor, \
-            type, \
-            Util::GetTime(), \
-            Engine::Files::GetInstance().GetName(__FILE__), \
-            __LINE__, \
-            FMT_STRING(format), \
-            __VA_ARGS__ \
-        ); \
-    } \
-    while (0)
-
-#define IMPL_LOG_EXIT(fgColor, bgColor, type, format, ...) \
-    do \
-    { \
-        IMPL_LOG(fgColor, bgColor, type, format, __VA_ARGS__); \
-        std::exit(-1); \
-    } \
-    while (0)
-
-// Regular loggers
-#define LOG_INFO(format, ...)    IMPL_LOG(fmt::color::green,  fmt::color::black, "INFO",    format, __VA_ARGS__)
-#define LOG_WARNING(format, ...) IMPL_LOG(fmt::color::yellow, fmt::color::black, "WARNING", format, __VA_ARGS__)
-
-// Debug loggers
-#ifdef ENGINE_DEBUG
-    #define LOG_DEBUG(format, ...)   IMPL_LOG(fmt::color::cyan,   fmt::color::black, "DEBUG",   format, __VA_ARGS__)
-    #define LOG_VK(format, ...)      IMPL_LOG(fmt::color::orange, fmt::color::black, "VULKAN",  format, __VA_ARGS__)
-#else
-    #define LOG_DEBUG(format, ...)
-    #define LOG_VK(format, ...)
-#endif
-
-// Error loggers
-#define LOG_ERROR(format, ...) IMPL_LOG_EXIT(fmt::color::red, fmt::color::black, "ERROR", format, __VA_ARGS__)
 
 #endif

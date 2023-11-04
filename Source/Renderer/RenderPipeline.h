@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -33,7 +33,16 @@ namespace Renderer
         struct VULKAN_GLSL_DATA BasicShaderPushConstant
         {
             // Transformation matrix
-            glm::mat4 modelMatrix = {};
+            glm::mat4 model = {};
+        };
+
+        // Common data UBO
+        struct VULKAN_GLSL_DATA SharedBuffer
+        {
+            // View matrix
+            glm::mat4 view = {};
+            // Projection matrix
+            glm::mat4 proj = {};
         };
 
         // Create render pipeline
@@ -45,6 +54,8 @@ namespace Renderer
         VkPipeline pipeline = {};
         // Layout
         VkPipelineLayout pipelineLayout = {};
+        // Descriptor layout
+        VkDescriptorSetLayout descriptorLayout = {};
         // Push constant
         std::array<BasicShaderPushConstant, Vk::MAX_FRAMES_IN_FLIGHT> pushConstants = {};
     private:
