@@ -66,7 +66,7 @@ namespace Vk
         }
 
         // Log
-        Logger::Info("Created descriptor layout! [handle={}]\n", reinterpret_cast<void*>(descriptorLayout));
+        Logger::Debug("Created descriptor layout! [handle={}]\n", reinterpret_cast<void*>(descriptorLayout));
 
         // Pipeline layout create info
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
@@ -96,7 +96,7 @@ namespace Vk
         }
 
         // Log
-        Logger::Info("Created pipeline layout! [handle={}]\n", reinterpret_cast<void*>(pipelineLayout));
+        Logger::Debug("Created pipeline layout! [handle={}]\n", reinterpret_cast<void*>(pipelineLayout));
 
         // Pipeline creation info
         VkGraphicsPipelineCreateInfo pipelineCreateInfo =
@@ -230,7 +230,7 @@ namespace Vk
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlagBits vkCullMode)
+    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace)
     {
         // Set rasterization info
         rasterizationInfo =
@@ -241,8 +241,8 @@ namespace Vk
             .depthClampEnable        = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode             = VK_POLYGON_MODE_FILL,
-            .cullMode                = vkCullMode,
-            .frontFace               = VK_FRONT_FACE_CLOCKWISE, // TODO: REMEMBER TO CHANGE THIS LATER
+            .cullMode                = cullMode,
+            .frontFace               = frontFace,
             .depthBiasEnable         = VK_FALSE,
             .depthBiasConstantFactor = 0.0f,
             .depthBiasClamp          = 0.0f,
@@ -354,7 +354,7 @@ namespace Vk
         for (auto&& stage : shaderStageCreateInfos)
         {
             // Log
-            Logger::Info("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
+            Logger::Debug("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
             // Destroy
             vkDestroyShaderModule(m_device, stage.module, nullptr);
         }

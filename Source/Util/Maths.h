@@ -21,7 +21,13 @@
 
 namespace Maths
 {
-    // Create transformation matrix
+    /// @brief Create transformation matrix
+    /// @tparam T Matrix type
+    /// @tparam U Vector type
+    /// @param translation Translation vector
+    /// @param rotation Euler rotation vector (In radians)
+    /// @param scale Scaling vector
+    /// @returns Transformation matrix
     template<typename T, typename U>
     constexpr T CreateModelMatrix(U translation, U rotation, U scale)
     {
@@ -30,9 +36,9 @@ namespace Maths
         // Translate
         matrix = glm::translate(matrix, translation);
         // Rotate in all axis
-        matrix = glm::rotate(matrix, glm::radians(rotation.x), glm::vec3(1, 0, 0));
-        matrix = glm::rotate(matrix, glm::radians(rotation.y), glm::vec3(0, 1, 0));
-        matrix = glm::rotate(matrix, glm::radians(rotation.z), glm::vec3(0, 0, 1));
+        matrix = glm::rotate(matrix, rotation.x, glm::vec3(1, 0, 0));
+        matrix = glm::rotate(matrix, rotation.y, glm::vec3(0, 1, 0));
+        matrix = glm::rotate(matrix, rotation.z, glm::vec3(0, 0, 1));
         // Scale
         matrix = glm::scale(matrix, scale);
         // Return

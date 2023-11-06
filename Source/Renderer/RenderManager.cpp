@@ -32,6 +32,9 @@ namespace Renderer
 
     void RenderManager::Render()
     {
+        // Current command buffer
+        auto currentCommandBuffer = m_vkContext->commandBuffers[m_currentFrame];
+
         // Make sure swap chain is valid
         if (!IsSwapchainValid()) return;
 
@@ -41,22 +44,35 @@ namespace Renderer
         Update();
 
         // Bind buffer
-        m_vkContext->vertexBuffer->BindBuffer(m_vkContext->commandBuffers[m_currentFrame]);
+        m_vkContext->vertexBuffer->BindBuffer(currentCommandBuffer);
 
-        // Load
+        // Load push constants
         vkCmdPushConstants
         (
-            m_vkContext->commandBuffers[m_currentFrame],
+            currentCommandBuffer,
             m_renderPipeline->pipelineLayout,
             VK_SHADER_STAGE_VERTEX_BIT,
             0, sizeof(decltype(m_renderPipeline->pushConstants[m_currentFrame])),
             reinterpret_cast<void*>(&m_renderPipeline->pushConstants[m_currentFrame])
         );
 
+        // Bind descriptors
+        vkCmdBindDescriptorSets
+        (
+            currentCommandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_renderPipeline->pipelineLayout,
+            0,
+            1,
+            &m_renderPipeline->sharedUBOSets[m_currentFrame],
+            0,
+            nullptr
+        );
+
         // Draw triangle
         vkCmdDrawIndexed
         (
-            m_vkContext->commandBuffers[m_currentFrame],
+            currentCommandBuffer,
             m_vkContext->vertexBuffer->indexCount,
             1,
             0,
@@ -82,33 +98,13 @@ namespace Renderer
         // Durations
         f32 time = std::chrono::duration<f32, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        // View Matrix
-        auto view = glm::lookAt
-        (
-            glm::vec3(0.0f, 0.0f, 2.5f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
-        // Projection matrix
-        auto proj = glm::perspective
-        (
-            FOV,
-            static_cast<f32>(m_vkContext->swapChainExtent.width) / static_cast<f32>(m_vkContext->swapChainExtent.height),
-            PLANES.x,
-            PLANES.y
-        );
-        // Flip projection
-        proj[1][1] *= -1;
-
         // Create model matrix
         pushConstant.model = Maths::CreateModelMatrix<glm::mat4>
         (
             glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 100.0f * time * glm::radians(90.0f), 0.0f),
+            glm::vec3(0.0f, time * glm::radians(90.0f), 0.0f),
             glm::vec3(1.4f, 1.4f, 1.4f)
         );
-
-        pushConstant.model = proj * view * pushConstant.model; // FIXME: Currently cheating here lmao
     }
 
     void RenderManager::BeginFrame()
@@ -221,6 +217,34 @@ namespace Renderer
             1,
             &scissor
         );
+
+        // Get shared UBO
+        auto& sharedUBO = m_renderPipeline->sharedUBOs[m_currentFrame];
+
+        // Shared UBO data
+        RenderPipeline::SharedBuffer sharedBuffer =
+        {
+            // View Matrix
+            .view = glm::lookAt(
+                glm::vec3(0.0f, 0.0f, 2.5f),
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                glm::vec3(0.0f, 1.0f, 0.0f)
+            ),
+            // Projection matrix
+            .proj = glm::perspective(
+                FOV,
+                static_cast<f32>(m_vkContext->swapChainExtent.width) /
+                static_cast<f32>(m_vkContext->swapChainExtent.height),
+                PLANES.x,
+                PLANES.y
+            )
+        };
+
+        // Flip projection
+        sharedBuffer.proj[1][1] *= -1;
+
+        // Load UBO data
+        std::memcpy(sharedUBO.mappedPtr, &sharedBuffer, sizeof(RenderPipeline::SharedBuffer));
     }
 
     void RenderManager::WaitForFrame()
@@ -321,7 +345,7 @@ namespace Renderer
         m_swapchainStatus[1] = vkQueuePresentKHR(m_vkContext->graphicsQueue, &presentInfo);
 
         // Set frame index
-        m_currentFrame = (m_currentFrame + 1) % Vk::MAX_FRAMES_IN_FLIGHT;
+        m_currentFrame = (m_currentFrame + 1) % Vk::FRAMES_IN_FLIGHT;
     }
 
     void RenderManager::EndFrame()

@@ -22,32 +22,39 @@
 
 #include "Util/Util.h"
 
-namespace Engine
+namespace Engine::Files
 {
-    class Files
+    /// @brief Get file directory from path
+    /// @param path Path of file
+    /// @returns The file's directory as a std::string
+    [[nodiscard]] std::string GetDirectory(const std::string_view path);
+    /// @brief Get file size from path
+    /// @param path Path of file
+    /// @returns Size (in bytes)
+    [[nodiscard]] usize GetFileSize(const std::string_view path);
+    /// @brief Read file data as binary
+    /// @param path Path of file
+    /// @returns std::vector of binary data
+    [[nodiscard]] std::vector<u8> ReadBytes(const std::string_view path);
+    /// @brief Get file name from path (constexpr version)
+    /// @param path Path of file
+    /// @returns std::string_view of file name from original path
+    constexpr std::string_view GetName(const std::string_view fileName)
     {
-    private:
-        // Default constructor
-        Files() = default;
-    public:
-        // Get instance
-        [[nodiscard]] static Files& GetInstance();
-        // Set resource directory
-        void SetResources(const std::string_view relPath);
-        // Get resource directory
-        [[nodiscard]] const std::string& GetResources();
-        // Get file name from path
-        [[nodiscard]] std::string GetName(const std::string_view path);
-        // Get directory from path
-        [[nodiscard]] std::string GetDirectory(const std::string_view path);
-        // Get file size
-        [[nodiscard]] usize GetFileSize(const std::string_view path);
-        // Reads binary data into vector
-        [[nodiscard]] std::vector<u8> ReadBytes(const std::string_view path);
-    private:
-        // Resource directory
-        std::string m_resDir;
-    };
+        // Get last slash
+        usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);
+        // Check
+        if (lastSlash != std::string_view::npos)
+        {
+            // Return name
+            return fileName.substr(lastSlash + 1);
+        }
+        else
+        {
+            // Return already fine name
+            return fileName;
+        }
+    }
 }
 
 #endif

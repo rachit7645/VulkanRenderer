@@ -54,10 +54,17 @@ namespace Renderer
         VkPipeline pipeline = {};
         // Layout
         VkPipelineLayout pipelineLayout = {};
+
         // Descriptor layout
         VkDescriptorSetLayout descriptorLayout = {};
+        // Shared UBOs descriptor sets
+        std::array<VkDescriptorSet, Vk::FRAMES_IN_FLIGHT> sharedUBOSets = {};
+
+        // Shared data UBOs
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sharedUBOs = {};
+
         // Push constant
-        std::array<BasicShaderPushConstant, Vk::MAX_FRAMES_IN_FLIGHT> pushConstants = {};
+        std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
     private:
         VkDevice m_device = {};
     };

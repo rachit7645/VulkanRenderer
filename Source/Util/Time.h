@@ -21,6 +21,8 @@
 
 namespace Util
 {
+    /// @brief Get formatted time
+    /// @returns Formatted time string
     std::string GetTime();
 }
 

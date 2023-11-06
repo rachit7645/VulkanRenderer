@@ -35,7 +35,9 @@
 namespace Vk
 {
     // Maximum frames in flight at a time
-    constexpr usize MAX_FRAMES_IN_FLIGHT = 2;
+    constexpr usize FRAMES_IN_FLIGHT = 2;
+    // Number of uniform buffer objects
+    constexpr usize UBO_COUNT = 1;
 
     class Context
     {
@@ -47,9 +49,13 @@ namespace Vk
 
         // Recreate swap chain
         void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window);
+        // Allocates descriptors
+        std::vector<VkDescriptorSet> AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout);
 
         // Vulkan instance
         VkInstance vkInstance = {};
+        // Physical device memory properties
+        VkPhysicalDeviceMemoryProperties phyMemProperties = {};
         // Logical device
         VkDevice device = {};
         // Queue
@@ -64,16 +70,17 @@ namespace Vk
 
         // Render pass
         VkRenderPass renderPass = {};
+        // Command buffer
+        std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers = {};
+
         // Vertex buffer
         std::unique_ptr<Vk::VertexBuffer> vertexBuffer = nullptr;
-        // Command buffer
-        std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {};
 
         // Semaphores
-        std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
-        std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
+        std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
+        std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
         // Fences
-        std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
+        std::array<VkFence, FRAMES_IN_FLIGHT> inFlightFences = {};
     private:
         // Create vulkan instance
         void CreateVKInstance(SDL_Window* window);
@@ -106,6 +113,12 @@ namespace Vk
 
         // Creates command pool
         void CreateCommandPool();
+        // Create buffer objects
+        void CreateBuffers();
+
+        // Create descriptor pool
+        void CreateDescriptorPool();
+
         // Create graphics command buffer
         void CreateCommandBuffers();
         // Create synchronisation objects
@@ -125,8 +138,6 @@ namespace Vk
 
         // Physical device (GPU)
         VkPhysicalDevice m_physicalDevice = {};
-        // Physical device memory properties
-        VkPhysicalDeviceMemoryProperties m_phyMemProperties = {};
         // Queue families
         Vk::QueueFamilyIndices m_queueFamilies = {};
 
@@ -139,6 +150,8 @@ namespace Vk
 
         // Command pool
         VkCommandPool m_commandPool = {};
+        // Descriptor pool
+        VkDescriptorPool m_descriptorPool = {};
     };
 }
 

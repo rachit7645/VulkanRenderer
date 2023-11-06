@@ -48,10 +48,4 @@ using f64 = double;
 using ssize = ssize_t;
 using usize = std::size_t;
 
-namespace Util
-{
-    // Global delta
-    inline f32 g_Delta = 1.0f;
-}
-
 #endif

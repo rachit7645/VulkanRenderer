@@ -69,7 +69,7 @@ namespace Renderer
                        .SetDynamicStates(dynStates, SetDynamicStates)
                        .SetVertexInputState()
                        .SetIAState()
-                       .SetRasterizerState(VK_CULL_MODE_NONE)
+                       .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                        .SetMSAAState()
                        .SetBlendState()
                        .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
@@ -78,10 +78,76 @@ namespace Renderer
 
         // Retrieve members
         std::tie(pipeline, pipelineLayout, descriptorLayout) = pipelineData;
+
+        // Create shared buffers
+        for (auto&& shared : sharedUBOs)
+        {
+            // Create buffer
+            shared = Vk::Buffer
+            (
+                m_device,
+                static_cast<u32>(sizeof(SharedBuffer)),
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                vkContext->phyMemProperties
+            );
+
+            // Map
+            shared.Map(m_device);
+        }
+
+        // Allocate sets
+        auto _sharedUBOSets = vkContext->AllocateDescriptorSets(sharedUBOSets.size(), descriptorLayout);
+        // Convert
+        std::move
+        (
+            _sharedUBOSets.begin(),
+            _sharedUBOSets.begin() + static_cast<ssize>(sharedUBOSets.size()),
+            sharedUBOSets.begin()
+        );
+
+        // Loop
+        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+        {
+            // Descriptor buffer info
+            VkDescriptorBufferInfo bufferInfo =
+            {
+                .buffer = sharedUBOs[i].handle,
+                .offset = 0,
+                .range  = VK_WHOLE_SIZE
+            };
+
+            // Write info
+            VkWriteDescriptorSet descriptorWrite =
+            {
+                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext            = nullptr,
+                .dstSet           = sharedUBOSets[i],
+                .dstBinding       = 0,
+                .dstArrayElement  = 0,
+                .descriptorCount  = 1,
+                .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo       = nullptr,
+                .pBufferInfo      = &bufferInfo,
+                .pTexelBufferView = nullptr
+            };
+
+            // Update
+            vkUpdateDescriptorSets
+            (
+                m_device,
+                1,
+                &descriptorWrite,
+                0,
+                nullptr
+            );
+        }
     }
 
     RenderPipeline::~RenderPipeline()
     {
+        // Destroy UBOs
+        for (auto&& shared : sharedUBOs) shared.DeleteBuffer(m_device);
         // Destroy pipeline
         vkDestroyPipeline(m_device, pipeline, nullptr);
         // Destroy pipeline layout

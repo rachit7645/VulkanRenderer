@@ -39,6 +39,11 @@ namespace Vk
             const VkPhysicalDeviceMemoryProperties& memProperties
         );
 
+        // Map buffer
+        void Map(VkDevice device, VkDeviceSize offset = 0, VkDeviceSize rangeSize = VK_WHOLE_SIZE);
+        // Unmap buffer
+        void Unmap(VkDevice device);
+
         // Load data
         template <typename T>
         void LoadData(VkDevice device, const std::span<const T> data);
@@ -61,6 +66,8 @@ namespace Vk
         VkBuffer handle = {};
         // Memory
         VkDeviceMemory memory = {};
+        // Mapped pointer
+        void* mappedPtr = nullptr;
         // Buffer size
         VkDeviceSize size = {};
         // Buffer usage flags

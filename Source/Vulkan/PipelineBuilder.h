@@ -50,7 +50,7 @@ namespace Vk
         // Set IA info
         [[nodiscard]] PipelineBuilder& SetIAState();
         // Set rasterizer state
-        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits vkCullMode);
+        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace);
         // Set MSAA state
         [[nodiscard]] PipelineBuilder& SetMSAAState();
         // Set color blending state

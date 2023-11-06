@@ -97,7 +97,7 @@ namespace Vk
         vkBindBufferMemory(device, handle, memory, 0);
 
         // Log
-        Logger::Info
+        Logger::Debug
         (
             "Allocated memory for buffer! [buffer={}] [size={}]\n",
             reinterpret_cast<void*>(handle),
@@ -105,43 +105,21 @@ namespace Vk
         );
     }
 
-    u32 Buffer::FindMemoryType
-    (
-        u32 typeFilter,
-        VkMemoryPropertyFlags properties,
-        const VkPhysicalDeviceMemoryProperties& memProperties
-    )
+    void Buffer::Map(VkDevice device, VkDeviceSize offset, VkDeviceSize rangeSize)
     {
-        // Search through memory types
-        for (u32 i = 0; i < memProperties.memoryTypeCount; ++i)
-        {
-            // Type check
-            bool typeCheck = typeFilter & (0x1 << i);
-            // Property check
-            bool propertyCheck = (memProperties.memoryTypes[i].propertyFlags & properties) == properties;
-            // Check
-            if (typeCheck && propertyCheck)
-            {
-                // Found memory!
-                return i;
-            }
-        }
-
-        // If we didn't find memory, terminate
-        Logger::Error("Failed to find suitable memory type! [buffer={}]\n", reinterpret_cast<void*>(handle));
+        // Map
+        vkMapMemory(device, memory, offset, rangeSize, 0, &mappedPtr);
     }
 
     template <typename T>
     void Buffer::LoadData(VkDevice device, const std::span<const T> data)
     {
-        // Pointer to buffer
-        void* mapPtr = nullptr;
         // Map
-        vkMapMemory(device, memory, 0, size, 0, &mapPtr);
+        Map(device);
         // Copy
-        std::memcpy(mapPtr, data.data(), size);
+        std::memcpy(mappedPtr, data.data(), size);
         // Unmap
-        vkUnmapMemory(device, memory);
+        Unmap(device);
     }
 
     void Buffer::CopyBuffer
@@ -218,7 +196,7 @@ namespace Vk
     void Buffer::DeleteBuffer(VkDevice device)
     {
         // Log
-        Logger::Info
+        Logger::Debug
         (
             "Destroying buffer [buffer={}] [memory={}]\n",
             reinterpret_cast<void*>(handle),
@@ -228,6 +206,40 @@ namespace Vk
         vkDestroyBuffer(device, handle, nullptr);
         // Free
         vkFreeMemory(device, memory, nullptr);
+    }
+
+    u32 Buffer::FindMemoryType
+    (
+        u32 typeFilter,
+        VkMemoryPropertyFlags properties,
+        const VkPhysicalDeviceMemoryProperties& memProperties
+    )
+    {
+        // Search through memory types
+        for (u32 i = 0; i < memProperties.memoryTypeCount; ++i)
+        {
+            // Type check
+            bool typeCheck = typeFilter & (0x1 << i);
+            // Property check
+            bool propertyCheck = (memProperties.memoryTypes[i].propertyFlags & properties) == properties;
+            // Check
+            if (typeCheck && propertyCheck)
+            {
+                // Found memory!
+                return i;
+            }
+        }
+
+        // If we didn't find memory, terminate
+        Logger::Error("Failed to find suitable memory type! [buffer={}]\n", reinterpret_cast<void*>(handle));
+    }
+
+    void Buffer::Unmap(VkDevice device)
+    {
+        // Unmap
+        vkUnmapMemory(device, memory);
+        // Fix mapped pointer
+        mappedPtr = nullptr;
     }
 
     // Explicit template initialisations

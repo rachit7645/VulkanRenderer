@@ -23,15 +23,15 @@
 #include "Extensions.h"
 #include "Util/Log.h"
 #include "Externals/GLM.h"
+#include "Renderer/RenderPipeline.h"
 
 // Usings
 using Renderer::Vertex;
 using Renderer::Index;
+using Renderer::RenderPipeline;
 
 namespace Vk
 {
-    // TODO: Figure out a good way to move these vectors to their respective classes
-
     #ifdef ENGINE_DEBUG
     // Layers
     constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
@@ -91,17 +91,10 @@ namespace Vk
 
         // Create global command pool
         CreateCommandPool();
-
-        // Create vertex buffer
-        vertexBuffer = std::make_unique<Vk::VertexBuffer>
-        (
-            device,
-            m_commandPool,
-            graphicsQueue,
-            m_phyMemProperties,
-            VERTICES,
-            INDICES
-        );
+        // Create buffers
+        CreateBuffers();
+        // Create descriptor pool
+        CreateDescriptorPool();
 
         // Creates command buffer
         CreateCommandBuffers();
@@ -277,7 +270,7 @@ namespace Vk
         m_physicalDevice = bestDevice;
 
         // Get memory properties
-        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_phyMemProperties);
+        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &phyMemProperties);
 
         // Log
         Logger::Info("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
@@ -551,7 +544,7 @@ namespace Vk
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
                 // Log
-                Logger::Info("{}\n", "Using mailbox presentation!");
+                Logger::Debug("{}\n", "Using mailbox presentation!");
                 // Found it!
                 return presentMode;
             }
@@ -592,6 +585,7 @@ namespace Vk
         };
     }
 
+    // TODO: Move this
     void Context::CreateRenderPass()
     {
         // Color attachment
@@ -742,6 +736,92 @@ namespace Vk
         Logger::Info("Created command pool! [handle={}]\n", reinterpret_cast<void*>(m_commandPool));
     }
 
+    void Context::CreateBuffers()
+    {
+        // Create vertex buffer
+        vertexBuffer = std::make_unique<Vk::VertexBuffer>
+        (
+            device,
+            m_commandPool,
+            graphicsQueue,
+            phyMemProperties,
+            VERTICES,
+            INDICES
+        );
+    }
+
+    void Context::CreateDescriptorPool()
+    {
+        // Size
+        VkDescriptorPoolSize uboPoolSize =
+        {
+            .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = static_cast<u32>(UBO_COUNT * FRAMES_IN_FLIGHT)
+        };
+
+        // Creation info
+        VkDescriptorPoolCreateInfo poolCreateInfo =
+        {
+            .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .pNext         = nullptr,
+            .flags         = 0,
+            .maxSets       = static_cast<u32>(UBO_COUNT * FRAMES_IN_FLIGHT),
+            .poolSizeCount = 1,
+            .pPoolSizes    = &uboPoolSize
+        };
+
+        // Create
+        if (vkCreateDescriptorPool(
+                device,
+                &poolCreateInfo,
+                nullptr,
+                &m_descriptorPool
+            ) != VK_SUCCESS)
+        {
+            // Log
+            Logger::Error("Failed to create descriptor pool! [device={}]\n", reinterpret_cast<void*>(device));
+        }
+
+        // Log
+        Logger::Info("Created descriptor pool! [handle={}]\n", reinterpret_cast<void*>(m_descriptorPool));
+    }
+
+    std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout)
+    {
+        // Layout
+        auto layouts = std::vector<VkDescriptorSetLayout>(count, descriptorLayout);
+
+        // Allocation info
+        VkDescriptorSetAllocateInfo allocInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .descriptorPool     = m_descriptorPool,
+            .descriptorSetCount = static_cast<u32>(layouts.size()),
+            .pSetLayouts        = layouts.data()
+        };
+
+        // Descriptor sets
+        auto descriptorSets = std::vector<VkDescriptorSet>(layouts.size(), VK_NULL_HANDLE);
+
+        // Allocate
+        if (vkAllocateDescriptorSets(
+                device,
+                &allocInfo,
+                descriptorSets.data()
+            ) != VK_SUCCESS)
+        {
+            // Log
+            Logger::Error("Failed to allocate descriptor sets! [pool={}]\n", reinterpret_cast<void*>(m_descriptorPool));
+        }
+
+        // Log
+        Logger::Debug("Allocated descriptor sets! [count={}]\n", count);
+
+        // Return
+        return descriptorSets;
+    }
+
     void Context::CreateCommandBuffers()
     {
         // Allocation info
@@ -792,7 +872,7 @@ namespace Vk
         };
 
         // For each frame in flight
-        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
         {
             if
             (
@@ -841,7 +921,7 @@ namespace Vk
         vertexBuffer->DestroyBuffer(device);
 
         // Destroy sync objects
-        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
         {
             // Destroy semaphores
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -850,6 +930,8 @@ namespace Vk
             vkDestroyFence(device, inFlightFences[i], nullptr);
         }
 
+        // Destroy descriptor pool
+        vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
         // Destroy command pool
         vkDestroyCommandPool(device, m_commandPool, nullptr);
         // Destroy render pass

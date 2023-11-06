@@ -27,31 +27,20 @@
 
 #include "Time.h"
 #include "Util.h"
+#include "Files.h"
 
 namespace Logger
 {
     // Internal namespace
     namespace Detail
     {
-        // Get file name from directory
-        constexpr std::string_view GetFileName(std::string_view fileName)
-        {
-            // Get last slash
-            usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);
-
-            // Check
-            if (lastSlash != std::string_view::npos)
-            {
-                // Return name
-                return fileName.substr(lastSlash + 1);
-            }
-            else
-            {
-                // Return already fine name
-                return fileName;
-            }
-        }
-
+         /// @brief Internal logging function
+         /// @param fgColor  Foreground color for the terminal
+         /// @param bgColor  Background color for the terminal
+         /// @param type     Logger Type
+         /// @param location Source Location Information
+         /// @param format   Format string
+         /// @param args     Variable arguments
         template <typename... Args>
         void Log
         (
@@ -71,13 +60,19 @@ namespace Logger
                 std::string("[{}] [{}] [{}:{}] ") + format.data(),
                 type,
                 Util::GetTime(),
-                GetFileName(location.file_name()),
+                Engine::Files::GetName(location.file_name()),
                 location.line(),
                 args...
             );
         }
 
-        // Error logger
+        /// @brief Internal error logger
+        /// @param fgColor  Foreground color for the terminal
+        /// @param bgColor  Background color for the terminal
+        /// @param type     Logger Type
+        /// @param location Source Location Information
+        /// @param format   Format string
+        /// @param args     Variable arguments
         template <s32 ErrorCode, typename... Args>
         [[noreturn]] void LogAndExit
         (
@@ -108,6 +103,10 @@ namespace Logger
     template <typename... Args>
     struct Info
     {
+        /// @brief Info logging function
+        /// @param format   Format string
+        /// @param args     Variable arguments
+        /// @param location Source location information
         explicit Info
         (
             const std::string_view format,
@@ -132,6 +131,10 @@ namespace Logger
     template <typename... Args>
     struct Warning
     {
+        /// @brief Warning logging function
+        /// @param format   Format string
+        /// @param args     Variable arguments
+        /// @param location Source location information
         explicit Warning
         (
             const std::string_view format,
@@ -156,11 +159,16 @@ namespace Logger
     template <typename... Args>
     struct Debug
     {
+        /// @brief Debug logging function
+        /// @note  Enabled only if ENGINE_DEBUG is defined
+        /// @param format   Format string
+        /// @param args     Variable arguments
+        /// @param location Source location information
         explicit Debug
         (
-            const std::string_view format,
-            Args&&... args,
-			const std::source_location location = std::source_location::current()
+            UNUSED const std::string_view format,
+            UNUSED Args&&... args,
+            UNUSED const std::source_location location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG
@@ -182,11 +190,16 @@ namespace Logger
     template <typename... Args>
     struct Vulkan
     {
+        /// @brief Vulkan validation layer logging function
+        /// @note  Enabled only if ENGINE_DEBUG is defined
+        /// @param format   Format string
+        /// @param args     Variable arguments
+        /// @param location Source location information
         explicit Vulkan
         (
-            const std::string_view format,
-            Args&&... args,
-			const std::source_location location = std::source_location::current()
+            UNUSED const std::string_view format,
+            UNUSED Args&&... args,
+            UNUSED const std::source_location location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG
@@ -208,6 +221,11 @@ namespace Logger
     template <typename... Args>
     struct Error
     {
+        /// @brief Error logging function
+        /// @note  Will exit the program
+        /// @param format   Format string
+        /// @param args     Variable arguments
+        /// @param location Source location information
         [[noreturn]] explicit Error
         (
             const std::string_view format,

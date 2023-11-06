@@ -23,27 +23,9 @@
 // Namespace aliases
 namespace filesystem = std::filesystem;
 
-namespace Engine
+namespace Engine::Files
 {
-    void Files::SetResources(const std::string_view relPath)
-    {
-        // Set resource path
-        m_resDir = filesystem::absolute(relPath).string();
-    }
-
-    const std::string& Files::GetResources()
-    {
-        // Return resource path
-        return m_resDir;
-    }
-
-    std::string Files::GetName(const std::string_view path)
-    {
-        // Return name
-        return filesystem::path(path).filename().string();
-    }
-
-    std::string Files::GetDirectory(const std::string_view path)
+    std::string GetDirectory(const std::string_view path)
     {
         // Get directory
         auto directory = filesystem::path(path).parent_path().string();
@@ -53,7 +35,7 @@ namespace Engine
         return directory + separator;
     }
 
-    usize Files::GetFileSize(const std::string_view path)
+    usize GetFileSize(const std::string_view path)
     {
         // Assert
         static_assert(sizeof(usize) >= sizeof(std::uintmax_t), "How???");
@@ -61,7 +43,7 @@ namespace Engine
         return filesystem::file_size(path);
     }
 
-    std::vector<u8> Files::ReadBytes(const std::string_view path)
+    std::vector<u8> ReadBytes(const std::string_view path)
     {
         // Create file
         auto bin = std::ifstream(path.data(), std::ios::binary);
@@ -84,13 +66,5 @@ namespace Engine
 
         // Return
         return binary;
-    }
-
-    Files& Files::GetInstance()
-    {
-        // Static storage
-        static Files files;
-        // Return
-        return files;
     }
 }

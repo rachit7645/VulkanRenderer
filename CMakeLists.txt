@@ -29,7 +29,6 @@ add_executable(VulkanRenderer
 	Source/Engine/Window.cpp
     # Utility Sources
 	Source/Util/Files.cpp
-	Source/Util/Inputs.cpp
 	Source/Util/Time.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp

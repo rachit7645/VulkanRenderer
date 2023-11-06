@@ -16,11 +16,11 @@
 
 #version 460
 
-/*layout(binding = 0, set = 0) uniform SharedDataBuffer
+layout(binding = 0, set = 0) uniform SharedDataBuffer
 {
     mat4 view;
     mat4 proj;
-} Shared;*/
+} Shared;
 
 // Push constant buffer
 layout(push_constant) uniform ConstantsBuffer
@@ -40,7 +40,7 @@ layout(location = 0) out vec3 fragColor;
 void main()
 {
     // Get position
-    gl_Position = /*Shared.proj * Shared.view */ Constants.model * vec4(position, 0.0f, 1.0f);
+    gl_Position = Shared.proj * Shared.view * Constants.model * vec4(position, 0.0f, 1.0f);
     // Get vertex color
     fragColor = color;
 }

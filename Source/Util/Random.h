@@ -21,7 +21,11 @@
 
 namespace Util
 {
-    // Random number between a range
+    /// @brief Deterministic random number between a range
+    /// @tparam T Number type
+    /// @param min Range minimum
+    /// @param max Range maximum
+    /// @returns Random number ∈ [min, max)
     template<typename T>
     [[nodiscard]] T RandRange(T min, T max)
     {
@@ -30,7 +34,11 @@ namespace Util
         return distributer(generator);
     }
 
-    // Truly random number between a range
+    /// @brief More random number between a range
+    /// @tparam T Number type
+    /// @param min Range minimum
+    /// @param max Range maximum
+    /// @returns Random number ∈ [min, max)
     template<typename T>
     [[nodiscard]] T TrueRandRange(T min, T max)
     {
