@@ -14,34 +14,15 @@
  *    limitations under the License.
  */
 
-#include "AppInstance.h"
+#include "IPipeline.h"
 
-#include "../Util/Log.h"
-
-namespace Engine
+namespace Renderer
 {
-    AppInstance::AppInstance()
-        : m_window(std::make_shared<Window>()),
-          m_renderer(m_window)
+    void IPipeline::Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext)
     {
-        // Log
-        Logger::Info("{}\n", "App instance initialised!");
     }
 
-    void AppInstance::Run()
+    void IPipeline::Destroy(UNUSED const std::shared_ptr<Vk::Context>& vkContext)
     {
-        while (true)
-        {
-            // Render
-            m_renderer.Render();
-            // Poll events
-            if (m_window->PollEvents()) break;
-        }
-    }
-
-    AppInstance::~AppInstance()
-    {
-        // Log
-        Logger::Info("{}\n", "App instance destroyed!");
     }
 }

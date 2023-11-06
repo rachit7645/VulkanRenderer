@@ -22,11 +22,9 @@
 
 #include "Util/Log.h"
 
-/*
- * There is absolutely no reason for this to be written in this way. Just absolutely none.
- * I just wanted to experiment with constraints and concepts.
- * Please forgive my sins.
- */
+/// There is absolutely no reason for this to be written in this way. Just absolutely none.
+/// I just wanted to experiment with constraints and concepts.
+/// Please forgive my sins.
 
 namespace Vk
 {

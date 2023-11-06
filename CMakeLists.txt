@@ -30,6 +30,7 @@ add_executable(VulkanRenderer
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
+	Source/Util/DeletionQueue.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
@@ -44,6 +45,7 @@ add_executable(VulkanRenderer
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/RenderPipeline.cpp
 	Source/Renderer/Vertex.cpp
+	Source/Renderer/IPipeline.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 )

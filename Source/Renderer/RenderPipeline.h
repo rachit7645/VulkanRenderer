@@ -23,10 +23,11 @@
 #include <vulkan/vulkan.h>
 
 #include "Vulkan/Context.h"
+#include "IPipeline.h"
 
 namespace Renderer
 {
-    class RenderPipeline
+    class RenderPipeline : public IPipeline
     {
     public:
         // Push constant info
@@ -46,14 +47,9 @@ namespace Renderer
         };
 
         // Create render pipeline
-        explicit RenderPipeline(const std::shared_ptr<Vk::Context>& vkContext);
+        void Create(const std::shared_ptr<Vk::Context>& vkContext) override;
         // Destroy render pipeline
-        ~RenderPipeline();
-
-        // Pipeline data
-        VkPipeline pipeline = {};
-        // Layout
-        VkPipelineLayout pipelineLayout = {};
+        void Destroy(const std::shared_ptr<Vk::Context>& vkContext) override;
 
         // Descriptor layout
         VkDescriptorSetLayout descriptorLayout = {};
@@ -62,11 +58,8 @@ namespace Renderer
 
         // Shared data UBOs
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sharedUBOs = {};
-
-        // Push constant
+        // Push constant data
         std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
-    private:
-        VkDevice m_device = {};
     };
 }
 

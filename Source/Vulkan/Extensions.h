@@ -26,7 +26,7 @@ namespace Vk
     {
     public:
         // Destructor
-        ~Extensions();
+        void Destroy();
         // Load extensions for instance
         [[nodiscard]] std::vector<const char*> LoadInstanceExtensions(SDL_Window* window);
         // Load functions

@@ -14,34 +14,28 @@
  *    limitations under the License.
  */
 
-#include "AppInstance.h"
+#include "DeletionQueue.h"
 
-#include "../Util/Log.h"
+#include <ranges>
 
-namespace Engine
+namespace Util
 {
-    AppInstance::AppInstance()
-        : m_window(std::make_shared<Window>()),
-          m_renderer(m_window)
+    void DeletionQueue::PushDeletor(std::function<void()>&& function)
     {
-        // Log
-        Logger::Info("{}\n", "App instance initialised!");
+        // Add
+        m_deletors.push_back(function);
     }
 
-    void AppInstance::Run()
+    void DeletionQueue::FlushQueue()
     {
-        while (true)
+        // Iterate in reverse order
+        for (auto& deletor : std::ranges::reverse_view(m_deletors))
         {
-            // Render
-            m_renderer.Render();
-            // Poll events
-            if (m_window->PollEvents()) break;
+            // Execute
+            std::invoke(deletor);
         }
-    }
 
-    AppInstance::~AppInstance()
-    {
-        // Log
-        Logger::Info("{}\n", "App instance destroyed!");
+        // Clear
+        m_deletors.clear();
     }
 }

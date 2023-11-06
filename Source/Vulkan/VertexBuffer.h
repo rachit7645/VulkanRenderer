@@ -30,6 +30,8 @@ namespace Vk
     class VertexBuffer
     {
     public:
+        // Default constructor
+        VertexBuffer() = default;
         // Creates a vertex buffer
         VertexBuffer
         (

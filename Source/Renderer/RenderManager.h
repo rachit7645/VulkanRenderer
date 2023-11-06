@@ -32,11 +32,11 @@ namespace Renderer
     public:
         // Constructor
         explicit RenderManager(std::shared_ptr<Engine::Window> window);
+        // Destructor
+        ~RenderManager();
 
         // Render frame
         void Render();
-        // Wait for gpu to finish
-        void WaitForLogicalDevice();
     private:
         // Begin frame
         void BeginFrame();
@@ -57,6 +57,8 @@ namespace Renderer
 
         // Check if swap chain is valid
         bool IsSwapchainValid();
+        // Wait for gpu to finish
+        void WaitForLogicalDevice();
 
         // Pointer to window
         std::shared_ptr<Engine::Window> m_window = nullptr;

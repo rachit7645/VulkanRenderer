@@ -17,7 +17,6 @@
 #ifndef VK_CONTEXT_H
 #define VK_CONTEXT_H
 
-#include <memory>
 #include <array>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -31,6 +30,7 @@
 #include "Util/Util.h"
 #include "Engine/Window.h"
 #include "VertexBuffer.h"
+#include "Util/DeletionQueue.h"
 
 namespace Vk
 {
@@ -74,7 +74,7 @@ namespace Vk
         std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers = {};
 
         // Vertex buffer
-        std::unique_ptr<Vk::VertexBuffer> vertexBuffer = nullptr;
+        Vk::VertexBuffer vertexBuffer = {};
 
         // Semaphores
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
@@ -131,7 +131,7 @@ namespace Vk
         Vk::Extensions m_extensions = {};
         #ifdef ENGINE_DEBUG
         // Vulkan validation layers
-        std::unique_ptr<Vk::ValidationLayers> m_layers = nullptr;
+        Vk::ValidationLayers m_layers = {};
         #endif
         // Surface
         VkSurfaceKHR m_surface = {};
@@ -152,6 +152,9 @@ namespace Vk
         VkCommandPool m_commandPool = {};
         // Descriptor pool
         VkDescriptorPool m_descriptorPool = {};
+
+        // Deletion queue
+        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

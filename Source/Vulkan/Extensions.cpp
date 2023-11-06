@@ -93,17 +93,13 @@ namespace Vk
         LoadProcLoader();
 
         // Load debug utils creation function
-        g_ExtensionState.p_vkCreateDebugUtilsMessengerEXT = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT>
-        (
-            instance,
-            "vkCreateDebugUtilsMessengerEXT"
+        g_ExtensionState.p_vkCreateDebugUtilsMessengerEXT = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT>(
+            instance, "vkCreateDebugUtilsMessengerEXT"
         );
 
         // Load debug utils destruction function
-        g_ExtensionState.p_vkDestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>
-        (
-            instance,
-            "vkDestroyDebugUtilsMessengerEXT"
+        g_ExtensionState.p_vkDestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>(
+            instance, "vkDestroyDebugUtilsMessengerEXT"
         );
     }
 
@@ -147,7 +143,7 @@ namespace Vk
     {
     }
 
-    Extensions::~Extensions()
+    void Extensions::Destroy()
     {
         // Reset
         g_ExtensionState = {};

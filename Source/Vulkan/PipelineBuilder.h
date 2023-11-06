@@ -42,7 +42,7 @@ namespace Vk
         // Set dynamic state objects
         [[nodiscard]] PipelineBuilder& SetDynamicStates
         (
-            const std::vector<VkDynamicState>& vkDynamicStates,
+            const std::span<const VkDynamicState> vkDynamicStates,
             const std::function<void(PipelineBuilder&)>& SetDynStates
         );
         // Set vertex input state

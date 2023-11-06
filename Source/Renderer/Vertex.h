@@ -33,12 +33,12 @@ namespace Renderer
         using VertexAttribs = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
 
         // Constructor
-        constexpr Vertex(glm::vec2 position, glm::vec3 color)
+        constexpr Vertex(glm::vec3 position, glm::vec3 color)
             : position(position),
               color(color) {}
 
         // Vertex data
-        glm::vec2 position = {};
+        glm::vec3 position = {};
         glm::vec3 color    = {};
 
         // Get binding description

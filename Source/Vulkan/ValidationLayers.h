@@ -26,6 +26,8 @@ namespace Vk
     class ValidationLayers
     {
     public:
+        // Default constructor
+        ValidationLayers() = default;
         // Constructor
         explicit ValidationLayers(const std::span<const char* const> layers);
 

@@ -172,12 +172,12 @@ namespace Vk
 
     PipelineBuilder& PipelineBuilder::SetDynamicStates
     (
-        const std::vector<VkDynamicState>& vkDynamicStates,
+        const std::span<const VkDynamicState> vkDynamicStates,
         const std::function<void(PipelineBuilder&)>& SetDynStates
     )
     {
         // Set dynamic states
-        dynamicStates = vkDynamicStates;
+        dynamicStates = std::vector(vkDynamicStates.begin(), vkDynamicStates.end());
 
         // Set dynamic states creation info
         dynamicStateInfo =

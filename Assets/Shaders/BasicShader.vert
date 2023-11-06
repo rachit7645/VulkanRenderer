@@ -30,7 +30,7 @@ layout(push_constant) uniform ConstantsBuffer
 } Constants;
 
 // Vertex inputs
-layout(location = 0) in vec2 position;
+layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color;
 
 // Vertex outputs
@@ -40,7 +40,7 @@ layout(location = 0) out vec3 fragColor;
 void main()
 {
     // Get position
-    gl_Position = Shared.proj * Shared.view * Constants.model * vec4(position, 0.0f, 1.0f);
+    gl_Position = Shared.proj * Shared.view * Constants.model * vec4(position, 1.0f);
     // Get vertex color
     fragColor = color;
 }

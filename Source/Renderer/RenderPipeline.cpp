@@ -20,8 +20,7 @@
 
 namespace Renderer
 {
-    RenderPipeline::RenderPipeline(const std::shared_ptr<Vk::Context>& vkContext)
-        : m_device(vkContext->device)
+    void RenderPipeline::Create(const std::shared_ptr<Vk::Context>& vkContext)
     {
         // Custom functions
         auto SetDynamicStates = [vkContext](Vk::PipelineBuilder& pipelineBuilder)
@@ -58,7 +57,7 @@ namespace Renderer
         };
 
         // Dynamic states
-        auto dynStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        constexpr std::array<VkDynamicState, 2> dynStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
         // Pipeline data tuple
         std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout> pipelineData = {};
 
@@ -85,7 +84,7 @@ namespace Renderer
             // Create buffer
             shared = Vk::Buffer
             (
-                m_device,
+                vkContext->device,
                 static_cast<u32>(sizeof(SharedBuffer)),
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -93,7 +92,7 @@ namespace Renderer
             );
 
             // Map
-            shared.Map(m_device);
+            shared.Map(vkContext->device);
         }
 
         // Allocate sets
@@ -135,7 +134,7 @@ namespace Renderer
             // Update
             vkUpdateDescriptorSets
             (
-                m_device,
+                vkContext->device,
                 1,
                 &descriptorWrite,
                 0,
@@ -144,15 +143,15 @@ namespace Renderer
         }
     }
 
-    RenderPipeline::~RenderPipeline()
+    void RenderPipeline::Destroy(const std::shared_ptr<Vk::Context>& vkContext)
     {
         // Destroy UBOs
-        for (auto&& shared : sharedUBOs) shared.DeleteBuffer(m_device);
+        for (auto&& shared : sharedUBOs) shared.DeleteBuffer(vkContext->device);
         // Destroy pipeline
-        vkDestroyPipeline(m_device, pipeline, nullptr);
+        vkDestroyPipeline(vkContext->device, pipeline, nullptr);
         // Destroy pipeline layout
-        vkDestroyPipelineLayout(m_device, pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(vkContext->device, pipelineLayout, nullptr);
         // Destroy descriptor set layout
-        vkDestroyDescriptorSetLayout(m_device, descriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(vkContext->device, descriptorLayout, nullptr);
     }
 }

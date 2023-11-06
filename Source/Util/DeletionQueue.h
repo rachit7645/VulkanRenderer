@@ -14,34 +14,25 @@
  *    limitations under the License.
  */
 
-#include "AppInstance.h"
+#ifndef DELETION_QUEUE_H
+#define DELETION_QUEUE_H
 
-#include "../Util/Log.h"
+#include <deque>
+#include <functional>
 
-namespace Engine
+namespace Util
 {
-    AppInstance::AppInstance()
-        : m_window(std::make_shared<Window>()),
-          m_renderer(m_window)
+    class DeletionQueue
     {
-        // Log
-        Logger::Info("{}\n", "App instance initialised!");
-    }
-
-    void AppInstance::Run()
-    {
-        while (true)
-        {
-            // Render
-            m_renderer.Render();
-            // Poll events
-            if (m_window->PollEvents()) break;
-        }
-    }
-
-    AppInstance::~AppInstance()
-    {
-        // Log
-        Logger::Info("{}\n", "App instance destroyed!");
-    }
+    public:
+        // Add function to queue
+        void PushDeletor(std::function<void()>&& function);
+        // Flush deletion queue
+        void FlushQueue();
+    private:
+        // Deletion functions
+        std::deque<std::function<void()>> m_deletors;
+    };
 }
+
+#endif

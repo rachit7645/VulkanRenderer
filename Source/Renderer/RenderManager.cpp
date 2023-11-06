@@ -26,8 +26,10 @@ namespace Renderer
     RenderManager::RenderManager(std::shared_ptr<Engine::Window> window)
         : m_window(std::move(window)),
           m_vkContext(std::make_shared<Vk::Context>(m_window->handle)),
-          m_renderPipeline(std::make_shared<RenderPipeline>(m_vkContext))
+          m_renderPipeline(std::make_shared<RenderPipeline>())
     {
+        // Create render pipeline
+        m_renderPipeline->Create(m_vkContext);
     }
 
     void RenderManager::Render()
@@ -44,7 +46,7 @@ namespace Renderer
         Update();
 
         // Bind buffer
-        m_vkContext->vertexBuffer->BindBuffer(currentCommandBuffer);
+        m_vkContext->vertexBuffer.BindBuffer(currentCommandBuffer);
 
         // Load push constants
         vkCmdPushConstants
@@ -73,7 +75,7 @@ namespace Renderer
         vkCmdDrawIndexed
         (
             currentCommandBuffer,
-            m_vkContext->vertexBuffer->indexCount,
+            m_vkContext->vertexBuffer.indexCount,
             1,
             0,
             0,
@@ -101,9 +103,9 @@ namespace Renderer
         // Create model matrix
         pushConstant.model = Maths::CreateModelMatrix<glm::mat4>
         (
-            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(2.0f * std::cos(time), 0.0f, 0.0f),
             glm::vec3(0.0f, time * glm::radians(90.0f), 0.0f),
-            glm::vec3(1.4f, 1.4f, 1.4f)
+            glm::vec3(1.0f, 1.0f, 1.0f)
         );
     }
 
@@ -226,7 +228,7 @@ namespace Renderer
         {
             // View Matrix
             .view = glm::lookAt(
-                glm::vec3(0.0f, 0.0f, 2.5f),
+                glm::vec3(0.0f, 0.0f, 5.0f),
                 glm::vec3(0.0f, 0.0f, 0.0f),
                 glm::vec3(0.0f, 1.0f, 0.0f)
             ),
@@ -408,5 +410,13 @@ namespace Renderer
     {
         // Wait
         vkDeviceWaitIdle(m_vkContext->device);
+    }
+
+    RenderManager::~RenderManager()
+    {
+        // Wait
+        WaitForLogicalDevice();
+        // Destroy pipeline
+        m_renderPipeline->Destroy(m_vkContext);
     }
 }

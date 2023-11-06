@@ -41,31 +41,57 @@ namespace Vk
     constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
 
     // Vertex data (FIXME: HORRIBLE HARD CODING)
-    constexpr std::array<Vertex, 4> VERTICES =
+    constexpr std::array<Vertex, 8> VERTICES =
     {
-        Vertex({-0.5f, -0.5f},  {1.0f, 0.0f, 0.0f}),
-        Vertex({ 0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}),
-        Vertex({ 0.5f,  0.5f},  {0.0f, 0.0f, 1.0f}),
-        Vertex({-0.5f,  0.5f},  {1.0f, 1.0f, 1.0f})
+        // Front face
+        Vertex(glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), // Vertex 0
+        Vertex(glm::vec3( 1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)), // Vertex 1
+        Vertex(glm::vec3( 1.0f,  1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f)), // Vertex 2
+        Vertex(glm::vec3(-1.0f,  1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 0.0f)), // Vertex 3
+
+        // Back face
+        Vertex(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), // Vertex 4
+        Vertex(glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f)), // Vertex 5
+        Vertex(glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f)), // Vertex 6
+        Vertex(glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 0.0f))  // Vertex 7
     };
 
     // Index data (FIXME: HORRIBLE HARD CODING)
-    constexpr std::array<Index, 6> INDICES =
+    constexpr std::array<Index, 36> INDICES =
     {
-        0, 1, 2, // First triangle
-        2, 3, 0  // Second triangle
+        // Front face
+        0, 1, 2,
+        2, 3, 0,
+
+        // Right face
+        1, 5, 6,
+        6, 2, 1,
+
+        // Back face
+        5, 4, 7,
+        7, 6, 5,
+
+        // Left face
+        4, 0, 3,
+        3, 7, 4,
+
+        // Top face
+        3, 2, 6,
+        6, 7, 3,
+
+        // Bottom face
+        4, 5, 1,
+        1, 0, 4
     };
 
     Context::Context(SDL_Window* window)
     {
         // Create vulkan instance
         CreateVKInstance(window);
-        // Load extensions
-        m_extensions.LoadInstanceFunctions(vkInstance);
 
         #ifdef ENGINE_DEBUG
         // Load validation layers
-        if (m_layers->SetupMessenger(vkInstance) != VK_SUCCESS)
+        if (m_layers.SetupMessenger(vkInstance) != VK_SUCCESS)
         {
             // Log
             Logger::Error("{}\n", "Failed to set up debug messenger!");
@@ -148,7 +174,7 @@ namespace Vk
 
         #ifdef ENGINE_DEBUG
         // Request validation layers
-        m_layers = std::make_unique<Vk::ValidationLayers>(VALIDATION_LAYERS);
+        m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
         #endif
 
         // Instance creation info
@@ -156,7 +182,7 @@ namespace Vk
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             #ifdef ENGINE_DEBUG
-            .pNext                   = reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&m_layers->messengerInfo),
+            .pNext                   = reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&m_layers.messengerInfo),
             #else
             .pNext                   = nullptr,
             #endif
@@ -182,6 +208,9 @@ namespace Vk
 
         // Log
         Logger::Info("Successfully initialised Vulkan instance! [handle={}]\n", reinterpret_cast<void*>(vkInstance));
+
+        // Load extensions
+        m_extensions.LoadInstanceFunctions(vkInstance);
     }
 
     void Context::CreateSurface(SDL_Window* window)
@@ -664,6 +693,13 @@ namespace Vk
 
         // Log
         Logger::Info("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
+
+        // Add to deletion queue
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            // Destroy render pass
+            vkDestroyRenderPass(device, renderPass, nullptr);
+        });
     }
 
     void Context::CreateFramebuffers()
@@ -734,12 +770,19 @@ namespace Vk
 
         // Log
         Logger::Info("Created command pool! [handle={}]\n", reinterpret_cast<void*>(m_commandPool));
+
+        // Add to deletion queue
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            // Destroy command pool
+            vkDestroyCommandPool(device, m_commandPool, nullptr);
+        });
     }
 
     void Context::CreateBuffers()
     {
         // Create vertex buffer
-        vertexBuffer = std::make_unique<Vk::VertexBuffer>
+        vertexBuffer = Vk::VertexBuffer
         (
             device,
             m_commandPool,
@@ -748,6 +791,13 @@ namespace Vk
             VERTICES,
             INDICES
         );
+
+        // Add to deletion queue
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            // Destroy vertex buffer
+            vertexBuffer.DestroyBuffer(device);
+        });
     }
 
     void Context::CreateDescriptorPool()
@@ -784,6 +834,13 @@ namespace Vk
 
         // Log
         Logger::Info("Created descriptor pool! [handle={}]\n", reinterpret_cast<void*>(m_descriptorPool));
+
+        // Add to deletion queue
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            // Destroy descriptor pool
+            vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
+        });
     }
 
     std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout)
@@ -891,6 +948,20 @@ namespace Vk
 
         // Log
         Logger::Info("{}\n", "Created synchronisation objects!");
+
+        // Add to deletion queue
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            // Destroy sync objects
+            for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
+            {
+                // Destroy semaphores
+                vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+                vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+                // Destroy fences
+                vkDestroyFence(device, inFlightFences[i], nullptr);
+            }
+        });
     }
 
     void Context::DestroySwapChain()
@@ -915,37 +986,23 @@ namespace Vk
 
     Context::~Context()
     {
-        // Destroy swap chain objects
+        // Flush deletion queue
+        m_deletionQueue.FlushQueue();
+
+        // Destroy swap chain
         DestroySwapChain();
-        // Destroy vertex buffer
-        vertexBuffer->DestroyBuffer(device);
-
-        // Destroy sync objects
-        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
-        {
-            // Destroy semaphores
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-            // Destroy fences
-            vkDestroyFence(device, inFlightFences[i], nullptr);
-        }
-
-        // Destroy descriptor pool
-        vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
-        // Destroy command pool
-        vkDestroyCommandPool(device, m_commandPool, nullptr);
-        // Destroy render pass
-        vkDestroyRenderPass(device, renderPass, nullptr);
         // Destroy surface
         vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
+        // Destroy logical device
+        vkDestroyDevice(device, nullptr);
 
         #ifdef ENGINE_DEBUG
         // Destroy validation layers
-        m_layers->DestroyMessenger(vkInstance);
+        m_layers.DestroyMessenger(vkInstance);
         #endif
 
-        // Destroy logical device
-        vkDestroyDevice(device, nullptr);
+        // Destroy extensions
+        m_extensions.Destroy();
         // Destroy vulkan instance
         vkDestroyInstance(vkInstance, nullptr);
 

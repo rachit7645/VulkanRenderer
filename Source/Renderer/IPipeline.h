@@ -14,34 +14,30 @@
  *    limitations under the License.
  */
 
-#include "AppInstance.h"
+#ifndef I_PIPELINE_H
+#define I_PIPELINE_H
 
-#include "../Util/Log.h"
+#include <memory>
+#include <vulkan/vulkan.h>
+#include "Vulkan/Context.h"
 
-namespace Engine
+namespace Renderer
 {
-    AppInstance::AppInstance()
-        : m_window(std::make_shared<Window>()),
-          m_renderer(m_window)
+    struct IPipeline
     {
-        // Log
-        Logger::Info("{}\n", "App instance initialised!");
-    }
+        // Destructor
+        virtual ~IPipeline() = default;
 
-    void AppInstance::Run()
-    {
-        while (true)
-        {
-            // Render
-            m_renderer.Render();
-            // Poll events
-            if (m_window->PollEvents()) break;
-        }
-    }
+        // Create pipeline
+        virtual void Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext);
+        // Destroy pipeline
+        virtual void Destroy(UNUSED const std::shared_ptr<Vk::Context>& vkContext);
 
-    AppInstance::~AppInstance()
-    {
-        // Log
-        Logger::Info("{}\n", "App instance destroyed!");
-    }
+        // Pipeline data
+        VkPipeline pipeline = {};
+        // Layout
+        VkPipelineLayout pipelineLayout = {};
+    };
 }
+
+#endif
