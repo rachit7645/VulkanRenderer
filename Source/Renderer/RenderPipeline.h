@@ -17,13 +17,10 @@
 #ifndef RENDER_PIPELINE_H
 #define RENDER_PIPELINE_H
 
+#include "IPipeline.h"
 #include "Util/Util.h"
 #include "Externals/GLM.h"
-#include <memory>
-#include <vulkan/vulkan.h>
-
-#include "Vulkan/Context.h"
-#include "IPipeline.h"
+#include "Vulkan/Buffer.h"
 
 namespace Renderer
 {

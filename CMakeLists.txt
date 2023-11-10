@@ -41,13 +41,17 @@ add_executable(VulkanRenderer
     Source/Vulkan/PipelineBuilder.cpp
 	Source/Vulkan/VertexBuffer.cpp
 	Source/Vulkan/Buffer.cpp
+	Source/Vulkan/Image.cpp
+	Source/Vulkan/Texture.cpp
+	Source/Vulkan/Util.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/RenderPipeline.cpp
 	Source/Renderer/Vertex.cpp
-	Source/Renderer/IPipeline.cpp
+	Source/Renderer/Mesh.cpp
 	# External sources
 	Source/Externals/GLM.cpp
+	Source/Externals/STBImage.cpp
 )
 
 # Precompiled Headers
@@ -152,3 +156,4 @@ install(FILES $<TARGET_RUNTIME_DLLS:imgui>          DESTINATION ${INSTALL_DIR})
 install(FILES $<TARGET_RUNTIME_DLLS:simdjson>       DESTINATION ${INSTALL_DIR})
 
 # Copy other directories
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets/)

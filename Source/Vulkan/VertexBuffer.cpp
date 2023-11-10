@@ -25,10 +25,7 @@ namespace Vk
 {
     VertexBuffer::VertexBuffer
     (
-        VkDevice device,
-        VkCommandPool commandPool,
-        VkQueue queue,
-        const VkPhysicalDeviceMemoryProperties& memProperties,
+        const std::shared_ptr<Vk::Context>& context,
         const std::span<const Vertex> vertices,
         const std::span<const Index> indices
     )
@@ -38,24 +35,18 @@ namespace Vk
         // Initialise vertex buffer
         InitBuffer
         (
-            device,
-            commandPool,
-            queue,
+            context,
             vertexBuffer,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            memProperties,
             vertices
         );
 
         // Initialise index buffer
         InitBuffer
         (
-            device,
-            commandPool,
-            queue,
+            context,
             indexBuffer,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            memProperties,
             indices
         );
     }
@@ -91,12 +82,9 @@ namespace Vk
     template <typename T>
     void VertexBuffer::InitBuffer
     (
-        VkDevice device,
-        VkCommandPool commandPool,
-        VkQueue queue,
+        const std::shared_ptr<Vk::Context>& context,
         Vk::Buffer& buffer,
         VkBufferUsageFlags usage,
-        const VkPhysicalDeviceMemoryProperties& memProperties,
         const std::span<const T> data
     )
     {
@@ -106,30 +94,28 @@ namespace Vk
         // Create staging buffer
         auto stagingBuffer = Vk::Buffer
         (
-            device,
+            context,
             size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            memProperties
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         );
 
         // Load data
-        stagingBuffer.LoadData(device, data);
+        stagingBuffer.LoadData(context->device, data);
 
         // Create real buffer
         buffer = Vk::Buffer
         (
-            device,
+            context,
             size,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            memProperties
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
         // Copy
-        Vk::Buffer::CopyBuffer(stagingBuffer, buffer, size, device, commandPool, queue);
+        Vk::Buffer::CopyBuffer(context, stagingBuffer, buffer, size);
 
         // Delete staging buffer
-        stagingBuffer.DeleteBuffer(device);
+        stagingBuffer.DeleteBuffer(context->device);
     }
 }

@@ -14,29 +14,27 @@
  *    limitations under the License.
  */
 
-#ifndef I_PIPELINE_H
-#define I_PIPELINE_H
+#ifndef TEXTURE_H
+#define TEXTURE_H
 
-#include <memory>
 #include <vulkan/vulkan.h>
-#include "Vulkan/Context.h"
 
-namespace Renderer
+#include "Image.h"
+#include "Context.h"
+#include "Util/Util.h"
+#include "Externals/STBImage.h"
+
+namespace Vk
 {
-    struct IPipeline
+    class Texture
     {
-        // Destructor
-        virtual ~IPipeline() = default;
-
-        // Create pipeline
-        virtual void Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-        // Destroy pipeline
-        virtual void Destroy(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-
-        // Pipeline data
-        VkPipeline pipeline = {};
-        // Layout
-        VkPipelineLayout pipelineLayout = {};
+    public:
+        // Constructor
+        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
+        // Destroy texture
+        void Destroy(VkDevice device);
+        // Texture image data
+        Vk::Image image;
     };
 }
 

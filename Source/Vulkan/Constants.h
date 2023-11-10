@@ -14,30 +14,30 @@
  *    limitations under the License.
  */
 
-#ifndef I_PIPELINE_H
-#define I_PIPELINE_H
+#ifndef VK_CONSTANTS_H
+#define VK_CONSTANTS_H
 
-#include <memory>
-#include <vulkan/vulkan.h>
-#include "Vulkan/Context.h"
+#include <array>
+#include <numeric>
+#include "Util/Util.h"
 
-namespace Renderer
+namespace Vk
 {
-    struct IPipeline
+    // Maximum frames in flight at a time
+    constexpr usize FRAMES_IN_FLIGHT = 2;
+
+    // Get number of sets to put in descriptor pool
+    consteval usize GetDescriptorPoolSize()
     {
-        // Destructor
-        virtual ~IPipeline() = default;
+        // Descriptor sets list
+        constexpr std::array<usize, 1> DESCRIPTOR_ALLOCATIONS =
+        {
+            FRAMES_IN_FLIGHT // Shared UBO
+        };
 
-        // Create pipeline
-        virtual void Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-        // Destroy pipeline
-        virtual void Destroy(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-
-        // Pipeline data
-        VkPipeline pipeline = {};
-        // Layout
-        VkPipelineLayout pipelineLayout = {};
-    };
+        // Return sum
+        return std::accumulate(DESCRIPTOR_ALLOCATIONS.begin(), DESCRIPTOR_ALLOCATIONS.end(), 0);
+    }
 }
 
 #endif

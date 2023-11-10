@@ -5,5 +5,8 @@
     <sourceRoots>
       <file path="$PROJECT_DIR$/Source" />
     </sourceRoots>
+    <libraryRoots>
+      <file path="$PROJECT_DIR$/Externals" />
+    </libraryRoots>
   </component>
 </project>

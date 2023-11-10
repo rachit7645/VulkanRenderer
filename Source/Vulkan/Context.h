@@ -27,30 +27,29 @@
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainInfo.h"
+#include "Constants.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
-#include "VertexBuffer.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
 {
-    // Maximum frames in flight at a time
-    constexpr usize FRAMES_IN_FLIGHT = 2;
-    // Number of uniform buffer objects
-    constexpr usize UBO_COUNT = 1;
-
     class Context
     {
     public:
         // Initialise vulkan context
         explicit Context(SDL_Window* window);
         // Destroy vulkan context
-        ~Context();
+        void Destroy();
 
-        // Recreate swap chain
-        void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window);
+        // Allocates command buffer
+        std::vector<VkCommandBuffer> AllocateCommandBuffers(u32 count, VkCommandBufferLevel level);
+        // Free command buffers
+        void FreeCommandBuffers(const std::span<const VkCommandBuffer> cmdBuffers);
         // Allocates descriptors
         std::vector<VkDescriptorSet> AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout);
+        // Recreate swap chain
+        void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window);
 
         // Vulkan instance
         VkInstance vkInstance = {};
@@ -72,10 +71,6 @@ namespace Vk
         VkRenderPass renderPass = {};
         // Command buffer
         std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers = {};
-
-        // Vertex buffer
-        Vk::VertexBuffer vertexBuffer = {};
-
         // Semaphores
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
@@ -113,9 +108,6 @@ namespace Vk
 
         // Creates command pool
         void CreateCommandPool();
-        // Create buffer objects
-        void CreateBuffers();
-
         // Create descriptor pool
         void CreateDescriptorPool();
 

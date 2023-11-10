@@ -14,15 +14,27 @@
  *    limitations under the License.
  */
 
-#include "IPipeline.h"
+#ifndef EXT_STBI_IMAGE_H
+#define EXT_STBI_IMAGE_H
 
-namespace Renderer
+#include "Util/Util.h"
+
+namespace STB
 {
-    void IPipeline::Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext)
+    // Loaded image from STB
+    struct STBImage
     {
-    }
-
-    void IPipeline::Destroy(UNUSED const std::shared_ptr<Vk::Context>& vkContext)
-    {
-    }
+        // Load image
+        explicit STBImage(const std::string_view path, s32 requiredComponents);
+        // Free image
+        ~STBImage();
+        // Pixel data (PLEASE DON'T BE INCOMPATIBLE SOME DAY 60 YEARS LATER)
+        u8* data = nullptr;
+        // Metadata
+        u32 width    = 0;
+        u32 height   = 0;
+        s32 channels = 0;
+    };
 }
+
+#endif

@@ -26,7 +26,8 @@ namespace Renderer
     RenderManager::RenderManager(std::shared_ptr<Engine::Window> window)
         : m_window(std::move(window)),
           m_vkContext(std::make_shared<Vk::Context>(m_window->handle)),
-          m_renderPipeline(std::make_shared<RenderPipeline>())
+          m_renderPipeline(std::make_shared<RenderPipeline>()),
+          m_cubeMesh(std::make_shared<Mesh>(m_vkContext))
     {
         // Create render pipeline
         m_renderPipeline->Create(m_vkContext);
@@ -46,7 +47,7 @@ namespace Renderer
         Update();
 
         // Bind buffer
-        m_vkContext->vertexBuffer.BindBuffer(currentCommandBuffer);
+        m_cubeMesh->vertexBuffer.BindBuffer(currentCommandBuffer);
 
         // Load push constants
         vkCmdPushConstants
@@ -75,7 +76,7 @@ namespace Renderer
         vkCmdDrawIndexed
         (
             currentCommandBuffer,
-            m_vkContext->vertexBuffer.indexCount,
+            m_cubeMesh->vertexBuffer.indexCount,
             1,
             0,
             0,
@@ -406,17 +407,15 @@ namespace Renderer
         return true;
     }
 
-    void RenderManager::WaitForLogicalDevice()
-    {
-        // Wait
-        vkDeviceWaitIdle(m_vkContext->device);
-    }
-
     RenderManager::~RenderManager()
     {
         // Wait
-        WaitForLogicalDevice();
+        vkDeviceWaitIdle(m_vkContext->device);
         // Destroy pipeline
         m_renderPipeline->Destroy(m_vkContext);
+        // Destroy mesh
+        m_cubeMesh->DestroyMesh(m_vkContext->device);
+        // Destroy vulkan context
+        m_vkContext->Destroy();
     }
 }

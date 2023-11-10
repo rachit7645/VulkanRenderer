@@ -14,29 +14,25 @@
  *    limitations under the License.
  */
 
-#ifndef I_PIPELINE_H
-#define I_PIPELINE_H
+#ifndef MESH_H
+#define MESH_H
 
-#include <memory>
-#include <vulkan/vulkan.h>
+#include "Vulkan/VertexBuffer.h"
+#include "Vulkan/Texture.h"
 #include "Vulkan/Context.h"
 
 namespace Renderer
 {
-    struct IPipeline
+    struct Mesh
     {
-        // Destructor
-        virtual ~IPipeline() = default;
-
-        // Create pipeline
-        virtual void Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-        // Destroy pipeline
-        virtual void Destroy(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-
-        // Pipeline data
-        VkPipeline pipeline = {};
-        // Layout
-        VkPipelineLayout pipelineLayout = {};
+        // Create mesh object
+        Mesh(const std::shared_ptr<Vk::Context>& context);
+        // Destroy mesh object
+        void DestroyMesh(VkDevice device);
+        // Vertex buffer
+        Vk::VertexBuffer vertexBuffer;
+        // Texture
+        Vk::Texture texture;
     };
 }
 

@@ -21,9 +21,11 @@
 #include <vulkan/vulkan.h>
 
 #include "RenderPipeline.h"
+#include "Mesh.h"
 #include "Vulkan/Context.h"
 #include "Engine/Window.h"
 #include "Util/Util.h"
+#include "Vulkan/VertexBuffer.h"
 
 namespace Renderer
 {
@@ -57,8 +59,6 @@ namespace Renderer
 
         // Check if swap chain is valid
         bool IsSwapchainValid();
-        // Wait for gpu to finish
-        void WaitForLogicalDevice();
 
         // Pointer to window
         std::shared_ptr<Engine::Window> m_window = nullptr;
@@ -66,6 +66,8 @@ namespace Renderer
         std::shared_ptr<Vk::Context> m_vkContext = nullptr;
         // Render pipeline
         std::shared_ptr<Renderer::RenderPipeline> m_renderPipeline = nullptr;
+        // Mesh
+        std::shared_ptr<Renderer::Mesh> m_cubeMesh;
 
         // Image index
         u32 m_imageIndex = 0;

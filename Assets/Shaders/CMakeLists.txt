@@ -3,11 +3,7 @@ project(Shaders)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-set(SHADERS_INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin/Assets/Shaders)
-
-# C++ 20 is required
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(SHADERS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/Bin/Assets/Shaders)
 
 # Get glsl compiler
 find_package(Vulkan REQUIRED COMPONENTS glslc)

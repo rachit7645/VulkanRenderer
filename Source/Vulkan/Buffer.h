@@ -20,6 +20,7 @@
 #include <span>
 #include <vulkan/vulkan.h>
 #include "Util/Util.h"
+#include "Context.h"
 
 namespace Vk
 {
@@ -32,11 +33,10 @@ namespace Vk
         // Creates the buffer
         Buffer
         (
-            VkDevice device,
+            const std::shared_ptr<Vk::Context>& context,
             VkDeviceSize size,
             VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties,
-            const VkPhysicalDeviceMemoryProperties& memProperties
+            VkMemoryPropertyFlags properties
         );
 
         // Map buffer
@@ -51,35 +51,25 @@ namespace Vk
         // Copy from src to dst buffer
         static void CopyBuffer
         (
+            const std::shared_ptr<Vk::Context>& context,
             Vk::Buffer srcBuffer,
             Vk::Buffer dstBuffer,
-            VkDeviceSize copySize,
-            VkDevice device,
-            VkCommandPool commandPool,
-            VkQueue queue
+            VkDeviceSize copySize
         );
 
         // Internal deletion function
         void DeleteBuffer(VkDevice device);
 
         // Buffer handle
-        VkBuffer handle = {};
+        VkBuffer handle = VK_NULL_HANDLE;
         // Memory
-        VkDeviceMemory memory = {};
+        VkDeviceMemory memory = VK_NULL_HANDLE;
         // Mapped pointer
         void* mappedPtr = nullptr;
         // Buffer size
-        VkDeviceSize size = {};
+        VkDeviceSize size = 0;
         // Buffer usage flags
         VkBufferUsageFlags usage = {};
-    private:
-        // Find memory type
-        u32 FindMemoryType
-        (
-            u32 typeFilter,
-            VkMemoryPropertyFlags properties,
-            const VkPhysicalDeviceMemoryProperties& memProperties
-        );
     };
 }
 

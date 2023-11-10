@@ -84,11 +84,10 @@ namespace Renderer
             // Create buffer
             shared = Vk::Buffer
             (
-                vkContext->device,
+                vkContext,
                 static_cast<u32>(sizeof(SharedBuffer)),
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                vkContext->phyMemProperties
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             );
 
             // Map

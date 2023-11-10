@@ -14,30 +14,26 @@
  *    limitations under the License.
  */
 
-#ifndef I_PIPELINE_H
-#define I_PIPELINE_H
+#ifndef VK_UTIL_H
+#define VK_UTIL_H
 
-#include <memory>
+#include <functional>
 #include <vulkan/vulkan.h>
-#include "Vulkan/Context.h"
+#include "Util/Util.h"
+#include "Context.h"
 
-namespace Renderer
+namespace Vk
 {
-    struct IPipeline
-    {
-        // Destructor
-        virtual ~IPipeline() = default;
+    // Single use command buffer
+    void SingleTimeCmdBuffer(const std::shared_ptr<Vk::Context>& context, const std::function<void(VkCommandBuffer)>& CmdFunction);
 
-        // Create pipeline
-        virtual void Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-        // Destroy pipeline
-        virtual void Destroy(UNUSED const std::shared_ptr<Vk::Context>& vkContext) = 0;
-
-        // Pipeline data
-        VkPipeline pipeline = {};
-        // Layout
-        VkPipelineLayout pipelineLayout = {};
-    };
+    // Find memory type
+    u32 FindMemoryType
+    (
+        u32 typeFilter,
+        VkMemoryPropertyFlags properties,
+        const VkPhysicalDeviceMemoryProperties& memProperties
+    );
 }
 
 #endif

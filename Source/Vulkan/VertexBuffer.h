@@ -24,7 +24,6 @@
 #include "Renderer/Vertex.h"
 #include "Util/Util.h"
 
-
 namespace Vk
 {
     class VertexBuffer
@@ -35,10 +34,7 @@ namespace Vk
         // Creates a vertex buffer
         VertexBuffer
         (
-            VkDevice device,
-            VkCommandPool commandPool,
-            VkQueue queue,
-            const VkPhysicalDeviceMemoryProperties& memProperties,
+            const std::shared_ptr<Vk::Context>& context,
             const std::span<const Renderer::Vertex> vertices,
             const std::span<const Renderer::Index> indices
         );
@@ -64,12 +60,9 @@ namespace Vk
         template<typename T>
         void InitBuffer
         (
-            VkDevice device,
-            VkCommandPool commandPool,
-            VkQueue queue,
+            const std::shared_ptr<Vk::Context>& context,
             Vk::Buffer& buffer,
             VkBufferUsageFlags usage,
-            const VkPhysicalDeviceMemoryProperties& memProperties,
             const std::span<const T> data
         );
     };

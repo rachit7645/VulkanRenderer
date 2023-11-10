@@ -26,8 +26,6 @@
 #include "Renderer/RenderPipeline.h"
 
 // Usings
-using Renderer::Vertex;
-using Renderer::Index;
 using Renderer::RenderPipeline;
 
 namespace Vk
@@ -39,50 +37,6 @@ namespace Vk
 
     // Required device extensions
     constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
-
-    // Vertex data (FIXME: HORRIBLE HARD CODING)
-    constexpr std::array<Vertex, 8> VERTICES =
-    {
-        // Front face
-        Vertex(glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), // Vertex 0
-        Vertex(glm::vec3( 1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)), // Vertex 1
-        Vertex(glm::vec3( 1.0f,  1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f)), // Vertex 2
-        Vertex(glm::vec3(-1.0f,  1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 0.0f)), // Vertex 3
-
-        // Back face
-        Vertex(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), // Vertex 4
-        Vertex(glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f)), // Vertex 5
-        Vertex(glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f)), // Vertex 6
-        Vertex(glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 0.0f))  // Vertex 7
-    };
-
-    // Index data (FIXME: HORRIBLE HARD CODING)
-    constexpr std::array<Index, 36> INDICES =
-    {
-        // Front face
-        0, 1, 2,
-        2, 3, 0,
-
-        // Right face
-        1, 5, 6,
-        6, 2, 1,
-
-        // Back face
-        5, 4, 7,
-        7, 6, 5,
-
-        // Left face
-        4, 0, 3,
-        3, 7, 4,
-
-        // Top face
-        3, 2, 6,
-        6, 7, 3,
-
-        // Bottom face
-        4, 5, 1,
-        1, 0, 4
-    };
 
     Context::Context(SDL_Window* window)
     {
@@ -117,8 +71,6 @@ namespace Vk
 
         // Create global command pool
         CreateCommandPool();
-        // Create buffers
-        CreateBuffers();
         // Create descriptor pool
         CreateDescriptorPool();
 
@@ -129,6 +81,73 @@ namespace Vk
 
         // Log
         Logger::Info("{}\n", "Initialised vulkan context!");
+    }
+
+    std::vector<VkCommandBuffer> Context::AllocateCommandBuffers(u32 count, VkCommandBufferLevel level)
+    {
+        // Command buffer allocation data
+        VkCommandBufferAllocateInfo allocInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .commandPool        = m_commandPool,
+            .level              = level,
+            .commandBufferCount = count
+        };
+        // Create space
+        auto cmdBuffers = std::vector<VkCommandBuffer>(count);
+        // Allocate
+        vkAllocateCommandBuffers(device, &allocInfo, cmdBuffers.data());
+        // Return
+        return cmdBuffers;
+    }
+
+    void Context::FreeCommandBuffers(const std::span<const VkCommandBuffer> cmdBuffers)
+    {
+        // Free
+        vkFreeCommandBuffers
+        (
+            device,
+            m_commandPool,
+            static_cast<u32>(cmdBuffers.size()),
+            cmdBuffers.data()
+        );
+    }
+
+    std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout)
+    {
+        // Layout
+        auto layouts = std::vector<VkDescriptorSetLayout>(count, descriptorLayout);
+
+        // Allocation info
+        VkDescriptorSetAllocateInfo allocInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .descriptorPool     = m_descriptorPool,
+            .descriptorSetCount = static_cast<u32>(layouts.size()),
+            .pSetLayouts        = layouts.data()
+        };
+
+        // Descriptor sets
+        auto descriptorSets = std::vector<VkDescriptorSet>(layouts.size(), VK_NULL_HANDLE);
+
+        // Allocate
+        if (vkAllocateDescriptorSets(
+                device,
+                &allocInfo,
+                descriptorSets.data()
+            ) != VK_SUCCESS)
+        {
+            // Log
+            Logger::Error("Failed to allocate descriptor sets! [pool={}]\n", reinterpret_cast<void*>(m_descriptorPool));
+        }
+
+        // Log
+        Logger::Debug("Allocated descriptor sets! [count={}]\n", count);
+
+        // Return
+        return descriptorSets;
     }
 
     void Context::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window)
@@ -779,34 +798,13 @@ namespace Vk
         });
     }
 
-    void Context::CreateBuffers()
-    {
-        // Create vertex buffer
-        vertexBuffer = Vk::VertexBuffer
-        (
-            device,
-            m_commandPool,
-            graphicsQueue,
-            phyMemProperties,
-            VERTICES,
-            INDICES
-        );
-
-        // Add to deletion queue
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            // Destroy vertex buffer
-            vertexBuffer.DestroyBuffer(device);
-        });
-    }
-
     void Context::CreateDescriptorPool()
     {
         // Size
         VkDescriptorPoolSize uboPoolSize =
         {
             .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = static_cast<u32>(UBO_COUNT * FRAMES_IN_FLIGHT)
+            .descriptorCount = static_cast<u32>(GetDescriptorPoolSize())
         };
 
         // Creation info
@@ -815,7 +813,7 @@ namespace Vk
             .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext         = nullptr,
             .flags         = 0,
-            .maxSets       = static_cast<u32>(UBO_COUNT * FRAMES_IN_FLIGHT),
+            .maxSets       = static_cast<u32>(GetDescriptorPoolSize()),
             .poolSizeCount = 1,
             .pPoolSizes    = &uboPoolSize
         };
@@ -843,69 +841,17 @@ namespace Vk
         });
     }
 
-    std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout)
-    {
-        // Layout
-        auto layouts = std::vector<VkDescriptorSetLayout>(count, descriptorLayout);
-
-        // Allocation info
-        VkDescriptorSetAllocateInfo allocInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .descriptorPool     = m_descriptorPool,
-            .descriptorSetCount = static_cast<u32>(layouts.size()),
-            .pSetLayouts        = layouts.data()
-        };
-
-        // Descriptor sets
-        auto descriptorSets = std::vector<VkDescriptorSet>(layouts.size(), VK_NULL_HANDLE);
-
-        // Allocate
-        if (vkAllocateDescriptorSets(
-                device,
-                &allocInfo,
-                descriptorSets.data()
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to allocate descriptor sets! [pool={}]\n", reinterpret_cast<void*>(m_descriptorPool));
-        }
-
-        // Log
-        Logger::Debug("Allocated descriptor sets! [count={}]\n", count);
-
-        // Return
-        return descriptorSets;
-    }
-
     void Context::CreateCommandBuffers()
     {
-        // Allocation info
-        VkCommandBufferAllocateInfo allocInfo
-        {
-            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .commandPool        = m_commandPool,
-            .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = static_cast<u32>(commandBuffers.size())
-        };
-
-        // Allocate command buffer
-        if (vkAllocateCommandBuffers(
-                device,
-                &allocInfo,
-                commandBuffers.data()
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error
-            (
-                "Failed to allocate command buffer(s)! [CommandPool={}]\n",
-                reinterpret_cast<void*>(m_commandPool)
-            );
-        }
-
+        // Allocate command buffers
+        auto _commandBuffers = AllocateCommandBuffers(commandBuffers.size(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        // Convert
+        std::move
+        (
+            _commandBuffers.begin(),
+            _commandBuffers.begin() + static_cast<ssize>(commandBuffers.size()),
+            commandBuffers.begin()
+        );
         // Log
         Logger::Info("{}\n", "Created command buffers!");
     }
@@ -984,7 +930,7 @@ namespace Vk
         vkDestroySwapchainKHR(device, swapChain, nullptr);
     }
 
-    Context::~Context()
+    void Context::Destroy()
     {
         // Flush deletion queue
         m_deletionQueue.FlushQueue();
