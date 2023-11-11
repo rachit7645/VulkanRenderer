@@ -14,13 +14,13 @@
  *    limitations under the License.
  */
 
-#include "SwapChainInfo.h"
+#include "SwapchainInfo.h"
 
 #include "../Util/Util.h"
 
 namespace Vk
 {
-    SwapChainInfo::SwapChainInfo(VkPhysicalDevice device, VkSurfaceKHR surface)
+    SwapchainInfo::SwapChainInfo(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
         // Get capabilities
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &capabilities);

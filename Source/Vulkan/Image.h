@@ -14,8 +14,8 @@
  *    limitations under the License.
  */
 
-#ifndef IMAGE_H
-#define IMAGE_H
+#ifndef VK_IMAGE_H
+#define VK_IMAGE_H
 
 #include "Buffer.h"
 #include "Context.h"
@@ -40,6 +40,9 @@ namespace Vk
             VkImageUsageFlags usage,
             VkMemoryPropertyFlags properties
         );
+
+        // Copy image (for swap chain)
+        Image(u32 width, u32 height, VkFormat format, VkImage image);
 
         // Transitions image layout
         void TransitionLayout

@@ -44,9 +44,9 @@ namespace Renderer
         };
 
         // Create render pipeline
-        void Create(const std::shared_ptr<Vk::Context>& vkContext) override;
+        void Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain) override;
         // Destroy render pipeline
-        void Destroy(const std::shared_ptr<Vk::Context>& vkContext) override;
+        void Destroy(VkDevice device) override;
 
         // Descriptor layout
         VkDescriptorSetLayout descriptorLayout = {};

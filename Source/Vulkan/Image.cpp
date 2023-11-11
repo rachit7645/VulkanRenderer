@@ -43,6 +43,15 @@ namespace Vk
         Logger::Info("Created image! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
+    Image::Image(u32 width, u32 height, VkFormat format, VkImage image)
+        : handle(image),
+          width(width),
+          height(height),
+          format(format),
+          tiling(VK_IMAGE_TILING_OPTIMAL)
+    {
+    }
+
     void Image::CreateImage
     (
         const std::shared_ptr<Vk::Context>& context,

@@ -20,18 +20,18 @@
 
 namespace Renderer
 {
-    void RenderPipeline::Create(const std::shared_ptr<Vk::Context>& vkContext)
+    void RenderPipeline::Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
     {
         // Custom functions
-        auto SetDynamicStates = [vkContext](Vk::PipelineBuilder& pipelineBuilder)
+        auto SetDynamicStates = [swapchain] (Vk::PipelineBuilder& pipelineBuilder)
         {
             // Set viewport config
             pipelineBuilder.viewport =
             {
                 .x        = 0.0f,
                 .y        = 0.0f,
-                .width    = static_cast<f32>(vkContext->swapChainExtent.width),
-                .height   = static_cast<f32>(vkContext->swapChainExtent.height),
+                .width    = static_cast<f32>(swapchain->extent.width),
+                .height   = static_cast<f32>(swapchain->extent.height),
                 .minDepth = 0.0f,
                 .maxDepth = 1.0f
             };
@@ -40,7 +40,7 @@ namespace Renderer
             pipelineBuilder.scissor =
             {
                 .offset = {0, 0},
-                .extent = vkContext->swapChainExtent
+                .extent = swapchain->extent
             };
 
             // Create viewport creation info
@@ -62,7 +62,7 @@ namespace Renderer
         std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout> pipelineData = {};
 
         // Build pipeline
-        pipelineData = Vk::PipelineBuilder::Create(vkContext->device, vkContext->renderPass)
+        pipelineData = Vk::PipelineBuilder::Create(vkContext->device, swapchain->renderPass)
                        .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
                        .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
                        .SetDynamicStates(dynStates, SetDynamicStates)
@@ -142,15 +142,15 @@ namespace Renderer
         }
     }
 
-    void RenderPipeline::Destroy(const std::shared_ptr<Vk::Context>& vkContext)
+    void RenderPipeline::Destroy(VkDevice device)
     {
         // Destroy UBOs
-        for (auto&& shared : sharedUBOs) shared.DeleteBuffer(vkContext->device);
+        for (auto&& shared : sharedUBOs) shared.DeleteBuffer(device);
         // Destroy pipeline
-        vkDestroyPipeline(vkContext->device, pipeline, nullptr);
+        vkDestroyPipeline(device, pipeline, nullptr);
         // Destroy pipeline layout
-        vkDestroyPipelineLayout(vkContext->device, pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
         // Destroy descriptor set layout
-        vkDestroyDescriptorSetLayout(vkContext->device, descriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, descriptorLayout, nullptr);
     }
 }

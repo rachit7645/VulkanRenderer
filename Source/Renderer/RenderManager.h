@@ -26,6 +26,7 @@
 #include "Engine/Window.h"
 #include "Util/Util.h"
 #include "Vulkan/VertexBuffer.h"
+#include "Vulkan/Swapchain.h"
 
 namespace Renderer
 {
@@ -64,10 +65,12 @@ namespace Renderer
         std::shared_ptr<Engine::Window> m_window = nullptr;
         // Vulkan context
         std::shared_ptr<Vk::Context> m_vkContext = nullptr;
+        // Swap chain
+        std::shared_ptr<Vk::Swapchain> m_swapchain = nullptr;
         // Render pipeline
-        std::shared_ptr<Renderer::RenderPipeline> m_renderPipeline = nullptr;
+        std::unique_ptr<Renderer::RenderPipeline> m_renderPipeline = nullptr;
         // Mesh
-        std::shared_ptr<Renderer::Mesh> m_cubeMesh;
+        std::unique_ptr<Renderer::Mesh> m_cubeMesh;
 
         // Image index
         u32 m_imageIndex = 0;

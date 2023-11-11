@@ -21,12 +21,10 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
 
 #include "ValidationLayers.h"
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
-#include "SwapChainInfo.h"
 #include "Constants.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
@@ -38,7 +36,7 @@ namespace Vk
     {
     public:
         // Initialise vulkan context
-        explicit Context(SDL_Window* window);
+        explicit Context(const std::shared_ptr<Engine::Window>& window);
         // Destroy vulkan context
         void Destroy();
 
@@ -48,29 +46,23 @@ namespace Vk
         void FreeCommandBuffers(const std::span<const VkCommandBuffer> cmdBuffers);
         // Allocates descriptors
         std::vector<VkDescriptorSet> AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout);
-        // Recreate swap chain
-        void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window);
 
         // Vulkan instance
         VkInstance vkInstance = {};
+        // Physical device (GPU)
+        VkPhysicalDevice physicalDevice = {};
         // Physical device memory properties
         VkPhysicalDeviceMemoryProperties phyMemProperties = {};
         // Logical device
         VkDevice device = {};
+        // Surface
+        VkSurfaceKHR surface = {};
         // Queue
         VkQueue graphicsQueue = {};
 
-        // Swap chain
-        VkSwapchainKHR swapChain = {};
-        // Extent
-        VkExtent2D swapChainExtent = {};
-        // Swap chain framebuffers
-        std::vector<VkFramebuffer> swapChainFrameBuffers = {};
-
-        // Render pass
-        VkRenderPass renderPass = {};
-        // Command buffer
+        // Command buffers
         std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers = {};
+
         // Semaphores
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
@@ -89,23 +81,6 @@ namespace Vk
         // Create a logical device
         void CreateLogicalDevice();
 
-        // Create swap
-        void CreateSwapChain(SDL_Window* window);
-        // Create image views
-        void CreateImageViews();
-
-        // Choose surface format
-        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat(const Vk::SwapChainInfo& swapChainInfo);
-        // Choose surface presentation mode
-        [[nodiscard]] VkPresentModeKHR ChoosePresentationMode(const Vk::SwapChainInfo& swapChainInfo);
-        // Choose swap extent
-        [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window, const Vk::SwapChainInfo& swapChainInfo);
-
-        // Creates the default render pass
-        void CreateRenderPass();
-        // Create swap chain framebuffers
-        void CreateFramebuffers();
-
         // Creates command pool
         void CreateCommandPool();
         // Create descriptor pool
@@ -116,30 +91,15 @@ namespace Vk
         // Create synchronisation objects
         void CreateSyncObjects();
 
-        // Destroy current swap chain
-        void DestroySwapChain();
-
         // Extensions
         Vk::Extensions m_extensions = {};
         #ifdef ENGINE_DEBUG
         // Vulkan validation layers
         Vk::ValidationLayers m_layers = {};
         #endif
-        // Surface
-        VkSurfaceKHR m_surface = {};
 
-        // Physical device (GPU)
-        VkPhysicalDevice m_physicalDevice = {};
         // Queue families
         Vk::QueueFamilyIndices m_queueFamilies = {};
-
-        // Swap chain images
-        std::vector<VkImage> m_swapChainImages = {};
-        // Image format
-        VkFormat m_swapChainImageFormat = {};
-        // Swap chain image views
-        std::vector<VkImageView> m_swapChainImageViews = {};
-
         // Command pool
         VkCommandPool m_commandPool = {};
         // Descriptor pool

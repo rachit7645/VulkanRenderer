@@ -18,11 +18,10 @@
 
 #include <map>
 #include <unordered_map>
-#include <limits>
 
 #include "Extensions.h"
+#include "SwapchainInfo.h"
 #include "Util/Log.h"
-#include "Externals/GLM.h"
 #include "Renderer/RenderPipeline.h"
 
 // Usings
@@ -34,14 +33,13 @@ namespace Vk
     // Layers
     constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
     #endif
-
     // Required device extensions
     constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
 
-    Context::Context(SDL_Window* window)
+    Context::Context(const std::shared_ptr<Engine::Window>& window)
     {
         // Create vulkan instance
-        CreateVKInstance(window);
+        CreateVKInstance(window->handle);
 
         #ifdef ENGINE_DEBUG
         // Load validation layers
@@ -53,21 +51,11 @@ namespace Vk
         #endif
 
         // Create surface
-        CreateSurface(window);
+        CreateSurface(window->handle);
         // Grab a GPU
         PickPhysicalDevice();
         // Setup logical device
         CreateLogicalDevice();
-
-        // Create swap chain
-        CreateSwapChain(window);
-        // Create image views for swap chain
-        CreateImageViews();
-
-        // Create render pass
-        CreateRenderPass();
-        // Create framebuffers
-        CreateFramebuffers();
 
         // Create global command pool
         CreateCommandPool();
@@ -150,21 +138,6 @@ namespace Vk
         return descriptorSets;
     }
 
-    void Context::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window)
-    {
-        // Wait for gpu to finish
-        vkDeviceWaitIdle(device);
-        // Clean up old swap chain
-        DestroySwapChain();
-
-        // Wait
-        window->WaitForRestoration();
-        // Create new swap chain
-        CreateSwapChain(window->handle);
-        CreateImageViews();
-        CreateFramebuffers();
-    }
-
     void Context::CreateVKInstance(SDL_Window* window)
     {
         // Application info
@@ -235,7 +208,7 @@ namespace Vk
     void Context::CreateSurface(SDL_Window* window)
     {
         // Create surface using SDL
-        if (SDL_Vulkan_CreateSurface(window, vkInstance, &m_surface) != SDL_TRUE)
+        if (SDL_Vulkan_CreateSurface(window, vkInstance, &surface) != SDL_TRUE)
         {
             // Log
             Logger::Error
@@ -247,7 +220,7 @@ namespace Vk
         }
 
         // Log
-        Logger::Info("Initialised vulkan surface! [handle={}]\n", reinterpret_cast<void*>(m_surface));
+        Logger::Info("Initialised vulkan surface! [handle={}]\n", reinterpret_cast<void*>(surface));
     }
 
     void Context::PickPhysicalDevice()
@@ -315,19 +288,19 @@ namespace Vk
             Logger::Error("Failed to load physical device! [name=\"{}\"]", properties[bestDevice].deviceName);
         }
         // Set GPU
-        m_physicalDevice = bestDevice;
+        physicalDevice = bestDevice;
 
         // Get memory properties
-        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &phyMemProperties);
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &phyMemProperties);
 
         // Log
-        Logger::Info("Selecting GPU: {}\n", properties[m_physicalDevice].deviceName);
+        Logger::Info("Selecting GPU: {}\n", properties[physicalDevice].deviceName);
     }
 
     usize Context::CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet)
     {
         // Get queue
-        auto queue = QueueFamilyIndices(logicalDevice, m_surface);
+        auto queue = QueueFamilyIndices(logicalDevice, surface);
 
         // Calculate score parts
         usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 10000;
@@ -343,7 +316,7 @@ namespace Vk
         if (hasExtensions)
         {
             // Make sure we have valid presentation and surface formats
-            auto swapChainInfo = SwapChainInfo(logicalDevice, m_surface);
+            auto swapChainInfo = Vk::SwapchainInfo(logicalDevice, surface);
             isSwapChainAdequate = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
         }
 
@@ -354,7 +327,7 @@ namespace Vk
     void Context::CreateLogicalDevice()
     {
         // Get queue
-        m_queueFamilies = QueueFamilyIndices(m_physicalDevice, m_surface);
+        m_queueFamilies = QueueFamilyIndices(physicalDevice, surface);
 
         // Queue priority
         constexpr f32 queuePriority = 1.0f;
@@ -405,14 +378,14 @@ namespace Vk
 
         // Create device
         if (vkCreateDevice(
-            m_physicalDevice,
+            physicalDevice,
             &createInfo,
             nullptr,
             &device
         ) != VK_SUCCESS)
         {
             // Log
-            Logger::Error("Failed to create logical device! [Physical Device = {}]\n", reinterpret_cast<void*>(m_physicalDevice));
+            Logger::Error("Failed to create logical device! [Physical Device = {}]\n", reinterpret_cast<void*>(physicalDevice));
         }
 
         // Get functions
@@ -429,339 +402,6 @@ namespace Vk
             0,
             &graphicsQueue
         );
-    }
-
-    void Context::CreateSwapChain(SDL_Window* window)
-    {
-        // Get swap chain info
-        auto swapChainInfo = SwapChainInfo(m_physicalDevice, m_surface);
-        // Get swap chain config data
-        VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapChainInfo);
-        VkPresentModeKHR   presentMode   = ChoosePresentationMode(swapChainInfo);
-        VkExtent2D         extent        = ChooseSwapExtent(window, swapChainInfo);
-
-        // Get image count
-        u32 imageCount = glm::max
-        (
-            swapChainInfo.capabilities.minImageCount + 1,
-            swapChainInfo.capabilities.maxImageCount
-        );
-
-        // Swap chain creation data
-        VkSwapchainCreateInfoKHR createInfo =
-        {
-            .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext                 = nullptr,
-            .flags                 = 0,
-            .surface               = m_surface,
-            .minImageCount         = imageCount,
-            .imageFormat           = surfaceFormat.format,
-            .imageColorSpace       = surfaceFormat.colorSpace,
-            .imageExtent           = extent,
-            .imageArrayLayers      = 1,
-            .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices   = nullptr,
-            .preTransform          = swapChainInfo.capabilities.currentTransform,
-            .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .presentMode           = presentMode,
-            .clipped               = VK_TRUE,
-            .oldSwapchain          = VK_NULL_HANDLE
-        };
-
-        // Create swap chain
-        if (vkCreateSwapchainKHR(
-                device,
-                &createInfo,
-                nullptr,
-                &swapChain
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create swap chain! [device={}]\n", reinterpret_cast<void*>(device));
-        }
-
-        // Get image count
-        vkGetSwapchainImagesKHR
-        (
-            device,
-            swapChain,
-            &imageCount,
-            nullptr
-        );
-        // Resize
-        m_swapChainImages.resize(imageCount);
-        // Get the images
-        vkGetSwapchainImagesKHR
-        (
-            device,
-            swapChain,
-            &imageCount,
-            m_swapChainImages.data()
-        );
-
-        // Store other properties
-        m_swapChainImageFormat = surfaceFormat.format;
-        swapChainExtent        = extent;
-
-        // Log
-        Logger::Info("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(swapChain));
-    }
-
-    void Context::CreateImageViews()
-    {
-        // Resize
-        m_swapChainImageViews.resize(m_swapChainImages.size());
-
-        // Loop over all swap chain images
-        for (usize i = 0; i < m_swapChainImages.size(); ++i)
-        {
-            // Image view creation data
-            VkImageViewCreateInfo createInfo =
-            {
-                .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .pNext            = nullptr,
-                .flags            = 0,
-                .image            = m_swapChainImages[i],
-                .viewType         = VK_IMAGE_VIEW_TYPE_2D,
-                .format           = m_swapChainImageFormat,
-                .components       = {
-                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .a = VK_COMPONENT_SWIZZLE_IDENTITY,
-                },
-                .subresourceRange = {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            };
-            // Create image view
-            if (vkCreateImageView(
-                    device,
-                    &createInfo,
-                    nullptr,
-                    &m_swapChainImageViews[i]
-                ) != VK_SUCCESS)
-            {
-                // Log
-                Logger::Error
-                (
-                    "Failed to create image view #{}! [device={}] [image={}]",
-                    i, reinterpret_cast<void*>(device),
-                    reinterpret_cast<void*>(m_swapChainImages[i])
-                );
-            }
-        }
-    }
-
-    VkSurfaceFormatKHR Context::ChooseSurfaceFormat(const SwapChainInfo& swapChainInfo)
-    {
-        // Formats
-        const auto& formats = swapChainInfo.formats;
-
-        // Search
-        for (const auto& availableFormat : formats)
-        {
-            // Check
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
-                availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
-            {
-                // Found preferred format!
-                return availableFormat;
-            }
-        }
-
-        // By default, return the first format
-        return formats[0];
-    }
-
-    VkPresentModeKHR Context::ChoosePresentationMode(const SwapChainInfo& swapChainInfo)
-    {
-        // Presentation modes
-        const auto& presentModes = swapChainInfo.presentModes;
-
-        // Check all presentation modes
-        for (auto presentMode : presentModes)
-        {
-            // Check for mailbox
-            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-            {
-                // Log
-                Logger::Debug("{}\n", "Using mailbox presentation!");
-                // Found it!
-                return presentMode;
-            }
-        }
-
-        // FIFO is guaranteed to be supported
-        return VK_PRESENT_MODE_FIFO_KHR;
-    }
-
-    VkExtent2D Context::ChooseSwapExtent(SDL_Window* window, const SwapChainInfo& swapChainInfo)
-    {
-        // Surface capability data
-        const auto& capabilities = swapChainInfo.capabilities;
-
-        // Some platforms set swap extents themselves
-        if (capabilities.currentExtent.width != std::numeric_limits<u32>::max())
-        {
-            // Just give back the original swap extent
-            return capabilities.currentExtent;
-        }
-
-        // Window pixel size
-        glm::ivec2 size = {};
-        SDL_Vulkan_GetDrawableSize(window, &size.x, &size.y);
-
-        // Get min and max
-        auto minSize = glm::ivec2(capabilities.minImageExtent.width, capabilities.minImageExtent.height);
-        auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
-
-        // Clamp
-        auto actualExtent = glm::clamp(size, minSize, maxSize);
-
-        // Return
-        return
-        {
-            .width  = static_cast<u32>(actualExtent.x),
-            .height = static_cast<u32>(actualExtent.y),
-        };
-    }
-
-    // TODO: Move this
-    void Context::CreateRenderPass()
-    {
-        // Color attachment
-        VkAttachmentDescription colorAttachment =
-        {
-            .flags          = 0,
-            .format         = m_swapChainImageFormat,
-            .samples        = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-        };
-
-        // Color attachment ref
-        VkAttachmentReference colorAttachmentRef =
-        {
-            .attachment = 0,
-            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-        };
-
-        // Subpass description
-        VkSubpassDescription subpass =
-        {
-            .flags                   = 0,
-            .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
-            .inputAttachmentCount    = 0,
-            .pInputAttachments       = nullptr,
-            .colorAttachmentCount    = 1,
-            .pColorAttachments       = &colorAttachmentRef,
-            .pResolveAttachments     = nullptr,
-            .pDepthStencilAttachment = nullptr,
-            .preserveAttachmentCount = 0,
-            .pPreserveAttachments    = nullptr
-        };
-
-        // Subpass dependency info
-        VkSubpassDependency dependency =
-        {
-            .srcSubpass      = VK_SUBPASS_EXTERNAL,
-            .dstSubpass      = 0,
-            .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .srcAccessMask   = 0,
-            .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            .dependencyFlags = 0
-        };
-
-        // Render pass creation info
-        VkRenderPassCreateInfo createInfo =
-        {
-            .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            .pNext           = nullptr,
-            .flags           = 0,
-            .attachmentCount = 1,
-            .pAttachments    = &colorAttachment,
-            .subpassCount    = 1,
-            .pSubpasses      = &subpass,
-            .dependencyCount = 1,
-            .pDependencies   = &dependency
-        };
-
-        // Create render pass
-        if (vkCreateRenderPass(
-                device,
-                &createInfo,
-                nullptr,
-                &renderPass
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create render pass! [device={}]\n", reinterpret_cast<void*>(device));
-        }
-
-        // Log
-        Logger::Info("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
-
-        // Add to deletion queue
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            // Destroy render pass
-            vkDestroyRenderPass(device, renderPass, nullptr);
-        });
-    }
-
-    void Context::CreateFramebuffers()
-    {
-        // Resize
-        swapChainFrameBuffers.resize(m_swapChainImageViews.size());
-
-        // For each image view
-        for (usize i = 0; i < m_swapChainImageViews.size(); ++i)
-        {
-            // Framebuffer info
-            VkFramebufferCreateInfo framebufferInfo =
-            {
-                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .pNext           = nullptr,
-                .flags           = 0,
-                .renderPass      = renderPass,
-                .attachmentCount = 1,
-                .pAttachments    = &m_swapChainImageViews[i],
-                .width           = swapChainExtent.width,
-                .height          = swapChainExtent.height,
-                .layers          = 1
-            };
-
-            // Create framebuffer
-            if (vkCreateFramebuffer(
-                    device,
-                    &framebufferInfo,
-                    nullptr,
-                    &swapChainFrameBuffers[i]
-                ) != VK_SUCCESS)
-            {
-                // Log
-                Logger::Error
-                (
-                    "Failed to create framebuffer #{}! [image={}]\n",
-                    i, reinterpret_cast<void*>(&m_swapChainImageViews[i])
-                );
-            }
-        }
-
-        // Log
-        Logger::Info("{}\n", "Created framebuffers!");
     }
 
     void Context::CreateCommandPool()
@@ -910,35 +550,13 @@ namespace Vk
         });
     }
 
-    void Context::DestroySwapChain()
-    {
-        // Destroy framebuffers
-        for (auto&& framebuffer : swapChainFrameBuffers)
-        {
-            // Destroy
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
-        }
-
-        // Destroy swap chain images
-        for (auto&& imageView : m_swapChainImageViews)
-        {
-            // Delete
-            vkDestroyImageView(device, imageView, nullptr);
-        }
-
-        // Destroy swap chain
-        vkDestroySwapchainKHR(device, swapChain, nullptr);
-    }
-
     void Context::Destroy()
     {
         // Flush deletion queue
         m_deletionQueue.FlushQueue();
 
-        // Destroy swap chain
-        DestroySwapChain();
         // Destroy surface
-        vkDestroySurfaceKHR(vkInstance, m_surface, nullptr);
+        vkDestroySurfaceKHR(vkInstance, surface, nullptr);
         // Destroy logical device
         vkDestroyDevice(device, nullptr);
 

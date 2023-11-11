@@ -25,12 +25,13 @@ namespace Renderer
 {
     RenderManager::RenderManager(std::shared_ptr<Engine::Window> window)
         : m_window(std::move(window)),
-          m_vkContext(std::make_shared<Vk::Context>(m_window->handle)),
-          m_renderPipeline(std::make_shared<RenderPipeline>()),
-          m_cubeMesh(std::make_shared<Mesh>(m_vkContext))
+          m_vkContext(std::make_shared<Vk::Context>(m_window)),
+          m_swapchain(std::make_shared<Vk::Swapchain>(m_window, m_vkContext)),
+          m_renderPipeline(std::make_unique<RenderPipeline>()),
+          m_cubeMesh(std::make_unique<Mesh>(m_vkContext))
     {
         // Create render pipeline
-        m_renderPipeline->Create(m_vkContext);
+        m_renderPipeline->Create(m_vkContext, m_swapchain);
     }
 
     void RenderManager::Render()
@@ -159,11 +160,11 @@ namespace Renderer
         {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .pNext           = nullptr,
-            .renderPass      = m_vkContext->renderPass,
-            .framebuffer     = m_vkContext->swapChainFrameBuffers[m_imageIndex],
+            .renderPass      = m_swapchain->renderPass,
+            .framebuffer     = m_swapchain->framebuffers[m_imageIndex],
             .renderArea      = {
                 .offset = {0, 0},
-                .extent = m_vkContext->swapChainExtent
+                .extent = m_swapchain->extent
             },
             .clearValueCount = 1,
             .pClearValues    = &clearValue
@@ -190,8 +191,8 @@ namespace Renderer
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(m_vkContext->swapChainExtent.width),
-            .height   = static_cast<f32>(m_vkContext->swapChainExtent.height),
+            .width    = static_cast<f32>(m_swapchain->extent.width),
+            .height   = static_cast<f32>(m_swapchain->extent.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -209,7 +210,7 @@ namespace Renderer
         VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = m_vkContext->swapChainExtent
+            .extent = m_swapchain->extent
         };
 
         // Set scissor
@@ -236,8 +237,8 @@ namespace Renderer
             // Projection matrix
             .proj = glm::perspective(
                 FOV,
-                static_cast<f32>(m_vkContext->swapChainExtent.width) /
-                static_cast<f32>(m_vkContext->swapChainExtent.height),
+                static_cast<f32>(m_swapchain->extent.width) /
+                static_cast<f32>(m_swapchain->extent.height),
                 PLANES.x,
                 PLANES.y
             )
@@ -275,7 +276,7 @@ namespace Renderer
         m_swapchainStatus[0] = vkAcquireNextImageKHR
         (
             m_vkContext->device,
-            m_vkContext->swapChain,
+            m_swapchain->handle,
             std::numeric_limits<u64>::max(),
             m_vkContext->imageAvailableSemaphores[m_currentFrame],
             VK_NULL_HANDLE,
@@ -327,7 +328,7 @@ namespace Renderer
     void RenderManager::Present()
     {
         // Swap chains
-        VkSwapchainKHR swapChains[] = {m_vkContext->swapChain};
+        VkSwapchainKHR swapChains[] = {m_swapchain->handle};
         // Signal semaphores
         VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[m_currentFrame]};
 
@@ -396,7 +397,7 @@ namespace Renderer
         if (toRecreate)
         {
             // Recreate
-            m_vkContext->RecreateSwapChain(m_window);
+            m_swapchain->RecreateSwapChain(m_window, m_vkContext);
             // Reset
             m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
             // Return
@@ -412,9 +413,11 @@ namespace Renderer
         // Wait
         vkDeviceWaitIdle(m_vkContext->device);
         // Destroy pipeline
-        m_renderPipeline->Destroy(m_vkContext);
+        m_renderPipeline->Destroy(m_vkContext->device);
         // Destroy mesh
         m_cubeMesh->DestroyMesh(m_vkContext->device);
+        // Destroy swap chain
+        m_swapchain->Destroy(m_vkContext->device);
         // Destroy vulkan context
         m_vkContext->Destroy();
     }

@@ -14,30 +14,26 @@
  *    limitations under the License.
  */
 
-#ifndef I_PIPELINE_H
-#define I_PIPELINE_H
+#ifndef SWAP_CHAIN_INFO_H
+#define SWAP_CHAIN_INFO_H
 
-#include <memory>
+#include <vector>
 #include <vulkan/vulkan.h>
-#include "Vulkan/Context.h"
-#include "Vulkan/Swapchain.h"
 
-namespace Renderer
+namespace Vk
 {
-    struct IPipeline
+    struct SwapchainInfo
     {
-        // Destructor
-        virtual ~IPipeline() = default;
-
-        // Create pipeline
-        virtual void Create(UNUSED const std::shared_ptr<Vk::Context>& vkContext, UNUSED const std::shared_ptr<Vk::Swapchain>& swapchain) = 0;
-        // Destroy pipeline
-        virtual void Destroy(UNUSED VkDevice device) = 0;
-
-        // Pipeline data
-        VkPipeline pipeline = {};
-        // Layout
-        VkPipelineLayout pipelineLayout = {};
+        // Default constructor
+        SwapchainInfo() = default;
+        // Query swapchain info
+        SwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
+        // Surface feature data
+        VkSurfaceCapabilitiesKHR capabilities = {};
+        // Available formats
+        std::vector<VkSurfaceFormatKHR> formats = {};
+        // Presentation modes
+        std::vector<VkPresentModeKHR> presentModes = {};
     };
 }
 

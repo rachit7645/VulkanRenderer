@@ -14,26 +14,33 @@
  *    limitations under the License.
  */
 
-#ifndef SWAP_CHAIN_INFO_H
-#define SWAP_CHAIN_INFO_H
+#ifndef IMAGE_VIEW_H
+#define IMAGE_VIEW_H
 
-#include <vector>
 #include <vulkan/vulkan.h>
+#include "Image.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
-    struct SwapChainInfo
+    class ImageView
     {
-        // Default constructor
-        SwapChainInfo() = default;
-        // Query swapchain info
-        SwapChainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
-        // Surface feature data
-        VkSurfaceCapabilitiesKHR capabilities = {};
-        // Available formats
-        std::vector<VkSurfaceFormatKHR> formats = {};
-        // Presentation modes
-        std::vector<VkPresentModeKHR> presentModes = {};
+    public:
+        // Create image view
+        ImageView
+        (
+            VkDevice device,
+            const Vk::Image& image,
+            VkImageViewType viewType,
+            VkFormat format,
+            VkImageAspectFlagBits aspectMask,
+            u32 baseMipLevel = 0,
+            u32 levelCount = 1,
+            u32 baseArrayLayer = 0,
+            u32 layerCount = 1
+        );
+        // Vulkan handle
+        VkImageView handle = VK_NULL_HANDLE;
     };
 }
 
