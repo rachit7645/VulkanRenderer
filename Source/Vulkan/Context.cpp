@@ -440,22 +440,15 @@ namespace Vk
 
     void Context::CreateDescriptorPool()
     {
-        // Size
-        VkDescriptorPoolSize uboPoolSize =
-        {
-            .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = static_cast<u32>(GetDescriptorPoolSize())
-        };
-
         // Creation info
         VkDescriptorPoolCreateInfo poolCreateInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext         = nullptr,
             .flags         = 0,
-            .maxSets       = static_cast<u32>(GetDescriptorPoolSize()),
-            .poolSizeCount = 1,
-            .pPoolSizes    = &uboPoolSize
+            .maxSets       = static_cast<u32>(Vk::GetDescriptorPoolSize()),
+            .poolSizeCount = Vk::DESCRIPTOR_POOL_SIZES.size(),
+            .pPoolSizes    = Vk::DESCRIPTOR_POOL_SIZES.data()
         };
 
         // Create

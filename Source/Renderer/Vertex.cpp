@@ -42,13 +42,22 @@ namespace Renderer
             .offset   = offsetof(Vertex, position)
         };
 
-        // First attrib (position)
+        // Second attrib (color)
         attribs[1] =
         {
             .location = 1,
             .binding  = 0,
             .format   = VK_FORMAT_R32G32B32_SFLOAT,
             .offset   = offsetof(Vertex, color)
+        };
+
+        // Third attrib (texCoords)
+        attribs[2] =
+        {
+            .location = 2,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32_SFLOAT,
+            .offset   = offsetof(Vertex, texCoords)
         };
 
         return attribs;

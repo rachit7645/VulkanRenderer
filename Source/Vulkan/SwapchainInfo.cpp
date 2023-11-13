@@ -20,7 +20,7 @@
 
 namespace Vk
 {
-    SwapchainInfo::SwapChainInfo(VkPhysicalDevice device, VkSurfaceKHR surface)
+    SwapchainInfo::SwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
         // Get capabilities
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &capabilities);

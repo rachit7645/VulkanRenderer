@@ -6,16 +6,16 @@ namespace Renderer
     constexpr std::array<Vertex, 8> VERTICES =
     {
         // Front face
-        Vertex(glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), // Vertex 0
-        Vertex(glm::vec3( 1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)), // Vertex 1
-        Vertex(glm::vec3( 1.0f,  1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f)), // Vertex 2
-        Vertex(glm::vec3(-1.0f,  1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 0.0f)), // Vertex 3
+        Vertex(glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)), // Vertex 0
+        Vertex(glm::vec3( 1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec2(1.0f, 0.0f)), // Vertex 1
+        Vertex(glm::vec3( 1.0f,  1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f)), // Vertex 2
+        Vertex(glm::vec3(-1.0f,  1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 0.0f), glm::vec2(0.0f, 1.0f)), // Vertex 3
 
         // Back face
-        Vertex(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), // Vertex 4
-        Vertex(glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f)), // Vertex 5
-        Vertex(glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f)), // Vertex 6
-        Vertex(glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 0.0f))  // Vertex 7
+        Vertex(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)), // Vertex 4
+        Vertex(glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec2(1.0f, 0.0f)), // Vertex 5
+        Vertex(glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f)), // Vertex 6
+        Vertex(glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 0.0f), glm::vec2(0.0f, 1.0f))  // Vertex 7
     };
 
     // Index data (FIXME: HORRIBLE HARD CODING)

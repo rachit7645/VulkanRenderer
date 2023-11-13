@@ -14,30 +14,39 @@
  *    limitations under the License.
  */
 
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef SAMPLER_H
+#define SAMPLER_H
 
+#include <utility>
 #include <vulkan/vulkan.h>
 
-#include "Image.h"
-#include "ImageView.h"
-#include "Context.h"
 #include "Util/Util.h"
-#include "Externals/STBImage.h"
 
 namespace Vk
 {
-    class Texture
+    class Sampler
     {
     public:
-        // Constructor
-        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
-        // Destroy texture
+        // Default constructor
+        Sampler() = default;
+        // Create a sampler
+        Sampler
+        (
+            VkDevice device,
+            std::array<VkFilter, 2> filters,
+            VkSamplerMipmapMode mipmapMode,
+            std::array<VkSamplerAddressMode, 3> addressModes,
+            f32 mipLodBias,
+            std::pair<VkBool32, f32> anisotropy,
+            std::pair<VkBool32, VkCompareOp> compare,
+            std::array<f32, 2> lod,
+            VkBorderColor borderColor,
+            VkBool32 unnormalizedCoordinates
+        );
+        // Destroy sampler
         void Destroy(VkDevice device);
-        // Texture image data
-        Vk::Image image = {};
-        // Texture image view
-        Vk::ImageView imageView = {};
+        // Vulkan handle
+        VkSampler handle = nullptr;
     };
 }
 

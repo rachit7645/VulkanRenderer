@@ -23,19 +23,29 @@
 #include <vulkan/vulkan.h>
 
 #include "Renderer/Vertex.h"
+#include "Context.h"
 
 namespace Vk
 {
     class PipelineBuilder
     {
     public:
+        // Pipeline data
+        using PipelineData = std::tuple
+        <
+            VkPipeline,
+            VkPipelineLayout,
+            VkDescriptorSetLayout,
+            std::vector<VkDescriptorSet>
+        >;
+
         // Initialise pipeline builder
-        [[nodiscard]] static PipelineBuilder Create(VkDevice device, VkRenderPass renderPass);
+        [[nodiscard]] static PipelineBuilder Create(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass);
         // Destroy pipeline data
         ~PipelineBuilder();
 
         // Build pipeline
-        std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout> Build();
+        PipelineData Build();
 
         // Attach shader to pipeline
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
@@ -58,7 +68,7 @@ namespace Vk
         // Add push constant
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         // Add descriptor set binding
-        [[nodiscard]] PipelineBuilder& AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages);
+        [[nodiscard]] PipelineBuilder& AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages, usize count);
 
         // Shader stages
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
@@ -91,18 +101,18 @@ namespace Vk
 
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
-        // Descriptor data
-        std::vector<VkDescriptorSetLayoutBinding> descriptorSets = {};
-
+        // Descriptor set layout data
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayouts = {};
+        // Descriptor state
+        std::vector<std::pair<VkDescriptorType, usize>> descriptorStates = {};
     private:
         // Private constructor
-        explicit PipelineBuilder(VkDevice device, VkRenderPass renderPass);
+        explicit PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass);
 
-        // Pipeline device
-        VkDevice m_device = {};
+        // Vulkan context
+        std::shared_ptr<Vk::Context> m_context = nullptr;
         // Render pass
-        VkRenderPass m_renderPass = {};
-
+        VkRenderPass m_renderPass = VK_NULL_HANDLE;
         // Vertex info
         VkVertexInputBindingDescription m_bindings = {};
         Renderer::Vertex::VertexAttribs m_attribs  = {};

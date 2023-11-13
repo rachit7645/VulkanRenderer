@@ -72,4 +72,10 @@ namespace Vk
             );
         }
     }
+
+    void ImageView::Destroy(VkDevice device)
+    {
+        // Destroy
+        vkDestroyImageView(device, handle, nullptr);
+    }
 }

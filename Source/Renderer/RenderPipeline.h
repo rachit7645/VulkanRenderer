@@ -21,6 +21,7 @@
 #include "Util/Util.h"
 #include "Externals/GLM.h"
 #include "Vulkan/Buffer.h"
+#include "Vulkan/Sampler.h"
 
 namespace Renderer
 {
@@ -48,15 +49,27 @@ namespace Renderer
         // Destroy render pipeline
         void Destroy(VkDevice device) override;
 
+        // Write image descriptors
+        void WriteImageDescriptors(VkDevice device, const Vk::ImageView& imageView);
+
         // Descriptor layout
         VkDescriptorSetLayout descriptorLayout = {};
         // Shared UBOs descriptor sets
         std::array<VkDescriptorSet, Vk::FRAMES_IN_FLIGHT> sharedUBOSets = {};
+        // Texture sampler descriptor sets
+        std::array<VkDescriptorSet, Vk::FRAMES_IN_FLIGHT> samplerSets = {};
 
         // Shared data UBOs
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sharedUBOs = {};
+        // Texture sampler
+        Vk::Sampler textureSampler = {};
         // Push constant data
         std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
+    private:
+        // Copy sets into arrays
+        void CopyDescriptors(const std::vector<VkDescriptorSet>& sets);
+        // Write shared UBO descriptors
+        void WriteSharedDescriptors(VkDevice device);
     };
 }
 

@@ -26,17 +26,28 @@ namespace Vk
     // Maximum frames in flight at a time
     constexpr usize FRAMES_IN_FLIGHT = 2;
 
-    // Get number of sets to put in descriptor pool
-    consteval usize GetDescriptorPoolSize()
+    // Descriptor pool size
+    constexpr std::array<VkDescriptorPoolSize, 2> DESCRIPTOR_POOL_SIZES =
     {
-        // Descriptor sets list
-        constexpr std::array<usize, 1> DESCRIPTOR_ALLOCATIONS =
-        {
-            FRAMES_IN_FLIGHT // Shared UBO
-        };
+        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         (1 << 4) * FRAMES_IN_FLIGHT),
+        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (1 << 16) * FRAMES_IN_FLIGHT)
+    };
 
-        // Return sum
-        return std::accumulate(DESCRIPTOR_ALLOCATIONS.begin(), DESCRIPTOR_ALLOCATIONS.end(), 0);
+    // Calculate descriptor pool size
+    consteval auto GetDescriptorPoolSize() -> usize
+    {
+        // Accumulate
+        return std::accumulate
+        (
+            DESCRIPTOR_POOL_SIZES.begin(),
+            DESCRIPTOR_POOL_SIZES.end(),
+            usize{0},
+            [] (usize sum, const auto& poolSize) -> usize
+            {
+                // Add
+                return sum + poolSize.descriptorCount;
+            }
+        );
     }
 }
 

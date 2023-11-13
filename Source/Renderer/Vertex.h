@@ -28,18 +28,20 @@ namespace Renderer
     struct Vertex
     {
         // Constants
-        static constexpr usize VERTEX_NUM_ATTRIBS = 2;
+        static constexpr usize VERTEX_NUM_ATTRIBS = 3;
         // Usings
         using VertexAttribs = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
 
         // Constructor
-        constexpr Vertex(glm::vec3 position, glm::vec3 color)
+        constexpr Vertex(glm::vec3 position, glm::vec3 color, glm::vec2 texCoords)
             : position(position),
-              color(color) {}
+              color(color),
+              texCoords(texCoords) {}
 
         // Vertex data
-        glm::vec3 position = {};
-        glm::vec3 color    = {};
+        glm::vec3 position  = {};
+        glm::vec3 color     = {};
+        glm::vec2 texCoords = {};
 
         // Get binding description
         static VkVertexInputBindingDescription GetBindingDescription();

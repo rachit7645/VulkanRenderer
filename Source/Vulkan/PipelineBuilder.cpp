@@ -15,6 +15,10 @@
  */
 
 #include "PipelineBuilder.h"
+
+#include <utility>
+#include <ranges>
+
 #include "ShaderModule.h"
 #include "Util/Log.h"
 #include "Renderer/Vertex.h"
@@ -26,21 +30,21 @@ namespace Vk
 {
     // TODO: Make everything more customisable
 
-    PipelineBuilder PipelineBuilder::Create(VkDevice device, VkRenderPass renderPass)
+    PipelineBuilder PipelineBuilder::Create(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass)
     {
         // Create
-        return PipelineBuilder(device, renderPass);
+        return PipelineBuilder(std::move(context), renderPass);
     }
 
-    PipelineBuilder::PipelineBuilder(VkDevice device, VkRenderPass renderPass)
-        : m_device(device),
+    PipelineBuilder::PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass)
+        : m_context(std::move(context)),
           m_renderPass(renderPass),
           m_bindings(Vertex::GetBindingDescription()),
           m_attribs(Vertex::GetVertexAttribDescription())
     {
     }
 
-    std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout> PipelineBuilder::Build()
+    std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout, std::vector<VkDescriptorSet>> PipelineBuilder::Build()
     {
         // Descriptor set layout info
         VkDescriptorSetLayoutCreateInfo layoutInfo =
@@ -48,25 +52,25 @@ namespace Vk
             .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext        = nullptr,
             .flags        = 0,
-            .bindingCount = static_cast<u32>(descriptorSets.size()),
-            .pBindings    = descriptorSets.data()
+            .bindingCount = static_cast<u32>(descriptorSetLayouts.size()),
+            .pBindings    = descriptorSetLayouts.data()
         };
 
         // Create
         VkDescriptorSetLayout descriptorLayout = {};
         if (vkCreateDescriptorSetLayout(
-                m_device,
+                m_context->device,
                 &layoutInfo,
                 nullptr,
                 &descriptorLayout
             ) != VK_SUCCESS)
         {
             // Log
-            Logger::Error("Failed to create descriptor layout! [device={}]\n", reinterpret_cast<void*>(m_device));
+            Logger::Error("Failed to create descriptor layout! [device={}]\n", reinterpret_cast<void*>(m_context->device));
         }
 
-        // Log
-        Logger::Debug("Created descriptor layout! [handle={}]\n", reinterpret_cast<void*>(descriptorLayout));
+        // Duplicate layouts
+        auto descriptorLayouts = std::vector(descriptorSetLayouts.size(), descriptorLayout);
 
         // Pipeline layout create info
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
@@ -74,8 +78,8 @@ namespace Vk
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = 1,
-            .pSetLayouts            = &descriptorLayout,
+            .setLayoutCount         = static_cast<uint32_t>(descriptorLayouts.size()),
+            .pSetLayouts            = descriptorLayouts.data(),
             .pushConstantRangeCount = static_cast<u32>(pushConstantRanges.size()),
             .pPushConstantRanges    = pushConstantRanges.data()
         };
@@ -85,14 +89,14 @@ namespace Vk
 
         // Create pipeline layout
         if (vkCreatePipelineLayout(
-                m_device,
+                m_context->device,
                 &pipelineLayoutInfo,
                 nullptr,
                 &pipelineLayout
             ) != VK_SUCCESS)
         {
             // Log
-            Logger::Error("Failed to create pipeline layout! [device={}]\n", reinterpret_cast<void*>(m_device));
+            Logger::Error("Failed to create pipeline layout! [device={}]\n", reinterpret_cast<void*>(m_context->device));
         }
 
         // Log
@@ -127,7 +131,7 @@ namespace Vk
 
         // Create pipeline
         if (vkCreateGraphicsPipelines(
-                m_device,
+                m_context->device,
                 nullptr,
                 1,
                 &pipelineCreateInfo,
@@ -136,20 +140,35 @@ namespace Vk
             ) != VK_SUCCESS)
         {
             // Log
-            Logger::Error("Failed to create pipeline! [device={}]\n", reinterpret_cast<void*>(m_device));
+            Logger::Error("Failed to create pipeline! [device={}]\n", reinterpret_cast<void*>(m_context->device));
         }
 
+        // Calculate descriptor count
+        auto size = std::accumulate
+        (
+            descriptorStates.begin(),
+            descriptorStates.end(),
+            usize{0},
+            [] (usize sum, const auto& state) -> usize
+            {
+                // Sum
+                return sum + state.second;
+            }
+        );
+        // Allocate descriptors
+        auto descriptorSets = m_context->AllocateDescriptorSets(size, descriptorLayout);
+
         // Log
-        Logger::Info("Created pipeline object! [handle={}]\n", reinterpret_cast<void*>(pipeline));
+        Logger::Info("Created pipeline! [handle={}]\n", reinterpret_cast<void*>(pipeline));
 
         // Return
-        return {pipeline, pipelineLayout, descriptorLayout};
+        return {pipeline, pipelineLayout, descriptorLayout, descriptorSets};
     }
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
     {
         // Load shader module
-        auto shaderModule = Vk::CreateShaderModule(m_device, path);
+        auto shaderModule = Vk::CreateShaderModule(m_context->device, path);
 
         // Pipeline shader stage info
         VkPipelineShaderStageCreateInfo stageCreateInfo =
@@ -329,7 +348,7 @@ namespace Vk
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages)
+    PipelineBuilder& PipelineBuilder::AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages, usize count)
     {
         // Binding
         VkDescriptorSetLayoutBinding layoutBinding =
@@ -342,7 +361,9 @@ namespace Vk
         };
 
         // Add to vector
-        descriptorSets.emplace_back(layoutBinding);
+        descriptorSetLayouts.emplace_back(layoutBinding);
+        // Add to states
+        descriptorStates.emplace_back(type, count);
 
         // Return
         return *this;
@@ -356,7 +377,7 @@ namespace Vk
             // Log
             Logger::Debug("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
             // Destroy
-            vkDestroyShaderModule(m_device, stage.module, nullptr);
+            vkDestroyShaderModule(m_context->device, stage.module, nullptr);
         }
     }
 }

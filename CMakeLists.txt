@@ -36,7 +36,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/ValidationLayers.cpp
 	Source/Vulkan/Context.cpp
 	Source/Vulkan/QueueFamilyIndices.cpp
-        Source/Vulkan/SwapchainInfo.cpp
+	Source/Vulkan/SwapchainInfo.cpp
 	Source/Vulkan/ShaderModule.cpp
     Source/Vulkan/PipelineBuilder.cpp
 	Source/Vulkan/VertexBuffer.cpp
@@ -46,6 +46,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Util.cpp
 	Source/Vulkan/ImageView.cpp
 	Source/Vulkan/Swapchain.cpp
+	Source/Vulkan/Sampler.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/RenderPipeline.cpp
@@ -113,6 +114,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<set>
 	<tuple>
 	<functional>
+	<ranges>
     # C STL Headers
     <cstdint>
     <cstddef>

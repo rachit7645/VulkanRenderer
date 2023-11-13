@@ -26,6 +26,8 @@ namespace Vk
     class ImageView
     {
     public:
+        // Default constructor
+        ImageView() = default;
         // Create image view
         ImageView
         (
@@ -39,6 +41,8 @@ namespace Vk
             u32 baseArrayLayer = 0,
             u32 layerCount = 1
         );
+        // Destroy view
+        void Destroy(VkDevice device);
         // Vulkan handle
         VkImageView handle = VK_NULL_HANDLE;
     };

@@ -32,6 +32,8 @@ namespace Renderer
     {
         // Create render pipeline
         m_renderPipeline->Create(m_vkContext, m_swapchain);
+        // Bind texture to pipeline
+        m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_cubeMesh->texture.imageView);
     }
 
     void RenderManager::Render()
@@ -60,6 +62,13 @@ namespace Renderer
             reinterpret_cast<void*>(&m_renderPipeline->pushConstants[m_currentFrame])
         );
 
+        // Descriptor data
+        std::array<VkDescriptorSet, 2> descriptorSets =
+        {
+            m_renderPipeline->sharedUBOSets[m_currentFrame],
+            m_renderPipeline->samplerSets[m_currentFrame]
+        };
+
         // Bind descriptors
         vkCmdBindDescriptorSets
         (
@@ -67,8 +76,8 @@ namespace Renderer
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_renderPipeline->pipelineLayout,
             0,
-            1,
-            &m_renderPipeline->sharedUBOSets[m_currentFrame],
+            static_cast<u32>(descriptorSets.size()),
+            descriptorSets.data(),
             0,
             nullptr
         );

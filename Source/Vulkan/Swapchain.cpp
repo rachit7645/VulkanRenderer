@@ -42,6 +42,8 @@ namespace Vk
         CreateSwapChain(window, context);
         CreateImageViews(context->device);
         CreateFramebuffers(context->device);
+        // Log
+        Logger::Info("Recreated swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
     void Swapchain::Destroy(VkDevice device)
@@ -64,12 +66,17 @@ namespace Vk
         // Destroy swap chain images
         for (auto&& imageView : m_imageViews)
         {
-            // Delete FIXME: Move deletion into image view
-            vkDestroyImageView(device, imageView.handle, nullptr);
+            // Delete
+            imageView.Destroy(device);
         }
 
         // Destroy swap chain
         vkDestroySwapchainKHR(device, handle, nullptr);
+
+        // Clear vectors
+        framebuffers.clear();
+        m_images.clear();
+        m_imageViews.clear();
     }
 
     void Swapchain::CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
@@ -212,9 +219,6 @@ namespace Vk
                 );
             }
         }
-
-        // Log
-        Logger::Info("{}\n", "Created framebuffers!");
     }
 
     void Swapchain::CreateRenderPass(VkDevice device)
@@ -329,8 +333,6 @@ namespace Vk
             // Check for mailbox
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
-                // Log
-                Logger::Debug("{}\n", "Using mailbox presentation!");
                 // Found it!
                 return presentMode;
             }

@@ -64,10 +64,22 @@ namespace Vk
 
         // Destroy staging buffer
         stagingBuffer.DeleteBuffer(context->device);
+
+        // Create image view
+        imageView = Vk::ImageView
+        (
+            context->device,
+            image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            image.format,
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
     }
 
     void Texture::Destroy(VkDevice device)
     {
+        // Destroy image view
+        imageView.Destroy(device);
         // Destroy image
         image.Destroy(device);
     }

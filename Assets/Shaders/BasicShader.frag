@@ -17,14 +17,18 @@
 #version 460
 
 // Fragment inputs
-layout (location = 0) in vec3 fragColor;
+layout(location = 0) in vec3 fragColor;
+layout(location = 1) in vec2 fragTexCoords;
+
+// Texture sampler
+layout(binding = 1, set = 1) uniform sampler2D textureSampler;
 
 // Fragment outputs
-layout (location = 0) out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
 // Fragment entry point
 void main()
 {
     // Output color
-    outColor = vec4(fragColor, 1.0f);
+    outColor = vec4(fragColor * texture(textureSampler, fragTexCoords).rgb, 1.0f);
 }
