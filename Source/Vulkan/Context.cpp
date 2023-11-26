@@ -24,11 +24,11 @@
 #include "Util/Log.h"
 #include "Renderer/RenderPipeline.h"
 
-// Usings
-using Renderer::RenderPipeline;
-
 namespace Vk
 {
+    // Usings
+    using Renderer::RenderPipeline;
+
     #ifdef ENGINE_DEBUG
     // Layers
     constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
@@ -102,23 +102,20 @@ namespace Vk
         );
     }
 
-    std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout)
+    std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts)
     {
-        // Layout
-        auto layouts = std::vector<VkDescriptorSetLayout>(count, descriptorLayout);
-
         // Allocation info
         VkDescriptorSetAllocateInfo allocInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .pNext              = nullptr,
             .descriptorPool     = m_descriptorPool,
-            .descriptorSetCount = static_cast<u32>(layouts.size()),
-            .pSetLayouts        = layouts.data()
+            .descriptorSetCount = static_cast<u32>(descriptorLayouts.size()),
+            .pSetLayouts        = descriptorLayouts.data()
         };
 
         // Descriptor sets
-        auto descriptorSets = std::vector<VkDescriptorSet>(layouts.size(), VK_NULL_HANDLE);
+        auto descriptorSets = std::vector<VkDescriptorSet>(descriptorLayouts.size(), VK_NULL_HANDLE);
 
         // Allocate
         if (vkAllocateDescriptorSets(
@@ -130,9 +127,6 @@ namespace Vk
             // Log
             Logger::Error("Failed to allocate descriptor sets! [pool={}]\n", reinterpret_cast<void*>(m_descriptorPool));
         }
-
-        // Log
-        Logger::Debug("Allocated descriptor sets! [count={}]\n", count);
 
         // Return
         return descriptorSets;

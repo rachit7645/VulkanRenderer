@@ -22,6 +22,7 @@
 #include "Externals/GLM.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Sampler.h"
+#include "Vulkan/DescriptorSetData.h"
 
 namespace Renderer
 {
@@ -45,31 +46,32 @@ namespace Renderer
         };
 
         // Create render pipeline
-        void Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain) override;
+        void Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain);
         // Destroy render pipeline
-        void Destroy(VkDevice device) override;
+        void Destroy(VkDevice device);
 
         // Write image descriptors
         void WriteImageDescriptors(VkDevice device, const Vk::ImageView& imageView);
 
-        // Descriptor layout
-        VkDescriptorSetLayout descriptorLayout = {};
-        // Shared UBOs descriptor sets
-        std::array<VkDescriptorSet, Vk::FRAMES_IN_FLIGHT> sharedUBOSets = {};
-        // Texture sampler descriptor sets
-        std::array<VkDescriptorSet, Vk::FRAMES_IN_FLIGHT> samplerSets = {};
+        // Get shared UBO set data
+        Vk::DescriptorSetData& GetSharedUBOData();
+        // Get texture sampler data
+        Vk::DescriptorSetData& GetTextureSamplerData();
+
+        // Push constant data
+        std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
+        // Descriptor data
+        std::array<Vk::DescriptorSetData, 2> descriptorData = {};
 
         // Shared data UBOs
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sharedUBOs = {};
         // Texture sampler
         Vk::Sampler textureSampler = {};
-        // Push constant data
-        std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
     private:
-        // Copy sets into arrays
-        void CopyDescriptors(const std::vector<VkDescriptorSet>& sets);
+        // Create associated pipeline data
+        void CreatePipelineData(const std::shared_ptr<Vk::Context>& vkContext);
         // Write shared UBO descriptors
-        void WriteSharedDescriptors(VkDevice device);
+        void WriteSharedUBODescriptors(VkDevice device);
     };
 }
 

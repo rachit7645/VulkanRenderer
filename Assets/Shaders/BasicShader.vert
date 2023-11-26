@@ -16,7 +16,7 @@
 
 #version 460
 
-layout(binding = 0, set = 0) uniform SharedDataBuffer
+layout(binding = 0) uniform SharedDataBuffer
 {
     mat4 view;
     mat4 proj;

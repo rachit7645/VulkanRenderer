@@ -23,7 +23,6 @@
 #include "Util/Log.h"
 
 /// There is absolutely no reason for this to be written in this way. Just absolutely none.
-/// I just wanted to experiment with constraints and concepts.
 /// Please forgive my sins.
 
 namespace Vk
@@ -36,8 +35,8 @@ namespace Vk
     template<typename T>
     using LoaderType = PFN_vkVoidFunction (VKAPI_PTR*) (T, const char*);
 
-    // Template to load function
-    template <typename PFN, typename Param1Type, LoaderType<Param1Type> Loader>
+    // Template to load functions (PFN = Pointer to Function)
+    template<typename PFN, typename Param1Type, LoaderType<Param1Type> Loader>
         requires (std::is_pointer_v<PFN>) && (HasLoader<Param1Type>) && (Loader != nullptr)
     [[nodiscard]] PFN LoadExtension(Param1Type param1, std::string_view name)
     {

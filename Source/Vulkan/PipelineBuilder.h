@@ -24,6 +24,7 @@
 
 #include "Renderer/Vertex.h"
 #include "Context.h"
+#include "DescriptorSetData.h"
 
 namespace Vk
 {
@@ -35,8 +36,7 @@ namespace Vk
         <
             VkPipeline,
             VkPipelineLayout,
-            VkDescriptorSetLayout,
-            std::vector<VkDescriptorSet>
+            std::vector<Vk::DescriptorSetData>
         >;
 
         // Initialise pipeline builder
@@ -102,20 +102,25 @@ namespace Vk
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
         // Descriptor set layout data
-        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayouts = {};
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSetBindings = {};
         // Descriptor state
         std::vector<std::pair<VkDescriptorType, usize>> descriptorStates = {};
     private:
         // Private constructor
         explicit PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass);
 
+        // Creates descriptor set layouts
+        std::vector<VkDescriptorSetLayout> CreateDescriptorSetLayouts();
+        // Allocate sets
+        std::vector<Vk::DescriptorSetData> AllocateDescriptorSets(const std::vector<VkDescriptorSetLayout>& descriptorLayouts);
+
         // Vulkan context
         std::shared_ptr<Vk::Context> m_context = nullptr;
         // Render pass
         VkRenderPass m_renderPass = VK_NULL_HANDLE;
         // Vertex info
-        VkVertexInputBindingDescription m_bindings = {};
-        Renderer::Vertex::VertexAttribs m_attribs  = {};
+        VkVertexInputBindingDescription m_vertexInputBindings = {};
+        Renderer::Vertex::VertexAttribs m_vertexAttribs  = {};
     };
 }
 

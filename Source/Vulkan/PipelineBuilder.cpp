@@ -39,38 +39,15 @@ namespace Vk
     PipelineBuilder::PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass)
         : m_context(std::move(context)),
           m_renderPass(renderPass),
-          m_bindings(Vertex::GetBindingDescription()),
-          m_attribs(Vertex::GetVertexAttribDescription())
+          m_vertexInputBindings(Vertex::GetBindingDescription()),
+          m_vertexAttribs(Vertex::GetVertexAttribDescription())
     {
     }
 
-    std::tuple<VkPipeline, VkPipelineLayout, VkDescriptorSetLayout, std::vector<VkDescriptorSet>> PipelineBuilder::Build()
+    PipelineBuilder::PipelineData PipelineBuilder::Build()
     {
-        // Descriptor set layout info
-        VkDescriptorSetLayoutCreateInfo layoutInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .pNext        = nullptr,
-            .flags        = 0,
-            .bindingCount = static_cast<u32>(descriptorSetLayouts.size()),
-            .pBindings    = descriptorSetLayouts.data()
-        };
-
-        // Create
-        VkDescriptorSetLayout descriptorLayout = {};
-        if (vkCreateDescriptorSetLayout(
-                m_context->device,
-                &layoutInfo,
-                nullptr,
-                &descriptorLayout
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create descriptor layout! [device={}]\n", reinterpret_cast<void*>(m_context->device));
-        }
-
-        // Duplicate layouts
-        auto descriptorLayouts = std::vector(descriptorSetLayouts.size(), descriptorLayout);
+        // Create descriptor set layouts
+        auto descriptorLayouts = CreateDescriptorSetLayouts();
 
         // Pipeline layout create info
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
@@ -143,26 +120,14 @@ namespace Vk
             Logger::Error("Failed to create pipeline! [device={}]\n", reinterpret_cast<void*>(m_context->device));
         }
 
-        // Calculate descriptor count
-        auto size = std::accumulate
-        (
-            descriptorStates.begin(),
-            descriptorStates.end(),
-            usize{0},
-            [] (usize sum, const auto& state) -> usize
-            {
-                // Sum
-                return sum + state.second;
-            }
-        );
-        // Allocate descriptors
-        auto descriptorSets = m_context->AllocateDescriptorSets(size, descriptorLayout);
+        // Create descriptor sets
+        auto descriptorMap = AllocateDescriptorSets(descriptorLayouts);
 
         // Log
         Logger::Info("Created pipeline! [handle={}]\n", reinterpret_cast<void*>(pipeline));
 
         // Return
-        return {pipeline, pipelineLayout, descriptorLayout, descriptorSets};
+        return {pipeline, pipelineLayout, descriptorMap};
     }
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
@@ -224,9 +189,9 @@ namespace Vk
             .pNext                           = nullptr,
             .flags                           = 0,
             .vertexBindingDescriptionCount   = 1,
-            .pVertexBindingDescriptions      = &m_bindings,
-            .vertexAttributeDescriptionCount = static_cast<u32>(m_attribs.size()),
-            .pVertexAttributeDescriptions    = m_attribs.data()
+            .pVertexBindingDescriptions      = &m_vertexInputBindings,
+            .vertexAttributeDescriptionCount = static_cast<u32>(m_vertexAttribs.size()),
+            .pVertexAttributeDescriptions    = m_vertexAttribs.data()
         };
 
         // Return
@@ -361,12 +326,77 @@ namespace Vk
         };
 
         // Add to vector
-        descriptorSetLayouts.emplace_back(layoutBinding);
+        descriptorSetBindings.emplace_back(layoutBinding);
         // Add to states
         descriptorStates.emplace_back(type, count);
 
         // Return
         return *this;
+    }
+
+    std::vector<VkDescriptorSetLayout> PipelineBuilder::CreateDescriptorSetLayouts()
+    {
+        // Descriptor layouts
+        std::vector<VkDescriptorSetLayout> descriptorLayouts = {};
+        // Reserve
+        descriptorLayouts.reserve(descriptorSetBindings.size());
+
+        // Loop
+        for (auto& descriptorSetBinding : descriptorSetBindings)
+        {
+            // Descriptor set layout info
+            VkDescriptorSetLayoutCreateInfo layoutInfo =
+            {
+                .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .pNext        = nullptr,
+                .flags        = 0,
+                .bindingCount = 1,
+                .pBindings    = &descriptorSetBinding
+            };
+
+            // Create
+            VkDescriptorSetLayout descriptorLayout = {};
+            if (vkCreateDescriptorSetLayout(
+                    m_context->device,
+                    &layoutInfo,
+                    nullptr,
+                    &descriptorLayout
+                ) != VK_SUCCESS)
+            {
+                // Log
+                Logger::Error("Failed to create descriptor layout! [device={}]\n",
+                    reinterpret_cast<void*>(m_context->device));
+            }
+
+            // Append
+            descriptorLayouts.emplace_back(descriptorLayout);
+        }
+
+        // NVRO POG
+        return descriptorLayouts;
+    }
+
+    std::vector<Vk::DescriptorSetData> PipelineBuilder::AllocateDescriptorSets(const std::vector<VkDescriptorSetLayout>& descriptorLayouts)
+    {
+        // Allocate map
+        auto data = std::vector<Vk::DescriptorSetData>();
+        data.reserve(descriptorLayouts.size());
+
+        // Loop
+        for (usize i = 0; i < descriptorLayouts.size(); ++i)
+        {
+            // Get state
+            auto [type, count] = descriptorStates[i];
+            // Duplicate layouts
+            auto layouts = std::vector<VkDescriptorSetLayout>(count, descriptorLayouts[i]);
+            // Allocate sets
+            auto sets = m_context->AllocateDescriptorSets(layouts);
+            // Insert into map
+            data.emplace_back(descriptorSetBindings[i].binding, type, descriptorLayouts[i], sets);
+        }
+
+        // Return (NVRO please work)
+        return data;
     }
 
     PipelineBuilder::~PipelineBuilder()

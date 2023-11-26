@@ -14,22 +14,24 @@
  *    limitations under the License.
  */
 
-#ifndef I_PIPELINE_H
-#define I_PIPELINE_H
+#ifndef DESCRIPTOR_SET_DATA_H
+#define DESCRIPTOR_SET_DATA_H
 
-#include <memory>
+#include <vector>
 #include <vulkan/vulkan.h>
-#include "Vulkan/Context.h"
-#include "Vulkan/Swapchain.h"
 
-namespace Renderer
+namespace Vk
 {
-    struct IPipeline
+    struct DescriptorSetData
     {
-        // Pipeline data
-        VkPipeline pipeline = {};
+        // Binding
+        u32 binding = 0;
+        // Type
+        VkDescriptorType type = {};
         // Layout
-        VkPipelineLayout pipelineLayout = {};
+        VkDescriptorSetLayout layout = {};
+        // Descriptors
+        std::vector<VkDescriptorSet> sets = {};
     };
 }
 

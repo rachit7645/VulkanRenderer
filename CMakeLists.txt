@@ -127,8 +127,6 @@ target_precompile_headers(VulkanRenderer PRIVATE
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
-# -O3 optimisations
-target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable CPU vectorisation (SSE or better)
 target_compile_options(VulkanRenderer PRIVATE -march=native)
 
@@ -138,6 +136,11 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
 	# Enable debug output
 	target_compile_options(VulkanRenderer PRIVATE -g)
+	# -Og optimisations
+	target_compile_options(VulkanRenderer PRIVATE -Og)
+else()
+	# -O3 optimisations
+	target_compile_options(VulkanRenderer PRIVATE -O3)
 endif()
 
 # Add shader dependency

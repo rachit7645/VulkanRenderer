@@ -65,8 +65,8 @@ namespace Renderer
         // Descriptor data
         std::array<VkDescriptorSet, 2> descriptorSets =
         {
-            m_renderPipeline->sharedUBOSets[m_currentFrame],
-            m_renderPipeline->samplerSets[m_currentFrame]
+            m_renderPipeline->GetSharedUBOData().sets[m_currentFrame],
+            m_renderPipeline->GetTextureSamplerData().sets[m_currentFrame]
         };
 
         // Bind descriptors

@@ -52,8 +52,8 @@ namespace Vk
         static void CopyBuffer
         (
             const std::shared_ptr<Vk::Context>& context,
-            Vk::Buffer srcBuffer,
-            Vk::Buffer dstBuffer,
+            Vk::Buffer& srcBuffer,
+            Vk::Buffer& dstBuffer,
             VkDeviceSize copySize
         );
 

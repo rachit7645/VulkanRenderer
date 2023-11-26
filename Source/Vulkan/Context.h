@@ -45,7 +45,7 @@ namespace Vk
         // Free command buffers
         void FreeCommandBuffers(const std::span<const VkCommandBuffer> cmdBuffers);
         // Allocates descriptors
-        std::vector<VkDescriptorSet> AllocateDescriptorSets(u32 count, VkDescriptorSetLayout descriptorLayout);
+        std::vector<VkDescriptorSet> AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts);
 
         // Vulkan instance
         VkInstance vkInstance = {};
