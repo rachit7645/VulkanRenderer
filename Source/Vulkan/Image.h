@@ -37,12 +37,21 @@ namespace Vk
             u32 height,
             VkFormat format,
             VkImageTiling tiling,
+            VkImageAspectFlags aspect,
             VkImageUsageFlags usage,
             VkMemoryPropertyFlags properties
         );
 
         // Copy image (for swap chain)
-        Image(u32 width, u32 height, VkFormat format, VkImage image);
+        Image
+        (
+            VkImage image,
+            u32 width,
+            u32 height,
+            VkFormat format,
+            VkImageTiling tiling,
+            VkImageAspectFlags aspect
+        );
 
         // Transitions image layout
         void TransitionLayout
@@ -67,8 +76,9 @@ namespace Vk
         u32 height = 0;
 
         // Image properties
-        VkFormat      format = VK_FORMAT_UNDEFINED;
-        VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+        VkFormat           format = VK_FORMAT_UNDEFINED;
+        VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
+        VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
     private:
         // Create image & allocate memory for image
         void CreateImage

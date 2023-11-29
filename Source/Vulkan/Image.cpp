@@ -29,13 +29,11 @@ namespace Vk
         u32 height,
         VkFormat format,
         VkImageTiling tiling,
+        VkImageAspectFlags aspect,
         VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties
     )
-        : width(width),
-          height(height),
-          format(format),
-          tiling(tiling)
+        : Image(VK_NULL_HANDLE, width, height, format, tiling, aspect)
     {
         // Create image
         CreateImage(context, usage, properties);
@@ -43,12 +41,21 @@ namespace Vk
         Logger::Info("Created image! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
-    Image::Image(u32 width, u32 height, VkFormat format, VkImage image)
+    Image::Image
+    (
+        VkImage image,
+        u32 width,
+        u32 height,
+        VkFormat format,
+        VkImageTiling tiling,
+        VkImageAspectFlags aspect
+    )
         : handle(image),
           width(width),
           height(height),
           format(format),
-          tiling(VK_IMAGE_TILING_OPTIMAL)
+          tiling(tiling),
+          aspect(aspect)
     {
     }
 
@@ -153,7 +160,7 @@ namespace Vk
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image               = handle,
                 .subresourceRange    = {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT, // FIXME: Make this a parameter
+                    .aspectMask     = aspect,
                     .baseMipLevel   = 0,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
@@ -218,7 +225,7 @@ namespace Vk
                 .bufferRowLength   = 0,
                 .bufferImageHeight = 0,
                 .imageSubresource  = {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT, // FIXME: Make this a parameter
+                    .aspectMask     = aspect,
                     .mipLevel       = 0,
                     .baseArrayLayer = 0,
                     .layerCount     = 1
@@ -241,6 +248,13 @@ namespace Vk
 
     void Image::Destroy(VkDevice device)
     {
+        // Log
+        Logger::Debug
+        (
+            "Destroying image! [handle={}] [memory={}]\n",
+            reinterpret_cast<void*>(handle),
+            reinterpret_cast<void*>(memory)
+        );
         // Destroy image
         vkDestroyImage(device, handle, nullptr);
         // Free associated memory

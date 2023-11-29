@@ -61,7 +61,7 @@ namespace Renderer
         // Push constant data
         std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
         // Descriptor data
-        std::array<Vk::DescriptorSetData, 2> descriptorData = {};
+        std::vector<Vk::DescriptorSetData> descriptorData = {};
 
         // Shared data UBOs
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sharedUBOs = {};

@@ -72,6 +72,7 @@ namespace Renderer
                        .SetIAState()
                        .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                        .SetMSAAState()
+                       .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
                        .SetBlendState()
                        .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
                        .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   Vk::FRAMES_IN_FLIGHT)
@@ -79,15 +80,7 @@ namespace Renderer
                        .Build();
 
         // Retrieve members
-        std::tie(pipeline, pipelineLayout, _descriptorData) = pipelineData;
-
-        // Copy descriptor data
-        std::copy
-        (
-            _descriptorData.begin(),
-            _descriptorData.end(),
-            descriptorData.begin()
-        );
+        std::tie(pipeline, pipelineLayout, descriptorData) = pipelineData;
 
         // Create pipeline data
         CreatePipelineData(vkContext);
@@ -179,7 +172,7 @@ namespace Renderer
             VK_SAMPLER_MIPMAP_MODE_LINEAR,
             {VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT},
             0.0f,
-            {VK_FALSE, 0.0f},
+            {VK_TRUE, 2.0f},
             {VK_FALSE, VK_COMPARE_OP_ALWAYS},
             {0.0f, 0.0f},
             VK_BORDER_COLOR_INT_OPAQUE_BLACK,

@@ -242,7 +242,6 @@ namespace Vk
         // Device scores
         auto scores = std::map<usize, VkPhysicalDevice>{};
 
-
         // Get information about physical devices
         for (const auto& currentDevice : devices)
         {
@@ -267,7 +266,7 @@ namespace Vk
             ));
 
             // Add score
-            scores.emplace(CalculateScore(currentDevice, propertySet), currentDevice);
+            scores.emplace(CalculateScore(currentDevice, propertySet, featureSet), currentDevice);
         }
 
         // Log string
@@ -291,7 +290,12 @@ namespace Vk
         Logger::Info("Selecting GPU: {}\n", properties[physicalDevice].deviceName);
     }
 
-    usize Context::CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet)
+    usize Context::CalculateScore
+    (
+        VkPhysicalDevice logicalDevice,
+        VkPhysicalDeviceProperties& propertySet,
+        VkPhysicalDeviceFeatures& featureSet
+    )
     {
         // Get queue
         auto queue = QueueFamilyIndices(logicalDevice, surface);
@@ -302,6 +306,7 @@ namespace Vk
         // Calculate score multipliers
         bool isQueueValid  = queue.IsComplete();
         bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
+        bool hasAnisotropy = featureSet.samplerAnisotropy;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -315,7 +320,7 @@ namespace Vk
         }
 
         // Calculate score
-        return hasExtensions * isQueueValid * isSwapChainAdequate * discreteGPU;
+        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -349,6 +354,7 @@ namespace Vk
 
         // Vulkan device features
         VkPhysicalDeviceFeatures deviceFeatures = {};
+        deviceFeatures.samplerAnisotropy = VK_TRUE;
 
         // Logical device creation info
         VkDeviceCreateInfo createInfo =

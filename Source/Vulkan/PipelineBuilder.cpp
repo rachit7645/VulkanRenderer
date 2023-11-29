@@ -93,7 +93,7 @@ namespace Vk
             .pViewportState      = &viewportInfo,
             .pRasterizationState = &rasterizationInfo,
             .pMultisampleState   = &msaaStateInfo,
-            .pDepthStencilState  = nullptr,
+            .pDepthStencilState  = &depthStencilInfo,
             .pColorBlendState    = &colorBlendInfo,
             .pDynamicState       = &dynamicStateInfo,
             .layout              = pipelineLayout,
@@ -252,6 +252,37 @@ namespace Vk
             .pSampleMask           = nullptr,
             .alphaToCoverageEnable = VK_FALSE,
             .alphaToOneEnable      = VK_FALSE
+        };
+
+        // Return
+        return *this;
+    }
+
+    PipelineBuilder& PipelineBuilder::SetDepthStencilState
+    (
+        VkBool32 depthTestEnable,
+        VkBool32 depthWriteEnable,
+        VkCompareOp depthCompareOp,
+        VkBool32 stencilTestEnable,
+        VkStencilOpState front,
+        VkStencilOpState back
+    )
+    {
+        // Depth stencil state
+        depthStencilInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .depthTestEnable       = depthTestEnable,
+            .depthWriteEnable      = depthWriteEnable,
+            .depthCompareOp        = depthCompareOp,
+            .depthBoundsTestEnable = VK_FALSE,
+            .stencilTestEnable     = stencilTestEnable,
+            .front                 = front,
+            .back                  = back,
+            .minDepthBounds        = 0.0f,
+            .maxDepthBounds        = 1.0f
         };
 
         // Return

@@ -75,6 +75,8 @@ namespace Vk
 
     void ImageView::Destroy(VkDevice device)
     {
+        // Log
+        Logger::Debug("Destroying image view! [handle={}]\n", reinterpret_cast<void*>(handle));
         // Destroy
         vkDestroyImageView(device, handle, nullptr);
     }

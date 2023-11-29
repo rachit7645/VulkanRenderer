@@ -77,7 +77,12 @@ namespace Vk
         // Pick a GPU
         void PickPhysicalDevice();
         // Calculate score
-        [[nodiscard]] usize CalculateScore(VkPhysicalDevice logicalDevice, VkPhysicalDeviceProperties propertySet);
+        [[nodiscard]] usize CalculateScore
+        (
+            VkPhysicalDevice logicalDevice,
+            VkPhysicalDeviceProperties& propertySet,
+            VkPhysicalDeviceFeatures& featureSet
+        );
         // Create a logical device
         void CreateLogicalDevice();
 

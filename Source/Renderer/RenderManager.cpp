@@ -151,18 +151,18 @@ namespace Renderer
             );
         }
 
-        // Clear color (weird ahh notation)
-        VkClearValue clearValue =
-        {.color =
-            {.float32 =
-                {
-                    Renderer::CLEAR_COLOR.r,
-                    Renderer::CLEAR_COLOR.g,
-                    Renderer::CLEAR_COLOR.b,
-                    Renderer::CLEAR_COLOR.a
-                }
-            }
-        };
+        // Clear values
+        std::array<VkClearValue, 2> clearValues = {};
+        // Color
+        clearValues[0].color =
+        {{
+            Renderer::CLEAR_COLOR.r,
+            Renderer::CLEAR_COLOR.g,
+            Renderer::CLEAR_COLOR.b,
+            Renderer::CLEAR_COLOR.a
+        }};
+        // Depth + Stencil
+        clearValues[1].depthStencil = {.depth = 1.0f, .stencil= 0};
 
         // Render pass begin info
         VkRenderPassBeginInfo renderPassInfo =
@@ -175,8 +175,8 @@ namespace Renderer
                 .offset = {0, 0},
                 .extent = m_swapchain->extent
             },
-            .clearValueCount = 1,
-            .pClearValues    = &clearValue
+            .clearValueCount = static_cast<u32>(clearValues.size()),
+            .pClearValues    = clearValues.data()
         };
 
         // Begin render pass

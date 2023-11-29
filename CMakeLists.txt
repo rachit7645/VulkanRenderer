@@ -47,6 +47,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/ImageView.cpp
 	Source/Vulkan/Swapchain.cpp
 	Source/Vulkan/Sampler.cpp
+	Source/Vulkan/DepthBuffer.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/RenderPipeline.cpp

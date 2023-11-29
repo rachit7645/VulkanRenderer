@@ -24,6 +24,7 @@ namespace Vk
         // Create swap chain
         CreateSwapChain(window, context);
         CreateImageViews(context->device);
+        CreateDepthBuffer(context);
         CreateRenderPass(context->device);
         CreateFramebuffers(context->device);
         // Log
@@ -41,6 +42,7 @@ namespace Vk
         // Create new swap chain
         CreateSwapChain(window, context);
         CreateImageViews(context->device);
+        CreateDepthBuffer(context);
         CreateFramebuffers(context->device);
         // Log
         Logger::Info("Recreated swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
@@ -59,17 +61,17 @@ namespace Vk
         // Destroy framebuffers
         for (auto&& framebuffer : framebuffers)
         {
-            // Destroy
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
 
         // Destroy swap chain images
         for (auto&& imageView : m_imageViews)
         {
-            // Delete
             imageView.Destroy(device);
         }
 
+        // Destroy depth buffer
+        depthBuffer.Destroy(device);
         // Destroy swap chain
         vkDestroySwapchainKHR(device, handle, nullptr);
 
@@ -160,7 +162,7 @@ namespace Vk
         for (auto image : _images)
         {
             // Create and add to vector
-            m_images.emplace_back(extent.width, extent.height, m_imageFormat, image);
+            m_images.emplace_back(image, extent.width, extent.height, m_imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
         }
     }
 
@@ -181,44 +183,10 @@ namespace Vk
         }
     }
 
-    void Swapchain::CreateFramebuffers(VkDevice device)
+    void Swapchain::CreateDepthBuffer(const std::shared_ptr<Vk::Context>& context)
     {
-        // Resize
-        framebuffers.resize(m_imageViews.size());
-
-        // For each image view
-        for (usize i = 0; i < m_imageViews.size(); ++i)
-        {
-            // Framebuffer info
-            VkFramebufferCreateInfo framebufferInfo =
-            {
-                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .pNext           = nullptr,
-                .flags           = 0,
-                .renderPass      = renderPass,
-                .attachmentCount = 1,
-                .pAttachments    = &m_imageViews[i].handle,
-                .width           = extent.width,
-                .height          = extent.height,
-                .layers          = 1
-            };
-
-            // Create framebuffer
-            if (vkCreateFramebuffer(
-                    device,
-                    &framebufferInfo,
-                    nullptr,
-                    &framebuffers[i]
-                ) != VK_SUCCESS)
-            {
-                // Log
-                Logger::Error
-                (
-                    "Failed to create framebuffer #{}! [image={}]\n",
-                    i, reinterpret_cast<void*>(&m_imageViews[i])
-                );
-            }
-        }
+        // Create
+        depthBuffer = Vk::DepthBuffer(context, extent);
     }
 
     void Swapchain::CreateRenderPass(VkDevice device)
@@ -244,6 +212,30 @@ namespace Vk
             .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         };
 
+        // Depth attachment
+        VkAttachmentDescription depthAttachment =
+        {
+            .flags          = 0,
+            .format         = depthBuffer.depthImage.format,
+            .samples        = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        };
+
+        // Depth attachment ref
+        VkAttachmentReference depthAttachmentRef =
+        {
+            .attachment = 1,
+            .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        };
+
+        // Attachments
+        std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+
         // Subpass description
         VkSubpassDescription subpass =
         {
@@ -254,7 +246,7 @@ namespace Vk
             .colorAttachmentCount    = 1,
             .pColorAttachments       = &colorAttachmentRef,
             .pResolveAttachments     = nullptr,
-            .pDepthStencilAttachment = nullptr,
+            .pDepthStencilAttachment = &depthAttachmentRef,
             .preserveAttachmentCount = 0,
             .pPreserveAttachments    = nullptr
         };
@@ -264,10 +256,10 @@ namespace Vk
         {
             .srcSubpass      = VK_SUBPASS_EXTERNAL,
             .dstSubpass      = 0,
-            .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
             .srcAccessMask   = 0,
-            .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             .dependencyFlags = 0
         };
 
@@ -277,8 +269,8 @@ namespace Vk
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             .pNext           = nullptr,
             .flags           = 0,
-            .attachmentCount = 1,
-            .pAttachments    = &colorAttachment,
+            .attachmentCount = static_cast<u32>(attachments.size()),
+            .pAttachments    = attachments.data(),
             .subpassCount    = 1,
             .pSubpasses      = &subpass,
             .dependencyCount = 1,
@@ -299,6 +291,53 @@ namespace Vk
 
         // Log
         Logger::Info("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
+    }
+
+    void Swapchain::CreateFramebuffers(VkDevice device)
+    {
+        // Resize
+        framebuffers.resize(m_imageViews.size());
+
+        // For each image view
+        for (usize i = 0; i < m_imageViews.size(); ++i)
+        {
+            // Attachments
+            std::array<VkImageView, 2> attachmentViews =
+            {
+                m_imageViews[i].handle,
+                depthBuffer.depthImageView.handle
+            };
+
+            // Framebuffer info
+            VkFramebufferCreateInfo framebufferInfo =
+            {
+                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext           = nullptr,
+                .flags           = 0,
+                .renderPass      = renderPass,
+                .attachmentCount = static_cast<u32>(attachmentViews.size()),
+                .pAttachments    = attachmentViews.data(),
+                .width           = extent.width,
+                .height          = extent.height,
+                .layers          = 1
+            };
+
+            // Create framebuffer
+            if (vkCreateFramebuffer(
+                    device,
+                    &framebufferInfo,
+                    nullptr,
+                    &framebuffers[i]
+                ) != VK_SUCCESS)
+            {
+                // Log
+                Logger::Error
+                (
+                "Failed to create framebuffer #{}! [image={}]\n",
+                i, reinterpret_cast<void*>(&m_imageViews[i])
+                );
+            }
+        }
     }
 
     VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const SwapchainInfo& swapChainInfo)

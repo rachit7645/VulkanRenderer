@@ -28,6 +28,7 @@
 #include "ImageView.h"
 #include "Context.h"
 #include "Engine/Window.h"
+#include "DepthBuffer.h"
 
 namespace Vk
 {
@@ -50,6 +51,8 @@ namespace Vk
         VkExtent2D extent = {};
         // Swap chain framebuffers
         std::vector<VkFramebuffer> framebuffers = {};
+        // Swap chain depth buffer
+        Vk::DepthBuffer depthBuffer;
         // Swap chain presentation render pass
         VkRenderPass renderPass = {};
     private:
@@ -59,6 +62,8 @@ namespace Vk
         void CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
         // Create image views
         void CreateImageViews(VkDevice device);
+        // Create depth buffer
+        void CreateDepthBuffer(const std::shared_ptr<Vk::Context>& context);
         // Creates the default render pass
         void CreateRenderPass(VkDevice device);
         // Create swap chain framebuffers

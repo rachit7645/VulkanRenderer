@@ -63,6 +63,16 @@ namespace Vk
         [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace);
         // Set MSAA state
         [[nodiscard]] PipelineBuilder& SetMSAAState();
+        // Set depth/stencil state
+        [[nodiscard]] PipelineBuilder& SetDepthStencilState
+        (
+            VkBool32 depthTestEnable,
+            VkBool32 depthWriteEnable,
+            VkCompareOp depthCompareOp,
+            VkBool32 stencilTestEnable,
+            VkStencilOpState front,
+            VkStencilOpState back
+        );
         // Set color blending state
         [[nodiscard]] PipelineBuilder& SetBlendState();
         // Add push constant
@@ -93,6 +103,8 @@ namespace Vk
         VkPipelineRasterizationStateCreateInfo rasterizationInfo = {};
         // MSAA state
         VkPipelineMultisampleStateCreateInfo msaaStateInfo = {};
+        // Depth/Stencil State
+        VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {};
 
         // Blend states
         std::vector<VkPipelineColorBlendAttachmentState> colorBlendStates = {};
