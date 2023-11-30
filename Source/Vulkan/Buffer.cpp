@@ -16,7 +16,7 @@
 
 #include "Buffer.h"
 #include "Util/Log.h"
-#include "Renderer/Vertex.h"
+#include "Models/Vertex.h"
 #include "Util.h"
 
 namespace Vk
@@ -169,7 +169,7 @@ namespace Vk
     }
 
     // Explicit template initialisations
-    template void Buffer::LoadData(VkDevice, std::span<const Renderer::Vertex>);
+    template void Buffer::LoadData(VkDevice, std::span<const Models::Vertex>);
     template void Buffer::LoadData(VkDevice, std::span<const f32>);
     template void Buffer::LoadData(VkDevice, std::span<const u8>);
     template void Buffer::LoadData(VkDevice, std::span<const u16>);

@@ -21,7 +21,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"
-#include "Renderer/Vertex.h"
+#include "Models/Vertex.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -35,12 +35,12 @@ namespace Vk
         VertexBuffer
         (
             const std::shared_ptr<Vk::Context>& context,
-            const std::span<const Renderer::Vertex> vertices,
-            const std::span<const Renderer::Index> indices
+            const std::span<const Models::Vertex> vertices,
+            const std::span<const Models::Index> indices
         );
 
         // Bind buffer
-        void BindBuffer(VkCommandBuffer commandBuffer);
+        void BindBuffer(VkCommandBuffer commandBuffer) const;
         // Destroys the buffer
         void DestroyBuffer(VkDevice device);
 
@@ -54,7 +54,7 @@ namespace Vk
         // Index count
         u32 indexCount = 0;
         // Index type
-        VkIndexType indexType = std::is_same_v<Renderer::Index, u32> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+        VkIndexType indexType = VK_INDEX_TYPE_UINT32;
     private:
         // Init buffer
         template<typename T>

@@ -190,6 +190,15 @@ namespace Vk
                 srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
                 dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             }
+            else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+            {
+                // Access data
+                barrier.srcAccessMask = 0;
+                barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                // Stage data
+                srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            }
             else
             {
                 // Invalid

@@ -28,12 +28,12 @@ namespace Renderer
           m_vkContext(std::make_shared<Vk::Context>(m_window)),
           m_swapchain(std::make_shared<Vk::Swapchain>(m_window, m_vkContext)),
           m_renderPipeline(std::make_unique<RenderPipeline>()),
-          m_cubeMesh(std::make_unique<Mesh>(m_vkContext))
+          m_model(std::make_unique<Models::Model>(m_vkContext, "Mario/Mario.gltf"))
     {
         // Create render pipeline
         m_renderPipeline->Create(m_vkContext, m_swapchain);
         // Bind texture to pipeline
-        m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_cubeMesh->texture.imageView);
+        m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_model->meshes[0].texture.imageView);
     }
 
     void RenderManager::Render()
@@ -48,9 +48,6 @@ namespace Renderer
         BeginFrame();
         // Update
         Update();
-
-        // Bind buffer
-        m_cubeMesh->vertexBuffer.BindBuffer(currentCommandBuffer);
 
         // Load push constants
         vkCmdPushConstants
@@ -82,16 +79,22 @@ namespace Renderer
             nullptr
         );
 
-        // Draw triangle
-        vkCmdDrawIndexed
-        (
-            currentCommandBuffer,
-            m_cubeMesh->vertexBuffer.indexCount,
-            1,
-            0,
-            0,
-            0
-        );
+        // Loop over meshes
+        for (const auto& mesh : m_model->meshes)
+        {
+            // Bind buffer
+            mesh.vertexBuffer.BindBuffer(currentCommandBuffer);
+            // Draw triangle
+            vkCmdDrawIndexed
+            (
+                currentCommandBuffer,
+                mesh.vertexBuffer.indexCount,
+                1,
+                0,
+                0,
+                0
+            );
+        }
 
         // End
         EndFrame();
@@ -112,12 +115,15 @@ namespace Renderer
         f32 time = std::chrono::duration<f32, std::chrono::seconds::period>(currentTime - startTime).count();
 
         // Create model matrix
-        pushConstant.model = Maths::CreateModelMatrix<glm::mat4>
+        pushConstant.transform = Maths::CreateModelMatrix<glm::mat4>
         (
             glm::vec3(2.0f * std::cos(time), 0.0f, 0.0f),
             glm::vec3(0.0f, time * glm::radians(90.0f), 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
         );
+
+        // Create normal matrix
+        pushConstant.normalMatrix = glm::mat4(glm::transpose(glm::inverse(glm::mat3(pushConstant.transform))));
     }
 
     void RenderManager::BeginFrame()
@@ -424,7 +430,7 @@ namespace Renderer
         // Destroy pipeline
         m_renderPipeline->Destroy(m_vkContext->device);
         // Destroy mesh
-        m_cubeMesh->DestroyMesh(m_vkContext->device);
+        m_model->Destroy(m_vkContext->device);
         // Destroy swap chain
         m_swapchain->Destroy(m_vkContext->device);
         // Destroy vulkan context

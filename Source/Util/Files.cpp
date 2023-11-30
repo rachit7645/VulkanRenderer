@@ -25,6 +25,15 @@ namespace filesystem = std::filesystem;
 
 namespace Engine::Files
 {
+    // Assets directory
+    constexpr auto ASSETS_DIRECTORY = "Assets/";
+
+    std::string GetAssetPath(const std::string_view prefix, const std::string_view fileName)
+    {
+        // Return
+        return fmt::format("{}{}{}", ASSETS_DIRECTORY, prefix, fileName);
+    }
+
     std::string GetDirectory(const std::string_view path)
     {
         // Get directory

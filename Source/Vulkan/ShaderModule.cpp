@@ -19,15 +19,15 @@
 #include "Util/Log.h"
 #include "Util/Files.h"
 
-// Shader directory
-constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
-
 namespace Vk
 {
+    // Shader directory
+    constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
+
     VkShaderModule CreateShaderModule(VkDevice device, const std::string_view path)
     {
         // Calc full path
-        auto fullPath = fmt::format("{}{}{}", "Assets/", ASSETS_SHADERS_DIR, path);
+        auto fullPath = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
 
         // Get binary data
         auto shaderBinary = Engine::Files::ReadBytes(fullPath);

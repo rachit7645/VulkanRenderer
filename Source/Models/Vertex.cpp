@@ -16,7 +16,7 @@
 
 #include "Vertex.h"
 
-namespace Renderer
+namespace Models
 {
     VkVertexInputBindingDescription Vertex::GetBindingDescription()
     {
@@ -42,22 +42,22 @@ namespace Renderer
             .offset   = offsetof(Vertex, position)
         };
 
-        // Second attrib (color)
+        // Second attrib (texCoord)
         attribs[1] =
         {
             .location = 1,
             .binding  = 0,
-            .format   = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset   = offsetof(Vertex, color)
+            .format   = VK_FORMAT_R32G32_SFLOAT,
+            .offset   = offsetof(Vertex, texCoords)
         };
 
-        // Third attrib (texCoords)
+        // Third attrib (normal)
         attribs[2] =
         {
             .location = 2,
             .binding  = 0,
-            .format   = VK_FORMAT_R32G32_SFLOAT,
-            .offset   = offsetof(Vertex, texCoords)
+            .format   = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset   = offsetof(Vertex, normal)
         };
 
         return attribs;

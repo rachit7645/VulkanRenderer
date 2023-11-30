@@ -33,7 +33,9 @@ namespace Renderer
         struct VULKAN_GLSL_DATA BasicShaderPushConstant
         {
             // Transformation matrix
-            glm::mat4 model = {};
+            glm::mat4 transform = {};
+            // Normal matrix
+            glm::mat4 normalMatrix = {};
         };
 
         // Common data UBO

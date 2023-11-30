@@ -23,7 +23,7 @@
 #include "Externals/GLM.h"
 #include "Util/Util.h"
 
-namespace Renderer
+namespace Models
 {
     struct Vertex
     {
@@ -33,15 +33,15 @@ namespace Renderer
         using VertexAttribs = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
 
         // Constructor
-        constexpr Vertex(glm::vec3 position, glm::vec3 color, glm::vec2 texCoords)
+        constexpr Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal)
             : position(position),
-              color(color),
-              texCoords(texCoords) {}
+              texCoords(texCoords),
+              normal(normal) {}
 
         // Vertex data
         glm::vec3 position  = {};
-        glm::vec3 color     = {};
         glm::vec2 texCoords = {};
+        glm::vec3 normal    = {};
 
         // Get binding description
         static VkVertexInputBindingDescription GetBindingDescription();
@@ -49,7 +49,7 @@ namespace Renderer
     };
 
     // Index data
-    using Index = u16;
+    using Index = u32;
 }
 
 #endif

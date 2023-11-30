@@ -26,24 +26,27 @@ layout(binding = 0) uniform SharedDataBuffer
 layout(push_constant) uniform ConstantsBuffer
 {
     // Model matrix
-    mat4 model;
+    mat4 transform;
+    // Normal matrix
+    mat4 normalMatrix;
 } Constants;
 
 // Vertex inputs
 layout(location = 0) in vec3 position;
-layout(location = 1) in vec3 color;
-layout(location = 2) in vec2 texCoords;
+layout(location = 1) in vec2 texCoords;
+layout(location = 2) in vec3 normal;
 
 // Vertex outputs
-layout(location = 0) out vec3 fragColor;
-layout(location = 1) out vec2 fragTexCoords;
+layout(location = 0) out vec2 fragTexCoords;
+layout(location = 1) out vec3 fragNormal;
 
 // Vertex entry point
 void main()
 {
-    // Get position
-    gl_Position = Shared.proj * Shared.view * Constants.model * vec4(position, 1.0f);
-    // Set fragment data
-    fragColor     = color;
+    // Set position
+    gl_Position = Shared.proj * Shared.view * Constants.transform * vec4(position, 1.0f);
+    // Set texture coords
     fragTexCoords = texCoords;
+    // Set normal
+    fragNormal = normalize(Constants.normalMatrix * vec4(normal, 0.0f)).xyz;
 }

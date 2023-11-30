@@ -24,6 +24,9 @@ namespace Vk
     {
         // Get depth format
         auto depthFormat = GetDepthFormat(context->physicalDevice);
+        // Check if it has stencil
+        bool hasStencil = HasStencilComponent(depthFormat);
+
         // Create image
         depthImage = Vk::Image
         (
@@ -32,7 +35,7 @@ namespace Vk
             swapchainExtent.height,
             depthFormat,
             VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_ASPECT_DEPTH_BIT,
+            hasStencil ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
@@ -43,7 +46,14 @@ namespace Vk
             depthImage,
             VK_IMAGE_VIEW_TYPE_2D,
             depthImage.format,
-            VK_IMAGE_ASPECT_DEPTH_BIT
+            static_cast<VkImageAspectFlagBits>(depthImage.aspect)
+        );
+        // Transition (optional)
+        depthImage.TransitionLayout
+        (
+            context,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
         );
     }
 
@@ -91,7 +101,7 @@ namespace Vk
         return FindSupportedFormat
         (
             physicalDevice,
-            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+            {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
         );

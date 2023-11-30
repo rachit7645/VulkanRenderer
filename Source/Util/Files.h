@@ -24,6 +24,11 @@
 
 namespace Engine::Files
 {
+    /// @brief Get asset file path
+    /// @param prefix Prefix directory of file
+    /// @param fileName Name of file
+    /// @returns The file's directory as a std::string
+    [[nodiscard]] std::string GetAssetPath(const std::string_view prefix, const std::string_view fileName);
     /// @brief Get file directory from path
     /// @param path Path of file
     /// @returns The file's directory as a std::string
@@ -39,7 +44,7 @@ namespace Engine::Files
     /// @brief Get file name from path (constexpr version)
     /// @param path Path of file
     /// @returns std::string_view of file name from original path
-    constexpr std::string_view GetName(const std::string_view fileName)
+    [[nodiscard]] constexpr std::string_view GetName(const std::string_view fileName)
     {
         // Get last slash
         usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);

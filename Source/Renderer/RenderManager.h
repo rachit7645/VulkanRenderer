@@ -21,7 +21,7 @@
 #include <vulkan/vulkan.h>
 
 #include "RenderPipeline.h"
-#include "Mesh.h"
+#include "Models/Model.h"
 #include "Vulkan/Context.h"
 #include "Engine/Window.h"
 #include "Util/Util.h"
@@ -69,8 +69,8 @@ namespace Renderer
         std::shared_ptr<Vk::Swapchain> m_swapchain = nullptr;
         // Render pipeline
         std::unique_ptr<Renderer::RenderPipeline> m_renderPipeline = nullptr;
-        // Mesh
-        std::unique_ptr<Renderer::Mesh> m_cubeMesh;
+        // Model
+        std::unique_ptr<Models::Model> m_model;
 
         // Image index
         u32 m_imageIndex = 0;

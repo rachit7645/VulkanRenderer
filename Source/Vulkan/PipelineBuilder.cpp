@@ -21,10 +21,9 @@
 
 #include "ShaderModule.h"
 #include "Util/Log.h"
-#include "Renderer/Vertex.h"
 
 // Usings
-using Renderer::Vertex;
+using Models::Vertex;
 
 namespace Vk
 {

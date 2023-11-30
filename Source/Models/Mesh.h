@@ -14,21 +14,32 @@
  *    limitations under the License.
  */
 
-#version 460
+#ifndef MESH_H
+#define MESH_H
 
-// Fragment inputs
-layout(location = 0) in vec2 fragTexCoords;
-layout(location = 1) in vec3 fragNormal;
+#include "Vulkan/VertexBuffer.h"
+#include "Vulkan/Texture.h"
+#include "Vulkan/Context.h"
 
-// Texture sampler
-layout(binding = 1, set = 1) uniform sampler2D textureSampler;
-
-// Fragment outputs
-layout(location = 0) out vec4 outColor;
-
-// Fragment entry point
-void main()
+namespace Models
 {
-    // Output color
-    outColor = vec4(texture(textureSampler, fragTexCoords).rgb, 1.0f);
+    struct Mesh
+    {
+        // Create mesh object
+        Mesh
+        (
+            const std::shared_ptr<Vk::Context>& context,
+            const std::vector<Models::Vertex>& vertices,
+            const std::vector<Models::Index>& indices,
+            const Vk::Texture& texture
+        );
+        // Destroy mesh object
+        void DestroyMesh(VkDevice device);
+        // Vertex buffer
+        Vk::VertexBuffer vertexBuffer;
+        // Texture
+        Vk::Texture texture;
+    };
 }
+
+#endif

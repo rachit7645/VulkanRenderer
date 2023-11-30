@@ -14,26 +14,29 @@
  *    limitations under the License.
  */
 
-#ifndef MESH_H
-#define MESH_H
+#include "Mesh.h"
 
-#include "Vulkan/VertexBuffer.h"
-#include "Vulkan/Texture.h"
-#include "Vulkan/Context.h"
+#include "Vertex.h"
 
-namespace Renderer
+namespace Models
 {
-    struct Mesh
+    Mesh::Mesh
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        const std::vector<Models::Vertex>& vertices,
+        const std::vector<Models::Index>& indices,
+        const Vk::Texture& texture
+    )
+        : vertexBuffer(context, vertices, indices),
+          texture(texture)
     {
-        // Create mesh object
-        Mesh(const std::shared_ptr<Vk::Context>& context);
-        // Destroy mesh object
-        void DestroyMesh(VkDevice device);
-        // Vertex buffer
-        Vk::VertexBuffer vertexBuffer;
-        // Texture
-        Vk::Texture texture;
-    };
-}
+    }
 
-#endif
+    void Mesh::DestroyMesh(VkDevice device)
+    {
+        // Destroy vertex buffer
+        vertexBuffer.DestroyBuffer(device);
+        // Destroy texture
+        texture.Destroy(device);
+    }
+}

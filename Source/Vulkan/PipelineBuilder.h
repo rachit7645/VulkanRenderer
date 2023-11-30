@@ -22,7 +22,7 @@
 #include <functional>
 #include <vulkan/vulkan.h>
 
-#include "Renderer/Vertex.h"
+#include "Models/Vertex.h"
 #include "Context.h"
 #include "DescriptorSetData.h"
 
@@ -132,7 +132,7 @@ namespace Vk
         VkRenderPass m_renderPass = VK_NULL_HANDLE;
         // Vertex info
         VkVertexInputBindingDescription m_vertexInputBindings = {};
-        Renderer::Vertex::VertexAttribs m_vertexAttribs  = {};
+        Models::Vertex::VertexAttribs   m_vertexAttribs  = {};
     };
 }
 

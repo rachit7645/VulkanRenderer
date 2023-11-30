@@ -18,8 +18,8 @@
 #include "Util/Log.h"
 
 // Usings
-using Renderer::Vertex;
-using Renderer::Index;
+using Models::Vertex;
+using Models::Index;
 
 namespace Vk
 {
@@ -51,7 +51,7 @@ namespace Vk
         );
     }
 
-    void VertexBuffer::BindBuffer(VkCommandBuffer commandBuffer)
+    void VertexBuffer::BindBuffer(VkCommandBuffer commandBuffer) const
     {
         // Buffers to bind
         VkBuffer vertexBuffers[] = {vertexBuffer.handle};

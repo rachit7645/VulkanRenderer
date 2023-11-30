@@ -51,8 +51,10 @@ add_executable(VulkanRenderer
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/RenderPipeline.cpp
-	Source/Renderer/Vertex.cpp
-	Source/Renderer/Mesh.cpp
+	# Model sources
+	Source/Models/Mesh.cpp
+	Source/Models/Vertex.cpp
+	Source/Models/Model.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/STBImage.cpp
@@ -126,6 +128,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
 
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
+# -O3 optimisations (Set to -Og when debugging)
+target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)
@@ -137,11 +141,6 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
 	# Enable debug output
 	target_compile_options(VulkanRenderer PRIVATE -g)
-	# -Og optimisations
-	target_compile_options(VulkanRenderer PRIVATE -Og)
-else()
-	# -O3 optimisations
-	target_compile_options(VulkanRenderer PRIVATE -O3)
 endif()
 
 # Add shader dependency
