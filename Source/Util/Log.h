@@ -21,6 +21,7 @@
 #include <string_view>
 #include <source_location>
 #include <cstdlib>
+#include <istream>
 
 #include <fmt/format.h>
 #include <fmt/color.h>
@@ -94,6 +95,7 @@ namespace Logger
                 format,
                 args...
             );
+            std::cin.get();
             // Exit
             std::exit(ErrorCode);
         }
@@ -234,7 +236,7 @@ namespace Logger
         )
         {
             // Log
-            Detail::LogAndExit<EXIT_FAILURE>
+            Detail::LogAndExit<-1>
             (
                 fmt::color::red,
                 fmt::color::black,

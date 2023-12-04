@@ -17,6 +17,7 @@
 #ifndef DESCRIPTOR_SET_DATA_H
 #define DESCRIPTOR_SET_DATA_H
 
+#include <array>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -24,6 +25,8 @@ namespace Vk
 {
     struct DescriptorSetData
     {
+        // Usings
+        using DescriptorMap = std::array<std::vector<VkDescriptorSet>, Vk::FRAMES_IN_FLIGHT>;
         // Binding
         u32 binding = 0;
         // Type
@@ -31,7 +34,7 @@ namespace Vk
         // Layout
         VkDescriptorSetLayout layout = {};
         // Descriptors
-        std::vector<VkDescriptorSet> sets = {};
+        DescriptorMap setMap = {};
     };
 }
 

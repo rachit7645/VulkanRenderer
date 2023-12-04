@@ -145,8 +145,8 @@ namespace Models
                 (
                     "Unable to find texture path, using default textures! [Type={}] [mesh={}] [scene={}]\n",
                     aiTextureTypeToString(type),
-                    mesh->mName.C_Str(),
-                    scene->mName.C_Str()
+                    reinterpret_cast<const void*>(mesh),
+                    reinterpret_cast<const void*>(scene)
                 );
                 // Return
                 return Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_TEXTURE_ALBEDO);
@@ -164,5 +164,21 @@ namespace Models
         {
             mesh.DestroyMesh(device);
         }
+    }
+
+    std::vector<Vk::ImageView> Model::GetTextureViews() const
+    {
+        // Pre-allocate vector
+        std::vector<Vk::ImageView> imageViews = {};
+        imageViews.reserve(meshes.size());
+
+        // Add each view to vector
+        for (const auto& mesh : meshes)
+        {
+            imageViews.emplace_back(mesh.texture.imageView);
+        }
+
+        // Return
+        return imageViews;
     }
 }

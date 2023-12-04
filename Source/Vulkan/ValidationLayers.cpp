@@ -107,11 +107,22 @@ namespace Vk
         UNUSED void* pUserData
     )
     {
-        // Only log above a certain severity
-        if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        // Switch
+        switch (severity)
         {
-            // Log
+        // Ignore
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+            break;
+        // Heed Vulkan's warnings
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             Logger::Vulkan("{}\n", pCallbackData->pMessage);
+            break;
+        // Exit at error
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            Logger::Vulkan("{}\n", pCallbackData->pMessage);
+            std::exit(-1);
         }
         // Return
         return VK_TRUE;

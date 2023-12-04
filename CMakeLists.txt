@@ -118,6 +118,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<tuple>
 	<functional>
 	<ranges>
+	<istream>
+	<source_location>
     # C STL Headers
     <cstdint>
     <cstddef>
@@ -129,7 +131,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
 # -O3 optimisations (Set to -Og when debugging)
-target_compile_options(VulkanRenderer PRIVATE -O3)
+target_compile_options(VulkanRenderer PRIVATE -Og)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)

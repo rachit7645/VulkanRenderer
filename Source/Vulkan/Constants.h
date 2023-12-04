@@ -27,10 +27,11 @@ namespace Vk
     constexpr usize FRAMES_IN_FLIGHT = 2;
 
     // Descriptor pool size
-    constexpr std::array<VkDescriptorPoolSize, 2> DESCRIPTOR_POOL_SIZES =
+    constexpr std::array<VkDescriptorPoolSize, 3> DESCRIPTOR_POOL_SIZES =
     {
-        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         (1 << 4) * FRAMES_IN_FLIGHT),
-        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (1 << 16) * FRAMES_IN_FLIGHT)
+        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (1 << 4)  * FRAMES_IN_FLIGHT),
+        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER,        (1 << 4)  * FRAMES_IN_FLIGHT),
+        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  (1 << 10) * FRAMES_IN_FLIGHT)
     };
 
     // Calculate descriptor pool size

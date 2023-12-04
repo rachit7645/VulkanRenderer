@@ -39,6 +39,19 @@ namespace Vk
             std::vector<Vk::DescriptorSetData>
         >;
 
+        // Descriptor state
+        struct DescriptorState
+        {
+            // Count
+            u32 count = 0;
+            // Type
+            VkDescriptorType type = {};
+            // Binding
+            VkDescriptorSetLayoutBinding binding = {};
+            // Layout
+            VkDescriptorSetLayout layout = {};
+        };
+
         // Initialise pipeline builder
         [[nodiscard]] static PipelineBuilder Create(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass);
         // Destroy pipeline data
@@ -113,10 +126,8 @@ namespace Vk
 
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
-        // Descriptor set layout data
-        std::vector<VkDescriptorSetLayoutBinding> descriptorSetBindings = {};
-        // Descriptor state
-        std::vector<std::pair<VkDescriptorType, usize>> descriptorStates = {};
+        // Descriptor set states
+        std::vector<DescriptorState> descriptorStates = {};
     private:
         // Private constructor
         explicit PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass);
@@ -124,7 +135,7 @@ namespace Vk
         // Creates descriptor set layouts
         std::vector<VkDescriptorSetLayout> CreateDescriptorSetLayouts();
         // Allocate sets
-        std::vector<Vk::DescriptorSetData> AllocateDescriptorSets(const std::vector<VkDescriptorSetLayout>& descriptorLayouts);
+        std::vector<Vk::DescriptorSetData> AllocateDescriptorSets();
 
         // Vulkan context
         std::shared_ptr<Vk::Context> m_context = nullptr;

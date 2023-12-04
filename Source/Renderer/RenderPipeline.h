@@ -23,6 +23,7 @@
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Sampler.h"
 #include "Vulkan/DescriptorSetData.h"
+#include "Vulkan/Texture.h"
 
 namespace Renderer
 {
@@ -53,12 +54,14 @@ namespace Renderer
         void Destroy(VkDevice device);
 
         // Write image descriptors
-        void WriteImageDescriptors(VkDevice device, const Vk::ImageView& imageView);
+        void WriteImageDescriptors(VkDevice device, const std::vector<Vk::ImageView>& imageViews);
 
         // Get shared UBO set data
-        Vk::DescriptorSetData& GetSharedUBOData();
+        const Vk::DescriptorSetData& GetSharedUBOData() const;
         // Get texture sampler data
-        Vk::DescriptorSetData& GetTextureSamplerData();
+        const Vk::DescriptorSetData& GetSamplerData() const;
+        // Get image data
+        const Vk::DescriptorSetData& GetImageData() const;
 
         // Push constant data
         std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
@@ -69,11 +72,26 @@ namespace Renderer
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sharedUBOs = {};
         // Texture sampler
         Vk::Sampler textureSampler = {};
+        // Image view map
+        std::array
+        <
+            std::unordered_map
+            <
+                Vk::ImageView,
+                VkDescriptorSet,
+                Vk::ImageView::Hash,
+                Vk::ImageView::Equal
+            >,
+            Vk::FRAMES_IN_FLIGHT
+        > imageViewMap = {};
     private:
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& vkContext);
-        // Write shared UBO descriptors
-        void WriteSharedUBODescriptors(VkDevice device);
+        // Write static descriptors
+        void WriteStaticDescriptors(VkDevice device);
+
+        // Image view descriptor index
+        usize imageViewDescriptorIndexOffset = 0;
     };
 }
 

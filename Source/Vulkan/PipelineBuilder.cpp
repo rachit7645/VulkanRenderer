@@ -21,6 +21,7 @@
 
 #include "ShaderModule.h"
 #include "Util/Log.h"
+#include "Util/Ranges.h"
 
 // Usings
 using Models::Vertex;
@@ -54,7 +55,7 @@ namespace Vk
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = static_cast<uint32_t>(descriptorLayouts.size()),
+            .setLayoutCount         = static_cast<u32>(descriptorLayouts.size()),
             .pSetLayouts            = descriptorLayouts.data(),
             .pushConstantRangeCount = static_cast<u32>(pushConstantRanges.size()),
             .pPushConstantRanges    = pushConstantRanges.data()
@@ -120,13 +121,13 @@ namespace Vk
         }
 
         // Create descriptor sets
-        auto descriptorMap = AllocateDescriptorSets(descriptorLayouts);
+        auto descriptorData = AllocateDescriptorSets();
 
         // Log
         Logger::Info("Created pipeline! [handle={}]\n", reinterpret_cast<void*>(pipeline));
 
         // Return
-        return {pipeline, pipelineLayout, descriptorMap};
+        return {pipeline, pipelineLayout, descriptorData};
     }
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
@@ -350,15 +351,13 @@ namespace Vk
         {
             .binding            = binding,
             .descriptorType     = type,
-            .descriptorCount    = 1,
+            .descriptorCount    = static_cast<uint32_t>(count),
             .stageFlags         = stages,
             .pImmutableSamplers = nullptr
         };
 
-        // Add to vector
-        descriptorSetBindings.emplace_back(layoutBinding);
         // Add to states
-        descriptorStates.emplace_back(type, count);
+        descriptorStates.emplace_back(count, type, layoutBinding, nullptr);
 
         // Return
         return *this;
@@ -368,11 +367,10 @@ namespace Vk
     {
         // Descriptor layouts
         std::vector<VkDescriptorSetLayout> descriptorLayouts = {};
-        // Reserve
-        descriptorLayouts.reserve(descriptorSetBindings.size());
+        descriptorLayouts.reserve(descriptorStates.size());
 
         // Loop
-        for (auto& descriptorSetBinding : descriptorSetBindings)
+        for (auto&& state : descriptorStates)
         {
             // Descriptor set layout info
             VkDescriptorSetLayoutCreateInfo layoutInfo =
@@ -381,7 +379,7 @@ namespace Vk
                 .pNext        = nullptr,
                 .flags        = 0,
                 .bindingCount = 1,
-                .pBindings    = &descriptorSetBinding
+                .pBindings    = &state.binding
             };
 
             // Create
@@ -400,29 +398,37 @@ namespace Vk
 
             // Append
             descriptorLayouts.emplace_back(descriptorLayout);
+            // Add to state
+            state.layout = descriptorLayout;
         }
 
         // NVRO POG
         return descriptorLayouts;
     }
 
-    std::vector<Vk::DescriptorSetData> PipelineBuilder::AllocateDescriptorSets(const std::vector<VkDescriptorSetLayout>& descriptorLayouts)
+    std::vector<Vk::DescriptorSetData> PipelineBuilder::AllocateDescriptorSets()
     {
         // Allocate map
         auto data = std::vector<Vk::DescriptorSetData>();
-        data.reserve(descriptorLayouts.size());
+        data.reserve(descriptorStates.size());
 
         // Loop
-        for (usize i = 0; i < descriptorLayouts.size(); ++i)
+        for (const auto& state : descriptorStates)
         {
-            // Get state
-            auto [type, count] = descriptorStates[i];
+            // Get count
+            auto count = static_cast<u32>(state.count * Vk::FRAMES_IN_FLIGHT);
             // Duplicate layouts
-            auto layouts = std::vector<VkDescriptorSetLayout>(count, descriptorLayouts[i]);
+            auto layouts = std::vector<VkDescriptorSetLayout>(count, state.layout);
             // Allocate sets
             auto sets = m_context->AllocateDescriptorSets(layouts);
-            // Insert into map
-            data.emplace_back(descriptorSetBindings[i].binding, type, descriptorLayouts[i], sets);
+            // Insert into set data
+            data.emplace_back
+            (
+                state.binding.binding,
+                state.type,
+                state.layout,
+                Util::SplitVector<VkDescriptorSet, Vk::FRAMES_IN_FLIGHT>(sets)
+            );
         }
 
         // Return (NVRO please work)

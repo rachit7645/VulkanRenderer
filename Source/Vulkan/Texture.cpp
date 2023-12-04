@@ -22,6 +22,9 @@ namespace Vk
 {
     Texture::Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path)
     {
+        // Log
+        Logger::Info("Loading texture {}\n", path.data());
+
         // Load image
         auto imageData = STB::STBImage(path, STBI_rgb_alpha);
         // Image size

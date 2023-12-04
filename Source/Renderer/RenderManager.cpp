@@ -28,12 +28,12 @@ namespace Renderer
           m_vkContext(std::make_shared<Vk::Context>(m_window)),
           m_swapchain(std::make_shared<Vk::Swapchain>(m_window, m_vkContext)),
           m_renderPipeline(std::make_unique<RenderPipeline>()),
-          m_model(std::make_unique<Models::Model>(m_vkContext, "Mario/Mario.gltf"))
+          m_model(std::make_unique<Models::Model>(m_vkContext, "Sponza/sponza.glb"))
     {
         // Create render pipeline
         m_renderPipeline->Create(m_vkContext, m_swapchain);
-        // Bind texture to pipeline
-        m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_model->meshes[0].texture.imageView);
+        // Bind textures to pipeline
+        m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_model->GetTextureViews());
     }
 
     void RenderManager::Render()
@@ -49,6 +49,26 @@ namespace Renderer
         // Update
         Update();
 
+        // Get scene descriptors
+        std::array<VkDescriptorSet, 2> sceneDescriptorSets =
+        {
+            m_renderPipeline->GetSharedUBOData().setMap[m_currentFrame][0],
+            m_renderPipeline->GetSamplerData().setMap[m_currentFrame][0],
+        };
+
+        // Bind
+        vkCmdBindDescriptorSets
+        (
+            currentCommandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_renderPipeline->pipelineLayout,
+            0,
+            static_cast<u32>(sceneDescriptorSets.size()),
+            sceneDescriptorSets.data(),
+            0,
+            nullptr
+        );
+
         // Load push constants
         vkCmdPushConstants
         (
@@ -59,31 +79,31 @@ namespace Renderer
             reinterpret_cast<void*>(&m_renderPipeline->pushConstants[m_currentFrame])
         );
 
-        // Descriptor data
-        std::array<VkDescriptorSet, 2> descriptorSets =
-        {
-            m_renderPipeline->GetSharedUBOData().sets[m_currentFrame],
-            m_renderPipeline->GetTextureSamplerData().sets[m_currentFrame]
-        };
-
-        // Bind descriptors
-        vkCmdBindDescriptorSets
-        (
-            currentCommandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_renderPipeline->pipelineLayout,
-            0,
-            static_cast<u32>(descriptorSets.size()),
-            descriptorSets.data(),
-            0,
-            nullptr
-        );
-
         // Loop over meshes
         for (const auto& mesh : m_model->meshes)
         {
             // Bind buffer
             mesh.vertexBuffer.BindBuffer(currentCommandBuffer);
+
+            // Get mesh descriptors
+            std::array<VkDescriptorSet, 1> meshDescriptorSets =
+            {
+                m_renderPipeline->imageViewMap[m_currentFrame][mesh.texture.imageView]
+            };
+
+            // Bind
+            vkCmdBindDescriptorSets
+            (
+                currentCommandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                m_renderPipeline->pipelineLayout,
+                2,
+                static_cast<u32>(meshDescriptorSets.size()),
+                meshDescriptorSets.data(),
+                0,
+                nullptr
+            );
+
             // Draw triangle
             vkCmdDrawIndexed
             (
@@ -119,7 +139,7 @@ namespace Renderer
         (
             glm::vec3(2.0f * std::cos(time), 0.0f, 0.0f),
             glm::vec3(0.0f, time * glm::radians(90.0f), 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
+            glm::vec3(0.5f, 0.5f, 0.5f)
         );
 
         // Create normal matrix
@@ -333,7 +353,7 @@ namespace Renderer
             // Log
             Logger::Error
             (
-                "Failed to submit draw command buffer! [CommandBuffer={}] [Queue={}]\n",
+                "Failed to submit command buffer! [CommandBuffer={}] [Queue={}]\n",
                 reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame]),
                 reinterpret_cast<void*>(m_vkContext->graphicsQueue)
             );

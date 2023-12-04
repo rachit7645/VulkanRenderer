@@ -17,9 +17,13 @@
 #include "RenderPipeline.h"
 
 #include "Vulkan/PipelineBuilder.h"
+#include "Util/Log.h"
 
 namespace Renderer
 {
+    // Max textures
+    constexpr usize MAX_TEXTURE_COUNT = (1 << 8);
+
     void RenderPipeline::Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
     {
         // Custom functions
@@ -70,13 +74,14 @@ namespace Renderer
                        .SetDynamicStates(DYN_STATES, SetDynamicStates)
                        .SetVertexInputState()
                        .SetIAState()
-                       .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                       .SetRasterizerState(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                        .SetMSAAState()
                        .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
                        .SetBlendState()
                        .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
-                       .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   Vk::FRAMES_IN_FLIGHT)
-                       .AddDescriptor(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, Vk::FRAMES_IN_FLIGHT)
+                       .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1)
+                       .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1)
+                       .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, MAX_TEXTURE_COUNT)
                        .Build();
 
         // Retrieve members
@@ -85,66 +90,88 @@ namespace Renderer
         // Create pipeline data
         CreatePipelineData(vkContext);
         // Write descriptors for 'Shared' UBO
-        WriteSharedUBODescriptors(vkContext->device);
+        WriteStaticDescriptors(vkContext->device);
     }
 
-    void RenderPipeline::WriteImageDescriptors(VkDevice device, const Vk::ImageView& imageView)
+    void RenderPipeline::WriteImageDescriptors(VkDevice device, const std::vector<Vk::ImageView>& imageViews)
     {
-        // Get sampler sets
-        auto& samplerData = GetTextureSamplerData();
+        // Get descriptor data
+        auto& imageData = GetImageData();
+        // Calculate image view count
+        usize imageViewCount = imageViews.size();
+        // Calculate descriptor count
+        usize descriptorCount = imageViewCount * Vk::FRAMES_IN_FLIGHT;
 
-        // Writing data
-        std::array<VkDescriptorImageInfo, Vk::FRAMES_IN_FLIGHT> samplerInfos  = {};
-        std::array<VkWriteDescriptorSet,  Vk::FRAMES_IN_FLIGHT> samplerWrites = {};
+        // Infos
+        std::vector<VkDescriptorImageInfo> imageInfos = {};
+        imageInfos.reserve(descriptorCount);
+        // Writes
+        std::vector<VkWriteDescriptorSet> imageWrites = {};
+        imageWrites.reserve(descriptorCount);
 
-        // Loop
-        for (usize i = 0; i < samplerWrites.size(); ++i)
+        // For each frame in flight
+        for (usize FIF = 0; FIF < Vk::FRAMES_IN_FLIGHT; ++FIF)
         {
-            // Descriptor buffer info
-            samplerInfos[i] =
+            // Loop over all images
+            for (usize i = 0; i < imageViewCount; ++i)
             {
-                .sampler     = textureSampler.handle,
-                .imageView   = imageView.handle,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-            };
+                // Get image view
+                auto& currentImageView = imageViews[i];
 
-            // Write info
-            samplerWrites[i] =
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = samplerData.sets[i],
-                .dstBinding       = samplerData.binding,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .pImageInfo       = &samplerInfos[i],
-                .pBufferInfo      = nullptr,
-                .pTexelBufferView = nullptr
-            };
+                // Calculate descriptor index
+                usize descriptorIndex = i + (imageViewDescriptorIndexOffset / Vk::FRAMES_IN_FLIGHT);
+                // Get descriptor
+                auto currentDescriptor = imageData.setMap[FIF][descriptorIndex];
+
+                // Image info
+                VkDescriptorImageInfo imageInfo =
+                {
+                    .sampler     = VK_NULL_HANDLE,
+                    .imageView   = currentImageView.handle,
+                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                };
+                imageInfos.emplace_back(imageInfo);
+
+                // Image write
+                VkWriteDescriptorSet imageWrite =
+                {
+                    .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext            = nullptr,
+                    .dstSet           = currentDescriptor,
+                    .dstBinding       = imageData.binding,
+                    .dstArrayElement  = 0,
+                    .descriptorCount  = 1,
+                    .descriptorType   = imageData.type,
+                    .pImageInfo       = &imageInfos.back(),
+                    .pBufferInfo      = nullptr,
+                    .pTexelBufferView = nullptr
+                };
+                imageWrites.emplace_back(imageWrite);
+
+                // Add to map
+                imageViewMap[FIF].emplace(currentImageView, currentDescriptor);
+                /* Log
+                Logger::Debug
+                (
+                    "Image View: {}, Descriptor: {}\n",
+                    reinterpret_cast<void*>(currentImageView.handle),
+                    reinterpret_cast<void*>(currentDescriptor)
+                );*/
+            }
         }
+
+        // Update current index
+        imageViewDescriptorIndexOffset += descriptorCount;
 
         // Update
         vkUpdateDescriptorSets
         (
             device,
-            samplerWrites.size(),
-            samplerWrites.data(),
+            static_cast<u32>(imageWrites.size()),
+            imageWrites.data(),
             0,
             nullptr
         );
-    }
-
-    Vk::DescriptorSetData& RenderPipeline::GetSharedUBOData()
-    {
-        // Return
-        return descriptorData[0];
-    }
-
-    Vk::DescriptorSetData& RenderPipeline::GetTextureSamplerData()
-    {
-        // Return
-        return descriptorData[1];
     }
 
     void RenderPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& vkContext)
@@ -180,17 +207,21 @@ namespace Renderer
         );
     }
 
-    void RenderPipeline::WriteSharedUBODescriptors(VkDevice device)
+    void RenderPipeline::WriteStaticDescriptors(VkDevice device)
     {
-        // Get ubo sets
+        // Get UBO sets
         auto& sharedUBOData = GetSharedUBOData();
+        // Get sampler sets
+        auto& samplerData = GetSamplerData();
 
         // Writing data
         std::array<VkDescriptorBufferInfo, Vk::FRAMES_IN_FLIGHT> sharedBufferInfos  = {};
-        std::array<VkWriteDescriptorSet,   Vk::FRAMES_IN_FLIGHT> sharedBufferWrites = {};
+        std::array<VkDescriptorImageInfo,  Vk::FRAMES_IN_FLIGHT> samplerInfos       = {};
+        // Writes
+        std::array<VkWriteDescriptorSet, 2 * Vk::FRAMES_IN_FLIGHT> descriptorWrites = {};
 
         // Loop
-        for (usize i = 0; i < sharedBufferWrites.size(); ++i)
+        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
             // Descriptor buffer info
             sharedBufferInfos[i] =
@@ -200,18 +231,41 @@ namespace Renderer
                 .range  = VK_WHOLE_SIZE
             };
 
-            // Write info
-            sharedBufferWrites[i] =
+            // Descriptor sampler info
+            samplerInfos[i] =
+            {
+                .sampler     = textureSampler.handle,
+                .imageView   = {},
+                .imageLayout = {}
+            };
+
+            // Buffer Write info
+            descriptorWrites[2 * i] =
             {
                 .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .pNext            = nullptr,
-                .dstSet           = sharedUBOData.sets[i],
+                .dstSet           = sharedUBOData.setMap[i][0],
                 .dstBinding       = sharedUBOData.binding,
                 .dstArrayElement  = 0,
                 .descriptorCount  = 1,
-                .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorType   = sharedUBOData.type,
                 .pImageInfo       = nullptr,
                 .pBufferInfo      = &sharedBufferInfos[i],
+                .pTexelBufferView = nullptr
+            };
+
+            // Sampler write info
+            descriptorWrites[2 * i + 1] =
+            {
+                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext            = nullptr,
+                .dstSet           = samplerData.setMap[i][0],
+                .dstBinding       = samplerData.binding,
+                .dstArrayElement  = 0,
+                .descriptorCount  = 1,
+                .descriptorType   = samplerData.type,
+                .pImageInfo       = &samplerInfos[i],
+                .pBufferInfo      = nullptr,
                 .pTexelBufferView = nullptr
             };
         }
@@ -220,11 +274,35 @@ namespace Renderer
         vkUpdateDescriptorSets
         (
             device,
-            sharedBufferWrites.size(),
-            sharedBufferWrites.data(),
+            descriptorWrites.size(),
+            descriptorWrites.data(),
             0,
             nullptr
         );
+    }
+
+    const Vk::DescriptorSetData& RenderPipeline::GetSharedUBOData() const
+    {
+        // Check and return
+        auto& data = descriptorData[0];
+        assert(data.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && "Invalid descriptor type!");
+        return data;
+    }
+
+    const Vk::DescriptorSetData& RenderPipeline::GetSamplerData() const
+    {
+        // Check and return
+        auto& data = descriptorData[1];
+        assert(data.type == VK_DESCRIPTOR_TYPE_SAMPLER && "Invalid descriptor type!");
+        return data;
+    }
+
+    const Vk::DescriptorSetData& RenderPipeline::GetImageData() const
+    {
+        // Check and return
+        auto& data = descriptorData[2];
+        assert(data.type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE && "Invalid descriptor type!");
+        return data;
     }
 
     void RenderPipeline::Destroy(VkDevice device)
@@ -237,7 +315,10 @@ namespace Renderer
         vkDestroyPipeline(device, pipeline, nullptr);
         // Destroy pipeline layout
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        // Destroy descriptor set layout
-        for (auto&& descriptor : descriptorData) vkDestroyDescriptorSetLayout(device, descriptor.layout, nullptr);
+        // Destroy descriptor set layouts
+        for (auto&& descriptor : descriptorData)
+        {
+            vkDestroyDescriptorSetLayout(device, descriptor.layout, nullptr);
+        }
     }
 }

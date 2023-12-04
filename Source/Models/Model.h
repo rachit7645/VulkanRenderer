@@ -9,6 +9,7 @@
 
 #include "Mesh.h"
 #include "Vulkan/Context.h"
+#include "Vulkan/ImageView.h"
 #include "Util/Util.h"
 
 namespace Models
@@ -20,6 +21,10 @@ namespace Models
         Model(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
         // Destroy model
         void Destroy(VkDevice device);
+
+        // Get all texture image views
+        std::vector<Vk::ImageView> GetTextureViews() const;
+
         // Data
         std::vector<Models::Mesh> meshes;
     private:
