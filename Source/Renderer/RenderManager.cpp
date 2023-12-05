@@ -59,15 +59,8 @@ namespace Renderer
         // Init ImGui backend
         ImGui_ImplSDL2_InitForVulkan(m_window->handle);
         ImGui_ImplVulkan_Init(&imguiInitInfo, m_swapchain->renderPass);
-
         // Upload fonts
-        Vk::SingleTimeCmdBuffer(m_vkContext, [] (VkCommandBuffer cmdBuffer)
-        {
-            // Upload
-            ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
-        });
-        // Destroy
-        ImGui_ImplVulkan_DestroyFontUploadObjects();
+        ImGui_ImplVulkan_CreateFontsTexture();
 
         // Bind textures to pipeline
         m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_model->GetTextureViews());

@@ -450,7 +450,7 @@ namespace Vk
         {
             .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext         = nullptr,
-            .flags         = 0,
+            .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // Only for you ImGui
             .maxSets       = static_cast<u32>(Vk::GetDescriptorPoolSize()),
             .poolSizeCount = Vk::DESCRIPTOR_POOL_SIZES.size(),
             .pPoolSizes    = Vk::DESCRIPTOR_POOL_SIZES.data()
