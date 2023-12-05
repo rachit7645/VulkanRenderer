@@ -23,13 +23,8 @@
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 
-// Usings
-using Models::Vertex;
-
 namespace Vk
 {
-    // TODO: Make everything more customisable
-
     PipelineBuilder PipelineBuilder::Create(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass)
     {
         // Create
@@ -38,9 +33,7 @@ namespace Vk
 
     PipelineBuilder::PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass)
         : m_context(std::move(context)),
-          m_renderPass(renderPass),
-          m_vertexInputBindings(Vertex::GetBindingDescription()),
-          m_vertexAttribs(Vertex::GetVertexAttribDescription())
+          m_renderPass(renderPass)
     {
     }
 
@@ -180,34 +173,26 @@ namespace Vk
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetVertexInputState()
+    PipelineBuilder& PipelineBuilder::SetVertexInputState
+    (
+        const std::span<const VkVertexInputBindingDescription> vertexBindings,
+        const std::span<const VkVertexInputAttributeDescription> vertexAttribs
+    )
     {
+        // Copy to vectors
+        vertexInputBindings      = std::vector(vertexBindings.begin(), vertexBindings.end());
+        vertexAttribDescriptions = std::vector(vertexAttribs.begin(), vertexAttribs.end());
+
         // Set vertex input info
         vertexInputInfo =
         {
             .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .pNext                           = nullptr,
             .flags                           = 0,
-            .vertexBindingDescriptionCount   = 1,
-            .pVertexBindingDescriptions      = &m_vertexInputBindings,
-            .vertexAttributeDescriptionCount = static_cast<u32>(m_vertexAttribs.size()),
-            .pVertexAttributeDescriptions    = m_vertexAttribs.data()
-        };
-
-        // Return
-        return *this;
-    }
-
-    PipelineBuilder& PipelineBuilder::SetIAState()
-    {
-        // IA State
-        inputAssemblyInfo =
-        {
-            .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            .pNext                  = nullptr,
-            .flags                  = 0,
-            .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-            .primitiveRestartEnable = VK_FALSE
+            .vertexBindingDescriptionCount   = static_cast<u32>(vertexInputBindings.size()),
+            .pVertexBindingDescriptions      = vertexInputBindings.data(),
+            .vertexAttributeDescriptionCount = static_cast<u32>(vertexAttribDescriptions.size()),
+            .pVertexAttributeDescriptions    = vertexAttribDescriptions.data()
         };
 
         // Return
@@ -238,6 +223,23 @@ namespace Vk
         return *this;
     }
 
+    PipelineBuilder& PipelineBuilder::SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart)
+    {
+        // IA State
+        inputAssemblyInfo =
+        {
+        .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext                  = nullptr,
+        .flags                  = 0,
+        .topology               = topology,
+        .primitiveRestartEnable = enablePrimitiveRestart
+        };
+
+        // Return
+        return *this;
+    }
+
+    // TODO: Add customisable MSAA
     PipelineBuilder& PipelineBuilder::SetMSAAState()
     {
         // Set MSAA state info
@@ -289,6 +291,7 @@ namespace Vk
         return *this;
     }
 
+    // TODO: Add customisable blending
     PipelineBuilder& PipelineBuilder::SetBlendState()
     {
         // Create blend attachment state (no alpha)
@@ -349,8 +352,8 @@ namespace Vk
         u32 binding,
         VkDescriptorType type,
         VkShaderStageFlags stages,
-        u32 copyCount,
-        u32 useCount
+        u32 useCount,
+        u32 copyCount
     )
     {
         // Binding

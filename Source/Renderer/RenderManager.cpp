@@ -20,6 +20,7 @@
 #include "Util/Log.h"
 #include "Util/Maths.h"
 #include "RenderPipeline.h"
+#include "Vulkan/Util.h"
 
 namespace Renderer
 {
@@ -27,13 +28,52 @@ namespace Renderer
         : m_window(std::move(window)),
           m_vkContext(std::make_shared<Vk::Context>(m_window)),
           m_swapchain(std::make_shared<Vk::Swapchain>(m_window, m_vkContext)),
-          m_renderPipeline(std::make_unique<RenderPipeline>()),
+          m_renderPipeline(std::make_unique<RenderPipeline>(m_vkContext, m_swapchain)),
           m_model(std::make_unique<Models::Model>(m_vkContext, "Sponza/sponza.glb"))
     {
-        // Create render pipeline
-        m_renderPipeline->Create(m_vkContext, m_swapchain);
+        // ImGui init info
+        ImGui_ImplVulkan_InitInfo imguiInitInfo =
+        {
+            .Instance              = m_vkContext->vkInstance,
+            .PhysicalDevice        = m_vkContext->physicalDevice,
+            .Device                = m_vkContext->device,
+            .QueueFamily           = m_vkContext->queueFamilies.graphicsFamily.value(),
+            .Queue                 = m_vkContext->graphicsQueue,
+            .PipelineCache         = nullptr,
+            .DescriptorPool        = m_vkContext->descriptorPool,
+            .Subpass               = 0,
+            .MinImageCount         = Vk::FRAMES_IN_FLIGHT,
+            .ImageCount            = Vk::FRAMES_IN_FLIGHT,
+            .MSAASamples           = VK_SAMPLE_COUNT_1_BIT,
+            .UseDynamicRendering   = false,
+            .ColorAttachmentFormat = {},
+            .Allocator             = nullptr,
+            .CheckVkResultFn       = nullptr
+        };
+
+        // Init ImGui
+        Logger::Info("Initializing Dear ImGui version: {}\n", ImGui::GetVersion());
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+        // Init ImGui backend
+        ImGui_ImplSDL2_InitForVulkan(m_window->handle);
+        ImGui_ImplVulkan_Init(&imguiInitInfo, m_swapchain->renderPass);
+
+        // Upload fonts
+        Vk::SingleTimeCmdBuffer(m_vkContext, [] (VkCommandBuffer cmdBuffer)
+        {
+            // Upload
+            ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
+        });
+        // Destroy
+        ImGui_ImplVulkan_DestroyFontUploadObjects();
+
         // Bind textures to pipeline
         m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_model->GetTextureViews());
+
+        // Reset frame counter
+        m_frameCounter.Reset();
     }
 
     void RenderManager::Render()
@@ -116,6 +156,11 @@ namespace Renderer
             );
         }
 
+        // Render
+        ImGui::Render();
+        // Render ImGui
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), currentCommandBuffer);
+
         // End
         EndFrame();
         // Present
@@ -127,19 +172,54 @@ namespace Renderer
         // Get current push constant
         auto& pushConstant = m_renderPipeline->pushConstants[m_currentFrame];
 
+        // Update frame counter
+        m_frameCounter.Update();
+
+        // Data
+        static glm::vec3 s_position = {};
+        static glm::vec3 s_rotation = {};
+        static glm::vec3 s_scale    = {0.5f, 0.5f, 0.5f};
+
         // Staring time
         static auto startTime = std::chrono::high_resolution_clock::now();
         // Current time
         auto currentTime = std::chrono::high_resolution_clock::now();
-        // Durations
-        f32 time = std::chrono::duration<f32, std::chrono::seconds::period>(currentTime - startTime).count();
+        // Duration
+        f32 duration = std::chrono::duration<f32, std::chrono::seconds::period>(currentTime - startTime).count();
+        // Update rotation
+        s_rotation.y = (duration / 5.0f) * glm::radians(90.0f);
+
+        // Render ImGui
+        if (ImGui::BeginMainMenuBar())
+        {
+            // Profiler
+            if (ImGui::BeginMenu("Profiler"))
+            {
+                // Frame stats
+                ImGui::Text("FPS: %.2f", m_frameCounter.FPS);
+                ImGui::Text("Frame time: %.2f ms", m_frameCounter.avgFrameTime);
+                ImGui::EndMenu();
+            }
+            // Mesh
+            if (ImGui::BeginMenu("Mesh"))
+            {
+                // Transform modifiers
+                ImGui::DragFloat3("Position", &s_position[0]);
+                ImGui::DragFloat3("Rotation", &s_rotation[0]);
+                ImGui::DragFloat3("Scale",    &s_scale[0]);
+                // End menu
+                ImGui::EndMenu();
+            }
+            // End menu bar
+            ImGui::EndMainMenuBar();
+        }
 
         // Create model matrix
         pushConstant.transform = Maths::CreateModelMatrix<glm::mat4>
         (
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, (time / 5.0f) * glm::radians(90.0f), 0.0f),
-            glm::vec3(0.5f, 0.5f, 0.5f)
+            s_position,
+            s_rotation,
+            s_scale
         );
 
         // Create normal matrix
@@ -284,6 +364,11 @@ namespace Renderer
 
         // Load UBO data
         std::memcpy(sharedUBO.mappedPtr, &sharedBuffer, sizeof(RenderPipeline::SharedBuffer));
+
+        // Begin imgui
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplSDL2_NewFrame(m_window->handle);
+        ImGui::NewFrame();
     }
 
     void RenderManager::WaitForFrame()
@@ -447,6 +532,9 @@ namespace Renderer
     {
         // Wait
         vkDeviceWaitIdle(m_vkContext->device);
+        // Destroy ImGui
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
         // Destroy pipeline
         m_renderPipeline->Destroy(m_vkContext->device);
         // Destroy mesh

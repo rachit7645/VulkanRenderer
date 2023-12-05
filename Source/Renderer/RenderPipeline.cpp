@@ -18,13 +18,17 @@
 
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
+#include "Models/Vertex.h"
 
 namespace Renderer
 {
+    // Usings
+    using Models::Vertex;
+
     // Max textures
     constexpr usize MAX_TEXTURE_COUNT = (1 << 10);
 
-    void RenderPipeline::Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
+    RenderPipeline::RenderPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
     {
         // Custom functions
         auto SetDynamicStates = [swapchain] (Vk::PipelineBuilder& pipelineBuilder)
@@ -70,16 +74,16 @@ namespace Renderer
                        .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
                        .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
                        .SetDynamicStates(DYN_STATES, SetDynamicStates)
-                       .SetVertexInputState()
-                       .SetIAState()
-                       .SetRasterizerState(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                       .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
+                       .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+                       .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                        .SetMSAAState()
                        .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
                        .SetBlendState()
                        .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
-                       .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1)
-                       .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1)
-                       .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, MAX_TEXTURE_COUNT)
+                       .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
+                       .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
+                       .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, 1, MAX_TEXTURE_COUNT)
                        .Build();
 
         // Retrieve members

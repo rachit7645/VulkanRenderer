@@ -57,8 +57,12 @@ namespace Vk
         VkDevice device = {};
         // Surface
         VkSurfaceKHR surface = {};
-        // Queue
+        // Queue families
+        Vk::QueueFamilyIndices queueFamilies = {};
+        // Queues
         VkQueue graphicsQueue = {};
+        // Descriptor pool
+        VkDescriptorPool descriptorPool = {};
 
         // Command buffers
         std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers = {};
@@ -103,13 +107,8 @@ namespace Vk
         Vk::ValidationLayers m_layers = {};
         #endif
 
-        // Queue families
-        Vk::QueueFamilyIndices m_queueFamilies = {};
         // Command pool
         VkCommandPool m_commandPool = {};
-        // Descriptor pool
-        VkDescriptorPool m_descriptorPool = {};
-
         // Deletion queue
         Util::DeletionQueue m_deletionQueue = {};
     };

@@ -18,14 +18,21 @@
 
 namespace Models
 {
-    VkVertexInputBindingDescription Vertex::GetBindingDescription()
+    Vertex::VertexBindings Vertex::GetBindingDescription()
     {
-        return
+        // Binding data
+        VertexBindings bindings = {};
+
+        // First (and only) binding
+        bindings[0] =
         {
             .binding   = 0,
             .stride    = static_cast<u32>(sizeof(Vertex)),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
         };
+
+        // Return
+        return bindings;
     }
 
     Vertex::VertexAttribs Vertex::GetVertexAttribDescription()

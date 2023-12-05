@@ -49,7 +49,7 @@ namespace Renderer
         };
 
         // Create render pipeline
-        void Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain);
+        RenderPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain);
         // Destroy render pipeline
         void Destroy(VkDevice device);
 

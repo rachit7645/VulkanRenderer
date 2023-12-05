@@ -58,7 +58,7 @@ namespace Engine
         // Create handle
         handle = SDL_CreateWindow
         (
-            "Rachit's Engine",
+            "Rachit's Engine: Vulkan Edition",
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED,
             size.x,
@@ -86,13 +86,14 @@ namespace Engine
         // While events exist
         while (SDL_PollEvent(&m_event))
         {
+            // Intercept event for ImGUI
+            ImGui_ImplSDL2_ProcessEvent(&m_event);
             // Check event type
             switch (m_event.type)
             {
             // Event to quit
             case SDL_QUIT:
                 return true;
-
             // Default event handler
             default:
                 continue;

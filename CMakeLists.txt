@@ -31,6 +31,7 @@ add_executable(VulkanRenderer
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
 	Source/Util/DeletionQueue.cpp
+	Source/Util/FrameCounter.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
@@ -131,7 +132,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
 # -O3 optimisations (Set to -Og when debugging)
-target_compile_options(VulkanRenderer PRIVATE -Og)
+target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)

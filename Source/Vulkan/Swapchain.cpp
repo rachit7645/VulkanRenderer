@@ -84,13 +84,13 @@ namespace Vk
     void Swapchain::CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
     {
         // Get swap chain info
-        auto swapChainInfo = SwapchainInfo(context->physicalDevice, context->surface);
+        swapChainInfo = SwapchainInfo(context->physicalDevice, context->surface);
 
         // Get swap chain config data
-        VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapChainInfo);
-        VkPresentModeKHR   presentMode   = ChoosePresentationMode(swapChainInfo);
+        VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat();
+        VkPresentModeKHR   presentMode   = ChoosePresentationMode();
         // Get extent
-        extent = ChooseSwapExtent(window->handle, swapChainInfo);
+        extent = ChooseSwapExtent(window->handle);
 
         // Get image count
         u32 imageCount = glm::min
@@ -348,7 +348,7 @@ namespace Vk
         }
     }
 
-    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const SwapchainInfo& swapChainInfo)
+    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat()
     {
         // Formats
         const auto& formats = swapChainInfo.formats;
@@ -369,7 +369,7 @@ namespace Vk
         return formats[0];
     }
 
-    VkPresentModeKHR Swapchain::ChoosePresentationMode(const SwapchainInfo& swapChainInfo)
+    VkPresentModeKHR Swapchain::ChoosePresentationMode()
     {
         // Presentation modes
         const auto& presentModes = swapChainInfo.presentModes;
@@ -389,7 +389,7 @@ namespace Vk
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D Swapchain::ChooseSwapExtent(SDL_Window* window, const SwapchainInfo& swapChainInfo)
+    VkExtent2D Swapchain::ChooseSwapExtent(SDL_Window* window)
     {
         // Surface capability data
         const auto& capabilities = swapChainInfo.capabilities;

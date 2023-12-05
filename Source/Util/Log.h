@@ -95,7 +95,8 @@ namespace Logger
                 format,
                 args...
             );
-            std::cin.get();
+            // Enable if you need to wait to see output
+            // std::cin.get();
             // Exit
             std::exit(ErrorCode);
         }

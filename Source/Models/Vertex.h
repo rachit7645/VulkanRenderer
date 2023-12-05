@@ -28,9 +28,11 @@ namespace Models
     struct Vertex
     {
         // Constants
-        static constexpr usize VERTEX_NUM_ATTRIBS = 3;
+        static constexpr usize VERTEX_NUM_BINDINGS = 1;
+        static constexpr usize VERTEX_NUM_ATTRIBS  = 3;
         // Usings
-        using VertexAttribs = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
+        using VertexBindings = std::array<VkVertexInputBindingDescription,   VERTEX_NUM_BINDINGS>;
+        using VertexAttribs  = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
 
         // Constructor
         constexpr Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal)
@@ -44,7 +46,7 @@ namespace Models
         glm::vec3 normal    = {};
 
         // Get binding description
-        static VkVertexInputBindingDescription GetBindingDescription();
+        static VertexBindings GetBindingDescription();
         static VertexAttribs GetVertexAttribDescription();
     };
 

@@ -20,9 +20,9 @@
 #include <string_view>
 #include <vector>
 #include <functional>
+#include <span>
 #include <vulkan/vulkan.h>
 
-#include "Models/Vertex.h"
 #include "Context.h"
 #include "DescriptorSetData.h"
 
@@ -69,9 +69,13 @@ namespace Vk
             const std::function<void(PipelineBuilder&)>& SetDynStates
         );
         // Set vertex input state
-        [[nodiscard]] PipelineBuilder& SetVertexInputState();
+        [[nodiscard]] PipelineBuilder& SetVertexInputState
+        (
+            const std::span<const VkVertexInputBindingDescription>   vertexBindings,
+            const std::span<const VkVertexInputAttributeDescription> vertexAttribs
+        );
         // Set IA info
-        [[nodiscard]] PipelineBuilder& SetIAState();
+        [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
         // Set rasterizer state
         [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace);
         // Set MSAA state
@@ -96,8 +100,8 @@ namespace Vk
             u32 binding,
             VkDescriptorType type,
             VkShaderStageFlags stages,
-            u32 copyCount, // Number of unique descriptors per FIF
-            u32 useCount = 1 // Number of descriptors used at a time (for an array)
+            u32 useCount, // Number of descriptors used at a time (for arrays mostly I think)
+            u32 copyCount // Number of unique descriptors per FIF
         );
 
         // Shader stages
@@ -107,6 +111,10 @@ namespace Vk
         std::vector<VkDynamicState> dynamicStates = {};
         // Dynamic states info
         VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
+
+        // Vertex info
+        std::vector<VkVertexInputBindingDescription>   vertexInputBindings      = {};
+        std::vector<VkVertexInputAttributeDescription> vertexAttribDescriptions = {};
 
         // Viewport state
         VkPipelineViewportStateCreateInfo viewportInfo = {};
@@ -148,9 +156,6 @@ namespace Vk
         std::shared_ptr<Vk::Context> m_context = nullptr;
         // Render pass
         VkRenderPass m_renderPass = VK_NULL_HANDLE;
-        // Vertex info
-        VkVertexInputBindingDescription m_vertexInputBindings = {};
-        Models::Vertex::VertexAttribs   m_vertexAttribs  = {};
     };
 }
 

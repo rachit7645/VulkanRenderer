@@ -18,11 +18,13 @@
 
 #include <map>
 #include <unordered_map>
+#include <vulkan/vk_enum_string_helper.h>
 
 #include "Extensions.h"
 #include "SwapchainInfo.h"
 #include "Util/Log.h"
 #include "Renderer/RenderPipeline.h"
+#include "Externals/ImGui.h"
 
 namespace Vk
 {
@@ -109,7 +111,7 @@ namespace Vk
         {
             .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .pNext              = nullptr,
-            .descriptorPool     = m_descriptorPool,
+            .descriptorPool     = descriptorPool,
             .descriptorSetCount = static_cast<u32>(descriptorLayouts.size()),
             .pSetLayouts        = descriptorLayouts.data()
         };
@@ -118,14 +120,17 @@ namespace Vk
         auto descriptorSets = std::vector<VkDescriptorSet>(descriptorLayouts.size(), VK_NULL_HANDLE);
 
         // Allocate
-        if (vkAllocateDescriptorSets(
-                device,
-                &allocInfo,
-                descriptorSets.data()
-            ) != VK_SUCCESS)
+        VkResult result = vkAllocateDescriptorSets
+        (
+            device,
+            &allocInfo,
+            descriptorSets.data()
+        );
+        // Check result
+        if (result != VK_SUCCESS)
         {
             // Log
-            Logger::Error("Failed to allocate descriptor sets! [pool={}]\n", reinterpret_cast<void*>(m_descriptorPool));
+            Logger::Error("[{}] Failed to allocate descriptor sets! [pool={}]\n", string_VkResult(result), reinterpret_cast<void*>(descriptorPool));
         }
 
         // Return
@@ -326,13 +331,13 @@ namespace Vk
     void Context::CreateLogicalDevice()
     {
         // Get queue
-        m_queueFamilies = QueueFamilyIndices(physicalDevice, surface);
+        queueFamilies = QueueFamilyIndices(physicalDevice, surface);
 
         // Queue priority
         constexpr f32 queuePriority = 1.0f;
 
         // Queues data
-        auto uniqueQueueFamilies = m_queueFamilies.GetUniqueFamilies();
+        auto uniqueQueueFamilies = queueFamilies.GetUniqueFamilies();
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
         // Create queue creation data
@@ -398,7 +403,7 @@ namespace Vk
         vkGetDeviceQueue
         (
             device,
-            m_queueFamilies.graphicsFamily.value(),
+            queueFamilies.graphicsFamily.value(),
             0,
             &graphicsQueue
         );
@@ -412,7 +417,7 @@ namespace Vk
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = m_queueFamilies.graphicsFamily.value()
+            .queueFamilyIndex = queueFamilies.graphicsFamily.value()
         };
 
         // Create command pool
@@ -456,7 +461,7 @@ namespace Vk
                 device,
                 &poolCreateInfo,
                 nullptr,
-                &m_descriptorPool
+                &descriptorPool
             ) != VK_SUCCESS)
         {
             // Log
@@ -464,13 +469,13 @@ namespace Vk
         }
 
         // Log
-        Logger::Info("Created descriptor pool! [handle={}]\n", reinterpret_cast<void*>(m_descriptorPool));
+        Logger::Info("Created descriptor pool! [handle={}]\n", reinterpret_cast<void*>(descriptorPool));
 
         // Add to deletion queue
         m_deletionQueue.PushDeletor([this] ()
         {
             // Destroy descriptor pool
-            vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
+            vkDestroyDescriptorPool(device, descriptorPool, nullptr);
         });
     }
 

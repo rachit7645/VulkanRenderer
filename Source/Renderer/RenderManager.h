@@ -27,6 +27,7 @@
 #include "Util/Util.h"
 #include "Vulkan/VertexBuffer.h"
 #include "Vulkan/Swapchain.h"
+#include "Util/FrameCounter.h"
 
 namespace Renderer
 {
@@ -78,6 +79,9 @@ namespace Renderer
         usize m_currentFrame = 0;
         // Status
         std::array<VkResult, 2> m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
+
+        // Frame counter
+        Util::FrameCounter m_frameCounter = {};
     };
 }
 

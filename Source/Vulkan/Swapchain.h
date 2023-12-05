@@ -55,6 +55,8 @@ namespace Vk
         Vk::DepthBuffer depthBuffer;
         // Swap chain presentation render pass
         VkRenderPass renderPass = {};
+        // Swapchain info
+        Vk::SwapchainInfo swapChainInfo = {};
     private:
         // Destroy current swap chain
         void DestroySwapChain(VkDevice device);
@@ -70,11 +72,11 @@ namespace Vk
         void CreateFramebuffers(VkDevice device);
 
         // Choose surface format
-        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat(const Vk::SwapchainInfo& swapChainInfo);
+        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat();
         // Choose surface presentation mode
-        [[nodiscard]] VkPresentModeKHR ChoosePresentationMode(const Vk::SwapchainInfo& swapChainInfo);
+        [[nodiscard]] VkPresentModeKHR ChoosePresentationMode();
         // Choose swap extent
-        [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window, const Vk::SwapchainInfo& swapChainInfo);
+        [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window);
 
         // Swap chain images
         std::vector<Vk::Image> m_images = {};
