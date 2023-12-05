@@ -22,7 +22,7 @@
 namespace Renderer
 {
     // Max textures
-    constexpr usize MAX_TEXTURE_COUNT = (1 << 8);
+    constexpr usize MAX_TEXTURE_COUNT = (1 << 10);
 
     void RenderPipeline::Create(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
     {
@@ -63,8 +63,6 @@ namespace Renderer
         // Dynamic states
         constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
-        // Temporary descriptor data
-        auto _descriptorData = std::vector<Vk::DescriptorSetData>();
         // Pipeline data tuple
         Vk::PipelineBuilder::PipelineData pipelineData = {};
         // Build pipeline
@@ -150,13 +148,6 @@ namespace Renderer
 
                 // Add to map
                 imageViewMap[FIF].emplace(currentImageView, currentDescriptor);
-                /* Log
-                Logger::Debug
-                (
-                    "Image View: {}, Descriptor: {}\n",
-                    reinterpret_cast<void*>(currentImageView.handle),
-                    reinterpret_cast<void*>(currentDescriptor)
-                );*/
             }
         }
 

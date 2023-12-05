@@ -137,8 +137,8 @@ namespace Renderer
         // Create model matrix
         pushConstant.transform = Maths::CreateModelMatrix<glm::mat4>
         (
-            glm::vec3(2.0f * std::cos(time), 0.0f, 0.0f),
-            glm::vec3(0.0f, time * glm::radians(90.0f), 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, (time / 5.0f) * glm::radians(90.0f), 0.0f),
             glm::vec3(0.5f, 0.5f, 0.5f)
         );
 

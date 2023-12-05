@@ -344,20 +344,27 @@ namespace Vk
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages, usize count)
+    PipelineBuilder& PipelineBuilder::AddDescriptor
+    (
+        u32 binding,
+        VkDescriptorType type,
+        VkShaderStageFlags stages,
+        u32 copyCount,
+        u32 useCount
+    )
     {
         // Binding
         VkDescriptorSetLayoutBinding layoutBinding =
         {
             .binding            = binding,
             .descriptorType     = type,
-            .descriptorCount    = static_cast<uint32_t>(count),
+            .descriptorCount    = useCount,
             .stageFlags         = stages,
             .pImmutableSamplers = nullptr
         };
 
         // Add to states
-        descriptorStates.emplace_back(count, type, layoutBinding, nullptr);
+        descriptorStates.emplace_back(copyCount * useCount, type, layoutBinding, nullptr);
 
         // Return
         return *this;

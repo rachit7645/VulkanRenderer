@@ -91,7 +91,14 @@ namespace Vk
         // Add push constant
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         // Add descriptor set binding
-        [[nodiscard]] PipelineBuilder& AddDescriptor(u32 binding, VkDescriptorType type, VkShaderStageFlags stages, usize count);
+        [[nodiscard]] PipelineBuilder& AddDescriptor
+        (
+            u32 binding,
+            VkDescriptorType type,
+            VkShaderStageFlags stages,
+            u32 copyCount, // Number of unique descriptors per FIF
+            u32 useCount = 1 // Number of descriptors used at a time (for an array)
+        );
 
         // Shader stages
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};

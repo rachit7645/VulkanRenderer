@@ -162,7 +162,15 @@ namespace Vk
         for (auto image : _images)
         {
             // Create and add to vector
-            m_images.emplace_back(image, extent.width, extent.height, m_imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+            m_images.emplace_back
+            (
+                image,
+                extent.width,
+                extent.height,
+                m_imageFormat,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_ASPECT_COLOR_BIT
+            );
         }
     }
 
