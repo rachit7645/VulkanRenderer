@@ -17,19 +17,33 @@
 #ifndef RENDER_PIPELINE_H
 #define RENDER_PIPELINE_H
 
-#include "IPipeline.h"
 #include "Util/Util.h"
 #include "Externals/GLM.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Sampler.h"
 #include "Vulkan/DescriptorSetData.h"
 #include "Vulkan/Texture.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/Swapchain.h"
 
 namespace Renderer
 {
-    class RenderPipeline : public IPipeline
+    class RenderPipeline
     {
     public:
+        // Usings
+        using ImageViewMap = std::array
+        <
+            std::unordered_map
+            <
+                Vk::ImageView,
+                VkDescriptorSet,
+                Vk::ImageView::Hash,
+                Vk::ImageView::Equal
+            >,
+            Vk::FRAMES_IN_FLIGHT
+        >;
+
         // Push constant info
         struct VULKAN_GLSL_DATA BasicShaderPushConstant
         {
@@ -63,27 +77,17 @@ namespace Renderer
         // Get image data
         const Vk::DescriptorSetData& GetImageData() const;
 
+        // Pipeline data
+        Vk::Pipeline pipeline = {};
+
         // Push constant data
         std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
-        // Descriptor data
-        std::vector<Vk::DescriptorSetData> descriptorData = {};
-
         // Shared data UBOs
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sharedUBOs = {};
         // Texture sampler
         Vk::Sampler textureSampler = {};
         // Image view map
-        std::array
-        <
-            std::unordered_map
-            <
-                Vk::ImageView,
-                VkDescriptorSet,
-                Vk::ImageView::Hash,
-                Vk::ImageView::Equal
-            >,
-            Vk::FRAMES_IN_FLIGHT
-        > imageViewMap = {};
+        ImageViewMap imageViewMap = {};
     private:
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& vkContext);

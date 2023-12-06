@@ -14,6 +14,7 @@
  *    limitations under the License.
  */
 
+#include <vulkan/vk_enum_string_helper.h>
 #include "RenderManager.h"
 
 #include "RenderConstants.h"
@@ -71,9 +72,6 @@ namespace Renderer
 
     void RenderManager::Render()
     {
-        // Current command buffer
-        auto currentCommandBuffer = m_vkContext->commandBuffers[m_currentFrame];
-
         // Make sure swap chain is valid
         if (!IsSwapchainValid()) return;
 
@@ -90,23 +88,18 @@ namespace Renderer
         };
 
         // Bind
-        vkCmdBindDescriptorSets
+        m_renderPipeline->pipeline.BindDescriptors
         (
-            currentCommandBuffer,
+            currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_renderPipeline->pipelineLayout,
             0,
-            static_cast<u32>(sceneDescriptorSets.size()),
-            sceneDescriptorSets.data(),
-            0,
-            nullptr
+            sceneDescriptorSets
         );
 
         // Load push constants
-        vkCmdPushConstants
+        m_renderPipeline->pipeline.LoadPushConstants
         (
-            currentCommandBuffer,
-            m_renderPipeline->pipelineLayout,
+            currentCmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT,
             0, sizeof(decltype(m_renderPipeline->pushConstants[m_currentFrame])),
             reinterpret_cast<void*>(&m_renderPipeline->pushConstants[m_currentFrame])
@@ -116,7 +109,7 @@ namespace Renderer
         for (const auto& mesh : m_model->meshes)
         {
             // Bind buffer
-            mesh.vertexBuffer.BindBuffer(currentCommandBuffer);
+            mesh.vertexBuffer.BindBuffer(currentCmdBuffer);
 
             // Get mesh descriptors
             std::array<VkDescriptorSet, 1> meshDescriptorSets =
@@ -125,22 +118,18 @@ namespace Renderer
             };
 
             // Bind
-            vkCmdBindDescriptorSets
+            m_renderPipeline->pipeline.BindDescriptors
             (
-                currentCommandBuffer,
+                currentCmdBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                m_renderPipeline->pipelineLayout,
                 2,
-                static_cast<u32>(meshDescriptorSets.size()),
-                meshDescriptorSets.data(),
-                0,
-                nullptr
+                meshDescriptorSets
             );
 
             // Draw triangle
             vkCmdDrawIndexed
             (
-                currentCommandBuffer,
+                currentCmdBuffer,
                 mesh.vertexBuffer.indexCount,
                 1,
                 0,
@@ -152,7 +141,7 @@ namespace Renderer
         // Render
         ImGui::Render();
         // Render ImGui
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), currentCommandBuffer);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), currentCmdBuffer);
 
         // End
         EndFrame();
@@ -221,11 +210,14 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
+        // Get current command buffer
+        currentCmdBuffer = m_vkContext->commandBuffers[m_currentFrame];
+
         // Wait for previous frame to be finished
         WaitForFrame();
 
         // Reset command buffer
-        vkResetCommandBuffer(m_vkContext->commandBuffers[m_currentFrame], 0);
+        vkResetCommandBuffer(currentCmdBuffer, 0);
 
         // Begin info
         VkCommandBufferBeginInfo beginInfo =
@@ -237,16 +229,13 @@ namespace Renderer
         };
 
         // Begin recording commands
-        if (vkBeginCommandBuffer(
-                m_vkContext->commandBuffers[m_currentFrame],
-                &beginInfo
-            ) != VK_SUCCESS)
+        if (vkBeginCommandBuffer(currentCmdBuffer, &beginInfo) != VK_SUCCESS)
         {
             // Log
             Logger::Error
             (
                 "Failed to begin recording commands! [CommandBuffer={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame])
+                reinterpret_cast<void*>(currentCmdBuffer)
             );
         }
 
@@ -281,18 +270,13 @@ namespace Renderer
         // Begin render pass
         vkCmdBeginRenderPass
         (
-            m_vkContext->commandBuffers[m_currentFrame],
+            currentCmdBuffer,
             &renderPassInfo,
             VK_SUBPASS_CONTENTS_INLINE
         );
 
         // Bind pipeline
-        vkCmdBindPipeline
-        (
-            m_vkContext->commandBuffers[m_currentFrame],
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_renderPipeline->pipeline
-        );
+        m_renderPipeline->pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
         // Viewport
         VkViewport viewport =
@@ -308,7 +292,7 @@ namespace Renderer
         // Set viewport
         vkCmdSetViewport
         (
-            m_vkContext->commandBuffers[m_currentFrame],
+            currentCmdBuffer,
             0,
             1,
             &viewport
@@ -324,7 +308,7 @@ namespace Renderer
         // Set scissor
         vkCmdSetScissor
         (
-            m_vkContext->commandBuffers[m_currentFrame],
+            currentCmdBuffer,
             0,
             1,
             &scissor
@@ -397,6 +381,26 @@ namespace Renderer
         );
     }
 
+    void RenderManager::EndFrame()
+    {
+        // End render pass
+        vkCmdEndRenderPass(currentCmdBuffer);
+
+        // Finish recording command buffer
+        if (vkEndCommandBuffer(currentCmdBuffer) != VK_SUCCESS)
+        {
+            // Log
+            Logger::Error
+            (
+                "Failed to record command buffer! [handle={}]\n",
+                reinterpret_cast<void*>(currentCmdBuffer)
+            );
+        }
+
+        // Submit queue
+        SubmitQueue();
+    }
+
     void RenderManager::SubmitQueue()
     {
         // Waiting semaphores
@@ -415,7 +419,7 @@ namespace Renderer
             .pWaitSemaphores      = waitSemaphores,
             .pWaitDstStageMask    = waitStages,
             .commandBufferCount   = 1,
-            .pCommandBuffers      = &m_vkContext->commandBuffers[m_currentFrame],
+            .pCommandBuffers      = &currentCmdBuffer,
             .signalSemaphoreCount = 1,
             .pSignalSemaphores    = signalSemaphores
         };
@@ -432,7 +436,7 @@ namespace Renderer
             Logger::Error
             (
                 "Failed to submit command buffer! [CommandBuffer={}] [Queue={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame]),
+                reinterpret_cast<void*>(currentCmdBuffer),
                 reinterpret_cast<void*>(m_vkContext->graphicsQueue)
             );
         }
@@ -448,14 +452,14 @@ namespace Renderer
         // Presentation info
         VkPresentInfoKHR presentInfo =
         {
-            .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext              = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores    = signalSemaphores,
-            .swapchainCount     = 1,
-            .pSwapchains        = swapChains,
-            .pImageIndices      = &m_imageIndex,
-            .pResults           = nullptr
+        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .pNext              = nullptr,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores    = signalSemaphores,
+        .swapchainCount     = 1,
+        .pSwapchains        = swapChains,
+        .pImageIndices      = &m_imageIndex,
+        .pResults           = nullptr
         };
 
         // Present
@@ -463,26 +467,6 @@ namespace Renderer
 
         // Set frame index
         m_currentFrame = (m_currentFrame + 1) % Vk::FRAMES_IN_FLIGHT;
-    }
-
-    void RenderManager::EndFrame()
-    {
-        // End render pass
-        vkCmdEndRenderPass(m_vkContext->commandBuffers[m_currentFrame]);
-
-        // Finish recording command buffer
-        if (vkEndCommandBuffer(m_vkContext->commandBuffers[m_currentFrame]) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error
-            (
-                "Failed to record command buffer! [handle={}]\n",
-                reinterpret_cast<void*>(m_vkContext->commandBuffers[m_currentFrame])
-            );
-        }
-
-        // Submit queue
-        SubmitQueue();
     }
 
     bool RenderManager::IsSwapchainValid()
@@ -502,7 +486,7 @@ namespace Renderer
             else if (status != VK_SUCCESS)
             {
                 // Log
-                Logger::Error("Swap chain validation failed! [status={:X}]\n", static_cast<int>(status));
+                Logger::Error("[{}] Swap chain validation failed!\n", string_VkResult(status));
             }
         }
 
@@ -511,7 +495,7 @@ namespace Renderer
         {
             // Recreate
             m_swapchain->RecreateSwapChain(m_window, m_vkContext);
-            // Reset
+            // Reset status
             m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
             // Return
             return false;

@@ -306,7 +306,7 @@ namespace Vk
         auto queue = QueueFamilyIndices(logicalDevice, surface);
 
         // Calculate score parts
-        usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 10000;
+        usize discreteGPU = (propertySet.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
 
         // Calculate score multipliers
         bool isQueueValid  = queue.IsComplete();

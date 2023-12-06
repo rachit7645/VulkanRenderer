@@ -37,7 +37,7 @@ namespace Vk
     {
     }
 
-    PipelineBuilder::PipelineData PipelineBuilder::Build()
+    Vk::Pipeline PipelineBuilder::Build()
     {
         // Create descriptor set layouts
         auto descriptorLayouts = CreateDescriptorSetLayouts();
@@ -68,9 +68,6 @@ namespace Vk
             // Log
             Logger::Error("Failed to create pipeline layout! [device={}]\n", reinterpret_cast<void*>(m_context->device));
         }
-
-        // Log
-        Logger::Debug("Created pipeline layout! [handle={}]\n", reinterpret_cast<void*>(pipelineLayout));
 
         // Pipeline creation info
         VkGraphicsPipelineCreateInfo pipelineCreateInfo =
@@ -113,7 +110,7 @@ namespace Vk
             Logger::Error("Failed to create pipeline! [device={}]\n", reinterpret_cast<void*>(m_context->device));
         }
 
-        // Create descriptor sets
+        // Allocate descriptor sets
         auto descriptorData = AllocateDescriptorSets();
 
         // Log

@@ -21,24 +21,18 @@
 #include <vector>
 #include <functional>
 #include <span>
+#include <memory>
 #include <vulkan/vulkan.h>
 
 #include "Context.h"
 #include "DescriptorSetData.h"
+#include "Pipeline.h"
 
 namespace Vk
 {
     class PipelineBuilder
     {
     public:
-        // Pipeline data
-        using PipelineData = std::tuple
-        <
-            VkPipeline,
-            VkPipelineLayout,
-            std::vector<Vk::DescriptorSetData>
-        >;
-
         // Descriptor state
         struct DescriptorState
         {
@@ -58,7 +52,7 @@ namespace Vk
         ~PipelineBuilder();
 
         // Build pipeline
-        PipelineData Build();
+        Vk::Pipeline Build();
 
         // Attach shader to pipeline
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);

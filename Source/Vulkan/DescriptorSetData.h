@@ -21,6 +21,8 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
+#include "Constants.h"
+
 namespace Vk
 {
     struct DescriptorSetData

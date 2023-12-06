@@ -10,11 +10,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL2   REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(glm    REQUIRED)
-find_package(assimp REQUIRED)
-find_package(fmt    REQUIRED)
+find_package(SDL2     REQUIRED)
+find_package(Vulkan   REQUIRED)
+find_package(glm      REQUIRED)
+find_package(assimp   REQUIRED)
+find_package(fmt      REQUIRED)
+find_package(simdjson REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -49,6 +50,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Swapchain.cpp
 	Source/Vulkan/Sampler.cpp
 	Source/Vulkan/DepthBuffer.cpp
+	Source/Vulkan/Pipeline.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/RenderPipeline.cpp
@@ -76,7 +78,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/ImGui/backends/imgui_impl_vulkan.h
     Externals/ImGui/misc/cpp/imgui_stdlib.h
     # STB Headers
-    Externals/stb/stb_image.h
+    <stb/stb_image.h>
 	# Assimp Headers
     <assimp/Importer.hpp>
     <assimp/scene.h>
@@ -99,7 +101,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <glm/geometric.hpp>
     <glm/gtc/matrix_transform.hpp>
     # SIMD JSON Headers
-    Externals/simdjson/singleheader/simdjson.h
+    <simdjson.h>
     # C++ STL Headers
 	<map>
     <unordered_map>
@@ -154,7 +156,7 @@ target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2main SDL2::SDL2 fm
 
 # Install
 install(
-	TARGETS VulkanRenderer imgui simdjson
+	TARGETS VulkanRenderer imgui
 	ARCHIVE DESTINATION ${INSTALL_DIR}
 	LIBRARY DESTINATION ${INSTALL_DIR}
 	RUNTIME DESTINATION ${INSTALL_DIR}
@@ -163,7 +165,6 @@ install(
 # Copy required DLLs
 install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
 install(FILES $<TARGET_RUNTIME_DLLS:imgui>          DESTINATION ${INSTALL_DIR})
-install(FILES $<TARGET_RUNTIME_DLLS:simdjson>       DESTINATION ${INSTALL_DIR})
 
 # Copy other directories
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets/)

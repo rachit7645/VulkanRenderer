@@ -67,27 +67,22 @@ namespace Renderer
         // Dynamic states
         constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
-        // Pipeline data tuple
-        Vk::PipelineBuilder::PipelineData pipelineData = {};
         // Build pipeline
-        pipelineData = Vk::PipelineBuilder::Create(vkContext, swapchain->renderPass)
-                       .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-                       .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-                       .SetDynamicStates(DYN_STATES, SetDynamicStates)
-                       .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
-                       .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-                       .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                       .SetMSAAState()
-                       .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
-                       .SetBlendState()
-                       .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
-                       .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
-                       .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-                       .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, 1, MAX_TEXTURE_COUNT)
-                       .Build();
-
-        // Retrieve members
-        std::tie(pipeline, pipelineLayout, descriptorData) = pipelineData;
+        pipeline = Vk::PipelineBuilder::Create(vkContext, swapchain->renderPass)
+                   .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+                   .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+                   .SetDynamicStates(DYN_STATES, SetDynamicStates)
+                   .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
+                   .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+                   .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                   .SetMSAAState()
+                   .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
+                   .SetBlendState()
+                   .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
+                   .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
+                   .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
+                   .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, 1, MAX_TEXTURE_COUNT)
+                   .Build();
 
         // Create pipeline data
         CreatePipelineData(vkContext);
@@ -278,26 +273,20 @@ namespace Renderer
 
     const Vk::DescriptorSetData& RenderPipeline::GetSharedUBOData() const
     {
-        // Check and return
-        auto& data = descriptorData[0];
-        assert(data.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && "Invalid descriptor type!");
-        return data;
+        // Return
+        return pipeline.descriptorSetData[0];
     }
 
     const Vk::DescriptorSetData& RenderPipeline::GetSamplerData() const
     {
-        // Check and return
-        auto& data = descriptorData[1];
-        assert(data.type == VK_DESCRIPTOR_TYPE_SAMPLER && "Invalid descriptor type!");
-        return data;
+        // Return
+        return pipeline.descriptorSetData[1];
     }
 
     const Vk::DescriptorSetData& RenderPipeline::GetImageData() const
     {
-        // Check and return
-        auto& data = descriptorData[2];
-        assert(data.type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE && "Invalid descriptor type!");
-        return data;
+        // Return
+        return pipeline.descriptorSetData[2];
     }
 
     void RenderPipeline::Destroy(VkDevice device)
@@ -307,11 +296,11 @@ namespace Renderer
         // Destroy sampler
         textureSampler.Destroy(device);
         // Destroy pipeline
-        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyPipeline(device, pipeline.handle, nullptr);
         // Destroy pipeline layout
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, pipeline.layout, nullptr);
         // Destroy descriptor set layouts
-        for (auto&& descriptor : descriptorData)
+        for (auto&& descriptor : pipeline.descriptorSetData)
         {
             vkDestroyDescriptorSetLayout(device, descriptor.layout, nullptr);
         }

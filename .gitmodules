@@ -1,9 +1,3 @@
-[submodule "Externals/stb"]
-	path = Externals/stb
-	url = https://github.com/nothings/stb.git
 [submodule "Externals/ImGui"]
 	path = Externals/ImGui
 	url = https://github.com/ocornut/imgui.git
-[submodule "Externals/simdjson"]
-	path = Externals/simdjson
-	url = https://github.com/simdjson/simdjson.git

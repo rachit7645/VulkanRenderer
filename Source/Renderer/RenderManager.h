@@ -44,21 +44,18 @@ namespace Renderer
     private:
         // Begin frame
         void BeginFrame();
-        // End frame
-        void EndFrame();
-
-        // Update
-        void Update();
-
-        // Present
-        void Present();
         // Wait for previous frame
         void WaitForFrame();
         // Acquire swap chain image
         void AcquireSwapChainImage();
+        // Update
+        void Update();
+        // End frame
+        void EndFrame();
         // Submit queue
         void SubmitQueue();
-
+        // Present
+        void Present();
         // Check if swap chain is valid
         bool IsSwapchainValid();
 
@@ -77,6 +74,9 @@ namespace Renderer
         u32 m_imageIndex = 0;
         // Frame index
         usize m_currentFrame = 0;
+
+        // Current command buffer
+        VkCommandBuffer currentCmdBuffer = VK_NULL_HANDLE;
         // Status
         std::array<VkResult, 2> m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
 

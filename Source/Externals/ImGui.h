@@ -14,8 +14,8 @@
  *    limitations under the License.
  */
 
-#ifndef RACHIT_IMGUI_H
-#define RACHIT_IMGUI_H
+#ifndef EXT_IMGUI_H
+#define EXT_IMGUI_H
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 

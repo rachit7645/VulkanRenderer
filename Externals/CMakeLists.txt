@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(libs)
+project(Externals)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
@@ -11,25 +11,25 @@ find_package(Vulkan REQUIRED)
 
 # ImGui source files
 add_library(imgui SHARED
-	imgui/imgui.cpp
-	imgui/imgui_draw.cpp
-	imgui/imgui_tables.cpp
-	imgui/imgui_widgets.cpp
-	imgui/backends/imgui_impl_sdl2.cpp
-	imgui/backends/imgui_impl_vulkan.cpp
-	imgui/misc/cpp/imgui_stdlib.cpp
+	ImGui/imgui.cpp
+	ImGui/imgui_draw.cpp
+	ImGui/imgui_tables.cpp
+	ImGui/imgui_widgets.cpp
+	ImGui/backends/imgui_impl_sdl2.cpp
+	ImGui/backends/imgui_impl_vulkan.cpp
+	ImGui/misc/cpp/imgui_stdlib.cpp
 )
 
 # ImGui precompiled headers
 target_precompile_headers(imgui PRIVATE
-	imgui/imconfig.h
-	imgui/imgui_internal.h
-	imgui/imgui.h
-	imgui/imstb_rectpack.h
-	imgui/imstb_truetype.h
-	imgui/backends/imgui_impl_sdl2.h
-	imgui/backends/imgui_impl_vulkan.h
-	imgui/misc/cpp/imgui_stdlib.h
+	ImGui/imconfig.h
+	ImGui/imgui_internal.h
+	ImGui/imgui.h
+	ImGui/imstb_rectpack.h
+	ImGui/imstb_truetype.h
+	ImGui/backends/imgui_impl_sdl2.h
+	ImGui/backends/imgui_impl_vulkan.h
+	ImGui/misc/cpp/imgui_stdlib.h
 )
 
 # SDL2 Includes
@@ -53,26 +53,3 @@ endif()
 
 # Link libraries
 target_link_libraries(imgui Vulkan::Vulkan SDL2::SDL2)
-
-# SIMD JSON source files
-add_library(simdjson SHARED simdjson/singleheader/simdjson.cpp)
-# SIMD JSON precompiled headers
-target_precompile_headers(simdjson PRIVATE simdjson/singleheader/simdjson.h)
-
-# SIMD JSON includes
-target_include_directories(simdjson PUBLIC simdjson/singleheader/)
-# Disable warnings
-target_compile_options(simdjson PRIVATE -w)
-# -O3 optimisations
-target_compile_options(simdjson PRIVATE -O3)
-# Enable CPU vectorisation (SSE or better)
-target_compile_options(simdjson PRIVATE -march=native)
-
-# Debug config
-if (CMAKE_BUILD_TYPE STREQUAL Debug)
-	# Enable debug output
-	target_compile_options(simdjson PRIVATE -g)
-endif()
-
-# SIMD JSON libs
-target_link_libraries(simdjson)
