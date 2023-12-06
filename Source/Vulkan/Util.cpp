@@ -14,6 +14,7 @@
  *    limitations under the License.
  */
 
+#include <vulkan/vk_enum_string_helper.h>
 #include "Util.h"
 #include "Util/Log.h"
 
@@ -86,5 +87,20 @@ namespace Vk
 
         // If we didn't find memory, terminate
         Logger::Error("Failed to find suitable memory type!");
+    }
+
+    void CheckResult(VkResult result)
+    {
+        // Check
+        if (result != VK_SUCCESS)
+        {
+            // Log error
+            Logger::VulkanError
+            (
+                "Result is {}! (Expected: {})\n",
+                string_VkResult(result),
+                string_VkResult(VK_SUCCESS)
+            );
+        }
     }
 }

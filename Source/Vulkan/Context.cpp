@@ -23,14 +23,9 @@
 #include "Extensions.h"
 #include "SwapchainInfo.h"
 #include "Util/Log.h"
-#include "Renderer/RenderPipeline.h"
-#include "Externals/ImGui.h"
 
 namespace Vk
 {
-    // Usings
-    using Renderer::RenderPipeline;
-
     #ifdef ENGINE_DEBUG
     // Layers
     constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};

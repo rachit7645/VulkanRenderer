@@ -249,6 +249,34 @@ namespace Logger
         }
     };
 
+    // Vulkan error logger
+    template <typename... Args>
+    struct VulkanError
+    {
+        /// @brief Vulkan error logging function
+        /// @param format   Format string
+        /// @param args     Variable arguments
+        /// @param location Source location information
+        [[noreturn]] explicit VulkanError
+        (
+            const std::string_view format,
+            Args&&... args,
+            const std::source_location location = std::source_location::current()
+        )
+        {
+            // Log
+            Detail::LogAndExit<-1>
+            (
+                fmt::color::orange_red,
+                fmt::color::black,
+                "VULKAN ERROR",
+                location,
+                format,
+                args...
+            );
+        }
+    };
+
     // Deduction guides
     template <typename... Args>
     Info(std::string_view, Args&&...) -> Info<Args...>;
@@ -260,6 +288,8 @@ namespace Logger
     Vulkan(std::string_view, Args&&...) -> Vulkan<Args...>;
     template <typename... Args>
     Error(std::string_view, Args&&...) -> Error<Args...>;
+    template <typename... Args>
+    VulkanError(std::string_view, Args&&...) -> VulkanError<Args...>;
 }
 
 #endif

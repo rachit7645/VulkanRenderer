@@ -39,6 +39,7 @@ namespace Vk
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
+
         // Create image view
         depthImageView = Vk::ImageView
         (
@@ -48,6 +49,7 @@ namespace Vk
             depthImage.format,
             static_cast<VkImageAspectFlagBits>(depthImage.aspect)
         );
+
         // Transition (optional)
         depthImage.TransitionLayout
         (

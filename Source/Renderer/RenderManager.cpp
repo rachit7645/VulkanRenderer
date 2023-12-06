@@ -49,7 +49,7 @@ namespace Renderer
             .UseDynamicRendering   = false,
             .ColorAttachmentFormat = {},
             .Allocator             = nullptr,
-            .CheckVkResultFn       = nullptr
+            .CheckVkResultFn       = &Vk::CheckResult
         };
 
         // Init ImGui

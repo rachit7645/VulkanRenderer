@@ -5,7 +5,7 @@
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/lienses/LICENSE-2.0
  *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
@@ -121,8 +121,7 @@ namespace Vk
             break;
         // Exit at error
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            Logger::Vulkan("{}\n", pCallbackData->pMessage);
-            std::exit(-1);
+            Logger::VulkanError("{}\n", pCallbackData->pMessage);
         }
         // Return
         return VK_TRUE;

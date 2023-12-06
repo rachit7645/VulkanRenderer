@@ -18,7 +18,9 @@
 #define VK_UTIL_H
 
 #include <functional>
+#include <string_view>
 #include <vulkan/vulkan.h>
+
 #include "Util/Util.h"
 #include "Context.h"
 
@@ -26,7 +28,6 @@ namespace Vk
 {
     // Single use command buffer
     void SingleTimeCmdBuffer(const std::shared_ptr<Vk::Context>& context, const std::function<void(VkCommandBuffer)>& CmdFunction);
-
     // Find memory type
     u32 FindMemoryType
     (
@@ -34,6 +35,8 @@ namespace Vk
         VkMemoryPropertyFlags properties,
         const VkPhysicalDeviceMemoryProperties& memProperties
     );
+    // Check result
+    void CheckResult(VkResult result);
 }
 
 #endif

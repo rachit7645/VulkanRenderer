@@ -3,7 +3,5 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/ImGui" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Externals/simdjson" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Externals/stb" vcs="Git" />
   </component>
 </project>
