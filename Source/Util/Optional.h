@@ -14,14 +14,19 @@
  *    limitations under the License.
  */
 
-#ifndef EXT_IMGUI_H
-#define EXT_IMGUI_H
+#ifndef OPTIONAL_H
+#define OPTIONAL_H
 
-#define IMGUI_DEFINE_MATH_OPERATORS
+#include <optional>
 
-#include "ImGui/imgui_internal.h"
-#include "ImGui/imgui.h"
-#include "ImGui/backends/imgui_impl_sdl2.h"
-#include "ImGui/backends/imgui_impl_vulkan.h"
+namespace Util
+{
+    template <typename T>
+    constexpr T* GetAddressOrNull(std::optional<T>& opt)
+    {
+        // Return
+        return opt.has_value() ? &(*opt) : nullptr;
+    }
+}
 
 #endif

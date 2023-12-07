@@ -14,8 +14,8 @@
  *    limitations under the License.
  */
 
-#ifndef RENDER_PIPELINE_H
-#define RENDER_PIPELINE_H
+#ifndef SWAP_PIPELINE_H
+#define SWAP_PIPELINE_H
 
 #include "Util/Util.h"
 #include "Externals/GLM.h"
@@ -28,7 +28,7 @@
 
 namespace Renderer
 {
-    class RenderPipeline
+    class SwapPipeline
     {
     public:
         // Usings
@@ -63,7 +63,7 @@ namespace Renderer
         };
 
         // Create render pipeline
-        RenderPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain);
+        SwapPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain);
         // Destroy render pipeline
         void Destroy(VkDevice device);
 

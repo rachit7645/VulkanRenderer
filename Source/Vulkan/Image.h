@@ -42,7 +42,7 @@ namespace Vk
             VkMemoryPropertyFlags properties
         );
 
-        // Copy image (for swap chain)
+        // Copy image
         Image
         (
             VkImage image,

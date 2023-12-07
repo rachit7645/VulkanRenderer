@@ -20,7 +20,7 @@
 #include "RenderConstants.h"
 #include "Util/Log.h"
 #include "Util/Maths.h"
-#include "RenderPipeline.h"
+#include "SwapPipeline.h"
 #include "Vulkan/Util.h"
 
 namespace Renderer
@@ -29,7 +29,7 @@ namespace Renderer
         : m_window(std::move(window)),
           m_vkContext(std::make_shared<Vk::Context>(m_window)),
           m_swapchain(std::make_shared<Vk::Swapchain>(m_window, m_vkContext)),
-          m_renderPipeline(std::make_unique<RenderPipeline>(m_vkContext, m_swapchain)),
+          m_renderPipeline(std::make_unique<SwapPipeline>(m_vkContext, m_swapchain)),
           m_model(std::make_unique<Models::Model>(m_vkContext, "Sponza/sponza.glb"))
     {
         // ImGui init info
@@ -318,7 +318,7 @@ namespace Renderer
         auto& sharedUBO = m_renderPipeline->sharedUBOs[m_currentFrame];
 
         // Shared UBO data
-        RenderPipeline::SharedBuffer sharedBuffer =
+        SwapPipeline::SharedBuffer sharedBuffer =
         {
             // View Matrix
             .view = glm::lookAt(
@@ -340,7 +340,7 @@ namespace Renderer
         sharedBuffer.proj[1][1] *= -1;
 
         // Load UBO data
-        std::memcpy(sharedUBO.mappedPtr, &sharedBuffer, sizeof(RenderPipeline::SharedBuffer));
+        std::memcpy(sharedUBO.mappedPtr, &sharedBuffer, sizeof(SwapPipeline::SharedBuffer));
 
         // Begin imgui
         ImGui_ImplVulkan_NewFrame();

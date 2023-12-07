@@ -14,14 +14,27 @@
  *    limitations under the License.
  */
 
-#ifndef EXT_IMGUI_H
-#define EXT_IMGUI_H
+#ifndef SUBPASS_STATE_H
+#define SUBPASS_STATE_H
 
-#define IMGUI_DEFINE_MATH_OPERATORS
+#include <vector>
+#include <optional>
+#include <vulkan/vulkan.h>
 
-#include "ImGui/imgui_internal.h"
-#include "ImGui/imgui.h"
-#include "ImGui/backends/imgui_impl_sdl2.h"
-#include "ImGui/backends/imgui_impl_vulkan.h"
+namespace Vk
+{
+    // Subpass
+    struct SubpassState
+    {
+        // Subpass description
+        VkSubpassDescription description;
+        // Color attachment references
+        std::vector<VkAttachmentReference> colorReferences = {};
+        // Depth attachment reference
+        std::optional<VkAttachmentReference> depthReference;
+        // Subpass dependency
+        VkSubpassDependency dependency = {};
+    };
+}
 
 #endif

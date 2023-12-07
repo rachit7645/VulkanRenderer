@@ -14,9 +14,9 @@
  *    limitations under the License.
  */
 
-#include "RenderPipeline.h"
+#include "SwapPipeline.h"
 
-#include "Vulkan/PipelineBuilder.h"
+#include "Vulkan/Builders/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Models/Vertex.h"
 
@@ -28,7 +28,7 @@ namespace Renderer
     // Max textures
     constexpr usize MAX_TEXTURE_COUNT = (1 << 10);
 
-    RenderPipeline::RenderPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
+    SwapPipeline::SwapPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
     {
         // Custom functions
         auto SetDynamicStates = [swapchain] (Vk::PipelineBuilder& pipelineBuilder)
@@ -69,20 +69,20 @@ namespace Renderer
 
         // Build pipeline
         pipeline = Vk::PipelineBuilder::Create(vkContext, swapchain->renderPass)
-                   .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-                   .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-                   .SetDynamicStates(DYN_STATES, SetDynamicStates)
-                   .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
-                   .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-                   .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                   .SetMSAAState()
-                   .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
-                   .SetBlendState()
-                   .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
-                   .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
-                   .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-                   .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, 1, MAX_TEXTURE_COUNT)
-                   .Build();
+                  .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+                  .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+                  .SetDynamicStates(DYN_STATES, SetDynamicStates)
+                  .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
+                  .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+                  .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                  .SetMSAAState()
+                  .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
+                  .SetBlendState()
+                  .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
+                  .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
+                  .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
+                  .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, 1, MAX_TEXTURE_COUNT)
+                  .Build();
 
         // Create pipeline data
         CreatePipelineData(vkContext);
@@ -90,7 +90,7 @@ namespace Renderer
         WriteStaticDescriptors(vkContext->device);
     }
 
-    void RenderPipeline::WriteImageDescriptors(VkDevice device, const std::vector<Vk::ImageView>& imageViews)
+    void SwapPipeline::WriteImageDescriptors(VkDevice device, const std::vector<Vk::ImageView>& imageViews)
     {
         // Get descriptor data
         auto& imageData = GetImageData();
@@ -164,7 +164,7 @@ namespace Renderer
         );
     }
 
-    void RenderPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& vkContext)
+    void SwapPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& vkContext)
     {
         // Create shared buffers
         for (auto&& shared : sharedUBOs)
@@ -197,7 +197,7 @@ namespace Renderer
         );
     }
 
-    void RenderPipeline::WriteStaticDescriptors(VkDevice device)
+    void SwapPipeline::WriteStaticDescriptors(VkDevice device)
     {
         // Get UBO sets
         auto& sharedUBOData = GetSharedUBOData();
@@ -271,25 +271,25 @@ namespace Renderer
         );
     }
 
-    const Vk::DescriptorSetData& RenderPipeline::GetSharedUBOData() const
+    const Vk::DescriptorSetData& SwapPipeline::GetSharedUBOData() const
     {
         // Return
         return pipeline.descriptorSetData[0];
     }
 
-    const Vk::DescriptorSetData& RenderPipeline::GetSamplerData() const
+    const Vk::DescriptorSetData& SwapPipeline::GetSamplerData() const
     {
         // Return
         return pipeline.descriptorSetData[1];
     }
 
-    const Vk::DescriptorSetData& RenderPipeline::GetImageData() const
+    const Vk::DescriptorSetData& SwapPipeline::GetImageData() const
     {
         // Return
         return pipeline.descriptorSetData[2];
     }
 
-    void RenderPipeline::Destroy(VkDevice device)
+    void SwapPipeline::Destroy(VkDevice device)
     {
         // Destroy UBOs
         for (auto&& shared : sharedUBOs) shared.DeleteBuffer(device);

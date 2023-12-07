@@ -16,23 +16,20 @@
 
 #include "PipelineBuilder.h"
 
-#include <utility>
-#include <ranges>
-
-#include "ShaderModule.h"
+#include "Vulkan/ShaderModule.h"
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 
 namespace Vk
 {
-    PipelineBuilder PipelineBuilder::Create(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass)
+    PipelineBuilder PipelineBuilder::Create(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass)
     {
         // Create
-        return PipelineBuilder(std::move(context), renderPass);
+        return {context, renderPass};
     }
 
-    PipelineBuilder::PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass)
-        : m_context(std::move(context)),
+    PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass)
+        : m_context(context),
           m_renderPass(renderPass)
     {
     }

@@ -14,14 +14,25 @@
  *    limitations under the License.
  */
 
-#ifndef EXT_IMGUI_H
-#define EXT_IMGUI_H
+#ifndef DESCRIPTOR_STATE_H
+#define DESCRIPTOR_STATE_H
 
-#define IMGUI_DEFINE_MATH_OPERATORS
+#include <vulkan/vulkan.h>
+#include "Util/Util.h"
 
-#include "ImGui/imgui_internal.h"
-#include "ImGui/imgui.h"
-#include "ImGui/backends/imgui_impl_sdl2.h"
-#include "ImGui/backends/imgui_impl_vulkan.h"
+namespace Vk
+{
+    struct DescriptorState
+    {
+        // Count
+        u32 count = 0;
+        // Type
+        VkDescriptorType type = {};
+        // Binding
+        VkDescriptorSetLayoutBinding binding = {};
+        // Layout
+        VkDescriptorSetLayout layout = {};
+    };
+}
 
 #endif

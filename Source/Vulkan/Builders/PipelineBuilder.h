@@ -24,30 +24,18 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
-#include "Context.h"
-#include "DescriptorSetData.h"
-#include "Pipeline.h"
+#include "DescriptorState.h"
+#include "Vulkan/Context.h"
+#include "Vulkan/DescriptorSetData.h"
+#include "Vulkan/Pipeline.h"
 
 namespace Vk
 {
     class PipelineBuilder
     {
     public:
-        // Descriptor state
-        struct DescriptorState
-        {
-            // Count
-            u32 count = 0;
-            // Type
-            VkDescriptorType type = {};
-            // Binding
-            VkDescriptorSetLayoutBinding binding = {};
-            // Layout
-            VkDescriptorSetLayout layout = {};
-        };
-
         // Initialise pipeline builder
-        [[nodiscard]] static PipelineBuilder Create(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass);
+        [[nodiscard]] static PipelineBuilder Create(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass);
         // Destroy pipeline data
         ~PipelineBuilder();
 
@@ -136,10 +124,10 @@ namespace Vk
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
         // Descriptor set states
-        std::vector<DescriptorState> descriptorStates = {};
+        std::vector<Vk::DescriptorState> descriptorStates = {};
     private:
         // Private constructor
-        explicit PipelineBuilder(std::shared_ptr<Vk::Context> context, VkRenderPass renderPass);
+        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass);
 
         // Creates descriptor set layouts
         std::vector<VkDescriptorSetLayout> CreateDescriptorSetLayouts();

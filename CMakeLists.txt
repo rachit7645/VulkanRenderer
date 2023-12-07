@@ -40,7 +40,6 @@ add_executable(VulkanRenderer
 	Source/Vulkan/QueueFamilyIndices.cpp
 	Source/Vulkan/SwapchainInfo.cpp
 	Source/Vulkan/ShaderModule.cpp
-    Source/Vulkan/PipelineBuilder.cpp
 	Source/Vulkan/VertexBuffer.cpp
 	Source/Vulkan/Buffer.cpp
 	Source/Vulkan/Image.cpp
@@ -51,9 +50,13 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Sampler.cpp
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
+	# Vulkan Builders
+	Source/Vulkan/Builders/PipelineBuilder.cpp
+	Source/Vulkan/Builders/RenderPassBuilder.cpp
+	Source/Vulkan/Builders/SubpassBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
-	Source/Renderer/RenderPipeline.cpp
+	Source/Renderer/SwapPipeline.cpp
 	# Model sources
 	Source/Models/Mesh.cpp
 	Source/Models/Vertex.cpp
@@ -71,12 +74,12 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	# Vulkan headers
 	<vulkan/vulkan.h>
 	<vulkan/vulkan_core.h>
+	<vulkan/vk_enum_string_helper.h>
 	# ImGui Headers
     Externals/ImGui/imgui.h
     Externals/ImGui/imgui_internal.h
     Externals/ImGui/backends/imgui_impl_sdl2.h
     Externals/ImGui/backends/imgui_impl_vulkan.h
-    Externals/ImGui/misc/cpp/imgui_stdlib.h
     # STB Headers
     <stb/stb_image.h>
 	# Assimp Headers
@@ -123,6 +126,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<ranges>
 	<istream>
 	<source_location>
+	<iostream>
     # C STL Headers
     <cstdint>
     <cstddef>
