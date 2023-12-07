@@ -29,6 +29,7 @@
 #include "Context.h"
 #include "Engine/Window.h"
 #include "DepthBuffer.h"
+#include "Framebuffer.h"
 
 namespace Vk
 {
@@ -50,7 +51,7 @@ namespace Vk
         // Extent
         VkExtent2D extent = {};
         // Swap chain framebuffers
-        std::vector<VkFramebuffer> framebuffers = {};
+        std::vector<Vk::Framebuffer> framebuffers = {};
         // Swap chain depth buffer
         Vk::DepthBuffer depthBuffer;
         // Swap chain presentation render pass

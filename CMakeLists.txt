@@ -50,6 +50,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Sampler.cpp
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
+	Source/Vulkan/Framebuffer.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/RenderPassBuilder.cpp

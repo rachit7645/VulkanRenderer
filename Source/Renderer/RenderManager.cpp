@@ -258,7 +258,7 @@ namespace Renderer
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .pNext           = nullptr,
             .renderPass      = m_swapchain->renderPass,
-            .framebuffer     = m_swapchain->framebuffers[m_imageIndex],
+            .framebuffer     = m_swapchain->framebuffers[m_imageIndex].handle,
             .renderArea      = {
                 .offset = {0, 0},
                 .extent = m_swapchain->extent
@@ -320,19 +320,19 @@ namespace Renderer
         // Shared UBO data
         SwapPipeline::SharedBuffer sharedBuffer =
         {
-            // View Matrix
-            .view = glm::lookAt(
-                glm::vec3(0.0f, 0.0f, 5.0f),
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            ),
-            // Projection matrix
+        // Projection matrix
             .proj = glm::perspective(
                 FOV,
                 static_cast<f32>(m_swapchain->extent.width) /
                 static_cast<f32>(m_swapchain->extent.height),
                 PLANES.x,
                 PLANES.y
+            ),
+            // View Matrix
+            .view = glm::lookAt(
+                glm::vec3(0.0f, 0.0f, 5.0f),
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                glm::vec3(0.0f, 1.0f, 0.0f)
             )
         };
 

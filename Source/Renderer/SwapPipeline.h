@@ -56,10 +56,10 @@ namespace Renderer
         // Common data UBO
         struct VULKAN_GLSL_DATA SharedBuffer
         {
-            // View matrix
-            glm::mat4 view = {};
             // Projection matrix
             glm::mat4 proj = {};
+            // View matrix
+            glm::mat4 view = {};
         };
 
         // Create render pipeline

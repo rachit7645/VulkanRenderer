@@ -18,8 +18,8 @@
 
 layout(binding = 0) uniform SharedDataBuffer
 {
-    mat4 view;
     mat4 proj;
+    mat4 view;
 } Shared;
 
 // Push constant buffer

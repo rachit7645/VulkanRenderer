@@ -63,7 +63,7 @@ namespace Vk
         // Destroy framebuffers
         for (auto&& framebuffer : framebuffers)
         {
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
+            framebuffer.Destroy(device);
         }
 
         // Destroy swap chain images
@@ -240,47 +240,26 @@ namespace Vk
     void Swapchain::CreateFramebuffers(VkDevice device)
     {
         // Resize
-        framebuffers.resize(m_imageViews.size());
+        framebuffers.reserve(m_imageViews.size());
 
         // For each image view
-        for (usize i = 0; i < m_imageViews.size(); ++i)
+        for (auto & m_imageView : m_imageViews)
         {
             // Attachments
-            std::array<VkImageView, 2> attachmentViews =
+            std::array<Vk::ImageView, 2> attachmentViews =
             {
-                m_imageViews[i].handle,
-                depthBuffer.depthImageView.handle
+                m_imageView,
+                depthBuffer.depthImageView
             };
-
-            // Framebuffer info
-            VkFramebufferCreateInfo framebufferInfo =
-            {
-                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .pNext           = nullptr,
-                .flags           = 0,
-                .renderPass      = renderPass,
-                .attachmentCount = static_cast<u32>(attachmentViews.size()),
-                .pAttachments    = attachmentViews.data(),
-                .width           = extent.width,
-                .height          = extent.height,
-                .layers          = 1
-            };
-
             // Create framebuffer
-            if (vkCreateFramebuffer(
-                    device,
-                    &framebufferInfo,
-                    nullptr,
-                    &framebuffers[i]
-                ) != VK_SUCCESS)
-            {
-                // Log
-                Logger::Error
-                (
-                "Failed to create framebuffer #{}! [image={}]\n",
-                i, reinterpret_cast<void*>(&m_imageViews[i])
-                );
-            }
+            framebuffers.emplace_back
+            (
+                device,
+                renderPass,
+                attachmentViews,
+                glm::uvec2(extent.width, extent.height),
+                1
+            );
         }
     }
 
