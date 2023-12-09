@@ -33,5 +33,4 @@ void main()
 {
     // Output color
     outColor = vec4(texture(sampler2D(albedo, textureSampler), fragTexCoords).rgb, 1.0f);
-    // outColor = vec4(vec3(fragTexCoords * fragNormal.xy, fragNormal.z), 1.0f);
 }

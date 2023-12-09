@@ -20,7 +20,7 @@
 #include "Util/Log.h"
 #include "Models/Vertex.h"
 
-namespace Renderer
+namespace Renderer::Pipelines
 {
     // Usings
     using Models::Vertex;
@@ -31,7 +31,7 @@ namespace Renderer
     SwapPipeline::SwapPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
     {
         // Custom functions
-        auto SetDynamicStates = [swapchain] (Vk::PipelineBuilder& pipelineBuilder)
+        auto SetDynamicStates = [&swapchain] (Vk::PipelineBuilder& pipelineBuilder)
         {
             // Set viewport config
             pipelineBuilder.viewport =
@@ -69,8 +69,8 @@ namespace Renderer
 
         // Build pipeline
         pipeline = Vk::PipelineBuilder::Create(vkContext, swapchain->renderPass)
-                  .AttachShader("BasicShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-                  .AttachShader("BasicShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+                  .AttachShader("ForwardShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+                  .AttachShader("ForwardShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
                   .SetDynamicStates(DYN_STATES, SetDynamicStates)
                   .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
                   .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
@@ -292,7 +292,10 @@ namespace Renderer
     void SwapPipeline::Destroy(VkDevice device)
     {
         // Destroy UBOs
-        for (auto&& shared : sharedUBOs) shared.DeleteBuffer(device);
+        for (auto&& sharedUBO : sharedUBOs)
+        {
+            sharedUBO.DeleteBuffer(device);
+        }
         // Destroy sampler
         textureSampler.Destroy(device);
         // Destroy pipeline

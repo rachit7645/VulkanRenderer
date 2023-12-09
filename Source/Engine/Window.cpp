@@ -109,7 +109,7 @@ namespace Engine
         // Loop
         while (true)
         {
-            // Poll events (LEAKS MEMORY WHEN EXITING)
+            // Poll events (FIXME: LEAKS MEMORY WHEN EXITING)
             if (PollEvents()) std::exit(-1);
             // Check if not minimised
             if (!(SDL_GetWindowFlags(handle) & SDL_WINDOW_MINIMIZED)) break;

@@ -14,22 +14,26 @@
  *    limitations under the License.
  */
 
-#include <vulkan/vk_enum_string_helper.h>
 #include "RenderManager.h"
 
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "RenderConstants.h"
+#include "Pipelines/SwapPipeline.h"
 #include "Util/Log.h"
 #include "Util/Maths.h"
-#include "SwapPipeline.h"
 #include "Vulkan/Util.h"
 
 namespace Renderer
 {
+    // Usings
+    using Pipelines::SwapPipeline;
+
     RenderManager::RenderManager(std::shared_ptr<Engine::Window> window)
         : m_window(std::move(window)),
           m_vkContext(std::make_shared<Vk::Context>(m_window)),
           m_swapchain(std::make_shared<Vk::Swapchain>(m_window, m_vkContext)),
-          m_renderPipeline(std::make_unique<SwapPipeline>(m_vkContext, m_swapchain)),
+          m_swapPipeline(std::make_unique<Pipelines::SwapPipeline>(m_vkContext, m_swapchain)),
           m_model(std::make_unique<Models::Model>(m_vkContext, "Sponza/sponza.glb"))
     {
         // ImGui init info
@@ -38,7 +42,7 @@ namespace Renderer
             .Instance              = m_vkContext->vkInstance,
             .PhysicalDevice        = m_vkContext->physicalDevice,
             .Device                = m_vkContext->device,
-            .QueueFamily           = m_vkContext->queueFamilies.graphicsFamily.value(),
+            .QueueFamily           = m_vkContext->queueFamilies.graphicsFamily.value_or(0),
             .Queue                 = m_vkContext->graphicsQueue,
             .PipelineCache         = nullptr,
             .DescriptorPool        = m_vkContext->descriptorPool,
@@ -59,12 +63,12 @@ namespace Renderer
         ImGui::StyleColorsDark();
         // Init ImGui backend
         ImGui_ImplSDL2_InitForVulkan(m_window->handle);
-        ImGui_ImplVulkan_Init(&imguiInitInfo, m_swapchain->renderPass);
+        ImGui_ImplVulkan_Init(&imguiInitInfo, m_swapchain->renderPass.handle);
         // Upload fonts
         ImGui_ImplVulkan_CreateFontsTexture();
 
         // Bind textures to pipeline
-        m_renderPipeline->WriteImageDescriptors(m_vkContext->device, m_model->GetTextureViews());
+        m_swapPipeline->WriteImageDescriptors(m_vkContext->device, m_model->GetTextureViews());
 
         // Reset frame counter
         m_frameCounter.Reset();
@@ -73,7 +77,7 @@ namespace Renderer
     void RenderManager::Render()
     {
         // Make sure swap chain is valid
-        if (!IsSwapchainValid()) return;
+        if (!IsSwapchainValid()) { return; }
 
         // Begin
         BeginFrame();
@@ -83,12 +87,12 @@ namespace Renderer
         // Get scene descriptors
         std::array<VkDescriptorSet, 2> sceneDescriptorSets =
         {
-            m_renderPipeline->GetSharedUBOData().setMap[m_currentFrame][0],
-            m_renderPipeline->GetSamplerData().setMap[m_currentFrame][0],
+            m_swapPipeline->GetSharedUBOData().setMap[m_currentFrame][0],
+            m_swapPipeline->GetSamplerData().setMap[m_currentFrame][0],
         };
 
         // Bind
-        m_renderPipeline->pipeline.BindDescriptors
+        m_swapPipeline->pipeline.BindDescriptors
         (
             currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -97,12 +101,12 @@ namespace Renderer
         );
 
         // Load push constants
-        m_renderPipeline->pipeline.LoadPushConstants
+        m_swapPipeline->pipeline.LoadPushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(decltype(m_renderPipeline->pushConstants[m_currentFrame])),
-            reinterpret_cast<void*>(&m_renderPipeline->pushConstants[m_currentFrame])
+            0, sizeof(decltype(m_swapPipeline->pushConstants[m_currentFrame])),
+            reinterpret_cast<void*>(&m_swapPipeline->pushConstants[m_currentFrame])
         );
 
         // Loop over meshes
@@ -114,11 +118,11 @@ namespace Renderer
             // Get mesh descriptors
             std::array<VkDescriptorSet, 1> meshDescriptorSets =
             {
-                m_renderPipeline->imageViewMap[m_currentFrame][mesh.texture.imageView]
+                m_swapPipeline->imageViewMap[m_currentFrame][mesh.texture.imageView]
             };
 
             // Bind
-            m_renderPipeline->pipeline.BindDescriptors
+            m_swapPipeline->pipeline.BindDescriptors
             (
                 currentCmdBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -152,7 +156,7 @@ namespace Renderer
     void RenderManager::Update()
     {
         // Get current push constant
-        auto& pushConstant = m_renderPipeline->pushConstants[m_currentFrame];
+        auto& pushConstant = m_swapPipeline->pushConstants[m_currentFrame];
 
         // Update frame counter
         m_frameCounter.Update();
@@ -210,11 +214,10 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
-        // Get current command buffer
-        currentCmdBuffer = m_vkContext->commandBuffers[m_currentFrame];
-
         // Wait for previous frame to be finished
         WaitForFrame();
+        // Get current command buffer
+        currentCmdBuffer = m_vkContext->commandBuffers[m_currentFrame];
 
         // Reset command buffer
         vkResetCommandBuffer(currentCmdBuffer, 0);
@@ -234,49 +237,29 @@ namespace Renderer
             // Log
             Logger::Error
             (
-                "Failed to begin recording commands! [CommandBuffer={}]\n",
+                "Failed to begin recording commands! [CmdBuffer={}]\n",
                 reinterpret_cast<void*>(currentCmdBuffer)
             );
         }
 
-        // Clear values
-        std::array<VkClearValue, 2> clearValues = {};
+        // Reset clear state
+        m_swapchain->renderPass.ResetClearValues();
         // Color
-        clearValues[0].color =
-        {{
-            Renderer::CLEAR_COLOR.r,
-            Renderer::CLEAR_COLOR.g,
-            Renderer::CLEAR_COLOR.b,
-            Renderer::CLEAR_COLOR.a
-        }};
+        m_swapchain->renderPass.SetClearValue(Renderer::CLEAR_COLOR);
         // Depth + Stencil
-        clearValues[1].depthStencil = {.depth = 1.0f, .stencil= 0};
-
-        // Render pass begin info
-        VkRenderPassBeginInfo renderPassInfo =
-        {
-            .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .pNext           = nullptr,
-            .renderPass      = m_swapchain->renderPass,
-            .framebuffer     = m_swapchain->framebuffers[m_imageIndex].handle,
-            .renderArea      = {
-                .offset = {0, 0},
-                .extent = m_swapchain->extent
-            },
-            .clearValueCount = static_cast<u32>(clearValues.size()),
-            .pClearValues    = clearValues.data()
-        };
+        m_swapchain->renderPass.SetClearValue(1.0f, 0);
 
         // Begin render pass
-        vkCmdBeginRenderPass
+        m_swapchain->renderPass.BeginRenderPass
         (
             currentCmdBuffer,
-            &renderPassInfo,
+            m_swapchain->framebuffers[m_imageIndex],
+            {.offset = {0, 0}, .extent = m_swapchain->extent},
             VK_SUBPASS_CONTENTS_INLINE
         );
 
         // Bind pipeline
-        m_renderPipeline->pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        m_swapPipeline->pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
         // Viewport
         VkViewport viewport =
@@ -315,7 +298,7 @@ namespace Renderer
         );
 
         // Get shared UBO
-        auto& sharedUBO = m_renderPipeline->sharedUBOs[m_currentFrame];
+        auto& sharedUBO = m_swapPipeline->sharedUBOs[m_currentFrame];
 
         // Shared UBO data
         SwapPipeline::SharedBuffer sharedBuffer =
@@ -404,24 +387,24 @@ namespace Renderer
     void RenderManager::SubmitQueue()
     {
         // Waiting semaphores
-        VkSemaphore waitSemaphores[] = {m_vkContext->imageAvailableSemaphores[m_currentFrame]};
+        std::array<VkSemaphore, 1> waitSemaphores = {m_vkContext->imageAvailableSemaphores[m_currentFrame]};
         // Signal semaphores
-        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[m_currentFrame]};
+        std::array<VkSemaphore, 1> signalSemaphores = {m_vkContext->renderFinishedSemaphores[m_currentFrame]};
         // Pipeline stage flags
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
         // Queue submit info
         VkSubmitInfo submitInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext                = nullptr,
-            .waitSemaphoreCount   = 1,
-            .pWaitSemaphores      = waitSemaphores,
-            .pWaitDstStageMask    = waitStages,
+            .waitSemaphoreCount   = static_cast<u32>(waitSemaphores.size()),
+            .pWaitSemaphores      = waitSemaphores.data(),
+            .pWaitDstStageMask    = waitStages.data(),
             .commandBufferCount   = 1,
             .pCommandBuffers      = &currentCmdBuffer,
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores    = signalSemaphores
+            .signalSemaphoreCount = static_cast<u32>(signalSemaphores.size()),
+            .pSignalSemaphores    = signalSemaphores.data()
         };
 
         // Submit queue
@@ -444,22 +427,24 @@ namespace Renderer
 
     void RenderManager::Present()
     {
-        // Swap chains
-        VkSwapchainKHR swapChains[] = {m_swapchain->handle};
         // Signal semaphores
-        VkSemaphore signalSemaphores[] = {m_vkContext->renderFinishedSemaphores[m_currentFrame]};
+        std::array<VkSemaphore, 1> signalSemaphores = {m_vkContext->renderFinishedSemaphores[m_currentFrame]};
+        // Swap chains
+        std::array<VkSwapchainKHR, 1> swapChains = {m_swapchain->handle};
+        // Image indices
+        std::array<u32, 1> imageIndices = {m_imageIndex};
 
         // Presentation info
         VkPresentInfoKHR presentInfo =
         {
-        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .pNext              = nullptr,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores    = signalSemaphores,
-        .swapchainCount     = 1,
-        .pSwapchains        = swapChains,
-        .pImageIndices      = &m_imageIndex,
-        .pResults           = nullptr
+            .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext              = nullptr,
+            .waitSemaphoreCount = static_cast<u32>(signalSemaphores.size()),
+            .pWaitSemaphores    = signalSemaphores.data(),
+            .swapchainCount     = static_cast<u32>(swapChains.size()),
+            .pSwapchains        = swapChains.data(),
+            .pImageIndices      = imageIndices.data(),
+            .pResults           = nullptr
         };
 
         // Present
@@ -513,7 +498,7 @@ namespace Renderer
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         // Destroy pipeline
-        m_renderPipeline->Destroy(m_vkContext->device);
+        m_swapPipeline->Destroy(m_vkContext->device);
         // Destroy mesh
         m_model->Destroy(m_vkContext->device);
         // Destroy swap chain

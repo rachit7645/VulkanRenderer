@@ -16,21 +16,23 @@
 
 #include "PipelineBuilder.h"
 
+#include <utility>
+
 #include "Vulkan/ShaderModule.h"
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 
 namespace Vk
 {
-    PipelineBuilder PipelineBuilder::Create(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass)
+    PipelineBuilder PipelineBuilder::Create(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass)
     {
         // Create
         return {context, renderPass};
     }
 
-    PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass)
+    PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass renderPass)
         : m_context(context),
-          m_renderPass(renderPass)
+          m_renderPass(std::move(renderPass))
     {
     }
 
@@ -84,7 +86,7 @@ namespace Vk
             .pColorBlendState    = &colorBlendInfo,
             .pDynamicState       = &dynamicStateInfo,
             .layout              = pipelineLayout,
-            .renderPass          = m_renderPass,
+            .renderPass          = m_renderPass.handle,
             .subpass             = 0,
             .basePipelineHandle  = VK_NULL_HANDLE,
             .basePipelineIndex   = -1

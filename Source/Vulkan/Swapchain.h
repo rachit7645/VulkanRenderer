@@ -30,6 +30,7 @@
 #include "Engine/Window.h"
 #include "DepthBuffer.h"
 #include "Framebuffer.h"
+#include "RenderPass.h"
 
 namespace Vk
 {
@@ -54,8 +55,8 @@ namespace Vk
         std::vector<Vk::Framebuffer> framebuffers = {};
         // Swap chain depth buffer
         Vk::DepthBuffer depthBuffer;
-        // Swap chain presentation render pass
-        VkRenderPass renderPass = {};
+        // Presentation render pass
+        Vk::RenderPass renderPass;
         // Swapchain info
         Vk::SwapchainInfo swapChainInfo = {};
     private:
@@ -73,11 +74,11 @@ namespace Vk
         void CreateFramebuffers(VkDevice device);
 
         // Choose surface format
-        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat();
+        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;
         // Choose surface presentation mode
-        [[nodiscard]] VkPresentModeKHR ChoosePresentationMode();
+        [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
         // Choose swap extent
-        [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window);
+        [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window) const;
 
         // Swap chain images
         std::vector<Vk::Image> m_images = {};

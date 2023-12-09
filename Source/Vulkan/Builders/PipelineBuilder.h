@@ -28,6 +28,7 @@
 #include "Vulkan/Context.h"
 #include "Vulkan/DescriptorSetData.h"
 #include "Vulkan/Pipeline.h"
+#include "Vulkan/RenderPass.h"
 
 namespace Vk
 {
@@ -35,7 +36,7 @@ namespace Vk
     {
     public:
         // Initialise pipeline builder
-        [[nodiscard]] static PipelineBuilder Create(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass);
+        [[nodiscard]] static PipelineBuilder Create(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass);
         // Destroy pipeline data
         ~PipelineBuilder();
 
@@ -127,7 +128,7 @@ namespace Vk
         std::vector<Vk::DescriptorState> descriptorStates = {};
     private:
         // Private constructor
-        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass);
+        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass  renderPass);
 
         // Creates descriptor set layouts
         std::vector<VkDescriptorSetLayout> CreateDescriptorSetLayouts();
@@ -137,7 +138,7 @@ namespace Vk
         // Vulkan context
         std::shared_ptr<Vk::Context> m_context = nullptr;
         // Render pass
-        VkRenderPass m_renderPass = VK_NULL_HANDLE;
+        Vk::RenderPass m_renderPass;
     };
 }
 

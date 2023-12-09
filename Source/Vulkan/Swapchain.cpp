@@ -55,7 +55,7 @@ namespace Vk
         // Destroy main swapchain data
         DestroySwapChain(device);
         // Destroy renderpass
-        vkDestroyRenderPass(device, renderPass, nullptr);
+        renderPass.Destroy(device);
     }
 
     void Swapchain::DestroySwapChain(VkDevice device)
@@ -263,7 +263,7 @@ namespace Vk
         }
     }
 
-    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat()
+    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat() const
     {
         // Formats
         const auto& formats = swapChainInfo.formats;
@@ -284,7 +284,7 @@ namespace Vk
         return formats[0];
     }
 
-    VkPresentModeKHR Swapchain::ChoosePresentationMode()
+    VkPresentModeKHR Swapchain::ChoosePresentationMode() const
     {
         // Presentation modes
         const auto& presentModes = swapChainInfo.presentModes;
@@ -304,7 +304,7 @@ namespace Vk
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D Swapchain::ChooseSwapExtent(SDL_Window* window)
+    VkExtent2D Swapchain::ChooseSwapExtent(SDL_Window* window) const
     {
         // Surface capability data
         const auto& capabilities = swapChainInfo.capabilities;

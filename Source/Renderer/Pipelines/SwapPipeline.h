@@ -26,7 +26,7 @@
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/Swapchain.h"
 
-namespace Renderer
+namespace Renderer::Pipelines
 {
     class SwapPipeline
     {

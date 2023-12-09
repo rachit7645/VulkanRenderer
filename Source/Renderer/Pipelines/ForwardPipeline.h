@@ -14,19 +14,15 @@
  *    limitations under the License.
  */
 
-#ifndef OPTIONAL_H
-#define OPTIONAL_H
+#ifndef FORWARD_PIPELINE_H
+#define FORWARD_PIPELINE_H
 
-#include <optional>
-
-namespace Util
+namespace Renderer::Pipelines
 {
-    template <typename T>
-    constexpr auto GetAddressOrNull(const std::optional<T>& opt) -> const T*
+    class ForwardPipeline
     {
-        // Return
-        return opt.has_value() ? &(*opt) : nullptr;
-    }
+    public:
+    };
 }
 
 #endif

@@ -20,7 +20,7 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
-#include "SwapPipeline.h"
+#include "Pipelines/SwapPipeline.h"
 #include "Models/Model.h"
 #include "Vulkan/Context.h"
 #include "Engine/Window.h"
@@ -66,7 +66,7 @@ namespace Renderer
         // Swap chain
         std::shared_ptr<Vk::Swapchain> m_swapchain = nullptr;
         // Render pipeline
-        std::unique_ptr<Renderer::SwapPipeline> m_renderPipeline = nullptr;
+        std::unique_ptr<Renderer::Pipelines::SwapPipeline> m_swapPipeline = nullptr;
         // Model
         std::unique_ptr<Models::Model> m_model;
 

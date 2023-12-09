@@ -24,8 +24,8 @@ endif()
 
 # Shader files
 file(GLOB SHADER_SOURCES
-    BasicShader.vert
-    BasicShader.frag
+    ForwardShader.vert
+    ForwardShader.frag
 )
 
 # For each shader to be compiled

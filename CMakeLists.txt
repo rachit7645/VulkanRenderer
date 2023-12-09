@@ -51,13 +51,16 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/Framebuffer.cpp
+	Source/Vulkan/RenderPass.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/RenderPassBuilder.cpp
 	Source/Vulkan/Builders/SubpassBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
-	Source/Renderer/SwapPipeline.cpp
+	# Render pipeline sources
+	Source/Renderer/Pipelines/SwapPipeline.cpp
+	Source/Renderer/Pipelines/ForwardPipeline.cpp
 	# Model sources
 	Source/Models/Mesh.cpp
 	Source/Models/Vertex.cpp

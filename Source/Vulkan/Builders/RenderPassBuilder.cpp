@@ -31,7 +31,7 @@ namespace Vk
     {
     }
 
-    VkRenderPass RenderPassBuilder::Build()
+    Vk::RenderPass RenderPassBuilder::Build()
     {
         // Subpass descriptions
         std::vector<VkSubpassDescription> subpasses = {};
@@ -87,7 +87,7 @@ namespace Vk
         Logger::Info("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
 
         // Return
-        return renderPass;
+        return RenderPass(renderPass);
     }
 
     RenderPassBuilder& RenderPassBuilder::AddSubpass(const Vk::SubpassState& subpass)

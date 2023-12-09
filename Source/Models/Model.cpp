@@ -110,7 +110,7 @@ namespace Models
         }
 
         // Return mesh
-        return Mesh(context, vertices, indices, ProcessTextures(mesh, scene, directory, context));
+        return {context, vertices, indices, ProcessTextures(mesh, scene, directory, context)};
     }
 
     Vk::Texture Model::ProcessTextures
@@ -154,7 +154,7 @@ namespace Models
         };
 
         // Albedo
-        return Vk::Texture(context, GetTexturePath(aiTextureType_BASE_COLOR));
+        return {context, GetTexturePath(aiTextureType_BASE_COLOR)};
     }
 
     void Model::Destroy(VkDevice device)
