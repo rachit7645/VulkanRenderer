@@ -18,28 +18,21 @@
 
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Util/Log.h"
-#include "Models/Vertex.h"
 
 namespace Renderer::Pipelines
 {
-    // Usings
-    using Models::Vertex;
-
-    // Max textures
-    constexpr usize MAX_TEXTURE_COUNT = (1 << 10);
-
-    SwapPipeline::SwapPipeline(const std::shared_ptr<Vk::Context>& vkContext, const std::shared_ptr<Vk::Swapchain>& swapchain)
+    SwapPipeline::SwapPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& swapPass, VkExtent2D swapExtent)
     {
         // Custom functions
-        auto SetDynamicStates = [&swapchain] (Vk::PipelineBuilder& pipelineBuilder)
+        auto SetDynamicStates = [&swapExtent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
         {
             // Set viewport config
             pipelineBuilder.viewport =
             {
                 .x        = 0.0f,
                 .y        = 0.0f,
-                .width    = static_cast<f32>(swapchain->extent.width),
-                .height   = static_cast<f32>(swapchain->extent.height),
+                .width    = static_cast<f32>(swapExtent.width),
+                .height   = static_cast<f32>(swapExtent.height),
                 .minDepth = 0.0f,
                 .maxDepth = 1.0f
             };
@@ -48,7 +41,7 @@ namespace Renderer::Pipelines
             pipelineBuilder.scissor =
             {
                 .offset = {0, 0},
-                .extent = swapchain->extent
+                .extent = swapExtent
             };
 
             // Create viewport creation info
@@ -67,93 +60,77 @@ namespace Renderer::Pipelines
         // Dynamic states
         constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
+        // Vertex binding description
+        VkVertexInputBindingDescription vertexBinding =
+        {
+            .binding   = 0,
+            .stride    = 2 * sizeof(f32),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+        };
+
+        // Vertex attrib description
+        VkVertexInputAttributeDescription vertexAttrib =
+        {
+            .location = 0,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32_SFLOAT,
+            .offset   = 0
+        };
+
         // Build pipeline
-        pipeline = Vk::PipelineBuilder::Create(vkContext, swapchain->renderPass)
-                  .AttachShader("ForwardShader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-                  .AttachShader("ForwardShader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+        pipeline = Vk::Builders::PipelineBuilder::Create(context, swapPass)
+                  .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+                  .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
                   .SetDynamicStates(DYN_STATES, SetDynamicStates)
-                  .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
+                  .SetVertexInputState(std::span(&vertexBinding, 1), std::span(&vertexAttrib, 1))
                   .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-                  .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                  .SetRasterizerState(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                   .SetMSAAState()
-                  .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
                   .SetBlendState()
-                  .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
-                  .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
-                  .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-                  .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, 1, MAX_TEXTURE_COUNT)
+                  .AddDescriptor(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
                   .Build();
 
         // Create pipeline data
-        CreatePipelineData(vkContext);
-        // Write descriptors for 'Shared' UBO
-        WriteStaticDescriptors(vkContext->device);
+        CreatePipelineData(context);
     }
 
-    void SwapPipeline::WriteImageDescriptors(VkDevice device, const std::vector<Vk::ImageView>& imageViews)
+    void SwapPipeline::WriteImageDescriptors(VkDevice device, const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews)
     {
-        // Get descriptor data
-        auto& imageData = GetImageData();
-        // Calculate image view count
-        usize imageViewCount = imageViews.size();
-        // Calculate descriptor count
-        usize descriptorCount = imageViewCount * Vk::FRAMES_IN_FLIGHT;
+        // Image descriptor data
+        const auto& imageData = GetImageData();
 
-        // Infos
-        std::vector<VkDescriptorImageInfo> imageInfos = {};
-        imageInfos.reserve(descriptorCount);
-        // Writes
-        std::vector<VkWriteDescriptorSet> imageWrites = {};
-        imageWrites.reserve(descriptorCount);
+        // Writing data
+        std::array<VkDescriptorImageInfo, Vk::FRAMES_IN_FLIGHT> imageInfos  = {};
+        std::array<VkWriteDescriptorSet,  Vk::FRAMES_IN_FLIGHT> imageWrites = {};
 
-        // For each frame in flight
-        for (usize FIF = 0; FIF < Vk::FRAMES_IN_FLIGHT; ++FIF)
+        // Loop
+        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
-            // Loop over all images
-            for (usize i = 0; i < imageViewCount; ++i)
+            // Image info
+            imageInfos[i] =
             {
-                // Get image view
-                auto& currentImageView = imageViews[i];
+                .sampler     = textureSampler.handle,
+                .imageView   = imageViews[i].handle,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            };
 
-                // Calculate descriptor index
-                usize descriptorIndex = i + (imageViewDescriptorIndexOffset / Vk::FRAMES_IN_FLIGHT);
-                // Get descriptor
-                auto currentDescriptor = imageData.setMap[FIF][descriptorIndex];
-
-                // Image info
-                VkDescriptorImageInfo imageInfo =
-                {
-                    .sampler     = VK_NULL_HANDLE,
-                    .imageView   = currentImageView.handle,
-                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                };
-                imageInfos.emplace_back(imageInfo);
-
-                // Image write
-                VkWriteDescriptorSet imageWrite =
-                {
-                    .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .pNext            = nullptr,
-                    .dstSet           = currentDescriptor,
-                    .dstBinding       = imageData.binding,
-                    .dstArrayElement  = 0,
-                    .descriptorCount  = 1,
-                    .descriptorType   = imageData.type,
-                    .pImageInfo       = &imageInfos.back(),
-                    .pBufferInfo      = nullptr,
-                    .pTexelBufferView = nullptr
-                };
-                imageWrites.emplace_back(imageWrite);
-
-                // Add to map
-                imageViewMap[FIF].emplace(currentImageView, currentDescriptor);
-            }
+            // Image write
+            imageWrites[i] =
+            {
+                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext            = nullptr,
+                .dstSet           = imageData.setMap[i][0],
+                .dstBinding       = imageData.binding,
+                .dstArrayElement  = 0,
+                .descriptorCount  = 1,
+                .descriptorType   = imageData.type,
+                .pImageInfo       = &imageInfos[i],
+                .pBufferInfo      = nullptr,
+                .pTexelBufferView = nullptr
+            };
         }
 
-        // Update current index
-        imageViewDescriptorIndexOffset += descriptorCount;
-
-        // Update
+        // Update descriptors
         vkUpdateDescriptorSets
         (
             device,
@@ -164,148 +141,51 @@ namespace Renderer::Pipelines
         );
     }
 
-    void SwapPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& vkContext)
+    void SwapPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
-        // Create shared buffers
-        for (auto&& shared : sharedUBOs)
-        {
-            // Create buffer
-            shared = Vk::Buffer
-            (
-                vkContext,
-                static_cast<u32>(sizeof(SharedBuffer)),
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            );
-            // Map
-            shared.Map(vkContext->device);
-        }
-
         // Create texture sampler
         textureSampler = Vk::Sampler
         (
-            vkContext->device,
-            {VK_FILTER_LINEAR, VK_FILTER_LINEAR},
-            VK_SAMPLER_MIPMAP_MODE_LINEAR,
-            {VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT},
+            context->device,
+            {VK_FILTER_NEAREST, VK_FILTER_NEAREST},
+            VK_SAMPLER_MIPMAP_MODE_NEAREST,
+            {VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE},
             0.0f,
-            {VK_TRUE, 2.0f},
+            {VK_FALSE, 0.0f},
             {VK_FALSE, VK_COMPARE_OP_ALWAYS},
             {0.0f, 0.0f},
             VK_BORDER_COLOR_INT_OPAQUE_BLACK,
             VK_FALSE
         );
-    }
 
-    void SwapPipeline::WriteStaticDescriptors(VkDevice device)
-    {
-        // Get UBO sets
-        auto& sharedUBOData = GetSharedUBOData();
-        // Get sampler sets
-        auto& samplerData = GetSamplerData();
-
-        // Writing data
-        std::array<VkDescriptorBufferInfo, Vk::FRAMES_IN_FLIGHT> sharedBufferInfos  = {};
-        std::array<VkDescriptorImageInfo,  Vk::FRAMES_IN_FLIGHT> samplerInfos       = {};
-        // Writes
-        std::array<VkWriteDescriptorSet, 2 * Vk::FRAMES_IN_FLIGHT> descriptorWrites = {};
-
-        // Loop
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+        // Vertex data
+        constexpr std::array<f32, 12> QUAD_VERTICES =
         {
-            // Descriptor buffer info
-            sharedBufferInfos[i] =
-            {
-                .buffer = sharedUBOs[i].handle,
-                .offset = 0,
-                .range  = VK_WHOLE_SIZE
-            };
+            -1.0f, -1.0f, // Bottom-left
+             1.0f, -1.0f, // Bottom-right
+            -1.0f,  1.0f, // Top-left
+            -1.0f,  1.0f, // Top-left
+             1.0f, -1.0f, // Bottom-right
+             1.0f,  1.0f  // Top-right
+        };
 
-            // Descriptor sampler info
-            samplerInfos[i] =
-            {
-                .sampler     = textureSampler.handle,
-                .imageView   = {},
-                .imageLayout = {}
-            };
-
-            // Buffer Write info
-            descriptorWrites[2 * i] =
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = sharedUBOData.setMap[i][0],
-                .dstBinding       = sharedUBOData.binding,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = sharedUBOData.type,
-                .pImageInfo       = nullptr,
-                .pBufferInfo      = &sharedBufferInfos[i],
-                .pTexelBufferView = nullptr
-            };
-
-            // Sampler write info
-            descriptorWrites[2 * i + 1] =
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = samplerData.setMap[i][0],
-                .dstBinding       = samplerData.binding,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = samplerData.type,
-                .pImageInfo       = &samplerInfos[i],
-                .pBufferInfo      = nullptr,
-                .pTexelBufferView = nullptr
-            };
-        }
-
-        // Update
-        vkUpdateDescriptorSets
-        (
-            device,
-            descriptorWrites.size(),
-            descriptorWrites.data(),
-            0,
-            nullptr
-        );
-    }
-
-    const Vk::DescriptorSetData& SwapPipeline::GetSharedUBOData() const
-    {
-        // Return
-        return pipeline.descriptorSetData[0];
-    }
-
-    const Vk::DescriptorSetData& SwapPipeline::GetSamplerData() const
-    {
-        // Return
-        return pipeline.descriptorSetData[1];
+        // Create vertex buffer
+        screenQuad = Vk::VertexBuffer(context, QUAD_VERTICES);
     }
 
     const Vk::DescriptorSetData& SwapPipeline::GetImageData() const
     {
         // Return
-        return pipeline.descriptorSetData[2];
+        return pipeline.descriptorSetData[0];
     }
 
     void SwapPipeline::Destroy(VkDevice device)
     {
-        // Destroy UBOs
-        for (auto&& sharedUBO : sharedUBOs)
-        {
-            sharedUBO.DeleteBuffer(device);
-        }
         // Destroy sampler
         textureSampler.Destroy(device);
+        // Destroy screen quad
+        screenQuad.DestroyBuffer(device);
         // Destroy pipeline
-        vkDestroyPipeline(device, pipeline.handle, nullptr);
-        // Destroy pipeline layout
-        vkDestroyPipelineLayout(device, pipeline.layout, nullptr);
-        // Destroy descriptor set layouts
-        for (auto&& descriptor : pipeline.descriptorSetData)
-        {
-            vkDestroyDescriptorSetLayout(device, descriptor.layout, nullptr);
-        }
+        pipeline.Destroy(device);
     }
 }

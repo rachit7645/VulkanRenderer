@@ -47,7 +47,7 @@ namespace Vk
 
     void RenderPass::BeginRenderPass
     (
-        VkCommandBuffer cmdBuffer,
+        const Vk::CommandBuffer& cmdBuffer,
         const Framebuffer& framebuffer,
         VkRect2D renderArea,
         VkSubpassContents subpassContents
@@ -68,10 +68,16 @@ namespace Vk
         // Begin render pass
         vkCmdBeginRenderPass
         (
-            cmdBuffer,
+            cmdBuffer.handle,
             &renderPassInfo,
             subpassContents
         );
+    }
+
+    void RenderPass::EndRenderPass(const CommandBuffer& cmdBuffer)
+    {
+        // End
+        vkCmdEndRenderPass(cmdBuffer.handle);
     }
 
     void RenderPass::Destroy(VkDevice device) const

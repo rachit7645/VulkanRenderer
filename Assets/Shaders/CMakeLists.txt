@@ -22,10 +22,15 @@ else()
 	set(SHADER_FLAGS -O)
 endif()
 
+# Includes
+set(SHADER_INCLUDES -I ${SHADER_SOURCE_DIR}/Include)
+
 # Shader files
 file(GLOB SHADER_SOURCES
-    ForwardShader.vert
-    ForwardShader.frag
+    Swapchain.vert
+    Swapchain.frag
+    Forward.vert
+    Forward.frag
 )
 
 # For each shader to be compiled
@@ -38,7 +43,7 @@ foreach(Shader ${SHADER_SOURCES})
     add_custom_command(
         OUTPUT ${SPIRV}
         COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_BINARY_DIR}"
-        COMMAND ${GLSL_COMPILER} ${Shader} -o ${SPIRV} ${SHADER_FLAGS}
+        COMMAND ${GLSL_COMPILER} ${Shader} ${SHADER_FLAGS} ${SHADER_INCLUDES} -o ${SPIRV}
         DEPENDS ${Shader}
         COMMENT "Building GLSL shader ${Shader}"
     )

@@ -44,7 +44,7 @@ namespace Vk
         );
 
         // Destroy view
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         // Vulkan handle
         VkImageView handle = VK_NULL_HANDLE;

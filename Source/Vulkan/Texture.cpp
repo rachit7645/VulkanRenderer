@@ -15,6 +15,7 @@
  */
 
 #include "Texture.h"
+#include "Util.h"
 #include "Util/Log.h"
 #include "Buffer.h"
 
@@ -60,11 +61,17 @@ namespace Vk
         );
 
         // Transition layout for transfer
-        image.TransitionLayout(context, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        {
+            image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        });
         // Copy data
         image.CopyFromBuffer(context, stagingBuffer);
         // Transition layout for shader sampling
-        image.TransitionLayout(context, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        {
+            image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        });
 
         // Destroy staging buffer
         stagingBuffer.DeleteBuffer(context->device);

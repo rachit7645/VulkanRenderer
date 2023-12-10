@@ -34,15 +34,16 @@ namespace Vk
         // Create depth buffer
         DepthBuffer(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
         // Destroy depth buffer
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
+
+        // Get depth format
+        VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);
 
         // Depth image
         Vk::Image depthImage = {};
         // Depth image view
         Vk::ImageView depthImageView = {};
     private:
-        // Get depth format
-        VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);
         // Check if format has stencil component
         bool HasStencilComponent(VkFormat format);
 

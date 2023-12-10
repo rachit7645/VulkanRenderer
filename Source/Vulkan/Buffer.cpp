@@ -96,7 +96,7 @@ namespace Vk
         vkBindBufferMemory(context->device, handle, memory, 0);
 
         // Log
-        Logger::Info("Created buffer! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Created buffer! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
     void Buffer::Map(VkDevice device, VkDeviceSize offset, VkDeviceSize rangeSize)
@@ -124,7 +124,7 @@ namespace Vk
         VkDeviceSize copySize
     )
     {
-        Vk::SingleTimeCmdBuffer(context, [&] (VkCommandBuffer cmdBuffer)
+        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
         {
             // Copy region
             VkBufferCopy copyRegion =
@@ -136,7 +136,7 @@ namespace Vk
             // Copy
             vkCmdCopyBuffer
             (
-                cmdBuffer,
+                cmdBuffer.handle,
                 srcBuffer.handle,
                 dstBuffer.handle,
                 1,
@@ -145,7 +145,7 @@ namespace Vk
         });
     }
 
-    void Buffer::DeleteBuffer(VkDevice device)
+    void Buffer::DeleteBuffer(VkDevice device) const
     {
         // Log
         Logger::Debug

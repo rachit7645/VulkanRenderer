@@ -16,8 +16,6 @@
 
 #include "Swapchain.h"
 #include "Util/Log.h"
-#include "Builders/RenderPassBuilder.h"
-#include "Builders/SubpassBuilder.h"
 
 namespace Vk
 {
@@ -26,67 +24,82 @@ namespace Vk
         // Create swap chain
         CreateSwapChain(window, context);
         CreateImageViews(context->device);
-        CreateDepthBuffer(context);
-        CreateRenderPass(context->device);
-        CreateFramebuffers(context->device);
+        CreateSyncObjects(context->device);
         // Log
         Logger::Info("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
     void Swapchain::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
     {
-        // Wait for gpu to finish
-        vkDeviceWaitIdle(context->device);
         // Clean up old swap chain
-        DestroySwapChain(context->device);
+        DestroySwapchain(context->device);
         // Wait
         window->WaitForRestoration();
         // Create new swap chain
         CreateSwapChain(window, context);
         CreateImageViews(context->device);
-        CreateDepthBuffer(context);
-        CreateFramebuffers(context->device);
         // Log
         Logger::Info("Recreated swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
-    void Swapchain::Destroy(VkDevice device)
+    void Swapchain::Present(VkQueue queue, usize FIF)
     {
-        // Destroy main swapchain data
-        DestroySwapChain(device);
-        // Destroy renderpass
-        renderPass.Destroy(device);
+        // Signal semaphores
+        std::array<VkSemaphore, 1> signalSemaphores = {renderFinishedSemaphores[FIF]};
+        // Swap chains
+        std::array<VkSwapchainKHR, 1> swapChains = {handle};
+        // Image indices
+        std::array<u32, 1> imageIndices = {imageIndex};
+
+        // Presentation info
+        VkPresentInfoKHR presentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext              = nullptr,
+            .waitSemaphoreCount = static_cast<u32>(signalSemaphores.size()),
+            .pWaitSemaphores    = signalSemaphores.data(),
+            .swapchainCount     = static_cast<u32>(swapChains.size()),
+            .pSwapchains        = swapChains.data(),
+            .pImageIndices      = imageIndices.data(),
+            .pResults           = nullptr
+        };
+
+        // Present
+        m_status[1] = vkQueuePresentKHR(queue, &presentInfo);
     }
 
-    void Swapchain::DestroySwapChain(VkDevice device)
+    bool Swapchain::IsSwapchainValid()
     {
-        // Destroy framebuffers
-        for (auto&& framebuffer : framebuffers)
+        // Check if swapchain is valid
+        bool isValid = !std::ranges::any_of(m_status, [](const auto& result)
         {
-            framebuffer.Destroy(device);
-        }
+            // Return
+            return (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || result != VK_SUCCESS);
+        });
+        // Reset state
+        m_status.fill(VK_SUCCESS);
+        // Return
+        return isValid;
+    }
 
-        // Destroy swap chain images
-        for (auto&& imageView : m_imageViews)
-        {
-            imageView.Destroy(device);
-        }
-
-        // Destroy depth buffer
-        depthBuffer.Destroy(device);
-        // Destroy swap chain
-        vkDestroySwapchainKHR(device, handle, nullptr);
-
-        // Clear
-        framebuffers.clear();
-        m_images.clear();
-        m_imageViews.clear();
+    void Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
+    {
+        // Query
+        m_status[0] = vkAcquireNextImageKHR
+        (
+            device,
+            handle,
+            std::numeric_limits<u64>::max(),
+            imageAvailableSemaphores[FIF],
+            VK_NULL_HANDLE,
+            &imageIndex
+        );
     }
 
     void Swapchain::CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
     {
         // Get swap chain info
-        swapChainInfo = SwapchainInfo(context->physicalDevice, context->surface);
+        m_swapChainInfo = SwapchainInfo(context->physicalDevice, context->surface);
 
         // Get swap chain config data
         VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat();
@@ -97,8 +110,8 @@ namespace Vk
         // Get image count
         u32 imageCount = glm::min
         (
-            swapChainInfo.capabilities.minImageCount + 1,
-            swapChainInfo.capabilities.maxImageCount
+            m_swapChainInfo.capabilities.minImageCount + 1,
+            m_swapChainInfo.capabilities.maxImageCount
         );
 
         // Swap chain creation data
@@ -117,7 +130,7 @@ namespace Vk
             .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices   = nullptr,
-            .preTransform          = swapChainInfo.capabilities.currentTransform,
+            .preTransform          = m_swapChainInfo.capabilities.currentTransform,
             .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode           = presentMode,
             .clipped               = VK_TRUE,
@@ -158,7 +171,7 @@ namespace Vk
         );
 
         // Store other properties
-        m_imageFormat = surfaceFormat.format;
+        imageFormat = surfaceFormat.format;
 
         // Convert images
         for (auto image : _images)
@@ -169,11 +182,41 @@ namespace Vk
                 image,
                 extent.width,
                 extent.height,
-                m_imageFormat,
+                imageFormat,
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
         }
+    }
+
+    void Swapchain::CreateSyncObjects(VkDevice device)
+    {
+        // Semaphore info
+        VkSemaphoreCreateInfo semaphoreInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        // For each frame in flight
+        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
+        {
+            if
+            (
+                vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+                    &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+                    &renderFinishedSemaphores[i]) != VK_SUCCESS
+            )
+            {
+                // Log
+                Logger::Error("{}\n", "Failed to create swapchain sync objects!");
+            }
+        }
+
+        // Log
+        Logger::Debug("{}\n", "Created swapchain sync objects!");
     }
 
     void Swapchain::CreateImageViews(VkDevice device)
@@ -182,83 +225,13 @@ namespace Vk
         for (const auto& image : m_images)
         {
             // Create view
-            m_imageViews.emplace_back
+            imageViews.emplace_back
             (
                 device,
                 image,
                 VK_IMAGE_VIEW_TYPE_2D,
-                m_imageFormat,
+                imageFormat,
                 VK_IMAGE_ASPECT_COLOR_BIT
-            );
-        }
-    }
-
-    void Swapchain::CreateDepthBuffer(const std::shared_ptr<Vk::Context>& context)
-    {
-        // Create
-        depthBuffer = Vk::DepthBuffer(context, extent);
-    }
-
-    void Swapchain::CreateRenderPass(VkDevice device)
-    {
-        // Build
-        renderPass = RenderPassBuilder::Create(device)
-                    .AddAttachment(
-                        m_imageFormat,
-                        VK_SAMPLE_COUNT_1_BIT,
-                        VK_ATTACHMENT_LOAD_OP_CLEAR,
-                        VK_ATTACHMENT_STORE_OP_STORE,
-                        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-                    .AddAttachment(
-                        depthBuffer.depthImage.format,
-                        VK_SAMPLE_COUNT_1_BIT,
-                        VK_ATTACHMENT_LOAD_OP_CLEAR,
-                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                    .AddSubpass(
-                        Vk::SubpassBuilder::Create()
-                        .AddColorReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-                        .AddDepthReference(1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                        .SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-                        .SetDependency(
-                            VK_SUBPASS_EXTERNAL,
-                            0,
-                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                            0,
-                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-                        .Build())
-                    .Build();
-    }
-
-    void Swapchain::CreateFramebuffers(VkDevice device)
-    {
-        // Resize
-        framebuffers.reserve(m_imageViews.size());
-
-        // For each image view
-        for (auto & m_imageView : m_imageViews)
-        {
-            // Attachments
-            std::array<Vk::ImageView, 2> attachmentViews =
-            {
-                m_imageView,
-                depthBuffer.depthImageView
-            };
-            // Create framebuffer
-            framebuffers.emplace_back
-            (
-                device,
-                renderPass,
-                attachmentViews,
-                glm::uvec2(extent.width, extent.height),
-                1
             );
         }
     }
@@ -266,7 +239,7 @@ namespace Vk
     VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat() const
     {
         // Formats
-        const auto& formats = swapChainInfo.formats;
+        const auto& formats = m_swapChainInfo.formats;
 
         // Search
         for (const auto& availableFormat : formats)
@@ -287,7 +260,7 @@ namespace Vk
     VkPresentModeKHR Swapchain::ChoosePresentationMode() const
     {
         // Presentation modes
-        const auto& presentModes = swapChainInfo.presentModes;
+        const auto& presentModes = m_swapChainInfo.presentModes;
 
         // Check all presentation modes
         for (auto presentMode : presentModes)
@@ -307,7 +280,7 @@ namespace Vk
     VkExtent2D Swapchain::ChooseSwapExtent(SDL_Window* window) const
     {
         // Surface capability data
-        const auto& capabilities = swapChainInfo.capabilities;
+        const auto& capabilities = m_swapChainInfo.capabilities;
 
         // Some platforms set swap extents themselves
         if (capabilities.currentExtent.width != std::numeric_limits<u32>::max())
@@ -333,5 +306,36 @@ namespace Vk
             .width  = static_cast<u32>(actualExtent.x),
             .height = static_cast<u32>(actualExtent.y),
         };
+    }
+
+    void Swapchain::DestroySwapchain(VkDevice device)
+    {
+        // Destroy swap chain image views
+        for (auto&& imageView : imageViews)
+        {
+            imageView.Destroy(device);
+        }
+
+        // Destroy swap chain
+        vkDestroySwapchainKHR(device, handle, nullptr);
+
+        // Clear
+        m_images.clear();
+        imageViews.clear();
+    }
+
+    void Swapchain::Destroy(VkDevice device)
+    {
+        // Log
+        Logger::Debug("{}\n", "Destroying swapchain!");
+        // Destroy swapchain
+        DestroySwapchain(device);
+        // Destroy sync objects
+        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
+        {
+            // Destroy semaphores
+            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+        }
     }
 }

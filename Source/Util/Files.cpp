@@ -55,7 +55,7 @@ namespace Engine::Files
     std::vector<u8> ReadBytes(const std::string_view path)
     {
         // Create file
-        auto bin = std::ifstream(path.data(), std::ios::binary);
+        auto bin = std::ifstream(path.data(), std::ios::binary | std::ios::in);
 
         // Make sure files was opened
         if (!bin.is_open())
@@ -64,11 +64,9 @@ namespace Engine::Files
             Logger::Error("Failed to load shader binary {}!\n", path);
         }
 
-        // Get file size
-        auto fileSize = GetFileSize(path);
         // Binary data
-        auto binary = std::vector<u8>();
-        binary.resize(fileSize);
+        std::vector<u8> binary = {};
+        binary.resize(GetFileSize(path));
 
         // Read data into buffer
         bin.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));

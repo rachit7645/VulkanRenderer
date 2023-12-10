@@ -20,27 +20,17 @@
 
 namespace Vk
 {
-    void SingleTimeCmdBuffer(const std::shared_ptr<Vk::Context>& context, const std::function<void(VkCommandBuffer)>& CmdFunction)
+    void SingleTimeCmdBuffer(const std::shared_ptr<Vk::Context>& context, const std::function<void(const Vk::CommandBuffer&)>& CmdFunction)
     {
-        // Allocate
-        auto cmdBuffer = context->AllocateCommandBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY)[0];
+        // Create command buffer
+        auto cmdBuffer = Vk::CommandBuffer(context, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        // Begin info
-        VkCommandBufferBeginInfo beginInfo =
-        {
-            .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .pNext            = nullptr,
-            .flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-            .pInheritanceInfo = nullptr
-        };
-        // Begin
-        vkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         // Execute user provided function
         std::invoke(CmdFunction, cmdBuffer);
-
         // End
-        vkEndCommandBuffer(cmdBuffer);
+        cmdBuffer.EndRecording();
+
         // Submit info
         VkSubmitInfo submitInfo =
         {
@@ -50,7 +40,7 @@ namespace Vk
             .pWaitSemaphores      = nullptr,
             .pWaitDstStageMask    = nullptr,
             .commandBufferCount   = 1,
-            .pCommandBuffers      = &cmdBuffer,
+            .pCommandBuffers      = &cmdBuffer.handle,
             .signalSemaphoreCount = 0,
             .pSignalSemaphores    = nullptr
         };
@@ -60,7 +50,7 @@ namespace Vk
         vkQueueWaitIdle(context->graphicsQueue);
 
         // Cleanup
-        context->FreeCommandBuffers(std::span(&cmdBuffer, 1));
+        cmdBuffer.Free(context);
     }
 
     u32 FindMemoryType

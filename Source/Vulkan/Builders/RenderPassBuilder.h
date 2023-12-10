@@ -23,7 +23,7 @@
 #include "SubpassState.h"
 #include "Vulkan/RenderPass.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     class RenderPassBuilder
     {
@@ -46,7 +46,7 @@ namespace Vk
             VkImageLayout finalLayout
         );
         // Add subpass
-        [[nodiscard]] RenderPassBuilder& AddSubpass(const Vk::SubpassState& subpass);
+        [[nodiscard]] RenderPassBuilder& AddSubpass(const Builders::SubpassState& subpass);
 
         // Attachment descriptions
         std::vector<VkAttachmentDescription> descriptions = {};

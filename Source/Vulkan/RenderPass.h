@@ -18,8 +18,10 @@
 #define RENDERPASS_H
 
 #include <vulkan/vulkan.h>
-#include "Util/Util.h"
+
+#include "CommandBuffer.h"
 #include "Framebuffer.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -40,14 +42,16 @@ namespace Vk
         // Set clear value (depth & stencil)
         void SetClearValue(f32 depth, u32 stencil);
 
-        // Begin renderpass
+        // Begin render pass
         void BeginRenderPass
         (
-            VkCommandBuffer cmdBuffer,
+            const Vk::CommandBuffer& cmdBuffer,
             const Framebuffer& framebuffer,
             VkRect2D renderArea,
             VkSubpassContents subpassContents
         );
+        // End render pass
+        void EndRenderPass(const Vk::CommandBuffer& cmdBuffer);
 
         // Handle
         VkRenderPass handle = VK_NULL_HANDLE;

@@ -38,7 +38,7 @@ namespace Vk
         // Create image
         CreateImage(context, usage, properties);
         // Log
-        Logger::Info("Created image! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Created image! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
     Image::Image
@@ -140,92 +140,116 @@ namespace Vk
 
     void Image::TransitionLayout
     (
-        const std::shared_ptr<Vk::Context>& context,
+        const Vk::CommandBuffer& cmdBuffer,
         VkImageLayout oldLayout,
         VkImageLayout newLayout
     )
     {
-        Vk::SingleTimeCmdBuffer(context, [&] (VkCommandBuffer cmdBuffer)
+        // Barrier data
+        VkImageMemoryBarrier barrier =
         {
-            // Barrier data
-            VkImageMemoryBarrier barrier =
-            {
-                .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .pNext               = nullptr,
-                .srcAccessMask       = VK_ACCESS_NONE,
-                .dstAccessMask       = VK_ACCESS_NONE,
-                .oldLayout           = oldLayout,
-                .newLayout           = newLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image               = handle,
-                .subresourceRange    = {
-                    .aspectMask     = aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            };
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext               = nullptr,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstAccessMask       = VK_ACCESS_NONE,
+            .oldLayout           = oldLayout,
+            .newLayout           = newLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = handle,
+            .subresourceRange    = {
+                .aspectMask     = aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        };
 
-            // Stages
-            VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_NONE;
-            VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_NONE;
+        // Stages
+        VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_NONE;
+        VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_NONE;
 
-            if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-            {
-                // Access data
-                barrier.srcAccessMask = 0;
-                barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                // Stage data
-                srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            }
-            else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-            {
-                // Access data
-                barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                // Stage data
-                srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            }
-            else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-            {
-                // Access data
-                barrier.srcAccessMask = 0;
-                barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                // Stage data
-                srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-            }
-            else
-            {
-                // Invalid
-                Logger::Error
-                (
-                    "Invalid layout transition! [old={}] [new={}]\n",
-                    string_VkImageLayout(oldLayout),
-                    string_VkImageLayout(newLayout)
-                );
-            }
-
-            // Set barrier
-            vkCmdPipelineBarrier
+        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        {
+            // Access data
+            barrier.srcAccessMask = VK_ACCESS_NONE;
+            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            // Stage data
+            srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            // Access data
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            // Stage data
+            srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        {
+            // Access data
+            barrier.srcAccessMask = VK_ACCESS_NONE;
+            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            // Stage data
+            srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            // Access data
+            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            // Stage data
+            srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            // Access data
+            barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            // Stage data
+            srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            // Access data
+            barrier.srcAccessMask = VK_ACCESS_NONE;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            // Stage data
+            srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else
+        {
+            // Invalid
+            Logger::VulkanError
             (
-                cmdBuffer,
-                srcStage, dstStage,
-                0,
-                0, nullptr,
-                0, nullptr,
-                1, &barrier
+                "Invalid layout transition! [old={}] [new={}]\n",
+                string_VkImageLayout(oldLayout),
+                string_VkImageLayout(newLayout)
             );
-        });
+        }
+
+        // Set barrier
+        vkCmdPipelineBarrier
+        (
+            cmdBuffer.handle,
+            srcStage, dstStage,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
     }
 
     void Image::CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer)
     {
-        Vk::SingleTimeCmdBuffer(context, [&] (VkCommandBuffer cmdBuffer)
+        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
         {
             // Copy info
             VkBufferImageCopy copyRegion =
@@ -245,7 +269,7 @@ namespace Vk
             // Copy
             vkCmdCopyBufferToImage
             (
-                cmdBuffer,
+                cmdBuffer.handle,
                 buffer.handle,
                 handle,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -255,7 +279,7 @@ namespace Vk
         });
     }
 
-    void Image::Destroy(VkDevice device)
+    void Image::Destroy(VkDevice device) const
     {
         // Log
         Logger::Debug

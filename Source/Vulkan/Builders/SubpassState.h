@@ -21,7 +21,7 @@
 #include <optional>
 #include <vulkan/vulkan.h>
 
-namespace Vk
+namespace Vk::Builders
 {
     // Subpass
     struct SubpassState
@@ -33,7 +33,7 @@ namespace Vk
         // Depth attachment reference
         std::optional<VkAttachmentReference> depthReference;
         // Subpass dependency
-        VkSubpassDependency dependency = {};
+        std::vector<VkSubpassDependency> dependencies = {};
     };
 }
 

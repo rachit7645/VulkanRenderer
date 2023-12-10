@@ -30,7 +30,7 @@
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/RenderPass.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     class PipelineBuilder
     {
@@ -125,7 +125,7 @@ namespace Vk
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
         // Descriptor set states
-        std::vector<Vk::DescriptorState> descriptorStates = {};
+        std::vector<Builders::DescriptorState> descriptorStates = {};
     private:
         // Private constructor
         PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass  renderPass);

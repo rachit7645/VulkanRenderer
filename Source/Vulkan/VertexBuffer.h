@@ -23,6 +23,7 @@
 #include "Buffer.h"
 #include "Models/Vertex.h"
 #include "Util/Util.h"
+#include "CommandBuffer.h"
 
 namespace Vk
 {
@@ -31,6 +32,7 @@ namespace Vk
     public:
         // Default constructor
         VertexBuffer() = default;
+
         // Creates a vertex buffer
         VertexBuffer
         (
@@ -39,8 +41,11 @@ namespace Vk
             const std::span<const Models::Index> indices
         );
 
+        // Create a vertex buffer of floats
+        VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices);
+
         // Bind buffer
-        void BindBuffer(VkCommandBuffer commandBuffer) const;
+        void BindBuffer(const Vk::CommandBuffer& cmdBuffer) const;
         // Destroys the buffer
         void DestroyBuffer(VkDevice device);
 

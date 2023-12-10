@@ -16,6 +16,7 @@
 
 #include "DepthBuffer.h"
 
+#include "Util.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -50,13 +51,16 @@ namespace Vk
             static_cast<VkImageAspectFlagBits>(depthImage.aspect)
         );
 
-        // Transition (optional)
-        depthImage.TransitionLayout
-        (
-            context,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-        );
+        // Transition to depth layout (optional)
+        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        {
+            depthImage.TransitionLayout
+            (
+                cmdBuffer,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+            );
+        });
     }
 
     VkFormat DepthBuffer::FindSupportedFormat
@@ -115,7 +119,7 @@ namespace Vk
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void DepthBuffer::Destroy(VkDevice device)
+    void DepthBuffer::Destroy(VkDevice device) const
     {
         // Destroy image view
         depthImageView.Destroy(device);

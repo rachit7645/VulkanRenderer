@@ -20,6 +20,7 @@
 #include "Buffer.h"
 #include "Context.h"
 #include "Util/Util.h"
+#include "CommandBuffer.h"
 
 namespace Vk
 {
@@ -42,7 +43,7 @@ namespace Vk
             VkMemoryPropertyFlags properties
         );
 
-        // Copy image
+        // Copy image from handle
         Image
         (
             VkImage image,
@@ -56,7 +57,7 @@ namespace Vk
         // Transitions image layout
         void TransitionLayout
         (
-            const std::shared_ptr<Vk::Context>& context,
+            const Vk::CommandBuffer& cmdBuffer,
             VkImageLayout oldLayout,
             VkImageLayout newLayout
         );
@@ -65,7 +66,7 @@ namespace Vk
         void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
 
         // Delete image
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         // Vulkan handles
         VkImage        handle = VK_NULL_HANDLE;

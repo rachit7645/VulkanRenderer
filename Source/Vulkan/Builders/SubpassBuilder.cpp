@@ -18,7 +18,7 @@
 #include "RenderPassBuilder.h"
 #include "Util/Optional.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     SubpassBuilder SubpassBuilder::Create()
     {
@@ -26,7 +26,7 @@ namespace Vk
         return {};
     }
 
-    SubpassState SubpassBuilder::Build()
+    SubpassState SubpassBuilder::Build() const
     {
         // Return subpass state
         return subpassState;
@@ -82,7 +82,7 @@ namespace Vk
         return *this;
     }
 
-    SubpassBuilder& SubpassBuilder::SetDependency
+    SubpassBuilder& SubpassBuilder::AddDependency
     (
         uint32_t srcSubpass,
         uint32_t dstSubpass,
@@ -92,7 +92,8 @@ namespace Vk
         VkAccessFlags dstAccessMask
     )
     {
-        subpassState.dependency =
+        // Dependency info
+        VkSubpassDependency dependency =
         {
             .srcSubpass      = srcSubpass,
             .dstSubpass      = dstSubpass,
@@ -102,6 +103,9 @@ namespace Vk
             .dstAccessMask   = dstAccessMask,
             .dependencyFlags = 0
         };
+
+        // Add
+        subpassState.dependencies.emplace_back(dependency);
 
         // Return
         return *this;

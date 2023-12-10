@@ -22,30 +22,36 @@
 
 #include "DescriptorSetData.h"
 #include "Util/Util.h"
+#include "CommandBuffer.h"
 
 namespace Vk
 {
     struct Pipeline
     {
         // Bind pipeline to command buffer
-        void Bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint);
+        void Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const;
+
         // Bind descriptor sets
         void BindDescriptors
         (
-            VkCommandBuffer cmdBuffer,
+            const Vk::CommandBuffer& cmdBuffer,
             VkPipelineBindPoint bindPoint,
             u32 firstSet,
             const std::span<const VkDescriptorSet> descriptors
-        );
+        ) const;
+
         // Load push constants
         void LoadPushConstants
         (
-            VkCommandBuffer cmdBuffer,
+            const Vk::CommandBuffer& cmdBuffer,
             VkPipelineStageFlags stage,
             u32 offset,
             u32 size,
             void* pValues
-        );
+        ) const;
+
+        // Destroy
+        void Destroy(VkDevice device) const;
 
         // Pipeline handle
         VkPipeline handle = {};

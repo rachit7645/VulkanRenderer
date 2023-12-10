@@ -22,7 +22,7 @@
 #include "SubpassState.h"
 #include "Util/Util.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     class SubpassBuilder
     {
@@ -30,7 +30,7 @@ namespace Vk
         // Create builder
         [[nodiscard]] static SubpassBuilder Create();
         // Build renderpass
-        [[nodiscard]] SubpassState Build();
+        [[nodiscard]] SubpassState Build() const;
 
         // Add color reference to attachment
         [[nodiscard]] SubpassBuilder& AddColorReference(u32 attachment, VkImageLayout layout);
@@ -39,7 +39,7 @@ namespace Vk
         // Set description
         [[nodiscard]] SubpassBuilder& SetBindPoint(VkPipelineBindPoint bindPoint);
         // Set dependency
-        [[nodiscard]] SubpassBuilder& SetDependency
+        [[nodiscard]] SubpassBuilder& AddDependency
         (
             uint32_t srcSubpass,
             uint32_t dstSubpass,

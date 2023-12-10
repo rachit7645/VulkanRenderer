@@ -22,7 +22,7 @@
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     PipelineBuilder PipelineBuilder::Create(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass)
     {

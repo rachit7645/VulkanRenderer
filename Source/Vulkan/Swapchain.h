@@ -28,50 +28,50 @@
 #include "ImageView.h"
 #include "Context.h"
 #include "Engine/Window.h"
-#include "DepthBuffer.h"
-#include "Framebuffer.h"
-#include "RenderPass.h"
 
 namespace Vk
 {
     class Swapchain
     {
     public:
-        // Default constructor
-        Swapchain() = default;
         // Create swapchain
         Swapchain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-
         // Recreate swap chain
         void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
         // Destroys everything
         void Destroy(VkDevice device);
 
+        // Present
+        void Present(VkQueue queue, usize FIF);
+        // Check if swap chain is valid
+        bool IsSwapchainValid();
+        // Acquire swap chain image
+        void AcquireSwapChainImage(VkDevice device, usize FIF);
+
         // Swap chain
         VkSwapchainKHR handle = {};
         // Extent
         VkExtent2D extent = {};
-        // Swap chain framebuffers
-        std::vector<Vk::Framebuffer> framebuffers = {};
-        // Swap chain depth buffer
-        Vk::DepthBuffer depthBuffer;
-        // Presentation render pass
-        Vk::RenderPass renderPass;
-        // Swapchain info
-        Vk::SwapchainInfo swapChainInfo = {};
+
+        // Image format
+        VkFormat imageFormat = {};
+        // Swap chain image views
+        std::vector<Vk::ImageView> imageViews = {};
+        // Image index
+        u32 imageIndex = 0;
+
+        // Semaphores
+        std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
+        std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
     private:
-        // Destroy current swap chain
-        void DestroySwapChain(VkDevice device);
         // Create swap chain
         void CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
+        // Destroy swapchain data
+        void DestroySwapchain(VkDevice device);
         // Create image views
         void CreateImageViews(VkDevice device);
-        // Create depth buffer
-        void CreateDepthBuffer(const std::shared_ptr<Vk::Context>& context);
-        // Creates the default render pass
-        void CreateRenderPass(VkDevice device);
-        // Create swap chain framebuffers
-        void CreateFramebuffers(VkDevice device);
+        // Create sync objects
+        void CreateSyncObjects(VkDevice device);
 
         // Choose surface format
         [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;
@@ -82,10 +82,11 @@ namespace Vk
 
         // Swap chain images
         std::vector<Vk::Image> m_images = {};
-        // Image format
-        VkFormat m_imageFormat = {};
-        // Swap chain image views
-        std::vector<Vk::ImageView> m_imageViews = {};
+
+        // Swapchain info
+        Vk::SwapchainInfo m_swapChainInfo = {};
+        // Status
+        std::array<VkResult, 2> m_status = {VK_SUCCESS, VK_SUCCESS};
     };
 }
 

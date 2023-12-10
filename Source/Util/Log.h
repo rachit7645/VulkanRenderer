@@ -120,7 +120,7 @@ namespace Logger
             // Log
             Detail::Log
             (
-                fmt::color::green,
+                fmt::color::forest_green,
                 fmt::color::black,
                 "INFO",
                 location,
