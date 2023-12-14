@@ -64,7 +64,7 @@ namespace Vk
         // Convert to vector
         auto extensionStrings = std::vector<const char*>(instanceExtensions, instanceExtensions + extensionCount);
         // Free extensions
-        SDL_free(instanceExtensions);
+        SDL_free(reinterpret_cast<void*>(instanceExtensions));
 
         // Add other extensions
         extensionStrings.emplace_back("VK_EXT_debug_utils");

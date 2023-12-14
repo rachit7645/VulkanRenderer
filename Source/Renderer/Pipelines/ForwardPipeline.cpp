@@ -21,7 +21,7 @@
 namespace Renderer::Pipelines
 {
     // Max textures
-    constexpr usize MAX_TEXTURE_COUNT = (1 << 10);
+    constexpr usize MAX_TEXTURE_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
 
     // Usings
     using Models::Vertex;
@@ -79,7 +79,7 @@ namespace Renderer::Pipelines
                   .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
                   .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
                   .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-                  .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, 1, MAX_TEXTURE_COUNT)
+                  .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, Models::Material::MATERIAL_COUNT, MAX_TEXTURE_COUNT)
                   .Build();
 
         // Create pipeline data
@@ -88,63 +88,73 @@ namespace Renderer::Pipelines
         WriteStaticDescriptors(context->device);
     }
 
-    void ForwardPipeline::WriteImageDescriptors(VkDevice device, const std::vector<Vk::ImageView>& imageViews)
+    void ForwardPipeline::WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials)
     {
         // Get descriptor data
-        auto& imageData = GetImageData();
-        // Calculate image view count
-        usize imageViewCount = imageViews.size();
+        auto& materialData = GetMaterialData();
+
+        // Calculate material count
+        usize materialCount = materials.size();
         // Calculate descriptor count
-        usize descriptorCount = imageViewCount * Vk::FRAMES_IN_FLIGHT;
+        usize descriptorCount = materialCount * Vk::FRAMES_IN_FLIGHT;
+        // Calculate write count
+        usize writeCount = descriptorCount * Models::Material::MATERIAL_COUNT;
 
         // Infos
         std::vector<VkDescriptorImageInfo> imageInfos = {};
-        imageInfos.reserve(descriptorCount);
+        imageInfos.resize(writeCount);
         // Writes
         std::vector<VkWriteDescriptorSet> imageWrites = {};
-        imageWrites.reserve(descriptorCount);
+        imageWrites.resize(writeCount);
 
         // For each frame in flight
         for (usize FIF = 0; FIF < Vk::FRAMES_IN_FLIGHT; ++FIF)
         {
-            // Loop over all images
-            for (usize i = 0; i < imageViewCount; ++i)
+            // Loop over all materials
+            for (usize i = 0; i < materialCount; ++i)
             {
-                // Get image view
-                auto& currentImageView = imageViews[i];
-
                 // Calculate descriptor index
                 usize descriptorIndex = i + (imageViewDescriptorIndexOffset / Vk::FRAMES_IN_FLIGHT);
                 // Get descriptor
-                auto currentDescriptor = imageData.setMap[FIF][descriptorIndex];
+                auto currentDescriptor = materialData.setMap[FIF][descriptorIndex];
 
-                // Image info
-                VkDescriptorImageInfo imageInfo =
-                {
-                    .sampler     = VK_NULL_HANDLE,
-                    .imageView   = currentImageView.handle,
-                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                };
-                imageInfos.emplace_back(imageInfo);
+                // Current texture set
+                const auto& currentViews = materials[i].GetViews();
 
-                // Image write
-                VkWriteDescriptorSet imageWrite =
+                // Loop over all images
+                for (usize j = 0; j < currentViews.size(); ++j)
                 {
-                    .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .pNext            = nullptr,
-                    .dstSet           = currentDescriptor,
-                    .dstBinding       = imageData.binding,
-                    .dstArrayElement  = 0,
-                    .descriptorCount  = 1,
-                    .descriptorType   = imageData.type,
-                    .pImageInfo       = &imageInfos.back(),
-                    .pBufferInfo      = nullptr,
-                    .pTexelBufferView = nullptr
-                };
-                imageWrites.emplace_back(imageWrite);
+                    // Get image view
+                    auto& currentImageView = currentViews[j];
+                    // Write index
+                    usize writeIndex = FIF * materialCount * currentViews.size() + i * currentViews.size() + j;;
+
+                    // Image info
+                    imageInfos[writeIndex] =
+                    {
+                        .sampler     = VK_NULL_HANDLE,
+                        .imageView   = currentImageView.handle,
+                        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                    };
+
+                    // Image write
+                    imageWrites[writeIndex] =
+                    {
+                        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                        .pNext            = nullptr,
+                        .dstSet           = currentDescriptor,
+                        .dstBinding       = materialData.binding,
+                        .dstArrayElement  = static_cast<u32>(j),
+                        .descriptorCount  = 1,
+                        .descriptorType   = materialData.type,
+                        .pImageInfo       = &imageInfos[writeIndex],
+                        .pBufferInfo      = nullptr,
+                        .pTexelBufferView = nullptr
+                    };
+                }
 
                 // Add to map
-                imageViewMap[FIF].emplace(currentImageView, currentDescriptor);
+                materialMap[FIF].emplace(materials[i], currentDescriptor);
             }
         }
 
@@ -281,7 +291,7 @@ namespace Renderer::Pipelines
         return pipeline.descriptorSetData[1];
     }
 
-    const Vk::DescriptorSetData& ForwardPipeline::GetImageData() const
+    const Vk::DescriptorSetData& ForwardPipeline::GetMaterialData() const
     {
         // Return
         return pipeline.descriptorSetData[2];

@@ -16,24 +16,35 @@
 
 #version 460
 
+// Extensions
+#extension GL_GOOGLE_include_directive : enable
+
 // Includes
-#include "GammaCorrect.glsl"
+#include "Material.glsl"
 
 // Fragment inputs
-layout(location = 0) in vec2 fragTexCoords;
-layout(location = 1) in vec3 fragNormal;
+layout(location = 0) in vec3 fragPosition;
+layout(location = 1) in vec2 fragTexCoords;
+layout(location = 2) in mat3 fragTBNMatrix;
 
 // Texture sampler
-layout(binding = 1, set = 1) uniform sampler textureSampler;
-// Texture
-layout(binding = 2, set = 2) uniform texture2D albedo;
+layout(binding = 1, set = 1) uniform sampler texSampler;
+
+// Textures
+layout(binding = 2, set = 2) uniform texture2D textures[3];
 
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
 
-// Fragment entry point
 void main()
 {
+    // Get linear albedo
+    vec3 albedo = SampleLinear(ALBEDO(textures), texSampler, fragTexCoords);
+    // Calculate normal
+    vec3 normal = GetNormal(fragTBNMatrix, NORMAL(textures), texSampler, fragTexCoords);
+    // Get materials
+    vec3 aoRghMtl = Sample(AO_RGH_MTL(textures), texSampler, fragTexCoords);
+
     // Output color
-    outColor = vec4(ToLinear(texture(sampler2D(albedo, textureSampler), fragTexCoords).rgb), 1.0f);
+    outColor = vec4(albedo + normal + aoRghMtl + fragPosition, 1.0f);
 }

@@ -26,12 +26,17 @@
 
 namespace Vk
 {
-    #ifdef ENGINE_DEBUG
     // Layers
+    #ifdef ENGINE_DEBUG
     constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
     #endif
+
     // Required device extensions
+    #ifdef ENGINE_DEBUG
+    constexpr std::array<const char*, 2> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain", "VK_KHR_shader_non_semantic_info"};
+    #else
     constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
+    #endif
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
     {
@@ -277,6 +282,7 @@ namespace Vk
         bool isQueueValid  = queue.IsComplete();
         bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
         bool hasAnisotropy = featureSet.samplerAnisotropy;
+        bool hasWireframe  = featureSet.fillModeNonSolid;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -290,7 +296,7 @@ namespace Vk
         }
 
         // Calculate score
-        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * discreteGPU;
+        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * hasWireframe * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -325,6 +331,7 @@ namespace Vk
         // Vulkan device features
         VkPhysicalDeviceFeatures deviceFeatures = {};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
+        deviceFeatures.fillModeNonSolid  = VK_TRUE;
 
         // Logical device creation info
         VkDeviceCreateInfo createInfo =

@@ -34,7 +34,7 @@ namespace Vk
     {
         // Initialise buffers
         InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
-        InitBuffer(context, indexBuffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indices);
+        InitBuffer(context, indexBuffer,  VK_BUFFER_USAGE_INDEX_BUFFER_BIT,   indices);
     }
 
     VertexBuffer::VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices)

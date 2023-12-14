@@ -16,11 +16,16 @@
 
 #version 460
 
-layout(binding = 0) uniform SharedDataBuffer
+layout(binding = 0) uniform SceneBuffer
 {
+    // Matrices
     mat4 proj;
     mat4 view;
-} Shared;
+    /* Camera
+    vec4 cameraPos;
+    // Lights
+    DirLight light;*/
+} Scene;
 
 // Push constant buffer
 layout(push_constant) uniform ConstantsBuffer
@@ -35,18 +40,34 @@ layout(push_constant) uniform ConstantsBuffer
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 texCoords;
 layout(location = 2) in vec3 normal;
+layout(location = 3) in vec3 tangent;
 
 // Vertex outputs
-layout(location = 0) out vec2 fragTexCoords;
-layout(location = 1) out vec3 fragNormal;
+layout(location = 0) out vec3 fragPosition;
+layout(location = 1) out vec2 fragTexCoords;
+layout(location = 2) out mat3 fragTBNMatrix;
 
 // Vertex entry point
 void main()
 {
-    // Set position
-    gl_Position = Shared.proj * Shared.view * Constants.transform * vec4(position, 1.0f);
-    // Set texture coords
+    // Transform vertex by model matrix
+    vec4 fragPos = Constants.transform * vec4(position, 1.0f);
+    // Set world position
+    fragPosition = fragPos.xyz;
+    // Transform from world to clip space
+    gl_Position = Scene.proj * Scene.view * fragPos;
+
+    // Pass through texture coords
     fragTexCoords = texCoords;
-    // Set normal
-    fragNormal = normalize(Constants.normalMatrix * vec4(normal, 0.0f)).xyz;
+
+    // Transform normal
+    vec3 N = normalize(mat3(Constants.normalMatrix) * normal);
+    // Transform tangent
+    vec3 T = normalize(mat3(Constants.normalMatrix) * tangent);
+    // Re-orthagonalize tangent
+    T = normalize(T - dot(T, N) * N);
+    // Calculate bitangent
+    vec3 B = cross(N, T);
+    // Compute TBN matrix
+    fragTBNMatrix = mat3(T, B, N);
 }

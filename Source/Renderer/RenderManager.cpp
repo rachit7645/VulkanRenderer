@@ -36,7 +36,7 @@ namespace Renderer
         CreateSyncObjects();
 
         // Bind model images to forward pass
-        m_forwardPass.pipeline.WriteImageDescriptors(m_context->device, m_model.GetTextureViews());
+        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_model.GetMaterials());
         // Bind forward pass color output to swap pipeline
         m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_forwardPass.imageViews);
 

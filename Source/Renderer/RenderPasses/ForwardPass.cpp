@@ -229,7 +229,7 @@ namespace Renderer::RenderPasses
             // Get mesh descriptors
             std::array<VkDescriptorSet, 1> meshDescriptorSets =
             {
-                pipeline.imageViewMap[FIF][mesh.texture.imageView]
+                pipeline.materialMap[FIF][mesh.material]
             };
 
             // Bind

@@ -6,24 +6,23 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(SHADERS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/Bin/Assets/Shaders)
 
 # Get glsl compiler
-find_package(Vulkan REQUIRED COMPONENTS glslc)
-find_program(GLSL_COMPILER NAMES glslc HINTS Vulkan::glslc)
+find_package(Vulkan REQUIRED COMPONENTS glslangValidator)
+find_program(GLSL_COMPILER NAMES glslangValidator HINTS Vulkan::glslangValidator)
 
 # Shader locations
 set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPIRV_BINARY_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
+# Shader flags
+set(SHADER_FLAGS --target-env vulkan1.0)
+
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
-	# Debug shader flags
-	set(SHADER_FLAGS -g -O)
-else()
-	# Release shader flags
-	set(SHADER_FLAGS -O)
+    list(APPEND SHADER_FLAGS -gVS)
 endif()
 
 # Includes
-set(SHADER_INCLUDES -I ${SHADER_SOURCE_DIR}/Include)
+set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 
 # Shader files
 file(GLOB SHADER_SOURCES

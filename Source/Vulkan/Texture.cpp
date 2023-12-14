@@ -87,11 +87,17 @@ namespace Vk
         );
     }
 
-    void Texture::Destroy(VkDevice device)
+    void Texture::Destroy(VkDevice device) const
     {
         // Destroy image view
         imageView.Destroy(device);
         // Destroy image
         image.Destroy(device);
+    }
+
+    bool Texture::operator==(const Texture& rhs) const
+    {
+        // Return
+        return image == rhs.image && imageView == rhs.imageView;
     }
 }

@@ -23,6 +23,7 @@
 #include "Vulkan/Texture.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/RenderPass.h"
+#include "Models/Material.h"
 
 namespace Renderer::Pipelines
 {
@@ -30,14 +31,14 @@ namespace Renderer::Pipelines
     {
     public:
         // Usings
-        using ImageViewMap = std::array
+        using MaterialMap = std::array
         <
             std::unordered_map
             <
-                Vk::ImageView,
+                Models::Material,
                 VkDescriptorSet,
-                Vk::ImageView::Hash,
-                Vk::ImageView::Equal
+                Models::Material::Hash,
+                Models::Material::Equal
             >,
             Vk::FRAMES_IN_FLIGHT
         >;
@@ -67,15 +68,15 @@ namespace Renderer::Pipelines
         // Destroy render pipeline
         void Destroy(VkDevice device);
 
-        // Write image descriptors
-        void WriteImageDescriptors(VkDevice device, const std::vector<Vk::ImageView>& imageViews);
+        // Write material descriptors
+        void WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials);
 
         // Get shared UBO set data
         const Vk::DescriptorSetData& GetSceneUBOData() const;
         // Get texture sampler data
         const Vk::DescriptorSetData& GetSamplerData() const;
         // Get image data
-        const Vk::DescriptorSetData& GetImageData() const;
+        const Vk::DescriptorSetData& GetMaterialData() const;
 
         // Pipeline data
         Vk::Pipeline pipeline = {};
@@ -86,8 +87,8 @@ namespace Renderer::Pipelines
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneUBOs = {};
         // Texture sampler
         Vk::Sampler textureSampler = {};
-        // Image view map
-        ImageViewMap imageViewMap = {};
+        // Texture map
+        MaterialMap materialMap = {};
     private:
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);

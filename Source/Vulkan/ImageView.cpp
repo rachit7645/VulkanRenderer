@@ -73,6 +73,12 @@ namespace Vk
         }
     }
 
+    bool ImageView::operator==(const ImageView& rhs) const
+    {
+        // Compare handle
+        return handle == rhs.handle;
+    }
+
     void ImageView::Destroy(VkDevice device) const
     {
         // Log

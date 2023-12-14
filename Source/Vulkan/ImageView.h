@@ -43,15 +43,18 @@ namespace Vk
             u32 layerCount = 1
         );
 
+        // Equality operator
+        bool operator==(const ImageView& rhs) const;
+
         // Destroy view
         void Destroy(VkDevice device) const;
 
         // Vulkan handle
         VkImageView handle = VK_NULL_HANDLE;
 
+        // Hashing operator
         struct Hash
         {
-            // Hashing operator
             usize operator()(const ImageView& imageView) const
             {
                 // Just return the hash of the handle
@@ -59,9 +62,9 @@ namespace Vk
             }
         };
 
+        // Equality operator
         struct Equal
         {
-            // Equality comparison operator
             bool operator()(const ImageView& lhs, const ImageView& rhs) const
             {
                 // Compare handle

@@ -32,12 +32,35 @@ namespace Vk
     public:
         // Constructor
         Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
+        // Equality operator
+        bool operator==(const Texture& rhs) const;
         // Destroy texture
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
+
         // Texture image data
         Vk::Image image = {};
         // Texture image view
         Vk::ImageView imageView = {};
+
+        // Hashing operator
+        struct Hash
+        {
+            usize operator()(const Texture& texture) const
+            {
+                // Just return the hash of the handle
+                return Vk::Image::Hash()(texture.image) ^ Vk::ImageView::Hash()(texture.imageView);
+            }
+        };
+
+        // Equality operator
+        struct Equal
+        {
+            bool operator()(const Texture& lhs, const Texture& rhs) const
+            {
+                // Compare
+                return lhs == rhs;
+            }
+        };
     };
 }
 

@@ -54,6 +54,9 @@ namespace Vk
             VkImageAspectFlags aspect
         );
 
+        // Comparison operator
+        bool operator==(const Image& rhs) const;
+
         // Transitions image layout
         void TransitionLayout
         (
@@ -80,6 +83,26 @@ namespace Vk
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        // Hashing operator
+        struct Hash
+        {
+            usize operator()(const Image& image) const
+            {
+                // Return combined hashes
+                return std::hash<VkImage>()(image.handle) && std::hash<VkDeviceMemory>()(image.memory);
+            }
+        };
+
+        // Equality operator
+        struct Equal
+        {
+            bool operator()(const Image& lhs, const Image& rhs) const
+            {
+                // Compare
+                return lhs == rhs;
+            }
+        };
     private:
         // Create image & allocate memory for image
         void CreateImage

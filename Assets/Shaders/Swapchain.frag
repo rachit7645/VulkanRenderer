@@ -1,5 +1,8 @@
 #version 460
 
+// Extensions
+#extension GL_GOOGLE_include_directive : enable
+
 // Includes
 #include "GammaCorrect.glsl"
 

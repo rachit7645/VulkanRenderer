@@ -59,6 +59,18 @@ namespace Vk
     {
     }
 
+    bool Image::operator==(const Image& rhs) const
+    {
+        // Return
+        return handle == rhs.handle &&
+               memory == rhs.memory &&
+               width  == rhs.width  &&
+               height == rhs.height &&
+               format == rhs.format &&
+               tiling == rhs.tiling &&
+               aspect == rhs.aspect;
+    }
+
     void Image::CreateImage
     (
         const std::shared_ptr<Vk::Context>& context,

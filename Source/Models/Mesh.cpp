@@ -25,18 +25,18 @@ namespace Models
         const std::shared_ptr<Vk::Context>& context,
         const std::vector<Models::Vertex>& vertices,
         const std::vector<Models::Index>& indices,
-        const Vk::Texture& texture
+        const Models::Material& textures
     )
         : vertexBuffer(context, vertices, indices),
-          texture(texture)
+          material(textures)
     {
     }
 
-    void Mesh::DestroyMesh(VkDevice device)
+    void Mesh::Destroy(VkDevice device)
     {
         // Destroy vertex buffer
         vertexBuffer.DestroyBuffer(device);
-        // Destroy texture
-        texture.Destroy(device);
+        // Destroy textures
+        material.Destroy(device);
     }
 }

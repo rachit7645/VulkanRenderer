@@ -29,21 +29,23 @@ namespace Models
     {
         // Constants
         static constexpr usize VERTEX_NUM_BINDINGS = 1;
-        static constexpr usize VERTEX_NUM_ATTRIBS  = 3;
+        static constexpr usize VERTEX_NUM_ATTRIBS  = 4;
         // Usings
         using VertexBindings = std::array<VkVertexInputBindingDescription,   VERTEX_NUM_BINDINGS>;
         using VertexAttribs  = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
 
         // Constructor
-        constexpr Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal)
+        Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent)
             : position(position),
               texCoords(texCoords),
-              normal(normal) {}
+              normal(normal),
+              tangent(tangent) {}
 
         // Vertex data
         glm::vec3 position  = {};
         glm::vec2 texCoords = {};
         glm::vec3 normal    = {};
+        glm::vec3 tangent   = {};
 
         // Get binding description
         static VertexBindings GetBindingDescription();
