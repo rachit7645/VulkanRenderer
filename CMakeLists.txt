@@ -28,6 +28,7 @@ add_executable(VulkanRenderer
 	# Engine sources
 	Source/Engine/AppInstance.cpp
 	Source/Engine/Window.cpp
+	Source/Engine/Inputs.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
@@ -59,6 +60,8 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Builders/SubpassBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
+	Source/Renderer/FreeCamera.cpp
+	Source/Renderer/Camera.cpp
 	# Render pipeline sources
 	Source/Renderer/Pipelines/SwapPipeline.cpp
 	Source/Renderer/Pipelines/ForwardPipeline.cpp
@@ -136,6 +139,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<istream>
 	<source_location>
 	<iostream>
+	<numbers>
     # C STL Headers
     <cstdint>
     <cstddef>

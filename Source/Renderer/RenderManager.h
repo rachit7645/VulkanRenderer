@@ -20,6 +20,7 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
+#include "FreeCamera.h"
 #include "RenderPasses/SwapPass.h"
 #include "RenderPasses/ForwardPass.h"
 #include "Vulkan/Context.h"
@@ -67,6 +68,8 @@ namespace Renderer
         RenderPasses::ForwardPass m_forwardPass;
         // Model
         Models::Model m_model;
+        // Camera
+        Renderer::FreeCamera m_camera = {};
 
         // Fences
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};

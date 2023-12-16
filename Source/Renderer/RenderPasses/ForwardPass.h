@@ -19,6 +19,7 @@
 
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/RenderPass.h"
+#include "Renderer/FreeCamera.h"
 #include "Renderer/Pipelines/ForwardPipeline.h"
 #include "Vulkan/DepthBuffer.h"
 #include "Models/Model.h"
@@ -36,7 +37,7 @@ namespace Renderer::RenderPasses
         void Destroy(VkDevice device);
 
         // Render
-        void Render(usize FIF, const Models::Model& model);
+        void Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model);
 
         // Forward render pass
         Vk::RenderPass renderPass;

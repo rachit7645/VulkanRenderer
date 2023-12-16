@@ -66,7 +66,7 @@ namespace Renderer
         Update();
 
         // Render forward pass
-        m_forwardPass.Render(m_currentFrame, m_model);
+        m_forwardPass.Render(m_currentFrame, m_camera, m_model);
         // Render swap pass
         m_swapPass.Render(m_currentFrame);
 
@@ -82,21 +82,8 @@ namespace Renderer
     {
         // Update frame counter
         m_frameCounter.Update();
-
-        // Render ImGui
-        if (ImGui::BeginMainMenuBar())
-        {
-            // Profiler
-            if (ImGui::BeginMenu("Profiler"))
-            {
-                // Frame stats
-                ImGui::Text("FPS: %.2f", m_frameCounter.FPS);
-                ImGui::Text("Frame time: %.2f ms", m_frameCounter.avgFrameTime);
-                ImGui::EndMenu();
-            }
-            // End menu bar
-            ImGui::EndMainMenuBar();
-        }
+        // Update camera
+        m_camera.Update(m_frameCounter.frameDelta);
     }
 
     void RenderManager::BeginFrame()
@@ -166,7 +153,7 @@ namespace Renderer
             ) != VK_SUCCESS)
         {
             // Log
-            Logger::VulkanError("Failed to submit queue! [Queue={}]\n", reinterpret_cast<void*>(m_context->graphicsQueue));
+            Logger::VulkanError("Failed to submit queue! [Queue={}]\n", std::bit_cast<void*>(m_context->graphicsQueue));
         }
     }
 

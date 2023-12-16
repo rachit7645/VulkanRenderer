@@ -54,7 +54,7 @@ namespace Renderer::RenderPasses
         Logger::Info("{}\n", "Recreated forward pass!");
     }
 
-    void ForwardPass::Render(usize FIF, const Models::Model& model)
+    void ForwardPass::Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model)
     {
         // Get current resources
         auto& currentCmdBuffer    = cmdBuffers[FIF];
@@ -132,23 +132,19 @@ namespace Renderer::RenderPasses
         Pipelines::ForwardPipeline::SceneBuffer sceneBuffer =
         {
             // Projection matrix
-            .proj = glm::perspective(
-                FOV,
+            .projection = glm::perspective(
+                camera.FOV,
                 static_cast<f32>(currentFramebuffer.size.x) /
                 static_cast<f32>(currentFramebuffer.size.y),
                 PLANES.x,
                 PLANES.y
             ),
             // View Matrix
-            .view = glm::lookAt(
-                glm::vec3(0.0f, 0.0f, 5.0f),
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            )
+            .view = camera.GetViewMatrix()
         };
 
         // Flip projection
-        sceneBuffer.proj[1][1] *= -1;
+        sceneBuffer.projection[1][1] *= -1;
 
         // Load UBO data
         std::memcpy(sceneUBO.mappedPtr, &sceneBuffer, sizeof(sceneBuffer));
@@ -156,16 +152,7 @@ namespace Renderer::RenderPasses
         // Data
         static glm::vec3 s_position = {};
         static glm::vec3 s_rotation = {};
-        static glm::vec3 s_scale    = {0.5f, 0.5f, 0.5f};
-
-        // Staring time
-        static auto startTime = std::chrono::high_resolution_clock::now();
-        // Current time
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        // Duration
-        f32 duration = std::chrono::duration<f32, std::chrono::seconds::period>(currentTime - startTime).count();
-        // Update rotation
-        s_rotation.y = (duration / 5.0f) * glm::radians(90.0f);
+        static glm::vec3 s_scale    = {0.25f, 0.25f, 0.25f};
 
         // Render ImGui
         if (ImGui::BeginMainMenuBar())

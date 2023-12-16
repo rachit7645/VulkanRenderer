@@ -21,6 +21,7 @@
 
 // Includes
 #include "Material.glsl"
+#include "Texture.glsl"
 
 // Fragment inputs
 layout(location = 0) in vec3 fragPosition;
@@ -31,7 +32,7 @@ layout(location = 2) in mat3 fragTBNMatrix;
 layout(binding = 1, set = 1) uniform sampler texSampler;
 
 // Textures
-layout(binding = 2, set = 2) uniform texture2D textures[3];
+layout(binding = 2, set = 2) uniform texture2D textures[];
 
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
@@ -41,10 +42,13 @@ void main()
     // Get linear albedo
     vec3 albedo = SampleLinear(ALBEDO(textures), texSampler, fragTexCoords);
     // Calculate normal
-    vec3 normal = GetNormal(fragTBNMatrix, NORMAL(textures), texSampler, fragTexCoords);
+    vec3 normal = GetNormalFromMap(Sample(NORMAL(textures), texSampler, fragTexCoords), fragTBNMatrix);
     // Get materials
     vec3 aoRghMtl = Sample(AO_RGH_MTL(textures), texSampler, fragTexCoords);
 
+    // Fool GLSL
+    vec3(normal + aoRghMtl + fragPosition);
+
     // Output color
-    outColor = vec4(albedo + normal + aoRghMtl + fragPosition, 1.0f);
+    outColor = vec4(albedo, 1.0f);
 }

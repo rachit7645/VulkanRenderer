@@ -114,7 +114,7 @@ namespace Renderer::Pipelines
             for (usize i = 0; i < materialCount; ++i)
             {
                 // Calculate descriptor index
-                usize descriptorIndex = i + (imageViewDescriptorIndexOffset / Vk::FRAMES_IN_FLIGHT);
+                usize descriptorIndex = i + (textureDescriptorIndexOffset / Vk::FRAMES_IN_FLIGHT);
                 // Get descriptor
                 auto currentDescriptor = materialData.setMap[FIF][descriptorIndex];
 
@@ -159,7 +159,7 @@ namespace Renderer::Pipelines
         }
 
         // Update current index
-        imageViewDescriptorIndexOffset += descriptorCount;
+        textureDescriptorIndexOffset += descriptorCount;
 
         // Update
         vkUpdateDescriptorSets

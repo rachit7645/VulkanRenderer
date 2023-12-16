@@ -83,8 +83,8 @@ namespace Renderer::Pipelines
                   .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
                   .SetDynamicStates(DYN_STATES, SetDynamicStates)
                   .SetVertexInputState(std::span(&vertexBinding, 1), std::span(&vertexAttrib, 1))
-                  .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-                  .SetRasterizerState(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+                  .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE)
+                  .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
                   .SetMSAAState()
                   .SetBlendState()
                   .AddDescriptor(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
@@ -162,8 +162,6 @@ namespace Renderer::Pipelines
         constexpr std::array<f32, 12> QUAD_VERTICES =
         {
             -1.0f, -1.0f, // Bottom-left
-             1.0f, -1.0f, // Bottom-right
-            -1.0f,  1.0f, // Top-left
             -1.0f,  1.0f, // Top-left
              1.0f, -1.0f, // Bottom-right
              1.0f,  1.0f  // Top-right

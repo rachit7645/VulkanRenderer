@@ -43,6 +43,8 @@ namespace Engine
     private:
         // SDL event
         SDL_Event m_event = {};
+        // Is input captured?
+        bool m_isInputCaptured = true;
     };
 }
 

@@ -14,24 +14,33 @@
  *    limitations under the License.
  */
 
-#ifndef RENDER_CONSTANTS_H
-#define RENDER_CONSTANTS_H
+#ifndef FREE_CAMERA_H
+#define FREE_CAMERA_H
 
+#include "Camera.h"
 #include "Externals/GLM.h"
-#include "Util/Util.h"
 
 namespace Renderer
 {
-    // Clear color
-    constexpr glm::vec4 CLEAR_COLOR = {0.53f, 0.81f, 0.92f, 1.0f};
-    // Aspect ratio
-    constexpr f32 PREFERRED_ASPECT_RATIO = 16.0f / 9.0f;
-    // Field of view
-    constexpr f32 DEFAULT_FOV = glm::radians(70.0f);
-    // Planes
-    constexpr glm::vec2 PLANES = {0.1f, 2000.0f};
-    // World Up direction
-    constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
+    class FreeCamera : public Camera
+    {
+    public:
+        // Default constructor
+        FreeCamera();
+        // Constructor w/ vectors
+        FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
+        // Update
+        void Update(f32 frameDelta) override;
+    private:
+        // Check user inputs
+        void CheckInputs(f32 frameDelta);
+        // Camera movement
+        void Move(f32 frameDelta);
+        // Camera rotation
+        void Rotate(f32 frameDelta);
+        // Camera zooming
+        void Zoom(f32 frameDelta);
+    };
 }
 
 #endif

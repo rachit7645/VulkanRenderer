@@ -56,9 +56,11 @@ namespace Renderer::Pipelines
         struct VULKAN_GLSL_DATA SceneBuffer
         {
             // Projection matrix
-            glm::mat4 proj = {};
+            glm::mat4 projection = {};
             // View matrix
             glm::mat4 view = {};
+            // Camera position
+            glm::vec4 cameraPos = {};
         };
 
         // Default constructor
@@ -95,8 +97,8 @@ namespace Renderer::Pipelines
         // Write static descriptors
         void WriteStaticDescriptors(VkDevice device);
 
-        // Image view descriptor index
-        usize imageViewDescriptorIndexOffset = 0;
+        // Texture descriptors index offset
+        usize textureDescriptorIndexOffset = 0;
     };
 }
 

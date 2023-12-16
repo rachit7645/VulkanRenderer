@@ -19,7 +19,7 @@
 
 #include "Util/Log.h"
 #include "Util/Files.h"
-#include "Renderer/RenderConstants.h"
+#include "Inputs.h"
 
 namespace Engine
 {
@@ -78,7 +78,11 @@ namespace Engine
 
         // For sanity, raise handle
         SDL_RaiseWindow(handle);
+        // This doesn't even work (maybe it does?) :(
         SDL_SetWindowMinimumSize(handle, 1, 1);
+        // Set mouse mode
+        SDL_ShowCursor(SDL_FALSE);
+        SDL_SetRelativeMouseMode(SDL_TRUE);
     }
 
     bool Window::PollEvents()
@@ -88,12 +92,42 @@ namespace Engine
         {
             // Intercept event for ImGUI
             ImGui_ImplSDL2_ProcessEvent(&m_event);
+
             // Check event type
             switch (m_event.type)
             {
             // Event to quit
             case SDL_QUIT:
                 return true;
+
+            // Key event
+            case SDL_KEYDOWN:
+                switch (m_event.key.keysym.scancode)
+                {
+                // F1 key
+                case SDL_SCANCODE_F1:
+                    // Toggle mouse mode
+                    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!m_isInputCaptured));
+                    // Toggle flag
+                    m_isInputCaptured = !m_isInputCaptured;
+                    break;
+
+                // All other keys go here
+                default:
+                    break;
+                }
+                break;
+
+            // Mouse motion event
+            case SDL_MOUSEMOTION:
+                Inputs::GetInstance().SetMousePosition(glm::ivec2(m_event.motion.xrel, m_event.motion.yrel));
+                break;
+
+            // Mouse scroll event
+            case SDL_MOUSEWHEEL:
+                Inputs::GetInstance().SetMouseScroll(glm::ivec2(m_event.wheel.x, m_event.wheel.y));
+                break;
+
             // Default event handler
             default:
                 continue;

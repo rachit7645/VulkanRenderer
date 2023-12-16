@@ -19,11 +19,11 @@
 layout(binding = 0) uniform SceneBuffer
 {
     // Matrices
-    mat4 proj;
+    mat4 projection;
     mat4 view;
-    /* Camera
+    // Camera
     vec4 cameraPos;
-    // Lights
+    /* Lights
     DirLight light;*/
 } Scene;
 
@@ -55,7 +55,7 @@ void main()
     // Set world position
     fragPosition = fragPos.xyz;
     // Transform from world to clip space
-    gl_Position = Scene.proj * Scene.view * fragPos;
+    gl_Position = Scene.projection * Scene.view * fragPos;
 
     // Pass through texture coords
     fragTexCoords = texCoords;

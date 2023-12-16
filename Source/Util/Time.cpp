@@ -20,14 +20,11 @@
 #include <fmt/format.h>
 #include <fmt/chrono.h>
 
-// Shorten chrono
-namespace Chrono = std::chrono;
-
-// Aliases
-using TimeClock = Chrono::system_clock;
-
 namespace Util
 {
+    // Aliases
+    using TimeClock = std::chrono::system_clock;
+
     std::string GetTime()
     {
         // Format time
