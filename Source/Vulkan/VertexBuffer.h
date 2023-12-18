@@ -47,7 +47,7 @@ namespace Vk
         // Bind buffer
         void BindBuffer(const Vk::CommandBuffer& cmdBuffer) const;
         // Destroys the buffer
-        void DestroyBuffer(VkDevice device);
+        void DestroyBuffer(VkDevice device) const;
 
         // Vertex buffer
         Vk::Buffer vertexBuffer;

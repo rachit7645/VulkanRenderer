@@ -21,13 +21,23 @@
 #include <vulkan/vulkan.h>
 
 #include "DescriptorSetData.h"
+#include "RenderPass.h"
+#include "Context.h"
 #include "Util/Util.h"
 #include "CommandBuffer.h"
 
 namespace Vk
 {
-    struct Pipeline
+    class Pipeline
     {
+    public:
+        // Default constructor
+        Pipeline() = default;
+        // Constructor
+        Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData);
+        // Virtual destructor
+        virtual ~Pipeline() = default;
+
         // Bind pipeline to command buffer
         void Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const;
 
@@ -59,6 +69,9 @@ namespace Vk
         VkPipelineLayout layout = {};
         // Descriptor data
         std::vector<Vk::DescriptorSetData> descriptorSetData = {};
+    private:
+        // Destroy per-pipeline data
+        virtual void DestroyPipelineData(VkDevice device) const;
     };
 }
 

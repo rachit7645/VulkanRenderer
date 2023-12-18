@@ -22,12 +22,11 @@
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Texture.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/RenderPass.h"
 #include "Models/Material.h"
 
 namespace Renderer::Pipelines
 {
-    class ForwardPipeline
+    class ForwardPipeline : public Vk::Pipeline
     {
     public:
         // Usings
@@ -67,8 +66,6 @@ namespace Renderer::Pipelines
         ForwardPipeline() = default;
         // Create pipeline
         ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D swapchainExtent);
-        // Destroy render pipeline
-        void Destroy(VkDevice device);
 
         // Write material descriptors
         void WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials);
@@ -80,9 +77,6 @@ namespace Renderer::Pipelines
         // Get image data
         const Vk::DescriptorSetData& GetMaterialData() const;
 
-        // Pipeline data
-        Vk::Pipeline pipeline = {};
-
         // Push constant data
         std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
         // Shared data UBOs
@@ -92,8 +86,13 @@ namespace Renderer::Pipelines
         // Texture map
         MaterialMap materialMap = {};
     private:
+        // Create pipeline
+        [[nodiscard]] Vk::Pipeline CreatePipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent);
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
+        // Destroy per-pipeline data
+        void DestroyPipelineData(VkDevice device) const override;
+
         // Write static descriptors
         void WriteStaticDescriptors(VkDevice device);
 

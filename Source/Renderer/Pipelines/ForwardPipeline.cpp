@@ -21,67 +21,14 @@
 namespace Renderer::Pipelines
 {
     // Max textures
-    constexpr usize MAX_TEXTURE_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
+    constexpr usize MAX_MATERIAL_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
 
     // Usings
     using Models::Vertex;
 
     ForwardPipeline::ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D swapchainExtent)
+        : Vk::Pipeline(CreatePipeline(context, renderPass, swapchainExtent))
     {
-        // Custom functions
-        auto SetDynamicStates = [&swapchainExtent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
-        {
-            // Set viewport config
-            pipelineBuilder.viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(swapchainExtent.width),
-                .height   = static_cast<f32>(swapchainExtent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
-
-            // Set scissor config
-            pipelineBuilder.scissor =
-            {
-                .offset = {0, 0},
-                .extent = swapchainExtent
-            };
-
-            // Create viewport creation info
-            pipelineBuilder.viewportInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                .pNext         = nullptr,
-                .flags         = 0,
-                .viewportCount = 1,
-                .pViewports    = &pipelineBuilder.viewport,
-                .scissorCount  = 1,
-                .pScissors     = &pipelineBuilder.scissor
-            };
-        };
-
-        // Dynamic states
-        constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-
-        // Build pipeline
-        pipeline = Vk::Builders::PipelineBuilder::Create(context, renderPass)
-                  .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-                  .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-                  .SetDynamicStates(DYN_STATES, SetDynamicStates)
-                  .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
-                  .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-                  .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                  .SetMSAAState()
-                  .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
-                  .SetBlendState()
-                  .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
-                  .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
-                  .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-                  .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, Models::Material::MATERIAL_COUNT, MAX_TEXTURE_COUNT)
-                  .Build();
-
         // Create pipeline data
         CreatePipelineData(context);
         // Write descriptors for 'Shared' UBO
@@ -127,7 +74,7 @@ namespace Renderer::Pipelines
                     // Get image view
                     auto& currentImageView = currentViews[j];
                     // Write index
-                    usize writeIndex = FIF * materialCount * currentViews.size() + i * currentViews.size() + j;;
+                    usize writeIndex = FIF * materialCount * currentViews.size() + i * currentViews.size() + j;
 
                     // Image info
                     imageInfos[writeIndex] =
@@ -172,6 +119,86 @@ namespace Renderer::Pipelines
         );
     }
 
+    const Vk::DescriptorSetData& ForwardPipeline::GetSceneUBOData() const
+    {
+        // Return
+        return descriptorSetData[0];
+    }
+
+    const Vk::DescriptorSetData& ForwardPipeline::GetSamplerData() const
+    {
+        // Return
+        return descriptorSetData[1];
+    }
+
+    const Vk::DescriptorSetData& ForwardPipeline::GetMaterialData() const
+    {
+        // Return
+        return descriptorSetData[2];
+    }
+
+    Vk::Pipeline ForwardPipeline::CreatePipeline
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        const Vk::RenderPass& renderPass,
+        VkExtent2D extent
+    )
+    {
+        // Custom functions
+        auto SetDynamicStates = [&extent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
+        {
+            // Set viewport config
+            pipelineBuilder.viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(extent.width),
+                .height   = static_cast<f32>(extent.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
+
+            // Set scissor config
+            pipelineBuilder.scissor =
+            {
+                .offset = {0, 0},
+                .extent = extent
+            };
+
+            // Create viewport creation info
+            pipelineBuilder.viewportInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                .pNext         = nullptr,
+                .flags         = 0,
+                .viewportCount = 1,
+                .pViewports    = &pipelineBuilder.viewport,
+                .scissorCount  = 1,
+                .pScissors     = &pipelineBuilder.scissor
+            };
+        };
+
+        // Dynamic states
+        constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+        // Build pipeline
+        return Vk::Builders::PipelineBuilder::Create(context, renderPass)
+              .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+              .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+              .SetDynamicStates(DYN_STATES, SetDynamicStates)
+              .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
+              .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+              .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+              .SetMSAAState()
+              .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
+              .SetBlendState()
+              .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(BasicShaderPushConstant)))
+              .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
+              .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
+              .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, Models::Material::MATERIAL_COUNT, MAX_MATERIAL_COUNT)
+              .Build();
+    }
+
     void ForwardPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
         // Create shared buffers
@@ -203,6 +230,17 @@ namespace Renderer::Pipelines
             VK_BORDER_COLOR_INT_OPAQUE_BLACK,
             VK_FALSE
         );
+    }
+
+    void ForwardPipeline::DestroyPipelineData(VkDevice device) const
+    {
+        // Destroy UBOs
+        for (auto&& sharedUBO : sceneUBOs)
+        {
+            sharedUBO.DeleteBuffer(device);
+        }
+        // Destroy sampler
+        textureSampler.Destroy(device);
     }
 
     void ForwardPipeline::WriteStaticDescriptors(VkDevice device)
@@ -277,36 +315,5 @@ namespace Renderer::Pipelines
             0,
             nullptr
         );
-    }
-
-    const Vk::DescriptorSetData& ForwardPipeline::GetSceneUBOData() const
-    {
-        // Return
-        return pipeline.descriptorSetData[0];
-    }
-
-    const Vk::DescriptorSetData& ForwardPipeline::GetSamplerData() const
-    {
-        // Return
-        return pipeline.descriptorSetData[1];
-    }
-
-    const Vk::DescriptorSetData& ForwardPipeline::GetMaterialData() const
-    {
-        // Return
-        return pipeline.descriptorSetData[2];
-    }
-
-    void ForwardPipeline::Destroy(VkDevice device)
-    {
-        // Destroy UBOs
-        for (auto&& sharedUBO : sceneUBOs)
-        {
-            sharedUBO.DeleteBuffer(device);
-        }
-        // Destroy sampler
-        textureSampler.Destroy(device);
-        // Destroy pipeline
-        pipeline.Destroy(device);
     }
 }

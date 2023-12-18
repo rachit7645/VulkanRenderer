@@ -19,6 +19,13 @@
 
 namespace Vk
 {
+    Pipeline::Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData)
+        : handle(handle),
+          layout(layout),
+          descriptorSetData(descriptorData)
+    {
+    }
+
     void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const
     {
         // Bind pipeline
@@ -75,6 +82,8 @@ namespace Vk
 
     void Pipeline::Destroy(VkDevice device) const
     {
+        // Destroy specific data
+        DestroyPipelineData(device);
         // Destroy pipeline
         vkDestroyPipeline(device, handle, nullptr);
         // Destroy pipeline layout
@@ -84,5 +93,9 @@ namespace Vk
         {
             vkDestroyDescriptorSetLayout(device, descriptor.layout, nullptr);
         }
+    }
+
+    void Pipeline::DestroyPipelineData(UNUSED VkDevice device) const
+    {
     }
 }

@@ -21,7 +21,7 @@
 
 namespace Maths
 {
-    /// @brief Create transformation matrix
+    /// @brief CreatePipeline transformation matrix
     /// @tparam T Matrix type
     /// @tparam U Vector type
     /// @param translation Translation vector

@@ -72,7 +72,7 @@ namespace Renderer::RenderPasses
         );
 
         // Bind pipeline
-        pipeline.pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
         // Viewport
         VkViewport viewport =
@@ -111,7 +111,7 @@ namespace Renderer::RenderPasses
         );
 
         // Load image descriptor
-        pipeline.pipeline.BindDescriptors
+        pipeline.BindDescriptors
         (
             currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,

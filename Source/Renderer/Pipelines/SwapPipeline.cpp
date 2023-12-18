@@ -22,74 +22,8 @@
 namespace Renderer::Pipelines
 {
     SwapPipeline::SwapPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& swapPass, VkExtent2D swapExtent)
+        : Vk::Pipeline(CreatePipeline(context, swapPass, swapExtent))
     {
-        // Custom functions
-        auto SetDynamicStates = [&swapExtent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
-        {
-            // Set viewport config
-            pipelineBuilder.viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(swapExtent.width),
-                .height   = static_cast<f32>(swapExtent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
-
-            // Set scissor config
-            pipelineBuilder.scissor =
-            {
-                .offset = {0, 0},
-                .extent = swapExtent
-            };
-
-            // Create viewport creation info
-            pipelineBuilder.viewportInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                .pNext         = nullptr,
-                .flags         = 0,
-                .viewportCount = 1,
-                .pViewports    = &pipelineBuilder.viewport,
-                .scissorCount  = 1,
-                .pScissors     = &pipelineBuilder.scissor
-            };
-        };
-
-        // Dynamic states
-        constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-
-        // Vertex binding description
-        VkVertexInputBindingDescription vertexBinding =
-        {
-            .binding   = 0,
-            .stride    = 2 * sizeof(f32),
-            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-        };
-
-        // Vertex attrib description
-        VkVertexInputAttributeDescription vertexAttrib =
-        {
-            .location = 0,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32_SFLOAT,
-            .offset   = 0
-        };
-
-        // Build pipeline
-        pipeline = Vk::Builders::PipelineBuilder::Create(context, swapPass)
-                  .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-                  .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-                  .SetDynamicStates(DYN_STATES, SetDynamicStates)
-                  .SetVertexInputState(std::span(&vertexBinding, 1), std::span(&vertexAttrib, 1))
-                  .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE)
-                  .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                  .SetMSAAState()
-                  .SetBlendState()
-                  .AddDescriptor(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-                  .Build();
-
         // Create pipeline data
         CreatePipelineData(context);
     }
@@ -141,6 +75,87 @@ namespace Renderer::Pipelines
         );
     }
 
+    const Vk::DescriptorSetData& SwapPipeline::GetImageData() const
+    {
+        // Return
+        return descriptorSetData[0];
+    }
+
+    Vk::Pipeline SwapPipeline::CreatePipeline
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        const Vk::RenderPass& renderPass,
+        VkExtent2D extent
+    )
+    {
+        // Custom functions
+        auto SetDynamicStates = [&extent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
+        {
+            // Set viewport config
+            pipelineBuilder.viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(extent.width),
+                .height   = static_cast<f32>(extent.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
+
+            // Set scissor config
+            pipelineBuilder.scissor =
+            {
+                .offset = {0, 0},
+                .extent = extent
+            };
+
+            // Create viewport creation info
+            pipelineBuilder.viewportInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                .pNext         = nullptr,
+                .flags         = 0,
+                .viewportCount = 1,
+                .pViewports    = &pipelineBuilder.viewport,
+                .scissorCount  = 1,
+                .pScissors     = &pipelineBuilder.scissor
+            };
+        };
+
+        // Dynamic states
+        constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+        // Vertex binding description
+        VkVertexInputBindingDescription vertexBinding =
+        {
+            .binding   = 0,
+            .stride    = 2 * sizeof(f32),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+        };
+
+        // Vertex attrib description
+        VkVertexInputAttributeDescription vertexAttrib =
+        {
+            .location = 0,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32_SFLOAT,
+            .offset   = 0
+        };
+
+        // Build pipeline
+        return Vk::Builders::PipelineBuilder::Create(context, renderPass)
+              .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+              .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+              .SetDynamicStates(DYN_STATES, SetDynamicStates)
+              .SetVertexInputState(std::span(&vertexBinding, 1), std::span(&vertexAttrib, 1))
+              .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE)
+              .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+              .SetMSAAState()
+              .SetBlendState()
+              .AddDescriptor(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
+              .Build();
+    }
+
     void SwapPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
         // Create texture sampler
@@ -171,19 +186,11 @@ namespace Renderer::Pipelines
         screenQuad = Vk::VertexBuffer(context, QUAD_VERTICES);
     }
 
-    const Vk::DescriptorSetData& SwapPipeline::GetImageData() const
-    {
-        // Return
-        return pipeline.descriptorSetData[0];
-    }
-
-    void SwapPipeline::Destroy(VkDevice device)
+    void SwapPipeline::DestroyPipelineData(VkDevice device) const
     {
         // Destroy sampler
         textureSampler.Destroy(device);
         // Destroy screen quad
         screenQuad.DestroyBuffer(device);
-        // Destroy pipeline
-        pipeline.Destroy(device);
     }
 }

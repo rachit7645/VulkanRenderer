@@ -68,7 +68,7 @@ namespace Vk
         }
     }
 
-    void VertexBuffer::DestroyBuffer(VkDevice device)
+    void VertexBuffer::DestroyBuffer(VkDevice device) const
     {
         // Delete buffers
         vertexBuffer.DeleteBuffer(device);

@@ -26,32 +26,30 @@
 
 namespace Renderer::Pipelines
 {
-    class SwapPipeline
+    class SwapPipeline : public Vk::Pipeline
     {
     public:
-        // Deafault constructor
+        // Default constructor
         SwapPipeline() = default;
         // Create swapchain pipeline
         SwapPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& swapPass, VkExtent2D swapExtent);
 
-        // Destroy render pipeline
-        void Destroy(VkDevice device);
-
         // Write sampled image descriptors
         void WriteImageDescriptors(VkDevice device, const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews);
-
         // Get texture image data
         [[nodiscard]] const Vk::DescriptorSetData& GetImageData() const;
 
-        // Pipeline data
-        Vk::Pipeline pipeline = {};
         // Texture sampler
         Vk::Sampler textureSampler = {};
         // Screen quad
         Vk::VertexBuffer screenQuad = {};
     private:
+        // Create pipeline
+        [[nodiscard]] Vk::Pipeline CreatePipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent);
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
+        // Destroy per-pipeline data
+        void DestroyPipelineData(VkDevice device) const override;
     };
 }
 

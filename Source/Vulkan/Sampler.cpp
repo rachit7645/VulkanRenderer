@@ -72,7 +72,7 @@ namespace Vk
         Logger::Debug("Created sampler! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
-    void Sampler::Destroy(VkDevice device)
+    void Sampler::Destroy(VkDevice device) const
     {
         // Destroy
         vkDestroySampler(device, handle, nullptr);

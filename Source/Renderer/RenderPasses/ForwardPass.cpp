@@ -87,7 +87,7 @@ namespace Renderer::RenderPasses
         );
 
         // Bind pipeline
-        pipeline.pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
         // Viewport
         VkViewport viewport =
@@ -140,7 +140,9 @@ namespace Renderer::RenderPasses
                 PLANES.y
             ),
             // View Matrix
-            .view = camera.GetViewMatrix()
+            .view = camera.GetViewMatrix(),
+            // Camera position
+            .cameraPos = {camera.position, 1.0f}
         };
 
         // Flip projection
@@ -183,7 +185,7 @@ namespace Renderer::RenderPasses
         currentPushConstant.normalMatrix = glm::mat4(glm::transpose(glm::inverse(glm::mat3(currentPushConstant.transform))));
 
         // Load push constants
-        pipeline.pipeline.LoadPushConstants
+        pipeline.LoadPushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT,
@@ -199,7 +201,7 @@ namespace Renderer::RenderPasses
         };
 
         // Bind
-        pipeline.pipeline.BindDescriptors
+        pipeline.BindDescriptors
         (
             currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -220,7 +222,7 @@ namespace Renderer::RenderPasses
             };
 
             // Bind
-            pipeline.pipeline.BindDescriptors
+            pipeline.BindDescriptors
             (
                 currentCmdBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
