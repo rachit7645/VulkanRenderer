@@ -30,8 +30,16 @@ namespace Vk
     class Texture
     {
     public:
+        // Texture flags
+        enum Flags : u8
+        {
+            // Flags
+            None   = 0,
+            IsSRGB = 1U << 0
+        };
+
         // Constructor
-        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
+        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Flags flags);
         // Equality operator
         bool operator==(const Texture& rhs) const;
         // Destroy texture
@@ -41,26 +49,21 @@ namespace Vk
         Vk::Image image = {};
         // Texture image view
         Vk::ImageView imageView = {};
+    };
+}
 
-        // Hashing operator
-        struct Hash
+// Don't nuke me for this
+namespace std
+{
+    // Hashing
+    template <>
+    struct hash<Vk::Texture>
+    {
+        std::size_t operator()(const Vk::Texture& texture) const
         {
-            usize operator()(const Texture& texture) const
-            {
-                // Just return the hash of the handle
-                return Vk::Image::Hash()(texture.image) ^ Vk::ImageView::Hash()(texture.imageView);
-            }
-        };
-
-        // Equality operator
-        struct Equal
-        {
-            bool operator()(const Texture& lhs, const Texture& rhs) const
-            {
-                // Compare
-                return lhs == rhs;
-            }
-        };
+            // Combine hashes
+            return hash<Vk::Image>()(texture.image) ^ hash<Vk::ImageView>()(texture.imageView);
+        }
     };
 }
 

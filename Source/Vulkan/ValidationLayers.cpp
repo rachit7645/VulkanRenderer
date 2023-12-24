@@ -36,12 +36,9 @@ namespace Vk
             .sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
             .pNext           = nullptr,
             .flags           = 0,
-            .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT   |
-                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
-            .messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT    |
-                               VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+            .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+            .messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT     |
+                               VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT  |
                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
             .pfnUserCallback = ValidationLayers::DebugCallback,
             .pUserData       = nullptr,
@@ -91,11 +88,10 @@ namespace Vk
         return requiredLayers.empty();
     }
 
-    void ValidationLayers::DestroyMessenger(VkInstance instance)
+    void ValidationLayers::Destroy(VkInstance instance) const
     {
         // Destroy
         vkDestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
-        messenger = nullptr;
     }
 
     // TODO: Improve validation layer debug callback
@@ -110,11 +106,6 @@ namespace Vk
         // Switch
         switch (severity)
         {
-        // Ignore
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
-            break;
         // Heed Vulkan's warnings
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             Logger::Vulkan("{}\n", pCallbackData->pMessage);
@@ -122,7 +113,12 @@ namespace Vk
         // Exit at error
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             Logger::VulkanError("{}\n", pCallbackData->pMessage);
+            break;
+        // Ignore
+        default:
+            break;
         }
+
         // Return
         return VK_TRUE;
     }

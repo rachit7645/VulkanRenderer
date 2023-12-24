@@ -124,23 +124,23 @@ namespace Vk
         VkDeviceSize copySize
     )
     {
-        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             // Copy region
             VkBufferCopy copyRegion =
             {
-                .srcOffset = 0,
-                .dstOffset = 0,
-                .size      = copySize
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size      = copySize
             };
             // Copy
             vkCmdCopyBuffer
             (
-                cmdBuffer.handle,
-                srcBuffer.handle,
-                dstBuffer.handle,
-                1,
-                &copyRegion
+            cmdBuffer.handle,
+            srcBuffer.handle,
+            dstBuffer.handle,
+            1,
+            &copyRegion
             );
         });
     }

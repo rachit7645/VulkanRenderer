@@ -261,32 +261,32 @@ namespace Vk
 
     void Image::CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer)
     {
-        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             // Copy info
             VkBufferImageCopy copyRegion =
             {
-                .bufferOffset      = 0,
-                .bufferRowLength   = 0,
-                .bufferImageHeight = 0,
-                .imageSubresource  = {
-                    .aspectMask     = aspect,
-                    .mipLevel       = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                },
-                .imageOffset       = {0, 0, 0},
-                .imageExtent       = {width, height, 1}
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource  = {
+            .aspectMask     = aspect,
+            .mipLevel       = 0,
+            .baseArrayLayer = 0,
+            .layerCount     = 1
+            },
+            .imageOffset       = {0, 0, 0},
+            .imageExtent       = {width, height, 1}
             };
             // Copy
             vkCmdCopyBufferToImage
             (
-                cmdBuffer.handle,
-                buffer.handle,
-                handle,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                1,
-                &copyRegion
+            cmdBuffer.handle,
+            buffer.handle,
+            handle,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &copyRegion
             );
         });
     }

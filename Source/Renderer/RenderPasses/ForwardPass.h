@@ -64,6 +64,9 @@ namespace Renderer::RenderPasses
         void InitFramebuffers(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
         // Create render pass
         void CreateRenderPass(VkDevice device, VkPhysicalDevice physicalDevice);
+
+        // Get color format
+        VkFormat GetColorFormat(VkPhysicalDevice physicalDevice);
     };
 }
 

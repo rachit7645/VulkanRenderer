@@ -149,7 +149,7 @@ namespace Renderer::Pipelines
               .SetDynamicStates(DYN_STATES, SetDynamicStates)
               .SetVertexInputState(std::span(&vertexBinding, 1), std::span(&vertexAttrib, 1))
               .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE)
-              .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+              .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
               .SetMSAAState()
               .SetBlendState()
               .AddDescriptor(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)

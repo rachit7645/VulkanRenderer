@@ -24,9 +24,6 @@
 
 namespace Renderer::RenderPasses
 {
-    // Color format
-    constexpr VkFormat COLOR_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
-
     ForwardPass::ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
     {
         // Create render pass
@@ -271,6 +268,10 @@ namespace Renderer::RenderPasses
     {
         // Create depth buffer (TODO: it's shared between FIFs, must ask later)
         depthBuffer = Vk::DepthBuffer(context, swapchainExtent);
+        // Get color format
+        auto colorFormat = GetColorFormat(context->physicalDevice);
+        // Log
+        Logger::Debug("Using format \"{}\" for color attachment!\n", string_VkFormat(colorFormat));
 
         // Create framebuffer resources
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
@@ -281,7 +282,7 @@ namespace Renderer::RenderPasses
                 context,
                 swapchainExtent.width,
                 swapchainExtent.height,
-                COLOR_FORMAT,
+                colorFormat,
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -289,7 +290,7 @@ namespace Renderer::RenderPasses
             );
 
             // Transition
-            Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+            Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
             {
                 images[i].TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             });
@@ -323,7 +324,7 @@ namespace Renderer::RenderPasses
         // Build
         renderPass = Vk::Builders::RenderPassBuilder::Create(device)
                     .AddAttachment(
-                        COLOR_FORMAT,
+                        GetColorFormat(physicalDevice),
                         VK_SAMPLE_COUNT_1_BIT,
                         VK_ATTACHMENT_LOAD_OP_CLEAR,
                         VK_ATTACHMENT_STORE_OP_STORE,
@@ -354,6 +355,18 @@ namespace Renderer::RenderPasses
                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
                         .Build())
                     .Build();
+    }
+
+    VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice)
+    {
+        // Return
+        return Vk::FindSupportedFormat
+        (
+            physicalDevice,
+            std::array<VkFormat, 4>{VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+        );
     }
 
     void ForwardPass::Destroy(VkDevice device)

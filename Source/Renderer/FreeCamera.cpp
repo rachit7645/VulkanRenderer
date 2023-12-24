@@ -62,8 +62,8 @@ namespace Renderer
         Move(frameDelta);
         // Rotate camera
         Rotate(frameDelta);
-        // Zoom camera
-        Zoom(frameDelta);
+        // Zoom camera (FIXME: Broken AF)
+        // Zoom(frameDelta);
     }
 
     void FreeCamera::Move(f32 frameDelta)

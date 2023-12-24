@@ -168,9 +168,9 @@ namespace Models
         // Mesh textures
         return
         {
-            Vk::Texture(context, GetTexturePath(aiTextureType_BASE_COLOR,        DEFAULT_TEXTURE_ALBEDO)),
-            Vk::Texture(context, GetTexturePath(aiTextureType_NORMALS,           DEFAULT_TEXTURE_NORMAL)),
-            Vk::Texture(context, GetTexturePath(aiTextureType_DIFFUSE_ROUGHNESS, DEFAULT_TEXTURE_MATERIAL))
+            Vk::Texture(context, GetTexturePath(aiTextureType_BASE_COLOR, DEFAULT_TEXTURE_ALBEDO), Vk::Texture::Flags::IsSRGB),
+            Vk::Texture(context, GetTexturePath(aiTextureType_NORMALS, DEFAULT_TEXTURE_NORMAL), Vk::Texture::Flags::None),
+            Vk::Texture(context, GetTexturePath(aiTextureType_DIFFUSE_ROUGHNESS, DEFAULT_TEXTURE_MATERIAL), Vk::Texture::Flags::None)
         };
     }
 

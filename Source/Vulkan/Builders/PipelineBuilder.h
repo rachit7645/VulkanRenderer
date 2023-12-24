@@ -60,7 +60,7 @@ namespace Vk::Builders
         // Set IA info
         [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
         // Set rasterizer state
-        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace);
+        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode);
         // Set MSAA state
         [[nodiscard]] PipelineBuilder& SetMSAAState();
         // Set depth/stencil state

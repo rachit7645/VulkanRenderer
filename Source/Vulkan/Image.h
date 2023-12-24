@@ -83,26 +83,6 @@ namespace Vk
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        // Hashing operator
-        struct Hash
-        {
-            usize operator()(const Image& image) const
-            {
-                // Return combined hashes
-                return std::hash<VkImage>()(image.handle) && std::hash<VkDeviceMemory>()(image.memory);
-            }
-        };
-
-        // Equality operator
-        struct Equal
-        {
-            bool operator()(const Image& lhs, const Image& rhs) const
-            {
-                // Compare
-                return lhs == rhs;
-            }
-        };
     private:
         // Create image & allocate memory for image
         void CreateImage
@@ -111,6 +91,21 @@ namespace Vk
             VkImageUsageFlags usage,
             VkMemoryPropertyFlags properties
         );
+    };
+}
+
+// Don't nuke me for this
+namespace std
+{
+    // Hashing
+    template<>
+    struct hash<Vk::Image>
+    {
+        std::size_t operator()(const Vk::Image& image) const
+        {
+            // Return combined hashes
+            return std::hash<VkImage>()(image.handle) && std::hash<VkDeviceMemory>()(image.memory);
+        }
     };
 }
 

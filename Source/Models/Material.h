@@ -48,28 +48,24 @@ namespace Models
         Vk::Texture albedo;
         Vk::Texture normal;
         Vk::Texture aoRghMtl;
+    };
+}
 
-        // Hashing operator
-        struct Hash
+// Please don't nuke me for this
+namespace std
+{
+    // Hashing
+    template <>
+    // Hashing operator
+    struct hash<Models::Material>
+    {
+        usize operator()(const Models::Material& material) const
         {
-            usize operator()(const Material& material) const
-            {
-                // Combine hashes
-                return Vk::Texture::Hash()(material.albedo) ^
-                       Vk::Texture::Hash()(material.normal) ^
-                       Vk::Texture::Hash()(material.aoRghMtl);
-            }
-        };
-
-        // Equality comparison operator
-        struct Equal
-        {
-            bool operator()(const Material& lhs, const Material& rhs) const
-            {
-                // Compare handle
-                return lhs == rhs;
-            }
-        };
+            // Combine hashes
+            return std::hash<Vk::Texture>()(material.albedo) ^
+                   std::hash<Vk::Texture>()(material.normal) ^
+                   std::hash<Vk::Texture>()(material.aoRghMtl);
+        }
     };
 }
 

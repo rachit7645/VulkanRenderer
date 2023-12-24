@@ -14,6 +14,8 @@
  *    limitations under the License.
  */
 
+#include <vulkan/utility/vk_format_utils.h>
+
 #include "Texture.h"
 #include "Util.h"
 #include "Util/Log.h"
@@ -21,15 +23,38 @@
 
 namespace Vk
 {
-    Texture::Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path)
+    Texture::Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Texture::Flags flags)
     {
         // Log
         Logger::Info("Loading texture {}\n", path.data());
 
+        // Format candidates
+        auto candidates = flags & Flags::IsSRGB ?
+                                         std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
+                                         std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
+
+        // Get supported formats
+        auto format = Vk::FindSupportedFormat
+        (
+            context->physicalDevice,
+            candidates,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+        );
+
+        // Get components
+        auto components = STBI_rgb;
+        // Check for formats with alpha
+        if (vkuFormatHasAlpha(format))
+        {
+            // We have four components (TONS of wasted space but ehh)
+            components = STBI_rgb_alpha;
+        }
+
         // Load image
-        auto imageData = STB::STBImage(path, STBI_rgb_alpha);
+        auto imageData = STB::STBImage(path, components);
         // Image size
-        VkDeviceSize imageSize = imageData.width * imageData.height * STBI_rgb_alpha;
+        VkDeviceSize imageSize = imageData.width * imageData.height * components;
 
         // Create staging buffer
         auto stagingBuffer = Vk::Buffer
@@ -53,7 +78,7 @@ namespace Vk
             context,
             imageData.width,
             imageData.height,
-            VK_FORMAT_R8G8B8A8_SRGB,
+            format,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_ASPECT_COLOR_BIT,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -61,14 +86,14 @@ namespace Vk
         );
 
         // Transition layout for transfer
-        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         });
         // Copy data
         image.CopyFromBuffer(context, stagingBuffer);
         // Transition layout for shader sampling
-        Vk::SingleTimeCmdBuffer(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         });
@@ -83,7 +108,7 @@ namespace Vk
             image,
             VK_IMAGE_VIEW_TYPE_2D,
             image.format,
-            VK_IMAGE_ASPECT_COLOR_BIT
+            static_cast<VkImageAspectFlagBits>(image.aspect)
         );
     }
 

@@ -43,18 +43,6 @@ namespace Vk
         Vk::Image depthImage = {};
         // Depth image view
         Vk::ImageView depthImageView = {};
-    private:
-        // Check if format has stencil component
-        bool HasStencilComponent(VkFormat format);
-
-        // Find supported format from list
-        VkFormat FindSupportedFormat
-        (
-            VkPhysicalDevice physicalDevice,
-            const std::vector<VkFormat>& candidates,
-            VkImageTiling tiling,
-            VkFormatFeatureFlags features
-        );
     };
 }
 

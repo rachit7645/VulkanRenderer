@@ -195,7 +195,7 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace)
+    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
     {
         // Set rasterization info
         rasterizationInfo =
@@ -205,7 +205,7 @@ namespace Vk::Builders
             .flags                   = 0,
             .depthClampEnable        = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
-            .polygonMode             = VK_POLYGON_MODE_FILL,
+            .polygonMode             = polygonMode,
             .cullMode                = cullMode,
             .frontFace               = frontFace,
             .depthBiasEnable         = VK_FALSE,

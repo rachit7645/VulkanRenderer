@@ -283,6 +283,7 @@ namespace Vk
         bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
         bool hasAnisotropy = featureSet.samplerAnisotropy;
         bool hasWireframe  = featureSet.fillModeNonSolid;
+        bool multiViewport = featureSet.multiViewport;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -296,7 +297,7 @@ namespace Vk
         }
 
         // Calculate score
-        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * hasWireframe * discreteGPU;
+        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * hasWireframe * multiViewport * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -332,6 +333,7 @@ namespace Vk
         VkPhysicalDeviceFeatures deviceFeatures = {};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
         deviceFeatures.fillModeNonSolid  = VK_TRUE;
+        deviceFeatures.multiViewport     = VK_TRUE;
 
         // Logical device creation info
         VkDeviceCreateInfo createInfo =
@@ -463,7 +465,7 @@ namespace Vk
 
         #ifdef ENGINE_DEBUG
         // Destroy validation layers
-        m_layers.DestroyMessenger(vkInstance);
+        m_layers.Destroy(vkInstance);
         #endif
 
         // Destroy extensions

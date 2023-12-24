@@ -51,26 +51,21 @@ namespace Vk
 
         // Vulkan handle
         VkImageView handle = VK_NULL_HANDLE;
+    };
+}
 
-        // Hashing operator
-        struct Hash
+// Don't nuke me for this
+namespace std
+{
+    // Hashing
+    template <>
+    struct hash<Vk::ImageView>
+    {
+        std::size_t operator()(const Vk::ImageView& imageView) const
         {
-            usize operator()(const ImageView& imageView) const
-            {
-                // Just return the hash of the handle
-                return std::hash<VkImageView>()(imageView.handle);
-            }
-        };
-
-        // Equality operator
-        struct Equal
-        {
-            bool operator()(const ImageView& lhs, const ImageView& rhs) const
-            {
-                // Compare handle
-                return lhs.handle == rhs.handle;
-            }
-        };
+            // Just return the hash of the handle
+            return std::hash<VkImageView>()(imageView.handle);
+        }
     };
 }
 

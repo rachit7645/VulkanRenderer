@@ -30,20 +30,10 @@ namespace Renderer::Pipelines
     {
     public:
         // Usings
-        using MaterialMap = std::array
-        <
-            std::unordered_map
-            <
-                Models::Material,
-                VkDescriptorSet,
-                Models::Material::Hash,
-                Models::Material::Equal
-            >,
-            Vk::FRAMES_IN_FLIGHT
-        >;
+        using MaterialMap = std::array<std::unordered_map<Models::Material, VkDescriptorSet>, Vk::FRAMES_IN_FLIGHT>;
 
         // Push constant info
-        struct VULKAN_GLSL_DATA BasicShaderPushConstant
+        struct VULKAN_GLSL_DATA VSPushConstant
         {
             // Transformation matrix
             glm::mat4 transform = {};
@@ -78,7 +68,7 @@ namespace Renderer::Pipelines
         const Vk::DescriptorSetData& GetMaterialData() const;
 
         // Push constant data
-        std::array<BasicShaderPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
+        std::array<VSPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
         // Shared data UBOs
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneUBOs = {};
         // Texture sampler

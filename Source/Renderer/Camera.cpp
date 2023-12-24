@@ -43,6 +43,8 @@ namespace Renderer
                 ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.1f");
                 // Camera rotation
                 ImGui::DragFloat3("Rotation", &rotation[0], 1.0f, 0.0f, 0.0f, "%.1f");
+                // Camera FOV
+                ImGui::DragFloat("FOV", &FOV, 1.0f, 0.0f, 0.0f, "%.1f");
 
                 // Camera front vector
                 ImGui::DragFloat3("Front", &front[0], 1.0f, 0.0f, 0.0f, "%.1f");
@@ -50,8 +52,6 @@ namespace Renderer
                 ImGui::DragFloat3("Up", &up[0], 1.0f, 0.0f, 0.0f, "%.1f");
                 // Camera right vector
                 ImGui::DragFloat3("Right", &right[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                // Camera FOV
-                ImGui::DragFloat("FOV", &FOV, 1.0f, 0.0f, 0.0f, "%.1f");
 
                 // End menu
                 ImGui::EndMenu();
