@@ -43,6 +43,8 @@ namespace Renderer::RenderPasses
         swapchain.RecreateSwapChain(window, context);
         // Destroy data
         DestroyData(context->device);
+        // Create render pass
+        CreateRenderPass(context->device);
         // Init swapchain data
         InitData(context);
         // Log

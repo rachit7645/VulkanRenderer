@@ -48,17 +48,16 @@ namespace Engine::Files
     {
         // Get last slash
         usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);
-        // Check
+
+        // If a slash exists
         if (lastSlash != std::string_view::npos)
         {
             // Return name
             return fileName.substr(lastSlash + 1);
         }
-        else
-        {
-            // Return already fine name
-            return fileName;
-        }
+
+        // No action required
+        return fileName.data();
     }
 }
 

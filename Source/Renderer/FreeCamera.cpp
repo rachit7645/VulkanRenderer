@@ -95,6 +95,13 @@ namespace Renderer
         {
             position += right * velocity;
         }
+
+        // Get left stick
+        auto lStick = inputs.GetLStick();
+        // Move forward and backward
+        position -= lStick.y * front * velocity;
+        // Move left and right
+        position += lStick.x * right * velocity;
     }
 
     void FreeCamera::Rotate(f32 frameDelta)
@@ -102,17 +109,25 @@ namespace Renderer
         // Get inputs
         auto& inputs = Engine::Inputs::GetInstance();
 
+        // Rotation speed
+        auto speed = CAMERA_SENSITIVITY * frameDelta;
+
         // If mouse was moved
-        if (inputs.wasMouseMoved)
+        if (inputs.WasMouseMoved())
         {
             // Yaw
-            rotation.y += glm::radians(static_cast<f32>(inputs.GetMousePosition().x) * CAMERA_SENSITIVITY * frameDelta);
+            rotation.y += glm::radians(static_cast<f32>(inputs.GetMousePosition().x) * speed);
             // Pitch
-            rotation.x += glm::radians(static_cast<f32>(inputs.GetMousePosition().y) * CAMERA_SENSITIVITY * frameDelta);
-
-            // Clamp pitch
-            rotation.x = glm::clamp(rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
+            rotation.x += glm::radians(static_cast<f32>(inputs.GetMousePosition().y) * speed);
         }
+
+        // Get right stick
+        auto rStick = inputs.GetRStick();
+        rotation.x += rStick.y * speed * 0.04f;
+        rotation.y += rStick.x * speed * 0.04f;
+
+        // Clamp pitch
+        rotation.x = glm::clamp(rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
     }
 
     void FreeCamera::Zoom(f32 frameDelta)
@@ -121,7 +136,7 @@ namespace Renderer
         auto& inputs = Engine::Inputs::GetInstance();
 
         // If mouse was scrolled
-        if (inputs.wasMouseScrolled)
+        if (inputs.WasMouseScrolled())
         {
             // Set zoom
             FOV *= static_cast<f32>(inputs.GetMouseScroll().y) * CAMERA_ZOOM * frameDelta;

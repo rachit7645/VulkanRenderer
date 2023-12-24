@@ -42,8 +42,8 @@ namespace Renderer
 
         // Lookat vectors
         glm::vec3 front = {0.0f, 0.0f, -1.0f};
-        glm::vec3 up    = {0.0f, 0.0f,  0.0f};
-        glm::vec3 right = {0.0f, 0.0f,  0.0f};
+        glm::vec3 up    = {0.0f, 1.0f,  0.0f};
+        glm::vec3 right = glm::normalize(glm::cross(front, up));
     protected:
         // ImGui
         void ImGuiDisplay();

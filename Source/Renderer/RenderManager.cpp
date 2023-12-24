@@ -20,6 +20,7 @@
 
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
+#include "Engine/Inputs.h"
 
 namespace Renderer
 {
@@ -84,6 +85,8 @@ namespace Renderer
         m_frameCounter.Update();
         // Update camera
         m_camera.Update(m_frameCounter.frameDelta);
+        // Input display
+        Engine::Inputs::GetInstance().ImGuiDisplay();
     }
 
     void RenderManager::BeginFrame()

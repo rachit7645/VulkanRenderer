@@ -23,7 +23,8 @@
 
 namespace Engine
 {
-    // Window flags
+    // Flags
+    constexpr u32 SDL_INIT_FLAGS   = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER;
     constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
 
     Window::Window()
@@ -42,7 +43,7 @@ namespace Engine
         );
 
         // Initialise SDL2
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
+        if (SDL_Init(SDL_INIT_FLAGS) != 0)
         {
             // Log error
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
@@ -76,7 +77,7 @@ namespace Engine
         // Log handle address
         Logger::Info("Succesfully created window handle! [handle={}]\n", reinterpret_cast<void*>(handle));
 
-        // For sanity, raise handle
+        // For sanity, raise window
         SDL_RaiseWindow(handle);
         // This doesn't even work (maybe it does?) :(
         SDL_SetWindowMinimumSize(handle, 1, 1);
@@ -87,6 +88,9 @@ namespace Engine
 
     bool Window::PollEvents()
     {
+        // Get input handler
+        auto& inputs = Inputs::GetInstance();
+
         // While events exist
         while (SDL_PollEvent(&m_event))
         {
@@ -120,12 +124,34 @@ namespace Engine
 
             // Mouse motion event
             case SDL_MOUSEMOTION:
-                Inputs::GetInstance().SetMousePosition(glm::ivec2(m_event.motion.xrel, m_event.motion.yrel));
+                inputs.SetMousePosition(glm::ivec2(m_event.motion.xrel, m_event.motion.yrel));
                 break;
 
             // Mouse scroll event
             case SDL_MOUSEWHEEL:
-                Inputs::GetInstance().SetMouseScroll(glm::ivec2(m_event.wheel.x, m_event.wheel.y));
+                inputs.SetMouseScroll(glm::ivec2(m_event.wheel.x, m_event.wheel.y));
+                break;
+
+            // Controller added
+            case SDL_CONTROLLERDEVICEADDED:
+                // Check for existing controller
+                if (inputs.GetController() == nullptr)
+                {
+                    // Add controller
+                    inputs.FindController();
+                }
+                break;
+
+            // Controller removed
+            case SDL_CONTROLLERDEVICEREMOVED:
+                // Check if controller is valid
+                if (inputs.GetController() == nullptr && m_event.cdevice.which == inputs.GetControllerID())
+                {
+                    // Close controller
+                    SDL_GameControllerClose(inputs.GetController());
+                    // Find controller
+                    inputs.FindController();
+                }
                 break;
 
             // Default event handler
@@ -152,6 +178,8 @@ namespace Engine
 
     Window::~Window()
     {
+        // Close controller (TODO: Move to inputs)
+        SDL_GameControllerClose(Inputs::GetInstance().GetController());
         // CLose SDL
         SDL_Vulkan_UnloadLibrary();
         SDL_DestroyWindow(handle);

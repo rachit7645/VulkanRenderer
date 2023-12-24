@@ -171,11 +171,11 @@ namespace Renderer::RenderPasses
         }
 
         // Create model matrix
-        currentPushConstant.transform = Maths::CreateModelMatrix<glm::mat4>
+        currentPushConstant.transform = Maths::CreateTransformationMatrix
         (
-            s_position,
-            s_rotation,
-            s_scale
+        s_position,
+        s_rotation,
+        s_scale
         );
 
         // Create normal matrix

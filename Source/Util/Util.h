@@ -18,9 +18,6 @@
 #define UTIL_H
 
 #include <cstdint>
-#include <cstddef>
-#include <cassert>
-#include <cmath>
 
 // Unused macro
 #define UNUSED [[maybe_unused]]

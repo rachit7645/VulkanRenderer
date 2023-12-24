@@ -25,7 +25,7 @@ namespace Util
     class DeletionQueue
     {
     public:
-        // Add function to queue
+        // Add deletor to queue
         void PushDeletor(std::function<void()>&& function);
         // Flush deletion queue
         void FlushQueue();

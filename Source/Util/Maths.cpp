@@ -14,19 +14,23 @@
  *    limitations under the License.
  */
 
-#ifndef MATHS_H
-#define MATHS_H
-
-#include "Externals/GLM.h"
+#include "Maths.h"
 
 namespace Maths
 {
-    /// @brief CreatePipeline transformation matrix
-    /// @param translation Translation vector
-    /// @param rotation Euler rotation vector (In radians)
-    /// @param scale Scaling vector
-    /// @returns Transformation matrix
-    glm::mat4 CreateTransformationMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
+    glm::mat4 CreateTransformationMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
+    {
+        // Matrix
+        auto matrix = glm::identity<glm::mat4>();
+        // Translate
+        matrix = glm::translate(matrix, translation);
+        // Rotate in all axis
+        matrix = glm::rotate(matrix, rotation.x, glm::vec3(1, 0, 0));
+        matrix = glm::rotate(matrix, rotation.y, glm::vec3(0, 1, 0));
+        matrix = glm::rotate(matrix, rotation.z, glm::vec3(0, 0, 1));
+        // Scale matrix
+        matrix = glm::scale(matrix, scale);
+        // Return
+        return matrix;
+    }
 }
-
-#endif

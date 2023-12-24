@@ -34,6 +34,8 @@ namespace Engine
         void SetMousePosition(const glm::ivec2& position);
         // Set mouse scroll
         void SetMouseScroll(const glm::ivec2& scroll);
+        // Find controller
+        void FindController();
 
         // Check if key is pressed
         [[nodiscard]] bool IsKeyPressed(SDL_Scancode key) const;
@@ -41,21 +43,47 @@ namespace Engine
         [[nodiscard]] const glm::ivec2& GetMousePosition();
         // Get mouse scroll
         [[nodiscard]] const glm::ivec2& GetMouseScroll();
+        // Get left stick direction vector
+        [[nodiscard]] glm::vec2 GetLStick() const;
+        // Get right stick direction vector
+        [[nodiscard]] glm::vec2 GetRStick() const;
 
-        // Mouse position
-        glm::ivec2 mousePosition = {};
-        // Mouse scroll
-        glm::ivec2 mouseScroll = {};
+        // Get controller
+        [[nodiscard]] SDL_GameController* GetController() const;
+        // Get joystick id
+        [[nodiscard]] SDL_JoystickID GetControllerID() const;
 
-        // Flags
-        bool wasMouseMoved    = false;
-        bool wasMouseScrolled = false;
+        // Get flags
+        [[nodiscard]] bool WasMouseMoved() const;
+        [[nodiscard]] bool WasMouseScrolled() const;
+
+        // Display ImGui info
+        void ImGuiDisplay();
     private:
         // Main constructor
         Inputs();
 
+        // Get axis direction (Dead zone must be between 0.0f and 1.0f)
+        glm::vec2 GetNormalisedAxisDirection
+        (
+            SDL_GameControllerAxis axisHorizontal,
+            SDL_GameControllerAxis axisVertical,
+            const glm::vec2& deadZone
+        ) const;
+
         // Key array
         const u8* m_keys = nullptr;
+        // Controller
+        SDL_GameController* m_controller = nullptr;
+
+        // Mouse position
+        glm::ivec2 m_mousePosition = {};
+        // Mouse scroll
+        glm::ivec2 m_mouseScroll = {};
+
+        // Flags
+        bool m_wasMouseMoved = false;
+        bool m_wasMouseScrolled = false;
     };
 }
 

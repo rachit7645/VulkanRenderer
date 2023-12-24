@@ -53,6 +53,6 @@ namespace Util
         f32 m_currentFPS = 0.0f;
     };
 
-} // Util
+}
 
 #endif

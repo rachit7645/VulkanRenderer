@@ -17,11 +17,9 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <string>
 #include <string_view>
 #include <source_location>
 #include <cstdlib>
-#include <istream>
 
 #include <fmt/format.h>
 #include <fmt/color.h>
@@ -63,7 +61,7 @@ namespace Logger
                 Util::GetTime(),
                 Engine::Files::GetName(location.file_name()),
                 location.line(),
-                args...
+                std::forward<Args>(args)...
             );
         }
 
@@ -93,10 +91,8 @@ namespace Logger
                 type,
                 location,
                 format,
-                args...
+                std::forward<Args>(args)...
             );
-            // Enable if you need to wait to see output
-            // std::cin.get();
             // Exit
             std::exit(ErrorCode);
         }
@@ -125,7 +121,7 @@ namespace Logger
                 "INFO",
                 location,
                 format,
-                args...
+                std::forward<Args>(args)...
             );
         }
     };
@@ -153,7 +149,7 @@ namespace Logger
                 "WARNING",
                 location,
                 format,
-                args...
+                std::forward<Args>(args)...
             );
         }
     };
@@ -183,7 +179,7 @@ namespace Logger
                 "DEBUG",
                 location,
                 format,
-                args...
+                std::forward<Args>(args)...
             );
             #endif
         }
@@ -214,7 +210,7 @@ namespace Logger
                 "VULKAN",
                 location,
                 format,
-                args...
+                std::forward<Args>(args)...
             );
             #endif
         }
@@ -244,7 +240,7 @@ namespace Logger
                 "ERROR",
                 location,
                 format,
-                args...
+                std::forward<Args>(args)...
             );
         }
     };
@@ -272,7 +268,7 @@ namespace Logger
                 "VULKAN ERROR",
                 location,
                 format,
-                args...
+                std::forward<Args>(args)...
             );
         }
     };

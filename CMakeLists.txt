@@ -34,6 +34,7 @@ add_executable(VulkanRenderer
 	Source/Util/Time.cpp
 	Source/Util/DeletionQueue.cpp
 	Source/Util/FrameCounter.cpp
+	Source/Util/Maths.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
