@@ -15,32 +15,23 @@
  */
 
 #include <vulkan/vk_enum_string_helper.h>
+
 #include "Util.h"
 #include "Util/Log.h"
 
 namespace Vk
 {
-    void SingleTimeCmdBuffer(const std::shared_ptr<Vk::Context>& context, const std::function<void(VkCommandBuffer)>& CmdFunction)
+    void ImmediateSubmit(const std::shared_ptr<Vk::Context>& context, const std::function<void(const Vk::CommandBuffer&)>& CmdFunction)
     {
-        // Allocate
-        auto cmdBuffer = context->AllocateCommandBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY)[0];
+        // Create command buffer
+        auto cmdBuffer = Vk::CommandBuffer(context, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        // Begin info
-        VkCommandBufferBeginInfo beginInfo =
-        {
-            .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .pNext            = nullptr,
-            .flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-            .pInheritanceInfo = nullptr
-        };
-        // Begin
-        vkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         // Execute user provided function
         std::invoke(CmdFunction, cmdBuffer);
-
         // End
-        vkEndCommandBuffer(cmdBuffer);
+        cmdBuffer.EndRecording();
+
         // Submit info
         VkSubmitInfo submitInfo =
         {
@@ -50,7 +41,7 @@ namespace Vk
             .pWaitSemaphores      = nullptr,
             .pWaitDstStageMask    = nullptr,
             .commandBufferCount   = 1,
-            .pCommandBuffers      = &cmdBuffer,
+            .pCommandBuffers      = &cmdBuffer.handle,
             .signalSemaphoreCount = 0,
             .pSignalSemaphores    = nullptr
         };
@@ -60,7 +51,7 @@ namespace Vk
         vkQueueWaitIdle(context->graphicsQueue);
 
         // Cleanup
-        context->FreeCommandBuffers(std::span(&cmdBuffer, 1));
+        cmdBuffer.Free(context);
     }
 
     u32 FindMemoryType
@@ -86,7 +77,45 @@ namespace Vk
         }
 
         // If we didn't find memory, terminate
-        Logger::Error("Failed to find suitable memory type!");
+        Logger::VulkanError("Failed to find suitable memory type! [properties={}]", string_VkMemoryPropertyFlags(properties));
+    }
+
+    VkFormat FindSupportedFormat
+    (
+        VkPhysicalDevice physicalDevice,
+        const std::span<const VkFormat> candidates,
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features
+    )
+    {
+        // Loop over formats
+        for (auto format : candidates)
+        {
+            // Get format properties
+            VkFormatProperties properties = {};
+            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+
+            // Linear tiling
+            bool isValidLinear = tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features;
+            // Optimal tiling
+            bool isValidOptimal = tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features;
+
+            // Return if valid
+            if (isValidLinear || isValidOptimal)
+            {
+                // Found valid format
+                return format;
+            }
+        }
+
+        // Throw error if no format was suitable
+        Logger::Error
+        (
+            "No valid formats found! [physicalDevice={}] [tiling={}] [features={}]\n",
+            std::bit_cast<void*>(physicalDevice),
+            string_VkImageTiling(tiling),
+            string_VkFormatFeatureFlags(features)
+        );
     }
 
     void CheckResult(VkResult result)

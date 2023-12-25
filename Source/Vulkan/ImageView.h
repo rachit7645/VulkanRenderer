@@ -43,31 +43,29 @@ namespace Vk
             u32 layerCount = 1
         );
 
+        // Equality operator
+        bool operator==(const ImageView& rhs) const;
+
         // Destroy view
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         // Vulkan handle
         VkImageView handle = VK_NULL_HANDLE;
+    };
+}
 
-        struct Hash
+// Don't nuke me for this
+namespace std
+{
+    // Hashing
+    template <>
+    struct hash<Vk::ImageView>
+    {
+        std::size_t operator()(const Vk::ImageView& imageView) const
         {
-            // Hashing operator
-            usize operator()(const ImageView& imageView) const
-            {
-                // Just return the hash of the handle
-                return std::hash<VkImageView>()(imageView.handle);
-            }
-        };
-
-        struct Equal
-        {
-            // Equality comparison operator
-            bool operator()(const ImageView& lhs, const ImageView& rhs) const
-            {
-                // Compare handle
-                return lhs.handle == rhs.handle;
-            }
-        };
+            // Just return the hash of the handle
+            return std::hash<VkImageView>()(imageView.handle);
+        }
     };
 }
 

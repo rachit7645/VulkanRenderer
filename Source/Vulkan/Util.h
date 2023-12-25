@@ -19,15 +19,18 @@
 
 #include <functional>
 #include <string_view>
+#include <span>
 #include <vulkan/vulkan.h>
 
 #include "Util/Util.h"
 #include "Context.h"
+#include "CommandBuffer.h"
 
 namespace Vk
 {
     // Single use command buffer
-    void SingleTimeCmdBuffer(const std::shared_ptr<Vk::Context>& context, const std::function<void(VkCommandBuffer)>& CmdFunction);
+    void ImmediateSubmit(const std::shared_ptr<Vk::Context>& context, const std::function<void(const Vk::CommandBuffer&)>& CmdFunction);
+
     // Find memory type
     u32 FindMemoryType
     (
@@ -35,7 +38,17 @@ namespace Vk
         VkMemoryPropertyFlags properties,
         const VkPhysicalDeviceMemoryProperties& memProperties
     );
-    // Check result
+
+    // Find supported format from list
+    VkFormat FindSupportedFormat
+    (
+        VkPhysicalDevice physicalDevice,
+        const std::span<const VkFormat> candidates,
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features
+    );
+
+    // Check result (for ImGui)
     void CheckResult(VkResult result);
 }
 

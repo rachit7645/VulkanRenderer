@@ -25,6 +25,9 @@
 
 namespace Vk
 {
+    // Forward declare render pass (Can't wait for modules to actually work)
+    class RenderPass;
+
     class Framebuffer
     {
     public:
@@ -35,14 +38,14 @@ namespace Vk
         Framebuffer
         (
             VkDevice device,
-            VkRenderPass renderPass,
+            const Vk::RenderPass& renderPass,
             const std::span<const Vk::ImageView> attachments,
             const glm::uvec2& size,
             u32 layers
         );
 
         // Destroy framebuffer
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         // Framebuffer handle
         VkFramebuffer handle = VK_NULL_HANDLE;

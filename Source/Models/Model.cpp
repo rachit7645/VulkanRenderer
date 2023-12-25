@@ -16,14 +16,13 @@ namespace Models
                                  aiProcess_OptimizeGraph            | // Optimise scene graph
                                  aiProcess_GenSmoothNormals         | // Generate normals
                                  aiProcess_GenUVCoords              | // Generate texture coordinates
+                                 aiProcess_CalcTangentSpace         | // Generate tangents, if missing
                                  aiProcess_JoinIdenticalVertices    | // Join identical vertex groups
                                  aiProcess_ImproveCacheLocality     | // Improves cache efficiency
                                  aiProcess_RemoveRedundantMaterials ; // Removes unnecessary materials
 
     // Model prefix path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
-    // Default textures
-    constexpr auto DEFAULT_TEXTURE_ALBEDO = "Grass.png";
 
     Model::Model(const std::shared_ptr<Vk::Context>& context, const std::string_view path)
     {
@@ -35,8 +34,17 @@ namespace Models
 
         // Load scene
         const aiScene* scene = importer.ReadFile(Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, path), ASSIMP_FLAGS);
+
         // Check if scene is OK
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+        if (scene != nullptr)
+        {
+            if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || scene->mRootNode == nullptr)
+            {
+                // Log error
+                Logger::Error("Model Load Failed: {}", importer.GetErrorString());
+            }
+        }
+        else
         {
             // Log error
             Logger::Error("Model Load Failed: {}", importer.GetErrorString());
@@ -94,7 +102,8 @@ namespace Models
             (
                 glm::ai_cast(mesh->mVertices[i]),
                 glm::ai_cast(mesh->mTextureCoords[0][i]),
-                glm::ai_cast(mesh->mNormals[i])
+                glm::ai_cast(mesh->mNormals[i]),
+                glm::ai_cast(mesh->mTangents[i])
             );
         }
 
@@ -110,10 +119,10 @@ namespace Models
         }
 
         // Return mesh
-        return Mesh(context, vertices, indices, ProcessTextures(mesh, scene, directory, context));
+        return {context, vertices, indices, ProcessTextures(mesh, scene, directory, context)};
     }
 
-    Vk::Texture Model::ProcessTextures
+    Material Model::ProcessTextures
     (
         aiMesh* mesh,
         const aiScene* scene,
@@ -121,40 +130,65 @@ namespace Models
         const std::shared_ptr<Vk::Context>& context
     )
     {
+        // Default textures
+        constexpr auto DEFAULT_TEXTURE_ALBEDO   = "def.png";
+        constexpr auto DEFAULT_TEXTURE_NORMAL   = "defNrm.png";
+        constexpr auto DEFAULT_TEXTURE_MATERIAL = "def.png";
+
         // Current materials
         aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
 
         // Utility lambda
-        auto GetTexturePath = [&mat, &mesh, &scene, &directory] (aiTextureType type)
+        auto GetTexturePath = [&] (aiTextureType type, const std::string_view defaultPath)
         {
             // Path variable
             aiString path;
             // Get texture
             mat->GetTexture(type, 0, &path);
+
             // If texture is available
             if (path.length > 0)
             {
                 // Found path
                 return Engine::Files::GetAssetPath(MODEL_ASSETS_DIR + directory, path.C_Str());
             }
+
             // If texture not found
-            else
-            {
-                // Log
-                Logger::Warning
-                (
-                    "Unable to find texture path, using default textures! [Type={}] [mesh={}] [scene={}]\n",
-                    aiTextureTypeToString(type),
-                    reinterpret_cast<const void*>(mesh),
-                    reinterpret_cast<const void*>(scene)
-                );
-                // Return
-                return Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_TEXTURE_ALBEDO);
-            }
+            Logger::Warning
+            (
+                "Unable to find texture path, using default textures! [Type={}] [mesh={}] [scene={}]\n",
+                aiTextureTypeToString(type),
+                reinterpret_cast<const void*>(mesh),
+                reinterpret_cast<const void*>(scene)
+            );
+            // Return
+            return Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultPath);
         };
 
-        // Albedo
-        return Vk::Texture(context, GetTexturePath(aiTextureType_BASE_COLOR));
+        // Mesh textures
+        return
+        {
+            Vk::Texture(context, GetTexturePath(aiTextureType_BASE_COLOR,        DEFAULT_TEXTURE_ALBEDO),   Vk::Texture::Flags::IsSRGB | Vk::Texture::Flags::GenMipmaps),
+            Vk::Texture(context, GetTexturePath(aiTextureType_NORMALS,           DEFAULT_TEXTURE_NORMAL),   Vk::Texture::Flags::GenMipmaps),
+            Vk::Texture(context, GetTexturePath(aiTextureType_DIFFUSE_ROUGHNESS, DEFAULT_TEXTURE_MATERIAL), Vk::Texture::Flags::GenMipmaps)
+        };
+    }
+
+    std::vector<Models::Material> Model::GetMaterials() const
+    {
+        // Materials
+        std::vector<Models::Material> materials = {};
+        materials.reserve(meshes.size());
+
+        // For each mesh
+        for (const auto& mesh : meshes)
+        {
+            // Add material
+            materials.emplace_back(mesh.material);
+        }
+
+        // Return
+        return materials;
     }
 
     void Model::Destroy(VkDevice device)
@@ -162,23 +196,7 @@ namespace Models
         // Destroy all meshes
         for (auto&& mesh : meshes)
         {
-            mesh.DestroyMesh(device);
+            mesh.Destroy(device);
         }
-    }
-
-    std::vector<Vk::ImageView> Model::GetTextureViews() const
-    {
-        // Pre-allocate vector
-        std::vector<Vk::ImageView> imageViews = {};
-        imageViews.reserve(meshes.size());
-
-        // Add each view to vector
-        for (const auto& mesh : meshes)
-        {
-            imageViews.emplace_back(mesh.texture.imageView);
-        }
-
-        // Return
-        return imageViews;
     }
 }

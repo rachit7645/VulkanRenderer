@@ -40,6 +40,8 @@ namespace Util
         f32 FPS = 0.0f;
         // Frame time
         f32 avgFrameTime = 0.0f;
+        // Frame delta
+        f32 frameDelta = 0.0f;
     private:
         // Cycle start time
         TimePoint m_startTime = {};
@@ -51,6 +53,6 @@ namespace Util
         f32 m_currentFPS = 0.0f;
     };
 
-} // Util
+}
 
 #endif

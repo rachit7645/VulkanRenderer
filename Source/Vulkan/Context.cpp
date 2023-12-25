@@ -26,17 +26,22 @@
 
 namespace Vk
 {
-    #ifdef ENGINE_DEBUG
     // Layers
+    #ifdef ENGINE_DEBUG
     constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
     #endif
+
     // Required device extensions
+    #ifdef ENGINE_DEBUG
+    constexpr std::array<const char*, 2> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain", "VK_KHR_shader_non_semantic_info"};
+    #else
     constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {"VK_KHR_swapchain"};
+    #endif
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
     {
         // Create vulkan instance
-        CreateVKInstance(window->handle);
+        CreateInstance(window->handle);
 
         #ifdef ENGINE_DEBUG
         // Load validation layers
@@ -59,44 +64,8 @@ namespace Vk
         // Create descriptor pool
         CreateDescriptorPool();
 
-        // Creates command buffer
-        CreateCommandBuffers();
-        // Create sync objects
-        CreateSyncObjects();
-
         // Log
         Logger::Info("{}\n", "Initialised vulkan context!");
-    }
-
-    std::vector<VkCommandBuffer> Context::AllocateCommandBuffers(u32 count, VkCommandBufferLevel level)
-    {
-        // Command buffer allocation data
-        VkCommandBufferAllocateInfo allocInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .commandPool        = m_commandPool,
-            .level              = level,
-            .commandBufferCount = count
-        };
-        // Create space
-        auto cmdBuffers = std::vector<VkCommandBuffer>(count);
-        // Allocate
-        vkAllocateCommandBuffers(device, &allocInfo, cmdBuffers.data());
-        // Return
-        return cmdBuffers;
-    }
-
-    void Context::FreeCommandBuffers(const std::span<const VkCommandBuffer> cmdBuffers)
-    {
-        // Free
-        vkFreeCommandBuffers
-        (
-            device,
-            m_commandPool,
-            static_cast<u32>(cmdBuffers.size()),
-            cmdBuffers.data()
-        );
     }
 
     std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts)
@@ -121,18 +90,24 @@ namespace Vk
             &allocInfo,
             descriptorSets.data()
         );
+
         // Check result
         if (result != VK_SUCCESS)
         {
             // Log
-            Logger::Error("[{}] Failed to allocate descriptor sets! [pool={}]\n", string_VkResult(result), reinterpret_cast<void*>(descriptorPool));
+            Logger::VulkanError
+            (
+                "[{}] Failed to allocate descriptor sets! [pool={}]\n",
+                string_VkResult(result),
+                reinterpret_cast<void*>(descriptorPool)
+            );
         }
 
         // Return
         return descriptorSets;
     }
 
-    void Context::CreateVKInstance(SDL_Window* window)
+    void Context::CreateInstance(SDL_Window* window)
     {
         // Application info
         VkApplicationInfo appInfo =
@@ -214,7 +189,7 @@ namespace Vk
         }
 
         // Log
-        Logger::Info("Initialised vulkan surface! [handle={}]\n", reinterpret_cast<void*>(surface));
+        Logger::Info("Initialised window surface! [handle={}]\n", reinterpret_cast<void*>(surface));
     }
 
     void Context::PickPhysicalDevice()
@@ -284,7 +259,9 @@ namespace Vk
         physicalDevice = bestDevice;
 
         // Get memory properties
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &phyMemProperties);
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemProperties);
+        // Get limits
+        physicalDeviceLimits = properties[physicalDevice].limits;
 
         // Log
         Logger::Info("Selecting GPU: {}\n", properties[physicalDevice].deviceName);
@@ -307,6 +284,8 @@ namespace Vk
         bool isQueueValid  = queue.IsComplete();
         bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
         bool hasAnisotropy = featureSet.samplerAnisotropy;
+        bool hasWireframe  = featureSet.fillModeNonSolid;
+        bool multiViewport = featureSet.multiViewport;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -320,7 +299,7 @@ namespace Vk
         }
 
         // Calculate score
-        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * discreteGPU;
+        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * hasWireframe * multiViewport * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -355,6 +334,8 @@ namespace Vk
         // Vulkan device features
         VkPhysicalDeviceFeatures deviceFeatures = {};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
+        deviceFeatures.fillModeNonSolid  = VK_TRUE;
+        deviceFeatures.multiViewport     = VK_TRUE;
 
         // Logical device creation info
         VkDeviceCreateInfo createInfo =
@@ -398,7 +379,7 @@ namespace Vk
         vkGetDeviceQueue
         (
             device,
-            queueFamilies.graphicsFamily.value(),
+            queueFamilies.graphicsFamily.value_or(0),
             0,
             &graphicsQueue
         );
@@ -412,7 +393,7 @@ namespace Vk
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = queueFamilies.graphicsFamily.value()
+            .queueFamilyIndex = queueFamilies.graphicsFamily.value_or(0)
         };
 
         // Create command pool
@@ -420,7 +401,7 @@ namespace Vk
                 device,
                 &createInfo,
                 nullptr,
-                &m_commandPool
+                &commandPool
             ) != VK_SUCCESS)
         {
             // Log
@@ -428,13 +409,13 @@ namespace Vk
         }
 
         // Log
-        Logger::Info("Created command pool! [handle={}]\n", reinterpret_cast<void*>(m_commandPool));
+        Logger::Info("Created command pool! [handle={}]\n", reinterpret_cast<void*>(commandPool));
 
         // Add to deletion queue
         m_deletionQueue.PushDeletor([this] ()
         {
             // Destroy command pool
-            vkDestroyCommandPool(device, m_commandPool, nullptr);
+            vkDestroyCommandPool(device, commandPool, nullptr);
         });
     }
 
@@ -474,75 +455,6 @@ namespace Vk
         });
     }
 
-    void Context::CreateCommandBuffers()
-    {
-        // Allocate command buffers
-        auto _commandBuffers = AllocateCommandBuffers(commandBuffers.size(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        // Convert
-        std::move
-        (
-            _commandBuffers.begin(),
-            _commandBuffers.begin() + static_cast<ssize>(commandBuffers.size()),
-            commandBuffers.begin()
-        );
-        // Log
-        Logger::Info("{}\n", "Created command buffers!");
-    }
-
-    void Context::CreateSyncObjects()
-    {
-        // Semaphore info
-        VkSemaphoreCreateInfo semaphoreInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0
-        };
-
-        // Fence info
-        VkFenceCreateInfo fenceInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = VK_FENCE_CREATE_SIGNALED_BIT
-        };
-
-        // For each frame in flight
-        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
-        {
-            if
-            (
-                vkCreateSemaphore(device, &semaphoreInfo, nullptr,
-                    &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(device, &semaphoreInfo, nullptr,
-                    &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(device, &fenceInfo, nullptr,
-                    &inFlightFences[i]) != VK_SUCCESS
-            )
-            {
-                // Log
-                Logger::Error("{}\n", "Failed to create sync objects!");
-            }
-        }
-
-        // Log
-        Logger::Info("{}\n", "Created synchronisation objects!");
-
-        // Add to deletion queue
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            // Destroy sync objects
-            for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
-            {
-                // Destroy semaphores
-                vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-                vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-                // Destroy fences
-                vkDestroyFence(device, inFlightFences[i], nullptr);
-            }
-        });
-    }
-
     void Context::Destroy()
     {
         // Flush deletion queue
@@ -555,7 +467,7 @@ namespace Vk
 
         #ifdef ENGINE_DEBUG
         // Destroy validation layers
-        m_layers.DestroyMessenger(vkInstance);
+        m_layers.Destroy(vkInstance);
         #endif
 
         // Destroy extensions

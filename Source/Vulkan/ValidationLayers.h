@@ -34,12 +34,12 @@ namespace Vk
         // Setup messenger
         [[nodiscard]] VkResult SetupMessenger(VkInstance instance);
         // Destroy messenger
-        void DestroyMessenger(VkInstance instance);
+        void Destroy(VkInstance instance) const;
 
-        // Messenger
-        VkDebugUtilsMessengerCreateInfoEXT messengerInfo = {};
         // Debugging messenger
-        VkDebugUtilsMessengerEXT messenger = {};
+        VkDebugUtilsMessengerEXT messenger = VK_NULL_HANDLE;
+        // Messenger info
+        VkDebugUtilsMessengerCreateInfoEXT messengerInfo = {};
     private:
         // Check if all layers are present
         [[nodiscard]] bool CheckLayers(const std::span<const char* const> layers);

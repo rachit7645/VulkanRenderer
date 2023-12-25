@@ -22,6 +22,10 @@
 
 int main(UNUSED int argc, UNUSED char** argv)
 {
+    #ifdef ENGINE_DEBUG
+    // Set stderr to line buffering mode
+    setvbuf(stderr, nullptr, _IOLBF, 0);
+    #endif
     // Create and run app
     Engine::AppInstance().Run();
     // Exit successfully

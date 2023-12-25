@@ -15,15 +15,23 @@
  */
 
 #include "Pipeline.h"
+#include "CommandBuffer.h"
 
 namespace Vk
 {
-    void Pipeline::Bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint)
+    Pipeline::Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData)
+        : handle(handle),
+          layout(layout),
+          descriptorSetData(descriptorData)
+    {
+    }
+
+    void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const
     {
         // Bind pipeline
         vkCmdBindPipeline
         (
-            cmdBuffer,
+            cmdBuffer.handle,
             bindPoint,
             handle
         );
@@ -31,16 +39,16 @@ namespace Vk
 
     void Pipeline::BindDescriptors
     (
-        VkCommandBuffer cmdBuffer,
+        const Vk::CommandBuffer& cmdBuffer,
         VkPipelineBindPoint bindPoint,
         u32 firstSet,
         const std::span<const VkDescriptorSet> descriptors
-    )
+    ) const
     {
         // Bind
         vkCmdBindDescriptorSets
         (
-            cmdBuffer,
+            cmdBuffer.handle,
             bindPoint,
             layout,
             firstSet,
@@ -53,22 +61,41 @@ namespace Vk
 
     void Pipeline::LoadPushConstants
     (
-        VkCommandBuffer cmdBuffer,
+        const Vk::CommandBuffer& cmdBuffer,
         VkPipelineStageFlags stage,
         u32 offset,
         u32 size,
         void* pValues
-    )
+    ) const
     {
         // Load
         vkCmdPushConstants
         (
-            cmdBuffer,
+            cmdBuffer.handle,
             layout,
             stage,
             offset,
             size,
             pValues
         );
+    }
+
+    void Pipeline::Destroy(VkDevice device) const
+    {
+        // Destroy specific data
+        DestroyPipelineData(device);
+        // Destroy pipeline
+        vkDestroyPipeline(device, handle, nullptr);
+        // Destroy pipeline layout
+        vkDestroyPipelineLayout(device, layout, nullptr);
+        // Destroy descriptor set layouts
+        for (auto&& descriptor : descriptorSetData)
+        {
+            vkDestroyDescriptorSetLayout(device, descriptor.layout, nullptr);
+        }
+    }
+
+    void Pipeline::DestroyPipelineData(UNUSED VkDevice device) const
+    {
     }
 }

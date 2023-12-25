@@ -22,8 +22,8 @@ namespace Models
         // Destroy model
         void Destroy(VkDevice device);
 
-        // Get all texture image views
-        std::vector<Vk::ImageView> GetTextureViews() const;
+        // Get all materials
+        [[nodiscard]] std::vector<Models::Material> GetMaterials() const;
 
         // Data
         std::vector<Models::Mesh> meshes;
@@ -45,7 +45,7 @@ namespace Models
             const std::shared_ptr<Vk::Context>& context
         );
         // Process each texture in the mesh
-        Vk::Texture ProcessTextures
+        Material ProcessTextures
         (
             aiMesh* mesh,
             const aiScene* scene,

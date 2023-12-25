@@ -21,8 +21,9 @@
 #include <vulkan/vulkan.h>
 
 #include "SubpassState.h"
+#include "Vulkan/RenderPass.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     class RenderPassBuilder
     {
@@ -30,7 +31,7 @@ namespace Vk
         // Create builder
         [[nodiscard]] static RenderPassBuilder Create(VkDevice device);
         // Build renderpass
-        [[nodiscard]] VkRenderPass Build();
+        [[nodiscard]] Vk::RenderPass Build();
 
         // Add attachment
         [[nodiscard]] RenderPassBuilder& AddAttachment
@@ -45,7 +46,7 @@ namespace Vk
             VkImageLayout finalLayout
         );
         // Add subpass
-        [[nodiscard]] RenderPassBuilder& AddSubpass(const Vk::SubpassState& subpass);
+        [[nodiscard]] RenderPassBuilder& AddSubpass(const Builders::SubpassState& subpass);
 
         // Attachment descriptions
         std::vector<VkAttachmentDescription> descriptions = {};

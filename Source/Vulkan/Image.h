@@ -20,6 +20,7 @@
 #include "Buffer.h"
 #include "Context.h"
 #include "Util/Util.h"
+#include "CommandBuffer.h"
 
 namespace Vk
 {
@@ -29,12 +30,13 @@ namespace Vk
         // Default constructor to make c++ happy
         Image() = default;
 
-        // Constructor
+        // Image with mipmaps
         Image
         (
             const std::shared_ptr<Vk::Context>& context,
             u32 width,
             u32 height,
+            u32 mipLevels,
             VkFormat format,
             VkImageTiling tiling,
             VkImageAspectFlags aspect,
@@ -42,21 +44,25 @@ namespace Vk
             VkMemoryPropertyFlags properties
         );
 
-        // Copy image
+        // Copy image from handle
         Image
         (
             VkImage image,
             u32 width,
             u32 height,
+            u32 mipLevels,
             VkFormat format,
             VkImageTiling tiling,
             VkImageAspectFlags aspect
         );
 
+        // Comparison operator
+        bool operator==(const Image& rhs) const;
+
         // Transitions image layout
         void TransitionLayout
         (
-            const std::shared_ptr<Vk::Context>& context,
+            const Vk::CommandBuffer& cmdBuffer,
             VkImageLayout oldLayout,
             VkImageLayout newLayout
         );
@@ -65,15 +71,16 @@ namespace Vk
         void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
 
         // Delete image
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         // Vulkan handles
         VkImage        handle = VK_NULL_HANDLE;
         VkDeviceMemory memory = VK_NULL_HANDLE;
 
         // Image dimensions
-        u32 width  = 0;
-        u32 height = 0;
+        u32 width     = 0;
+        u32 height    = 0;
+        u32 mipLevels = 0;
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
@@ -87,6 +94,21 @@ namespace Vk
             VkImageUsageFlags usage,
             VkMemoryPropertyFlags properties
         );
+    };
+}
+
+// Don't nuke me for this
+namespace std
+{
+    // Hashing
+    template<>
+    struct hash<Vk::Image>
+    {
+        std::size_t operator()(const Vk::Image& image) const
+        {
+            // Return combined hashes
+            return std::hash<VkImage>()(image.handle) && std::hash<VkDeviceMemory>()(image.memory);
+        }
     };
 }
 

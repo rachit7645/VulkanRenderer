@@ -18,17 +18,18 @@
 #define RENDER_CONSTANTS_H
 
 #include "Externals/GLM.h"
+#include "Util/Util.h"
 
 namespace Renderer
 {
     // Clear color
     constexpr glm::vec4 CLEAR_COLOR = {0.53f, 0.81f, 0.92f, 1.0f};
-    // Aspect ratio
-    constexpr f32 PREFERRED_ASPECT_RATIO = 16.0f / 9.0f;
     // Field of view
-    constexpr f32 FOV = glm::radians(70.0f);
+    constexpr f32 DEFAULT_FOV = glm::radians(80.0f);
     // Planes
-    constexpr glm::vec2 PLANES = {0.1f, 1000.0f};
+    constexpr glm::vec2 PLANES = {0.1f, 2000.0f};
+    // World Up direction
+    constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
 }
 
 #endif

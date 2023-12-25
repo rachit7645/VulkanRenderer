@@ -58,7 +58,7 @@ namespace Vk
         );
 
         // Internal deletion function
-        void DeleteBuffer(VkDevice device);
+        void DeleteBuffer(VkDevice device) const;
 
         // Buffer handle
         VkBuffer handle = VK_NULL_HANDLE;

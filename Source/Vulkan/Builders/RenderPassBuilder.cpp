@@ -16,9 +16,8 @@
 
 #include "RenderPassBuilder.h"
 #include "Util/Log.h"
-#include "Util/Util.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     RenderPassBuilder RenderPassBuilder::Create(VkDevice device)
     {
@@ -31,30 +30,27 @@ namespace Vk
     {
     }
 
-    VkRenderPass RenderPassBuilder::Build()
+    Vk::RenderPass RenderPassBuilder::Build()
     {
         // Subpass descriptions
         std::vector<VkSubpassDescription> subpasses = {};
         subpasses.reserve(subpassStates.size());
         // Subpass dependencies
         std::vector<VkSubpassDependency> dependencies = {};
-        subpasses.reserve(subpassStates.size());
 
-        // Copy subpass descriptions
-        std::transform(subpassStates.begin(), subpassStates.end(), std::back_inserter(subpasses),
-        [](const auto& subpassState)
+        // Loop over subpass states
+        for (const auto& subpassState : subpassStates)
         {
-            // Return
-            return subpassState.description;
-        });
-
-        // Copy subpass dependencies
-        std::transform(subpassStates.begin(), subpassStates.end(), std::back_inserter(dependencies),
-        [](const auto& subpassState)
-        {
-            // Return
-            return subpassState.dependency;
-        });
+            // Copy description
+            subpasses.emplace_back(subpassState.description);
+            // Copy dependencies
+            dependencies.insert
+            (
+                dependencies.end(),
+                subpassState.dependencies.begin(),
+                subpassState.dependencies.end()
+            );
+        }
 
         // Render pass creation info
         VkRenderPassCreateInfo createInfo =
@@ -87,10 +83,10 @@ namespace Vk
         Logger::Info("Created render pass! [handle={}]\n", reinterpret_cast<void*>(renderPass));
 
         // Return
-        return renderPass;
+        return RenderPass(renderPass);
     }
 
-    RenderPassBuilder& RenderPassBuilder::AddSubpass(const Vk::SubpassState& subpass)
+    RenderPassBuilder& RenderPassBuilder::AddSubpass(const Builders::SubpassState& subpass)
     {
         // Add
         subpassStates.emplace_back(subpass);

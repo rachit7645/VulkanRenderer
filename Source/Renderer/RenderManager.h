@@ -20,14 +20,16 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
-#include "SwapPipeline.h"
-#include "Models/Model.h"
+#include "FreeCamera.h"
+#include "RenderPasses/SwapPass.h"
+#include "RenderPasses/ForwardPass.h"
 #include "Vulkan/Context.h"
-#include "Engine/Window.h"
-#include "Util/Util.h"
 #include "Vulkan/VertexBuffer.h"
 #include "Vulkan/Swapchain.h"
+#include "Util/Util.h"
 #include "Util/FrameCounter.h"
+#include "Engine/Window.h"
+#include "Models/Model.h"
 
 namespace Renderer
 {
@@ -35,7 +37,7 @@ namespace Renderer
     {
     public:
         // Constructor
-        explicit RenderManager(std::shared_ptr<Engine::Window> window);
+        explicit RenderManager(const std::shared_ptr<Engine::Window>& window);
         // Destructor
         ~RenderManager();
 
@@ -44,42 +46,36 @@ namespace Renderer
     private:
         // Begin frame
         void BeginFrame();
-        // Wait for previous frame
-        void WaitForFrame();
-        // Acquire swap chain image
-        void AcquireSwapChainImage();
         // Update
         void Update();
         // End frame
         void EndFrame();
         // Submit queue
         void SubmitQueue();
-        // Present
-        void Present();
-        // Check if swap chain is valid
-        bool IsSwapchainValid();
+
+        // Initialise ImGui
+        void InitImGui();
+        // Create sync objects
+        void CreateSyncObjects();
 
         // Pointer to window
         std::shared_ptr<Engine::Window> m_window = nullptr;
         // Vulkan context
-        std::shared_ptr<Vk::Context> m_vkContext = nullptr;
-        // Swap chain
-        std::shared_ptr<Vk::Swapchain> m_swapchain = nullptr;
-        // Render pipeline
-        std::unique_ptr<Renderer::SwapPipeline> m_renderPipeline = nullptr;
+        std::shared_ptr<Vk::Context> m_context = nullptr;
+        // Swap pass
+        RenderPasses::SwapPass m_swapPass;
+        // Forward pipeline
+        RenderPasses::ForwardPass m_forwardPass;
         // Model
-        std::unique_ptr<Models::Model> m_model;
+        Models::Model m_model;
+        // Camera
+        Renderer::FreeCamera m_camera = {};
 
-        // Image index
-        u32 m_imageIndex = 0;
+        // Fences
+        std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
+
         // Frame index
         usize m_currentFrame = 0;
-
-        // Current command buffer
-        VkCommandBuffer currentCmdBuffer = VK_NULL_HANDLE;
-        // Status
-        std::array<VkResult, 2> m_swapchainStatus = {VK_SUCCESS, VK_SUCCESS};
-
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
     };

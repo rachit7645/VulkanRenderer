@@ -21,32 +21,12 @@
 
 namespace Maths
 {
-    /// @brief Create transformation matrix
-    /// @tparam T Matrix type
-    /// @tparam U Vector type
+    /// @brief CreatePipeline transformation matrix
     /// @param translation Translation vector
     /// @param rotation Euler rotation vector (In radians)
     /// @param scale Scaling vector
     /// @returns Transformation matrix
-    template<typename T, typename U>
-    constexpr T CreateModelMatrix(U translation, U rotation, U scale)
-    {
-        // Matrix
-        T matrix = glm::identity<T>();
-        // Translate
-        matrix = glm::translate(matrix, translation);
-        // Rotate in all axis
-        matrix = glm::rotate(matrix, rotation.x, glm::vec3(1, 0, 0));
-        matrix = glm::rotate(matrix, rotation.y, glm::vec3(0, 1, 0));
-        matrix = glm::rotate(matrix, rotation.z, glm::vec3(0, 0, 1));
-        // Scale
-        matrix = glm::scale(matrix, scale);
-        // Return
-        return matrix;
-    }
-
-    // Common uses
-    template glm::mat4 CreateModelMatrix<glm::mat4, glm::vec3>(glm::vec3, glm::vec3, glm::vec3);
+    glm::mat4 CreateTransformationMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
 }
 
 #endif

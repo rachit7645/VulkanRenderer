@@ -67,6 +67,15 @@ namespace Models
             .offset   = offsetof(Vertex, normal)
         };
 
+        // Fourth attrib (tangent)
+        attribs[3] =
+        {
+            .location = 3,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset   = offsetof(Vertex, tangent)
+        };
+
         return attribs;
     }
 }

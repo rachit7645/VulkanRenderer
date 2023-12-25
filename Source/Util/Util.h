@@ -18,9 +18,6 @@
 #define UTIL_H
 
 #include <cstdint>
-#include <cstddef>
-#include <cassert>
-#include <cmath>
 
 // Unused macro
 #define UNUSED [[maybe_unused]]
@@ -47,5 +44,27 @@ using f64 = double;
 // Size types
 using ssize = ssize_t;
 using usize = std::size_t;
+
+// Enum combiner
+template<typename T>
+constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
+{
+    // Combine
+    return static_cast<T>(
+        static_cast<std::underlying_type_t<T>>(lhs) |
+        static_cast<std::underlying_type_t<T>>(rhs)
+    );
+}
+
+// Enum checker
+template<typename T>
+constexpr T operator&(T lhs, T rhs) requires (std::is_enum_v<T>)
+{
+    // Combine
+    return static_cast<T>(
+        static_cast<std::underlying_type_t<T>>(lhs) &
+        static_cast<std::underlying_type_t<T>>(rhs)
+    );
+}
 
 #endif

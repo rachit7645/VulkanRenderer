@@ -3,10 +3,15 @@
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="CidrRootsConfiguration">
     <sourceRoots>
+      <file path="$PROJECT_DIR$/Assets/Shaders" />
       <file path="$PROJECT_DIR$/Source" />
     </sourceRoots>
     <libraryRoots>
       <file path="$PROJECT_DIR$/Externals" />
+      <file path="$PROJECT_DIR$/Externals/ImGui" />
     </libraryRoots>
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/Assets/GFX" />
+    </excludeRoots>
   </component>
 </project>

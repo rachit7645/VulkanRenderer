@@ -44,7 +44,7 @@ namespace Vk
             VkBool32 unnormalizedCoordinates
         );
         // Destroy sampler
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
         // Vulkan handle
         VkSampler handle = nullptr;
     };

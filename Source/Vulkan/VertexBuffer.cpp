@@ -32,47 +32,43 @@ namespace Vk
         : vertexCount(static_cast<u32>(vertices.size())),
           indexCount(static_cast<u32>(indices.size()))
     {
-        // Initialise vertex buffer
-        InitBuffer
-        (
-            context,
-            vertexBuffer,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            vertices
-        );
-
-        // Initialise index buffer
-        InitBuffer
-        (
-            context,
-            indexBuffer,
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            indices
-        );
+        // Initialise buffers
+        InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
+        InitBuffer(context, indexBuffer,  VK_BUFFER_USAGE_INDEX_BUFFER_BIT,   indices);
     }
 
-    void VertexBuffer::BindBuffer(VkCommandBuffer commandBuffer) const
+    VertexBuffer::VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices)
+        : vertexCount(vertices.size())
+    {
+        // Init vertex buffer
+        InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
+    }
+
+    void VertexBuffer::BindBuffer(const Vk::CommandBuffer& cmdBuffer) const
     {
         // Buffers to bind
-        VkBuffer vertexBuffers[] = {vertexBuffer.handle};
+        std::array<VkBuffer, 1> vertexBuffers = {vertexBuffer.handle};
         // Offsets
-        VkDeviceSize offsets[] = {0};
+        std::array<VkDeviceSize, 1> offsets = {0};
 
         // Bind vertex buffers
         vkCmdBindVertexBuffers
         (
-            commandBuffer,
+            cmdBuffer.handle,
             0,
-            1,
-            vertexBuffers,
-            offsets
+            static_cast<u32>(vertexBuffers.size()),
+            vertexBuffers.data(),
+            offsets.data()
         );
 
         // Bind index buffer
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.handle, 0, indexType);
+        if (indexCount > 0)
+        {
+            vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, indexType);
+        }
     }
 
-    void VertexBuffer::DestroyBuffer(VkDevice device)
+    void VertexBuffer::DestroyBuffer(VkDevice device) const
     {
         // Delete buffers
         vertexBuffer.DeleteBuffer(device);

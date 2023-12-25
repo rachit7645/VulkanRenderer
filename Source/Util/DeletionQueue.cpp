@@ -23,19 +23,17 @@ namespace Util
     void DeletionQueue::PushDeletor(std::function<void()>&& function)
     {
         // Add
-        m_deletors.push_back(function);
+        m_deletors.emplace_back(std::move(function));
     }
 
     void DeletionQueue::FlushQueue()
     {
-        // Iterate in reverse order
-        for (auto& deletor : std::ranges::reverse_view(m_deletors))
+        // Last in first out
+        for (auto& Deletor : std::ranges::reverse_view(m_deletors))
         {
-            // Execute
-            std::invoke(deletor);
+            Deletor();
         }
 
-        // Clear
         m_deletors.clear();
     }
 }

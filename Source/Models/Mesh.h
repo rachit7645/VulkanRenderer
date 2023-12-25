@@ -17,8 +17,8 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include "Material.h"
 #include "Vulkan/VertexBuffer.h"
-#include "Vulkan/Texture.h"
 #include "Vulkan/Context.h"
 
 namespace Models
@@ -31,14 +31,14 @@ namespace Models
             const std::shared_ptr<Vk::Context>& context,
             const std::vector<Models::Vertex>& vertices,
             const std::vector<Models::Index>& indices,
-            const Vk::Texture& texture
+            const Models::Material& textures
         );
         // Destroy mesh object
-        void DestroyMesh(VkDevice device);
+        void Destroy(VkDevice device);
         // Vertex buffer
         Vk::VertexBuffer vertexBuffer;
         // Texture
-        Vk::Texture texture;
+        Models::Material material;
     };
 }
 

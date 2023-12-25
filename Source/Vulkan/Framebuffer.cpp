@@ -14,6 +14,7 @@
  *    limitations under the License.
  */
 
+#include "RenderPass.h"
 #include "Framebuffer.h"
 #include "Util/Log.h"
 
@@ -24,7 +25,7 @@ namespace Vk
     Framebuffer::Framebuffer
     (
         VkDevice device,
-        VkRenderPass renderPass,
+        const Vk::RenderPass& renderPass,
         const std::span<const Vk::ImageView> attachments,
         const glm::uvec2& size,
         u32 layers
@@ -50,7 +51,7 @@ namespace Vk
             .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .pNext           = nullptr,
             .flags           = 0,
-            .renderPass      = renderPass,
+            .renderPass      = renderPass.handle,
             .attachmentCount = static_cast<u32>(vkAttachments.size()),
             .pAttachments    = vkAttachments.data(),
             .width           = size.x,
@@ -71,12 +72,12 @@ namespace Vk
             (
                 "Failed to create framebuffer! [device={}] [renderPass={}]\n",
                 reinterpret_cast<void*>(device),
-                reinterpret_cast<void*>(renderPass)
+                reinterpret_cast<void*>(renderPass.handle)
             );
         }
     }
 
-    void Framebuffer::Destroy(VkDevice device)
+    void Framebuffer::Destroy(VkDevice device) const
     {
         // Log
         Logger::Debug("Destroying framebuffer! [handle={}]\n", reinterpret_cast<void*>(handle));

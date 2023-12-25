@@ -71,7 +71,7 @@ namespace Vk
             .memoryTypeIndex = Vk::FindMemoryType(
                 memRequirements.memoryTypeBits,
                 properties,
-                context->phyMemProperties
+                context->physicalDeviceMemProperties
             )
         };
 
@@ -96,7 +96,7 @@ namespace Vk
         vkBindBufferMemory(context->device, handle, memory, 0);
 
         // Log
-        Logger::Info("Created buffer! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Created buffer! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
     void Buffer::Map(VkDevice device, VkDeviceSize offset, VkDeviceSize rangeSize)
@@ -124,28 +124,28 @@ namespace Vk
         VkDeviceSize copySize
     )
     {
-        Vk::SingleTimeCmdBuffer(context, [&] (VkCommandBuffer cmdBuffer)
+        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             // Copy region
             VkBufferCopy copyRegion =
             {
-                .srcOffset = 0,
-                .dstOffset = 0,
-                .size      = copySize
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size      = copySize
             };
             // Copy
             vkCmdCopyBuffer
             (
-                cmdBuffer,
-                srcBuffer.handle,
-                dstBuffer.handle,
-                1,
-                &copyRegion
+            cmdBuffer.handle,
+            srcBuffer.handle,
+            dstBuffer.handle,
+            1,
+            &copyRegion
             );
         });
     }
 
-    void Buffer::DeleteBuffer(VkDevice device)
+    void Buffer::DeleteBuffer(VkDevice device) const
     {
         // Log
         Logger::Debug

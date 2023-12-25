@@ -16,6 +16,9 @@
 
 #include "DepthBuffer.h"
 
+#include <vulkan/utility/vk_format_utils.h>
+
+#include "Util.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -25,7 +28,7 @@ namespace Vk
         // Get depth format
         auto depthFormat = GetDepthFormat(context->physicalDevice);
         // Check if it has stencil
-        bool hasStencil = HasStencilComponent(depthFormat);
+        bool hasStencil = vkuFormatHasStencil(depthFormat);
 
         // Create image
         depthImage = Vk::Image
@@ -33,6 +36,7 @@ namespace Vk
             context,
             swapchainExtent.width,
             swapchainExtent.height,
+            1,
             depthFormat,
             VK_IMAGE_TILING_OPTIMAL,
             hasStencil ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -50,72 +54,31 @@ namespace Vk
             static_cast<VkImageAspectFlagBits>(depthImage.aspect)
         );
 
-        // Transition (optional)
-        depthImage.TransitionLayout
-        (
-            context,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-        );
-    }
-
-    VkFormat DepthBuffer::FindSupportedFormat
-    (
-        VkPhysicalDevice physicalDevice,
-        const std::vector<VkFormat>& candidates,
-        VkImageTiling tiling,
-        VkFormatFeatureFlags features
-    )
-    {
-        // Loop over formats
-        for (auto format : candidates)
+        // Transition to depth layout (optional)
+        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
-            // Get format properties
-            VkFormatProperties properties = {};
-            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
-
-            // Linear tiling
-            bool isValidLinear = tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features;
-            // Optimal tiling
-            bool isValidOptimal = tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features;
-
-            // Return if valid
-            if (isValidLinear || isValidOptimal)
-            {
-                // Found valid format
-                return format;
-            }
-        }
-
-        // Throw error if no format was suitable
-        Logger::Error
-        (
-            "Failed to find valid depth format! [physicalDevice={}] [tiling={}] [features={}]\n",
-            reinterpret_cast<void*>(physicalDevice),
-            static_cast<s32>(tiling),
-            features
-        );
+            depthImage.TransitionLayout
+                      (
+                      cmdBuffer,
+                      VK_IMAGE_LAYOUT_UNDEFINED,
+                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                      );
+        });
     }
 
     VkFormat DepthBuffer::GetDepthFormat(VkPhysicalDevice physicalDevice)
     {
         // Return
-        return FindSupportedFormat
+        return Vk::FindSupportedFormat
         (
             physicalDevice,
-            {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT},
+            std::array<VkFormat, 3>{VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
         );
     }
 
-    bool DepthBuffer::HasStencilComponent(VkFormat format)
-    {
-        // Return
-        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-    }
-
-    void DepthBuffer::Destroy(VkDevice device)
+    void DepthBuffer::Destroy(VkDevice device) const
     {
         // Destroy image view
         depthImageView.Destroy(device);

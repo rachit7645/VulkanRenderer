@@ -20,7 +20,7 @@
 #include <vulkan/vulkan.h>
 #include "Util/Util.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     struct DescriptorState
     {

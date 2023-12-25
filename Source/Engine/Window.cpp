@@ -19,11 +19,12 @@
 
 #include "Util/Log.h"
 #include "Util/Files.h"
-#include "Renderer/RenderConstants.h"
+#include "Inputs.h"
 
 namespace Engine
 {
-    // Window flags
+    // Flags
+    constexpr u32 SDL_INIT_FLAGS   = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER;
     constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
 
     Window::Window()
@@ -42,7 +43,7 @@ namespace Engine
         );
 
         // Initialise SDL2
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
+        if (SDL_Init(SDL_INIT_FLAGS) != 0)
         {
             // Log error
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
@@ -76,24 +77,83 @@ namespace Engine
         // Log handle address
         Logger::Info("Succesfully created window handle! [handle={}]\n", reinterpret_cast<void*>(handle));
 
-        // For sanity, raise handle
+        // For sanity, raise window
         SDL_RaiseWindow(handle);
+        // This doesn't even work (maybe it does?) :(
         SDL_SetWindowMinimumSize(handle, 1, 1);
+        // Set mouse mode
+        SDL_ShowCursor(SDL_FALSE);
+        SDL_SetRelativeMouseMode(SDL_TRUE);
     }
 
     bool Window::PollEvents()
     {
+        // Get input handler
+        auto& inputs = Inputs::GetInstance();
+
         // While events exist
         while (SDL_PollEvent(&m_event))
         {
             // Intercept event for ImGUI
             ImGui_ImplSDL2_ProcessEvent(&m_event);
+
             // Check event type
             switch (m_event.type)
             {
             // Event to quit
             case SDL_QUIT:
                 return true;
+
+            // Key event
+            case SDL_KEYDOWN:
+                switch (m_event.key.keysym.scancode)
+                {
+                // F1 key
+                case SDL_SCANCODE_F1:
+                    // Toggle mouse mode
+                    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!m_isInputCaptured));
+                    // Toggle flag
+                    m_isInputCaptured = !m_isInputCaptured;
+                    break;
+
+                // All other keys go here
+                default:
+                    break;
+                }
+                break;
+
+            // Mouse motion event
+            case SDL_MOUSEMOTION:
+                inputs.SetMousePosition(glm::ivec2(m_event.motion.xrel, m_event.motion.yrel));
+                break;
+
+            // Mouse scroll event
+            case SDL_MOUSEWHEEL:
+                inputs.SetMouseScroll(glm::ivec2(m_event.wheel.x, m_event.wheel.y));
+                break;
+
+            // Controller added
+            case SDL_CONTROLLERDEVICEADDED:
+                // Check for existing controller
+                if (inputs.GetController() == nullptr)
+                {
+                    // Add controller
+                    inputs.FindController();
+                }
+                break;
+
+            // Controller removed
+            case SDL_CONTROLLERDEVICEREMOVED:
+                // Check if controller is valid
+                if (inputs.GetController() == nullptr && m_event.cdevice.which == inputs.GetControllerID())
+                {
+                    // Close controller
+                    SDL_GameControllerClose(inputs.GetController());
+                    // Find controller
+                    inputs.FindController();
+                }
+                break;
+
             // Default event handler
             default:
                 continue;
@@ -109,7 +169,7 @@ namespace Engine
         // Loop
         while (true)
         {
-            // Poll events (LEAKS MEMORY WHEN EXITING)
+            // Poll events (FIXME: LEAKS MEMORY WHEN EXITING)
             if (PollEvents()) std::exit(-1);
             // Check if not minimised
             if (!(SDL_GetWindowFlags(handle) & SDL_WINDOW_MINIMIZED)) break;
@@ -118,6 +178,8 @@ namespace Engine
 
     Window::~Window()
     {
+        // Close controller (TODO: Move to inputs)
+        SDL_GameControllerClose(Inputs::GetInstance().GetController());
         // CLose SDL
         SDL_Vulkan_UnloadLibrary();
         SDL_DestroyWindow(handle);

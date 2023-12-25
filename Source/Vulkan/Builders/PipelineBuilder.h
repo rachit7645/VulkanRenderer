@@ -28,14 +28,15 @@
 #include "Vulkan/Context.h"
 #include "Vulkan/DescriptorSetData.h"
 #include "Vulkan/Pipeline.h"
+#include "Vulkan/RenderPass.h"
 
-namespace Vk
+namespace Vk::Builders
 {
     class PipelineBuilder
     {
     public:
         // Initialise pipeline builder
-        [[nodiscard]] static PipelineBuilder Create(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass);
+        [[nodiscard]] static PipelineBuilder Create(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass);
         // Destroy pipeline data
         ~PipelineBuilder();
 
@@ -59,7 +60,7 @@ namespace Vk
         // Set IA info
         [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
         // Set rasterizer state
-        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace);
+        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode);
         // Set MSAA state
         [[nodiscard]] PipelineBuilder& SetMSAAState();
         // Set depth/stencil state
@@ -124,10 +125,10 @@ namespace Vk
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
         // Descriptor set states
-        std::vector<Vk::DescriptorState> descriptorStates = {};
+        std::vector<Builders::DescriptorState> descriptorStates = {};
     private:
         // Private constructor
-        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, VkRenderPass renderPass);
+        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass  renderPass);
 
         // Creates descriptor set layouts
         std::vector<VkDescriptorSetLayout> CreateDescriptorSetLayouts();
@@ -137,7 +138,7 @@ namespace Vk
         // Vulkan context
         std::shared_ptr<Vk::Context> m_context = nullptr;
         // Render pass
-        VkRenderPass m_renderPass = VK_NULL_HANDLE;
+        Vk::RenderPass m_renderPass;
     };
 }
 

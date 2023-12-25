@@ -18,30 +18,32 @@
 #define RANGES_H
 
 #include <vector>
+#include <array>
 #include <ranges>
-#include <algorithm>
 
 #include "Util.h"
 
 namespace Util
 {
-    template <typename T, usize GroupSize>
+    template <typename T, usize GroupSize> requires (GroupSize > 0)
     auto SplitVector(const std::vector<T>& originalVector) -> std::array<std::vector<T>, GroupSize>
     {
         // Result array
         std::array<std::vector<T>, GroupSize> result;
 
-        // Calculate the size of each group
-        size_t groupSize = originalVector.size() / GroupSize;
+        // Calculate the size and remainder of each group
+        usize groupSize = originalVector.size() / GroupSize;
+        usize remainder = originalVector.size() % GroupSize;
 
         // Copy elements to each group
-        for (size_t i = 0; i < GroupSize; ++i)
+        for (usize i = 0, start = 0, end = 0; i < GroupSize; ++i)
         {
-            // Calculate indexes
-            size_t start = i * groupSize;
-            size_t end = (i == GroupSize - 1) ? originalVector.size() : (i + 1) * groupSize;
-            // Insert
+            // Adjust the end index for remaining elements
+            end = start + groupSize + (i < remainder ? 1 : 0);
+            // Insert elements
             result[i].insert(result[i].end(), originalVector.begin() + start, originalVector.begin() + end);
+            // Update the start index
+            start = end;
         }
 
         // Return

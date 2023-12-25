@@ -30,14 +30,44 @@ namespace Vk
     class Texture
     {
     public:
+        // Texture flags
+        enum class Flags : u8
+        {
+            // Flags
+            None       = 0,
+            IsSRGB     = 1U << 0,
+            GenMipmaps = 1U << 1
+        };
+
         // Constructor
-        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
+        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Flags flags = Flags::None);
+        // Equality operator
+        bool operator==(const Texture& rhs) const;
         // Destroy texture
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
+
         // Texture image data
         Vk::Image image = {};
         // Texture image view
         Vk::ImageView imageView = {};
+    private:
+        // Generate mipmaps
+        void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
+    };
+}
+
+// Don't nuke me for this
+namespace std
+{
+    // Hashing
+    template <>
+    struct hash<Vk::Texture>
+    {
+        std::size_t operator()(const Vk::Texture& texture) const
+        {
+            // Combine hashes
+            return hash<Vk::Image>()(texture.image) ^ hash<Vk::ImageView>()(texture.imageView);
+        }
     };
 }
 

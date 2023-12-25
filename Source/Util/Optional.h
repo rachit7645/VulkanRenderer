@@ -22,7 +22,7 @@
 namespace Util
 {
     template <typename T>
-    constexpr T* GetAddressOrNull(std::optional<T>& opt)
+    constexpr auto GetAddressOrNull(const std::optional<T>& opt) -> const T*
     {
         // Return
         return opt.has_value() ? &(*opt) : nullptr;

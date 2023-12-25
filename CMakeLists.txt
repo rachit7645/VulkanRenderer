@@ -28,11 +28,13 @@ add_executable(VulkanRenderer
 	# Engine sources
 	Source/Engine/AppInstance.cpp
 	Source/Engine/Window.cpp
+	Source/Engine/Inputs.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
 	Source/Util/DeletionQueue.cpp
 	Source/Util/FrameCounter.cpp
+	Source/Util/Maths.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
@@ -51,17 +53,27 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/Framebuffer.cpp
+	Source/Vulkan/RenderPass.cpp
+	Source/Vulkan/CommandBuffer.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/RenderPassBuilder.cpp
 	Source/Vulkan/Builders/SubpassBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
-	Source/Renderer/SwapPipeline.cpp
+	Source/Renderer/FreeCamera.cpp
+	Source/Renderer/Camera.cpp
+	# Render pipeline sources
+	Source/Renderer/Pipelines/SwapPipeline.cpp
+	Source/Renderer/Pipelines/ForwardPipeline.cpp
+	# Render passes sources
+	Source/Renderer/RenderPasses/SwapPass.cpp
+	Source/Renderer/RenderPasses/ForwardPass.cpp
 	# Model sources
 	Source/Models/Mesh.cpp
 	Source/Models/Vertex.cpp
 	Source/Models/Model.cpp
+    Source/Models/Material.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/STBImage.cpp
@@ -128,6 +140,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<istream>
 	<source_location>
 	<iostream>
+	<numbers>
     # C STL Headers
     <cstdint>
     <cstddef>
@@ -139,7 +152,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
 # -O3 optimisations (Set to -Og when debugging)
-target_compile_options(VulkanRenderer PRIVATE -O3)
+target_compile_options(VulkanRenderer PRIVATE -Og)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)

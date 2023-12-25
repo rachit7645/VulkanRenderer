@@ -40,10 +40,6 @@ namespace Vk
         // Destroy vulkan context
         void Destroy();
 
-        // Allocates command buffer
-        std::vector<VkCommandBuffer> AllocateCommandBuffers(u32 count, VkCommandBufferLevel level);
-        // Free command buffers
-        void FreeCommandBuffers(const std::span<const VkCommandBuffer> cmdBuffers);
         // Allocates descriptors
         std::vector<VkDescriptorSet> AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts);
 
@@ -52,7 +48,9 @@ namespace Vk
         // Physical device (GPU)
         VkPhysicalDevice physicalDevice = {};
         // Physical device memory properties
-        VkPhysicalDeviceMemoryProperties phyMemProperties = {};
+        VkPhysicalDeviceMemoryProperties physicalDeviceMemProperties = {};
+        // Physical device limits
+        VkPhysicalDeviceLimits physicalDeviceLimits = {};
         // Logical device
         VkDevice device = {};
         // Surface
@@ -61,20 +59,13 @@ namespace Vk
         Vk::QueueFamilyIndices queueFamilies = {};
         // Queues
         VkQueue graphicsQueue = {};
+        // Command pool
+        VkCommandPool commandPool = {};
         // Descriptor pool
         VkDescriptorPool descriptorPool = {};
-
-        // Command buffers
-        std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers = {};
-
-        // Semaphores
-        std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
-        std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
-        // Fences
-        std::array<VkFence, FRAMES_IN_FLIGHT> inFlightFences = {};
     private:
         // Create vulkan instance
-        void CreateVKInstance(SDL_Window* window);
+        void CreateInstance(SDL_Window* window);
         // Create platform dependent surface
         void CreateSurface(SDL_Window* window);
 
@@ -95,11 +86,6 @@ namespace Vk
         // Create descriptor pool
         void CreateDescriptorPool();
 
-        // Create graphics command buffer
-        void CreateCommandBuffers();
-        // Create synchronisation objects
-        void CreateSyncObjects();
-
         // Extensions
         Vk::Extensions m_extensions = {};
         #ifdef ENGINE_DEBUG
@@ -107,8 +93,6 @@ namespace Vk
         Vk::ValidationLayers m_layers = {};
         #endif
 
-        // Command pool
-        VkCommandPool m_commandPool = {};
         // Deletion queue
         Util::DeletionQueue m_deletionQueue = {};
     };

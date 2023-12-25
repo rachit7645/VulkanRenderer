@@ -35,8 +35,14 @@ namespace Util
     {
         // Calculate end time
         m_endTime = Clock::now();
+
+        // Calculate frame duration
+        auto duration = m_endTime - m_frameStartTime;
         // Calculate cycle duration
         auto cycleDuration = m_endTime - m_startTime;
+
+        // Set frame delta
+        frameDelta = static_cast<f32>(static_cast<f64>(duration.count()) / 1000.0);
         // Set this/next frame's start time
         m_frameStartTime = m_endTime;
 
@@ -56,6 +62,22 @@ namespace Util
         {
             // Increment FPS
             ++m_currentFPS;
+        }
+
+        // Render ImGui
+        if (ImGui::BeginMainMenuBar())
+        {
+            // Profiler
+            if (ImGui::BeginMenu("Profiler"))
+            {
+                // Frame stats
+                ImGui::Text("FPS: %.2f", FPS);
+                ImGui::Text("Frame Time: %.2f ms", avgFrameTime);
+                ImGui::Text("Frame Delta: %.2f", frameDelta);
+                ImGui::EndMenu();
+            }
+            // End menu bar
+            ImGui::EndMainMenuBar();
         }
     }
 }
