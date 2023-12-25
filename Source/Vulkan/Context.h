@@ -48,7 +48,9 @@ namespace Vk
         // Physical device (GPU)
         VkPhysicalDevice physicalDevice = {};
         // Physical device memory properties
-        VkPhysicalDeviceMemoryProperties phyMemProperties = {};
+        VkPhysicalDeviceMemoryProperties physicalDeviceMemProperties = {};
+        // Physical device limits
+        VkPhysicalDeviceLimits physicalDeviceLimits = {};
         // Logical device
         VkDevice device = {};
         // Surface

@@ -71,7 +71,7 @@ namespace Vk
             .memoryTypeIndex = Vk::FindMemoryType(
                 memRequirements.memoryTypeBits,
                 properties,
-                context->phyMemProperties
+                context->physicalDeviceMemProperties
             )
         };
 

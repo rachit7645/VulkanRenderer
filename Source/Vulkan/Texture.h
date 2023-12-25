@@ -31,15 +31,16 @@ namespace Vk
     {
     public:
         // Texture flags
-        enum Flags : u8
+        enum class Flags : u8
         {
             // Flags
-            None   = 0,
-            IsSRGB = 1U << 0
+            None       = 0,
+            IsSRGB     = 1U << 0,
+            GenMipmaps = 1U << 1
         };
 
         // Constructor
-        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Flags flags);
+        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Flags flags = Flags::None);
         // Equality operator
         bool operator==(const Texture& rhs) const;
         // Destroy texture
@@ -49,6 +50,9 @@ namespace Vk
         Vk::Image image = {};
         // Texture image view
         Vk::ImageView imageView = {};
+    private:
+        // Generate mipmaps
+        void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
     };
 }
 

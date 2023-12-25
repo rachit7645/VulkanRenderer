@@ -216,6 +216,10 @@ namespace Renderer::Pipelines
             shared.Map(context->device);
         }
 
+        // Get anisotropy
+        constexpr auto SAMPLER_ANISOTROPY = 4.0f;
+        auto anisotropy = std::min(SAMPLER_ANISOTROPY, context->physicalDeviceLimits.maxSamplerAnisotropy);
+
         // Create texture sampler
         textureSampler = Vk::Sampler
         (
@@ -224,9 +228,9 @@ namespace Renderer::Pipelines
             VK_SAMPLER_MIPMAP_MODE_LINEAR,
             {VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT},
             0.0f,
-            {VK_TRUE, 2.0f},
+            {VK_TRUE, anisotropy},
             {VK_FALSE, VK_COMPARE_OP_ALWAYS},
-            {0.0f, 0.0f},
+            {0.0f, VK_LOD_CLAMP_NONE},
             VK_BORDER_COLOR_INT_OPAQUE_BLACK,
             VK_FALSE
         );

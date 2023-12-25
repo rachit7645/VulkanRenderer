@@ -259,7 +259,9 @@ namespace Vk
         physicalDevice = bestDevice;
 
         // Get memory properties
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &phyMemProperties);
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemProperties);
+        // Get limits
+        physicalDeviceLimits = properties[physicalDevice].limits;
 
         // Log
         Logger::Info("Selecting GPU: {}\n", properties[physicalDevice].deviceName);

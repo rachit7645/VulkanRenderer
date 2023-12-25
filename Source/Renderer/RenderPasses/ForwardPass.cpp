@@ -288,6 +288,7 @@ namespace Renderer::RenderPasses
                 context,
                 swapchainExtent.width,
                 swapchainExtent.height,
+                1,
                 colorFormat,
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT,

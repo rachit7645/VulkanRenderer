@@ -36,6 +36,7 @@ namespace Vk
             context,
             swapchainExtent.width,
             swapchainExtent.height,
+            1,
             depthFormat,
             VK_IMAGE_TILING_OPTIMAL,
             hasStencil ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT,

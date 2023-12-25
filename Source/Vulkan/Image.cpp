@@ -27,13 +27,14 @@ namespace Vk
         const std::shared_ptr<Vk::Context>& context,
         u32 width,
         u32 height,
+        u32 mipLevels,
         VkFormat format,
         VkImageTiling tiling,
         VkImageAspectFlags aspect,
         VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties
     )
-        : Image(VK_NULL_HANDLE, width, height, format, tiling, aspect)
+        : Image(VK_NULL_HANDLE, width, height, mipLevels, format, tiling, aspect)
     {
         // Create image
         CreateImage(context, usage, properties);
@@ -46,6 +47,7 @@ namespace Vk
         VkImage image,
         u32 width,
         u32 height,
+        u32 mipLevels,
         VkFormat format,
         VkImageTiling tiling,
         VkImageAspectFlags aspect
@@ -53,6 +55,7 @@ namespace Vk
         : handle(image),
           width(width),
           height(height),
+          mipLevels(mipLevels),
           format(format),
           tiling(tiling),
           aspect(aspect)
@@ -87,7 +90,7 @@ namespace Vk
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = format,
             .extent                = {width, height, 1},
-            .mipLevels             = 1,
+            .mipLevels             = mipLevels,
             .arrayLayers           = 1,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
             .tiling                = tiling,
@@ -108,7 +111,7 @@ namespace Vk
         {
             // Log
             Logger::Error("Failed to create image! [device={}]\n",
-                reinterpret_cast<void*>(context->device)
+                std::bit_cast<void*>(context->device)
             );
         }
 
@@ -125,7 +128,7 @@ namespace Vk
             .memoryTypeIndex = Vk::FindMemoryType(
                 memRequirements.memoryTypeBits,
                 properties,
-                context->phyMemProperties
+                context->physicalDeviceMemProperties
             )
         };
 
@@ -172,7 +175,7 @@ namespace Vk
             .subresourceRange    = {
                 .aspectMask     = aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = 1,
+                .levelCount     = mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }

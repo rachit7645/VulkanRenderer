@@ -30,12 +30,13 @@ namespace Vk
         // Default constructor to make c++ happy
         Image() = default;
 
-        // Constructor
+        // Image with mipmaps
         Image
         (
             const std::shared_ptr<Vk::Context>& context,
             u32 width,
             u32 height,
+            u32 mipLevels,
             VkFormat format,
             VkImageTiling tiling,
             VkImageAspectFlags aspect,
@@ -49,6 +50,7 @@ namespace Vk
             VkImage image,
             u32 width,
             u32 height,
+            u32 mipLevels,
             VkFormat format,
             VkImageTiling tiling,
             VkImageAspectFlags aspect
@@ -76,8 +78,9 @@ namespace Vk
         VkDeviceMemory memory = VK_NULL_HANDLE;
 
         // Image dimensions
-        u32 width  = 0;
-        u32 height = 0;
+        u32 width     = 0;
+        u32 height    = 0;
+        u32 mipLevels = 0;
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
