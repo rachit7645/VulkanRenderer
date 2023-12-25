@@ -139,7 +139,13 @@ namespace Renderer::RenderPasses
             // View Matrix
             .view = camera.GetViewMatrix(),
             // Camera position
-            .cameraPos = {camera.position, 1.0f}
+            .cameraPos = {camera.position, 1.0f},
+            // Directional light
+            .dirLight = {
+                .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
+                .color     = {1.0f,   0.956f, 0.898f, 1.0f},
+                .intensity = {3.5f,   3.5f,   3.5f,   1.0f}
+            }
         };
 
         // Flip projection
@@ -173,9 +179,9 @@ namespace Renderer::RenderPasses
         // Create model matrix
         currentPushConstant.transform = Maths::CreateTransformationMatrix
         (
-        s_position,
-        s_rotation,
-        s_scale
+            s_position,
+            s_rotation,
+            s_scale
         );
 
         // Create normal matrix

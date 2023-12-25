@@ -23,6 +23,7 @@
 #include "Vulkan/Texture.h"
 #include "Vulkan/Pipeline.h"
 #include "Models/Material.h"
+#include "Renderer/DirLight.h"
 
 namespace Renderer::Pipelines
 {
@@ -50,12 +51,14 @@ namespace Renderer::Pipelines
             glm::mat4 view = {};
             // Camera position
             glm::vec4 cameraPos = {};
+            // Light
+            Renderer::DirLight dirLight = {};
         };
 
         // Default constructor
         ForwardPipeline() = default;
         // Create pipeline
-        ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D swapchainExtent);
+        ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent);
 
         // Write material descriptors
         void WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials);

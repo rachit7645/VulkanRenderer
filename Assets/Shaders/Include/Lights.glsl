@@ -101,7 +101,7 @@ LightInfo GetSpotLightInfo(SpotLight light, vec3 fragPos)
     // Attenuation
     float attenuation = CalculateAttenuation(light.position.xyz, light.attenuation.xyz, fragPos);
     // Spot intensity
-    float intensity = CalculateSpotIntensity(info.L, light.direction.xyz, light.cutOff.xy, fragPos);
+    float intensity = CalculateSpotIntensity(info.L, light.direction.xyz, light.cutOff.xy);
     // Radiance
     info.radiance = light.color.rgb * light.intensity.xyz * attenuation * intensity;
     // Return

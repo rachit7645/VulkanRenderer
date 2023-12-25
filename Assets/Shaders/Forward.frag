@@ -22,15 +22,29 @@
 // Includes
 #include "Material.glsl"
 #include "Texture.glsl"
+#include "Lights.glsl"
+#include "PBR.glsl"
+#include "ACES.glsl"
+
+layout(binding = 0) uniform SceneBuffer
+{
+    // Matrices
+    mat4 projection;
+    mat4 view;
+    // Camera
+    vec4 cameraPos;
+    // Lights
+    DirLight light;
+} Scene;
 
 // Fragment inputs
 layout(location = 0) in vec3 fragPosition;
 layout(location = 1) in vec2 fragTexCoords;
-layout(location = 2) in mat3 fragTBNMatrix;
+layout(location = 2) in vec3 fragToCamera;
+layout(location = 3) in mat3 fragTBNMatrix;
 
 // Texture sampler
 layout(binding = 1, set = 1) uniform sampler texSampler;
-
 // Textures
 layout(binding = 2, set = 2) uniform texture2D textures[];
 
@@ -46,9 +60,15 @@ void main()
     // Get materials
     vec3 aoRghMtl = Sample(AO_RGH_MTL(textures), texSampler, fragTexCoords);
 
-    // Fool GLSL
-    vec3(normal + aoRghMtl + fragPosition);
+    // Calculate F0
+    vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
+    // Calculate light
+    vec3 Lo = CalculateLight(GetDirLightInfo(Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);
+    // Add ambient
+    Lo += albedo * vec3(0.03f);
 
+    // Tonemap
+    Lo = ACESToneMap(Lo);
     // Output color
-    outColor = vec4(albedo, 1.0f);
+    outColor = vec4(Lo, 1.0f);
 }

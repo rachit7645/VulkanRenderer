@@ -28,7 +28,7 @@ namespace Renderer
     constexpr f32 CAMERA_ZOOM        = 0.00045f;
 
     FreeCamera::FreeCamera()
-        : FreeCamera(glm::vec3(0.0f), glm::vec3(0.0f, -std::numbers::pi / 2.0f, 0.0f), Renderer::DEFAULT_FOV)
+        : FreeCamera(glm::vec3(30.0f, 30.0f, 4.0f), glm::vec3(0.0f, std::numbers::pi, 0.0f), Renderer::DEFAULT_FOV)
     {
     }
 

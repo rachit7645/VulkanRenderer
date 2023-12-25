@@ -26,8 +26,8 @@ namespace Renderer::Pipelines
     // Usings
     using Models::Vertex;
 
-    ForwardPipeline::ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D swapchainExtent)
-        : Vk::Pipeline(CreatePipeline(context, renderPass, swapchainExtent))
+    ForwardPipeline::ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent)
+        : Vk::Pipeline(CreatePipeline(context, renderPass, extent))
     {
         // Create pipeline data
         CreatePipelineData(context);
@@ -193,7 +193,7 @@ namespace Renderer::Pipelines
               .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
               .SetBlendState()
               .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(VSPushConstant)))
-              .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT,   1, 1)
+              .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
               .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
               .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, Models::Material::MATERIAL_COUNT, MAX_MATERIAL_COUNT)
               .Build();

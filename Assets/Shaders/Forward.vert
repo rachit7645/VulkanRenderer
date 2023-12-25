@@ -16,6 +16,12 @@
 
 #version 460
 
+// Extensions
+#extension GL_GOOGLE_include_directive : enable
+
+// Includes
+#include "Lights.glsl"
+
 layout(binding = 0) uniform SceneBuffer
 {
     // Matrices
@@ -23,8 +29,8 @@ layout(binding = 0) uniform SceneBuffer
     mat4 view;
     // Camera
     vec4 cameraPos;
-    /* Lights
-    DirLight light;*/
+    // Lights
+    DirLight light;
 } Scene;
 
 // Push constant buffer
@@ -45,7 +51,8 @@ layout(location = 3) in vec3 tangent;
 // Vertex outputs
 layout(location = 0) out vec3 fragPosition;
 layout(location = 1) out vec2 fragTexCoords;
-layout(location = 2) out mat3 fragTBNMatrix;
+layout(location = 2) out vec3 fragToCamera;
+layout(location = 3) out mat3 fragTBNMatrix;
 
 // Vertex entry point
 void main()
@@ -70,4 +77,7 @@ void main()
     vec3 B = cross(N, T);
     // Compute TBN matrix
     fragTBNMatrix = mat3(T, B, N);
+
+    // Calculate to camera vector
+    fragToCamera = normalize(Scene.cameraPos.xyz - fragPosition);
 }
