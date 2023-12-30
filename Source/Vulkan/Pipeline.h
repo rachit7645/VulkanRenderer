@@ -61,7 +61,7 @@ namespace Vk
         ) const;
 
         // Destroy
-        void Destroy(VkDevice device) const;
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         // Pipeline handle
         VkPipeline handle = {};
@@ -71,7 +71,7 @@ namespace Vk
         std::vector<Vk::DescriptorSetData> descriptorSetData = {};
     private:
         // Destroy per-pipeline data
-        virtual void DestroyPipelineData(VkDevice device) const;
+        virtual void DestroyPipelineData(VkDevice device, VmaAllocator allocator);
     };
 }
 

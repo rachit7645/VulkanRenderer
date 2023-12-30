@@ -35,9 +35,6 @@ namespace Vk
         [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions);
         // Load device functions
         void LoadDeviceFunctions(VkDevice device);
-    private:
-        // Load loader
-        void LoadProcLoader();
     };
 }
 

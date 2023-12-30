@@ -33,7 +33,7 @@ namespace Renderer::RenderPasses
         // Recreate swapchain pass
         void Recreate(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
         // Destroy swapchain pass
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         // Render to swapchain
         void Render(usize FIF);

@@ -32,11 +32,11 @@ namespace Models
     {
     }
 
-    void Mesh::Destroy(VkDevice device)
+    void Mesh::Destroy(VkDevice device, VmaAllocator allocator)
     {
         // Destroy vertex buffer
-        vertexBuffer.DestroyBuffer(device);
+        vertexBuffer.Destroy(allocator);
         // Destroy textures
-        material.Destroy(device);
+        material.Destroy(device, allocator);
     }
 }

@@ -73,30 +73,8 @@ namespace Vk
         return extensionStrings;
     }
 
-    void Extensions::LoadProcLoader()
-    {
-        // Get function loader
-        g_ExtensionState.p_GetInstanceProcAddr = reinterpret_cast<GetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
-        // Check for errors
-        if (g_ExtensionState.p_GetInstanceProcAddr == nullptr)
-        {
-            // LOG
-            Logger::Error("Failed to load function {}: \n", "vkGetInstanceProcAddr", SDL_GetError());
-        }
-        // Log
-        Logger::Debug
-        (
-            "Loaded function {} [address={}]\n",
-            "vkGetInstanceProcAddr",
-            reinterpret_cast<void*>(g_ExtensionState.p_GetInstanceProcAddr)
-        );
-    }
-
     void Extensions::LoadInstanceFunctions(VkInstance instance)
     {
-        // Load instance loader
-        LoadProcLoader();
-
         // Load debug utils creation function
         g_ExtensionState.p_CreateDebugUtilsMessengerEXT = LoadExtension<CreateDebugUtilsMessengerEXT>(
             instance, "vkCreateDebugUtilsMessengerEXT"
@@ -153,14 +131,6 @@ namespace Vk
         // Reset
         g_ExtensionState = {};
     }
-}
-
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance, const char* pName)
-{
-    // Get function
-    Vk::GetInstanceProcAddr fn = Vk::g_ExtensionState.p_GetInstanceProcAddr;
-    // Call
-    return fn(instance, pName);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT

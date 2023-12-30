@@ -5,6 +5,9 @@ project(Externals)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# VMA
+add_subdirectory(VMA/)
+
 # Required packages
 find_package(SDL2   REQUIRED)
 find_package(Vulkan REQUIRED)

@@ -44,7 +44,7 @@ namespace Renderer::RenderPasses
     void ForwardPass::Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
     {
         // Destroy old data
-        DestroyData(context->device);
+        DestroyData(context->device, context->allocator);
         // Init forward pass data
         InitData(context, swapchainExtent);
         // Log
@@ -147,12 +147,11 @@ namespace Renderer::RenderPasses
                 .intensity = {3.5f,   3.5f,   3.5f,   1.0f}
             }
         };
-
         // Flip projection
         sceneBuffer.projection[1][1] *= -1;
 
         // Load UBO data
-        std::memcpy(sceneUBO.mappedPtr, &sceneBuffer, sizeof(sceneBuffer));
+        std::memcpy(sceneUBO.allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
 
         // Data
         static glm::vec3 s_position = {};
@@ -216,7 +215,7 @@ namespace Renderer::RenderPasses
         for (const auto& mesh : model.meshes)
         {
             // Bind buffer
-            mesh.vertexBuffer.BindBuffer(currentCmdBuffer);
+            mesh.vertexBuffer.Bind(currentCmdBuffer);
 
             // Get mesh descriptors
             std::array<VkDescriptorSet, 1> meshDescriptorSets =
@@ -376,19 +375,19 @@ namespace Renderer::RenderPasses
         );
     }
 
-    void ForwardPass::Destroy(VkDevice device)
+    void ForwardPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
         // Log
         Logger::Debug("{}\n", "Destroying forward pass!");
         // Destroy data
-        DestroyData(device);
+        DestroyData(device, allocator);
         // Destroy pipeline
-        pipeline.Destroy(device);
+        pipeline.Destroy(device, allocator);
         // Destroy renderpass
         renderPass.Destroy(device);
     }
 
-    void ForwardPass::DestroyData(VkDevice device)
+    void ForwardPass::DestroyData(VkDevice device, VmaAllocator allocator)
     {
         // Destroy image views
         for (auto&& imageView : imageViews)
@@ -399,7 +398,7 @@ namespace Renderer::RenderPasses
         // Destroy images
         for (auto&& image : images)
         {
-            image.Destroy(device);
+            image.Destroy(allocator);
         }
 
         // Destroy framebuffers
@@ -409,7 +408,7 @@ namespace Renderer::RenderPasses
         }
 
         // Destroy depth buffer
-        depthBuffer.Destroy(device);
+        depthBuffer.Destroy(device, allocator);
 
         // Clear
         images.fill({});

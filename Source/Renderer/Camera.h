@@ -27,6 +27,8 @@ namespace Renderer
     public:
         // Constructor w/ vectors
         Camera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
+        // Virtual destructor
+        virtual ~Camera() = default;
 
         // Update camera state
         virtual void Update(f32 frameDelta) = 0;

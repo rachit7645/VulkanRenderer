@@ -165,7 +165,7 @@ namespace Renderer
         // ImGui init info
         ImGui_ImplVulkan_InitInfo imguiInitInfo =
         {
-            .Instance              = m_context->vkInstance,
+            .Instance              = m_context->instance,
             .PhysicalDevice        = m_context->physicalDevice,
             .Device                = m_context->device,
             .QueueFamily           = m_context->queueFamilies.graphicsFamily.value_or(0),
@@ -233,11 +233,11 @@ namespace Renderer
         ImGui_ImplSDL2_Shutdown();
 
         // Destroy render passes
-        m_swapPass.Destroy(m_context->device);
-        m_forwardPass.Destroy(m_context->device);
+        m_swapPass.Destroy(m_context->device, m_context->allocator);
+        m_forwardPass.Destroy(m_context->device, m_context->allocator);
 
         // Destroy mesh
-        m_model.Destroy(m_context->device);
+        m_model.Destroy(m_context->device, m_context->allocator);
 
         // Destroy fences
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)

@@ -34,7 +34,7 @@ namespace Models
             const Models::Material& textures
         );
         // Destroy mesh object
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device, VmaAllocator allocator);
         // Vertex buffer
         Vk::VertexBuffer vertexBuffer;
         // Texture

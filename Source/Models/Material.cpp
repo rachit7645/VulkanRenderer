@@ -49,11 +49,11 @@ namespace Models
         };
     }
 
-    void Material::Destroy(VkDevice device) const
+    void Material::Destroy(VkDevice device, VmaAllocator allocator) const
     {
         // Destroy textures
-        albedo.Destroy(device);
-        normal.Destroy(device);
-        aoRghMtl.Destroy(device);
+        albedo.Destroy(device, allocator);
+        normal.Destroy(device, allocator);
+        aoRghMtl.Destroy(device, allocator);
     }
 }

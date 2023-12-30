@@ -42,7 +42,7 @@ namespace Models
         [[nodiscard]] std::array<Vk::ImageView, MATERIAL_COUNT> GetViews() const;
 
         // Destroy textures
-        void Destroy(VkDevice device) const;
+        void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         // Textures
         Vk::Texture albedo;

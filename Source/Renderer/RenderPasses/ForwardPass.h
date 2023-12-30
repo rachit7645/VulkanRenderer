@@ -34,7 +34,7 @@ namespace Renderer::RenderPasses
         // Recreate forward pass data
         void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
         // Destroy
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         // Render
         void Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model);
@@ -58,7 +58,7 @@ namespace Renderer::RenderPasses
         // Init
         void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
         // Destroy data
-        void DestroyData(VkDevice device);
+        void DestroyData(VkDevice device, VmaAllocator allocator);
 
         // Init framebuffers
         void InitFramebuffers(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);

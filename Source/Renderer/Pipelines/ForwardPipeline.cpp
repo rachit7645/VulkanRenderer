@@ -202,18 +202,18 @@ namespace Renderer::Pipelines
     void ForwardPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
         // Create shared buffers
-        for (auto&& shared : sceneUBOs)
+        for (auto&& sceneUBO : sceneUBOs)
         {
             // Create buffer
-            shared = Vk::Buffer
+            sceneUBO = Vk::Buffer
             (
-                context,
+                context->allocator,
                 static_cast<u32>(sizeof(SceneBuffer)),
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+                VMA_MEMORY_USAGE_AUTO
             );
-            // Map
-            shared.Map(context->device);
         }
 
         // Get anisotropy
@@ -236,12 +236,12 @@ namespace Renderer::Pipelines
         );
     }
 
-    void ForwardPipeline::DestroyPipelineData(VkDevice device) const
+    void ForwardPipeline::DestroyPipelineData(VkDevice device, VmaAllocator allocator)
     {
         // Destroy UBOs
-        for (auto&& sharedUBO : sceneUBOs)
+        for (auto&& sceneUBO : sceneUBOs)
         {
-            sharedUBO.DeleteBuffer(device);
+            sceneUBO.Destroy(allocator);
         }
         // Destroy sampler
         textureSampler.Destroy(device);

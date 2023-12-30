@@ -84,14 +84,23 @@ namespace Vk
 
     void Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
     {
-        // Query
-        m_status[0] = vkAcquireNextImageKHR
+        // Acquire image info
+        VkAcquireNextImageInfoKHR acquireNextImageInfo =
+        {
+            .sType      = VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
+            .pNext      = nullptr,
+            .swapchain  = handle,
+            .timeout    = std::numeric_limits<u64>::max(),
+            .semaphore  = imageAvailableSemaphores[FIF],
+            .fence      = VK_NULL_HANDLE,
+            .deviceMask = 1
+        };
+
+        // Acquire
+        m_status[0] = vkAcquireNextImage2KHR
         (
             device,
-            handle,
-            std::numeric_limits<u64>::max(),
-            imageAvailableSemaphores[FIF],
-            VK_NULL_HANDLE,
+            &acquireNextImageInfo,
             &imageIndex
         );
     }
@@ -297,7 +306,6 @@ namespace Vk
         // Get min and max
         auto minSize = glm::ivec2(capabilities.minImageExtent.width, capabilities.minImageExtent.height);
         auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
-
         // Clamp
         auto actualExtent = glm::clamp(size, minSize, maxSize);
 

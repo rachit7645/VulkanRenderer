@@ -186,11 +186,11 @@ namespace Renderer::Pipelines
         screenQuad = Vk::VertexBuffer(context, QUAD_VERTICES);
     }
 
-    void SwapPipeline::DestroyPipelineData(VkDevice device) const
+    void SwapPipeline::DestroyPipelineData(VkDevice device, VmaAllocator allocator)
     {
         // Destroy sampler
         textureSampler.Destroy(device);
         // Destroy screen quad
-        screenQuad.DestroyBuffer(device);
+        screenQuad.Destroy(allocator);
     }
 }

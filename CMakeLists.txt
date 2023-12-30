@@ -15,7 +15,6 @@ find_package(Vulkan   REQUIRED)
 find_package(glm      REQUIRED)
 find_package(assimp   REQUIRED)
 find_package(fmt      REQUIRED)
-find_package(simdjson REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -77,6 +76,7 @@ add_executable(VulkanRenderer
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/STBImage.cpp
+	Source/Externals/VMA.cpp
 )
 
 # Precompiled Headers
@@ -116,8 +116,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <glm/trigonometric.hpp>
     <glm/geometric.hpp>
     <glm/gtc/matrix_transform.hpp>
-    # SIMD JSON Headers
-    <simdjson.h>
+    # VMA Headers
+	Externals/VMA/include/vk_mem_alloc.h
     # C++ STL Headers
 	<map>
     <unordered_map>
@@ -170,7 +170,15 @@ endif()
 add_dependencies(VulkanRenderer Shaders)
 
 # Link libraries
-target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2main SDL2::SDL2 fmt::fmt assimp imgui simdjson)
+target_link_libraries(VulkanRenderer
+	Vulkan::Vulkan
+	SDL2::SDL2main
+	SDL2::SDL2
+	fmt::fmt
+	assimp::assimp
+	GPUOpen::VulkanMemoryAllocator
+	imgui
+)
 
 # Install
 install(

@@ -29,6 +29,7 @@
 #include "Util/Util.h"
 #include "Engine/Window.h"
 #include "Util/DeletionQueue.h"
+#include "Externals/VMA.h"
 
 namespace Vk
 {
@@ -44,7 +45,8 @@ namespace Vk
         std::vector<VkDescriptorSet> AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts);
 
         // Vulkan instance
-        VkInstance vkInstance = {};
+        VkInstance instance = {};
+
         // Physical device (GPU)
         VkPhysicalDevice physicalDevice = {};
         // Physical device memory properties
@@ -53,16 +55,21 @@ namespace Vk
         VkPhysicalDeviceLimits physicalDeviceLimits = {};
         // Logical device
         VkDevice device = {};
+
         // Surface
         VkSurfaceKHR surface = {};
+
         // Queue families
         Vk::QueueFamilyIndices queueFamilies = {};
         // Queues
         VkQueue graphicsQueue = {};
+
         // Command pool
         VkCommandPool commandPool = {};
         // Descriptor pool
         VkDescriptorPool descriptorPool = {};
+        // Memory allocator
+        VmaAllocator allocator = {};
     private:
         // Create vulkan instance
         void CreateInstance(SDL_Window* window);
@@ -75,8 +82,8 @@ namespace Vk
         [[nodiscard]] usize CalculateScore
         (
             VkPhysicalDevice logicalDevice,
-            VkPhysicalDeviceProperties& propertySet,
-            VkPhysicalDeviceFeatures& featureSet
+            VkPhysicalDeviceProperties2& propertySet,
+            VkPhysicalDeviceFeatures2& featureSet
         );
         // Create a logical device
         void CreateLogicalDevice();
@@ -85,6 +92,8 @@ namespace Vk
         void CreateCommandPool();
         // Create descriptor pool
         void CreateDescriptorPool();
+        // Create allocator
+        void CreateAllocator();
 
         // Extensions
         Vk::Extensions m_extensions = {};

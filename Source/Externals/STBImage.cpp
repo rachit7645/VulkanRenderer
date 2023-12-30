@@ -25,7 +25,8 @@ namespace STB
     STBImage::STBImage(const std::string_view path, s32 requiredComponents)
     {
         // Temporary signed data
-        s32 _width, _height;
+        s32 _width  = 0;
+        s32 _height = 0;
         // Load
         data = stbi_load(path.data(), &_width, &_height, &channels, requiredComponents);
 

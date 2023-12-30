@@ -78,11 +78,11 @@ namespace Vk
         );
     }
 
-    void DepthBuffer::Destroy(VkDevice device) const
+    void DepthBuffer::Destroy(VkDevice device, VmaAllocator allocator) const
     {
         // Destroy image view
         depthImageView.Destroy(device);
         // Destroy image
-        depthImage.Destroy(device);
+        depthImage.Destroy(allocator);
     }
 }

@@ -122,7 +122,7 @@ namespace Renderer::RenderPasses
         );
 
         // Bind vertex buffer
-        pipeline.screenQuad.BindBuffer(currentCmdBuffer);
+        pipeline.screenQuad.Bind(currentCmdBuffer);
         // Draw quad
         vkCmdDraw
         (
@@ -210,7 +210,7 @@ namespace Renderer::RenderPasses
         }
     }
 
-    void SwapPass::Destroy(VkDevice device)
+    void SwapPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
         // Log
         Logger::Debug("{}\n", "Destroying swapchain pass!");
@@ -223,7 +223,7 @@ namespace Renderer::RenderPasses
         // Destroy renderpass
         renderPass.Destroy(device);
         // Destroy pipeline
-        pipeline.Destroy(device);
+        pipeline.Destroy(device, allocator);
     }
 
     void SwapPass::DestroyData(VkDevice device)

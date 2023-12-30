@@ -84,7 +84,7 @@ namespace Vk
         // Log
         Logger::Debug("{}", layerDbg);
 
-        // Found all the layers!
+        // Check if we found all the required layers
         return requiredLayers.empty();
     }
 
@@ -102,7 +102,7 @@ namespace Vk
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         UNUSED void* pUserData
     )
-    {
+        {
         // Switch
         switch (severity)
         {

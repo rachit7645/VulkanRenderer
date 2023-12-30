@@ -80,10 +80,10 @@ namespace Vk
         );
     }
 
-    void Pipeline::Destroy(VkDevice device) const
+    void Pipeline::Destroy(VkDevice device, VmaAllocator allocator)
     {
         // Destroy specific data
-        DestroyPipelineData(device);
+        DestroyPipelineData(device, allocator);
         // Destroy pipeline
         vkDestroyPipeline(device, handle, nullptr);
         // Destroy pipeline layout
@@ -95,7 +95,7 @@ namespace Vk
         }
     }
 
-    void Pipeline::DestroyPipelineData(UNUSED VkDevice device) const
+    void Pipeline::DestroyPipelineData(UNUSED VkDevice device, UNUSED VmaAllocator allocator)
     {
     }
 }

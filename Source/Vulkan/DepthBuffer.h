@@ -34,7 +34,7 @@ namespace Vk
         // Create depth buffer
         DepthBuffer(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
         // Destroy depth buffer
-        void Destroy(VkDevice device) const;
+        void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         // Get depth format
         VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);

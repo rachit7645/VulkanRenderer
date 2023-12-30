@@ -23,13 +23,13 @@ namespace Vk
 {
     Buffer::Buffer
     (
-        const std::shared_ptr<Vk::Context>& context,
+        VmaAllocator allocator,
         VkDeviceSize size,
         VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties
+        VkMemoryPropertyFlags properties,
+        VmaAllocationCreateFlags allocationFlags,
+        VmaMemoryUsage memoryUsage
     )
-        : size(size),
-          usage(usage)
     {
         // Creation info
         VkBufferCreateInfo createInfo =
@@ -44,76 +44,60 @@ namespace Vk
             .pQueueFamilyIndices   = nullptr
         };
 
-        // Create buffer
-        if (vkCreateBuffer(
-                context->device,
-                &createInfo,
-                nullptr,
-                &handle
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create vertex buffer! [device={}]\n",
-                reinterpret_cast<void*>(context->device)
-            );
-        }
-
-        // Memory requirements
-        VkMemoryRequirements memRequirements = {};
-        vkGetBufferMemoryRequirements(context->device, handle, &memRequirements);
-
         // Allocation info
-        VkMemoryAllocateInfo allocInfo =
+        VmaAllocationCreateInfo allocCreateInfo =
         {
-            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext           = nullptr,
-            .allocationSize  = memRequirements.size,
-            .memoryTypeIndex = Vk::FindMemoryType(
-                memRequirements.memoryTypeBits,
-                properties,
-                context->physicalDeviceMemProperties
-            )
+            .flags          = allocationFlags,
+            .usage          = memoryUsage,
+            .requiredFlags  = properties,
+            .preferredFlags = 0,
+            .memoryTypeBits = 0,
+            .pool           = VK_NULL_HANDLE,
+            .pUserData      = nullptr,
+            .priority       = 0.0f
         };
 
-        // Allocate
-        if (vkAllocateMemory(
-                context->device,
-                &allocInfo,
-                nullptr,
-                &memory
+        // Create buffer
+        if (vmaCreateBuffer(
+                allocator,
+                &createInfo,
+                &allocCreateInfo,
+                &handle,
+                &allocation,
+                &allocInfo
             ) != VK_SUCCESS)
         {
             // Log
-            Logger::Error
-            (
-                "Failed to allocate vertex buffer memory! [device={}] [buffer={}]\n",
-                reinterpret_cast<void*>(context->device),
-                reinterpret_cast<void*>(handle)
+            Logger::Error("Failed to create vertex buffer! [allocator={}]\n",
+                std::bit_cast<void*>(allocator)
             );
         }
-
-        // Attach memory to buffer
-        vkBindBufferMemory(context->device, handle, memory, 0);
 
         // Log
         Logger::Debug("Created buffer! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
 
-    void Buffer::Map(VkDevice device, VkDeviceSize offset, VkDeviceSize rangeSize)
+    void Buffer::Map(VmaAllocator allocator)
     {
         // Map
-        vkMapMemory(device, memory, offset, rangeSize, 0, &mappedPtr);
+        vmaMapMemory(allocator, allocation, &allocInfo.pMappedData);
+    }
+
+    void Buffer::Unmap(VmaAllocator allocator) const
+    {
+        // Unmap
+        vmaUnmapMemory(allocator, allocation);
     }
 
     template <typename T>
-    void Buffer::LoadData(VkDevice device, const std::span<const T> data)
+    void Buffer::LoadData(VmaAllocator allocator, const std::span<const T> data)
     {
         // Map
-        Map(device);
+        Map(allocator);
         // Copy
-        std::memcpy(mappedPtr, data.data(), size);
+        std::memcpy(allocInfo.pMappedData, data.data(), allocInfo.size);
         // Unmap
-        Unmap(device);
+        Unmap(allocator);
     }
 
     void Buffer::CopyBuffer
@@ -129,49 +113,38 @@ namespace Vk
             // Copy region
             VkBufferCopy copyRegion =
             {
-            .srcOffset = 0,
-            .dstOffset = 0,
-            .size      = copySize
+                .srcOffset = 0,
+                .dstOffset = 0,
+                .size      = copySize
             };
             // Copy
             vkCmdCopyBuffer
             (
-            cmdBuffer.handle,
-            srcBuffer.handle,
-            dstBuffer.handle,
-            1,
-            &copyRegion
+                cmdBuffer.handle,
+                srcBuffer.handle,
+                dstBuffer.handle,
+                1,
+                &copyRegion
             );
         });
     }
 
-    void Buffer::DeleteBuffer(VkDevice device) const
+    void Buffer::Destroy(VmaAllocator allocator)
     {
         // Log
         Logger::Debug
         (
-            "Destroying buffer [buffer={}] [memory={}]\n",
+            "Destroying buffer [buffer={}] [allocation={}]\n",
             reinterpret_cast<void*>(handle),
-            reinterpret_cast<void*>(memory)
+            reinterpret_cast<void*>(allocation)
         );
         // Destroy
-        vkDestroyBuffer(device, handle, nullptr);
-        // Free
-        vkFreeMemory(device, memory, nullptr);
-    }
-
-    void Buffer::Unmap(VkDevice device)
-    {
-        // Unmap
-        vkUnmapMemory(device, memory);
-        // Fix mapped pointer
-        mappedPtr = nullptr;
+        vmaDestroyBuffer(allocator, handle, allocation);
     }
 
     // Explicit template initialisations
-    template void Buffer::LoadData(VkDevice, std::span<const Models::Vertex>);
-    template void Buffer::LoadData(VkDevice, std::span<const f32>);
-    template void Buffer::LoadData(VkDevice, std::span<const u8>);
-    template void Buffer::LoadData(VkDevice, std::span<const u16>);
-    template void Buffer::LoadData(VkDevice, std::span<const u32>);
+    template void Buffer::LoadData(VmaAllocator, std::span<const Models::Vertex>);
+    template void Buffer::LoadData(VmaAllocator, std::span<const f32>);
+    template void Buffer::LoadData(VmaAllocator, std::span<const u8>);
+    template void Buffer::LoadData(VmaAllocator, std::span<const u32>);
 }

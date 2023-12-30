@@ -84,7 +84,7 @@ namespace Renderer::Pipelines
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
         // Destroy per-pipeline data
-        void DestroyPipelineData(VkDevice device) const override;
+        void DestroyPipelineData(VkDevice device, VmaAllocator allocator) override;
 
         // Write static descriptors
         void WriteStaticDescriptors(VkDevice device);

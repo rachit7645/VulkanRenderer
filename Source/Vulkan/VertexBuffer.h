@@ -45,9 +45,9 @@ namespace Vk
         VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices);
 
         // Bind buffer
-        void BindBuffer(const Vk::CommandBuffer& cmdBuffer) const;
+        void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         // Destroys the buffer
-        void DestroyBuffer(VkDevice device) const;
+        void Destroy(VmaAllocator allocator);
 
         // Vertex buffer
         Vk::Buffer vertexBuffer;

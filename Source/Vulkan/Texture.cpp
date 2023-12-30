@@ -61,16 +61,18 @@ namespace Vk
         // Create staging buffer
         auto stagingBuffer = Vk::Buffer
         (
-            context,
+            context->allocator,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
         );
 
         // Copy data
         stagingBuffer.LoadData
         (
-            context->device,
+            context->allocator,
             std::span(static_cast<const stbi_uc*>(imageData.data), imageSize / sizeof(stbi_uc))
         );
 
@@ -101,7 +103,7 @@ namespace Vk
         image.CopyFromBuffer(context, stagingBuffer);
 
         // Destroy staging buffer
-        stagingBuffer.DeleteBuffer(context->device);
+        stagingBuffer.Destroy(context->allocator);
 
         // Create image view
         imageView = Vk::ImageView
@@ -263,11 +265,11 @@ namespace Vk
         return image == rhs.image && imageView == rhs.imageView;
     }
 
-    void Texture::Destroy(VkDevice device) const
+    void Texture::Destroy(VkDevice device, VmaAllocator allocator) const
     {
         // Destroy image view
         imageView.Destroy(device);
         // Destroy image
-        image.Destroy(device);
+        image.Destroy(allocator);
     }
 }

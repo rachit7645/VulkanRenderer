@@ -71,11 +71,11 @@ namespace Vk
         void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
 
         // Delete image
-        void Destroy(VkDevice device) const;
+        void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
-        VkImage        handle = VK_NULL_HANDLE;
-        VkDeviceMemory memory = VK_NULL_HANDLE;
+        VkImage       handle     = VK_NULL_HANDLE;
+        VmaAllocation allocation = {};
 
         // Image dimensions
         u32 width     = 0;
@@ -90,7 +90,7 @@ namespace Vk
         // Create image & allocate memory for image
         void CreateImage
         (
-            const std::shared_ptr<Vk::Context>& context,
+            VmaAllocator allocator,
             VkImageUsageFlags usage,
             VkMemoryPropertyFlags properties
         );
@@ -107,7 +107,7 @@ namespace std
         std::size_t operator()(const Vk::Image& image) const
         {
             // Return combined hashes
-            return std::hash<VkImage>()(image.handle) && std::hash<VkDeviceMemory>()(image.memory);
+            return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
         }
     };
 }

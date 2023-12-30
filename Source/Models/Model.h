@@ -20,7 +20,7 @@ namespace Models
         // Main constructor
         Model(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
         // Destroy model
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         // Get all materials
         [[nodiscard]] std::vector<Models::Material> GetMaterials() const;

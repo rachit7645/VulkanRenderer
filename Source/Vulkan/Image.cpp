@@ -37,7 +37,7 @@ namespace Vk
         : Image(VK_NULL_HANDLE, width, height, mipLevels, format, tiling, aspect)
     {
         // Create image
-        CreateImage(context, usage, properties);
+        CreateImage(context->allocator, usage, properties);
         // Log
         Logger::Debug("Created image! [handle={}]\n", reinterpret_cast<void*>(handle));
     }
@@ -66,7 +66,7 @@ namespace Vk
     {
         // Return
         return handle == rhs.handle &&
-               memory == rhs.memory &&
+               allocation == rhs.allocation &&
                width  == rhs.width  &&
                height == rhs.height &&
                format == rhs.format &&
@@ -76,7 +76,7 @@ namespace Vk
 
     void Image::CreateImage
     (
-        const std::shared_ptr<Vk::Context>& context,
+        VmaAllocator allocator,
         VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties
     )
@@ -101,56 +101,34 @@ namespace Vk
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
         };
 
-        // Create image
-        if (vkCreateImage(
-                context->device,
-                &imageInfo,
-                nullptr,
-                &handle
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create image! [device={}]\n",
-                std::bit_cast<void*>(context->device)
-            );
-        }
-
-        // Get memory requirements
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(context->device, handle, &memRequirements);
-
         // Allocation info
-        VkMemoryAllocateInfo allocInfo =
+        VmaAllocationCreateInfo allocInfo =
         {
-            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext           = nullptr,
-            .allocationSize  = memRequirements.size,
-            .memoryTypeIndex = Vk::FindMemoryType(
-                memRequirements.memoryTypeBits,
-                properties,
-                context->physicalDeviceMemProperties
-            )
+            .flags          = 0,
+            .usage          = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+            .requiredFlags  = properties,
+            .preferredFlags = 0,
+            .memoryTypeBits = 0,
+            .pool           = VK_NULL_HANDLE,
+            .pUserData      = nullptr,
+            .priority       = 0.0f
         };
 
-        // Allocate
-        if (vkAllocateMemory(
-                context->device,
+        // Create image
+        if (vmaCreateImage(
+                allocator,
+                &imageInfo,
                 &allocInfo,
-                nullptr,
-                &memory
+                &handle,
+                &allocation,
+                nullptr
             ) != VK_SUCCESS)
         {
             // Log
-            Logger::Error
-            (
-                "Failed to allocate image memory! [device={}] [buffer={}]\n",
-                reinterpret_cast<void*>(context->device),
-                reinterpret_cast<void*>(handle)
+            Logger::Error("Failed to create image! [allocator={}]\n",
+                std::bit_cast<void*>(allocator)
             );
         }
-
-        // Attach memory to image
-        vkBindImageMemory(context->device, handle, memory, 0);
     }
 
     void Image::TransitionLayout
@@ -269,43 +247,41 @@ namespace Vk
             // Copy info
             VkBufferImageCopy copyRegion =
             {
-            .bufferOffset      = 0,
-            .bufferRowLength   = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource  = {
-            .aspectMask     = aspect,
-            .mipLevel       = 0,
-            .baseArrayLayer = 0,
-            .layerCount     = 1
-            },
-            .imageOffset       = {0, 0, 0},
-            .imageExtent       = {width, height, 1}
+                .bufferOffset      = 0,
+                .bufferRowLength   = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource  = {
+                    .aspectMask     = aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                },
+                .imageOffset       = {0, 0, 0},
+                .imageExtent       = {width, height, 1}
             };
             // Copy
             vkCmdCopyBufferToImage
             (
-            cmdBuffer.handle,
-            buffer.handle,
-            handle,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1,
-            &copyRegion
+                cmdBuffer.handle,
+                buffer.handle,
+                handle,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1,
+                &copyRegion
             );
         });
     }
 
-    void Image::Destroy(VkDevice device) const
+    void Image::Destroy(VmaAllocator allocator) const
     {
         // Log
         Logger::Debug
         (
-            "Destroying image! [handle={}] [memory={}]\n",
+            "Destroying image! [handle={}] [allocation={}]\n",
             reinterpret_cast<void*>(handle),
-            reinterpret_cast<void*>(memory)
+            reinterpret_cast<void*>(allocation)
         );
         // Destroy image
-        vkDestroyImage(device, handle, nullptr);
-        // Free associated memory
-        vkFreeMemory(device, memory, nullptr);
+        vmaDestroyImage(allocator, handle, allocation);
     }
 }

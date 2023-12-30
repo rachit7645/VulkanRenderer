@@ -154,13 +154,7 @@ namespace Models
             }
 
             // If texture not found
-            Logger::Warning
-            (
-                "Unable to find texture path, using default textures! [Type={}] [mesh={}] [scene={}]\n",
-                aiTextureTypeToString(type),
-                reinterpret_cast<const void*>(mesh),
-                reinterpret_cast<const void*>(scene)
-            );
+            Logger::Warning("Unable to find texture, using default textures! [Type={}]\n", aiTextureTypeToString(type));
             // Return
             return Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultPath);
         };
@@ -191,12 +185,12 @@ namespace Models
         return materials;
     }
 
-    void Model::Destroy(VkDevice device)
+    void Model::Destroy(VkDevice device, VmaAllocator allocator)
     {
         // Destroy all meshes
         for (auto&& mesh : meshes)
         {
-            mesh.Destroy(device);
+            mesh.Destroy(device, allocator);
         }
     }
 }

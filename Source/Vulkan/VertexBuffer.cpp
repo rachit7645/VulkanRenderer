@@ -44,7 +44,7 @@ namespace Vk
         InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
     }
 
-    void VertexBuffer::BindBuffer(const Vk::CommandBuffer& cmdBuffer) const
+    void VertexBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
         // Buffers to bind
         std::array<VkBuffer, 1> vertexBuffers = {vertexBuffer.handle};
@@ -68,13 +68,6 @@ namespace Vk
         }
     }
 
-    void VertexBuffer::DestroyBuffer(VkDevice device) const
-    {
-        // Delete buffers
-        vertexBuffer.DeleteBuffer(device);
-        indexBuffer.DeleteBuffer(device);
-    }
-
     template <typename T>
     void VertexBuffer::InitBuffer
     (
@@ -90,28 +83,39 @@ namespace Vk
         // Create staging buffer
         auto stagingBuffer = Vk::Buffer
         (
-            context,
+            context->allocator,
             size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
         );
 
         // Load data
-        stagingBuffer.LoadData(context->device, data);
+        stagingBuffer.LoadData(context->allocator, data);
 
         // Create real buffer
         buffer = Vk::Buffer
         (
-            context,
+            context->allocator,
             size,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            0,
+            VMA_MEMORY_USAGE_AUTO
         );
 
         // Copy
         Vk::Buffer::CopyBuffer(context, stagingBuffer, buffer, size);
 
         // Delete staging buffer
-        stagingBuffer.DeleteBuffer(context->device);
+        stagingBuffer.Destroy(context->allocator);
+    }
+
+    void VertexBuffer::Destroy(VmaAllocator allocator)
+    {
+        // Delete buffers
+        vertexBuffer.Destroy(allocator);
+        indexBuffer.Destroy(allocator);
     }
 }

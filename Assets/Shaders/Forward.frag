@@ -26,7 +26,7 @@
 #include "PBR.glsl"
 #include "ACES.glsl"
 
-layout(binding = 0) uniform SceneBuffer
+layout(binding = 0, set = 0) uniform SceneBuffer
 {
     // Matrices
     mat4 projection;

@@ -44,7 +44,7 @@ namespace Vk
         // Equality operator
         bool operator==(const Texture& rhs) const;
         // Destroy texture
-        void Destroy(VkDevice device) const;
+        void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         // Texture image data
         Vk::Image image = {};
