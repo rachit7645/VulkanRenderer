@@ -17,11 +17,8 @@
 #ifndef EXT_IMGUI_H
 #define EXT_IMGUI_H
 
-#define IMGUI_DEFINE_MATH_OPERATORS
-
-#include "ImGui/imgui_internal.h"
-#include "ImGui/imgui.h"
-#include "ImGui/backends/imgui_impl_sdl2.h"
-#include "ImGui/backends/imgui_impl_vulkan.h"
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_sdl2.h"
+#include "imgui/backends/imgui_impl_vulkan.h"
 
 #endif

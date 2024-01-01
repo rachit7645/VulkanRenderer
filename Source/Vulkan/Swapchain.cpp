@@ -241,7 +241,11 @@ namespace Vk
                 image,
                 VK_IMAGE_VIEW_TYPE_2D,
                 imageFormat,
-                VK_IMAGE_ASPECT_COLOR_BIT
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                0,
+                1,
+                0,
+                1
             );
         }
     }

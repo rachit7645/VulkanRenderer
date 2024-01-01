@@ -25,14 +25,10 @@ namespace Renderer::RenderPasses
     SwapPass::SwapPass(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
         : swapchain(window, context)
     {
-        // Create render pass
-        CreateRenderPass(context->device);
-        // Create pipeline
-        pipeline = Pipelines::SwapPipeline(context, renderPass, swapchain.extent);
-        // Create command buffers
-        CreateCmdBuffers(context);
         // Initialise swapchain pass
         InitData(context);
+        // Create command buffers
+        CreateCmdBuffers(context);
         // Log
         Logger::Info("{}\n", "Created swapchain pass!");
     }
@@ -42,9 +38,7 @@ namespace Renderer::RenderPasses
         // Recreate swap chain
         swapchain.RecreateSwapChain(window, context);
         // Destroy data
-        DestroyData(context->device);
-        // Create render pass
-        CreateRenderPass(context->device);
+        DestroyData(context->device, context->allocator);
         // Init swapchain data
         InitData(context);
         // Log
@@ -147,6 +141,10 @@ namespace Renderer::RenderPasses
 
     void SwapPass::InitData(const std::shared_ptr<Vk::Context>& context)
     {
+        // Create render pass
+        CreateRenderPass(context->device);
+        // Create pipeline
+        pipeline = Pipelines::SwapPipeline(context, renderPass, swapchain.extent);
         // Create framebuffers
         CreateFramebuffers(context->device);
     }
@@ -154,7 +152,7 @@ namespace Renderer::RenderPasses
     void SwapPass::CreateRenderPass(VkDevice device)
     {
         // Build render pass
-        renderPass = Vk::Builders::RenderPassBuilder::Create(device)
+        renderPass = Vk::Builders::RenderPassBuilder(device)
                     .AddAttachment(
                         swapchain.imageFormat,
                         VK_SAMPLE_COUNT_1_BIT,
@@ -165,7 +163,7 @@ namespace Renderer::RenderPasses
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
                     .AddSubpass(
-                        Vk::Builders::SubpassBuilder::Create()
+                        Vk::Builders::SubpassBuilder()
                         .AddColorReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
                         .SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                         .AddDependency(
@@ -216,23 +214,24 @@ namespace Renderer::RenderPasses
         Logger::Debug("{}\n", "Destroying swapchain pass!");
 
         // Destroy data
-        DestroyData(device);
+        DestroyData(device, allocator);
         // Destroy swapchain
         swapchain.Destroy(device);
+    }
 
+    void SwapPass::DestroyData(VkDevice device, VmaAllocator allocator)
+    {
         // Destroy renderpass
         renderPass.Destroy(device);
         // Destroy pipeline
         pipeline.Destroy(device, allocator);
-    }
 
-    void SwapPass::DestroyData(VkDevice device)
-    {
         // Destroy framebuffers
         for (auto&& framebuffer : framebuffers)
         {
             framebuffer.Destroy(device);
         }
+
         // Clear framebuffers
         framebuffers.clear();
     }

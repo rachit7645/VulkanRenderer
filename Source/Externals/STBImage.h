@@ -22,12 +22,12 @@
 namespace STB
 {
     // Loaded image from STB
-    struct STBImage
+    struct Image
     {
         // Load image
-        explicit STBImage(const std::string_view path, s32 requiredComponents);
+        explicit Image(const std::string_view path, s32 requiredComponents);
         // Free image
-        ~STBImage();
+        Image();
         // Pixel data (PLEASE DON'T BE INCOMPATIBLE SOME DAY 60 YEARS LATER)
         u8* data = nullptr;
         // Metadata

@@ -16,6 +16,8 @@
 
 #include "Inputs.h"
 
+#include "Externals/ImGui.h"
+
 namespace Engine
 {
     Inputs::Inputs()

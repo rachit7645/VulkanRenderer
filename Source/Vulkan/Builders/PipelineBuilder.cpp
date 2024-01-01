@@ -18,18 +18,11 @@
 
 #include <utility>
 
-#include "Vulkan/ShaderModule.h"
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 
 namespace Vk::Builders
 {
-    PipelineBuilder PipelineBuilder::Create(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass)
-    {
-        // Create
-        return {context, renderPass};
-    }
-
     PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass renderPass)
         : m_context(context),
           m_renderPass(std::move(renderPass))
@@ -122,7 +115,7 @@ namespace Vk::Builders
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
     {
         // Load shader module
-        auto shaderModule = Vk::CreateShaderModule(m_context->device, path);
+        shaderModules.emplace_back(m_context->device, path);
 
         // Pipeline shader stage info
         VkPipelineShaderStageCreateInfo stageCreateInfo =
@@ -131,7 +124,7 @@ namespace Vk::Builders
             .pNext               = nullptr,
             .flags               = 0,
             .stage               = shaderStage,
-            .module              = shaderModule,
+            .module              = shaderModules.back().handle,
             .pName               = "main",
             .pSpecializationInfo = nullptr
         };
@@ -443,13 +436,12 @@ namespace Vk::Builders
 
     PipelineBuilder::~PipelineBuilder()
     {
-        // Loop over all shader stages
-        for (auto&& stage : shaderStageCreateInfos)
+        // For each shader module
+        for (const auto& shaderModule : shaderModules)
         {
-            // Log
-            Logger::Debug("Destroying shader module [handle={}]\n", reinterpret_cast<void*>(stage.module));
             // Destroy
-            vkDestroyShaderModule(m_context->device, stage.module, nullptr);
+            shaderModule.Destroy(m_context->device);
         }
     }
+
 }

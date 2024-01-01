@@ -31,7 +31,7 @@ namespace Vk
 
     // Layers
     #ifdef ENGINE_DEBUG
-    constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
+    constexpr std::array<const char*, 2> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     #endif
 
     // Required device extensions
@@ -233,11 +233,18 @@ namespace Vk
                 .properties = {}
             };
 
+            // Sync2
+            VkPhysicalDeviceSynchronization2Features sync2Features =
+            {
+                .sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+                .pNext            = nullptr,
+                .synchronization2 = VK_TRUE
+            };
             // Feature set
             VkPhysicalDeviceFeatures2 featureSet =
             {
                 .sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                .pNext    = nullptr,
+                .pNext    = &sync2Features,
                 .features = {}
             };
 
@@ -305,6 +312,7 @@ namespace Vk
         bool hasAnisotropy = featureSet.features.samplerAnisotropy;
         bool hasWireframe  = featureSet.features.fillModeNonSolid;
         bool multiViewport = featureSet.features.multiViewport;
+        bool hasSync2      = reinterpret_cast<VkPhysicalDeviceSynchronization2Features*>(featureSet.pNext)->synchronization2;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -318,7 +326,7 @@ namespace Vk
         }
 
         // Calculate score
-        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * hasWireframe * multiViewport * discreteGPU;
+        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * hasWireframe * multiViewport * hasSync2 * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -356,11 +364,19 @@ namespace Vk
         deviceFeatures.fillModeNonSolid  = VK_TRUE;
         deviceFeatures.multiViewport     = VK_TRUE;
 
+        // Sync2 features
+        VkPhysicalDeviceSynchronization2Features sync2Features =
+        {
+            .sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+            .pNext            = nullptr,
+            .synchronization2 = VK_TRUE
+        };
+
         // Logical device creation info
         VkDeviceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext                   = nullptr,
+            .pNext                   = &sync2Features,
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),

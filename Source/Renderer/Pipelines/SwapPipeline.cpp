@@ -143,7 +143,7 @@ namespace Renderer::Pipelines
         };
 
         // Build pipeline
-        return Vk::Builders::PipelineBuilder::Create(context, renderPass)
+        return Vk::Builders::PipelineBuilder(context, renderPass)
               .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
               .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
               .SetDynamicStates(DYN_STATES, SetDynamicStates)

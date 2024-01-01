@@ -27,8 +27,6 @@ namespace Vk::Builders
     class SubpassBuilder
     {
     public:
-        // Create builder
-        [[nodiscard]] static SubpassBuilder Create();
         // Build renderpass
         [[nodiscard]] SubpassState Build() const;
 
@@ -51,9 +49,6 @@ namespace Vk::Builders
 
         // State
         SubpassState subpassState;
-    private:
-        // Private constructor
-        SubpassBuilder() = default;
     };
 }
 

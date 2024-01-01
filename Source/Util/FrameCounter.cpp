@@ -16,6 +16,8 @@
 
 #include "FrameCounter.h"
 
+#include "Externals/ImGui.h"
+
 namespace Util
 {
     // Aliases

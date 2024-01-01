@@ -47,7 +47,7 @@ namespace Vk
         // Bind buffer
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         // Destroys the buffer
-        void Destroy(VmaAllocator allocator);
+        void Destroy(VmaAllocator allocator) const;
 
         // Vertex buffer
         Vk::Buffer vertexBuffer;

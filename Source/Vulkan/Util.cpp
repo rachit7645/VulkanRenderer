@@ -28,26 +28,35 @@ namespace Vk
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         // Execute user provided function
-        std::invoke(CmdFunction, cmdBuffer);
+        CmdFunction(cmdBuffer);
         // End
         cmdBuffer.EndRecording();
 
-        // Submit info
-        VkSubmitInfo submitInfo =
+        // Command buffer info
+        VkCommandBufferSubmitInfo cmdBufferInfo =
         {
-            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext                = nullptr,
-            .waitSemaphoreCount   = 0,
-            .pWaitSemaphores      = nullptr,
-            .pWaitDstStageMask    = nullptr,
-            .commandBufferCount   = 1,
-            .pCommandBuffers      = &cmdBuffer.handle,
-            .signalSemaphoreCount = 0,
-            .pSignalSemaphores    = nullptr
+            .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+            .pNext         = nullptr,
+            .commandBuffer = cmdBuffer.handle,
+            .deviceMask    = 0
+        };
+
+        // Submit info
+        VkSubmitInfo2 submitInfo =
+        {
+            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+            .pNext                    = nullptr,
+            .flags                    = 0,
+            .waitSemaphoreInfoCount   = 0,
+            .pWaitSemaphoreInfos      = nullptr,
+            .commandBufferInfoCount   = 1,
+            .pCommandBufferInfos      = &cmdBufferInfo,
+            .signalSemaphoreInfoCount = 0,
+            .pSignalSemaphoreInfos    = nullptr
         };
 
         // Submit
-        vkQueueSubmit(context->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueSubmit2(context->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(context->graphicsQueue);
 
         // Cleanup

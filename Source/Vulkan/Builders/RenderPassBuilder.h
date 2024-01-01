@@ -29,7 +29,7 @@ namespace Vk::Builders
     {
     public:
         // Create builder
-        [[nodiscard]] static RenderPassBuilder Create(VkDevice device);
+        explicit RenderPassBuilder(VkDevice device);
         // Build renderpass
         [[nodiscard]] Vk::RenderPass Build();
 
@@ -53,8 +53,6 @@ namespace Vk::Builders
         // Subpasses
         std::vector<SubpassState> subpassStates = {};
     private:
-        // Constructor
-        explicit RenderPassBuilder(VkDevice device);
         // Internal data
         VkDevice m_device = VK_NULL_HANDLE;
     };

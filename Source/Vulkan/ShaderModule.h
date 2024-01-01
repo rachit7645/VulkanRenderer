@@ -25,8 +25,16 @@
 
 namespace Vk
 {
-    // Creates a shader module
-    [[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, const std::string_view path);
+    class ShaderModule
+    {
+    public:
+        // Create shader module
+        ShaderModule(VkDevice device, const std::string_view path);
+        // Destroy shader module
+        void Destroy(VkDevice device) const;
+        // Handle
+        VkShaderModule handle = {};
+    };
 }
 
 #endif

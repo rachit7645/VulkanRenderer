@@ -51,18 +51,22 @@ namespace Vk
             depthImage,
             VK_IMAGE_VIEW_TYPE_2D,
             depthImage.format,
-            static_cast<VkImageAspectFlagBits>(depthImage.aspect)
+            static_cast<VkImageAspectFlagBits>(depthImage.aspect),
+            0,
+            1,
+            0,
+            1
         );
 
         // Transition to depth layout (optional)
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             depthImage.TransitionLayout
-                      (
-                      cmdBuffer,
-                      VK_IMAGE_LAYOUT_UNDEFINED,
-                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-                      );
+            (
+                cmdBuffer,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+            );
         });
     }
 

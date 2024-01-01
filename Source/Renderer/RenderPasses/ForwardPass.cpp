@@ -21,6 +21,7 @@
 #include "Renderer/RenderConstants.h"
 #include "Util/Maths.h"
 #include "Vulkan/Util.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer::RenderPasses
 {
@@ -308,7 +309,11 @@ namespace Renderer::RenderPasses
                 images[i],
                 VK_IMAGE_VIEW_TYPE_2D,
                 images[i].format,
-                VK_IMAGE_ASPECT_COLOR_BIT
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                0,
+                1,
+                0,
+                1
             );
 
             // Framebuffer attachments
@@ -328,7 +333,7 @@ namespace Renderer::RenderPasses
     void ForwardPass::CreateRenderPass(VkDevice device, VkPhysicalDevice physicalDevice)
     {
         // Build
-        renderPass = Vk::Builders::RenderPassBuilder::Create(device)
+        renderPass = Vk::Builders::RenderPassBuilder(device)
                     .AddAttachment(
                         GetColorFormat(physicalDevice),
                         VK_SAMPLE_COUNT_1_BIT,
@@ -348,7 +353,7 @@ namespace Renderer::RenderPasses
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
                     .AddSubpass(
-                        Vk::Builders::SubpassBuilder::Create()
+                        Vk::Builders::SubpassBuilder()
                         .AddColorReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
                         .AddDepthReference(1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
                         .SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)

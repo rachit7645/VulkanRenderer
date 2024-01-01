@@ -60,7 +60,7 @@ namespace Vk
         );
 
         // Internal deletion function
-        void Destroy(VmaAllocator allocator);
+        void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
         VkBuffer      handle     = VK_NULL_HANDLE;

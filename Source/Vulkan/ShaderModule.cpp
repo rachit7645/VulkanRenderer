@@ -24,7 +24,7 @@ namespace Vk
     // Shader directory
     constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
 
-    VkShaderModule CreateShaderModule(VkDevice device, const std::string_view path)
+    ShaderModule::ShaderModule(VkDevice device, const std::string_view path)
     {
         // Calc full path
         auto fullPath = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
@@ -42,15 +42,12 @@ namespace Vk
             .pCode    = reinterpret_cast<u32*>(shaderBinary.data())
         };
 
-        // Shader module
-        VkShaderModule shaderModule = {};
-
         // Create shader module
         if (vkCreateShaderModule(
                 device,
                 &createInfo,
                 nullptr,
-                &shaderModule
+                &handle
             ) != VK_SUCCESS)
         {
             // Log
@@ -58,9 +55,14 @@ namespace Vk
         }
 
         // Log
-        Logger::Info("Created shader module {} [handle={}]\n", path, reinterpret_cast<void*>(shaderModule));
+        Logger::Info("Created shader module {} [handle={}]\n", path, std::bit_cast<void*>(handle));
+    }
 
-        // Return
-        return shaderModule;
+    void ShaderModule::Destroy(VkDevice device) const
+    {
+        // Log
+        Logger::Debug("Destroying shader module [handle={}]\n", std::bit_cast<void*>(handle));
+        // Destroy
+        vkDestroyShaderModule(device, handle, nullptr);
     }
 }

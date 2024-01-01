@@ -58,7 +58,7 @@ namespace Renderer::RenderPasses
         // Create framebuffers
         void CreateFramebuffers(VkDevice device);
         // Destroy data
-        void DestroyData(VkDevice device);
+        void DestroyData(VkDevice device, VmaAllocator allocator);
         // Create command buffers
         void CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context);
     };

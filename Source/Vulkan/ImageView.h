@@ -29,7 +29,7 @@ namespace Vk
         // Default constructor
         ImageView() = default;
 
-        // Create image view (by default contains no mipmap layers, only a base layer)
+        // Create image view
         ImageView
         (
             VkDevice device,
@@ -37,10 +37,10 @@ namespace Vk
             VkImageViewType viewType,
             VkFormat format,
             VkImageAspectFlagBits aspectMask,
-            u32 baseMipLevel = 0,
-            u32 levelCount = 1,
-            u32 baseArrayLayer = 0,
-            u32 layerCount = 1
+            u32 baseMipLevel,
+            u32 levelCount,
+            u32 baseArrayLayer,
+            u32 layerCount
         );
 
         // Equality operator

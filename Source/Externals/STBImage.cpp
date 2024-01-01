@@ -22,7 +22,7 @@
 
 namespace STB
 {
-    STBImage::STBImage(const std::string_view path, s32 requiredComponents)
+    Image::Image(const std::string_view path, s32 requiredComponents)
     {
         // Temporary signed data
         s32 _width  = 0;
@@ -42,7 +42,7 @@ namespace STB
         height = static_cast<u32>(_height);
     }
 
-    STBImage::~STBImage()
+    Image::Image()
     {
         // Free
         stbi_image_free(data);

@@ -69,6 +69,8 @@ namespace Vk
 
         // Copies buffer data into image
         void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
+        // Generate mipmaps
+        void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
 
         // Delete image
         void Destroy(VmaAllocator allocator) const;

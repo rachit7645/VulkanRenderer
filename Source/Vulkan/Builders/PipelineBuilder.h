@@ -29,6 +29,7 @@
 #include "Vulkan/DescriptorSetData.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/RenderPass.h"
+#include "Vulkan/ShaderModule.h"
 
 namespace Vk::Builders
 {
@@ -36,7 +37,7 @@ namespace Vk::Builders
     {
     public:
         // Initialise pipeline builder
-        [[nodiscard]] static PipelineBuilder Create(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass);
+        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass renderPass);
         // Destroy pipeline data
         ~PipelineBuilder();
 
@@ -87,6 +88,8 @@ namespace Vk::Builders
             u32 copyCount // Number of unique descriptors per FIF
         );
 
+        // Shader modules
+        std::vector<Vk::ShaderModule> shaderModules = {};
         // Shader stages
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
 
@@ -127,8 +130,6 @@ namespace Vk::Builders
         // Descriptor set states
         std::vector<Builders::DescriptorState> descriptorStates = {};
     private:
-        // Private constructor
-        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass  renderPass);
 
         // Creates descriptor set layouts
         std::vector<VkDescriptorSetLayout> CreateDescriptorSetLayouts();

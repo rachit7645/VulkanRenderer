@@ -19,12 +19,6 @@
 
 namespace Vk::Builders
 {
-    RenderPassBuilder RenderPassBuilder::Create(VkDevice device)
-    {
-        // Return
-        return RenderPassBuilder(device);
-    }
-
     RenderPassBuilder::RenderPassBuilder(VkDevice device)
         : m_device(device)
     {

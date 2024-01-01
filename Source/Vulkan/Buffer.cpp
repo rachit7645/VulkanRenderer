@@ -111,25 +111,32 @@ namespace Vk
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             // Copy region
-            VkBufferCopy copyRegion =
+            VkBufferCopy2 copyRegion =
             {
+                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext     = nullptr,
                 .srcOffset = 0,
                 .dstOffset = 0,
                 .size      = copySize
             };
+
+            // Copy info
+            VkCopyBufferInfo2 copyInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                .pNext       = nullptr,
+                .srcBuffer   = srcBuffer.handle,
+                .dstBuffer   = dstBuffer.handle,
+                .regionCount = 1,
+                .pRegions    = &copyRegion
+            };
+
             // Copy
-            vkCmdCopyBuffer
-            (
-                cmdBuffer.handle,
-                srcBuffer.handle,
-                dstBuffer.handle,
-                1,
-                &copyRegion
-            );
+            vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
         });
     }
 
-    void Buffer::Destroy(VmaAllocator allocator)
+    void Buffer::Destroy(VmaAllocator allocator) const
     {
         // Log
         Logger::Debug

@@ -20,12 +20,6 @@
 
 namespace Vk::Builders
 {
-    SubpassBuilder SubpassBuilder::Create()
-    {
-        // Return
-        return {};
-    }
-
     SubpassState SubpassBuilder::Build() const
     {
         // Return subpass state

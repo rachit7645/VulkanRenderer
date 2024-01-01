@@ -21,6 +21,7 @@
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
 #include "Engine/Inputs.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer
 {
@@ -120,35 +121,61 @@ namespace Renderer
 
     void RenderManager::SubmitQueue()
     {
-        // Waiting semaphores
-        std::array<VkSemaphore, 1> waitSemaphores = {m_swapPass.swapchain.imageAvailableSemaphores[m_currentFrame]};
-        // Signal semaphores
-        std::array<VkSemaphore, 1> signalSemaphores = {m_swapPass.swapchain.renderFinishedSemaphores[m_currentFrame]};
-        // Pipeline stage flags
-        std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        // Command buffers
-        std::array<VkCommandBuffer, 2> cmdBuffers =
+        // Waiting semaphore
+        VkSemaphoreSubmitInfo waitSemaphoreInfo =
         {
-            m_forwardPass.cmdBuffers[m_currentFrame].handle,
-            m_swapPass.cmdBuffers[m_currentFrame].handle
+            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .pNext       = nullptr,
+            .semaphore   = m_swapPass.swapchain.imageAvailableSemaphores[m_currentFrame],
+            .value       = 0,
+            .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .deviceIndex = 0
+        };
+        // Command buffer submit information
+        std::array<VkCommandBufferSubmitInfo, 2> cmdBufferInfos =
+        {
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_forwardPass.cmdBuffers[m_currentFrame].handle,
+                .deviceMask    = 0
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_swapPass.cmdBuffers[m_currentFrame].handle,
+                .deviceMask    = 0
+            }
+        };
+        // Signal semaphore
+        VkSemaphoreSubmitInfo signalSemaphoreInfo =
+        {
+            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .pNext       = nullptr,
+            .semaphore   = m_swapPass.swapchain.renderFinishedSemaphores[m_currentFrame],
+            .value       = 0,
+            .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .deviceIndex = 0
         };
 
         // Queue submit info
-        VkSubmitInfo submitInfo =
+        VkSubmitInfo2 submitInfo =
         {
-            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext                = nullptr,
-            .waitSemaphoreCount   = static_cast<u32>(waitSemaphores.size()),
-            .pWaitSemaphores      = waitSemaphores.data(),
-            .pWaitDstStageMask    = waitStages.data(),
-            .commandBufferCount   = static_cast<u32>(cmdBuffers.size()),
-            .pCommandBuffers      = cmdBuffers.data(),
-            .signalSemaphoreCount = static_cast<u32>(signalSemaphores.size()),
-            .pSignalSemaphores    = signalSemaphores.data()
+            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+            .pNext                    = nullptr,
+            .flags                    = 0,
+            .waitSemaphoreInfoCount   = 1,
+            .pWaitSemaphoreInfos      = &waitSemaphoreInfo,
+            .commandBufferInfoCount   = static_cast<u32>(cmdBufferInfos.size()),
+            .pCommandBufferInfos      = cmdBufferInfos.data(),
+            .signalSemaphoreInfoCount = 1,
+            .pSignalSemaphoreInfos    = &signalSemaphoreInfo
         };
 
         // Submit queue
-        if (vkQueueSubmit(
+        if (vkQueueSubmit2(
                 m_context->graphicsQueue,
                 1,
                 &submitInfo,

@@ -89,10 +89,10 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<vulkan/vulkan_core.h>
 	<vulkan/vk_enum_string_helper.h>
 	# ImGui Headers
-    Externals/ImGui/imgui.h
-    Externals/ImGui/imgui_internal.h
-    Externals/ImGui/backends/imgui_impl_sdl2.h
-    Externals/ImGui/backends/imgui_impl_vulkan.h
+    Externals/imgui/imgui.h
+    Externals/imgui/imgui_internal.h
+    Externals/imgui/backends/imgui_impl_sdl2.h
+    Externals/imgui/backends/imgui_impl_vulkan.h
     # STB Headers
     <stb/stb_image.h>
 	# Assimp Headers
@@ -117,7 +117,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <glm/geometric.hpp>
     <glm/gtc/matrix_transform.hpp>
     # VMA Headers
-	Externals/VMA/include/vk_mem_alloc.h
+	Externals/vma/include/vk_mem_alloc.h
     # C++ STL Headers
 	<map>
     <unordered_map>

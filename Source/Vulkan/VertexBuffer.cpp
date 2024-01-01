@@ -47,18 +47,20 @@ namespace Vk
     void VertexBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
         // Buffers to bind
-        std::array<VkBuffer, 1> vertexBuffers = {vertexBuffer.handle};
+        std::array<VkBuffer, 1> buffers = {vertexBuffer.handle};
         // Offsets
         std::array<VkDeviceSize, 1> offsets = {0};
 
         // Bind vertex buffers
-        vkCmdBindVertexBuffers
+        vkCmdBindVertexBuffers2
         (
             cmdBuffer.handle,
             0,
-            static_cast<u32>(vertexBuffers.size()),
-            vertexBuffers.data(),
-            offsets.data()
+            static_cast<u32>(buffers.size()),
+            buffers.data(),
+            offsets.data(),
+            nullptr,
+            nullptr
         );
 
         // Bind index buffer
@@ -112,7 +114,7 @@ namespace Vk
         stagingBuffer.Destroy(context->allocator);
     }
 
-    void VertexBuffer::Destroy(VmaAllocator allocator)
+    void VertexBuffer::Destroy(VmaAllocator allocator) const
     {
         // Delete buffers
         vertexBuffer.Destroy(allocator);

@@ -22,16 +22,20 @@ namespace Vk
     {
         // Get queue family count
         u32 queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties
+        vkGetPhysicalDeviceQueueFamilyProperties2
         (
             device,
             &queueFamilyCount,
             nullptr
         );
 
+        // Empty queue family
+        VkQueueFamilyProperties2 emptyQueue = {};
+        emptyQueue.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+        emptyQueue.pNext = nullptr;
         // Get queue families
-        auto queueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties
+        auto queueFamilies = std::vector<VkQueueFamilyProperties2>(queueFamilyCount, emptyQueue);
+        vkGetPhysicalDeviceQueueFamilyProperties2
         (
             device,
             &queueFamilyCount,
@@ -52,7 +56,7 @@ namespace Vk
             );
 
             // Check if family has graphics support
-            if (presentSupport == VK_TRUE && family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if (presentSupport == VK_TRUE && family.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
                 // Found graphics family!
                 graphicsFamily = i;
@@ -73,12 +77,12 @@ namespace Vk
     std::set<u32> QueueFamilyIndices::GetUniqueFamilies() const
     {
         // Return all queue families
-        return {graphicsFamily.value()};
+        return {graphicsFamily.value_or(0)};
     }
 
     bool QueueFamilyIndices::IsComplete() const
     {
-        // Make sure both queues available
+        // Make sure queues are available
         return graphicsFamily.has_value();
     }
 }
