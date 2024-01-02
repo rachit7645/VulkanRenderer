@@ -28,7 +28,6 @@
 #include "Vulkan/Context.h"
 #include "Vulkan/DescriptorSetData.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/RenderPass.h"
 #include "Vulkan/ShaderModule.h"
 
 namespace Vk::Builders
@@ -37,13 +36,20 @@ namespace Vk::Builders
     {
     public:
         // Initialise pipeline builder
-        PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass renderPass);
+        PipelineBuilder(const std::shared_ptr<Vk::Context>& context);
         // Destroy pipeline data
         ~PipelineBuilder();
 
         // Build pipeline
         Vk::Pipeline Build();
 
+        // Set rendering info
+        [[nodiscard]] PipelineBuilder& SetRenderingInfo
+        (
+            const std::span<const VkFormat> colorFormats,
+            VkFormat depthFormat,
+            VkFormat stencilFormat
+        );
         // Attach shader to pipeline
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
         // Set dynamic state objects
@@ -87,6 +93,11 @@ namespace Vk::Builders
             u32 useCount, // Number of descriptors used at a time (for arrays mostly I think)
             u32 copyCount // Number of unique descriptors per FIF
         );
+
+        // Rendering info
+        VkPipelineRenderingCreateInfo renderingCreateInfo = {};
+        // Color formats
+        std::vector<VkFormat> renderingColorFormats = {};
 
         // Shader modules
         std::vector<Vk::ShaderModule> shaderModules = {};
@@ -138,8 +149,6 @@ namespace Vk::Builders
 
         // Vulkan context
         std::shared_ptr<Vk::Context> m_context = nullptr;
-        // Render pass
-        Vk::RenderPass m_renderPass;
     };
 }
 

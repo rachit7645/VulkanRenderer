@@ -55,10 +55,14 @@ namespace Renderer::Pipelines
             Renderer::DirLight dirLight = {};
         };
 
-        // Default constructor
-        ForwardPipeline() = default;
         // Create pipeline
-        ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent);
+        ForwardPipeline
+        (
+            const std::shared_ptr<Vk::Context>& context,
+            VkFormat colorFormat,
+            VkFormat depthFormat,
+            VkExtent2D extent
+        );
 
         // Write material descriptors
         void WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials);
@@ -80,7 +84,13 @@ namespace Renderer::Pipelines
         MaterialMap materialMap = {};
     private:
         // Create pipeline
-        [[nodiscard]] Vk::Pipeline CreatePipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent);
+        [[nodiscard]] Vk::Pipeline CreatePipeline
+        (
+            const std::shared_ptr<Vk::Context>& context,
+            VkFormat colorFormat,
+            VkFormat depthFormat,
+            VkExtent2D extent
+        );
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
         // Destroy per-pipeline data

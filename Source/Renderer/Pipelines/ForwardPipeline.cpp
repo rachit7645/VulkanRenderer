@@ -20,14 +20,17 @@
 
 namespace Renderer::Pipelines
 {
-    // Max textures
-    constexpr usize MAX_MATERIAL_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
-
     // Usings
     using Models::Vertex;
 
-    ForwardPipeline::ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent)
-        : Vk::Pipeline(CreatePipeline(context, renderPass, extent))
+    ForwardPipeline::ForwardPipeline
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        VkFormat colorFormat,
+        VkFormat depthFormat,
+        VkExtent2D extent
+    )
+        : Vk::Pipeline(CreatePipeline(context, colorFormat, depthFormat, extent))
     {
         // Create pipeline data
         CreatePipelineData(context);
@@ -140,7 +143,8 @@ namespace Renderer::Pipelines
     Vk::Pipeline ForwardPipeline::CreatePipeline
     (
         const std::shared_ptr<Vk::Context>& context,
-        const Vk::RenderPass& renderPass,
+        VkFormat colorFormat,
+        VkFormat depthFormat,
         VkExtent2D extent
     )
     {
@@ -180,9 +184,14 @@ namespace Renderer::Pipelines
 
         // Dynamic states
         constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        // Max textures
+        constexpr usize MAX_MATERIAL_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
+        // Color formats
+        auto colorFormats = std::span(&colorFormat, 1);
 
         // Build pipeline
-        return Vk::Builders::PipelineBuilder(context, renderPass)
+        return Vk::Builders::PipelineBuilder(context)
+              .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
               .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
               .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
               .SetDynamicStates(DYN_STATES, SetDynamicStates)

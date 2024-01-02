@@ -65,7 +65,7 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkImageLayout oldLayout,
             VkImageLayout newLayout
-        );
+        ) const;
 
         // Copies buffer data into image
         void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);

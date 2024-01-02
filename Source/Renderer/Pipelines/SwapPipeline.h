@@ -21,7 +21,6 @@
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/Swapchain.h"
-#include "Vulkan/RenderPass.h"
 #include "Vulkan/VertexBuffer.h"
 
 namespace Renderer::Pipelines
@@ -29,10 +28,13 @@ namespace Renderer::Pipelines
     class SwapPipeline : public Vk::Pipeline
     {
     public:
-        // Default constructor
-        SwapPipeline() = default;
         // Create swapchain pipeline
-        SwapPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& swapPass, VkExtent2D swapExtent);
+        SwapPipeline
+        (
+            const std::shared_ptr<Vk::Context>& context,
+            VkFormat colorFormat,
+            VkExtent2D extent
+        );
 
         // Write sampled image descriptors
         void WriteImageDescriptors(VkDevice device, const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews);
@@ -45,7 +47,12 @@ namespace Renderer::Pipelines
         Vk::VertexBuffer screenQuad = {};
     private:
         // Create pipeline
-        [[nodiscard]] Vk::Pipeline CreatePipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent);
+        [[nodiscard]] Vk::Pipeline CreatePipeline
+        (
+            const std::shared_ptr<Vk::Context>& context,
+            VkFormat colorFormat,
+            VkExtent2D extent
+        );
         // Create associated pipeline data
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
         // Destroy per-pipeline data

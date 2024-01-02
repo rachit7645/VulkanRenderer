@@ -21,7 +21,6 @@
 #include <vulkan/vulkan.h>
 
 #include "DescriptorSetData.h"
-#include "RenderPass.h"
 #include "Context.h"
 #include "Util/Util.h"
 #include "CommandBuffer.h"

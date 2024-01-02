@@ -2,7 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Externals/ImGui" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Externals/VMA" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/vma" vcs="Git" />
   </component>
 </project>

@@ -55,6 +55,8 @@ namespace Vk
 
         // Image format
         VkFormat imageFormat = {};
+        // Swap chain images
+        std::vector<Vk::Image> images = {};
         // Swap chain image views
         std::vector<Vk::ImageView> imageViews = {};
         // Image index
@@ -79,9 +81,6 @@ namespace Vk
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
         // Choose swap extent
         [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window) const;
-
-        // Swap chain images
-        std::vector<Vk::Image> m_images = {};
 
         // Swapchain info
         Vk::SwapchainInfo m_swapChainInfo = {};

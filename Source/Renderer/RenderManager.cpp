@@ -139,14 +139,14 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_forwardPass.cmdBuffers[m_currentFrame].handle,
-                .deviceMask    = 0
+                .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo
             {
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_swapPass.cmdBuffers[m_currentFrame].handle,
-                .deviceMask    = 0
+                .deviceMask    = 1
             }
         };
         // Signal semaphore
@@ -203,8 +203,8 @@ namespace Renderer
             .MinImageCount         = Vk::FRAMES_IN_FLIGHT,
             .ImageCount            = Vk::FRAMES_IN_FLIGHT,
             .MSAASamples           = VK_SAMPLE_COUNT_1_BIT,
-            .UseDynamicRendering   = false,
-            .ColorAttachmentFormat = {},
+            .UseDynamicRendering   = true,
+            .ColorAttachmentFormat = m_swapPass.swapchain.imageFormat,
             .Allocator             = nullptr,
             .CheckVkResultFn       = &Vk::CheckResult
         };
@@ -216,7 +216,7 @@ namespace Renderer
         ImGui::StyleColorsDark();
         // Init ImGui backend
         ImGui_ImplSDL2_InitForVulkan(m_window->handle);
-        ImGui_ImplVulkan_Init(&imguiInitInfo, m_forwardPass.renderPass.handle);
+        ImGui_ImplVulkan_Init(&imguiInitInfo, VK_NULL_HANDLE);
         // Upload fonts
         ImGui_ImplVulkan_CreateFontsTexture();
     }

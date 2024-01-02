@@ -25,12 +25,11 @@
 namespace Vk
 {
     // Usings
-    using GetInstanceProcAddr           = ExtensionState::GetInstanceProcAddr;
     using CreateDebugUtilsMessengerEXT  = ExtensionState::CreateDebugUtilsMessengerEXT;
     using DestroyDebugUtilsMessengerEXT = ExtensionState::DestroyDebugUtilsMessengerEXT;
 
     // Internal extension function pointers (Global state, I know)
-    inline ExtensionState g_ExtensionState = {};
+    static inline ExtensionState g_ExtensionState = {};
 
     std::vector<const char*> Extensions::LoadInstanceExtensions(SDL_Window* window)
     {
@@ -67,7 +66,9 @@ namespace Vk
         SDL_free(reinterpret_cast<void*>(instanceExtensions));
 
         // Add other extensions
+        #ifdef ENGINE_DEBUG
         extensionStrings.emplace_back("VK_EXT_debug_utils");
+        #endif
 
         // Return
         return extensionStrings;
@@ -75,6 +76,7 @@ namespace Vk
 
     void Extensions::LoadInstanceFunctions(VkInstance instance)
     {
+        #ifdef ENGINE_DEBUG
         // Load debug utils creation function
         g_ExtensionState.p_CreateDebugUtilsMessengerEXT = LoadExtension<CreateDebugUtilsMessengerEXT>(
             instance, "vkCreateDebugUtilsMessengerEXT"
@@ -84,6 +86,7 @@ namespace Vk
         g_ExtensionState.p_DestroyDebugUtilsMessengerEXT = LoadExtension<DestroyDebugUtilsMessengerEXT>(
             instance, "vkDestroyDebugUtilsMessengerEXT"
         );
+        #endif
     }
 
     bool Extensions::CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions)
@@ -144,7 +147,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT
     // Get function
     Vk::CreateDebugUtilsMessengerEXT fn = Vk::g_ExtensionState.p_CreateDebugUtilsMessengerEXT;
     // Call
-    return fn(instance, pCreateInfo, pAllocator, pMessenger);
+    return fn != nullptr ? fn(instance, pCreateInfo, pAllocator, pMessenger) : VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT
@@ -157,5 +160,5 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT
     // Get function
     Vk::DestroyDebugUtilsMessengerEXT fn = Vk::g_ExtensionState.p_DestroyDebugUtilsMessengerEXT;
     // Call
-    fn(instance, messenger, pAllocator);
+    fn != nullptr ? fn(instance, messenger, pAllocator) : (void) fn;
 }

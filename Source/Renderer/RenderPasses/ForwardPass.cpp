@@ -15,9 +15,7 @@
  */
 
 #include "ForwardPass.h"
-#include "Vulkan/Builders/RenderPassBuilder.h"
 #include "Util/Log.h"
-#include "Vulkan/Builders/SubpassBuilder.h"
 #include "Renderer/RenderConstants.h"
 #include "Util/Maths.h"
 #include "Vulkan/Util.h"
@@ -25,29 +23,26 @@
 
 namespace Renderer::RenderPasses
 {
-    ForwardPass::ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
+    ForwardPass::ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
+        : pipeline(context, GetColorFormat(context->physicalDevice), Vk::DepthBuffer::GetDepthFormat(context->physicalDevice), extent)
     {
-        // Create render pass
-        CreateRenderPass(context->device, context->physicalDevice);
-        // Create pipeline
-        pipeline = Pipelines::ForwardPipeline(context, renderPass, swapchainExtent);
         // Create command buffers
         for (auto&& cmdBuffer : cmdBuffers)
         {
             cmdBuffer = Vk::CommandBuffer(context, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
         }
         // Init forward pass data
-        InitData(context, swapchainExtent);
+        InitData(context, extent);
         // Log
         Logger::Info("{}\n", "Created forward pass!");
     }
 
-    void ForwardPass::Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
+    void ForwardPass::Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
     {
         // Destroy old data
         DestroyData(context->device, context->allocator);
         // Init forward pass data
-        InitData(context, swapchainExtent);
+        InitData(context, extent);
         // Log
         Logger::Info("{}\n", "Recreated forward pass!");
     }
@@ -56,7 +51,6 @@ namespace Renderer::RenderPasses
     {
         // Get current resources
         auto& currentCmdBuffer    = cmdBuffers[FIF];
-        auto& currentFramebuffer  = framebuffers[FIF];
         auto& currentPushConstant = pipeline.pushConstants[FIF];
 
         // Begin recording
@@ -71,18 +65,60 @@ namespace Renderer::RenderPasses
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         );
 
-        // Set clear state
-        renderPass.ResetClearValues();
-        renderPass.SetClearValue(Renderer::CLEAR_COLOR);
-        renderPass.SetClearValue(1.0f, 0x0);
-        // Begin renderpass
-        renderPass.BeginRenderPass
-        (
-            currentCmdBuffer,
-            currentFramebuffer,
-            {.offset = {0, 0}, .extent = {currentFramebuffer.size.x, currentFramebuffer.size.y}},
-            VK_SUBPASS_CONTENTS_INLINE
-        );
+        // Color attachment info
+        VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = imageViews[FIF].handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{
+                Renderer::CLEAR_COLOR.r,
+                Renderer::CLEAR_COLOR.g,
+                Renderer::CLEAR_COLOR.b,
+                Renderer::CLEAR_COLOR.a
+            }}}
+        };
+
+        // Depth attachment info
+        VkRenderingAttachmentInfo depthAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = depthBuffer.depthImageView.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .clearValue         = {.depthStencil = {1.0f, 0x0}}
+        };
+
+        VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {0, 0},
+                .extent = {m_renderSize.x, m_renderSize.y}
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = &depthAttachmentInfo,
+            .pStencilAttachment   = nullptr
+        };
+
+        // Begin rendering
+        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
 
         // Bind pipeline
         pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -92,8 +128,8 @@ namespace Renderer::RenderPasses
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(currentFramebuffer.size.x),
-            .height   = static_cast<f32>(currentFramebuffer.size.y),
+            .width    = static_cast<f32>(m_renderSize.x),
+            .height   = static_cast<f32>(m_renderSize.y),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -111,7 +147,7 @@ namespace Renderer::RenderPasses
         VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = {currentFramebuffer.size.x, currentFramebuffer.size.y}
+            .extent = {m_renderSize.x, m_renderSize.y}
         };
 
         // Set scissor
@@ -132,8 +168,8 @@ namespace Renderer::RenderPasses
             // Projection matrix
             .projection = glm::perspective(
                 camera.FOV,
-                static_cast<f32>(currentFramebuffer.size.x) /
-                static_cast<f32>(currentFramebuffer.size.y),
+                static_cast<f32>(m_renderSize.x) /
+                static_cast<f32>(m_renderSize.y),
                 PLANES.x,
                 PLANES.y
             ),
@@ -245,12 +281,8 @@ namespace Renderer::RenderPasses
             );
         }
 
-        // Render ImGui
-        ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), currentCmdBuffer.handle);
-
-        // End render pass
-        renderPass.EndRenderPass(currentCmdBuffer);
+        // End render
+        vkCmdEndRendering(currentCmdBuffer.handle);
 
         // Transition back
         images[FIF].TransitionLayout
@@ -264,16 +296,14 @@ namespace Renderer::RenderPasses
         currentCmdBuffer.EndRecording();
     }
 
-    void ForwardPass::InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
+    void ForwardPass::InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
     {
-        // Create framebuffer data
-        InitFramebuffers(context, swapchainExtent);
-    }
+        // Set render area
+        m_renderSize = {extent.width, extent.height};
 
-    void ForwardPass::InitFramebuffers(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
-    {
-        // Create depth buffer (TODO: it's shared between FIFs, must ask later)
-        depthBuffer = Vk::DepthBuffer(context, swapchainExtent);
+        // Create depth buffer
+        depthBuffer = Vk::DepthBuffer(context, extent);
+
         // Get color format
         auto colorFormat = GetColorFormat(context->physicalDevice);
         // Log
@@ -286,8 +316,8 @@ namespace Renderer::RenderPasses
             images[i] = Vk::Image
             (
                 context,
-                swapchainExtent.width,
-                swapchainExtent.height,
+                m_renderSize.x,
+                m_renderSize.y,
                 1,
                 colorFormat,
                 VK_IMAGE_TILING_OPTIMAL,
@@ -315,57 +345,7 @@ namespace Renderer::RenderPasses
                 0,
                 1
             );
-
-            // Framebuffer attachments
-            std::array<Vk::ImageView, 2> attachments = {imageViews[i], depthBuffer.depthImageView};
-            // Create framebuffer
-            framebuffers[i] = Vk::Framebuffer
-            (
-                context->device,
-                renderPass,
-                attachments,
-                glm::uvec2(swapchainExtent.width, swapchainExtent.height),
-                1
-            );
         }
-    }
-
-    void ForwardPass::CreateRenderPass(VkDevice device, VkPhysicalDevice physicalDevice)
-    {
-        // Build
-        renderPass = Vk::Builders::RenderPassBuilder(device)
-                    .AddAttachment(
-                        GetColorFormat(physicalDevice),
-                        VK_SAMPLE_COUNT_1_BIT,
-                        VK_ATTACHMENT_LOAD_OP_CLEAR,
-                        VK_ATTACHMENT_STORE_OP_STORE,
-                        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-                    .AddAttachment(
-                        depthBuffer.GetDepthFormat(physicalDevice),
-                        VK_SAMPLE_COUNT_1_BIT,
-                        VK_ATTACHMENT_LOAD_OP_CLEAR,
-                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                    .AddSubpass(
-                        Vk::Builders::SubpassBuilder()
-                        .AddColorReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-                        .AddDepthReference(1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                        .SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-                        .AddDependency(
-                            VK_SUBPASS_EXTERNAL,
-                            0,
-                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                            0,
-                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-                        .Build())
-                    .Build();
     }
 
     VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice)
@@ -386,10 +366,6 @@ namespace Renderer::RenderPasses
         Logger::Debug("{}\n", "Destroying forward pass!");
         // Destroy data
         DestroyData(device, allocator);
-        // Destroy pipeline
-        pipeline.Destroy(device, allocator);
-        // Destroy renderpass
-        renderPass.Destroy(device);
     }
 
     void ForwardPass::DestroyData(VkDevice device, VmaAllocator allocator)
@@ -406,18 +382,13 @@ namespace Renderer::RenderPasses
             image.Destroy(allocator);
         }
 
-        // Destroy framebuffers
-        for (auto&& framebuffer : framebuffers)
-        {
-            framebuffer.Destroy(device);
-        }
-
         // Destroy depth buffer
         depthBuffer.Destroy(device, allocator);
+        // Destroy pipeline
+        pipeline.Destroy(device, allocator);
 
         // Clear
         images.fill({});
         imageViews.fill({});
-        framebuffers.fill({});
     }
 }

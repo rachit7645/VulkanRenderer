@@ -17,9 +17,7 @@
 #ifndef SWAP_PASS_H
 #define SWAP_PASS_H
 
-#include "Vulkan/Framebuffer.h"
 #include "Vulkan/DepthBuffer.h"
-#include "Vulkan/RenderPass.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Renderer/Pipelines/SwapPipeline.h"
 
@@ -42,23 +40,11 @@ namespace Renderer::RenderPasses
 
         // Swapchain
         Vk::Swapchain swapchain;
-        // Presentation render pass
-        Vk::RenderPass renderPass;
         // Pipeline
         Pipelines::SwapPipeline pipeline;
-        // Swap chain framebuffers
-        std::vector<Vk::Framebuffer> framebuffers;
         // Command buffers
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
     private:
-        // Initialise swapchain pass data
-        void InitData(const std::shared_ptr<Vk::Context>& context);
-        // Create renderpass
-        void CreateRenderPass(VkDevice device);
-        // Create framebuffers
-        void CreateFramebuffers(VkDevice device);
-        // Destroy data
-        void DestroyData(VkDevice device, VmaAllocator allocator);
         // Create command buffers
         void CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context);
     };

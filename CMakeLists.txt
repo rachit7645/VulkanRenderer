@@ -51,13 +51,9 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Sampler.cpp
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
-	Source/Vulkan/Framebuffer.cpp
-	Source/Vulkan/RenderPass.cpp
 	Source/Vulkan/CommandBuffer.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
-	Source/Vulkan/Builders/RenderPassBuilder.cpp
-	Source/Vulkan/Builders/SubpassBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/FreeCamera.cpp

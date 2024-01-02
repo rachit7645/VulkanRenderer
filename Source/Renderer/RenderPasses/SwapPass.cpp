@@ -15,18 +15,15 @@
  */
 
 #include "SwapPass.h"
-#include "Vulkan/Builders/RenderPassBuilder.h"
-#include "Vulkan/Builders/SubpassBuilder.h"
 #include "Util/Log.h"
 #include "Renderer/RenderConstants.h"
 
 namespace Renderer::RenderPasses
 {
     SwapPass::SwapPass(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
-        : swapchain(window, context)
+        : swapchain(window, context),
+          pipeline(context, swapchain.imageFormat, swapchain.extent)
     {
-        // Initialise swapchain pass
-        InitData(context);
         // Create command buffers
         CreateCmdBuffers(context);
         // Log
@@ -37,10 +34,8 @@ namespace Renderer::RenderPasses
     {
         // Recreate swap chain
         swapchain.RecreateSwapChain(window, context);
-        // Destroy data
-        DestroyData(context->device, context->allocator);
-        // Init swapchain data
-        InitData(context);
+        // Recreate pipeline just in case
+        pipeline = Pipelines::SwapPipeline(context, swapchain.imageFormat, swapchain.extent);
         // Log
         Logger::Info("{}\n", "Recreated swapchain pass!");
     }
@@ -48,24 +43,61 @@ namespace Renderer::RenderPasses
     void SwapPass::Render(usize FIF)
     {
         // Get current resources
-        auto& currentCmdBuffer   = cmdBuffers[FIF];
-        auto& currentFramebuffer = framebuffers[swapchain.imageIndex];
+        auto& currentCmdBuffer = cmdBuffers[FIF];
+        auto& currentImage     = swapchain.images[swapchain.imageIndex];
+        auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
 
         // Begin recording
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(0);
 
-        // Set clear state
-        renderPass.ResetClearValues();
-        renderPass.SetClearValue(Renderer::CLEAR_COLOR);
-        // Begin render pass
-        renderPass.BeginRenderPass
+        // Transition as color attachment
+        currentImage.TransitionLayout
         (
             currentCmdBuffer,
-            currentFramebuffer,
-            {.offset = {0, 0}, .extent = swapchain.extent},
-            VK_SUBPASS_CONTENTS_INLINE
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         );
+
+        // Color attachment info
+        VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = currentImageView.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{
+                Renderer::CLEAR_COLOR.r,
+                Renderer::CLEAR_COLOR.g,
+                Renderer::CLEAR_COLOR.b,
+                Renderer::CLEAR_COLOR.a
+            }}}
+        };
+
+        VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {0, 0},
+                .extent = swapchain.extent
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
+
+        // Begin rendering
+        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
 
         // Bind pipeline
         pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -75,8 +107,8 @@ namespace Renderer::RenderPasses
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(currentFramebuffer.size.x),
-            .height   = static_cast<f32>(currentFramebuffer.size.y),
+            .width    = static_cast<f32>(swapchain.extent.width),
+            .height   = static_cast<f32>(swapchain.extent.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -94,7 +126,7 @@ namespace Renderer::RenderPasses
         VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = {currentFramebuffer.size.x, currentFramebuffer.size.y}
+            .extent = swapchain.extent
         };
 
         // Set scissor
@@ -127,8 +159,21 @@ namespace Renderer::RenderPasses
             0
         );
 
-        // End render pass
-        renderPass.EndRenderPass(currentCmdBuffer);
+        // Render ImGui
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), currentCmdBuffer.handle);
+
+        // End render
+        vkCmdEndRendering(currentCmdBuffer.handle);
+
+        // Transition for presentation
+        currentImage.TransitionLayout
+        (
+            currentCmdBuffer,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        );
+
         // End recording
         currentCmdBuffer.EndRecording();
     }
@@ -137,66 +182,6 @@ namespace Renderer::RenderPasses
     {
         // Present
         swapchain.Present(context->graphicsQueue, FIF);
-    }
-
-    void SwapPass::InitData(const std::shared_ptr<Vk::Context>& context)
-    {
-        // Create render pass
-        CreateRenderPass(context->device);
-        // Create pipeline
-        pipeline = Pipelines::SwapPipeline(context, renderPass, swapchain.extent);
-        // Create framebuffers
-        CreateFramebuffers(context->device);
-    }
-
-    void SwapPass::CreateRenderPass(VkDevice device)
-    {
-        // Build render pass
-        renderPass = Vk::Builders::RenderPassBuilder(device)
-                    .AddAttachment(
-                        swapchain.imageFormat,
-                        VK_SAMPLE_COUNT_1_BIT,
-                        VK_ATTACHMENT_LOAD_OP_CLEAR,
-                        VK_ATTACHMENT_STORE_OP_STORE,
-                        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-                    .AddSubpass(
-                        Vk::Builders::SubpassBuilder()
-                        .AddColorReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-                        .SetBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-                        .AddDependency(
-                            VK_SUBPASS_EXTERNAL,
-                            0,
-                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                            0,
-                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                        .Build())
-                    .Build();
-    }
-
-    void SwapPass::CreateFramebuffers(VkDevice device)
-    {
-        // Resize
-        framebuffers.reserve(swapchain.imageViews.size());
-
-        // For each image view
-        for (auto& imageView : swapchain.imageViews)
-        {
-            // Attachments
-            std::array<Vk::ImageView, 1> attachmentViews = { imageView };
-            // Create framebuffer
-            framebuffers.emplace_back
-            (
-                device,
-                renderPass,
-                attachmentViews,
-                glm::uvec2(swapchain.extent.width, swapchain.extent.height),
-                1
-            );
-        }
     }
 
     void SwapPass::CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context)
@@ -213,26 +198,9 @@ namespace Renderer::RenderPasses
         // Log
         Logger::Debug("{}\n", "Destroying swapchain pass!");
 
-        // Destroy data
-        DestroyData(device, allocator);
         // Destroy swapchain
         swapchain.Destroy(device);
-    }
-
-    void SwapPass::DestroyData(VkDevice device, VmaAllocator allocator)
-    {
-        // Destroy renderpass
-        renderPass.Destroy(device);
         // Destroy pipeline
         pipeline.Destroy(device, allocator);
-
-        // Destroy framebuffers
-        for (auto&& framebuffer : framebuffers)
-        {
-            framebuffer.Destroy(device);
-        }
-
-        // Clear framebuffers
-        framebuffers.clear();
     }
 }

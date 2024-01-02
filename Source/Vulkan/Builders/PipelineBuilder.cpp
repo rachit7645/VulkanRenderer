@@ -23,9 +23,8 @@
 
 namespace Vk::Builders
 {
-    PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context, Vk::RenderPass renderPass)
-        : m_context(context),
-          m_renderPass(std::move(renderPass))
+    PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context)
+        : m_context(context)
     {
     }
 
@@ -65,7 +64,7 @@ namespace Vk::Builders
         VkGraphicsPipelineCreateInfo pipelineCreateInfo =
         {
             .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            .pNext               = nullptr,
+            .pNext               = &renderingCreateInfo,
             .flags               = 0,
             .stageCount          = static_cast<u32>(shaderStageCreateInfos.size()),
             .pStages             = shaderStageCreateInfos.data(),
@@ -79,7 +78,7 @@ namespace Vk::Builders
             .pColorBlendState    = &colorBlendInfo,
             .pDynamicState       = &dynamicStateInfo,
             .layout              = pipelineLayout,
-            .renderPass          = m_renderPass.handle,
+            .renderPass          = VK_NULL_HANDLE,
             .subpass             = 0,
             .basePipelineHandle  = VK_NULL_HANDLE,
             .basePipelineIndex   = -1
@@ -110,6 +109,32 @@ namespace Vk::Builders
 
         // Return
         return {pipeline, pipelineLayout, descriptorData};
+    }
+
+    PipelineBuilder& PipelineBuilder::SetRenderingInfo
+    (
+        const std::span<const VkFormat> colorFormats,
+        VkFormat depthFormat,
+        VkFormat stencilFormat
+    )
+    {
+        // Copy
+        renderingColorFormats = std::vector(colorFormats.begin(), colorFormats.end());
+
+        // Set
+        renderingCreateInfo =
+        {
+            .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .pNext                   = nullptr,
+            .viewMask                = 0,
+            .colorAttachmentCount    = static_cast<u32>(renderingColorFormats.size()),
+            .pColorAttachmentFormats = renderingColorFormats.data(),
+            .depthAttachmentFormat   = depthFormat,
+            .stencilAttachmentFormat = stencilFormat
+        };
+
+        // Return
+        return *this;
     }
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
@@ -443,5 +468,4 @@ namespace Vk::Builders
             shaderModule.Destroy(m_context->device);
         }
     }
-
 }

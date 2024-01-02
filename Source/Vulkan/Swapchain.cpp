@@ -16,6 +16,7 @@
 
 #include "Swapchain.h"
 #include "Util/Log.h"
+#include "Util.h"
 
 namespace Vk
 {
@@ -186,7 +187,7 @@ namespace Vk
         for (auto image : _images)
         {
             // Create and add to vector
-            m_images.emplace_back
+            images.emplace_back
             (
                 image,
                 extent.width,
@@ -197,6 +198,20 @@ namespace Vk
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
         }
+
+        // Transition for presentation
+        Vk::ImmediateSubmit(context, [this] (const Vk::CommandBuffer& cmdBuffer)
+        {
+            for (const auto& image : images)
+            {
+                image.TransitionLayout
+                (
+                    cmdBuffer,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+                );
+            }
+        });
     }
 
     void Swapchain::CreateSyncObjects(VkDevice device)
@@ -232,7 +247,7 @@ namespace Vk
     void Swapchain::CreateImageViews(VkDevice device)
     {
         // Loop over all swap chain images
-        for (const auto& image : m_images)
+        for (const auto& image : images)
         {
             // Create view
             imageViews.emplace_back
@@ -333,7 +348,7 @@ namespace Vk
         vkDestroySwapchainKHR(device, handle, nullptr);
 
         // Clear
-        m_images.clear();
+        images.clear();
         imageViews.clear();
     }
 

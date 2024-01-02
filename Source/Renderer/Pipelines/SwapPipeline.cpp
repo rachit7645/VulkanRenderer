@@ -21,8 +21,13 @@
 
 namespace Renderer::Pipelines
 {
-    SwapPipeline::SwapPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& swapPass, VkExtent2D swapExtent)
-        : Vk::Pipeline(CreatePipeline(context, swapPass, swapExtent))
+    SwapPipeline::SwapPipeline
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        VkFormat colorFormat,
+        VkExtent2D extent
+    )
+        : Vk::Pipeline(CreatePipeline(context, colorFormat, extent))
     {
         // Create pipeline data
         CreatePipelineData(context);
@@ -84,7 +89,7 @@ namespace Renderer::Pipelines
     Vk::Pipeline SwapPipeline::CreatePipeline
     (
         const std::shared_ptr<Vk::Context>& context,
-        const Vk::RenderPass& renderPass,
+        VkFormat colorFormat,
         VkExtent2D extent
     )
     {
@@ -126,28 +131,38 @@ namespace Renderer::Pipelines
         constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
         // Vertex binding description
-        VkVertexInputBindingDescription vertexBinding =
+        constexpr std::array<VkVertexInputBindingDescription, 1> vertexBindings =
         {
-            .binding   = 0,
-            .stride    = 2 * sizeof(f32),
-            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+            VkVertexInputBindingDescription
+            {
+                .binding   = 0,
+                .stride    = 2 * sizeof(f32),
+                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+            }
         };
 
         // Vertex attrib description
-        VkVertexInputAttributeDescription vertexAttrib =
+        constexpr std::array<VkVertexInputAttributeDescription, 1> vertexAttribs =
         {
-            .location = 0,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32_SFLOAT,
-            .offset   = 0
+            VkVertexInputAttributeDescription
+            {
+                .location = 0,
+                .binding  = 0,
+                .format   = VK_FORMAT_R32G32_SFLOAT,
+                .offset   = 0
+            }
         };
 
+        // Color formats
+        std::array<VkFormat, 1> colorFormats = {colorFormat};
+
         // Build pipeline
-        return Vk::Builders::PipelineBuilder(context, renderPass)
+        return Vk::Builders::PipelineBuilder(context)
+              .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
               .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
               .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
               .SetDynamicStates(DYN_STATES, SetDynamicStates)
-              .SetVertexInputState(std::span(&vertexBinding, 1), std::span(&vertexAttrib, 1))
+              .SetVertexInputState(vertexBindings, vertexAttribs)
               .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE)
               .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
               .SetMSAAState()

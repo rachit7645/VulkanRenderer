@@ -18,7 +18,6 @@
 #define FORWARD_PASS_H
 
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/RenderPass.h"
 #include "Renderer/FreeCamera.h"
 #include "Renderer/Pipelines/ForwardPipeline.h"
 #include "Vulkan/DepthBuffer.h"
@@ -30,17 +29,15 @@ namespace Renderer::RenderPasses
     {
     public:
         // Create forward pass
-        ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
+        ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
         // Recreate forward pass data
-        void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
+        void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
         // Destroy
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         // Render
         void Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model);
 
-        // Forward render pass
-        Vk::RenderPass renderPass;
         // Pipeline
         Pipelines::ForwardPipeline pipeline;
         // Command buffers
@@ -52,11 +49,9 @@ namespace Renderer::RenderPasses
         std::array<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews;
         // Depth buffer
         Vk::DepthBuffer depthBuffer;
-        // Framebuffers
-        std::array<Vk::Framebuffer, Vk::FRAMES_IN_FLIGHT> framebuffers;
     private:
         // Init
-        void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
+        void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
         // Destroy data
         void DestroyData(VkDevice device, VmaAllocator allocator);
 
@@ -67,6 +62,9 @@ namespace Renderer::RenderPasses
 
         // Get color format
         VkFormat GetColorFormat(VkPhysicalDevice physicalDevice);
+
+        // Size of the render area
+        glm::uvec2 m_renderSize = {0, 0};
     };
 }
 

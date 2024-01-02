@@ -23,12 +23,9 @@ namespace Vk
 {
     struct ExtensionState
     {
-        // Usings
-        using GetInstanceProcAddr           = PFN_vkGetInstanceProcAddr;
         using CreateDebugUtilsMessengerEXT  = PFN_vkCreateDebugUtilsMessengerEXT;
         using DestroyDebugUtilsMessengerEXT = PFN_vkDestroyDebugUtilsMessengerEXT;
         // Function pointers
-        GetInstanceProcAddr           p_GetInstanceProcAddr           = nullptr;
         CreateDebugUtilsMessengerEXT  p_CreateDebugUtilsMessengerEXT  = nullptr;
         DestroyDebugUtilsMessengerEXT p_DestroyDebugUtilsMessengerEXT = nullptr;
     };

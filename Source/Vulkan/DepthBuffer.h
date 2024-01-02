@@ -37,7 +37,7 @@ namespace Vk
         void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         // Get depth format
-        VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);
+        static VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);
 
         // Depth image
         Vk::Image depthImage = {};

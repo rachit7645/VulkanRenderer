@@ -233,18 +233,16 @@ namespace Vk
                 .properties = {}
             };
 
-            // Sync2
-            VkPhysicalDeviceSynchronization2Features sync2Features =
-            {
-                .sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-                .pNext            = nullptr,
-                .synchronization2 = VK_TRUE
-            };
+            // Vulkan 1.3 features
+            VkPhysicalDeviceVulkan13Features vk13Features = {};
+            vk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+            vk13Features.pNext = nullptr;
+
             // Feature set
             VkPhysicalDeviceFeatures2 featureSet =
             {
                 .sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                .pNext    = &sync2Features,
+                .pNext    = &vk13Features,
                 .features = {}
             };
 
@@ -302,6 +300,8 @@ namespace Vk
     {
         // Get queue
         auto queue = QueueFamilyIndices(logicalDevice, surface);
+        // Vulkan 1.3 features
+        auto vk13Features = reinterpret_cast<VkPhysicalDeviceVulkan13Features*>(featureSet.pNext);
 
         // Calculate score parts
         usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
@@ -312,7 +312,8 @@ namespace Vk
         bool hasAnisotropy = featureSet.features.samplerAnisotropy;
         bool hasWireframe  = featureSet.features.fillModeNonSolid;
         bool multiViewport = featureSet.features.multiViewport;
-        bool hasSync2      = reinterpret_cast<VkPhysicalDeviceSynchronization2Features*>(featureSet.pNext)->synchronization2;
+        bool hasSync2      = vk13Features->synchronization2;
+        bool hasDynRender  = vk13Features->dynamicRendering;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = true;
@@ -326,7 +327,9 @@ namespace Vk
         }
 
         // Calculate score
-        return hasExtensions * isQueueValid * isSwapChainAdequate * hasAnisotropy * hasWireframe * multiViewport * hasSync2 * discreteGPU;
+        return hasExtensions * isQueueValid * isSwapChainAdequate *
+               hasAnisotropy * hasWireframe * multiViewport *
+               hasSync2      * hasDynRender * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -364,19 +367,18 @@ namespace Vk
         deviceFeatures.fillModeNonSolid  = VK_TRUE;
         deviceFeatures.multiViewport     = VK_TRUE;
 
-        // Sync2 features
-        VkPhysicalDeviceSynchronization2Features sync2Features =
-        {
-            .sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-            .pNext            = nullptr,
-            .synchronization2 = VK_TRUE
-        };
+        // Vulkan 1.3 features
+        VkPhysicalDeviceVulkan13Features vk13Features = {};
+        vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        vk13Features.pNext            = nullptr;
+        vk13Features.synchronization2 = VK_TRUE;
+        vk13Features.dynamicRendering = VK_TRUE;
 
         // Logical device creation info
         VkDeviceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext                   = &sync2Features,
+            .pNext                   = &vk13Features,
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
