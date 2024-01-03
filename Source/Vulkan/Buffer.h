@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,10 +27,9 @@ namespace Vk
     class Buffer
     {
     public:
-        // Default constructor (to make C++ happy)
+        // Default constructor to make C++ happy
         Buffer() = default;
 
-        // Creates the buffer
         Buffer
         (
             VmaAllocator allocator,
@@ -41,16 +40,13 @@ namespace Vk
             VmaMemoryUsage memoryUsage
         );
 
-        // Map buffer
         void Map(VmaAllocator allocator);
-        // Unmap buffer
         void Unmap(VmaAllocator allocator) const;
 
-        // Load data
         template <typename T>
         void LoadData(VmaAllocator allocator, const std::span<const T> data);
 
-        // Copy from src to dst buffer
+        // FIXME: Should this be here at all?
         static void CopyBuffer
         (
             const std::shared_ptr<Vk::Context>& context,
@@ -59,14 +55,13 @@ namespace Vk
             VkDeviceSize copySize
         );
 
-        // Internal deletion function
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
         VkBuffer      handle     = VK_NULL_HANDLE;
         VmaAllocation allocation = {};
 
-        // Buffer info
+        // Buffer allocation info
         VmaAllocationInfo allocInfo  = {};
     };
 }

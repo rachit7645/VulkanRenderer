@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,9 +18,16 @@
 
 namespace Models
 {
+    Vertex::Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent)
+        : position(position),
+          texCoords(texCoords),
+          normal(normal),
+          tangent(tangent)
+    {
+    }
+
     Vertex::VertexBindings Vertex::GetBindingDescription()
     {
-        // Binding data
         VertexBindings bindings = {};
 
         // First (and only) binding
@@ -31,13 +38,11 @@ namespace Models
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
         };
 
-        // Return
         return bindings;
     }
 
     Vertex::VertexAttribs Vertex::GetVertexAttribDescription()
     {
-        // Attribute data
         VertexAttribs attribs = {};
 
         // First attrib (position)

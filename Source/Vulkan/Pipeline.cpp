@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "Pipeline.h"
 #include "CommandBuffer.h"
+#include "Util.h"
 
 namespace Vk
 {
@@ -28,7 +29,6 @@ namespace Vk
 
     void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const
     {
-        // Bind pipeline
         vkCmdBindPipeline
         (
             cmdBuffer.handle,
@@ -45,7 +45,6 @@ namespace Vk
         const std::span<const VkDescriptorSet> descriptors
     ) const
     {
-        // Bind
         vkCmdBindDescriptorSets
         (
             cmdBuffer.handle,
@@ -68,7 +67,6 @@ namespace Vk
         void* pValues
     ) const
     {
-        // Load
         vkCmdPushConstants
         (
             cmdBuffer.handle,
@@ -80,18 +78,27 @@ namespace Vk
         );
     }
 
-    void Pipeline::Destroy(VkDevice device, VmaAllocator allocator)
+    void Pipeline::Destroy(const std::shared_ptr<Vk::Context>& context)
     {
-        // Destroy specific data
-        DestroyPipelineData(device, allocator);
-        // Destroy pipeline
-        vkDestroyPipeline(device, handle, nullptr);
-        // Destroy pipeline layout
-        vkDestroyPipelineLayout(device, layout, nullptr);
-        // Destroy descriptor set layouts
-        for (auto&& descriptor : descriptorSetData)
+        DestroyPipelineData(context->device, context->allocator);
+
+        vkDestroyPipeline(context->device, handle, nullptr);
+        vkDestroyPipelineLayout(context->device, layout, nullptr);
+
+        for (const auto& descriptorData : descriptorSetData)
         {
-            vkDestroyDescriptorSetLayout(device, descriptor.layout, nullptr);
+            for (const auto& descriptors : descriptorData.setMap)
+            {
+                Vk::CheckResult(vkFreeDescriptorSets
+                (
+                    context->device,
+                    context->descriptorPool,
+                    static_cast<u32>(descriptors.size()),
+                    descriptors.data()
+                ));
+            }
+
+            vkDestroyDescriptorSetLayout(context->device, descriptorData.layout, nullptr);
         }
     }
 

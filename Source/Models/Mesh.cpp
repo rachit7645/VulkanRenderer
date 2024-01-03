@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,11 +32,9 @@ namespace Models
     {
     }
 
-    void Mesh::Destroy(VkDevice device, VmaAllocator allocator)
+    void Mesh::Destroy(VkDevice device, VmaAllocator allocator) const
     {
-        // Destroy vertex buffer
         vertexBuffer.Destroy(allocator);
-        // Destroy textures
         material.Destroy(device, allocator);
     }
 }

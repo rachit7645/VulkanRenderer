@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,14 +24,10 @@ namespace Vk::Builders
 {
     struct DescriptorState
     {
-        // Count
-        u32 count = 0;
-        // Type
-        VkDescriptorType type = {};
-        // Binding
+        u32                          count   = 0;
+        VkDescriptorType             type    = {};
         VkDescriptorSetLayoutBinding binding = {};
-        // Layout
-        VkDescriptorSetLayout layout = {};
+        VkDescriptorSetLayout        layout  = {};
     };
 }
 

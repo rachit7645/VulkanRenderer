@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -33,16 +33,12 @@ namespace Renderer::Pipelines
         // Usings
         using MaterialMap = std::array<std::unordered_map<Models::Material, VkDescriptorSet>, Vk::FRAMES_IN_FLIGHT>;
 
-        // Push constant info
         struct VULKAN_GLSL_DATA VSPushConstant
         {
-            // Transformation matrix
-            glm::mat4 transform = {};
-            // Normal matrix
+            glm::mat4 transform    = {};
             glm::mat4 normalMatrix = {};
         };
 
-        // Scene data UBO
         struct VULKAN_GLSL_DATA SceneBuffer
         {
             // Projection matrix
@@ -55,7 +51,8 @@ namespace Renderer::Pipelines
             Renderer::DirLight dirLight = {};
         };
 
-        // Create pipeline
+        ForwardPipeline() = default;
+
         ForwardPipeline
         (
             const std::shared_ptr<Vk::Context>& context,
@@ -64,26 +61,18 @@ namespace Renderer::Pipelines
             VkExtent2D extent
         );
 
-        // Write material descriptors
         void WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials);
 
-        // Get shared UBO set data
         const Vk::DescriptorSetData& GetSceneUBOData() const;
-        // Get texture sampler data
-        const Vk::DescriptorSetData& GetSamplerData() const;
-        // Get image data
+        const Vk::DescriptorSetData& GetSamplerData()  const;
         const Vk::DescriptorSetData& GetMaterialData() const;
 
-        // Push constant data
         std::array<VSPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
-        // Shared data UBOs
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneUBOs = {};
-        // Texture sampler
+        std::array<Vk::Buffer,     Vk::FRAMES_IN_FLIGHT> sceneUBOs     = {};
+
         Vk::Sampler textureSampler = {};
-        // Texture map
-        MaterialMap materialMap = {};
+        MaterialMap materialMap    = {};
     private:
-        // Create pipeline
         [[nodiscard]] Vk::Pipeline CreatePipeline
         (
             const std::shared_ptr<Vk::Context>& context,
@@ -91,15 +80,12 @@ namespace Renderer::Pipelines
             VkFormat depthFormat,
             VkExtent2D extent
         );
-        // Create associated pipeline data
+
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
-        // Destroy per-pipeline data
         void DestroyPipelineData(VkDevice device, VmaAllocator allocator) override;
 
-        // Write static descriptors
         void WriteStaticDescriptors(VkDevice device);
 
-        // Texture descriptors index offset
         usize textureDescriptorIndexOffset = 0;
     };
 }

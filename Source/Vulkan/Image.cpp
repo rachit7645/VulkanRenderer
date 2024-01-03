@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -109,19 +109,15 @@ namespace Vk
             .priority       = 0.0f
         };
         
-        if (vmaCreateImage(
-                allocator,
-                &imageInfo,
-                &allocInfo,
-                &handle,
-                &allocation,
-                nullptr
-            ) != VK_SUCCESS)
-        {
-            Logger::Error("Failed to create image! [allocator={}]\n",
-                std::bit_cast<void*>(allocator)
-            );
-        }
+        Vk::CheckResult(vmaCreateImage(
+            allocator,
+            &imageInfo,
+            &allocInfo,
+            &handle,
+            &allocation,
+            nullptr),
+            "Failed to create image!"
+        );
     }
 
     void Image::TransitionLayout
@@ -227,7 +223,7 @@ namespace Vk
         }
         else
         {
-            // Invalid
+            // Invalid transition, abort
             Logger::VulkanError
             (
                 "Invalid layout transition! [old={}] [new={}]\n",
@@ -236,7 +232,6 @@ namespace Vk
             );
         }
 
-        // Dependency info
         VkDependencyInfo dependencyInfo =
         {
             .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
@@ -250,7 +245,6 @@ namespace Vk
             .pImageMemoryBarriers     = &barrier
         };
 
-        // Set barrier
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
     }
 
@@ -258,7 +252,6 @@ namespace Vk
     {
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
-            // Copy info
             VkBufferImageCopy2 copyRegion =
             {
                 .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
@@ -276,7 +269,6 @@ namespace Vk
                 .imageExtent       = {width, height, 1}
             };
 
-            // Copy info
             VkCopyBufferToImageInfo2 copyInfo =
             {
                 .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
@@ -288,7 +280,6 @@ namespace Vk
                 .pRegions       = &copyRegion
             };
 
-            // Copy
             vkCmdCopyBufferToImage2(cmdBuffer.handle, &copyInfo);
         });
     }
@@ -297,7 +288,6 @@ namespace Vk
     {
         Vk::ImmediateSubmit(context, [&] (const Vk::CommandBuffer& cmdBuffer)
         {
-            // Barrier
             VkImageMemoryBarrier2 barrier =
             {
                 .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -320,7 +310,6 @@ namespace Vk
                 }
             };
 
-            // Dependency info
             VkDependencyInfo dependencyInfo =
             {
                 .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
@@ -334,29 +323,23 @@ namespace Vk
                 .pImageMemoryBarriers     = &barrier
             };
 
-            // Mip dimensions
             s32 mipWidth  = static_cast<s32>(width);
             s32 mipHeight = static_cast<s32>(height);
 
-            // Loop over the rest of the mipmap chain
             for (u32 i = 1; i < mipLevels; ++i)
             {
-                // Mipmap level
+                // Blit from previous mip
                 barrier.subresourceRange.baseMipLevel = i - 1;
-                // Layout
-                barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                // Access mask
+
+                barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                barrier.newLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
                 barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
                 barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-                // Stages
-                barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-                barrier.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+                barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+                barrier.dstStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
 
-                // Barrier
                 vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
 
-                // Image blit info
                 VkImageBlit2 blitRegion =
                 {
                     .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
@@ -383,7 +366,6 @@ namespace Vk
                     }
                 };
 
-                // Blit info
                 VkBlitImageInfo2 blitInfo =
                 {
                     .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
@@ -397,52 +379,42 @@ namespace Vk
                     .filter         = VK_FILTER_LINEAR
                 };
 
-                // Blit Image
                 vkCmdBlitImage2(cmdBuffer.handle, &blitInfo);
 
-                // Configure layouts
-                barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                // Configure access masks
+                barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                barrier.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
                 barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
-                // Stages
-                barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-                barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+                barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+                barrier.dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
 
-                // Barrier
                 vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
 
-                // Divide mip dimensions
                 if (mipWidth > 1) mipWidth /= 2;
                 if (mipHeight > 1) mipHeight /= 2;
             }
 
-            // Base mipmap level
+            // Final mip level
             barrier.subresourceRange.baseMipLevel = mipLevels - 1;
-            // Configure layouts
-            barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            // Configure access masks
+
+            barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            barrier.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
-            // Stages
-            barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-            barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+            barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+            barrier.dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
 
-            // Transition final level
             vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
         });
     }
 
     void Image::Destroy(VmaAllocator allocator) const
     {
-        // Log
         Logger::Debug
         (
             "Destroying image! [handle={}] [allocation={}]\n",
-            reinterpret_cast<void*>(handle),
-            reinterpret_cast<void*>(allocation)
+            std::bit_cast<void*>(handle),
+            std::bit_cast<void*>(allocation)
         );
         // Destroy image
         vmaDestroyImage(allocator, handle, allocation);

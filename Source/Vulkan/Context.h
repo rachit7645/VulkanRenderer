@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,67 +36,56 @@ namespace Vk
     class Context
     {
     public:
-        // Initialise vulkan context
         explicit Context(const std::shared_ptr<Engine::Window>& window);
-        // Destroy vulkan context
         void Destroy();
 
-        // Allocates descriptors
         std::vector<VkDescriptorSet> AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts);
 
         // Vulkan instance
-        VkInstance instance = {};
+        VkInstance instance = VK_NULL_HANDLE;
 
-        // Physical device (GPU)
-        VkPhysicalDevice physicalDevice = {};
-        // Physical device memory properties
+        // Physical device
+        VkPhysicalDevice                 physicalDevice              = VK_NULL_HANDLE;
         VkPhysicalDeviceMemoryProperties physicalDeviceMemProperties = {};
-        // Physical device limits
-        VkPhysicalDeviceLimits physicalDeviceLimits = {};
+        VkPhysicalDeviceLimits           physicalDeviceLimits        = {};
         // Logical device
-        VkDevice device = {};
+        VkDevice device = VK_NULL_HANDLE;
 
         // Surface
-        VkSurfaceKHR surface = {};
+        VkSurfaceKHR surface = VK_NULL_HANDLE;
 
         // Queue families
         Vk::QueueFamilyIndices queueFamilies = {};
-        // Queues
-        VkQueue graphicsQueue = {};
+        VkQueue                graphicsQueue = VK_NULL_HANDLE;
 
-        // Command pool
-        VkCommandPool commandPool = {};
-        // Descriptor pool
-        VkDescriptorPool descriptorPool = {};
+        // Pools
+        VkCommandPool    commandPool    = VK_NULL_HANDLE;
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+
         // Memory allocator
-        VmaAllocator allocator = {};
+        VmaAllocator allocator = VK_NULL_HANDLE;
     private:
-        // Create vulkan instance
         void CreateInstance(SDL_Window* window);
-        // Create platform dependent surface
         void CreateSurface(SDL_Window* window);
 
-        // Pick a GPU
         void PickPhysicalDevice();
-        // Calculate score
+        void CreateLogicalDevice();
+
         [[nodiscard]] usize CalculateScore
         (
             VkPhysicalDevice logicalDevice,
             VkPhysicalDeviceProperties2& propertySet,
             VkPhysicalDeviceFeatures2& featureSet
         );
-        // Create a logical device
-        void CreateLogicalDevice();
 
-        // Creates command pool
         void CreateCommandPool();
-        // Create descriptor pool
         void CreateDescriptorPool();
-        // Create allocator
+
         void CreateAllocator();
 
         // Extensions
         Vk::Extensions m_extensions = {};
+
         #ifdef ENGINE_DEBUG
         // Vulkan validation layers
         Vk::ValidationLayers m_layers = {};

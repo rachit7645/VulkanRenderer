@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ namespace Vk
         : vertexCount(static_cast<u32>(vertices.size())),
           indexCount(static_cast<u32>(indices.size()))
     {
-        // Initialise buffers
         InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
         InitBuffer(context, indexBuffer,  VK_BUFFER_USAGE_INDEX_BUFFER_BIT,   indices);
     }
@@ -40,18 +39,15 @@ namespace Vk
     VertexBuffer::VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices)
         : vertexCount(vertices.size())
     {
-        // Init vertex buffer
+        // No index buffer
         InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
     }
 
     void VertexBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
-        // Buffers to bind
-        std::array<VkBuffer, 1> buffers = {vertexBuffer.handle};
-        // Offsets
+        std::array<VkBuffer, 1>     buffers = {vertexBuffer.handle};
         std::array<VkDeviceSize, 1> offsets = {0};
 
-        // Bind vertex buffers
         vkCmdBindVertexBuffers2
         (
             cmdBuffer.handle,
@@ -63,7 +59,6 @@ namespace Vk
             nullptr
         );
 
-        // Bind index buffer
         if (indexCount > 0)
         {
             vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, indexType);
@@ -79,10 +74,9 @@ namespace Vk
         const std::span<const T> data
     )
     {
-        // Size of vertex data (bytes)
+        // Bytes
         VkDeviceSize size = data.size() * sizeof(T);
 
-        // Create staging buffer
         auto stagingBuffer = Vk::Buffer
         (
             context->allocator,
@@ -93,10 +87,8 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        // Load data
         stagingBuffer.LoadData(context->allocator, data);
 
-        // Create real buffer
         buffer = Vk::Buffer
         (
             context->allocator,
@@ -107,10 +99,8 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        // Copy
         Vk::Buffer::CopyBuffer(context, stagingBuffer, buffer, size);
 
-        // Delete staging buffer
         stagingBuffer.Destroy(context->allocator);
     }
 

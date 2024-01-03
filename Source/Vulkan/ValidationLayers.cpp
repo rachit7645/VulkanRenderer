@@ -1,11 +1,11 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
  *
- *      http://www.apache.org/lienses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,20 +17,18 @@
 #include "ValidationLayers.h"
 
 #include "../Util/Log.h"
+#include "Util.h"
 
 namespace Vk
 {
 #ifdef ENGINE_DEBUG
     ValidationLayers::ValidationLayers(const std::span<const char* const> layers)
     {
-        // Check for availability
         if (!CheckLayers(layers))
         {
-            // Log
             Logger::Error("{}\n", "Validation layers not found!");
         }
 
-        // Creation data
         messengerInfo =
         {
             .sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
@@ -45,21 +43,20 @@ namespace Vk
         };
     }
 
-    VkResult ValidationLayers::SetupMessenger(VkInstance instance)
+    void ValidationLayers::SetupMessenger(VkInstance instance)
     {
         // Create a messenger
-        return vkCreateDebugUtilsMessengerEXT
-        (
+        Vk::CheckResult(vkCreateDebugUtilsMessengerEXT(
             instance,
             &messengerInfo,
             nullptr,
-            &messenger
+            &messenger),
+            "Failed to set up debug messenger!"
         );
     }
 
     bool ValidationLayers::CheckLayers(const std::span<const char* const> layers)
     {
-        // Get layer count
         u32 layerCount = 0;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -67,22 +64,15 @@ namespace Vk
         auto availableLayers = std::vector<VkLayerProperties>(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-        // Create layers string
-        std::string layerDbg = fmt::format("Available vulkan validation layers: {}\n", layerCount);
         // Create unique layers set
         auto requiredLayers = std::set<std::string_view>(layers.begin(), layers.end());
 
         // Go over all layer properties
         for (auto&& layerProperties : availableLayers)
         {
-            // Add to string
-            layerDbg.append(fmt::format("- {}\n", layerProperties.layerName));
             // Remove from set
             requiredLayers.erase(layerProperties.layerName);
         }
-
-        // Log
-        Logger::Debug("{}", layerDbg);
 
         // Check if we found all the required layers
         return requiredLayers.empty();

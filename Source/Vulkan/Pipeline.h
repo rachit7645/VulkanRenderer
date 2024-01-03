@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,17 +30,21 @@ namespace Vk
     class Pipeline
     {
     public:
-        // Default constructor
         Pipeline() = default;
-        // Constructor
-        Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData);
-        // Virtual destructor
         virtual ~Pipeline() = default;
 
-        // Bind pipeline to command buffer
+        Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData);
+
+        // No copying
+        Pipeline(const Pipeline&) = delete;
+        Pipeline& operator=(const Pipeline&) = delete;
+
+        // Only moving
+        Pipeline(Pipeline&& other) noexcept = default;
+        Pipeline& operator=(Pipeline&& other) noexcept = default;
+
         void Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const;
 
-        // Bind descriptor sets
         void BindDescriptors
         (
             const Vk::CommandBuffer& cmdBuffer,
@@ -49,7 +53,6 @@ namespace Vk
             const std::span<const VkDescriptorSet> descriptors
         ) const;
 
-        // Load push constants
         void LoadPushConstants
         (
             const Vk::CommandBuffer& cmdBuffer,
@@ -59,17 +62,14 @@ namespace Vk
             void* pValues
         ) const;
 
-        // Destroy
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        // Pipeline handle
-        VkPipeline handle = {};
-        // Pipeline layout
+        // Handles
+        VkPipeline       handle = {};
         VkPipelineLayout layout = {};
         // Descriptor data
         std::vector<Vk::DescriptorSetData> descriptorSetData = {};
     private:
-        // Destroy per-pipeline data
         virtual void DestroyPipelineData(VkDevice device, VmaAllocator allocator);
     };
 }

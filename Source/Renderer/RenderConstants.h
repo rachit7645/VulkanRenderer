@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ namespace Renderer
 {
     // Clear color
     constexpr glm::vec4 CLEAR_COLOR = {0.53f, 0.81f, 0.92f, 1.0f};
-    // Field of view
+    // Default field of view
     constexpr f32 DEFAULT_FOV = glm::radians(80.0f);
-    // Planes
+    // Near and far plane
     constexpr glm::vec2 PLANES = {0.1f, 2000.0f};
     // World Up direction
     constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};

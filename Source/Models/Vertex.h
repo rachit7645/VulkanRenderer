@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,16 +30,12 @@ namespace Models
         // Constants
         static constexpr usize VERTEX_NUM_BINDINGS = 1;
         static constexpr usize VERTEX_NUM_ATTRIBS  = 4;
+
         // Usings
         using VertexBindings = std::array<VkVertexInputBindingDescription,   VERTEX_NUM_BINDINGS>;
         using VertexAttribs  = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
 
-        // Constructor
-        Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent)
-            : position(position),
-              texCoords(texCoords),
-              normal(normal),
-              tangent(tangent) {}
+        Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent);
 
         // Vertex data
         glm::vec3 position  = {};

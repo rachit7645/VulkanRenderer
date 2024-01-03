@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,38 +30,29 @@ namespace Vk
     class VertexBuffer
     {
     public:
-        // Default constructor
         VertexBuffer() = default;
 
-        // Creates a vertex buffer
         VertexBuffer
         (
             const std::shared_ptr<Vk::Context>& context,
             const std::span<const Models::Vertex> vertices,
             const std::span<const Models::Index> indices
         );
-
-        // Create a vertex buffer of floats
         VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices);
 
-        // Bind buffer
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
-        // Destroys the buffer
         void Destroy(VmaAllocator allocator) const;
 
-        // Vertex buffer
+        // Buffers
         Vk::Buffer vertexBuffer;
-        // Index buffer
         Vk::Buffer indexBuffer;
 
-        // Vertex count
-        UNUSED u32 vertexCount = 0;
-        // Index count
+        // Data
+        u32 vertexCount = 0;
         u32 indexCount = 0;
-        // Index type
+        // Index type (Does this need to be a variable: probably.)
         VkIndexType indexType = VK_INDEX_TYPE_UINT32;
     private:
-        // Init buffer
         template<typename T>
         void InitBuffer
         (

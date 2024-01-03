@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "Sampler.h"
 #include "Util/Log.h"
+#include "Util.h"
 
 namespace Vk
 {
@@ -33,7 +34,6 @@ namespace Vk
         VkBool32 unnormalizedCoordinates
     )
     {
-        // Sampler info
         VkSamplerCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -56,25 +56,19 @@ namespace Vk
             .unnormalizedCoordinates = unnormalizedCoordinates
         };
 
-        // Create
-        if (vkCreateSampler(
-                device,
-                &createInfo,
-                nullptr,
-                &handle
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create sampler! [device={}]\n", reinterpret_cast<void*>(device));
-        }
+        Vk::CheckResult(vkCreateSampler(
+            device,
+            &createInfo,
+            nullptr,
+            &handle),
+            "Failed to create sampler!"
+        );
 
-        // Log
-        Logger::Debug("Created sampler! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Created sampler! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Sampler::Destroy(VkDevice device) const
     {
-        // Destroy
         vkDestroySampler(device, handle, nullptr);
     }
 }

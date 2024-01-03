@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ namespace Vk
     class ShaderModule
     {
     public:
-        // Create shader module
         ShaderModule(VkDevice device, const std::string_view path);
-        // Destroy shader module
         void Destroy(VkDevice device) const;
         // Handle
         VkShaderModule handle = {};

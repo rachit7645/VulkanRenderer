@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ namespace Models
 
     bool Material::operator==(const Material& rhs) const
     {
-        // Return
         return albedo == rhs.albedo &&
                normal == rhs.normal &&
                aoRghMtl == rhs.aoRghMtl;
@@ -40,7 +39,6 @@ namespace Models
 
     std::array<Vk::ImageView, Material::MATERIAL_COUNT> Material::GetViews() const
     {
-        // Return
         return
         {
             albedo.imageView,
@@ -51,7 +49,6 @@ namespace Models
 
     void Material::Destroy(VkDevice device, VmaAllocator allocator) const
     {
-        // Destroy textures
         albedo.Destroy(device, allocator);
         normal.Destroy(device, allocator);
         aoRghMtl.Destroy(device, allocator);

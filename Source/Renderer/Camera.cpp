@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,36 +29,28 @@ namespace Renderer
 
     glm::mat4 Camera::GetViewMatrix() const
     {
-        // Return
         return glm::lookAt(position, position + front, up);
     }
 
     void Camera::ImGuiDisplay()
     {
-        // Render ImGui
         if (ImGui::BeginMainMenuBar())
         {
-            // If camera menu is visible
             if (ImGui::BeginMenu("Camera"))
             {
-                // Camera position
+                // Camera Data
                 ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                // Camera rotation
                 ImGui::DragFloat3("Rotation", &rotation[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                // Camera FOV
-                ImGui::DragFloat("FOV", &FOV, 1.0f, 0.0f, 0.0f, "%.1f");
+                ImGui::DragFloat ("FOV",      &FOV,         1.0f, 0.0f, 0.0f, "%.1f");
 
-                // Camera front vector
+                // Camera lookat data
                 ImGui::DragFloat3("Front", &front[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                // Camera up vector
-                ImGui::DragFloat3("Up", &up[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                // Camera right vector
+                ImGui::DragFloat3("Up",    &up[0],    1.0f, 0.0f, 0.0f, "%.1f");
                 ImGui::DragFloat3("Right", &right[0], 1.0f, 0.0f, 0.0f, "%.1f");
 
-                // End menu
                 ImGui::EndMenu();
             }
-            // End menu bar
+
             ImGui::EndMainMenuBar();
         }
     }

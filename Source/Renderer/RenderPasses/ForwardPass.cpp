@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,40 +24,34 @@
 namespace Renderer::RenderPasses
 {
     ForwardPass::ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
-        : pipeline(context, GetColorFormat(context->physicalDevice), Vk::DepthBuffer::GetDepthFormat(context->physicalDevice), extent)
     {
-        // Create command buffers
         for (auto&& cmdBuffer : cmdBuffers)
         {
             cmdBuffer = Vk::CommandBuffer(context, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
         }
-        // Init forward pass data
+
         InitData(context, extent);
-        // Log
+
         Logger::Info("{}\n", "Created forward pass!");
     }
 
     void ForwardPass::Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
     {
-        // Destroy old data
-        DestroyData(context->device, context->allocator);
-        // Init forward pass data
+        DestroyData(context);
         InitData(context, extent);
-        // Log
+
         Logger::Info("{}\n", "Recreated forward pass!");
     }
 
     void ForwardPass::Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model)
     {
-        // Get current resources
         auto& currentCmdBuffer    = cmdBuffers[FIF];
         auto& currentPushConstant = pipeline.pushConstants[FIF];
 
-        // Begin recording
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(0);
 
-        // Transition to color attachment
+        // Transition for rendering
         images[FIF].TransitionLayout
         (
             currentCmdBuffer,
@@ -65,7 +59,6 @@ namespace Renderer::RenderPasses
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         );
 
-        // Color attachment info
         VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -85,7 +78,6 @@ namespace Renderer::RenderPasses
             }}}
         };
 
-        // Depth attachment info
         VkRenderingAttachmentInfo depthAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -117,13 +109,10 @@ namespace Renderer::RenderPasses
             .pStencilAttachment   = nullptr
         };
 
-        // Begin rendering
         vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
 
-        // Bind pipeline
         pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-        // Viewport
         VkViewport viewport =
         {
             .x        = 0.0f,
@@ -134,7 +123,6 @@ namespace Renderer::RenderPasses
             .maxDepth = 1.0f
         };
 
-        // Set viewport
         vkCmdSetViewport
         (
             currentCmdBuffer.handle,
@@ -143,14 +131,12 @@ namespace Renderer::RenderPasses
             &viewport
         );
 
-        // Scissor
         VkRect2D scissor =
         {
             .offset = {0, 0},
             .extent = {m_renderSize.x, m_renderSize.y}
         };
 
-        // Set scissor
         vkCmdSetScissor
         (
             currentCmdBuffer.handle,
@@ -159,13 +145,10 @@ namespace Renderer::RenderPasses
             &scissor
         );
 
-        // Get shared UBO
         auto& sceneUBO = pipeline.sceneUBOs[FIF];
 
-        // Shared UBO data
         Pipelines::ForwardPipeline::SceneBuffer sceneBuffer =
         {
-            // Projection matrix
             .projection = glm::perspective(
                 camera.FOV,
                 static_cast<f32>(m_renderSize.x) /
@@ -173,46 +156,38 @@ namespace Renderer::RenderPasses
                 PLANES.x,
                 PLANES.y
             ),
-            // View Matrix
             .view = camera.GetViewMatrix(),
-            // Camera position
             .cameraPos = {camera.position, 1.0f},
-            // Directional light
             .dirLight = {
                 .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
                 .color     = {1.0f,   0.956f, 0.898f, 1.0f},
                 .intensity = {3.5f,   3.5f,   3.5f,   1.0f}
             }
         };
-        // Flip projection
+
+        // Flip projection since GLM assumes OpenGL conventions
         sceneBuffer.projection[1][1] *= -1;
 
-        // Load UBO data
         std::memcpy(sceneUBO.allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
 
-        // Data
         static glm::vec3 s_position = {};
         static glm::vec3 s_rotation = {};
         static glm::vec3 s_scale    = {0.25f, 0.25f, 0.25f};
 
-        // Render ImGui
         if (ImGui::BeginMainMenuBar())
         {
-            // Mesh
             if (ImGui::BeginMenu("Mesh"))
             {
                 // Transform modifiers
                 ImGui::DragFloat3("Position", &s_position[0]);
                 ImGui::DragFloat3("Rotation", &s_rotation[0]);
                 ImGui::DragFloat3("Scale",    &s_scale[0]);
-                // End menu
                 ImGui::EndMenu();
             }
-            // End menu bar
+
             ImGui::EndMainMenuBar();
         }
 
-        // Create model matrix
         currentPushConstant.transform = Maths::CreateTransformationMatrix
         (
             s_position,
@@ -220,10 +195,8 @@ namespace Renderer::RenderPasses
             s_scale
         );
 
-        // Create normal matrix
         currentPushConstant.normalMatrix = glm::mat4(glm::transpose(glm::inverse(glm::mat3(currentPushConstant.transform))));
 
-        // Load push constants
         pipeline.LoadPushConstants
         (
             currentCmdBuffer,
@@ -232,14 +205,13 @@ namespace Renderer::RenderPasses
             reinterpret_cast<void*>(&currentPushConstant)
         );
 
-        // Get scene descriptors
+        // Scene specific descriptor sets
         std::array<VkDescriptorSet, 2> sceneDescriptorSets =
         {
             pipeline.GetSceneUBOData().setMap[FIF][0],
             pipeline.GetSamplerData().setMap[FIF][0],
         };
 
-        // Bind
         pipeline.BindDescriptors
         (
             currentCmdBuffer,
@@ -248,19 +220,13 @@ namespace Renderer::RenderPasses
             sceneDescriptorSets
         );
 
-        // Loop over meshes
         for (const auto& mesh : model.meshes)
         {
-            // Bind buffer
             mesh.vertexBuffer.Bind(currentCmdBuffer);
 
-            // Get mesh descriptors
-            std::array<VkDescriptorSet, 1> meshDescriptorSets =
-            {
-                pipeline.materialMap[FIF][mesh.material]
-            };
+            // Mesh-specific descriptors
+            std::array<VkDescriptorSet, 1> meshDescriptorSets = {pipeline.materialMap[FIF][mesh.material]};
 
-            // Bind
             pipeline.BindDescriptors
             (
                 currentCmdBuffer,
@@ -269,7 +235,6 @@ namespace Renderer::RenderPasses
                 meshDescriptorSets
             );
 
-            // Draw triangle
             vkCmdDrawIndexed
             (
                 currentCmdBuffer.handle,
@@ -281,10 +246,9 @@ namespace Renderer::RenderPasses
             );
         }
 
-        // End render
         vkCmdEndRendering(currentCmdBuffer.handle);
 
-        // Transition back
+        // Transition to shader readable layout
         images[FIF].TransitionLayout
         (
             currentCmdBuffer,
@@ -292,65 +256,64 @@ namespace Renderer::RenderPasses
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
 
-        // End recording
         currentCmdBuffer.EndRecording();
     }
 
     void ForwardPass::InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
     {
-        // Set render area
         m_renderSize = {extent.width, extent.height};
 
-        // Create depth buffer
+        auto colorFormat = GetColorFormat(context->physicalDevice);
+        auto depthFormat = Vk::DepthBuffer::GetDepthFormat(context->physicalDevice);
+
+        pipeline = Pipelines::ForwardPipeline
+        (
+            context,
+            colorFormat,
+            depthFormat,
+            extent
+        );
+
         depthBuffer = Vk::DepthBuffer(context, extent);
 
-        // Get color format
-        auto colorFormat = GetColorFormat(context->physicalDevice);
-        // Log
-        Logger::Debug("Using format \"{}\" for color attachment!\n", string_VkFormat(colorFormat));
-
-        // Create framebuffer resources
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+        Vk::ImmediateSubmit(context, [&] (const Vk::CommandBuffer& cmdBuffer)
         {
-            // Create image
-            images[i] = Vk::Image
-            (
-                context,
-                m_renderSize.x,
-                m_renderSize.y,
-                1,
-                colorFormat,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_ASPECT_COLOR_BIT,
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            );
-
-            // Transition
-            Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
+            for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
             {
-                images[i].TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            });
+                images[i] = Vk::Image
+                (
+                    context,
+                    m_renderSize.x,
+                    m_renderSize.y,
+                    1,
+                    colorFormat,
+                    VK_IMAGE_TILING_OPTIMAL,
+                    VK_IMAGE_ASPECT_COLOR_BIT,
+                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                );
 
-            // Create image view
-            imageViews[i] = Vk::ImageView
-            (
-                context->device,
-                images[i],
-                VK_IMAGE_VIEW_TYPE_2D,
-                images[i].format,
-                VK_IMAGE_ASPECT_COLOR_BIT,
-                0,
-                1,
-                0,
-                1
-            );
-        }
+                // Transition for shader reading (this skips having extra logic for frame 1)
+                images[i].TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+                imageViews[i] = Vk::ImageView
+                (
+                    context->device,
+                    images[i],
+                    VK_IMAGE_VIEW_TYPE_2D,
+                    images[i].format,
+                    VK_IMAGE_ASPECT_COLOR_BIT,
+                    0,
+                    1,
+                    0,
+                    1
+                );
+            }
+        });
     }
 
     VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice)
     {
-        // Return
         return Vk::FindSupportedFormat
         (
             physicalDevice,
@@ -360,35 +323,28 @@ namespace Renderer::RenderPasses
         );
     }
 
-    void ForwardPass::Destroy(VkDevice device, VmaAllocator allocator)
+    void ForwardPass::Destroy(const std::shared_ptr<Vk::Context>& context)
     {
-        // Log
         Logger::Debug("{}\n", "Destroying forward pass!");
-        // Destroy data
-        DestroyData(device, allocator);
+        DestroyData(context);
     }
 
-    void ForwardPass::DestroyData(VkDevice device, VmaAllocator allocator)
+    void ForwardPass::DestroyData(const std::shared_ptr<Vk::Context>& context)
     {
-        // Destroy image views
         for (auto&& imageView : imageViews)
         {
-            imageView.Destroy(device);
+            imageView.Destroy(context->device);
         }
 
-        // Destroy images
         for (auto&& image : images)
         {
-            image.Destroy(allocator);
+            image.Destroy(context->allocator);
         }
 
-        // Destroy depth buffer
-        depthBuffer.Destroy(device, allocator);
-        // Destroy pipeline
-        pipeline.Destroy(device, allocator);
+        depthBuffer.Destroy(context->device, context->allocator);
+        pipeline.Destroy(context);
 
-        // Clear
-        images.fill({});
-        imageViews.fill({});
+        images     = {};
+        imageViews = {};
     }
 }

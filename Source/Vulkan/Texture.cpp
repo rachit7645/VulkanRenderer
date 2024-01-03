@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,15 +25,12 @@ namespace Vk
 {
     Texture::Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Texture::Flags flags)
     {
-        // Log
         Logger::Info("Loading texture {}\n", path.data());
 
-        // Format candidates
         auto candidates = (flags & Flags::IsSRGB) == Flags::IsSRGB ?
                                          std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
                                          std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
 
-        // Get supported formats
         auto format = Vk::FindSupportedFormat
         (
             context->physicalDevice,
@@ -44,21 +41,16 @@ namespace Vk
             VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
-        // Get components
         auto components = STBI_rgb;
-        // Check for formats with alpha
         if (vkuFormatHasAlpha(format))
         {
-            // We have four components (TONS of wasted space but ehh)
+            // TONS of wasted space but ehh
             components = STBI_rgb_alpha;
         }
 
-        // Load image
-        auto imageData = STB::Image(path, components);
-        // Image size
+        auto         imageData = STB::Image(path, components);
         VkDeviceSize imageSize = imageData.width * imageData.height * components;
 
-        // Create staging buffer
         auto stagingBuffer = Vk::Buffer
         (
             context->allocator,
@@ -69,18 +61,16 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        // Copy data
         stagingBuffer.LoadData
         (
             context->allocator,
             std::span(static_cast<const stbi_uc*>(imageData.data), imageSize / sizeof(stbi_uc))
         );
 
-        // Mipmap levels
         auto mipLevels = (flags & Flags::GenMipmaps) == Flags::GenMipmaps ?
                               static_cast<u32>(std::floor(std::log2(std::max(imageData.width, imageData.height)))) + 1 :
                               1;
-        // Create image
+
         image = Vk::Image
         (
             context,
@@ -99,13 +89,11 @@ namespace Vk
         {
             image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         });
-        // Copy data
+
         image.CopyFromBuffer(context, stagingBuffer);
 
-        // Destroy staging buffer
         stagingBuffer.Destroy(context->allocator);
 
-        // Create image view
         imageView = Vk::ImageView
         (
             context->device,
@@ -119,21 +107,17 @@ namespace Vk
             1
         );
 
-        // Generate mipmaps
         image.GenerateMipmaps(context);
     }
 
     bool Texture::operator==(const Texture& rhs) const
     {
-        // Return
         return image == rhs.image && imageView == rhs.imageView;
     }
 
     void Texture::Destroy(VkDevice device, VmaAllocator allocator) const
     {
-        // Destroy image view
         imageView.Destroy(device);
-        // Destroy image
         image.Destroy(allocator);
     }
 }

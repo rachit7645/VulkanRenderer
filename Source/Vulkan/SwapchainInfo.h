@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ namespace Vk
 {
     struct SwapchainInfo
     {
-        // Default constructor
+        // Is this needed?
         SwapchainInfo() = default;
-        // Query swapchain info
         SwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
+
         // Surface feature data
         VkSurfaceCapabilitiesKHR capabilities = {};
         // Available formats

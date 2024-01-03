@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,12 +25,9 @@ namespace Vk
 {
     DepthBuffer::DepthBuffer(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
     {
-        // Get depth format
         auto depthFormat = GetDepthFormat(context->physicalDevice);
-        // Check if it has stencil
-        bool hasStencil = vkuFormatHasStencil(depthFormat);
+        bool hasStencil  = vkuFormatHasStencil(depthFormat);
 
-        // Create image
         depthImage = Vk::Image
         (
             context,
@@ -44,7 +41,6 @@ namespace Vk
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
-        // Create image view
         depthImageView = Vk::ImageView
         (
             context->device,
@@ -58,7 +54,6 @@ namespace Vk
             1
         );
 
-        // Transition to depth layout (optional)
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             depthImage.TransitionLayout
@@ -72,7 +67,6 @@ namespace Vk
 
     VkFormat DepthBuffer::GetDepthFormat(VkPhysicalDevice physicalDevice)
     {
-        // Return
         return Vk::FindSupportedFormat
         (
             physicalDevice,
@@ -84,9 +78,7 @@ namespace Vk
 
     void DepthBuffer::Destroy(VkDevice device, VmaAllocator allocator) const
     {
-        // Destroy image view
         depthImageView.Destroy(device);
-        // Destroy image
         depthImage.Destroy(allocator);
     }
 }

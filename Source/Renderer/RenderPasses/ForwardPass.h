@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,42 +28,25 @@ namespace Renderer::RenderPasses
     class ForwardPass
     {
     public:
-        // Create forward pass
         ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
-        // Recreate forward pass data
         void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
-        // Destroy
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        // Render
         void Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model);
 
-        // Pipeline
-        Pipelines::ForwardPipeline pipeline;
-        // Command buffers
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+        Pipelines::ForwardPipeline pipeline = {};
 
-        // Images
-        std::array<Vk::Image, Vk::FRAMES_IN_FLIGHT> images;
-        // Image views
-        std::array<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews;
-        // Depth buffer
-        Vk::DepthBuffer depthBuffer;
+        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
+        std::array<Vk::Image,         Vk::FRAMES_IN_FLIGHT> images     = {};
+        std::array<Vk::ImageView,     Vk::FRAMES_IN_FLIGHT> imageViews = {};
+
+        Vk::DepthBuffer depthBuffer = {};
     private:
-        // Init
         void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
-        // Destroy data
-        void DestroyData(VkDevice device, VmaAllocator allocator);
+        void DestroyData(const std::shared_ptr<Vk::Context>& context);
 
-        // Init framebuffers
-        void InitFramebuffers(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
-        // Create render pass
-        void CreateRenderPass(VkDevice device, VkPhysicalDevice physicalDevice);
-
-        // Get color format
         VkFormat GetColorFormat(VkPhysicalDevice physicalDevice);
 
-        // Size of the render area
         glm::uvec2 m_renderSize = {0, 0};
     };
 }

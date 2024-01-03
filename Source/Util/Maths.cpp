@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,17 +20,16 @@ namespace Maths
 {
     glm::mat4 CreateTransformationMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
     {
-        // Matrix
         auto matrix = glm::identity<glm::mat4>();
-        // Translate
+
         matrix = glm::translate(matrix, translation);
-        // Rotate in all axis
+
         matrix = glm::rotate(matrix, rotation.x, glm::vec3(1, 0, 0));
         matrix = glm::rotate(matrix, rotation.y, glm::vec3(0, 1, 0));
         matrix = glm::rotate(matrix, rotation.z, glm::vec3(0, 0, 1));
-        // Scale matrix
+
         matrix = glm::scale(matrix, scale);
-        // Return
+
         return matrix;
     }
 }

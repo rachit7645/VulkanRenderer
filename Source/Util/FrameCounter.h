@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,27 +29,18 @@ namespace Util
         // Usings
         using Clock     = std::chrono::steady_clock;
         using TimePoint = std::chrono::time_point<Clock>;
-        using Duration  = std::chrono::duration<f32, std::chrono::seconds::period>;
 
-        // Reset counter
         void Reset();
-        // Update frame counter
         void Update();
 
-        // FPS
-        f32 FPS = 0.0f;
-        // Frame time
+        f32 FPS          = 0.0f;
         f32 avgFrameTime = 0.0f;
-        // Frame delta
-        f32 frameDelta = 0.0f;
+        f32 frameDelta   = 0.0f;
     private:
-        // Cycle start time
-        TimePoint m_startTime = {};
-        // Frame start time
+        TimePoint m_startTime      = {};
         TimePoint m_frameStartTime = {};
-        // Frame end time
-        TimePoint m_endTime = {};
-        // Current FPS
+        TimePoint m_endTime        = {};
+
         f32 m_currentFPS = 0.0f;
     };
 

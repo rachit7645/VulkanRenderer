@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -26,26 +26,18 @@ namespace Renderer::RenderPasses
     class SwapPass
     {
     public:
-        // Create swapchain pass
         SwapPass(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        // Recreate swapchain pass
         void Recreate(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        // Destroy swapchain pass
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        // Render to swapchain
         void Render(usize FIF);
-        // Present
         void Present(const std::shared_ptr<Vk::Context>& context, usize FIF);
 
-        // Swapchain
-        Vk::Swapchain swapchain;
-        // Pipeline
+        Vk::Swapchain           swapchain;
         Pipelines::SwapPipeline pipeline;
-        // Command buffers
+
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
     private:
-        // Create command buffers
         void CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context);
     };
 }

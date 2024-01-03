@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,23 +29,18 @@ namespace Renderer::Pipelines
     )
         : Vk::Pipeline(CreatePipeline(context, colorFormat, extent))
     {
-        // Create pipeline data
         CreatePipelineData(context);
     }
 
     void SwapPipeline::WriteImageDescriptors(VkDevice device, const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews)
     {
-        // Image descriptor data
         const auto& imageData = GetImageData();
 
-        // Writing data
         std::array<VkDescriptorImageInfo, Vk::FRAMES_IN_FLIGHT> imageInfos  = {};
         std::array<VkWriteDescriptorSet,  Vk::FRAMES_IN_FLIGHT> imageWrites = {};
 
-        // Loop
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
-            // Image info
             imageInfos[i] =
             {
                 .sampler     = textureSampler.handle,
@@ -53,7 +48,6 @@ namespace Renderer::Pipelines
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             };
 
-            // Image write
             imageWrites[i] =
             {
                 .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -69,7 +63,6 @@ namespace Renderer::Pipelines
             };
         }
 
-        // Update descriptors
         vkUpdateDescriptorSets
         (
             device,
@@ -82,7 +75,6 @@ namespace Renderer::Pipelines
 
     const Vk::DescriptorSetData& SwapPipeline::GetImageData() const
     {
-        // Return
         return descriptorSetData[0];
     }
 
@@ -93,10 +85,8 @@ namespace Renderer::Pipelines
         VkExtent2D extent
     )
     {
-        // Custom functions
         auto SetDynamicStates = [&extent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
         {
-            // Set viewport config
             pipelineBuilder.viewport =
             {
                 .x        = 0.0f,
@@ -107,14 +97,12 @@ namespace Renderer::Pipelines
                 .maxDepth = 1.0f
             };
 
-            // Set scissor config
             pipelineBuilder.scissor =
             {
                 .offset = {0, 0},
                 .extent = extent
             };
 
-            // Create viewport creation info
             pipelineBuilder.viewportInfo =
             {
                 .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -127,10 +115,8 @@ namespace Renderer::Pipelines
             };
         };
 
-        // Dynamic states
         constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
-        // Vertex binding description
         constexpr std::array<VkVertexInputBindingDescription, 1> vertexBindings =
         {
             VkVertexInputBindingDescription
@@ -141,7 +127,6 @@ namespace Renderer::Pipelines
             }
         };
 
-        // Vertex attrib description
         constexpr std::array<VkVertexInputAttributeDescription, 1> vertexAttribs =
         {
             VkVertexInputAttributeDescription
@@ -153,10 +138,8 @@ namespace Renderer::Pipelines
             }
         };
 
-        // Color formats
         std::array<VkFormat, 1> colorFormats = {colorFormat};
 
-        // Build pipeline
         return Vk::Builders::PipelineBuilder(context)
               .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
               .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
@@ -173,7 +156,6 @@ namespace Renderer::Pipelines
 
     void SwapPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
-        // Create texture sampler
         textureSampler = Vk::Sampler
         (
             context->device,
@@ -188,7 +170,6 @@ namespace Renderer::Pipelines
             VK_FALSE
         );
 
-        // Vertex data
         constexpr std::array<f32, 12> QUAD_VERTICES =
         {
             -1.0f, -1.0f, // Bottom-left
@@ -197,15 +178,12 @@ namespace Renderer::Pipelines
              1.0f,  1.0f  // Top-right
         };
 
-        // Create vertex buffer
         screenQuad = Vk::VertexBuffer(context, QUAD_VERTICES);
     }
 
     void SwapPipeline::DestroyPipelineData(VkDevice device, VmaAllocator allocator)
     {
-        // Destroy sampler
         textureSampler.Destroy(device);
-        // Destroy screen quad
         screenQuad.Destroy(allocator);
     }
 }

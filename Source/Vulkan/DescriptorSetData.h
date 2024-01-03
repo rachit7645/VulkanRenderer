@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,14 +29,11 @@ namespace Vk
     {
         // Usings
         using DescriptorMap = std::array<std::vector<VkDescriptorSet>, Vk::FRAMES_IN_FLIGHT>;
-        // Binding
-        u32 binding = 0;
-        // Type
-        VkDescriptorType type = {};
-        // Layout
-        VkDescriptorSetLayout layout = {};
-        // Descriptors
-        DescriptorMap setMap = {};
+        // Data
+        u32                   binding = 0;
+        VkDescriptorType      type    = {};
+        VkDescriptorSetLayout layout  = VK_NULL_HANDLE;
+        DescriptorMap         setMap  = {};
     };
 }
 

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@
 
 namespace Renderer
 {
-    // Constants
+    // Constants (per us)
     constexpr f32 CAMERA_SPEED       = 0.00025f;
     constexpr f32 CAMERA_SENSITIVITY = 0.0001f;
-    constexpr f32 CAMERA_ZOOM        = 0.00045f;
+    constexpr f32 CAMERA_ZOOM        = 0.000045f;
 
     FreeCamera::FreeCamera()
         : FreeCamera(glm::vec3(30.0f, 30.0f, 4.0f), glm::vec3(0.0f, std::numbers::pi, 0.0f), Renderer::DEFAULT_FOV)
@@ -39,80 +39,68 @@ namespace Renderer
 
     void FreeCamera::Update(f32 frameDelta)
     {
-        // Check inputs
         CheckInputs(frameDelta);
 
-        // Calculate front vector
         front.x = std::cos(rotation.y) * std::cos(rotation.x);
         front.y = std::sin(rotation.x);
         front.z = std::sin(rotation.y) * std::cos(rotation.x);
         front   = glm::normalize(front);
 
-        // Calculate right & up vectors
         right = glm::normalize(glm::cross(front, Renderer::WORLD_UP));
         up    = glm::normalize(glm::cross(right, front));
 
-        // Display ImGui widget
         ImGuiDisplay();
     }
 
     void FreeCamera::CheckInputs(f32 frameDelta)
     {
-        // Move camera
         Move(frameDelta);
-        // Rotate camera
         Rotate(frameDelta);
-        // Zoom camera (FIXME: Broken AF)
-        // Zoom(frameDelta);
+        Zoom(frameDelta);
     }
 
     void FreeCamera::Move(f32 frameDelta)
     {
-        // Get inputs
         const auto& inputs = Engine::Inputs::GetInstance();
 
-        // Calculate velocity
         f32 velocity = CAMERA_SPEED * frameDelta;
 
-        // Move forward
+        // Forward
         if (inputs.IsKeyPressed(SDL_SCANCODE_W))
         {
             position += front * velocity;
         }
-        // Move backward
+        // Backward
         else if (inputs.IsKeyPressed(SDL_SCANCODE_S))
         {
             position -= front * velocity;
         }
 
-        // Move left
+        // Left
         if (inputs.IsKeyPressed(SDL_SCANCODE_A))
         {
             position -= right * velocity;
         }
-        // Move right
+        // Right
         else if (inputs.IsKeyPressed(SDL_SCANCODE_D))
         {
             position += right * velocity;
         }
 
-        // Get left stick
         auto lStick = inputs.GetLStick();
-        // Move forward and backward
+        // Forward/Backward
         position -= lStick.y * front * velocity;
-        // Move left and right
+        // Left/Right
         position += lStick.x * right * velocity;
     }
 
     void FreeCamera::Rotate(f32 frameDelta)
     {
-        // Get inputs
         auto& inputs = Engine::Inputs::GetInstance();
 
-        // Rotation speed
         auto speed = CAMERA_SENSITIVITY * frameDelta;
 
-        // If mouse was moved
+        // Avoids freaking out
         if (inputs.WasMouseMoved())
         {
             // Yaw
@@ -121,25 +109,24 @@ namespace Renderer
             rotation.x += glm::radians(static_cast<f32>(inputs.GetMousePosition().y) * speed);
         }
 
-        // Get right stick
         auto rStick = inputs.GetRStick();
+        // Pitch
         rotation.x += rStick.y * speed * 0.04f;
+        // Yaw
         rotation.y += rStick.x * speed * 0.04f;
 
-        // Clamp pitch
+        // Don't really want to flip the world around
         rotation.x = glm::clamp(rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
     }
 
     void FreeCamera::Zoom(f32 frameDelta)
     {
-        // Get inputs
         auto& inputs = Engine::Inputs::GetInstance();
 
-        // If mouse was scrolled
+        // Stops things from going haywire
         if (inputs.WasMouseScrolled())
         {
-            // Set zoom
-            FOV *= static_cast<f32>(inputs.GetMouseScroll().y) * CAMERA_ZOOM * frameDelta;
+            FOV -= static_cast<f32>(inputs.GetMouseScroll().y) * CAMERA_ZOOM * frameDelta;
             FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,9 +27,8 @@ namespace Vk
     class Sampler
     {
     public:
-        // Default constructor
         Sampler() = default;
-        // Create a sampler
+
         Sampler
         (
             VkDevice device,
@@ -43,8 +42,9 @@ namespace Vk
             VkBorderColor borderColor,
             VkBool32 unnormalizedCoordinates
         );
-        // Destroy sampler
+
         void Destroy(VkDevice device) const;
+
         // Vulkan handle
         VkSampler handle = nullptr;
     };

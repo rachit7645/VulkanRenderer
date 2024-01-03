@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,37 +27,27 @@ namespace Vk
     class CommandBuffer
     {
     public:
-        // Create command buffer
         CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level);
-        // Free command buffer
         void Free(const std::shared_ptr<Vk::Context>& context);
 
-        // Default constructor
-        CommandBuffer() = default;
-        // Default destructor
+        CommandBuffer()  = default;
         ~CommandBuffer() = default;
 
-        // Deleted copy constructor
+        // No copying
         CommandBuffer(const CommandBuffer&) = delete;
-        // Deleted copy assignment operator
         CommandBuffer& operator=(const CommandBuffer&) = delete;
 
-        // Move constructor
+        // Only moving
         CommandBuffer(CommandBuffer&& other) noexcept = default;
-        // Move assignment operator
         CommandBuffer& operator=(CommandBuffer&& other) noexcept = default;
 
-        // Begin recording command buffer
         void BeginRecording(VkCommandBufferUsageFlags usageFlags) const;
-        // End recording
         void EndRecording() const;
-        // Reset command buffer
+
         void Reset(VkCommandBufferResetFlags resetFlags) const;
 
-        // Vulkan handle
-        VkCommandBuffer handle = VK_NULL_HANDLE;
-        // Level
-        VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        VkCommandBuffer      handle = VK_NULL_HANDLE;
+        VkCommandBufferLevel level  = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     };
 }
 

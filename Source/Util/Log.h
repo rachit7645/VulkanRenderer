@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ namespace Logger
         /// @param location Source Location Information
         /// @param format   Format string
         /// @param args     Variable arguments
-        template <s32 ErrorCode, typename... Args>
+        template <s32 ErrorCode = EXIT_FAILURE, typename... Args>
         [[noreturn]] void LogAndExit
         (
             const fmt::color& fgColor,
@@ -93,7 +93,7 @@ namespace Logger
                 format,
                 std::forward<Args>(args)...
             );
-            // Exit
+
             std::exit(ErrorCode);
         }
     }
@@ -113,7 +113,6 @@ namespace Logger
 			const std::source_location location = std::source_location::current()
         )
         {
-            // Log
             Detail::Log
             (
                 fmt::color::forest_green,
@@ -141,7 +140,6 @@ namespace Logger
 			const std::source_location location = std::source_location::current()
         )
         {
-            // Log
             Detail::Log
             (
                 fmt::color::yellow,
@@ -171,7 +169,6 @@ namespace Logger
         )
         {
             #ifdef ENGINE_DEBUG
-            // Log
             Detail::Log
             (
                 fmt::color::cyan,
@@ -202,7 +199,6 @@ namespace Logger
         )
         {
             #ifdef ENGINE_DEBUG
-            // Log
             Detail::Log
             (
                 fmt::color::orange,
@@ -232,7 +228,6 @@ namespace Logger
 			const std::source_location location = std::source_location::current()
         )
         {
-            // Log
             Detail::LogAndExit<-1>
             (
                 fmt::color::red,
@@ -260,7 +255,6 @@ namespace Logger
             const std::source_location location = std::source_location::current()
         )
         {
-            // Log
             Detail::LogAndExit<-1>
             (
                 fmt::color::orange_red,

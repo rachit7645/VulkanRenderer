@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,34 +24,30 @@ namespace Renderer::RenderPasses
         : swapchain(window, context),
           pipeline(context, swapchain.imageFormat, swapchain.extent)
     {
-        // Create command buffers
         CreateCmdBuffers(context);
-        // Log
         Logger::Info("{}\n", "Created swapchain pass!");
     }
 
     void SwapPass::Recreate(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
     {
-        // Recreate swap chain
         swapchain.RecreateSwapChain(window, context);
-        // Recreate pipeline just in case
+
+        pipeline.Destroy(context);
         pipeline = Pipelines::SwapPipeline(context, swapchain.imageFormat, swapchain.extent);
-        // Log
+
         Logger::Info("{}\n", "Recreated swapchain pass!");
     }
 
     void SwapPass::Render(usize FIF)
     {
-        // Get current resources
         auto& currentCmdBuffer = cmdBuffers[FIF];
         auto& currentImage     = swapchain.images[swapchain.imageIndex];
         auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
 
-        // Begin recording
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(0);
 
-        // Transition as color attachment
+        // Transition to color attachment
         currentImage.TransitionLayout
         (
             currentCmdBuffer,
@@ -59,7 +55,6 @@ namespace Renderer::RenderPasses
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         );
 
-        // Color attachment info
         VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -96,13 +91,10 @@ namespace Renderer::RenderPasses
             .pStencilAttachment   = nullptr
         };
 
-        // Begin rendering
         vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
 
-        // Bind pipeline
         pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-        // Viewport
         VkViewport viewport =
         {
             .x        = 0.0f,
@@ -113,7 +105,6 @@ namespace Renderer::RenderPasses
             .maxDepth = 1.0f
         };
 
-        // Set viewport
         vkCmdSetViewport
         (
             currentCmdBuffer.handle,
@@ -122,14 +113,12 @@ namespace Renderer::RenderPasses
             &viewport
         );
 
-        // Scissor
         VkRect2D scissor =
         {
             .offset = {0, 0},
             .extent = swapchain.extent
         };
 
-        // Set scissor
         vkCmdSetScissor
         (
             currentCmdBuffer.handle,
@@ -138,7 +127,6 @@ namespace Renderer::RenderPasses
             &scissor
         );
 
-        // Load image descriptor
         pipeline.BindDescriptors
         (
             currentCmdBuffer,
@@ -147,9 +135,8 @@ namespace Renderer::RenderPasses
             std::span(pipeline.GetImageData().setMap[FIF].data(), 1)
         );
 
-        // Bind vertex buffer
         pipeline.screenQuad.Bind(currentCmdBuffer);
-        // Draw quad
+
         vkCmdDraw
         (
             currentCmdBuffer.handle,
@@ -159,11 +146,9 @@ namespace Renderer::RenderPasses
             0
         );
 
-        // Render ImGui
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), currentCmdBuffer.handle);
 
-        // End render
         vkCmdEndRendering(currentCmdBuffer.handle);
 
         // Transition for presentation
@@ -174,33 +159,27 @@ namespace Renderer::RenderPasses
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
         );
 
-        // End recording
         currentCmdBuffer.EndRecording();
     }
 
     void SwapPass::Present(const std::shared_ptr<Vk::Context>& context, usize FIF)
     {
-        // Present
         swapchain.Present(context->graphicsQueue, FIF);
     }
 
     void SwapPass::CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context)
     {
-        // Create
         for (auto&& cmdBuffer : cmdBuffers)
         {
             cmdBuffer = Vk::CommandBuffer(context, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
         }
     }
 
-    void SwapPass::Destroy(VkDevice device, VmaAllocator allocator)
+    void SwapPass::Destroy(const std::shared_ptr<Vk::Context>& context)
     {
-        // Log
         Logger::Debug("{}\n", "Destroying swapchain pass!");
 
-        // Destroy swapchain
-        swapchain.Destroy(device);
-        // Destroy pipeline
-        pipeline.Destroy(device, allocator);
+        swapchain.Destroy(context->device);
+        pipeline.Destroy(context);
     }
 }

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ namespace Vk
         VmaMemoryUsage memoryUsage
     )
     {
-        // Creation info
         VkBufferCreateInfo createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -44,7 +43,6 @@ namespace Vk
             .pQueueFamilyIndices   = nullptr
         };
 
-        // Allocation info
         VmaAllocationCreateInfo allocCreateInfo =
         {
             .flags          = allocationFlags,
@@ -57,47 +55,41 @@ namespace Vk
             .priority       = 0.0f
         };
 
-        // Create buffer
-        if (vmaCreateBuffer(
-                allocator,
-                &createInfo,
-                &allocCreateInfo,
-                &handle,
-                &allocation,
-                &allocInfo
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create vertex buffer! [allocator={}]\n",
-                std::bit_cast<void*>(allocator)
-            );
-        }
+        Vk::CheckResult(vmaCreateBuffer(
+            allocator,
+            &createInfo,
+            &allocCreateInfo,
+            &handle,
+            &allocation,
+            &allocInfo),
+            "Failed to create vertex buffer!"
+        );
 
-        // Log
-        Logger::Debug("Created buffer! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Created buffer! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Buffer::Map(VmaAllocator allocator)
     {
-        // Map
         vmaMapMemory(allocator, allocation, &allocInfo.pMappedData);
     }
 
     void Buffer::Unmap(VmaAllocator allocator) const
     {
-        // Unmap
         vmaUnmapMemory(allocator, allocation);
     }
 
     template <typename T>
     void Buffer::LoadData(VmaAllocator allocator, const std::span<const T> data)
     {
-        // Map
-        Map(allocator);
-        // Copy
+        bool isPersistentlyMapped = allocInfo.pMappedData != nullptr;
+
+        if (!isPersistentlyMapped)
+            Map(allocator);
+
         std::memcpy(allocInfo.pMappedData, data.data(), allocInfo.size);
-        // Unmap
-        Unmap(allocator);
+
+        if (!isPersistentlyMapped)
+            Unmap(allocator);
     }
 
     void Buffer::CopyBuffer

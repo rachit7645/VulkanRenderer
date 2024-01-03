@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,48 +30,39 @@ namespace Engine::Files
 
     std::string GetAssetPath(const std::string_view prefix, const std::string_view fileName)
     {
-        // Return
         return fmt::format("{}{}{}", ASSETS_DIRECTORY, prefix, fileName);
     }
 
     std::string GetDirectory(const std::string_view path)
     {
-        // Get directory
         auto directory = filesystem::path(path).parent_path().string();
-        // Get separator
         auto separator = static_cast<char>(filesystem::path::preferred_separator);
-        // Add and return
         return directory + separator;
     }
 
     usize GetFileSize(const std::string_view path)
     {
-        // Assert
+        // This should always work
         static_assert(sizeof(usize) >= sizeof(std::uintmax_t), "How???");
-        // Get file size
         return filesystem::file_size(path);
     }
 
     std::vector<u8> ReadBytes(const std::string_view path)
     {
-        // Create file
+        // Open in binary mode
         auto bin = std::ifstream(path.data(), std::ios::binary | std::ios::in);
 
-        // Make sure files was opened
         if (!bin.is_open())
         {
-            // Log
             Logger::Error("Failed to load shader binary {}!\n", path);
         }
 
-        // Binary data
+        // Pre-allocate memory for SPEED
         std::vector<u8> binary = {};
         binary.resize(GetFileSize(path));
 
-        // Read data into buffer
         bin.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
 
-        // Return
         return binary;
     }
 }

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ namespace Renderer
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
 
         // Frame index
-        usize m_currentFrame = 0;
+        usize m_currentFIF = 0;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
     };

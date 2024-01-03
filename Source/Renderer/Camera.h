@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,21 +25,24 @@ namespace Renderer
     class Camera
     {
     public:
-        // Constructor w/ vectors
         Camera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
-        // Virtual destructor
         virtual ~Camera() = default;
 
-        // Update camera state
+        Camera(const Camera&) noexcept = default;
+        Camera& operator=(const Camera&) noexcept = default;
+
+        Camera(Camera&& other) noexcept = default;
+        Camera& operator=(Camera&& other) noexcept = default;
+
+        // Each subclass MUST define this method
         virtual void Update(f32 frameDelta) = 0;
-        // Get camera matrix
         [[nodiscard]] glm::mat4 GetViewMatrix() const;
 
         // Camera position
         glm::vec3 position = {0.0f, 0.0f, 0.0f};
-        // Camera rotation (pitch, yaw, roll)
+        // Pitch, Yaw, Roll (Radians)
         glm::vec3 rotation = {0.0f, 0.0f, 0.0f};
-        // Field of view
+        // Must be in radians
         f32 FOV = Renderer::DEFAULT_FOV;
 
         // Lookat vectors
@@ -47,7 +50,6 @@ namespace Renderer
         glm::vec3 up    = {0.0f, 1.0f,  0.0f};
         glm::vec3 right = glm::normalize(glm::cross(front, up));
     protected:
-        // ImGui
         void ImGuiDisplay();
     };
 }

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -35,42 +35,38 @@ namespace Vk::Builders
     class PipelineBuilder
     {
     public:
-        // Initialise pipeline builder
-        PipelineBuilder(const std::shared_ptr<Vk::Context>& context);
-        // Destroy pipeline data
+        explicit PipelineBuilder(const std::shared_ptr<Vk::Context>& context);
         ~PipelineBuilder();
 
-        // Build pipeline
+        // You can not copy
+        PipelineBuilder(const PipelineBuilder&) = delete;
+        PipelineBuilder& operator=(const PipelineBuilder&) = delete;
+        // or move this
+        PipelineBuilder(PipelineBuilder&&) = delete;
+        PipelineBuilder& operator=(PipelineBuilder&&) = delete;
+
         Vk::Pipeline Build();
 
-        // Set rendering info
         [[nodiscard]] PipelineBuilder& SetRenderingInfo
         (
             const std::span<const VkFormat> colorFormats,
             VkFormat depthFormat,
             VkFormat stencilFormat
         );
-        // Attach shader to pipeline
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
-        // Set dynamic state objects
         [[nodiscard]] PipelineBuilder& SetDynamicStates
         (
             const std::span<const VkDynamicState> vkDynamicStates,
             const std::function<void(PipelineBuilder&)>& SetDynStates
         );
-        // Set vertex input state
         [[nodiscard]] PipelineBuilder& SetVertexInputState
         (
             const std::span<const VkVertexInputBindingDescription>   vertexBindings,
             const std::span<const VkVertexInputAttributeDescription> vertexAttribs
         );
-        // Set IA info
         [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
-        // Set rasterizer state
         [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode);
-        // Set MSAA state
         [[nodiscard]] PipelineBuilder& SetMSAAState();
-        // Set depth/stencil state
         [[nodiscard]] PipelineBuilder& SetDepthStencilState
         (
             VkBool32 depthTestEnable,
@@ -80,11 +76,8 @@ namespace Vk::Builders
             VkStencilOpState front,
             VkStencilOpState back
         );
-        // Set color blending state
         [[nodiscard]] PipelineBuilder& SetBlendState();
-        // Add push constant
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
-        // Add descriptor set binding
         [[nodiscard]] PipelineBuilder& AddDescriptor
         (
             u32 binding,
@@ -94,22 +87,20 @@ namespace Vk::Builders
             u32 copyCount // Number of unique descriptors per FIF
         );
 
-        // Rendering info
-        VkPipelineRenderingCreateInfo renderingCreateInfo = {};
-        // Color formats
-        std::vector<VkFormat> renderingColorFormats = {};
+        // Dynamic rendering info
+        VkPipelineRenderingCreateInfo renderingCreateInfo   = {};
+        std::vector<VkFormat>         renderingColorFormats = {};
 
-        // Shader modules
-        std::vector<Vk::ShaderModule> shaderModules = {};
-        // Shader stages
+        // Shaders
+        std::vector<Vk::ShaderModule>                shaderModules          = {};
         std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
 
         // Dynamic states
-        std::vector<VkDynamicState> dynamicStates = {};
-        // Dynamic states info
+        std::vector<VkDynamicState>      dynamicStates    = {};
         VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
 
         // Vertex info
+        VkPipelineVertexInputStateCreateInfo           vertexInputInfo          = {};
         std::vector<VkVertexInputBindingDescription>   vertexInputBindings      = {};
         std::vector<VkVertexInputAttributeDescription> vertexAttribDescriptions = {};
 
@@ -117,37 +108,31 @@ namespace Vk::Builders
         VkPipelineViewportStateCreateInfo viewportInfo = {};
         // Viewport data
         VkViewport viewport = {};
-        // Scissor data
-        VkRect2D scissor = {};
+        VkRect2D   scissor  = {};
 
-        // Vertex input state info
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
-        // Input assembly state info
+        // Input assembly state
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
         // Rasterizer state info
         VkPipelineRasterizationStateCreateInfo rasterizationInfo = {};
         // MSAA state
         VkPipelineMultisampleStateCreateInfo msaaStateInfo = {};
+
         // Depth/Stencil State
         VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {};
 
-        // Blend states
+        // Blend info
         std::vector<VkPipelineColorBlendAttachmentState> colorBlendStates = {};
-        // Blend states info
-        VkPipelineColorBlendStateCreateInfo colorBlendInfo = {};
+        VkPipelineColorBlendStateCreateInfo              colorBlendInfo   = {};
 
         // Push constant data
         std::vector<VkPushConstantRange> pushConstantRanges = {};
         // Descriptor set states
         std::vector<Builders::DescriptorState> descriptorStates = {};
     private:
-
-        // Creates descriptor set layouts
         std::vector<VkDescriptorSetLayout> CreateDescriptorSetLayouts();
-        // Allocate sets
         std::vector<Vk::DescriptorSetData> AllocateDescriptorSets();
 
-        // Vulkan context
+        // Ok we only need this pointer here temporarily
         std::shared_ptr<Vk::Context> m_context = nullptr;
     };
 }
