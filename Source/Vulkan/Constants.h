@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -23,10 +23,8 @@
 
 namespace Vk
 {
-    // Maximum frames in flight at a time
     constexpr usize FRAMES_IN_FLIGHT = 2;
 
-    // Descriptor pool size
     constexpr std::array<VkDescriptorPoolSize, 4> DESCRIPTOR_POOL_SIZES =
     {
         VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,           (1 << 4) * FRAMES_IN_FLIGHT),
@@ -35,10 +33,8 @@ namespace Vk
         VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,           (1 << 12) * FRAMES_IN_FLIGHT)
     };
 
-    // Calculate descriptor pool size
     consteval auto GetDescriptorPoolSize() -> usize
     {
-        // Accumulate
         return std::accumulate
         (
             DESCRIPTOR_POOL_SIZES.begin(),

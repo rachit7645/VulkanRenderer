@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,30 +27,26 @@
 
 namespace Vk
 {
-    // Template to check type
     template <typename T>
     concept HasLoader = std::is_same_v<T, VkInstance> || std::is_same_v<T, VkDevice>;
 
-    // Loader type
     template<typename T>
     using LoaderType = PFN_vkVoidFunction (VKAPI_PTR*) (T, const char*);
 
-    // Template to load functions (PFN = Pointer to Function)
+    // PFN = Pointer to Function
     template<typename PFN, typename Param1Type, LoaderType<Param1Type> Loader>
         requires (std::is_pointer_v<PFN>) && (HasLoader<Param1Type>) && (Loader != nullptr)
     [[nodiscard]] PFN LoadExtension(Param1Type param1, std::string_view name)
     {
-        // Load and return
         auto extension = reinterpret_cast<PFN>(Loader(param1, name.data()));
-        // Make sure we were able to load extension
+
         if (extension == nullptr)
         {
-            // Log
-            Logger::Error("Failed to load function \"{}\" for {} \n", name, reinterpret_cast<const void*>(param1));
+            Logger::Error("Failed to load function \"{}\" for {} \n", name, std::bit_cast<const void*>(param1));
         }
-        // Log
-        Logger::Debug("Loaded function {} [address={}]\n", name, reinterpret_cast<void*>(extension));
-        // Return
+
+        Logger::Debug("Loaded function {} [address={}]\n", name, std::bit_cast<void*>(extension));
+
         return extension;
     }
 
@@ -58,7 +54,6 @@ namespace Vk
     template <typename T>
     [[nodiscard]] T LoadExtension(VkInstance instance, std::string_view name)
     {
-        // Load
         return LoadExtension<T, VkInstance, vkGetInstanceProcAddr>(instance, name);
     }
 
@@ -66,7 +61,6 @@ namespace Vk
     template <typename T>
     [[nodiscard]] T LoadExtension(VkDevice device, std::string_view name)
     {
-        // Load
         return LoadExtension<T, VkDevice, vkGetDeviceProcAddr>(device, name);
     }
 }

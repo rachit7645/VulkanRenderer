@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,10 +22,11 @@
 
 namespace STB
 {
-    STBImage::STBImage(const std::string_view path, s32 requiredComponents)
+    Image::Image(const std::string_view path, s32 requiredComponents)
     {
         // Temporary signed data
-        s32 _width, _height;
+        s32 _width  = 0;
+        s32 _height = 0;
         // Load
         data = stbi_load(path.data(), &_width, &_height, &channels, requiredComponents);
 
@@ -41,7 +42,7 @@ namespace STB
         height = static_cast<u32>(_height);
     }
 
-    STBImage::~STBImage()
+    Image::~Image()
     {
         // Free
         stbi_image_free(data);

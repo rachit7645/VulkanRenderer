@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,10 +19,9 @@
 
 #include <cstdint>
 
-// Unused macro
 #define UNUSED [[maybe_unused]]
 
-// Vulkan data
+// STD140 / STD430 alignment
 #define VULKAN_GLSL_DATA alignas(16)
 
 // Signed integer types
@@ -45,22 +44,20 @@ using f64 = double;
 using ssize = ssize_t;
 using usize = std::size_t;
 
-// Enum combiner
+// Enum class combiner
 template<typename T>
 constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
 {
-    // Combine
     return static_cast<T>(
         static_cast<std::underlying_type_t<T>>(lhs) |
         static_cast<std::underlying_type_t<T>>(rhs)
     );
 }
 
-// Enum checker
+// Enum class checker
 template<typename T>
 constexpr T operator&(T lhs, T rhs) requires (std::is_enum_v<T>)
 {
-    // Combine
     return static_cast<T>(
         static_cast<std::underlying_type_t<T>>(lhs) &
         static_cast<std::underlying_type_t<T>>(rhs)

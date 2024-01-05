@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,58 +16,51 @@
 
 #include "FrameCounter.h"
 
+#include "Externals/ImGui.h"
+
 namespace Util
 {
-    // Aliases
+    // Alias for chrono
     namespace chrono = std::chrono;
 
     void FrameCounter::Reset()
     {
-        // Reset floats
-        FPS = avgFrameTime = m_currentFPS = 0.0f;
-        // Reset times
-        m_startTime = m_frameStartTime = Clock::now();
-        // Reset end time
+        FPS          = 0.0f;
+        avgFrameTime = 0.0f;
+        m_currentFPS = 0.0f;
+
+        m_startTime      = Clock::now();
+        m_frameStartTime = m_startTime;
+
         m_endTime = {};
     }
 
     void FrameCounter::Update()
     {
-        // Calculate end time
         m_endTime = Clock::now();
 
-        // Calculate frame duration
-        auto duration = m_endTime - m_frameStartTime;
-        // Calculate cycle duration
+        auto duration      = m_endTime - m_frameStartTime;
         auto cycleDuration = m_endTime - m_startTime;
 
-        // Set frame delta
-        frameDelta = static_cast<f32>(static_cast<f64>(duration.count()) / 1000.0);
-        // Set this/next frame's start time
+        // This is in us (I think)
+        frameDelta       = static_cast<f32>(static_cast<f64>(duration.count()) / 1000.0);
         m_frameStartTime = m_endTime;
 
-        // If a second has passed
+        // A cycle is a second long
         if (cycleDuration >= chrono::seconds(1))
         {
-            // Set this cycle's start time
-            m_startTime = m_endTime;
-            // Update displayed FPS
-            FPS = m_currentFPS;
-            // Calculate frame time
+            m_startTime  = m_endTime;
+            FPS          = m_currentFPS;
             avgFrameTime = static_cast<f32>(1000.0 / FPS);
-            // Reset FPS
             m_currentFPS = 0.0f;
         }
         else
         {
-            // Increment FPS
             ++m_currentFPS;
         }
 
-        // Render ImGui
         if (ImGui::BeginMainMenuBar())
         {
-            // Profiler
             if (ImGui::BeginMenu("Profiler"))
             {
                 // Frame stats
@@ -76,7 +69,6 @@ namespace Util
                 ImGui::Text("Frame Delta: %.2f", frameDelta);
                 ImGui::EndMenu();
             }
-            // End menu bar
             ImGui::EndMainMenuBar();
         }
     }

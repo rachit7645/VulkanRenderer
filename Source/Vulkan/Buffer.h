@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,28 +27,26 @@ namespace Vk
     class Buffer
     {
     public:
-        // Default constructor (to make C++ happy)
+        // Default constructor to make C++ happy
         Buffer() = default;
 
-        // Creates the buffer
         Buffer
         (
-            const std::shared_ptr<Vk::Context>& context,
+            VmaAllocator allocator,
             VkDeviceSize size,
             VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties
+            VkMemoryPropertyFlags properties,
+            VmaAllocationCreateFlags allocationFlags,
+            VmaMemoryUsage memoryUsage
         );
 
-        // Map buffer
-        void Map(VkDevice device, VkDeviceSize offset = 0, VkDeviceSize rangeSize = VK_WHOLE_SIZE);
-        // Unmap buffer
-        void Unmap(VkDevice device);
+        void Map(VmaAllocator allocator);
+        void Unmap(VmaAllocator allocator) const;
 
-        // Load data
         template <typename T>
-        void LoadData(VkDevice device, const std::span<const T> data);
+        void LoadData(VmaAllocator allocator, const std::span<const T> data);
 
-        // Copy from src to dst buffer
+        // FIXME: Should this be here at all?
         static void CopyBuffer
         (
             const std::shared_ptr<Vk::Context>& context,
@@ -57,19 +55,14 @@ namespace Vk
             VkDeviceSize copySize
         );
 
-        // Internal deletion function
-        void DeleteBuffer(VkDevice device) const;
+        void Destroy(VmaAllocator allocator) const;
 
-        // Buffer handle
-        VkBuffer handle = VK_NULL_HANDLE;
-        // Memory
-        VkDeviceMemory memory = VK_NULL_HANDLE;
-        // Mapped pointer
-        void* mappedPtr = nullptr;
-        // Buffer size
-        VkDeviceSize size = 0;
-        // Buffer usage flags
-        VkBufferUsageFlags usage = {};
+        // Vulkan handles
+        VkBuffer      handle     = VK_NULL_HANDLE;
+        VmaAllocation allocation = {};
+
+        // Buffer allocation info
+        VmaAllocationInfo allocInfo  = {};
     };
 }
 

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,63 +20,50 @@
 
 namespace Renderer::Pipelines
 {
-    // Max textures
-    constexpr usize MAX_MATERIAL_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
-
     // Usings
     using Models::Vertex;
 
-    ForwardPipeline::ForwardPipeline(const std::shared_ptr<Vk::Context>& context, const Vk::RenderPass& renderPass, VkExtent2D extent)
-        : Vk::Pipeline(CreatePipeline(context, renderPass, extent))
+    ForwardPipeline::ForwardPipeline
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        VkFormat colorFormat,
+        VkFormat depthFormat,
+        VkExtent2D extent
+    )
+        : Vk::Pipeline(CreatePipeline(context, colorFormat, depthFormat, extent))
     {
-        // Create pipeline data
         CreatePipelineData(context);
-        // Write descriptors for 'Shared' UBO
         WriteStaticDescriptors(context->device);
     }
 
     void ForwardPipeline::WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials)
     {
-        // Get descriptor data
         auto& materialData = GetMaterialData();
 
-        // Calculate material count
-        usize materialCount = materials.size();
-        // Calculate descriptor count
+        usize materialCount   = materials.size();
         usize descriptorCount = materialCount * Vk::FRAMES_IN_FLIGHT;
-        // Calculate write count
-        usize writeCount = descriptorCount * Models::Material::MATERIAL_COUNT;
+        usize writeCount      = descriptorCount * Models::Material::MATERIAL_COUNT;
 
-        // Infos
+        // Pre-allocate
         std::vector<VkDescriptorImageInfo> imageInfos = {};
         imageInfos.resize(writeCount);
-        // Writes
         std::vector<VkWriteDescriptorSet> imageWrites = {};
         imageWrites.resize(writeCount);
 
-        // For each frame in flight
         for (usize FIF = 0; FIF < Vk::FRAMES_IN_FLIGHT; ++FIF)
         {
-            // Loop over all materials
             for (usize i = 0; i < materialCount; ++i)
             {
-                // Calculate descriptor index
                 usize descriptorIndex = i + (textureDescriptorIndexOffset / Vk::FRAMES_IN_FLIGHT);
-                // Get descriptor
-                auto currentDescriptor = materialData.setMap[FIF][descriptorIndex];
 
-                // Current texture set
-                const auto& currentViews = materials[i].GetViews();
+                VkDescriptorSet currentDescriptor = materialData.setMap[FIF][descriptorIndex];
+                const auto&     currentViews      = materials[i].GetViews();
 
-                // Loop over all images
                 for (usize j = 0; j < currentViews.size(); ++j)
                 {
-                    // Get image view
                     auto& currentImageView = currentViews[j];
-                    // Write index
-                    usize writeIndex = FIF * materialCount * currentViews.size() + i * currentViews.size() + j;
+                    usize writeIndex       = FIF * materialCount * currentViews.size() + i * currentViews.size() + j;
 
-                    // Image info
                     imageInfos[writeIndex] =
                     {
                         .sampler     = VK_NULL_HANDLE,
@@ -84,7 +71,6 @@ namespace Renderer::Pipelines
                         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                     };
 
-                    // Image write
                     imageWrites[writeIndex] =
                     {
                         .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -100,15 +86,12 @@ namespace Renderer::Pipelines
                     };
                 }
 
-                // Add to map
                 materialMap[FIF].emplace(materials[i], currentDescriptor);
             }
         }
 
-        // Update current index
         textureDescriptorIndexOffset += descriptorCount;
 
-        // Update
         vkUpdateDescriptorSets
         (
             device,
@@ -121,33 +104,29 @@ namespace Renderer::Pipelines
 
     const Vk::DescriptorSetData& ForwardPipeline::GetSceneUBOData() const
     {
-        // Return
         return descriptorSetData[0];
     }
 
     const Vk::DescriptorSetData& ForwardPipeline::GetSamplerData() const
     {
-        // Return
         return descriptorSetData[1];
     }
 
     const Vk::DescriptorSetData& ForwardPipeline::GetMaterialData() const
     {
-        // Return
         return descriptorSetData[2];
     }
 
     Vk::Pipeline ForwardPipeline::CreatePipeline
     (
         const std::shared_ptr<Vk::Context>& context,
-        const Vk::RenderPass& renderPass,
+        VkFormat colorFormat,
+        VkFormat depthFormat,
         VkExtent2D extent
     )
     {
-        // Custom functions
         auto SetDynamicStates = [&extent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
         {
-            // Set viewport config
             pipelineBuilder.viewport =
             {
                 .x        = 0.0f,
@@ -158,14 +137,12 @@ namespace Renderer::Pipelines
                 .maxDepth = 1.0f
             };
 
-            // Set scissor config
             pipelineBuilder.scissor =
             {
                 .offset = {0, 0},
                 .extent = extent
             };
 
-            // Create viewport creation info
             pipelineBuilder.viewportInfo =
             {
                 .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -178,11 +155,13 @@ namespace Renderer::Pipelines
             };
         };
 
-        // Dynamic states
-        constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        constexpr std::array<VkDynamicState, 2> DYN_STATES         = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        constexpr usize                         MAX_MATERIAL_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
 
-        // Build pipeline
-        return Vk::Builders::PipelineBuilder::Create(context, renderPass)
+        auto colorFormats = std::span(&colorFormat, 1);
+
+        return Vk::Builders::PipelineBuilder(context)
+              .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
               .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
               .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
               .SetDynamicStates(DYN_STATES, SetDynamicStates)
@@ -201,26 +180,22 @@ namespace Renderer::Pipelines
 
     void ForwardPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
-        // Create shared buffers
-        for (auto&& shared : sceneUBOs)
+        for (auto&& sceneUBO : sceneUBOs)
         {
-            // Create buffer
-            shared = Vk::Buffer
+            sceneUBO = Vk::Buffer
             (
-                context,
+                context->allocator,
                 static_cast<u32>(sizeof(SceneBuffer)),
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+                VMA_MEMORY_USAGE_AUTO
             );
-            // Map
-            shared.Map(context->device);
         }
 
-        // Get anisotropy
         constexpr auto SAMPLER_ANISOTROPY = 4.0f;
         auto anisotropy = std::min(SAMPLER_ANISOTROPY, context->physicalDeviceLimits.maxSamplerAnisotropy);
 
-        // Create texture sampler
         textureSampler = Vk::Sampler
         (
             context->device,
@@ -236,34 +211,27 @@ namespace Renderer::Pipelines
         );
     }
 
-    void ForwardPipeline::DestroyPipelineData(VkDevice device) const
+    void ForwardPipeline::DestroyPipelineData(VkDevice device, VmaAllocator allocator)
     {
-        // Destroy UBOs
-        for (auto&& sharedUBO : sceneUBOs)
+        for (auto&& sceneUBO : sceneUBOs)
         {
-            sharedUBO.DeleteBuffer(device);
+            sceneUBO.Destroy(allocator);
         }
-        // Destroy sampler
+
         textureSampler.Destroy(device);
     }
 
     void ForwardPipeline::WriteStaticDescriptors(VkDevice device)
     {
-        // Get UBO sets
         auto& sharedUBOData = GetSceneUBOData();
-        // Get sampler sets
-        auto& samplerData = GetSamplerData();
+        auto& samplerData   = GetSamplerData();
 
-        // Writing data
-        std::array<VkDescriptorBufferInfo, Vk::FRAMES_IN_FLIGHT> sharedBufferInfos  = {};
-        std::array<VkDescriptorImageInfo,  Vk::FRAMES_IN_FLIGHT> samplerInfos       = {};
-        // Writes
-        std::array<VkWriteDescriptorSet, 2 * Vk::FRAMES_IN_FLIGHT> descriptorWrites = {};
+        std::array<VkDescriptorBufferInfo,   Vk::FRAMES_IN_FLIGHT> sharedBufferInfos  = {};
+        std::array<VkDescriptorImageInfo,    Vk::FRAMES_IN_FLIGHT> samplerInfos       = {};
+        std::array<VkWriteDescriptorSet, 2 * Vk::FRAMES_IN_FLIGHT> descriptorWrites   = {};
 
-        // Loop
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
-            // Descriptor buffer info
             sharedBufferInfos[i] =
             {
                 .buffer = sceneUBOs[i].handle,
@@ -271,7 +239,6 @@ namespace Renderer::Pipelines
                 .range  = VK_WHOLE_SIZE
             };
 
-            // Descriptor sampler info
             samplerInfos[i] =
             {
                 .sampler     = textureSampler.handle,
@@ -279,7 +246,6 @@ namespace Renderer::Pipelines
                 .imageLayout = {}
             };
 
-            // Buffer Write info
             descriptorWrites[2 * i] =
             {
                 .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -294,7 +260,6 @@ namespace Renderer::Pipelines
                 .pTexelBufferView = nullptr
             };
 
-            // Sampler write info
             descriptorWrites[2 * i + 1] =
             {
                 .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -310,7 +275,6 @@ namespace Renderer::Pipelines
             };
         }
 
-        // Update
         vkUpdateDescriptorSets
         (
             device,

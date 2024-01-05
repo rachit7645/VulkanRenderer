@@ -1,3 +1,17 @@
+#  Copyright 2023 - 2024 Rachit Khandelwal
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 cmake_minimum_required(VERSION 3.25)
 project(VulkanRenderer)
 
@@ -15,7 +29,6 @@ find_package(Vulkan   REQUIRED)
 find_package(glm      REQUIRED)
 find_package(assimp   REQUIRED)
 find_package(fmt      REQUIRED)
-find_package(simdjson REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -52,13 +65,9 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Sampler.cpp
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
-	Source/Vulkan/Framebuffer.cpp
-	Source/Vulkan/RenderPass.cpp
 	Source/Vulkan/CommandBuffer.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
-	Source/Vulkan/Builders/RenderPassBuilder.cpp
-	Source/Vulkan/Builders/SubpassBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/FreeCamera.cpp
@@ -77,6 +86,7 @@ add_executable(VulkanRenderer
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/STBImage.cpp
+	Source/Externals/VMA.cpp
 )
 
 # Precompiled Headers
@@ -89,10 +99,10 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<vulkan/vulkan_core.h>
 	<vulkan/vk_enum_string_helper.h>
 	# ImGui Headers
-    Externals/ImGui/imgui.h
-    Externals/ImGui/imgui_internal.h
-    Externals/ImGui/backends/imgui_impl_sdl2.h
-    Externals/ImGui/backends/imgui_impl_vulkan.h
+    Externals/imgui/imgui.h
+    Externals/imgui/imgui_internal.h
+    Externals/imgui/backends/imgui_impl_sdl2.h
+    Externals/imgui/backends/imgui_impl_vulkan.h
     # STB Headers
     <stb/stb_image.h>
 	# Assimp Headers
@@ -116,8 +126,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <glm/trigonometric.hpp>
     <glm/geometric.hpp>
     <glm/gtc/matrix_transform.hpp>
-    # SIMD JSON Headers
-    <simdjson.h>
+    # VMA Headers
+	Externals/vma/include/vk_mem_alloc.h
     # C++ STL Headers
 	<map>
     <unordered_map>
@@ -152,7 +162,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
 # -O3 optimisations (Set to -Og when debugging)
-target_compile_options(VulkanRenderer PRIVATE -Og)
+target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)
@@ -170,7 +180,15 @@ endif()
 add_dependencies(VulkanRenderer Shaders)
 
 # Link libraries
-target_link_libraries(VulkanRenderer Vulkan::Vulkan SDL2::SDL2main SDL2::SDL2 fmt::fmt assimp imgui simdjson)
+target_link_libraries(VulkanRenderer
+	Vulkan::Vulkan
+	SDL2::SDL2main
+	SDL2::SDL2
+	fmt::fmt
+	assimp::assimp
+	GPUOpen::VulkanMemoryAllocator
+	imgui
+)
 
 # Install
 install(

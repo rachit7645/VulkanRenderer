@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,20 +25,15 @@ namespace Renderer
     class FreeCamera : public Camera
     {
     public:
-        // Default constructor
         FreeCamera();
-        // Constructor w/ vectors
+        // Is this even used lol
         FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
-        // Update
+
         void Update(f32 frameDelta) override;
     private:
-        // Check user inputs
         void CheckInputs(f32 frameDelta);
-        // Camera movement
         void Move(f32 frameDelta);
-        // Camera rotation
         void Rotate(f32 frameDelta);
-        // Camera zooming
         void Zoom(f32 frameDelta);
     };
 }

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,13 +20,11 @@ namespace glm
 {
     vec2 ai_cast(const aiVector2D& vector)
     {
-        // Convert
         return {vector.x, vector.y};
     }
 
-    glm::vec3 ai_cast(const aiVector3D& vector)
+    vec3 ai_cast(const aiVector3D& vector)
     {
-        // Convert
         return {vector.x, vector.y, vector.z};
     }
 }

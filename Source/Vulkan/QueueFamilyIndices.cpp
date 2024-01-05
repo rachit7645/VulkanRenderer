@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,28 +20,28 @@ namespace Vk
 {
     QueueFamilyIndices::QueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
-        // Get queue family count
         u32 queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties
+        vkGetPhysicalDeviceQueueFamilyProperties2
         (
             device,
             &queueFamilyCount,
             nullptr
         );
 
-        // Get queue families
-        auto queueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties
+        VkQueueFamilyProperties2 emptyQueue = {};
+        emptyQueue.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+        emptyQueue.pNext = nullptr;
+
+        auto queueFamilies = std::vector<VkQueueFamilyProperties2>(queueFamilyCount, emptyQueue);
+        vkGetPhysicalDeviceQueueFamilyProperties2
         (
             device,
             &queueFamilyCount,
             queueFamilies.data()
         );
 
-        // Loop over queue families
-        for (usize i = 0; auto&& family : queueFamilies)
+        for (u32 i = 0; i < queueFamilies.size(); ++i)
         {
-            // Check for presentation support
             VkBool32 presentSupport = VK_FALSE;
             vkGetPhysicalDeviceSurfaceSupportKHR
             (
@@ -51,34 +51,27 @@ namespace Vk
                 &presentSupport
             );
 
-            // Check if family has graphics support
-            if (presentSupport == VK_TRUE && family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if (presentSupport == VK_TRUE && queueFamilies[i].queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
                 // Found graphics family!
                 graphicsFamily = i;
             }
 
-            // Check for completeness
             if (IsComplete())
             {
                 // Found all the queue families we need
                 break;
             }
-
-            // Go to next family index
-            ++i;
         }
     }
 
     std::set<u32> QueueFamilyIndices::GetUniqueFamilies() const
     {
-        // Return all queue families
-        return {graphicsFamily.value()};
+        return {graphicsFamily.value_or(0)};
     }
 
     bool QueueFamilyIndices::IsComplete() const
     {
-        // Make sure both queues available
         return graphicsFamily.has_value();
     }
 }

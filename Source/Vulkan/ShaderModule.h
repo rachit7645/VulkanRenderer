@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,8 +25,14 @@
 
 namespace Vk
 {
-    // Creates a shader module
-    [[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, const std::string_view path);
+    class ShaderModule
+    {
+    public:
+        ShaderModule(VkDevice device, const std::string_view path);
+        void Destroy(VkDevice device) const;
+        // Handle
+        VkShaderModule handle = {};
+    };
 }
 
 #endif

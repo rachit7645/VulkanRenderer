@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -34,59 +34,41 @@ namespace Vk
     class Swapchain
     {
     public:
-        // Create swapchain
         Swapchain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        // Recreate swap chain
         void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        // Destroys everything
         void Destroy(VkDevice device);
 
-        // Present
         void Present(VkQueue queue, usize FIF);
-        // Check if swap chain is valid
         bool IsSwapchainValid();
-        // Acquire swap chain image
         void AcquireSwapChainImage(VkDevice device, usize FIF);
 
-        // Swap chain
+        // Swap chain data
         VkSwapchainKHR handle = {};
-        // Extent
-        VkExtent2D extent = {};
+        VkExtent2D     extent = {};
 
-        // Image format
-        VkFormat imageFormat = {};
-        // Swap chain image views
-        std::vector<Vk::ImageView> imageViews = {};
-        // Image index
-        u32 imageIndex = 0;
+        // Swapchain images data
+        VkFormat                   imageFormat = {};
+        std::vector<Vk::Image>     images      = {};
+        std::vector<Vk::ImageView> imageViews  = {};
+        u32                        imageIndex  = 0;
 
         // Semaphores
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
     private:
-        // Create swap chain
         void CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        // Destroy swapchain data
         void DestroySwapchain(VkDevice device);
-        // Create image views
+
         void CreateImageViews(VkDevice device);
-        // Create sync objects
         void CreateSyncObjects(VkDevice device);
 
-        // Choose surface format
         [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;
-        // Choose surface presentation mode
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
-        // Choose swap extent
         [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window) const;
 
-        // Swap chain images
-        std::vector<Vk::Image> m_images = {};
-
         // Swapchain info
-        Vk::SwapchainInfo m_swapChainInfo = {};
-        // Status
-        std::array<VkResult, 2> m_status = {VK_SUCCESS, VK_SUCCESS};
+        Vk::SwapchainInfo       m_swapChainInfo = {};
+        std::array<VkResult, 2> m_status        = {VK_SUCCESS, VK_SUCCESS};
     };
 }
 

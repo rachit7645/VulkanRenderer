@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -26,10 +26,8 @@ namespace Vk
     class ImageView
     {
     public:
-        // Default constructor
         ImageView() = default;
 
-        // Create image view (by default contains no mipmap layers, only a base layer)
         ImageView
         (
             VkDevice device,
@@ -37,16 +35,14 @@ namespace Vk
             VkImageViewType viewType,
             VkFormat format,
             VkImageAspectFlagBits aspectMask,
-            u32 baseMipLevel = 0,
-            u32 levelCount = 1,
-            u32 baseArrayLayer = 0,
-            u32 layerCount = 1
+            u32 baseMipLevel,
+            u32 levelCount,
+            u32 baseArrayLayer,
+            u32 layerCount
         );
 
-        // Equality operator
         bool operator==(const ImageView& rhs) const;
 
-        // Destroy view
         void Destroy(VkDevice device) const;
 
         // Vulkan handle
@@ -63,7 +59,7 @@ namespace std
     {
         std::size_t operator()(const Vk::ImageView& imageView) const
         {
-            // Just return the hash of the handle
+            // Since VkImageView is a pointer, its safe to hash it directly
             return std::hash<VkImageView>()(imageView.handle);
         }
     };

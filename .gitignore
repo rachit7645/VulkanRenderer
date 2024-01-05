@@ -1,6 +1,7 @@
 /Bin/
 /Build/
-/Externals/ImGui/
+/Externals/imgui/
+/Externals/vma/
 /Assets/GFX/Mario
 /Assets/GFX/Sponza
 /Assets/Grass.png

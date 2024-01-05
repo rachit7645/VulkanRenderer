@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 #define FORWARD_PASS_H
 
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/RenderPass.h"
 #include "Renderer/FreeCamera.h"
 #include "Renderer/Pipelines/ForwardPipeline.h"
 #include "Vulkan/DepthBuffer.h"
@@ -29,44 +28,26 @@ namespace Renderer::RenderPasses
     class ForwardPass
     {
     public:
-        // Create forward pass
-        ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
-        // Recreate forward pass data
-        void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
-        // Destroy
-        void Destroy(VkDevice device);
+        ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
+        void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
+        void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        // Render
         void Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model);
 
-        // Forward render pass
-        Vk::RenderPass renderPass;
-        // Pipeline
-        Pipelines::ForwardPipeline pipeline;
-        // Command buffers
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+        Pipelines::ForwardPipeline pipeline = {};
 
-        // Images
-        std::array<Vk::Image, Vk::FRAMES_IN_FLIGHT> images;
-        // Image views
-        std::array<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews;
-        // Depth buffer
-        Vk::DepthBuffer depthBuffer;
-        // Framebuffers
-        std::array<Vk::Framebuffer, Vk::FRAMES_IN_FLIGHT> framebuffers;
+        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
+        std::array<Vk::Image,         Vk::FRAMES_IN_FLIGHT> images     = {};
+        std::array<Vk::ImageView,     Vk::FRAMES_IN_FLIGHT> imageViews = {};
+
+        Vk::DepthBuffer depthBuffer = {};
     private:
-        // Init
-        void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
-        // Destroy data
-        void DestroyData(VkDevice device);
+        void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
+        void DestroyData(const std::shared_ptr<Vk::Context>& context);
 
-        // Init framebuffers
-        void InitFramebuffers(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
-        // Create render pass
-        void CreateRenderPass(VkDevice device, VkPhysicalDevice physicalDevice);
-
-        // Get color format
         VkFormat GetColorFormat(VkPhysicalDevice physicalDevice);
+
+        glm::uvec2 m_renderSize = {0, 0};
     };
 }
 

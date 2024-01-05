@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ namespace Vk
         explicit ValidationLayers(const std::span<const char* const> layers);
 
         // Setup messenger
-        [[nodiscard]] VkResult SetupMessenger(VkInstance instance);
+        void SetupMessenger(VkInstance instance);
         // Destroy messenger
         void Destroy(VkInstance instance) const;
 

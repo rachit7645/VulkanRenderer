@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 
 #include "CommandBuffer.h"
+#include "Util.h"
 
 namespace Vk
 {
     CommandBuffer::CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level)
         : level(level)
     {
-        // Command buffer allocation data
         VkCommandBufferAllocateInfo allocInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -30,13 +30,17 @@ namespace Vk
             .level              = level,
             .commandBufferCount = 1
         };
-        // Allocate
-        vkAllocateCommandBuffers(context->device, &allocInfo, &handle);
+
+        Vk::CheckResult(vkAllocateCommandBuffers(
+            context->device,
+            &allocInfo,
+            &handle),
+            "Failed to allocate command buffers!"
+        );
     }
 
     void CommandBuffer::Free(const std::shared_ptr<Vk::Context>& context)
     {
-        // Free
         vkFreeCommandBuffers
         (
             context->device,
@@ -48,7 +52,6 @@ namespace Vk
 
     void CommandBuffer::BeginRecording(VkCommandBufferUsageFlags usageFlags) const
     {
-        // Begin info
         VkCommandBufferBeginInfo beginInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -56,19 +59,17 @@ namespace Vk
             .flags            = usageFlags,
             .pInheritanceInfo = nullptr
         };
-        // Begin
-        vkBeginCommandBuffer(handle, &beginInfo);
+
+        Vk::CheckResult(vkBeginCommandBuffer(handle, &beginInfo), "Failed to begin recording command buffer!");
     }
 
     void CommandBuffer::EndRecording() const
     {
-        // End
-        vkEndCommandBuffer(handle);
+        Vk::CheckResult(vkEndCommandBuffer(handle), "Failed to end recording command buffer!");
     }
 
     void CommandBuffer::Reset(VkCommandBufferResetFlags resetFlags) const
     {
-        // Reset
-        vkResetCommandBuffer(handle, resetFlags);
+        Vk::CheckResult(vkResetCommandBuffer(handle, resetFlags), "Failed to reset command buffer!");
     }
 }

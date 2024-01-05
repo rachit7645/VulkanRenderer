@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -23,12 +23,9 @@ namespace Vk
 {
     struct ExtensionState
     {
-        // Usings
-        using GetInstanceProcAddr           = PFN_vkGetInstanceProcAddr;
         using CreateDebugUtilsMessengerEXT  = PFN_vkCreateDebugUtilsMessengerEXT;
         using DestroyDebugUtilsMessengerEXT = PFN_vkDestroyDebugUtilsMessengerEXT;
         // Function pointers
-        GetInstanceProcAddr           p_GetInstanceProcAddr           = nullptr;
         CreateDebugUtilsMessengerEXT  p_CreateDebugUtilsMessengerEXT  = nullptr;
         DestroyDebugUtilsMessengerEXT p_DestroyDebugUtilsMessengerEXT = nullptr;
     };

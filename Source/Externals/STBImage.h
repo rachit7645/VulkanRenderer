@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -21,15 +21,14 @@
 
 namespace STB
 {
-    // Loaded image from STB
-    struct STBImage
+    struct Image
     {
-        // Load image
-        explicit STBImage(const std::string_view path, s32 requiredComponents);
-        // Free image
-        ~STBImage();
+        explicit Image(const std::string_view path, s32 requiredComponents);
+        ~Image();
+
         // Pixel data (PLEASE DON'T BE INCOMPATIBLE SOME DAY 60 YEARS LATER)
         u8* data = nullptr;
+
         // Metadata
         u32 width    = 0;
         u32 height   = 0;

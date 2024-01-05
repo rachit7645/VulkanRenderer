@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,19 +29,14 @@ namespace Vk
     class DepthBuffer
     {
     public:
-        // Default constructor
         DepthBuffer() = default;
-        // Create depth buffer
+
         DepthBuffer(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent);
-        // Destroy depth buffer
-        void Destroy(VkDevice device) const;
+        void Destroy(VkDevice device, VmaAllocator allocator) const;
 
-        // Get depth format
-        VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);
+        static VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);
 
-        // Depth image
-        Vk::Image depthImage = {};
-        // Depth image view
+        Vk::Image     depthImage     = {};
         Vk::ImageView depthImageView = {};
     };
 }

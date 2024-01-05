@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,19 +25,13 @@ namespace Vk
     class Extensions
     {
     public:
-        // Destructor
         void Destroy();
-        // Load extensions for instance
+
         [[nodiscard]] std::vector<const char*> LoadInstanceExtensions(SDL_Window* window);
-        // Load functions
         void LoadInstanceFunctions(VkInstance instance);
-        // Get extensions for device
+
         [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions);
-        // Load device functions
         void LoadDeviceFunctions(VkDevice device);
-    private:
-        // Load loader
-        void LoadProcLoader();
     };
 }
 

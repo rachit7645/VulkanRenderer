@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ namespace Vk
         : vertexCount(static_cast<u32>(vertices.size())),
           indexCount(static_cast<u32>(indices.size()))
     {
-        // Initialise buffers
         InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
         InitBuffer(context, indexBuffer,  VK_BUFFER_USAGE_INDEX_BUFFER_BIT,   indices);
     }
@@ -40,39 +39,30 @@ namespace Vk
     VertexBuffer::VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices)
         : vertexCount(vertices.size())
     {
-        // Init vertex buffer
+        // No index buffer
         InitBuffer(context, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
     }
 
-    void VertexBuffer::BindBuffer(const Vk::CommandBuffer& cmdBuffer) const
+    void VertexBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
-        // Buffers to bind
-        std::array<VkBuffer, 1> vertexBuffers = {vertexBuffer.handle};
-        // Offsets
+        std::array<VkBuffer, 1>     buffers = {vertexBuffer.handle};
         std::array<VkDeviceSize, 1> offsets = {0};
 
-        // Bind vertex buffers
-        vkCmdBindVertexBuffers
+        vkCmdBindVertexBuffers2
         (
             cmdBuffer.handle,
             0,
-            static_cast<u32>(vertexBuffers.size()),
-            vertexBuffers.data(),
-            offsets.data()
+            static_cast<u32>(buffers.size()),
+            buffers.data(),
+            offsets.data(),
+            nullptr,
+            nullptr
         );
 
-        // Bind index buffer
         if (indexCount > 0)
         {
             vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, indexType);
         }
-    }
-
-    void VertexBuffer::DestroyBuffer(VkDevice device) const
-    {
-        // Delete buffers
-        vertexBuffer.DeleteBuffer(device);
-        indexBuffer.DeleteBuffer(device);
     }
 
     template <typename T>
@@ -84,34 +74,40 @@ namespace Vk
         const std::span<const T> data
     )
     {
-        // Size of vertex data (bytes)
+        // Bytes
         VkDeviceSize size = data.size() * sizeof(T);
 
-        // Create staging buffer
         auto stagingBuffer = Vk::Buffer
         (
-            context,
+            context->allocator,
             size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
         );
 
-        // Load data
-        stagingBuffer.LoadData(context->device, data);
+        stagingBuffer.LoadData(context->allocator, data);
 
-        // Create real buffer
         buffer = Vk::Buffer
         (
-            context,
+            context->allocator,
             size,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            0,
+            VMA_MEMORY_USAGE_AUTO
         );
 
-        // Copy
         Vk::Buffer::CopyBuffer(context, stagingBuffer, buffer, size);
 
-        // Delete staging buffer
-        stagingBuffer.DeleteBuffer(context->device);
+        stagingBuffer.Destroy(context->allocator);
+    }
+
+    void VertexBuffer::Destroy(VmaAllocator allocator) const
+    {
+        // Delete buffers
+        vertexBuffer.Destroy(allocator);
+        indexBuffer.Destroy(allocator);
     }
 }

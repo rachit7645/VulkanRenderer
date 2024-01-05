@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@
 // Unsigned integer vector types
 #include <glm/ext/vector_uint2.hpp>
 #include <glm/ext/vector_uint3.hpp>
+#include <glm/ext/vector_uint4.hpp>
 
 // Core operations
 #include <glm/geometric.hpp>
@@ -51,9 +52,8 @@
 
 namespace glm
 {
-    // Cast an aiVector2D to a glm::vec2
+    // Assimp to GLM
     vec2 ai_cast(const aiVector2D& vector);
-    // Cast an aiVector3D to a glm::vec3
     vec3 ai_cast(const aiVector3D& vector);
 }
 

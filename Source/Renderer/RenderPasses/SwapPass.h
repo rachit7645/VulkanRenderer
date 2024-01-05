@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
 #ifndef SWAP_PASS_H
 #define SWAP_PASS_H
 
-#include "Vulkan/Framebuffer.h"
 #include "Vulkan/DepthBuffer.h"
-#include "Vulkan/RenderPass.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Renderer/Pipelines/SwapPipeline.h"
 
@@ -28,38 +26,18 @@ namespace Renderer::RenderPasses
     class SwapPass
     {
     public:
-        // Create swapchain pass
         SwapPass(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        // Recreate swapchain pass
         void Recreate(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        // Destroy swapchain pass
-        void Destroy(VkDevice device);
+        void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        // Render to swapchain
         void Render(usize FIF);
-        // Present
         void Present(const std::shared_ptr<Vk::Context>& context, usize FIF);
 
-        // Swapchain
-        Vk::Swapchain swapchain;
-        // Presentation render pass
-        Vk::RenderPass renderPass;
-        // Pipeline
+        Vk::Swapchain           swapchain;
         Pipelines::SwapPipeline pipeline;
-        // Swap chain framebuffers
-        std::vector<Vk::Framebuffer> framebuffers;
-        // Command buffers
+
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
     private:
-        // Initialise swapchain pass data
-        void InitData(const std::shared_ptr<Vk::Context>& context);
-        // Create renderpass
-        void CreateRenderPass(VkDevice device);
-        // Create framebuffers
-        void CreateFramebuffers(VkDevice device);
-        // Destroy data
-        void DestroyData(VkDevice device);
-        // Create command buffers
         void CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context);
     };
 }

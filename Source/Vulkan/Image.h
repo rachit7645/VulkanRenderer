@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ namespace Vk
         // Default constructor to make c++ happy
         Image() = default;
 
-        // Image with mipmaps
         Image
         (
             const std::shared_ptr<Vk::Context>& context,
@@ -44,7 +43,7 @@ namespace Vk
             VkMemoryPropertyFlags properties
         );
 
-        // Copy image from handle
+        // Basic constructor for copying
         Image
         (
             VkImage image,
@@ -56,26 +55,23 @@ namespace Vk
             VkImageAspectFlags aspect
         );
 
-        // Comparison operator
         bool operator==(const Image& rhs) const;
 
-        // Transitions image layout
         void TransitionLayout
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkImageLayout oldLayout,
             VkImageLayout newLayout
-        );
+        ) const;
 
-        // Copies buffer data into image
         void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
+        void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
 
-        // Delete image
-        void Destroy(VkDevice device) const;
+        void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
-        VkImage        handle = VK_NULL_HANDLE;
-        VkDeviceMemory memory = VK_NULL_HANDLE;
+        VkImage       handle     = VK_NULL_HANDLE;
+        VmaAllocation allocation = {};
 
         // Image dimensions
         u32 width     = 0;
@@ -87,10 +83,9 @@ namespace Vk
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
     private:
-        // Create image & allocate memory for image
         void CreateImage
         (
-            const std::shared_ptr<Vk::Context>& context,
+            VmaAllocator allocator,
             VkImageUsageFlags usage,
             VkMemoryPropertyFlags properties
         );
@@ -106,8 +101,8 @@ namespace std
     {
         std::size_t operator()(const Vk::Image& image) const
         {
-            // Return combined hashes
-            return std::hash<VkImage>()(image.handle) && std::hash<VkDeviceMemory>()(image.memory);
+            // This is basic but it should work
+            return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
         }
     };
 }

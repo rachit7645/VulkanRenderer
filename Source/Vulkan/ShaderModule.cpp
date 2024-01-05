@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -18,21 +18,19 @@
 
 #include "Util/Log.h"
 #include "Util/Files.h"
+#include "Util.h"
 
 namespace Vk
 {
     // Shader directory
     constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
 
-    VkShaderModule CreateShaderModule(VkDevice device, const std::string_view path)
+    ShaderModule::ShaderModule(VkDevice device, const std::string_view path)
     {
-        // Calc full path
         auto fullPath = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
 
-        // Get binary data
         auto shaderBinary = Engine::Files::ReadBytes(fullPath);
 
-        // Shader module creation info
         VkShaderModuleCreateInfo createInfo =
         {
             .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -42,25 +40,20 @@ namespace Vk
             .pCode    = reinterpret_cast<u32*>(shaderBinary.data())
         };
 
-        // Shader module
-        VkShaderModule shaderModule = {};
+        Vk::CheckResult(vkCreateShaderModule(
+            device,
+            &createInfo,
+            nullptr,
+            &handle),
+            fmt::format("Failed to create shader module for shader binary {}!", path)
+        );
 
-        // Create shader module
-        if (vkCreateShaderModule(
-                device,
-                &createInfo,
-                nullptr,
-                &shaderModule
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error("Failed to create shader module for shader binary {}!\n", path);
-        }
+        Logger::Info("Created shader module {} [handle={}]\n", path, std::bit_cast<void*>(handle));
+    }
 
-        // Log
-        Logger::Info("Created shader module {} [handle={}]\n", path, reinterpret_cast<void*>(shaderModule));
-
-        // Return
-        return shaderModule;
+    void ShaderModule::Destroy(VkDevice device) const
+    {
+        Logger::Debug("Destroying shader module [handle={}]\n", std::bit_cast<void*>(handle));
+        vkDestroyShaderModule(device, handle, nullptr);
     }
 }

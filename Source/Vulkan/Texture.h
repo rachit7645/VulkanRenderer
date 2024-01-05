@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -30,42 +30,33 @@ namespace Vk
     class Texture
     {
     public:
-        // Texture flags
         enum class Flags : u8
         {
-            // Flags
             None       = 0,
             IsSRGB     = 1U << 0,
             GenMipmaps = 1U << 1
         };
 
-        // Constructor
         Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Flags flags = Flags::None);
-        // Equality operator
+        void Destroy(VkDevice device, VmaAllocator allocator) const;
+
         bool operator==(const Texture& rhs) const;
-        // Destroy texture
-        void Destroy(VkDevice device) const;
 
         // Texture image data
-        Vk::Image image = {};
-        // Texture image view
+        Vk::Image     image     = {};
         Vk::ImageView imageView = {};
-    private:
-        // Generate mipmaps
-        void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
     };
 }
 
 // Don't nuke me for this
 namespace std
 {
-    // Hashing
     template <>
     struct hash<Vk::Texture>
     {
         std::size_t operator()(const Vk::Texture& texture) const
         {
-            // Combine hashes
+            // Again not the best way but ehh it's fine don't worry about it
             return hash<Vk::Image>()(texture.image) ^ hash<Vk::ImageView>()(texture.imageView);
         }
     };

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -23,11 +23,12 @@
 int main(UNUSED int argc, UNUSED char** argv)
 {
     #ifdef ENGINE_DEBUG
-    // Set stderr to line buffering mode
+    // Set stderr to line buffering mode (does this even work on windows lol)
     setvbuf(stderr, nullptr, _IOLBF, 0);
     #endif
-    // Create and run app
+
+    // Run an instance
     Engine::AppInstance().Run();
-    // Exit successfully
-    return 0;
+
+    return EXIT_SUCCESS;
 }

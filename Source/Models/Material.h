@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,10 +24,9 @@ namespace Models
     class Material
     {
     public:
-        // Material count
+        // Material count (Update if this struct changes)
         static constexpr auto MATERIAL_COUNT = 3;
 
-        // Copy textures
         Material
         (
             const Vk::Texture& albedo,
@@ -35,14 +34,11 @@ namespace Models
             const Vk::Texture& aoRghMtl
         );
 
-        // Equality operator
         bool operator==(const Material& rhs) const;
 
-        // Get texture image views
         [[nodiscard]] std::array<Vk::ImageView, MATERIAL_COUNT> GetViews() const;
 
-        // Destroy textures
-        void Destroy(VkDevice device) const;
+        void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         // Textures
         Vk::Texture albedo;
@@ -56,12 +52,11 @@ namespace std
 {
     // Hashing
     template <>
-    // Hashing operator
     struct hash<Models::Material>
     {
         usize operator()(const Models::Material& material) const
         {
-            // Combine hashes
+            // Combine hashes (good enough)
             return std::hash<Vk::Texture>()(material.albedo) ^
                    std::hash<Vk::Texture>()(material.normal) ^
                    std::hash<Vk::Texture>()(material.aoRghMtl);

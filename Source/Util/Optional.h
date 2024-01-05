@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ namespace Util
     template <typename T>
     constexpr auto GetAddressOrNull(const std::optional<T>& opt) -> const T*
     {
-        // Return
         return opt.has_value() ? &(*opt) : nullptr;
     }
 }

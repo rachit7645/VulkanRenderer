@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,61 +16,81 @@
 
 #include "SwapchainInfo.h"
 
-#include "../Util/Util.h"
+#include "Util.h"
+#include "Util/Util.h"
+#include "Util/Log.h"
 
 namespace Vk
 {
     SwapchainInfo::SwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
-        // Get capabilities
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &capabilities);
+        Vk::CheckResult(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+            device,
+            surface,
+            &capabilities),
+            "Failed to assess surface capabilities!"
+        );
 
-        // Get format count
         u32 formatCount = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR
+        Vk::CheckResult(vkGetPhysicalDeviceSurfaceFormatsKHR
         (
             device,
             surface,
             &formatCount,
-            nullptr
+            nullptr),
+            "Failed to get surface format count!"
         );
 
-        // Get formats
-        if (formatCount != 0)
+        if (formatCount == 0)
         {
-            // Make sure to resize!
-            formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR
+            Logger::VulkanError
             (
-                device,
-                surface,
-                &formatCount,
-                formats.data()
+                "Failed to find any surface formats! [device={}] [surface={}]\n",
+                std::bit_cast<void*>(device),
+                std::bit_cast<void*>(surface)
             );
         }
 
-        // Get presentation modes count
+        // Make sure to resize kids!
+        formats.resize(formatCount);
+        Vk::CheckResult(vkGetPhysicalDeviceSurfaceFormatsKHR
+        (
+            device,
+            surface,
+            &formatCount,
+            formats.data()),
+            "Failed to get surface formats!"
+        );
+
         u32 presentModeCount = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR
+        Vk::CheckResult(vkGetPhysicalDeviceSurfacePresentModesKHR
         (
             device,
             surface,
             &presentModeCount,
-            nullptr
+            nullptr),
+            "Failed to get presentation mode count!"
         );
 
-        // Get presentation modes fr this time
-        if (presentModeCount != 0)
+        if (presentModeCount == 0)
         {
-            // Make sure to resize
-            presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR
+            Logger::VulkanError
             (
-                device,
-                surface,
-                &presentModeCount,
-                presentModes.data()
+                "Failed to find any presentation modes! [device={}] [surface={}]\n",
+                std::bit_cast<void*>(device),
+                std::bit_cast<void*>(surface)
             );
         }
+
+        // Make sure to resize
+        presentModes.resize(presentModeCount);
+        Vk::CheckResult(vkGetPhysicalDeviceSurfacePresentModesKHR
+        (
+            device,
+            surface,
+            &presentModeCount,
+            presentModes.data()),
+            "Failed to get presentation modes!"
+        );
     }
 }

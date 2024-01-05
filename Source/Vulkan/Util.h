@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,18 +28,8 @@
 
 namespace Vk
 {
-    // Single use command buffer
     void ImmediateSubmit(const std::shared_ptr<Vk::Context>& context, const std::function<void(const Vk::CommandBuffer&)>& CmdFunction);
 
-    // Find memory type
-    u32 FindMemoryType
-    (
-        u32 typeFilter,
-        VkMemoryPropertyFlags properties,
-        const VkPhysicalDeviceMemoryProperties& memProperties
-    );
-
-    // Find supported format from list
     VkFormat FindSupportedFormat
     (
         VkPhysicalDevice physicalDevice,
@@ -48,7 +38,8 @@ namespace Vk
         VkFormatFeatureFlags features
     );
 
-    // Check result (for ImGui)
+    void CheckResult(VkResult result, const std::string_view message);
+    // For ImGui
     void CheckResult(VkResult result);
 }
 

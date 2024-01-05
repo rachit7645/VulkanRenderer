@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -46,17 +46,13 @@ namespace Engine::Files
     /// @returns std::string_view of file name from original path
     [[nodiscard]] constexpr std::string_view GetName(const std::string_view fileName)
     {
-        // Get last slash
         usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);
 
-        // If a slash exists
         if (lastSlash != std::string_view::npos)
         {
-            // Return name
             return fileName.substr(lastSlash + 1);
         }
 
-        // No action required
         return fileName.data();
     }
 }

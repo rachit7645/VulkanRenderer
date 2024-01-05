@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,12 +25,9 @@ namespace Util
     class DeletionQueue
     {
     public:
-        // Add deletor to queue
         void PushDeletor(std::function<void()>&& function);
-        // Flush deletion queue
         void FlushQueue();
     private:
-        // Deletion functions
         std::deque<std::function<void()>> m_deletors;
     };
 }

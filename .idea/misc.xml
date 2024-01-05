@@ -8,7 +8,8 @@
     </sourceRoots>
     <libraryRoots>
       <file path="$PROJECT_DIR$/Externals" />
-      <file path="$PROJECT_DIR$/Externals/ImGui" />
+      <file path="$PROJECT_DIR$/Externals/imgui" />
+      <file path="$PROJECT_DIR$/Externals/vma" />
     </libraryRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/Assets/GFX" />

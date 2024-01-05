@@ -1,5 +1,5 @@
 /*
- *   Copyright 2023 Rachit Khandelwal
+ *   Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 // Includes
 #include "Lights.glsl"
 
-layout(binding = 0) uniform SceneBuffer
+layout(binding = 0, set = 0) uniform SceneBuffer
 {
     // Matrices
     mat4 projection;

@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 namespace Maths
 {
-    /// @brief CreatePipeline transformation matrix
+    /// @brief Creates a transformation matrix
     /// @param translation Translation vector
     /// @param rotation Euler rotation vector (In radians)
     /// @param scale Scaling vector

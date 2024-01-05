@@ -1,5 +1,5 @@
 /*
- *    Copyright 2023 Rachit Khandelwal
+ *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "ImageView.h"
 #include "Util/Log.h"
+#include "Util.h"
 
 namespace Vk
 {
@@ -32,7 +33,6 @@ namespace Vk
         u32 layerCount
     )
     {
-        // Image view creation data
         VkImageViewCreateInfo createInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -55,35 +55,24 @@ namespace Vk
                 .layerCount     = layerCount
             }
         };
-        // Create image view
-        if (vkCreateImageView(
-                device,
-                &createInfo,
-                nullptr,
-                &handle
-            ) != VK_SUCCESS)
-        {
-            // Log
-            Logger::Error
-            (
-                "Failed to create image view! [device={}] [image={}]",
-                reinterpret_cast<void*>(device),
-                reinterpret_cast<void*>(image.handle)
-            );
-        }
+
+        Vk::CheckResult(vkCreateImageView(
+            device,
+            &createInfo,
+            nullptr,
+            &handle),
+            "Failed to create image view!"
+        );
     }
 
     bool ImageView::operator==(const ImageView& rhs) const
     {
-        // Compare handle
         return handle == rhs.handle;
     }
 
     void ImageView::Destroy(VkDevice device) const
     {
-        // Log
         Logger::Debug("Destroying image view! [handle={}]\n", reinterpret_cast<void*>(handle));
-        // Destroy
         vkDestroyImageView(device, handle, nullptr);
     }
 }
