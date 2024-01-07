@@ -58,30 +58,6 @@ namespace Vk
         Logger::Info("{}\n", "Initialised vulkan context!");
     }
 
-    std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts)
-    {
-        VkDescriptorSetAllocateInfo allocInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .descriptorPool     = descriptorPool,
-            .descriptorSetCount = static_cast<u32>(descriptorLayouts.size()),
-            .pSetLayouts        = descriptorLayouts.data()
-        };
-
-        auto descriptorSets = std::vector<VkDescriptorSet>(descriptorLayouts.size(), VK_NULL_HANDLE);
-
-        Vk::CheckResult(vkAllocateDescriptorSets(
-            device,
-            &allocInfo,
-            descriptorSets.data()),
-            "Failed to allocate descriptor sets!"
-        );
-
-        // Return
-        return descriptorSets;
-    }
-
     void Context::CreateInstance(SDL_Window* window)
     {
         VkApplicationInfo appInfo =
@@ -151,6 +127,11 @@ namespace Vk
         }
 
         Logger::Info("Initialised window surface! [handle={}]\n", std::bit_cast<void*>(surface));
+
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            vkDestroySurfaceKHR(instance, surface, nullptr);
+        });
     }
 
     void Context::PickPhysicalDevice()
@@ -248,13 +229,14 @@ namespace Vk
         usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
 
         // Calculate score multipliers
-        bool isQueueValid  = queue.IsComplete();
-        bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
-        bool hasAnisotropy = featureSet.features.samplerAnisotropy;
-        bool hasWireframe  = featureSet.features.fillModeNonSolid;
-        bool multiViewport = featureSet.features.multiViewport;
-        bool hasSync2      = vk13Features->synchronization2;
-        bool hasDynRender  = vk13Features->dynamicRendering;
+        bool isQueueValid    = queue.IsComplete();
+        bool hasExtensions   = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
+        bool hasAnisotropy   = featureSet.features.samplerAnisotropy;
+        bool hasWireframe    = featureSet.features.fillModeNonSolid;
+        bool multiViewport   = featureSet.features.multiViewport;
+        bool hasSync2        = vk13Features->synchronization2;
+        bool hasDynRender    = vk13Features->dynamicRendering;
+        bool hasMaintenance4 = vk13Features->maintenance4;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = false;
@@ -266,8 +248,9 @@ namespace Vk
         }
 
         return hasExtensions * isQueueValid * isSwapChainAdequate *
-               hasAnisotropy * hasWireframe * multiViewport *
-               hasSync2      * hasDynRender * discreteGPU;
+               hasAnisotropy * hasWireframe * multiViewport       *
+               hasSync2      * hasDynRender * hasMaintenance4     *
+               discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -294,23 +277,24 @@ namespace Vk
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        // Add required features here
-        VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
-        deviceFeatures.fillModeNonSolid  = VK_TRUE;
-        deviceFeatures.multiViewport     = VK_TRUE;
-
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
         vk13Features.pNext            = nullptr;
         vk13Features.synchronization2 = VK_TRUE;
         vk13Features.dynamicRendering = VK_TRUE;
+        vk13Features.maintenance4     = VK_TRUE;
+
+        // Add required features here
+        VkPhysicalDeviceFeatures2 deviceFeatures = {};
+        deviceFeatures.sType                      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext                      = &vk13Features;
+        deviceFeatures.features.samplerAnisotropy = VK_TRUE;
 
         VkDeviceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext                   = &vk13Features,
+            .pNext                   = &deviceFeatures,
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
@@ -323,7 +307,7 @@ namespace Vk
         #endif
             .enabledExtensionCount   = static_cast<u32>(REQUIRED_EXTENSIONS.size()),
             .ppEnabledExtensionNames = REQUIRED_EXTENSIONS.data(),
-            .pEnabledFeatures        = &deviceFeatures
+            .pEnabledFeatures        = nullptr
         };
 
         Vk::CheckResult(vkCreateDevice(
@@ -336,10 +320,10 @@ namespace Vk
 
         m_extensions.LoadDeviceFunctions(device);
 
-        Logger::Info("Successfully created vulkan logical device! [handle={}]\n", std::bit_cast<void*>(device));
+        Logger::Info("Created logical device! [handle={}]\n", std::bit_cast<void*>(device));
 
         // We assume that this graphics queue also has transfer capabilities
-        // Also we make sure that it has presentation capabilities
+        // We already know that it has presentation capabilities
         vkGetDeviceQueue
         (
             device,
@@ -371,35 +355,45 @@ namespace Vk
 
         m_deletionQueue.PushDeletor([this] ()
         {
+            Vk::CheckResult(vkResetCommandPool(device, commandPool, 0), "Failed to reset command pool!");
             vkDestroyCommandPool(device, commandPool, nullptr);
         });
     }
 
     void Context::CreateDescriptorPool()
     {
+        VkDescriptorPoolSize samplerPoolSize =
+        {
+            .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = (1 << 4) * FRAMES_IN_FLIGHT
+        };
+
         VkDescriptorPoolCreateInfo poolCreateInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext         = nullptr,
             .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-            .maxSets       = static_cast<u32>(Vk::GetDescriptorPoolSize()),
-            .poolSizeCount = Vk::DESCRIPTOR_POOL_SIZES.size(),
-            .pPoolSizes    = Vk::DESCRIPTOR_POOL_SIZES.data()
+            .maxSets       = static_cast<u32>(samplerPoolSize.descriptorCount),
+            .poolSizeCount = 1,
+            .pPoolSizes    = &samplerPoolSize
         };
 
         Vk::CheckResult(vkCreateDescriptorPool(
             device,
             &poolCreateInfo,
             nullptr,
-            &descriptorPool),
-            "Failed to create descriptor pool!"
+            &imguiDescriptorPool),
+            "Failed to create ImGui descriptor pool!"
         );
 
-        Logger::Info("Created descriptor pool! [handle={}]\n", std::bit_cast<void*>(descriptorPool));
+        Logger::Info("Created ImGui descriptor pool! [handle={}]\n", std::bit_cast<void*>(imguiDescriptorPool));
+
+        descriptorCache = Vk::DescriptorCache(device);
 
         m_deletionQueue.PushDeletor([this] ()
         {
-            vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+            vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
+            descriptorCache.Destroy(device);
         });
     }
 
@@ -436,7 +430,6 @@ namespace Vk
     {
         m_deletionQueue.FlushQueue();
 
-        vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyDevice(device, nullptr);
 
         #ifdef ENGINE_DEBUG
@@ -444,6 +437,7 @@ namespace Vk
         #endif
 
         m_extensions.Destroy();
+
         vkDestroyInstance(instance, nullptr);
 
         Logger::Info("{}\n", "Destroyed vulkan context!");

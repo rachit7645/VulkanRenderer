@@ -65,7 +65,7 @@ namespace Vk
 
     void CommandBuffer::EndRecording() const
     {
-        Vk::CheckResult(vkEndCommandBuffer(handle), "Failed to end recording command buffer!");
+        Vk::CheckResult(vkEndCommandBuffer(handle), "Failed to end command buffer recording!");
     }
 
     void CommandBuffer::Reset(VkCommandBufferResetFlags resetFlags) const

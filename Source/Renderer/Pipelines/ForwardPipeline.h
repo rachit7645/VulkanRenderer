@@ -31,7 +31,7 @@ namespace Renderer::Pipelines
     {
     public:
         // Usings
-        using MaterialMap = std::array<std::unordered_map<Models::Material, VkDescriptorSet>, Vk::FRAMES_IN_FLIGHT>;
+        using MaterialMap = std::unordered_map<Models::Material, std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>>;
 
         struct VULKAN_GLSL_DATA VSPushConstant
         {
@@ -57,15 +57,17 @@ namespace Renderer::Pipelines
         (
             const std::shared_ptr<Vk::Context>& context,
             VkFormat colorFormat,
-            VkFormat depthFormat,
-            VkExtent2D extent
+            VkFormat depthFormat
         );
 
-        void WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials);
+        void WriteMaterialDescriptors
+        (
+            VkDevice device,
+            Vk::DescriptorCache& descriptorCache,
+            const std::span<const Models::Material> materials
+        );
 
-        const Vk::DescriptorSetData& GetSceneUBOData() const;
-        const Vk::DescriptorSetData& GetSamplerData()  const;
-        const Vk::DescriptorSetData& GetMaterialData() const;
+        const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& GetStaticSets(Vk::DescriptorCache& descriptorCache) const;
 
         std::array<VSPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
         std::array<Vk::Buffer,     Vk::FRAMES_IN_FLIGHT> sceneUBOs     = {};
@@ -77,16 +79,14 @@ namespace Renderer::Pipelines
         (
             const std::shared_ptr<Vk::Context>& context,
             VkFormat colorFormat,
-            VkFormat depthFormat,
-            VkExtent2D extent
+            VkFormat depthFormat
         );
 
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
-        void DestroyPipelineData(VkDevice device, VmaAllocator allocator) override;
 
-        void WriteStaticDescriptors(VkDevice device);
+        void WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache);
 
-        usize textureDescriptorIndexOffset = 0;
+        usize materialDescriptorIDOffset = 0;
     };
 }
 

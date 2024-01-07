@@ -1,4 +1,4 @@
-/*
+    /*
  *    Copyright 2023 - 2024 Rachit Khandelwal
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,7 @@
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
 #include "Constants.h"
+#include "DescriptorCache.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
 #include "Util/DeletionQueue.h"
@@ -38,8 +39,6 @@ namespace Vk
     public:
         explicit Context(const std::shared_ptr<Engine::Window>& window);
         void Destroy();
-
-        std::vector<VkDescriptorSet> AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts);
 
         // Vulkan instance
         VkInstance instance = VK_NULL_HANDLE;
@@ -54,16 +53,18 @@ namespace Vk
         // Surface
         VkSurfaceKHR surface = VK_NULL_HANDLE;
 
-        // Queue families
+        // Queues
         Vk::QueueFamilyIndices queueFamilies = {};
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
 
         // Pools
         VkCommandPool    commandPool    = VK_NULL_HANDLE;
-        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        VkDescriptorPool imguiDescriptorPool = VK_NULL_HANDLE;
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
+        // Descriptor allocator
+        Vk::DescriptorCache descriptorCache = {};
     private:
         void CreateInstance(SDL_Window* window);
         void CreateSurface(SDL_Window* window);

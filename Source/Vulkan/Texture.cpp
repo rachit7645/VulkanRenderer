@@ -36,9 +36,9 @@ namespace Vk
             context->physicalDevice,
             candidates,
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_TRANSFER_DST_BIT  |
-            VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT  |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
         auto components = STBI_rgb;
@@ -87,7 +87,7 @@ namespace Vk
         // Transition layout for transfer
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
-            image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         });
 
         image.CopyFromBuffer(context, stagingBuffer);

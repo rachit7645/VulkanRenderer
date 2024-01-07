@@ -43,7 +43,7 @@ namespace Vk
         void AcquireSwapChainImage(VkDevice device, usize FIF);
 
         // Swap chain data
-        VkSwapchainKHR handle = {};
+        VkSwapchainKHR handle = VK_NULL_HANDLE;
         VkExtent2D     extent = {};
 
         // Swapchain images data

@@ -27,59 +27,47 @@ namespace Engine
     class Inputs
     {
     public:
-        // Get instance
-        static Inputs& GetInstance();
+        static Inputs& Get();
 
-        // Set mouse position
         void SetMousePosition(const glm::ivec2& position);
-        // Set mouse scroll
         void SetMouseScroll(const glm::ivec2& scroll);
-        // Find controller
+
         void FindController();
 
-        // Check if key is pressed
         [[nodiscard]] bool IsKeyPressed(SDL_Scancode key) const;
-        // Get mouse position
+
         [[nodiscard]] const glm::ivec2& GetMousePosition();
-        // Get mouse scroll
         [[nodiscard]] const glm::ivec2& GetMouseScroll();
-        // Get left stick direction vector
+
         [[nodiscard]] glm::vec2 GetLStick() const;
-        // Get right stick direction vector
         [[nodiscard]] glm::vec2 GetRStick() const;
 
-        // Get controller
         [[nodiscard]] SDL_GameController* GetController() const;
-        // Get joystick id
-        [[nodiscard]] SDL_JoystickID GetControllerID() const;
+        [[nodiscard]] SDL_JoystickID      GetControllerID() const;
 
-        // Get flags
         [[nodiscard]] bool WasMouseMoved() const;
         [[nodiscard]] bool WasMouseScrolled() const;
 
-        // Display ImGui info
         void ImGuiDisplay();
     private:
-        // Main constructor
         Inputs();
 
-        // Get axis direction (Dead zone must be between 0.0f and 1.0f)
-        glm::vec2 GetNormalisedAxisDirection
+        // Dead zone must be between 0.0f and 1.0f
+        [[nodiscard]] glm::vec2 GetNormalisedAxisDirection
         (
             SDL_GameControllerAxis axisHorizontal,
             SDL_GameControllerAxis axisVertical,
             const glm::vec2& deadZone
         ) const;
 
-        // Key array
+        // Keys from SDL
         const u8* m_keys = nullptr;
-        // Controller
+        // Game controller from SDL
         SDL_GameController* m_controller = nullptr;
 
-        // Mouse position
+        // Mouse data
         glm::ivec2 m_mousePosition = {};
-        // Mouse scroll
-        glm::ivec2 m_mouseScroll = {};
+        glm::ivec2 m_mouseScroll   = {};
 
         // Flags
         bool m_wasMouseMoved = false;

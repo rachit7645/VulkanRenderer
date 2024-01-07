@@ -69,6 +69,7 @@ namespace Vk
 
     void Sampler::Destroy(VkDevice device) const
     {
+        Logger::Debug("Destroying sampler! [handle={}]\n", std::bit_cast<void*>(handle));
         vkDestroySampler(device, handle, nullptr);
     }
 }

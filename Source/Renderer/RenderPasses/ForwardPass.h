@@ -18,7 +18,7 @@
 #define FORWARD_PASS_H
 
 #include "Vulkan/CommandBuffer.h"
-#include "Renderer/FreeCamera.h"
+#include "Renderer/Camera.h"
 #include "Renderer/Pipelines/ForwardPipeline.h"
 #include "Vulkan/DepthBuffer.h"
 #include "Models/Model.h"
@@ -32,7 +32,7 @@ namespace Renderer::RenderPasses
         void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
         void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        void Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model);
+        void Render(usize FIF, Vk::DescriptorCache& descriptorCache, const Renderer::Camera& camera, const Models::Model& model);
 
         Pipelines::ForwardPipeline pipeline = {};
 

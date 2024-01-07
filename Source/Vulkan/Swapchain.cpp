@@ -25,7 +25,7 @@ namespace Vk
         CreateSwapChain(window, context);
         CreateImageViews(context->device);
         CreateSyncObjects(context->device);
-        Logger::Info("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Swapchain::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
@@ -36,7 +36,7 @@ namespace Vk
         CreateSwapChain(window, context);
         CreateImageViews(context->device);
 
-        Logger::Info("Recreated swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Swapchain::Present(VkQueue queue, usize FIF)
@@ -142,6 +142,16 @@ namespace Vk
             "Failed to get swapchain image count!"
         );
 
+        if (imageCount == 0)
+        {
+            Logger::VulkanError
+            (
+                "Failed to get any swapchain images! [handle={}] [device={}]\n",
+                std::bit_cast<void*>(handle),
+                std::bit_cast<void*>(context->device)
+            );
+        }
+
         auto _images = std::vector<VkImage>(imageCount);
         Vk::CheckResult(vkGetSwapchainImagesKHR
         (
@@ -171,14 +181,9 @@ namespace Vk
         // Transition for presentation
         Vk::ImmediateSubmit(context, [this] (const Vk::CommandBuffer& cmdBuffer)
         {
-            for (const auto& image : images)
+            for (auto&& image : images)
             {
-                image.TransitionLayout
-                (
-                    cmdBuffer,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                );
+                image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
             }
         });
     }

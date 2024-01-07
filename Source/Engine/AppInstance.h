@@ -28,15 +28,12 @@ namespace Engine
     class AppInstance
     {
     public:
-        // Create an instance of the application
         AppInstance();
-        // Destroy application instance
         ~AppInstance();
 
-        // Run application
         void Run();
     private:
-        // Window
+        // Shared window (FIXME: why??)
         std::shared_ptr<Engine::Window> m_window = nullptr;
         // Renderer
         Renderer::RenderManager m_renderer;

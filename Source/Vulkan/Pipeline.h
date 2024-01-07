@@ -20,10 +20,10 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "DescriptorSetData.h"
 #include "Context.h"
 #include "Util/Util.h"
 #include "CommandBuffer.h"
+#include "DescriptorSet.h"
 
 namespace Vk
 {
@@ -33,7 +33,7 @@ namespace Vk
         Pipeline() = default;
         virtual ~Pipeline() = default;
 
-        Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData);
+        Pipeline(VkPipeline handle, VkPipelineLayout layout);
 
         // No copying
         Pipeline(const Pipeline&) = delete;
@@ -56,7 +56,7 @@ namespace Vk
         void LoadPushConstants
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkPipelineStageFlags stage,
+            VkShaderStageFlags stages,
             u32 offset,
             u32 size,
             void* pValues
@@ -67,10 +67,9 @@ namespace Vk
         // Handles
         VkPipeline       handle = {};
         VkPipelineLayout layout = {};
-        // Descriptor data
-        std::vector<Vk::DescriptorSetData> descriptorSetData = {};
-    private:
-        virtual void DestroyPipelineData(VkDevice device, VmaAllocator allocator);
+
+        // Deletion queue
+        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

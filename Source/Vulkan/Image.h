@@ -57,12 +57,7 @@ namespace Vk
 
         bool operator==(const Image& rhs) const;
 
-        void TransitionLayout
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            VkImageLayout oldLayout,
-            VkImageLayout newLayout
-        ) const;
+        void TransitionLayout(const Vk::CommandBuffer& cmdBuffer, VkImageLayout newLayout);
 
         void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
         void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
@@ -82,6 +77,7 @@ namespace Vk
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+        VkImageLayout      layout = VK_IMAGE_LAYOUT_UNDEFINED;
     private:
         void CreateImage
         (

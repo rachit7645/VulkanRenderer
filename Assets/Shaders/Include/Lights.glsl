@@ -21,7 +21,6 @@
 
 #include "Constants.glsl"
 
-// Directional Light
 struct DirLight
 {
     vec4 position;
@@ -29,7 +28,6 @@ struct DirLight
     vec4 intensity;
 };
 
-// Point Light
 struct PointLight
 {
     vec4 position;
@@ -38,7 +36,6 @@ struct PointLight
     vec4 attenuation;
 };
 
-// Spot Light
 struct SpotLight
 {
     vec4 position;
@@ -49,78 +46,61 @@ struct SpotLight
     vec4 cutOff;
 };
 
-// Common Light Information
 struct LightInfo
 {
     vec3 L;
     vec3 radiance;
 };
 
-// Calculate attenuation
 float CalculateAttenuation(vec3 position, vec3 ATT, vec3 fragPos)
 {
-    // Get distance
     float distance = length(position - fragPos);
-    // Calculate attenuation
+
     float attenuation = ATT.x + (ATT.y * distance) + (ATT.z * distance * distance);
-    // Make attenuation multiplicable
-    attenuation = 1.0f / max(attenuation, 0.0001f);
-    // Return
+          attenuation = 1.0f / max(attenuation, 0.0001f);
+
     return attenuation;
 }
 
-// Calculate spot light intensity
 float CalculateSpotIntensity(vec3 L, vec3 direction, vec2 cutOff)
 {
-    // Calculate angle
-    float theta = dot(L, normalize(-direction));
-    // Calculate cut off epsilon
-    float epsilon = cutOff.x - cutOff.y;
-    // Calculate intensity
+    float theta     = dot(L, normalize(-direction));
+    float epsilon   = cutOff.x - cutOff.y;
     float intensity = smoothstep(0.0f, 1.0f, (theta - cutOff.y) / epsilon);
-    // Return
+
     return intensity;
 }
 
-// Get directional light information
 LightInfo GetDirLightInfo(DirLight light)
 {
     LightInfo info;
-    // Light vector
-    info.L = normalize(-light.position.xyz);
-    // Radiance
+
+    info.L        = normalize(-light.position.xyz);
     info.radiance = light.color.rgb * light.intensity.xyz;
-    // Return
+
     return info;
 }
 
-// Get point light information
 LightInfo GetPointLightInfo(PointLight light, vec3 fragPos)
 {
     LightInfo info;
-    // Light vector
-    info.L = normalize(light.position.xyz - fragPos);
-    // Attenuation
+
+    info.L            = normalize(light.position.xyz - fragPos);
     float attenuation = CalculateAttenuation(light.position.xyz, light.attenuation.xyz, fragPos);
-    // Radiance
-    info.radiance = light.color.rgb * light.intensity.xyz * attenuation;
-    // Return
+    info.radiance     = light.color.rgb * light.intensity.xyz * attenuation;
+
     return info;
 }
 
-// Get spot light information
 LightInfo GetSpotLightInfo(SpotLight light, vec3 fragPos)
 {
     LightInfo info;
-    // Light vector
-    info.L = normalize(light.position.xyz - fragPos);
-    // Attenuation
+
+    info.L            = normalize(light.position.xyz - fragPos);
     float attenuation = CalculateAttenuation(light.position.xyz, light.attenuation.xyz, fragPos);
-    // Spot intensity
-    float intensity = CalculateSpotIntensity(info.L, light.direction.xyz, light.cutOff.xy);
-    // Radiance
-    info.radiance = light.color.rgb * light.intensity.xyz * attenuation * intensity;
-    // Return
+    float intensity   = CalculateSpotIntensity(info.L, light.direction.xyz, light.cutOff.xy);
+    info.radiance     = light.color.rgb * light.intensity.xyz * attenuation * intensity;
+
     return info;
 }
 

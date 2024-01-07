@@ -1,7 +1,12 @@
-/Bin/
-/Build/
-/Externals/imgui/
-/Externals/vma/
+# Excludes
+/Bin/*
+/Build/*
+/Externals/*
+
 /Assets/GFX/Mario
 /Assets/GFX/Sponza
 /Assets/Grass.png
+
+# Includes
+!/Bin/vk_layer_settings.txt
+!/Externals/CMakeLists.txt

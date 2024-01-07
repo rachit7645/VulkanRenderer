@@ -32,12 +32,12 @@ namespace Renderer
           m_forwardPass(m_context, m_swapPass.swapchain.extent),
           m_model(m_context, "Sponza/sponza.glb")
     {
-        // Yoy
+        // ImGui Yoy
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_forwardPass.imageViews);
-        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_model.GetMaterials());
+        m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_context->descriptorCache, m_forwardPass.imageViews);
+        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_context->descriptorCache, m_model.GetMaterials());
 
         m_frameCounter.Reset();
     }
@@ -51,21 +51,22 @@ namespace Renderer
             m_swapPass.Recreate(m_window, m_context);
             m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
 
-            m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_forwardPass.imageViews);
-            m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_model.GetMaterials());
+            m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_context->descriptorCache, m_forwardPass.imageViews);
+            m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_context->descriptorCache, m_model.GetMaterials());
 
             // Skip drawing this frame
             return;
         }
 
         BeginFrame();
+
         Update();
 
-        m_forwardPass.Render(m_currentFIF, m_camera, m_model);
-        m_swapPass.Render(m_currentFIF);
+        m_forwardPass.Render(m_currentFIF, m_context->descriptorCache, m_camera, m_model);
+        m_swapPass.Render(m_context->descriptorCache, m_currentFIF);
 
         SubmitQueue();
-        m_swapPass.Present(m_context, m_currentFIF);
+        m_swapPass.Present(m_context->graphicsQueue, m_currentFIF);
 
         EndFrame();
     }
@@ -74,7 +75,7 @@ namespace Renderer
     {
         m_frameCounter.Update();
         m_camera.Update(m_frameCounter.frameDelta);
-        Engine::Inputs::GetInstance().ImGuiDisplay();
+        Engine::Inputs::Get().ImGuiDisplay();
     }
 
     void RenderManager::BeginFrame()
@@ -89,7 +90,7 @@ namespace Renderer
             VK_TRUE,
             std::numeric_limits<u64>::max()
         );
-        // Un-signal the fence
+
         vkResetFences(m_context->device, 1, &inFlightFences[m_currentFIF]);
 
         m_swapPass.swapchain.AcquireSwapChainImage(m_context->device, m_currentFIF);
@@ -175,10 +176,10 @@ namespace Renderer
             .QueueFamily           = m_context->queueFamilies.graphicsFamily.value_or(0),
             .Queue                 = m_context->graphicsQueue,
             .PipelineCache         = nullptr,
-            .DescriptorPool        = m_context->descriptorPool,
+            .DescriptorPool        = m_context->imguiDescriptorPool,
             .Subpass               = 0,
-            .MinImageCount         = Vk::FRAMES_IN_FLIGHT,
-            .ImageCount            = Vk::FRAMES_IN_FLIGHT,
+            .MinImageCount         = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
+            .ImageCount            = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
             .MSAASamples           = VK_SAMPLE_COUNT_1_BIT,
             .UseDynamicRendering   = true,
             .ColorAttachmentFormat = m_swapPass.swapchain.imageFormat,

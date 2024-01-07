@@ -15,6 +15,8 @@
  */
 
 #include "QueueFamilyIndices.h"
+#include "Util/Log.h"
+#include "Util.h"
 
 namespace Vk
 {
@@ -27,6 +29,11 @@ namespace Vk
             &queueFamilyCount,
             nullptr
         );
+
+        if (queueFamilyCount == 0)
+        {
+            Logger::VulkanError("Failed to find any queue families! [device={}]\n", std::bit_cast<void*>(device));
+        }
 
         VkQueueFamilyProperties2 emptyQueue = {};
         emptyQueue.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
@@ -43,12 +50,12 @@ namespace Vk
         for (u32 i = 0; i < queueFamilies.size(); ++i)
         {
             VkBool32 presentSupport = VK_FALSE;
-            vkGetPhysicalDeviceSurfaceSupportKHR
-            (
+            Vk::CheckResult(vkGetPhysicalDeviceSurfaceSupportKHR(
                 device,
                 i,
                  surface,
-                &presentSupport
+                &presentSupport),
+                "Failed to check for surface support!"
             );
 
             if (presentSupport == VK_TRUE && queueFamilies[i].queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)

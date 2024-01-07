@@ -30,8 +30,8 @@ namespace Renderer::RenderPasses
         void Recreate(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
         void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        void Render(usize FIF);
-        void Present(const std::shared_ptr<Vk::Context>& context, usize FIF);
+        void Render(Vk::DescriptorCache& descriptorCache, usize FIF);
+        void Present(VkQueue queue, usize FIF);
 
         Vk::Swapchain           swapchain;
         Pipelines::SwapPipeline pipeline;

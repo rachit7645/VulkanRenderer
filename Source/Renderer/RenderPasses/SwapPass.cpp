@@ -22,7 +22,7 @@ namespace Renderer::RenderPasses
 {
     SwapPass::SwapPass(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
         : swapchain(window, context),
-          pipeline(context, swapchain.imageFormat, swapchain.extent)
+          pipeline(context, swapchain.imageFormat)
     {
         CreateCmdBuffers(context);
         Logger::Info("{}\n", "Created swapchain pass!");
@@ -33,27 +33,22 @@ namespace Renderer::RenderPasses
         swapchain.RecreateSwapChain(window, context);
 
         pipeline.Destroy(context);
-        pipeline = Pipelines::SwapPipeline(context, swapchain.imageFormat, swapchain.extent);
+        pipeline = Pipelines::SwapPipeline(context, swapchain.imageFormat);
 
         Logger::Info("{}\n", "Recreated swapchain pass!");
     }
 
-    void SwapPass::Render(usize FIF)
+    void SwapPass::Render(Vk::DescriptorCache& descriptorCache, usize FIF)
     {
         auto& currentCmdBuffer = cmdBuffers[FIF];
         auto& currentImage     = swapchain.images[swapchain.imageIndex];
         auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
 
         currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(0);
+        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         // Transition to color attachment
-        currentImage.TransitionLayout
-        (
-            currentCmdBuffer,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-        );
+        currentImage.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         VkRenderingAttachmentInfo colorAttachmentInfo =
         {
@@ -64,7 +59,7 @@ namespace Renderer::RenderPasses
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue         = {{{
                 Renderer::CLEAR_COLOR.r,
@@ -105,13 +100,7 @@ namespace Renderer::RenderPasses
             .maxDepth = 1.0f
         };
 
-        vkCmdSetViewport
-        (
-            currentCmdBuffer.handle,
-            0,
-            1,
-            &viewport
-        );
+        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
 
         VkRect2D scissor =
         {
@@ -119,20 +108,14 @@ namespace Renderer::RenderPasses
             .extent = swapchain.extent
         };
 
-        vkCmdSetScissor
-        (
-            currentCmdBuffer.handle,
-            0,
-            1,
-            &scissor
-        );
+        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
         pipeline.BindDescriptors
         (
             currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             0,
-            std::span(pipeline.GetImageData().setMap[FIF].data(), 1)
+            std::span(&pipeline.GetImageSets(descriptorCache)[FIF].handle, 1)
         );
 
         pipeline.screenQuad.Bind(currentCmdBuffer);
@@ -152,19 +135,14 @@ namespace Renderer::RenderPasses
         vkCmdEndRendering(currentCmdBuffer.handle);
 
         // Transition for presentation
-        currentImage.TransitionLayout
-        (
-            currentCmdBuffer,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-        );
+        currentImage.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         currentCmdBuffer.EndRecording();
     }
 
-    void SwapPass::Present(const std::shared_ptr<Vk::Context>& context, usize FIF)
+    void SwapPass::Present(VkQueue queue, usize FIF)
     {
-        swapchain.Present(context->graphicsQueue, FIF);
+        swapchain.Present(queue, FIF);
     }
 
     void SwapPass::CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context)
@@ -178,6 +156,11 @@ namespace Renderer::RenderPasses
     void SwapPass::Destroy(const std::shared_ptr<Vk::Context>& context)
     {
         Logger::Debug("{}\n", "Destroying swapchain pass!");
+
+        for (auto&& cmdBuffer : cmdBuffers)
+        {
+            cmdBuffer.Free(context);
+        }
 
         swapchain.Destroy(context->device);
         pipeline.Destroy(context);

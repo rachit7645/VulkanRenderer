@@ -24,29 +24,6 @@
 namespace Vk
 {
     constexpr usize FRAMES_IN_FLIGHT = 2;
-
-    constexpr std::array<VkDescriptorPoolSize, 4> DESCRIPTOR_POOL_SIZES =
-    {
-        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,           (1 << 4) * FRAMES_IN_FLIGHT),
-        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER,                  (1 << 4) * FRAMES_IN_FLIGHT),
-        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ,  (1 << 4) * FRAMES_IN_FLIGHT),
-        VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,           (1 << 12) * FRAMES_IN_FLIGHT)
-    };
-
-    consteval auto GetDescriptorPoolSize() -> usize
-    {
-        return std::accumulate
-        (
-            DESCRIPTOR_POOL_SIZES.begin(),
-            DESCRIPTOR_POOL_SIZES.end(),
-            usize{0},
-            [] (usize sum, const auto& poolSize) -> usize
-            {
-                // Add
-                return sum + poolSize.descriptorCount;
-            }
-        );
-    }
 }
 
 #endif

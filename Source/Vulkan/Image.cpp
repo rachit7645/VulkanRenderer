@@ -37,7 +37,7 @@ namespace Vk
         : Image(VK_NULL_HANDLE, width, height, mipLevels, format, tiling, aspect)
     {
         CreateImage(context->allocator, usage, properties);
-        Logger::Debug("Created image! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Created image! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     Image::Image
@@ -92,7 +92,7 @@ namespace Vk
             .tiling                = tiling,
             .usage                 = usage,
             .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = VK_QUEUE_FAMILY_IGNORED,
+            .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices   = nullptr,
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
         };
@@ -120,12 +120,7 @@ namespace Vk
         );
     }
 
-    void Image::TransitionLayout
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        VkImageLayout oldLayout,
-        VkImageLayout newLayout
-    ) const
+    void Image::TransitionLayout(const Vk::CommandBuffer& cmdBuffer, VkImageLayout newLayout)
     {
         VkImageMemoryBarrier2 barrier =
         {
@@ -135,7 +130,7 @@ namespace Vk
             .srcAccessMask       = VK_ACCESS_2_NONE,
             .dstStageMask        = VK_PIPELINE_STAGE_2_NONE,
             .dstAccessMask       = VK_ACCESS_2_NONE,
-            .oldLayout           = oldLayout,
+            .oldLayout           = layout,
             .newLayout           = newLayout,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -149,7 +144,7 @@ namespace Vk
             }
         };
 
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        if (layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         {
             barrier.srcAccessMask = VK_ACCESS_2_NONE;
             barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
@@ -157,7 +152,7 @@ namespace Vk
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        else if (layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         {
             barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
@@ -165,7 +160,7 @@ namespace Vk
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        else if (layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
         {
             barrier.srcAccessMask = VK_ACCESS_2_NONE;
             barrier.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -173,7 +168,7 @@ namespace Vk
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        else if (layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         {
             barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
@@ -181,7 +176,7 @@ namespace Vk
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        else if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         {
             barrier.srcAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
             barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
@@ -189,7 +184,7 @@ namespace Vk
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        else if (layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         {
             barrier.srcAccessMask = VK_ACCESS_2_NONE;
             barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
@@ -197,29 +192,37 @@ namespace Vk
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        else if (layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
         {
             barrier.srcAccessMask = VK_ACCESS_2_NONE;
-            barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+            barrier.dstAccessMask = VK_ACCESS_2_NONE;
             
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        else if (layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         {
-            barrier.srcAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+            barrier.srcAccessMask = VK_ACCESS_2_NONE;
             barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
             
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        else if (layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
         {
             barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+            barrier.dstAccessMask = VK_ACCESS_2_NONE;
             
             barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+        }
+        else if (layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            barrier.srcAccessMask = VK_ACCESS_2_NONE;
+            barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+
+            barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+            barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
         }
         else
         {
@@ -227,7 +230,7 @@ namespace Vk
             Logger::VulkanError
             (
                 "Invalid layout transition! [old={}] [new={}]\n",
-                string_VkImageLayout(oldLayout),
+                string_VkImageLayout(layout),
                 string_VkImageLayout(newLayout)
             );
         }
@@ -246,6 +249,8 @@ namespace Vk
         };
 
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+
+        layout = newLayout;
     }
 
     void Image::CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer)
@@ -416,7 +421,7 @@ namespace Vk
             std::bit_cast<void*>(handle),
             std::bit_cast<void*>(allocation)
         );
-        // Destroy image
+
         vmaDestroyImage(allocator, handle, allocation);
     }
 }

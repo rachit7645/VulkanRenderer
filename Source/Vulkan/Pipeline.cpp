@@ -20,10 +20,9 @@
 
 namespace Vk
 {
-    Pipeline::Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData)
+    Pipeline::Pipeline(VkPipeline handle, VkPipelineLayout layout)
         : handle(handle),
-          layout(layout),
-          descriptorSetData(descriptorData)
+          layout(layout)
     {
     }
 
@@ -61,7 +60,7 @@ namespace Vk
     void Pipeline::LoadPushConstants
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkPipelineStageFlags stage,
+        VkShaderStageFlags stages,
         u32 offset,
         u32 size,
         void* pValues
@@ -71,7 +70,7 @@ namespace Vk
         (
             cmdBuffer.handle,
             layout,
-            stage,
+            stages,
             offset,
             size,
             pValues
@@ -80,29 +79,9 @@ namespace Vk
 
     void Pipeline::Destroy(const std::shared_ptr<Vk::Context>& context)
     {
-        DestroyPipelineData(context->device, context->allocator);
+        m_deletionQueue.FlushQueue();
 
         vkDestroyPipeline(context->device, handle, nullptr);
         vkDestroyPipelineLayout(context->device, layout, nullptr);
-
-        for (const auto& descriptorData : descriptorSetData)
-        {
-            for (const auto& descriptors : descriptorData.setMap)
-            {
-                Vk::CheckResult(vkFreeDescriptorSets
-                (
-                    context->device,
-                    context->descriptorPool,
-                    static_cast<u32>(descriptors.size()),
-                    descriptors.data()
-                ));
-            }
-
-            vkDestroyDescriptorSetLayout(context->device, descriptorData.layout, nullptr);
-        }
-    }
-
-    void Pipeline::DestroyPipelineData(UNUSED VkDevice device, UNUSED VmaAllocator allocator)
-    {
     }
 }

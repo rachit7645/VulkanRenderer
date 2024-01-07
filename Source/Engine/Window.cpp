@@ -75,7 +75,7 @@ namespace Engine
         }
 
         // Log handle address
-        Logger::Info("Succesfully created window handle! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Info("Succesfully created window handle! [handle={}]\n", std::bit_cast<void*>(handle));
 
         // For sanity, raise window
         SDL_RaiseWindow(handle);
@@ -89,7 +89,7 @@ namespace Engine
     bool Window::PollEvents()
     {
         // Get input handler
-        auto& inputs = Inputs::GetInstance();
+        auto& inputs = Inputs::Get();
 
         // While events exist
         while (SDL_PollEvent(&m_event))
@@ -179,7 +179,7 @@ namespace Engine
     Window::~Window()
     {
         // Close controller (TODO: Move to inputs)
-        SDL_GameControllerClose(Inputs::GetInstance().GetController());
+        SDL_GameControllerClose(Inputs::Get().GetController());
         // CLose SDL
         SDL_Vulkan_UnloadLibrary();
         SDL_DestroyWindow(handle);

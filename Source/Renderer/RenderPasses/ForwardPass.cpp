@@ -24,6 +24,7 @@
 namespace Renderer::RenderPasses
 {
     ForwardPass::ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
+        : pipeline(context, GetColorFormat(context->physicalDevice), Vk::DepthBuffer::GetDepthFormat(context->physicalDevice))
     {
         for (auto&& cmdBuffer : cmdBuffers)
         {
@@ -39,25 +40,25 @@ namespace Renderer::RenderPasses
     {
         DestroyData(context);
         InitData(context, extent);
-
         Logger::Info("{}\n", "Recreated forward pass!");
     }
 
-    void ForwardPass::Render(usize FIF, const Renderer::FreeCamera& camera, const Models::Model& model)
+    void ForwardPass::Render
+    (
+        usize FIF,
+        Vk::DescriptorCache& descriptorCache,
+        const Renderer::Camera& camera,
+        const Models::Model& model
+    )
     {
         auto& currentCmdBuffer    = cmdBuffers[FIF];
         auto& currentPushConstant = pipeline.pushConstants[FIF];
 
         currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(0);
+        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         // Transition for rendering
-        images[FIF].TransitionLayout
-        (
-            currentCmdBuffer,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-        );
+        images[FIF].TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         VkRenderingAttachmentInfo colorAttachmentInfo =
         {
@@ -123,13 +124,7 @@ namespace Renderer::RenderPasses
             .maxDepth = 1.0f
         };
 
-        vkCmdSetViewport
-        (
-            currentCmdBuffer.handle,
-            0,
-            1,
-            &viewport
-        );
+        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
 
         VkRect2D scissor =
         {
@@ -137,13 +132,7 @@ namespace Renderer::RenderPasses
             .extent = {m_renderSize.x, m_renderSize.y}
         };
 
-        vkCmdSetScissor
-        (
-            currentCmdBuffer.handle,
-            0,
-            1,
-            &scissor
-        );
+        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
         auto& sceneUBO = pipeline.sceneUBOs[FIF];
 
@@ -206,11 +195,7 @@ namespace Renderer::RenderPasses
         );
 
         // Scene specific descriptor sets
-        std::array<VkDescriptorSet, 2> sceneDescriptorSets =
-        {
-            pipeline.GetSceneUBOData().setMap[FIF][0],
-            pipeline.GetSamplerData().setMap[FIF][0],
-        };
+        std::array<VkDescriptorSet, 1> sceneDescriptorSets = {pipeline.GetStaticSets(descriptorCache)[FIF].handle};
 
         pipeline.BindDescriptors
         (
@@ -225,13 +210,13 @@ namespace Renderer::RenderPasses
             mesh.vertexBuffer.Bind(currentCmdBuffer);
 
             // Mesh-specific descriptors
-            std::array<VkDescriptorSet, 1> meshDescriptorSets = {pipeline.materialMap[FIF][mesh.material]};
+            std::array<VkDescriptorSet, 1> meshDescriptorSets = {pipeline.materialMap[mesh.material][FIF].handle};
 
             pipeline.BindDescriptors
             (
                 currentCmdBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                2,
+                sceneDescriptorSets.size(),
                 meshDescriptorSets
             );
 
@@ -249,12 +234,7 @@ namespace Renderer::RenderPasses
         vkCmdEndRendering(currentCmdBuffer.handle);
 
         // Transition to shader readable layout
-        images[FIF].TransitionLayout
-        (
-            currentCmdBuffer,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        );
+        images[FIF].TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         currentCmdBuffer.EndRecording();
     }
@@ -264,52 +244,37 @@ namespace Renderer::RenderPasses
         m_renderSize = {extent.width, extent.height};
 
         auto colorFormat = GetColorFormat(context->physicalDevice);
-        auto depthFormat = Vk::DepthBuffer::GetDepthFormat(context->physicalDevice);
-
-        pipeline = Pipelines::ForwardPipeline
-        (
-            context,
-            colorFormat,
-            depthFormat,
-            extent
-        );
 
         depthBuffer = Vk::DepthBuffer(context, extent);
 
-        Vk::ImmediateSubmit(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
-            for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
-            {
-                images[i] = Vk::Image
-                (
-                    context,
-                    m_renderSize.x,
-                    m_renderSize.y,
-                    1,
-                    colorFormat,
-                    VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_ASPECT_COLOR_BIT,
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-                );
+            images[i] = Vk::Image
+            (
+                context,
+                m_renderSize.x,
+                m_renderSize.y,
+                1,
+                colorFormat,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            );
 
-                // Transition for shader reading (this skips having extra logic for frame 1)
-                images[i].TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-                imageViews[i] = Vk::ImageView
-                (
-                    context->device,
-                    images[i],
-                    VK_IMAGE_VIEW_TYPE_2D,
-                    images[i].format,
-                    VK_IMAGE_ASPECT_COLOR_BIT,
-                    0,
-                    1,
-                    0,
-                    1
-                );
-            }
-        });
+            imageViews[i] = Vk::ImageView
+            (
+                context->device,
+                images[i],
+                VK_IMAGE_VIEW_TYPE_2D,
+                images[i].format,
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                0,
+                1,
+                0,
+                1
+            );
+        }
     }
 
     VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice)
@@ -319,14 +284,22 @@ namespace Renderer::RenderPasses
             physicalDevice,
             std::array<VkFormat, 4>{VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
     }
 
     void ForwardPass::Destroy(const std::shared_ptr<Vk::Context>& context)
     {
         Logger::Debug("{}\n", "Destroying forward pass!");
+
         DestroyData(context);
+
+        for (auto&& cmdBuffer : cmdBuffers)
+        {
+            cmdBuffer.Free(context);
+        }
+
+        pipeline.Destroy(context);
     }
 
     void ForwardPass::DestroyData(const std::shared_ptr<Vk::Context>& context)
@@ -342,7 +315,6 @@ namespace Renderer::RenderPasses
         }
 
         depthBuffer.Destroy(context->device, context->allocator);
-        pipeline.Destroy(context);
 
         images     = {};
         imageViews = {};

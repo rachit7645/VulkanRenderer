@@ -134,8 +134,8 @@ namespace Vk
         Logger::Debug
         (
             "Destroying buffer [buffer={}] [allocation={}]\n",
-            reinterpret_cast<void*>(handle),
-            reinterpret_cast<void*>(allocation)
+            std::bit_cast<void*>(handle),
+            std::bit_cast<void*>(allocation)
         );
         // Destroy
         vmaDestroyBuffer(allocator, handle, allocation);

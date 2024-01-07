@@ -18,104 +18,56 @@
 
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Util/Log.h"
+#include "Vulkan/DescriptorWriter.h"
+#include "Vulkan/Builders/DescriptorLayoutBuilder.h"
 
 namespace Renderer::Pipelines
 {
-    SwapPipeline::SwapPipeline
-    (
-        const std::shared_ptr<Vk::Context>& context,
-        VkFormat colorFormat,
-        VkExtent2D extent
-    )
-        : Vk::Pipeline(CreatePipeline(context, colorFormat, extent))
+    constexpr auto COLOR_LAYOUT_ID = "SWAPCHAIN_PIPELINE_COLOR_LAYOUT";
+    constexpr auto IMAGE_SET_ID    = "SWAPCHAIN_PIPELINE_IMAGE_SETS";
+
+    SwapPipeline::SwapPipeline(const std::shared_ptr<Vk::Context>& context, VkFormat colorFormat)
+        : Vk::Pipeline(CreatePipeline(context, colorFormat))
     {
         CreatePipelineData(context);
     }
 
-    void SwapPipeline::WriteImageDescriptors(VkDevice device, const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews)
+    void SwapPipeline::WriteImageDescriptors
+    (
+        VkDevice device,
+        Vk::DescriptorCache& descriptorCache,
+        const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews
+    ) const
     {
-        const auto& imageData = GetImageData();
+        const auto& imageData = GetImageSets(descriptorCache);
 
-        std::array<VkDescriptorImageInfo, Vk::FRAMES_IN_FLIGHT> imageInfos  = {};
-        std::array<VkWriteDescriptorSet,  Vk::FRAMES_IN_FLIGHT> imageWrites = {};
+        Vk::DescriptorWriter writer = {};
 
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
-            imageInfos[i] =
-            {
-                .sampler     = textureSampler.handle,
-                .imageView   = imageViews[i].handle,
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-            };
-
-            imageWrites[i] =
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = imageData.setMap[i][0],
-                .dstBinding       = imageData.binding,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = imageData.type,
-                .pImageInfo       = &imageInfos[i],
-                .pBufferInfo      = nullptr,
-                .pTexelBufferView = nullptr
-            };
+            writer.WriteImage
+            (
+                imageData[i].handle,
+                0,
+                0,
+                colorSampler.handle,
+                imageViews[i].handle,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+            );
         }
 
-        vkUpdateDescriptorSets
-        (
-            device,
-            static_cast<u32>(imageWrites.size()),
-            imageWrites.data(),
-            0,
-            nullptr
-        );
+        writer.Update(device);
     }
 
-    const Vk::DescriptorSetData& SwapPipeline::GetImageData() const
+    const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& SwapPipeline::GetImageSets(Vk::DescriptorCache& descriptorCache) const
     {
-        return descriptorSetData[0];
+        return descriptorCache.GetSets(IMAGE_SET_ID);
     }
 
-    Vk::Pipeline SwapPipeline::CreatePipeline
-    (
-        const std::shared_ptr<Vk::Context>& context,
-        VkFormat colorFormat,
-        VkExtent2D extent
-    )
+    Vk::Pipeline SwapPipeline::CreatePipeline(const std::shared_ptr<Vk::Context>& context, VkFormat colorFormat)
     {
-        auto SetDynamicStates = [&extent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
-        {
-            pipelineBuilder.viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(extent.width),
-                .height   = static_cast<f32>(extent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
-
-            pipelineBuilder.scissor =
-            {
-                .offset = {0, 0},
-                .extent = extent
-            };
-
-            pipelineBuilder.viewportInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                .pNext         = nullptr,
-                .flags         = 0,
-                .viewportCount = 1,
-                .pViewports    = &pipelineBuilder.viewport,
-                .scissorCount  = 1,
-                .pScissors     = &pipelineBuilder.scissor
-            };
-        };
-
-        constexpr std::array<VkDynamicState, 2> DYN_STATES = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        constexpr std::array<VkDynamicState, 2> DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         constexpr std::array<VkVertexInputBindingDescription, 1> vertexBindings =
         {
@@ -140,23 +92,36 @@ namespace Renderer::Pipelines
 
         std::array<VkFormat, 1> colorFormats = {colorFormat};
 
-        return Vk::Builders::PipelineBuilder(context)
-              .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-              .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-              .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-              .SetDynamicStates(DYN_STATES, SetDynamicStates)
-              .SetVertexInputState(vertexBindings, vertexAttribs)
-              .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE)
-              .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-              .SetMSAAState()
-              .SetBlendState()
-              .AddDescriptor(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-              .Build();
+        auto colorLayout = context->descriptorCache.AddLayout
+        (
+            COLOR_LAYOUT_ID,
+            context->device,
+            Vk::Builders::DescriptorLayoutBuilder()
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .Build(context->device)
+        );
+
+        auto pipeline = Vk::Builders::PipelineBuilder(context)
+            .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetVertexInputState(vertexBindings, vertexAttribs)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_FALSE)
+            .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetMSAAState()
+            .SetBlendState()
+            .AddDescriptorLayout(colorLayout)
+            .Build();
+
+        context->descriptorCache.AllocateSets(IMAGE_SET_ID, COLOR_LAYOUT_ID, context->device);
+
+        return pipeline;
     }
 
     void SwapPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
-        textureSampler = Vk::Sampler
+        colorSampler = Vk::Sampler
         (
             context->device,
             {VK_FILTER_NEAREST, VK_FILTER_NEAREST},
@@ -179,11 +144,11 @@ namespace Renderer::Pipelines
         };
 
         screenQuad = Vk::VertexBuffer(context, QUAD_VERTICES);
-    }
 
-    void SwapPipeline::DestroyPipelineData(VkDevice device, VmaAllocator allocator)
-    {
-        textureSampler.Destroy(device);
-        screenQuad.Destroy(allocator);
+        m_deletionQueue.PushDeletor([sampler = colorSampler, quad = screenQuad, context] ()
+        {
+            sampler.Destroy(context->device);
+            quad.Destroy(context->allocator);
+        });
     }
 }

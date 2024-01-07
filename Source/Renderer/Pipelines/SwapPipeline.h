@@ -22,35 +22,30 @@
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/Swapchain.h"
 #include "Vulkan/VertexBuffer.h"
+#include "Vulkan/DescriptorCache.h"
+#include "Vulkan/Context.h"
 
 namespace Renderer::Pipelines
 {
     class SwapPipeline : public Vk::Pipeline
     {
     public:
-        SwapPipeline
+        SwapPipeline(const std::shared_ptr<Vk::Context>& context, VkFormat colorFormat);
+
+        void WriteImageDescriptors
         (
-            const std::shared_ptr<Vk::Context>& context,
-            VkFormat colorFormat,
-            VkExtent2D extent
-        );
+            VkDevice device,
+            Vk::DescriptorCache& descriptorCache,
+            const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews
+        ) const;
 
-        void WriteImageDescriptors(VkDevice device, const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews);
+        [[nodiscard]] const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& GetImageSets(Vk::DescriptorCache& descriptorCache) const;
 
-        [[nodiscard]] const Vk::DescriptorSetData& GetImageData() const;
-
-        Vk::Sampler      textureSampler = {};
-        Vk::VertexBuffer screenQuad     = {};
+        Vk::Sampler      colorSampler = {};
+        Vk::VertexBuffer screenQuad   = {};
     private:
-        [[nodiscard]] Vk::Pipeline CreatePipeline
-        (
-            const std::shared_ptr<Vk::Context>& context,
-            VkFormat colorFormat,
-            VkExtent2D extent
-        );
-
+        [[nodiscard]] Vk::Pipeline CreatePipeline(const std::shared_ptr<Vk::Context>& context, VkFormat colorFormat);
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
-        void DestroyPipelineData(VkDevice device, VmaAllocator allocator) override;
     };
 }
 

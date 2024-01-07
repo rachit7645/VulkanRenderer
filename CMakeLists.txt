@@ -66,8 +66,12 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/CommandBuffer.cpp
+	Source/Vulkan/DescriptorAllocator.cpp
+	Source/Vulkan/DescriptorWriter.cpp
+	Source/Vulkan/DescriptorCache.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
+	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/FreeCamera.cpp
@@ -151,6 +155,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<source_location>
 	<iostream>
 	<numbers>
+	<deque>
     # C STL Headers
     <cstdint>
     <cstddef>

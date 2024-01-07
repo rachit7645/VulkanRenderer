@@ -35,7 +35,7 @@ namespace Vk
         VkPhysicalDevice physicalDevice,
         const std::span<const VkFormat> candidates,
         VkImageTiling tiling,
-        VkFormatFeatureFlags features
+        VkFormatFeatureFlags2 features
     );
 
     void CheckResult(VkResult result, const std::string_view message);

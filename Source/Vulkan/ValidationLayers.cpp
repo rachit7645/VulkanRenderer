@@ -45,7 +45,6 @@ namespace Vk
 
     void ValidationLayers::SetupMessenger(VkInstance instance)
     {
-        // Create a messenger
         Vk::CheckResult(vkCreateDebugUtilsMessengerEXT(
             instance,
             &messengerInfo,
@@ -60,27 +59,26 @@ namespace Vk
         u32 layerCount = 0;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
-        // Get layers
+        if (layerCount == 0)
+        {
+            Logger::VulkanError("{}\n", "Failed to find any layers!");
+        }
+
         auto availableLayers = std::vector<VkLayerProperties>(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-        // Create unique layers set
         auto requiredLayers = std::set<std::string_view>(layers.begin(), layers.end());
 
-        // Go over all layer properties
         for (auto&& layerProperties : availableLayers)
         {
-            // Remove from set
             requiredLayers.erase(layerProperties.layerName);
         }
 
-        // Check if we found all the required layers
         return requiredLayers.empty();
     }
 
     void ValidationLayers::Destroy(VkInstance instance) const
     {
-        // Destroy
         vkDestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
     }
 
@@ -92,25 +90,20 @@ namespace Vk
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         UNUSED void* pUserData
     )
-        {
-        // Switch
+    {
         switch (severity)
         {
-        // Heed Vulkan's warnings
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             Logger::Vulkan("{}\n", pCallbackData->pMessage);
             break;
-        // Exit at error
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             Logger::VulkanError("{}\n", pCallbackData->pMessage);
             break;
-        // Ignore
         default:
             break;
         }
 
-        // Return
-        return VK_TRUE;
+        return VK_FALSE;
     }
 #endif
 }

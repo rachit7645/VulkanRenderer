@@ -72,7 +72,7 @@ namespace Vk
 
     void ImageView::Destroy(VkDevice device) const
     {
-        Logger::Debug("Destroying image view! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Destroying image view! [handle={}]\n", std::bit_cast<void*>(handle));
         vkDestroyImageView(device, handle, nullptr);
     }
 }

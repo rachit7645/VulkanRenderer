@@ -17,165 +17,133 @@
 #include "ForwardPipeline.h"
 #include "Models/Vertex.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/DescriptorWriter.h"
+#include "Vulkan/Builders/DescriptorLayoutBuilder.h"
 
 namespace Renderer::Pipelines
 {
     // Usings
     using Models::Vertex;
 
+    // Constants
+    constexpr auto STATIC_LAYOUT_ID   = "FORWARD_PIPELINE_STATIC_LAYOUT";
+    constexpr auto STATIC_SET_ID      = "FORWARD_PIPELINE_STATIC_SETS";
+    constexpr auto MATERIAL_LAYOUT_ID = "FORWARD_PIPELINE_MATERIAL_LAYOUT";
+    constexpr auto MATERIAL_SET_ID    = "FORWARD_PIPELINE_MATERIAL_SETS";
+
     ForwardPipeline::ForwardPipeline
     (
         const std::shared_ptr<Vk::Context>& context,
         VkFormat colorFormat,
-        VkFormat depthFormat,
-        VkExtent2D extent
+        VkFormat depthFormat
     )
-        : Vk::Pipeline(CreatePipeline(context, colorFormat, depthFormat, extent))
+        : Vk::Pipeline(CreatePipeline(context, colorFormat, depthFormat))
     {
         CreatePipelineData(context);
-        WriteStaticDescriptors(context->device);
+        WriteStaticDescriptors(context->device, context->descriptorCache);
     }
 
-    void ForwardPipeline::WriteMaterialDescriptors(VkDevice device, const std::span<const Models::Material> materials)
+    void ForwardPipeline::WriteMaterialDescriptors
+    (
+        VkDevice device,
+        Vk::DescriptorCache& descriptorCache,
+        const std::span<const Models::Material> materials
+    )
     {
-        auto& materialData = GetMaterialData();
+        const usize materialCount = materials.size();
 
-        usize materialCount   = materials.size();
-        usize descriptorCount = materialCount * Vk::FRAMES_IN_FLIGHT;
-        usize writeCount      = descriptorCount * Models::Material::MATERIAL_COUNT;
+        Vk::DescriptorWriter writer = {};
 
-        // Pre-allocate
-        std::vector<VkDescriptorImageInfo> imageInfos = {};
-        imageInfos.resize(writeCount);
-        std::vector<VkWriteDescriptorSet> imageWrites = {};
-        imageWrites.resize(writeCount);
-
-        for (usize FIF = 0; FIF < Vk::FRAMES_IN_FLIGHT; ++FIF)
+        for (usize i = 0; i < materialCount; ++i)
         {
-            for (usize i = 0; i < materialCount; ++i)
+            const auto& currentSets  = descriptorCache.AllocateSets
+            (
+                MATERIAL_SET_ID + std::to_string(i + materialDescriptorIDOffset),
+                MATERIAL_LAYOUT_ID,
+                device
+            );
+
+            const auto& currentViews = materials[i].GetViews();
+
+            for (usize j = 0; j < currentViews.size(); ++j)
             {
-                usize descriptorIndex = i + (textureDescriptorIndexOffset / Vk::FRAMES_IN_FLIGHT);
-
-                VkDescriptorSet currentDescriptor = materialData.setMap[FIF][descriptorIndex];
-                const auto&     currentViews      = materials[i].GetViews();
-
-                for (usize j = 0; j < currentViews.size(); ++j)
+                for (usize FIF = 0; FIF < Vk::FRAMES_IN_FLIGHT; ++FIF)
                 {
-                    auto& currentImageView = currentViews[j];
-                    usize writeIndex       = FIF * materialCount * currentViews.size() + i * currentViews.size() + j;
-
-                    imageInfos[writeIndex] =
-                    {
-                        .sampler     = VK_NULL_HANDLE,
-                        .imageView   = currentImageView.handle,
-                        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                    };
-
-                    imageWrites[writeIndex] =
-                    {
-                        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                        .pNext            = nullptr,
-                        .dstSet           = currentDescriptor,
-                        .dstBinding       = materialData.binding,
-                        .dstArrayElement  = static_cast<u32>(j),
-                        .descriptorCount  = 1,
-                        .descriptorType   = materialData.type,
-                        .pImageInfo       = &imageInfos[writeIndex],
-                        .pBufferInfo      = nullptr,
-                        .pTexelBufferView = nullptr
-                    };
+                    writer.WriteImage
+                    (
+                        currentSets[FIF].handle,
+                        0,
+                        static_cast<u32>(j),
+                        VK_NULL_HANDLE,
+                        currentViews[j].handle,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+                    );
                 }
-
-                materialMap[FIF].emplace(materials[i], currentDescriptor);
             }
+
+            materialMap.emplace(materials[i], currentSets);
         }
 
-        textureDescriptorIndexOffset += descriptorCount;
+        materialDescriptorIDOffset += materialCount;
 
-        vkUpdateDescriptorSets
-        (
-            device,
-            static_cast<u32>(imageWrites.size()),
-            imageWrites.data(),
-            0,
-            nullptr
-        );
+        writer.Update(device);
     }
 
-    const Vk::DescriptorSetData& ForwardPipeline::GetSceneUBOData() const
+    const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& ForwardPipeline::GetStaticSets(Vk::DescriptorCache& descriptorCache) const
     {
-        return descriptorSetData[0];
-    }
-
-    const Vk::DescriptorSetData& ForwardPipeline::GetSamplerData() const
-    {
-        return descriptorSetData[1];
-    }
-
-    const Vk::DescriptorSetData& ForwardPipeline::GetMaterialData() const
-    {
-        return descriptorSetData[2];
+        return descriptorCache.GetSets(STATIC_SET_ID);
     }
 
     Vk::Pipeline ForwardPipeline::CreatePipeline
     (
         const std::shared_ptr<Vk::Context>& context,
         VkFormat colorFormat,
-        VkFormat depthFormat,
-        VkExtent2D extent
+        VkFormat depthFormat
     )
     {
-        auto SetDynamicStates = [&extent] (Vk::Builders::PipelineBuilder& pipelineBuilder)
-        {
-            pipelineBuilder.viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(extent.width),
-                .height   = static_cast<f32>(extent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
-
-            pipelineBuilder.scissor =
-            {
-                .offset = {0, 0},
-                .extent = extent
-            };
-
-            pipelineBuilder.viewportInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                .pNext         = nullptr,
-                .flags         = 0,
-                .viewportCount = 1,
-                .pViewports    = &pipelineBuilder.viewport,
-                .scissorCount  = 1,
-                .pScissors     = &pipelineBuilder.scissor
-            };
-        };
-
-        constexpr std::array<VkDynamicState, 2> DYN_STATES         = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-        constexpr usize                         MAX_MATERIAL_COUNT = (1 << 10) / Models::Material::MATERIAL_COUNT;
+        constexpr std::array<VkDynamicState, 2> DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         auto colorFormats = std::span(&colorFormat, 1);
 
-        return Vk::Builders::PipelineBuilder(context)
-              .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
-              .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-              .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-              .SetDynamicStates(DYN_STATES, SetDynamicStates)
-              .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
-              .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-              .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-              .SetMSAAState()
-              .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
-              .SetBlendState()
-              .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(VSPushConstant)))
-              .AddDescriptor(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-              .AddDescriptor(1, VK_DESCRIPTOR_TYPE_SAMPLER,        VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1)
-              .AddDescriptor(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_FRAGMENT_BIT, Models::Material::MATERIAL_COUNT, MAX_MATERIAL_COUNT)
-              .Build();
+        auto staticLayout = context->descriptorCache.AddLayout
+        (
+            STATIC_LAYOUT_ID,
+            context->device,
+            Vk::Builders::DescriptorLayoutBuilder()
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+                .AddBinding(1, VK_DESCRIPTOR_TYPE_SAMPLER,        1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .Build(context->device)
+        );
+
+        auto materialLayout = context->descriptorCache.AddLayout
+        (
+            MATERIAL_LAYOUT_ID,
+            context->device,
+            Vk::Builders::DescriptorLayoutBuilder()
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Models::Material::MATERIAL_COUNT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .Build(context->device)
+        );
+
+        auto pipeline = Vk::Builders::PipelineBuilder(context)
+            .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
+            .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetMSAAState()
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
+            .SetBlendState()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(VSPushConstant)))
+            .AddDescriptorLayout(staticLayout)
+            .AddDescriptorLayout(materialLayout)
+            .Build();
+
+        context->descriptorCache.AllocateSets(STATIC_SET_ID, STATIC_LAYOUT_ID, context->device);
+
+        return pipeline;
     }
 
     void ForwardPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
@@ -209,79 +177,49 @@ namespace Renderer::Pipelines
             VK_BORDER_COLOR_INT_OPAQUE_BLACK,
             VK_FALSE
         );
-    }
 
-    void ForwardPipeline::DestroyPipelineData(VkDevice device, VmaAllocator allocator)
-    {
-        for (auto&& sceneUBO : sceneUBOs)
+        m_deletionQueue.PushDeletor([buffers = sceneUBOs, sampler = textureSampler, context] ()
         {
-            sceneUBO.Destroy(allocator);
-        }
+            for (auto&& buffer : buffers)
+            {
+                buffer.Destroy(context->allocator);
+            }
 
-        textureSampler.Destroy(device);
+            sampler.Destroy(context->device);
+        });
     }
 
-    void ForwardPipeline::WriteStaticDescriptors(VkDevice device)
+    void ForwardPipeline::WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache)
     {
-        auto& sharedUBOData = GetSceneUBOData();
-        auto& samplerData   = GetSamplerData();
+        const auto& staticSets = GetStaticSets(cache);
 
-        std::array<VkDescriptorBufferInfo,   Vk::FRAMES_IN_FLIGHT> sharedBufferInfos  = {};
-        std::array<VkDescriptorImageInfo,    Vk::FRAMES_IN_FLIGHT> samplerInfos       = {};
-        std::array<VkWriteDescriptorSet, 2 * Vk::FRAMES_IN_FLIGHT> descriptorWrites   = {};
+        Vk::DescriptorWriter writer = {};
 
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
-            sharedBufferInfos[i] =
-            {
-                .buffer = sceneUBOs[i].handle,
-                .offset = 0,
-                .range  = VK_WHOLE_SIZE
-            };
+            writer.WriteBuffer
+            (
+                staticSets[i].handle,
+                0,
+                0,
+                sceneUBOs[i].handle,
+                VK_WHOLE_SIZE,
+                0,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+            );
 
-            samplerInfos[i] =
-            {
-                .sampler     = textureSampler.handle,
-                .imageView   = {},
-                .imageLayout = {}
-            };
-
-            descriptorWrites[2 * i] =
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = sharedUBOData.setMap[i][0],
-                .dstBinding       = sharedUBOData.binding,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = sharedUBOData.type,
-                .pImageInfo       = nullptr,
-                .pBufferInfo      = &sharedBufferInfos[i],
-                .pTexelBufferView = nullptr
-            };
-
-            descriptorWrites[2 * i + 1] =
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = samplerData.setMap[i][0],
-                .dstBinding       = samplerData.binding,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = samplerData.type,
-                .pImageInfo       = &samplerInfos[i],
-                .pBufferInfo      = nullptr,
-                .pTexelBufferView = nullptr
-            };
+            writer.WriteImage
+            (
+                staticSets[i].handle,
+                1,
+                0,
+                textureSampler.handle,
+                VK_NULL_HANDLE,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_DESCRIPTOR_TYPE_SAMPLER
+            );
         }
 
-        vkUpdateDescriptorSets
-        (
-            device,
-            descriptorWrites.size(),
-            descriptorWrites.data(),
-            0,
-            nullptr
-        );
+        writer.Update(device);
     }
 }

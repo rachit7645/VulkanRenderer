@@ -69,16 +69,23 @@ namespace Vk
         VkPhysicalDevice physicalDevice,
         const std::span<const VkFormat> candidates,
         VkImageTiling tiling,
-        VkFormatFeatureFlags features
+        VkFormatFeatureFlags2 features
     )
     {
         for (auto format : candidates)
         {
-            VkFormatProperties properties = {};
-            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+            VkFormatProperties3 properties3 = {};
+            properties3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+            properties3.pNext = nullptr;
 
-            bool isValidLinear  = tiling == VK_IMAGE_TILING_LINEAR  && (properties.linearTilingFeatures  & features) == features;
-            bool isValidOptimal = tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features;
+            VkFormatProperties2 properties2 = {};
+            properties2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+            properties2.pNext = &properties3;
+
+            vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &properties2);
+
+            bool isValidLinear  = tiling == VK_IMAGE_TILING_LINEAR  && (properties3.linearTilingFeatures  & features) == features;
+            bool isValidOptimal = tiling == VK_IMAGE_TILING_OPTIMAL && (properties3.optimalTilingFeatures & features) == features;
 
             if (isValidLinear || isValidOptimal)
             {

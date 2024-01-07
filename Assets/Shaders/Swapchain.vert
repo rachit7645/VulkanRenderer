@@ -24,8 +24,7 @@ layout(location = 0) out vec2 fragTexCoords;
 
 void main()
 {
-    // Set position
     gl_Position = vec4(position.xy, 0.0f, 1.0f);
-    // Set texture coords
+    // This generates texture coordinates from the position itself
     fragTexCoords = 0.5f * (position + vec2(1.0));
 }

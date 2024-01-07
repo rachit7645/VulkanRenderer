@@ -26,25 +26,17 @@ namespace Vk
     class ValidationLayers
     {
     public:
-        // Default constructor
         ValidationLayers() = default;
-        // Constructor
         explicit ValidationLayers(const std::span<const char* const> layers);
 
-        // Setup messenger
         void SetupMessenger(VkInstance instance);
-        // Destroy messenger
         void Destroy(VkInstance instance) const;
 
-        // Debugging messenger
-        VkDebugUtilsMessengerEXT messenger = VK_NULL_HANDLE;
-        // Messenger info
+        VkDebugUtilsMessengerEXT           messenger     = VK_NULL_HANDLE;
         VkDebugUtilsMessengerCreateInfoEXT messengerInfo = {};
     private:
-        // Check if all layers are present
         [[nodiscard]] bool CheckLayers(const std::span<const char* const> layers);
 
-        // Debug Callback
         static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback
         (
             VkDebugUtilsMessageSeverityFlagBitsEXT severity,

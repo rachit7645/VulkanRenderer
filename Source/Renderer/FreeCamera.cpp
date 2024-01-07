@@ -61,7 +61,7 @@ namespace Renderer
 
     void FreeCamera::Move(f32 frameDelta)
     {
-        const auto& inputs = Engine::Inputs::GetInstance();
+        const auto& inputs = Engine::Inputs::Get();
 
         f32 velocity = CAMERA_SPEED * frameDelta;
 
@@ -96,7 +96,7 @@ namespace Renderer
 
     void FreeCamera::Rotate(f32 frameDelta)
     {
-        auto& inputs = Engine::Inputs::GetInstance();
+        auto& inputs = Engine::Inputs::Get();
 
         auto speed = CAMERA_SENSITIVITY * frameDelta;
 
@@ -121,7 +121,7 @@ namespace Renderer
 
     void FreeCamera::Zoom(f32 frameDelta)
     {
-        auto& inputs = Engine::Inputs::GetInstance();
+        auto& inputs = Engine::Inputs::Get();
 
         // Stops things from going haywire
         if (inputs.WasMouseScrolled())

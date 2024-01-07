@@ -26,14 +26,10 @@ namespace Engine
     class Window
     {
     public:
-        // Create window using SDL
         Window();
-        // Destroy window
         ~Window();
 
-        // Function to process SDL Events
         [[nodiscard]] bool PollEvents();
-        // Sleeps till window is restored
         void WaitForRestoration();
 
         // SDL window handle

@@ -44,7 +44,6 @@ namespace Logger
         void Log
         (
             const fmt::color& fgColor,
-            const fmt::color& bgColor,
             const std::string_view type,
             const std::source_location location,
             const std::string_view format,
@@ -55,7 +54,7 @@ namespace Logger
             fmt::print
             (
                 stderr,
-                fmt::fg(fgColor) | fmt::bg(bgColor),
+                fmt::fg(fgColor),
                 std::string("[{}] [{}] [{}:{}] ") + format.data(),
                 type,
                 Util::GetTime(),
@@ -76,7 +75,6 @@ namespace Logger
         [[noreturn]] void LogAndExit
         (
             const fmt::color& fgColor,
-            const fmt::color& bgColor,
             const std::string_view type,
             const std::source_location location,
             const std::string_view format,
@@ -87,7 +85,6 @@ namespace Logger
             Log
             (
                 fgColor,
-                bgColor,
                 type,
                 location,
                 format,
@@ -116,7 +113,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::forest_green,
-                fmt::color::black,
                 "INFO",
                 location,
                 format,
@@ -143,7 +139,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::yellow,
-                fmt::color::black,
                 "WARNING",
                 location,
                 format,
@@ -172,7 +167,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::cyan,
-                fmt::color::black,
                 "DEBUG",
                 location,
                 format,
@@ -202,7 +196,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::orange,
-                fmt::color::black,
                 "VULKAN",
                 location,
                 format,
@@ -231,7 +224,6 @@ namespace Logger
             Detail::LogAndExit<-1>
             (
                 fmt::color::red,
-                fmt::color::black,
                 "ERROR",
                 location,
                 format,
@@ -258,7 +250,6 @@ namespace Logger
             Detail::LogAndExit<-1>
             (
                 fmt::color::orange_red,
-                fmt::color::black,
                 "VULKAN ERROR",
                 location,
                 format,
