@@ -27,7 +27,7 @@ namespace Vk
     class CommandBuffer
     {
     public:
-        CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level);
+        CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level, const std::string_view name);
         void Free(const std::shared_ptr<Vk::Context>& context);
 
         CommandBuffer()  = default;
@@ -48,6 +48,8 @@ namespace Vk
 
         VkCommandBuffer      handle = VK_NULL_HANDLE;
         VkCommandBufferLevel level  = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    private:
+        std::string m_name = {};
     };
 }
 

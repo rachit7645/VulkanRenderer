@@ -21,7 +21,7 @@
 #include <vulkan/vulkan.h>
 
 #include "FreeCamera.h"
-#include "RenderPasses/SwapPass.h"
+#include "RenderPasses/SwapchainPass.h"
 #include "RenderPasses/ForwardPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/VertexBuffer.h"
@@ -63,7 +63,7 @@ namespace Renderer
         // Vulkan context
         std::shared_ptr<Vk::Context> m_context = nullptr;
         // Swap pass
-        RenderPasses::SwapPass m_swapPass;
+        RenderPasses::SwapchainPass m_swapPass;
         // Forward pipeline
         RenderPasses::ForwardPass m_forwardPass;
         // Model

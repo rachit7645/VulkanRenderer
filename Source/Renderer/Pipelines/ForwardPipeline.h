@@ -24,6 +24,7 @@
 #include "Vulkan/Pipeline.h"
 #include "Models/Material.h"
 #include "Renderer/DirLight.h"
+#include "Externals/GLM.h"
 
 namespace Renderer::Pipelines
 {
@@ -33,22 +34,19 @@ namespace Renderer::Pipelines
         // Usings
         using MaterialMap = std::unordered_map<Models::Material, std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>>;
 
-        struct VULKAN_GLSL_DATA VSPushConstant
+        struct VULKAN_GLSL_DATA PushConstant
         {
-            glm::mat4 transform    = {};
-            glm::mat4 normalMatrix = {};
+            glm::mat4       transform    = {};
+            glm::mat4       normalMatrix = {};
+            VkDeviceAddress scene        = {};
         };
 
         struct VULKAN_GLSL_DATA SceneBuffer
         {
-            // Projection matrix
             glm::mat4 projection = {};
-            // View matrix
-            glm::mat4 view = {};
-            // Camera position
-            glm::vec4 cameraPos = {};
-            // Light
-            Renderer::DirLight dirLight = {};
+            glm::mat4 view       = {};
+            glm::vec4 cameraPos  = {};
+            DirLight  dirLight   = {};
         };
 
         ForwardPipeline() = default;
@@ -69,8 +67,9 @@ namespace Renderer::Pipelines
 
         const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& GetStaticSets(Vk::DescriptorCache& descriptorCache) const;
 
-        std::array<VSPushConstant, Vk::FRAMES_IN_FLIGHT> pushConstants = {};
-        std::array<Vk::Buffer,     Vk::FRAMES_IN_FLIGHT> sceneUBOs     = {};
+        PushConstant pushConstant = {};
+        // Updated coherently so needs to be duplicated
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneSSBOs = {};
 
         Vk::Sampler textureSampler = {};
         MaterialMap materialMap    = {};
@@ -84,7 +83,7 @@ namespace Renderer::Pipelines
 
         void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
 
-        void WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache);
+        void WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache) const;
 
         usize materialDescriptorIDOffset = 0;
     };

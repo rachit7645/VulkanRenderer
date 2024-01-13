@@ -26,9 +26,14 @@ namespace Renderer::RenderPasses
     ForwardPass::ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
         : pipeline(context, GetColorFormat(context->physicalDevice), Vk::DepthBuffer::GetDepthFormat(context->physicalDevice))
     {
-        for (auto&& cmdBuffer : cmdBuffers)
+        for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
-            cmdBuffer = Vk::CommandBuffer(context, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+            cmdBuffers[i] = Vk::CommandBuffer
+            (
+                context,
+                VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                "ForwardPass/FIF" + std::to_string(i)
+            );
         }
 
         InitData(context, extent);
@@ -38,7 +43,7 @@ namespace Renderer::RenderPasses
 
     void ForwardPass::Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
     {
-        DestroyData(context);
+        m_deletionQueue.FlushQueue();
         InitData(context, extent);
         Logger::Info("{}\n", "Recreated forward pass!");
     }
@@ -51,8 +56,7 @@ namespace Renderer::RenderPasses
         const Models::Model& model
     )
     {
-        auto& currentCmdBuffer    = cmdBuffers[FIF];
-        auto& currentPushConstant = pipeline.pushConstants[FIF];
+        auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -90,7 +94,7 @@ namespace Renderer::RenderPasses
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue         = {.depthStencil = {1.0f, 0x0}}
+            .clearValue         = {.depthStencil = {0.0f, 0x0}}
         };
 
         VkRenderingInfo renderInfo =
@@ -134,11 +138,11 @@ namespace Renderer::RenderPasses
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
-        auto& sceneUBO = pipeline.sceneUBOs[FIF];
+        auto& sceneSSBO = pipeline.sceneSSBOs[FIF];
 
         Pipelines::ForwardPipeline::SceneBuffer sceneBuffer =
         {
-            .projection = glm::perspective(
+            .projection = Maths::CreateProjectionReverseZ(
                 camera.FOV,
                 static_cast<f32>(m_renderSize.x) /
                 static_cast<f32>(m_renderSize.y),
@@ -154,10 +158,7 @@ namespace Renderer::RenderPasses
             }
         };
 
-        // Flip projection since GLM assumes OpenGL conventions
-        sceneBuffer.projection[1][1] *= -1;
-
-        std::memcpy(sceneUBO.allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
+        std::memcpy(sceneSSBO.allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
 
         static glm::vec3 s_position = {};
         static glm::vec3 s_rotation = {};
@@ -177,21 +178,19 @@ namespace Renderer::RenderPasses
             ImGui::EndMainMenuBar();
         }
 
-        currentPushConstant.transform = Maths::CreateTransformationMatrix
-        (
-            s_position,
-            s_rotation,
-            s_scale
-        );
-
-        currentPushConstant.normalMatrix = glm::mat4(glm::transpose(glm::inverse(glm::mat3(currentPushConstant.transform))));
+        pipeline.pushConstant =
+        {
+            .transform    = Maths::CreateTransformationMatrix(s_position, s_rotation, s_scale),
+            .normalMatrix = glm::mat3(pipeline.pushConstant.transform),
+            .scene        = sceneSSBO.deviceAddress
+        };
 
         pipeline.LoadPushConstants
         (
             currentCmdBuffer,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(currentPushConstant),
-            reinterpret_cast<void*>(&currentPushConstant)
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0, sizeof(pipeline.pushConstant),
+            reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
         // Scene specific descriptor sets
@@ -275,6 +274,24 @@ namespace Renderer::RenderPasses
                 1
             );
         }
+
+        m_deletionQueue.PushDeletor([&] ()
+        {
+            for (auto&& imageView : imageViews)
+            {
+                imageView.Destroy(context->device);
+            }
+
+            for (auto&& image : images)
+            {
+                image.Destroy(context->allocator);
+            }
+
+            depthBuffer.Destroy(context->device, context->allocator);
+
+            images     = {};
+            imageViews = {};
+        });
     }
 
     VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice)
@@ -282,7 +299,15 @@ namespace Renderer::RenderPasses
         return Vk::FindSupportedFormat
         (
             physicalDevice,
-            std::array<VkFormat, 4>{VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
+            std::array<VkFormat, 6>
+            {
+                VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+                VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+                VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+                VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+                VK_FORMAT_A2R10G10B10_SNORM_PACK32,
+                VK_FORMAT_R16G16B16A16_SFLOAT
+            },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
@@ -292,7 +317,7 @@ namespace Renderer::RenderPasses
     {
         Logger::Debug("{}\n", "Destroying forward pass!");
 
-        DestroyData(context);
+        m_deletionQueue.FlushQueue();
 
         for (auto&& cmdBuffer : cmdBuffers)
         {
@@ -300,23 +325,5 @@ namespace Renderer::RenderPasses
         }
 
         pipeline.Destroy(context);
-    }
-
-    void ForwardPass::DestroyData(const std::shared_ptr<Vk::Context>& context)
-    {
-        for (auto&& imageView : imageViews)
-        {
-            imageView.Destroy(context->device);
-        }
-
-        for (auto&& image : images)
-        {
-            image.Destroy(context->allocator);
-        }
-
-        depthBuffer.Destroy(context->device, context->allocator);
-
-        images     = {};
-        imageViews = {};
     }
 }

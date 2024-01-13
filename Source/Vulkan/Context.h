@@ -74,9 +74,9 @@ namespace Vk
 
         [[nodiscard]] usize CalculateScore
         (
-            VkPhysicalDevice logicalDevice,
-            VkPhysicalDeviceProperties2& propertySet,
-            VkPhysicalDeviceFeatures2& featureSet
+            VkPhysicalDevice phyDevice,
+            const VkPhysicalDeviceProperties2& propertySet,
+            const VkPhysicalDeviceFeatures2& featureSet
         );
 
         void CreateCommandPool();

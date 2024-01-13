@@ -80,7 +80,7 @@ add_executable(VulkanRenderer
 	Source/Renderer/Pipelines/SwapPipeline.cpp
 	Source/Renderer/Pipelines/ForwardPipeline.cpp
 	# Render passes sources
-	Source/Renderer/RenderPasses/SwapPass.cpp
+	Source/Renderer/RenderPasses/SwapchainPass.cpp
 	Source/Renderer/RenderPasses/ForwardPass.cpp
 	# Model sources
 	Source/Models/Mesh.cpp

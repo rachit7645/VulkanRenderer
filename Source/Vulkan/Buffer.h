@@ -27,7 +27,7 @@ namespace Vk
     class Buffer
     {
     public:
-        // Default constructor to make C++ happy
+        // INVALID STATE!
         Buffer() = default;
 
         Buffer
@@ -46,6 +46,8 @@ namespace Vk
         template <typename T>
         void LoadData(VmaAllocator allocator, const std::span<const T> data);
 
+        void GetDeviceAddress(VkDevice device);
+
         // FIXME: Should this be here at all?
         static void CopyBuffer
         (
@@ -58,11 +60,12 @@ namespace Vk
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
-        VkBuffer      handle     = VK_NULL_HANDLE;
-        VmaAllocation allocation = {};
+        VkBuffer        handle        = VK_NULL_HANDLE;
+        VmaAllocation   allocation    = {};
+        VkDeviceAddress deviceAddress = VK_NULL_HANDLE;
 
         // Buffer allocation info
-        VmaAllocationInfo allocInfo  = {};
+        VmaAllocationInfo allocInfo = {};
     };
 }
 

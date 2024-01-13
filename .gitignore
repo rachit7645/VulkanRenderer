@@ -3,8 +3,10 @@
 /Build/*
 /Externals/*
 
-/Assets/GFX/Mario
-/Assets/GFX/Sponza
+# Get your own assets lol
+/Assets/GFX/Mario/
+/Assets/GFX/Sponza/
+/Assets/GFX/Bistro/
 /Assets/Grass.png
 
 # Includes

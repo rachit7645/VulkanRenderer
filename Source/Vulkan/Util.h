@@ -28,7 +28,12 @@
 
 namespace Vk
 {
-    void ImmediateSubmit(const std::shared_ptr<Vk::Context>& context, const std::function<void(const Vk::CommandBuffer&)>& CmdFunction);
+    void ImmediateSubmit
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
+        const std::source_location location = std::source_location::current()
+    );
 
     VkFormat FindSupportedFormat
     (

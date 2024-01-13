@@ -111,8 +111,7 @@ namespace Renderer::Pipelines
             STATIC_LAYOUT_ID,
             context->device,
             Vk::Builders::DescriptorLayoutBuilder()
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-                .AddBinding(1, VK_DESCRIPTOR_TYPE_SAMPLER,        1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .AddBinding(0, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
                 .Build(context->device)
         );
 
@@ -134,9 +133,9 @@ namespace Renderer::Pipelines
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER_OR_EQUAL, VK_FALSE, {}, {})
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, static_cast<u32>(sizeof(VSPushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
             .AddDescriptorLayout(staticLayout)
             .AddDescriptorLayout(materialLayout)
             .Build();
@@ -148,21 +147,22 @@ namespace Renderer::Pipelines
 
     void ForwardPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
     {
-        for (auto&& sceneUBO : sceneUBOs)
+        for (auto&& sceneSSBO : sceneSSBOs)
         {
-            sceneUBO = Vk::Buffer
+            sceneSSBO = Vk::Buffer
             (
                 context->allocator,
                 static_cast<u32>(sizeof(SceneBuffer)),
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
+
+            sceneSSBO.GetDeviceAddress(context->device);
         }
 
-        constexpr auto SAMPLER_ANISOTROPY = 4.0f;
-        auto anisotropy = std::min(SAMPLER_ANISOTROPY, context->physicalDeviceLimits.maxSamplerAnisotropy);
+        auto anisotropy = std::min(4.0f, context->physicalDeviceLimits.maxSamplerAnisotropy);
 
         textureSampler = Vk::Sampler
         (
@@ -178,7 +178,7 @@ namespace Renderer::Pipelines
             VK_FALSE
         );
 
-        m_deletionQueue.PushDeletor([buffers = sceneUBOs, sampler = textureSampler, context] ()
+        m_deletionQueue.PushDeletor([buffers = sceneSSBOs, sampler = textureSampler, context]()
         {
             for (auto&& buffer : buffers)
             {
@@ -189,29 +189,18 @@ namespace Renderer::Pipelines
         });
     }
 
-    void ForwardPipeline::WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache)
+    void ForwardPipeline::WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache) const
     {
         const auto& staticSets = GetStaticSets(cache);
 
         Vk::DescriptorWriter writer = {};
 
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+        for (auto&& staticSet : staticSets)
         {
-            writer.WriteBuffer
-            (
-                staticSets[i].handle,
-                0,
-                0,
-                sceneUBOs[i].handle,
-                VK_WHOLE_SIZE,
-                0,
-                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-            );
-
             writer.WriteImage
             (
-                staticSets[i].handle,
-                1,
+                staticSet.handle,
+                0,
                 0,
                 textureSampler.handle,
                 VK_NULL_HANDLE,

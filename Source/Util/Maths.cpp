@@ -32,4 +32,24 @@ namespace Maths
 
         return matrix;
     }
+
+    glm::mat4 CreateProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane)
+    {
+        // Since we force a depth range of [0, 1], we don't need to convert to that range
+        auto projection = glm::perspective(FOV, aspectRatio, nearPlane, farPlane);
+
+        // Flip Y axis for vulkan
+        projection[1][1] *= -1;
+
+        // https://tomhultonharrop.com/mathematics/graphics/2023/08/06/reverse-z.html
+        constexpr auto reverseZ = glm::mat4
+        (
+            1.0f, 0.0f,  0.0f, 0.0f,
+            0.0f, 1.0f,  0.0f, 0.0f,
+            0.0f, 0.0f, -1.0f, 0.0f,
+            0.0f, 0.0f,  1.0f, 1.0f
+        );
+
+        return reverseZ * projection;
+    }
 }

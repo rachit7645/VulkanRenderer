@@ -164,23 +164,19 @@ namespace Vk
 
         for (const auto& currentDevice : devices)
         {
-            VkPhysicalDeviceProperties2 propertySet =
-            {
-                .sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-                .pNext      = nullptr,
-                .properties = {}
-            };
+            VkPhysicalDeviceProperties2 propertySet = {};
+            propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+            VkPhysicalDeviceVulkan12Features vk12Features = {};
+            vk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
             VkPhysicalDeviceVulkan13Features vk13Features = {};
             vk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-            vk13Features.pNext = nullptr;
+            vk13Features.pNext = &vk12Features;
 
-            VkPhysicalDeviceFeatures2 featureSet =
-            {
-                .sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                .pNext    = &vk13Features,
-                .features = {}
-            };
+            VkPhysicalDeviceFeatures2 featureSet = {};
+            featureSet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            featureSet.pNext = &vk13Features;
 
             vkGetPhysicalDeviceProperties2(currentDevice, &propertySet);
             vkGetPhysicalDeviceFeatures2(currentDevice, &featureSet);
@@ -207,49 +203,52 @@ namespace Vk
 
         Logger::Info
         (
-            "Selecting GPU: {} [{}] [DriverVersion={}] [APIVersion={}]\n",
+            "Selecting GPU: {} [{}]\n",
             properties[physicalDevice].properties.deviceName,
-            string_VkPhysicalDeviceType(properties[physicalDevice].properties.deviceType),
-            properties[physicalDevice].properties.driverVersion,
-            properties[physicalDevice].properties.apiVersion
+            string_VkPhysicalDeviceType(properties[physicalDevice].properties.deviceType)
         );
     }
 
     usize Context::CalculateScore
     (
-        VkPhysicalDevice logicalDevice,
-        VkPhysicalDeviceProperties2& propertySet,
-        VkPhysicalDeviceFeatures2& featureSet
+        VkPhysicalDevice phyDevice,
+        const VkPhysicalDeviceProperties2& propertySet,
+        const VkPhysicalDeviceFeatures2& featureSet
     )
     {
-        auto queue = QueueFamilyIndices(logicalDevice, surface);
+        auto queue = QueueFamilyIndices(phyDevice, surface);
         auto vk13Features = reinterpret_cast<VkPhysicalDeviceVulkan13Features*>(featureSet.pNext);
+        auto vk12Features = reinterpret_cast<VkPhysicalDeviceVulkan12Features*>(vk13Features->pNext);
 
-        // Calculate score parts
+        // Score parts
         usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
 
-        // Calculate score multipliers
-        bool isQueueValid    = queue.IsComplete();
-        bool hasExtensions   = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
-        bool hasAnisotropy   = featureSet.features.samplerAnisotropy;
-        bool hasWireframe    = featureSet.features.fillModeNonSolid;
-        bool multiViewport   = featureSet.features.multiViewport;
-        bool hasSync2        = vk13Features->synchronization2;
-        bool hasDynRender    = vk13Features->dynamicRendering;
-        bool hasMaintenance4 = vk13Features->maintenance4;
+        // Standard features
+        bool isQueueValid  = queue.IsComplete();
+        bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(phyDevice, REQUIRED_EXTENSIONS);
+        bool hasAnisotropy = featureSet.features.samplerAnisotropy;
+        bool hasWireframe  = featureSet.features.fillModeNonSolid;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = false;
 
         if (hasExtensions)
         {
-            auto swapChainInfo = Vk::SwapchainInfo(logicalDevice, surface);
+            auto swapChainInfo = Vk::SwapchainInfo(phyDevice, surface);
             isSwapChainAdequate = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
         }
 
-        return hasExtensions * isQueueValid * isSwapChainAdequate *
-               hasAnisotropy * hasWireframe * multiViewport       *
-               hasSync2      * hasDynRender * hasMaintenance4     *
+        // Vulkan 1.2 features
+        bool hasBDA = vk12Features->bufferDeviceAddress;
+
+        // Vulkan 1.3 features
+        bool hasSync2        = vk13Features->synchronization2;
+        bool hasDynRender    = vk13Features->dynamicRendering;
+        bool hasMaintenance4 = vk13Features->maintenance4;
+
+        return isQueueValid  * hasExtensions * isSwapChainAdequate *
+               hasAnisotropy * hasWireframe  * hasBDA              *
+               hasSync2      * hasDynRender  * hasMaintenance4     *
                discreteGPU;
     }
 
@@ -277,10 +276,16 @@ namespace Vk
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
+        // Add required Vulkan 1.2 features here
+        VkPhysicalDeviceVulkan12Features vk12Features = {};
+        vk12Features.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        vk12Features.pNext               = nullptr;
+        vk12Features.bufferDeviceAddress = VK_TRUE;
+
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-        vk13Features.pNext            = nullptr;
+        vk13Features.pNext            = &vk12Features;
         vk13Features.synchronization2 = VK_TRUE;
         vk13Features.dynamicRendering = VK_TRUE;
         vk13Features.maintenance4     = VK_TRUE;
@@ -290,6 +295,7 @@ namespace Vk
         deviceFeatures.sType                      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         deviceFeatures.pNext                      = &vk13Features;
         deviceFeatures.features.samplerAnisotropy = VK_TRUE;
+        deviceFeatures.features.fillModeNonSolid  = VK_TRUE;
 
         VkDeviceCreateInfo createInfo =
         {
@@ -401,7 +407,7 @@ namespace Vk
     {
         VmaAllocatorCreateInfo createInfo =
         {
-            .flags                       = 0,
+            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
             .physicalDevice              = physicalDevice,
             .device                      = device,
             .preferredLargeHeapBlockSize = 0,

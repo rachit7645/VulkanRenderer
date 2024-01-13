@@ -23,11 +23,11 @@
 namespace Renderer
 {
     // Clear color
-    constexpr glm::vec4 CLEAR_COLOR = {0.53f, 0.81f, 0.92f, 1.0f};
+    constexpr glm::vec4 CLEAR_COLOR = {0.2474f, 0.62902f, 0.8324f, 1.0f};
     // Default field of view
     constexpr f32 DEFAULT_FOV = glm::radians(80.0f);
     // Near and far plane
-    constexpr glm::vec2 PLANES = {0.1f, 2000.0f};
+    constexpr glm::vec2 PLANES = {0.1f, 1024.0f};
     // World Up direction
     constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
 }

@@ -23,11 +23,12 @@ namespace Vk
 {
     struct ExtensionState
     {
-        using CreateDebugUtilsMessengerEXT  = PFN_vkCreateDebugUtilsMessengerEXT;
-        using DestroyDebugUtilsMessengerEXT = PFN_vkDestroyDebugUtilsMessengerEXT;
-        // Function pointers
-        CreateDebugUtilsMessengerEXT  p_CreateDebugUtilsMessengerEXT  = nullptr;
-        DestroyDebugUtilsMessengerEXT p_DestroyDebugUtilsMessengerEXT = nullptr;
+        PFN_vkCreateDebugUtilsMessengerEXT  p_CreateDebugUtilsMessengerEXT  = nullptr;
+        PFN_vkDestroyDebugUtilsMessengerEXT p_DestroyDebugUtilsMessengerEXT = nullptr;
+        PFN_vkCmdBeginDebugUtilsLabelEXT    p_CmdBeginDebugUtilsLabelEXT    = nullptr;
+        PFN_vkCmdEndDebugUtilsLabelEXT      p_CmdEndDebugUtilsLabelEXT      = nullptr;
+        PFN_vkQueueBeginDebugUtilsLabelEXT  p_QueueBeginDebugUtilsLabelEXT  = nullptr;
+        PFN_vkQueueEndDebugUtilsLabelEXT    p_QueueEndDebugUtilsLabelEXT    = nullptr;
     };
 }
 

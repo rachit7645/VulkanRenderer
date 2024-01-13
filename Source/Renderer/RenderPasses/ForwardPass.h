@@ -32,7 +32,13 @@ namespace Renderer::RenderPasses
         void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
         void Destroy(const std::shared_ptr<Vk::Context>& context);
 
-        void Render(usize FIF, Vk::DescriptorCache& descriptorCache, const Renderer::Camera& camera, const Models::Model& model);
+        void Render
+        (
+            usize FIF,
+            Vk::DescriptorCache& descriptorCache,
+            const Renderer::Camera& camera,
+            const Models::Model& model
+        );
 
         Pipelines::ForwardPipeline pipeline = {};
 
@@ -43,11 +49,12 @@ namespace Renderer::RenderPasses
         Vk::DepthBuffer depthBuffer = {};
     private:
         void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
-        void DestroyData(const std::shared_ptr<Vk::Context>& context);
 
         VkFormat GetColorFormat(VkPhysicalDevice physicalDevice);
 
         glm::uvec2 m_renderSize = {0, 0};
+
+        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

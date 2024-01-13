@@ -25,7 +25,7 @@ namespace Vk
     // Ratios
     constexpr std::array<DescriptorAllocator::PoolRatio, 4> ALLOCATOR_RATIOS =
     {
-        DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         4},
+        DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         4},
         DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_SAMPLER,                4},
         DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
         DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          16}

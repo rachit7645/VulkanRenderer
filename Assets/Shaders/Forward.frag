@@ -18,13 +18,14 @@
 
 // Extensions
 #extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference     : enable
+#extension GL_EXT_scalar_block_layout  : enable
 
 // Includes
 #include "Material.glsl"
 #include "Texture.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
-#include "ACES.glsl"
 
 // Fragment inputs
 layout(location = 0) in vec3 fragPosition;
@@ -32,20 +33,28 @@ layout(location = 1) in vec2 fragTexCoords;
 layout(location = 2) in vec3 fragToCamera;
 layout(location = 3) in mat3 fragTBNMatrix;
 
-layout(set = 0, binding = 0) uniform SceneBuffer
+// Fragment outputs
+layout(location = 0) out vec4 outColor;
+
+layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
 {
     mat4 projection;
     mat4 view;
     vec4 cameraPos;
     // Add more lights
     DirLight light;
-} Scene;
+};
 
-layout(set = 0, binding = 1) uniform sampler texSampler;
+layout(push_constant, scalar) uniform ConstantsBuffer
+{
+    mat4        transform;
+    mat4        normalMatrix;
+    SceneBuffer Scene;
+} Constants;
+
+layout(set = 0, binding = 0) uniform sampler texSampler;
 layout(set = 1, binding = 0) uniform texture2D textures[];
 
-// Fragment outputs
-layout(location = 0) out vec4 outColor;
 
 void main()
 {
@@ -55,8 +64,8 @@ void main()
     vec3 aoRghMtl = Sample(AO_RGH_MTL(textures), texSampler, fragTexCoords);
 
     vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
-    vec3 Lo = CalculateLight(GetDirLightInfo(Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);
+    vec3 Lo = CalculateLight(GetDirLightInfo(Constants.Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);
          Lo += albedo * vec3(0.03f);
 
-    outColor = vec4(ACES(Lo), 1.0f);
+    outColor = vec4(Lo, 1.0f);
 }

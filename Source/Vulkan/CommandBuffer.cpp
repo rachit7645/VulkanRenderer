@@ -15,12 +15,14 @@
  */
 
 #include "CommandBuffer.h"
+
 #include "Util.h"
 
 namespace Vk
 {
-    CommandBuffer::CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level)
-        : level(level)
+    CommandBuffer::CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level, const std::string_view name)
+        : level(level),
+          m_name(name)
     {
         VkCommandBufferAllocateInfo allocInfo =
         {
@@ -61,10 +63,25 @@ namespace Vk
         };
 
         Vk::CheckResult(vkBeginCommandBuffer(handle, &beginInfo), "Failed to begin recording command buffer!");
+
+        #ifdef ENGINE_DEBUG
+        VkDebugUtilsLabelEXT label =
+        {
+            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+            .pNext      = nullptr,
+            .pLabelName = m_name.c_str(),
+            .color      = {}
+        };
+
+        vkCmdBeginDebugUtilsLabelEXT(handle, &label);
+        #endif
     }
 
     void CommandBuffer::EndRecording() const
     {
+        #ifdef ENGINE_DEBUG
+        vkCmdEndDebugUtilsLabelEXT(handle);
+        #endif
         Vk::CheckResult(vkEndCommandBuffer(handle), "Failed to end command buffer recording!");
     }
 

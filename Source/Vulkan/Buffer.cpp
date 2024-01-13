@@ -92,6 +92,18 @@ namespace Vk
             Unmap(allocator);
     }
 
+    void Buffer::GetDeviceAddress(VkDevice device)
+    {
+        VkBufferDeviceAddressInfo bdaInfo =
+        {
+            .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+            .pNext  = nullptr,
+            .buffer = handle
+        };
+
+        deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
+    }
+
     void Buffer::CopyBuffer
     (
         const std::shared_ptr<Vk::Context>& context,

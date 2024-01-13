@@ -30,7 +30,7 @@ namespace Renderer
           m_context(std::make_shared<Vk::Context>(m_window)),
           m_swapPass(window, m_context),
           m_forwardPass(m_context, m_swapPass.swapchain.extent),
-          m_model(m_context, "Sponza/sponza.glb")
+          m_model(m_context, "Sponza/glTF/Sponza.gltf")
     {
         // ImGui Yoy
         InitImGui();
@@ -80,6 +80,18 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
+        #ifdef ENGINE_DEBUG
+        VkDebugUtilsLabelEXT label =
+        {
+            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+            .pNext      = nullptr,
+            .pLabelName = "Graphics Queue",
+            .color      = {}
+        };
+
+        vkQueueBeginDebugUtilsLabelEXT(m_context->graphicsQueue, &label);
+        #endif
+
         m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
 
         vkWaitForFences
@@ -164,6 +176,10 @@ namespace Renderer
             inFlightFences[m_currentFIF]),
             "Failed to submit queue!"
         );
+
+        #ifdef ENGINE_DEBUG
+        vkQueueEndDebugUtilsLabelEXT(m_context->graphicsQueue);
+        #endif
     }
 
     void RenderManager::InitImGui()

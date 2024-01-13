@@ -18,12 +18,23 @@
 
 #include "Util.h"
 #include "Util/Log.h"
+#include "Util/SourceLocation.h"
 
 namespace Vk
 {
-    void ImmediateSubmit(const std::shared_ptr<Vk::Context>& context, const std::function<void(const Vk::CommandBuffer&)>& CmdFunction)
+    void ImmediateSubmit
+    (
+        const std::shared_ptr<Vk::Context>& context,
+        const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
+        const std::source_location location
+    )
     {
-        auto cmdBuffer = Vk::CommandBuffer(context, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        auto cmdBuffer = Vk::CommandBuffer
+        (
+            context,
+            VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location))
+        );
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             CmdFunction(cmdBuffer);
