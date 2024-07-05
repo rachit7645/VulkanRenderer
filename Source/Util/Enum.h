@@ -14,31 +14,29 @@
  *    limitations under the License.
  */
 
-#ifndef DESCRIPTOR_LAYOUT_BUILDER_H
-#define DESCRIPTOR_LAYOUT_BUILDER_H
+#ifndef ENUM_H
+#define ENUM_H
 
-#include <vector>
-#include <vulkan/vulkan.h>
+#include <type_traits>
 
-#include "Util/Util.h"
-
-namespace Vk::Builders
+// Enum class combiner
+template<typename T>
+constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
 {
-    class DescriptorLayoutBuilder
-    {
-    public:
-        [[nodiscard]] VkDescriptorSetLayout Build(VkDevice device);
+    return static_cast<T>(
+        static_cast<std::underlying_type_t<T>>(lhs) |
+        static_cast<std::underlying_type_t<T>>(rhs)
+    );
+}
 
-        [[nodiscard]] DescriptorLayoutBuilder& AddBinding
-        (
-            u32 binding,
-            VkDescriptorType type,
-            u32 count,
-            VkShaderStageFlags shaderStages
-        );
-
-        std::vector<VkDescriptorSetLayoutBinding> bindings = {};
-    };
+// Enum class checker
+template<typename T>
+constexpr T operator&(T lhs, T rhs) requires (std::is_enum_v<T>)
+{
+    return static_cast<T>(
+        static_cast<std::underlying_type_t<T>>(lhs) &
+        static_cast<std::underlying_type_t<T>>(rhs)
+    );
 }
 
 #endif

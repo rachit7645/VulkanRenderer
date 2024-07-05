@@ -34,8 +34,6 @@
     #pragma clang diagnostic ignored "-Wunused-variable"
     #pragma clang diagnostic ignored "-Wunused-parameter"
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
-#elif defined(_MSC_VER)
-    #pragma warning(push, 0)
 #endif
 
 #include "vma/include/vk_mem_alloc.h"
@@ -45,8 +43,6 @@
     #pragma GCC diagnostic pop
 #elif defined(__clang__)
     #pragma clang diagnostic pop
-#elif defined(_MSC_VER)
-    #pragma warning(pop)
 #endif
 
 #endif

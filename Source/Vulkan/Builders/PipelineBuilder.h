@@ -36,10 +36,11 @@ namespace Vk::Builders
         explicit PipelineBuilder(const std::shared_ptr<Vk::Context>& context);
         ~PipelineBuilder();
 
-        // You can not copy
+        // No copying
         PipelineBuilder(const PipelineBuilder&) = delete;
         PipelineBuilder& operator=(const PipelineBuilder&) = delete;
-        // Moving should be ok
+
+        // Only moving
         PipelineBuilder(PipelineBuilder&&) = default;
         PipelineBuilder& operator=(PipelineBuilder&&) = default;
 
@@ -118,7 +119,7 @@ namespace Vk::Builders
         // Descriptor states
         std::vector<VkDescriptorSetLayout> descriptorLayouts = {};
     private:
-        // Ok we only need this pointer here temporarily
+        // We only need this pointer here temporarily
         std::shared_ptr<Vk::Context> m_context = nullptr;
     };
 }

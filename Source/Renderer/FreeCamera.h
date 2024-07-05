@@ -26,7 +26,6 @@ namespace Renderer
     {
     public:
         FreeCamera();
-        // Is this even used lol
         FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
 
         void Update(f32 frameDelta) override;

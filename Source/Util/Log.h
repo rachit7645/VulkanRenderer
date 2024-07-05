@@ -47,7 +47,7 @@ namespace Logger
             const std::string_view type,
             const std::source_location location,
             const std::string_view format,
-            Args&& ... args
+            Args&&... args
         )
         {
             // Format & print additional data
@@ -78,7 +78,7 @@ namespace Logger
             const std::string_view type,
             const std::source_location location,
             const std::string_view format,
-            Args&& ... args
+            Args&&... args
         )
         {
             // Call regular logger
@@ -250,7 +250,7 @@ namespace Logger
             Detail::LogAndExit<-1>
             (
                 fmt::color::orange_red,
-                "VULKAN ERROR",
+                "VKERROR",
                 location,
                 format,
                 std::forward<Args>(args)...

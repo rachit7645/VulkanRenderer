@@ -27,20 +27,13 @@
 
 namespace Vk
 {
-    // Constants
-    constexpr auto VULKAN_API_VERSION = VK_API_VERSION_1_3;
-
     // Required validation layers
     #ifdef ENGINE_DEBUG
-    constexpr std::array<const char*, 2> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
+    constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     #endif
 
     // Required device extensions
-    #ifdef ENGINE_DEBUG
-    constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    #else
-    constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    #endif
+    constexpr std::array REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
     {
@@ -60,7 +53,7 @@ namespace Vk
 
     void Context::CreateInstance(SDL_Window* window)
     {
-        VkApplicationInfo appInfo =
+        constexpr VkApplicationInfo appInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pNext              = nullptr,
@@ -77,11 +70,11 @@ namespace Vk
         m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
         #endif
 
-        VkInstanceCreateInfo createInfo =
+        const VkInstanceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             #ifdef ENGINE_DEBUG
-            .pNext                   = reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&m_layers.messengerInfo),
+            .pNext                   = &m_layers.messengerInfo,
             #else
             .pNext                   = nullptr,
             #endif
@@ -188,11 +181,10 @@ namespace Vk
         }
 
         // Best GPU => Highest score
-        auto [highestScore, bestDevice] = *scores.rbegin();
+        const auto [highestScore, bestDevice] = *scores.crbegin();
         // Score = 0 => Required features not supported
         if (highestScore == 0)
         {
-            // Log
             Logger::VulkanError("Failed to find any suitable physical device!");
         }
 
@@ -211,45 +203,46 @@ namespace Vk
 
     usize Context::CalculateScore
     (
-        VkPhysicalDevice phyDevice,
+        const VkPhysicalDevice phyDevice,
         const VkPhysicalDeviceProperties2& propertySet,
         const VkPhysicalDeviceFeatures2& featureSet
     )
     {
-        auto queue = QueueFamilyIndices(phyDevice, surface);
-        auto vk13Features = reinterpret_cast<VkPhysicalDeviceVulkan13Features*>(featureSet.pNext);
-        auto vk12Features = reinterpret_cast<VkPhysicalDeviceVulkan12Features*>(vk13Features->pNext);
+        const auto queue = QueueFamilyIndices(phyDevice, surface);
+        const auto vk13Features = static_cast<VkPhysicalDeviceVulkan13Features*>(featureSet.pNext);
+        const auto vk12Features = static_cast<VkPhysicalDeviceVulkan12Features*>(vk13Features->pNext);
 
         // Score parts
-        usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
+        const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
 
         // Standard features
-        bool isQueueValid  = queue.IsComplete();
-        bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(phyDevice, REQUIRED_EXTENSIONS);
-        bool hasAnisotropy = featureSet.features.samplerAnisotropy;
-        bool hasWireframe  = featureSet.features.fillModeNonSolid;
+        const bool isQueueValid  = queue.IsComplete();
+        const bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(phyDevice, REQUIRED_EXTENSIONS);
+        const bool hasAnisotropy = featureSet.features.samplerAnisotropy;
+        const bool hasWireframe  = featureSet.features.fillModeNonSolid;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = false;
 
         if (hasExtensions)
         {
-            auto swapChainInfo = Vk::SwapchainInfo(phyDevice, surface);
+            const auto swapChainInfo = Vk::SwapchainInfo(phyDevice, surface);
             isSwapChainAdequate = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
         }
 
         // Vulkan 1.2 features
-        bool hasBDA = vk12Features->bufferDeviceAddress;
+        const bool hasBDA          = vk12Features->bufferDeviceAddress;
+        const bool hasScalarLayout = vk12Features->scalarBlockLayout;
 
         // Vulkan 1.3 features
-        bool hasSync2        = vk13Features->synchronization2;
-        bool hasDynRender    = vk13Features->dynamicRendering;
-        bool hasMaintenance4 = vk13Features->maintenance4;
+        const bool hasSync2        = vk13Features->synchronization2;
+        const bool hasDynRender    = vk13Features->dynamicRendering;
+        const bool hasMaintenance4 = vk13Features->maintenance4;
 
-        return isQueueValid  * hasExtensions * isSwapChainAdequate *
-               hasAnisotropy * hasWireframe  * hasBDA              *
-               hasSync2      * hasDynRender  * hasMaintenance4     *
-               discreteGPU;
+        return isQueueValid    * hasExtensions * isSwapChainAdequate *
+               hasAnisotropy   * hasWireframe  * hasBDA              *
+               hasScalarLayout * hasSync2      * hasDynRender        *
+               hasMaintenance4 * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -257,23 +250,22 @@ namespace Vk
         queueFamilies = QueueFamilyIndices(physicalDevice, surface);
 
         auto uniqueQueueFamilies = queueFamilies.GetUniqueFamilies();
+
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        queueCreateInfos.reserve(uniqueQueueFamilies.size());
 
         constexpr f32 QUEUE_PRIORITY = 1.0f;
 
         for (auto queueFamily : uniqueQueueFamilies)
         {
-            VkDeviceQueueCreateInfo queueCreateInfo =
-            {
+            queueCreateInfos.emplace_back(VkDeviceQueueCreateInfo{
                 .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 .pNext            = nullptr,
                 .flags            = 0,
                 .queueFamilyIndex = queueFamily,
                 .queueCount       = 1,
                 .pQueuePriorities = &QUEUE_PRIORITY
-            };
-
-            queueCreateInfos.push_back(queueCreateInfo);
+            });
         }
 
         // Add required Vulkan 1.2 features here
@@ -281,6 +273,7 @@ namespace Vk
         vk12Features.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         vk12Features.pNext               = nullptr;
         vk12Features.bufferDeviceAddress = VK_TRUE;
+        vk12Features.scalarBlockLayout   = VK_TRUE;
 
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
@@ -297,7 +290,7 @@ namespace Vk
         deviceFeatures.features.samplerAnisotropy = VK_TRUE;
         deviceFeatures.features.fillModeNonSolid  = VK_TRUE;
 
-        VkDeviceCreateInfo createInfo =
+        const VkDeviceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .pNext                   = &deviceFeatures,
@@ -341,7 +334,7 @@ namespace Vk
 
     void Context::CreateCommandPool()
     {
-        VkCommandPoolCreateInfo createInfo =
+        const VkCommandPoolCreateInfo createInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext            = nullptr,
@@ -368,13 +361,13 @@ namespace Vk
 
     void Context::CreateDescriptorPool()
     {
-        VkDescriptorPoolSize samplerPoolSize =
+        constexpr VkDescriptorPoolSize samplerPoolSize =
         {
             .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = (1 << 4) * FRAMES_IN_FLIGHT
         };
 
-        VkDescriptorPoolCreateInfo poolCreateInfo =
+        const VkDescriptorPoolCreateInfo poolCreateInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext         = nullptr,
@@ -405,7 +398,7 @@ namespace Vk
 
     void Context::CreateAllocator()
     {
-        VmaAllocatorCreateInfo createInfo =
+        const VmaAllocatorCreateInfo createInfo =
         {
             .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
             .physicalDevice              = physicalDevice,

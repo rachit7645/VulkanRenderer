@@ -48,7 +48,7 @@ namespace Models
             const std::shared_ptr<Vk::Context>& context
         );
 
-        Models::Mesh ProcessMesh
+        [[nodiscard]] Models::Mesh ProcessMesh
         (
             aiMesh* mesh,
             const aiScene* scene,
@@ -56,7 +56,7 @@ namespace Models
             const std::shared_ptr<Vk::Context>& context
         );
 
-        Material ProcessTextures
+        [[nodiscard]] Material ProcessMaterial
         (
             aiMesh* mesh,
             const aiScene* scene,

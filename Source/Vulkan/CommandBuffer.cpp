@@ -24,7 +24,7 @@ namespace Vk
         : level(level),
           m_name(name)
     {
-        VkCommandBufferAllocateInfo allocInfo =
+        const VkCommandBufferAllocateInfo allocInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext              = nullptr,
@@ -54,7 +54,7 @@ namespace Vk
 
     void CommandBuffer::BeginRecording(VkCommandBufferUsageFlags usageFlags) const
     {
-        VkCommandBufferBeginInfo beginInfo =
+        const VkCommandBufferBeginInfo beginInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .pNext            = nullptr,
@@ -65,7 +65,7 @@ namespace Vk
         Vk::CheckResult(vkBeginCommandBuffer(handle, &beginInfo), "Failed to begin recording command buffer!");
 
         #ifdef ENGINE_DEBUG
-        VkDebugUtilsLabelEXT label =
+        const VkDebugUtilsLabelEXT label =
         {
             .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
             .pNext      = nullptr,

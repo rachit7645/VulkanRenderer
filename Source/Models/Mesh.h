@@ -25,19 +25,17 @@ namespace Models
 {
     struct Mesh
     {
-        // Create mesh object
         Mesh
         (
             const std::shared_ptr<Vk::Context>& context,
             const std::vector<Models::Vertex>& vertices,
             const std::vector<Models::Index>& indices,
-            const Models::Material& textures
+            const Models::Material& material
         );
-        // Destroy mesh object
+
         void Destroy(VkDevice device, VmaAllocator allocator) const;
-        // Vertex buffer
+
         Vk::VertexBuffer vertexBuffer;
-        // Texture
         Models::Material material;
     };
 }

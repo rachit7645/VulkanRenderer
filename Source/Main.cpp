@@ -27,7 +27,6 @@ int main(UNUSED int argc, UNUSED char** argv)
     setvbuf(stderr, nullptr, _IOLBF, 0);
     #endif
 
-    // Run an instance
     Engine::AppInstance().Run();
 
     return EXIT_SUCCESS;

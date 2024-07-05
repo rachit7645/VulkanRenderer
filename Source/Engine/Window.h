@@ -29,6 +29,14 @@ namespace Engine
         Window();
         ~Window();
 
+        // No copying
+        Window(const Window&)            = delete;
+        Window& operator=(const Window&) = delete;
+
+        // Only moving
+        Window(Window&& other)            = default;
+        Window& operator=(Window&& other) = default;
+
         [[nodiscard]] bool PollEvents();
         void WaitForRestoration();
 

@@ -91,7 +91,7 @@ namespace Vk
     void Swapchain::CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
     {
         m_swapChainInfo = SwapchainInfo(context->physicalDevice, context->surface);
-        extent          = ChooseSwapExtent(window->handle);
+        extent = ChooseSwapExtent(window->handle);
 
         VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat();
         VkPresentModeKHR   presentMode   = ChoosePresentationMode();

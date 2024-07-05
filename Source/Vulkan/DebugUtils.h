@@ -26,7 +26,7 @@ namespace Vk
     void SetDebugName(VkDevice device, T object, VkObjectType type, const std::string_view name)
     {
         #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT objectNameInfo =
+        const VkDebugUtilsObjectNameInfoEXT objectNameInfo =
         {
             .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
             .pNext        = nullptr,

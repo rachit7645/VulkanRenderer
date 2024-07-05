@@ -24,7 +24,7 @@ namespace Models
     class Material
     {
     public:
-        // Material count (Update if this struct changes)
+        // Update if this struct changes
         static constexpr auto MATERIAL_COUNT = 3;
 
         Material
@@ -50,13 +50,11 @@ namespace Models
 // Please don't nuke me for this
 namespace std
 {
-    // Hashing
     template <>
     struct hash<Models::Material>
     {
         usize operator()(const Models::Material& material) const
         {
-            // Combine hashes (good enough)
             return std::hash<Vk::Texture>()(material.albedo) ^
                    std::hash<Vk::Texture>()(material.normal) ^
                    std::hash<Vk::Texture>()(material.aoRghMtl);

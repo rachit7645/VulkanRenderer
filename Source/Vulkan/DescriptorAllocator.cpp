@@ -128,7 +128,7 @@ namespace Vk
             poolSizes.emplace_back(ratio.type, static_cast<u32>(ratio.ratio * static_cast<f32>(setCount)));
         }
 
-        VkDescriptorPoolCreateInfo poolInfo =
+        const VkDescriptorPoolCreateInfo poolInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext         = nullptr,

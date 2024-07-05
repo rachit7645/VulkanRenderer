@@ -52,7 +52,7 @@
 
 namespace glm
 {
-    // Assimp to GLM
+    // Assimp to GLM conversions
     vec2 ai_cast(const aiVector2D& vector);
     vec3 ai_cast(const aiVector3D& vector);
 }

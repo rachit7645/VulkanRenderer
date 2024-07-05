@@ -36,42 +36,41 @@ namespace Renderer
     class RenderManager
     {
     public:
-        // Constructor
         explicit RenderManager(const std::shared_ptr<Engine::Window>& window);
-        // Destructor
         ~RenderManager();
 
-        // Render frame
+        // No copying
+        RenderManager(const RenderManager&)            = delete;
+        RenderManager& operator=(const RenderManager&) = delete;
+
+        // Only moving
+        RenderManager(RenderManager&& other)            = default;
+        RenderManager& operator=(RenderManager&& other) = default;
+
         void Render();
     private:
-        // Begin frame
         void BeginFrame();
-        // Update
         void Update();
-        // End frame
         void EndFrame();
-        // Submit queue
         void SubmitQueue();
+        void Reset();
 
-        // Initialise ImGui
         void InitImGui();
-        // Create sync objects
         void CreateSyncObjects();
 
-        // Pointer to window
-        std::shared_ptr<Engine::Window> m_window = nullptr;
-        // Vulkan context
-        std::shared_ptr<Vk::Context> m_context = nullptr;
-        // Swap pass
+        // Object handles
+        std::shared_ptr<Engine::Window> m_window  = nullptr;
+        std::shared_ptr<Vk::Context>    m_context = nullptr;
+
+        // Render Passes
         RenderPasses::SwapchainPass m_swapPass;
-        // Forward pipeline
-        RenderPasses::ForwardPass m_forwardPass;
-        // Model
-        Models::Model m_model;
-        // Camera
+        RenderPasses::ForwardPass   m_forwardPass;
+
+        // Scene objects
+        Models::Model        m_model;
         Renderer::FreeCamera m_camera = {};
 
-        // Fences
+        // Sync objects
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
 
         // Frame index

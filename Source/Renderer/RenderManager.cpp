@@ -46,15 +46,8 @@ namespace Renderer
     {
         if (!m_swapPass.swapchain.IsSwapchainValid())
         {
-            vkDeviceWaitIdle(m_context->device);
-
-            m_swapPass.Recreate(m_window, m_context);
-            m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
-
-            m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_context->descriptorCache, m_forwardPass.imageViews);
-            m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_context->descriptorCache, m_model.GetMaterials());
-
             // Skip drawing this frame
+            Reset();
             return;
         }
 
@@ -180,6 +173,17 @@ namespace Renderer
         #ifdef ENGINE_DEBUG
         vkQueueEndDebugUtilsLabelEXT(m_context->graphicsQueue);
         #endif
+    }
+
+    void RenderManager::Reset()
+    {
+        vkDeviceWaitIdle(m_context->device);
+
+        m_swapPass.Recreate(m_window, m_context);
+        m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
+
+        m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_context->descriptorCache, m_forwardPass.imageViews);
+        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_context->descriptorCache, m_model.GetMaterials());
     }
 
     void RenderManager::InitImGui()

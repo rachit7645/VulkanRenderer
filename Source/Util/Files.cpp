@@ -20,12 +20,10 @@
 #include <filesystem>
 #include <fstream>
 
-// Namespace aliases
 namespace filesystem = std::filesystem;
 
 namespace Engine::Files
 {
-    // Assets directory
     constexpr auto ASSETS_DIRECTORY = "Assets/";
 
     std::string GetAssetPath(const std::string_view prefix, const std::string_view fileName)
@@ -44,7 +42,7 @@ namespace Engine::Files
     {
         // This should always work
         static_assert(sizeof(usize) >= sizeof(std::uintmax_t), "How???");
-        return filesystem::file_size(path);
+        return static_cast<usize>(filesystem::file_size(path));
     }
 
     std::vector<u8> ReadBytes(const std::string_view path)
@@ -57,7 +55,6 @@ namespace Engine::Files
             Logger::Error("Failed to load shader binary {}!\n", path);
         }
 
-        // Pre-allocate memory for SPEED
         std::vector<u8> binary = {};
         binary.resize(GetFileSize(path));
 

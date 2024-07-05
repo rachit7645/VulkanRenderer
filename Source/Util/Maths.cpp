@@ -18,7 +18,7 @@
 
 namespace Maths
 {
-    glm::mat4 CreateTransformationMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
+    glm::mat4 CreateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
     {
         auto matrix = glm::identity<glm::mat4>();
 

@@ -23,10 +23,6 @@
 
 namespace Engine
 {
-    // Flags
-    constexpr u32 SDL_INIT_FLAGS   = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER;
-    constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
-
     Window::Window()
     {
         SDL_version version = {};
@@ -40,6 +36,7 @@ namespace Engine
             static_cast<usize>(version.patch)
         );
 
+        constexpr u32 SDL_INIT_FLAGS = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER;
         if (SDL_Init(SDL_INIT_FLAGS) != 0)
         {
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
@@ -50,6 +47,7 @@ namespace Engine
             Logger::Error("SDL_Vulkan_LoadLibrary Failed: {}\n", SDL_GetError());
         }
 
+        constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
         handle = SDL_CreateWindow
         (
             "Rachit's Engine: Vulkan Edition",
@@ -128,10 +126,10 @@ namespace Engine
             }
         }
 
-        // Return
         return false;
     }
 
+    // FIXME: This is quite hacky
     void Window::WaitForRestoration()
     {
         while (true)
@@ -150,8 +148,7 @@ namespace Engine
 
     Window::~Window()
     {
-        // TODO: Move to inputs
-        SDL_GameControllerClose(Inputs::Get().GetController());
+        Inputs::Get().Destroy();
 
         SDL_Vulkan_UnloadLibrary();
         SDL_DestroyWindow(handle);

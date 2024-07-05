@@ -24,27 +24,22 @@ namespace STB
 {
     Image::Image(const std::string_view path, s32 requiredComponents)
     {
-        // Temporary signed data
         s32 _width  = 0;
         s32 _height = 0;
-        // Load
+
         data = stbi_load(path.data(), &_width, &_height, &channels, requiredComponents);
 
-        // Check
         if (data == nullptr)
         {
-            // Log
             Logger::Error("Failed to load image file \"{}\"", path.data());
         }
 
-        // Copy into proper unsigned data types
         width  = static_cast<u32>(_width);
         height = static_cast<u32>(_height);
     }
 
     Image::~Image()
     {
-        // Free
         stbi_image_free(data);
     }
 }

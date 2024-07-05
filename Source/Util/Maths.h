@@ -27,7 +27,7 @@ namespace Maths
     /// @param rotation Euler Rotation vector (in radians)
     /// @param scale Scaling vector
     /// @returns Transformation matrix
-    glm::mat4 CreateTransformationMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
+    glm::mat4 CreateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
 
     /// @brief Create a projection matrix for reverse-z
     /// @param FOV Field of View (in radians)

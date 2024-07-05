@@ -25,7 +25,7 @@ namespace Vk::Builders
 {
     Vk::Pipeline PipelineBuilder::Build()
     {
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+        const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
@@ -45,7 +45,7 @@ namespace Vk::Builders
             "Failed to create pipeline layout!"
         );
 
-        VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+        const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
         {
             .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .pNext               = &renderingCreateInfo,
@@ -79,7 +79,7 @@ namespace Vk::Builders
             "Failed to create pipeline!"
         );
 
-        Logger::Info("Created pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
+        Logger::Debug("Created pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
 
         return {pipeline, pipelineLayout};
     }
@@ -116,7 +116,7 @@ namespace Vk::Builders
     {
         shaderModules.emplace_back(m_context->device, path);
 
-        VkPipelineShaderStageCreateInfo stageCreateInfo =
+        const VkPipelineShaderStageCreateInfo stageCreateInfo =
         {
             .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             .pNext               = nullptr,
@@ -303,7 +303,7 @@ namespace Vk::Builders
 
     PipelineBuilder& PipelineBuilder::AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size)
     {
-        VkPushConstantRange pushConstant =
+        const VkPushConstantRange pushConstant =
         {
             .stageFlags = stages,
             .offset     = offset,

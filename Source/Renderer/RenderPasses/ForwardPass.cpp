@@ -180,7 +180,7 @@ namespace Renderer::RenderPasses
 
         pipeline.pushConstant =
         {
-            .transform    = Maths::CreateTransformationMatrix(s_position, s_rotation, s_scale),
+            .transform    = Maths::CreateTransformMatrix(s_position, s_rotation, s_scale),
             .normalMatrix = glm::mat3(pipeline.pushConstant.transform),
             .scene        = sceneSSBO.deviceAddress
         };
@@ -250,7 +250,7 @@ namespace Renderer::RenderPasses
         {
             images[i] = Vk::Image
             (
-                context,
+                context->allocator,
                 m_renderSize.x,
                 m_renderSize.y,
                 1,

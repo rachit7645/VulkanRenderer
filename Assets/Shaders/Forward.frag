@@ -55,7 +55,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
 layout(set = 0, binding = 0) uniform sampler texSampler;
 layout(set = 1, binding = 0) uniform texture2D textures[];
 
-
 void main()
 {
     // This is assumed to be an SRGB texture

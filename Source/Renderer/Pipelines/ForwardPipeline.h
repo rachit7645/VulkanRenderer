@@ -22,6 +22,7 @@
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Texture.h"
 #include "Vulkan/Pipeline.h"
+#include "Vulkan/Util.h"
 #include "Models/Material.h"
 #include "Renderer/DirLight.h"
 #include "Externals/GLM.h"

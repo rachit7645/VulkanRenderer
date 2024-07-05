@@ -49,6 +49,7 @@ namespace Engine
         [[nodiscard]] bool WasMouseScrolled() const;
 
         void ImGuiDisplay();
+        void Destroy();
     private:
         Inputs();
 

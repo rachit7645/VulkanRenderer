@@ -23,7 +23,7 @@ namespace Vk::Builders
 {
     VkDescriptorSetLayout DescriptorLayoutBuilder::Build(VkDevice device)
     {
-        VkDescriptorSetLayoutCreateInfo createInfo =
+        const VkDescriptorSetLayoutCreateInfo createInfo =
         {
             .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext        = nullptr,

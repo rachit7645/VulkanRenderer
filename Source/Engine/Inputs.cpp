@@ -23,7 +23,7 @@ namespace Engine
     Inputs::Inputs()
         : m_keys(SDL_GetKeyboardState(nullptr))
     {
-        // Fix joy-con state
+        // HACK?: Fix joy-con state
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
@@ -208,5 +208,19 @@ namespace Engine
 
             ImGui::EndMainMenuBar();
         }
+    }
+
+    void Inputs::Destroy()
+    {
+        SDL_GameControllerClose(m_controller);
+
+        m_keys       = nullptr;
+        m_controller = nullptr;
+
+        m_mousePosition = {};
+        m_mouseScroll   = {};
+
+        m_wasMouseMoved    = false;
+        m_wasMouseScrolled = false;
     }
 }

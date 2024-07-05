@@ -45,7 +45,7 @@ layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer Sc
     DirLight light;
 };
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+layout(push_constant, std430, buffer_reference_align = 16) uniform ConstantsBuffer
 {
     mat4        transform;
     mat4        normalMatrix;

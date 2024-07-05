@@ -27,7 +27,7 @@ namespace Vk
     class Buffer
     {
     public:
-        // INVALID STATE!
+        // WARNING: INVALID STATE!
         Buffer() = default;
 
         Buffer

@@ -22,6 +22,7 @@
 #include "Vertex.h"
 #include "Util/Log.h"
 #include "Util/Files.h"
+#include "Util/Enum.h"
 
 namespace Models
 {
@@ -38,14 +39,15 @@ namespace Models
                                      aiProcess_FlipUVs                  | // Flip textures
                                      aiProcess_OptimizeMeshes           | // Optimise meshes
                                      aiProcess_OptimizeGraph            | // Optimise scene graph
-                                     aiProcess_GenSmoothNormals         | // Generate normals
-                                     aiProcess_GenUVCoords              | // Generate texture coordinates
+                                     aiProcess_GenSmoothNormals         | // Generate normals (smooth), if missing
+                                     aiProcess_GenUVCoords              | // Generate texture coordinates, if missing
                                      aiProcess_CalcTangentSpace         | // Generate tangents, if missing
                                      aiProcess_JoinIdenticalVertices    | // Join identical vertex groups
                                      aiProcess_ImproveCacheLocality     | // Improves cache efficiency
                                      aiProcess_RemoveRedundantMaterials ; // Removes unnecessary materials
 
-        const aiScene* scene = importer.ReadFile(Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, path), ASSIMP_FLAGS);
+        const std::string assetPath = Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
+        const aiScene*    scene     = importer.ReadFile(assetPath, ASSIMP_FLAGS);
 
         if (scene != nullptr)
         {
@@ -59,8 +61,7 @@ namespace Models
             Logger::Error("Model Load Failed: {}", importer.GetErrorString());
         }
 
-        // Clang-tidy is dumb
-        assert(scene != nullptr && "Why am I giving this an error message");
+        assert(scene != nullptr && "clang-tidy is being dumb and hurting my feelings :(");
         ProcessNode(scene->mRootNode, scene, Engine::Files::GetDirectory(path), context);
     }
 
@@ -94,13 +95,11 @@ namespace Models
         std::vector<Vertex> vertices = {};
         std::vector<Index> indices   = {};
 
-        // Pre-allocate memory
         vertices.reserve(mesh->mNumVertices);
-        indices.reserve(mesh->mNumFaces * 3);
+        indices.reserve(mesh->mNumFaces * 3); // Assume triangles
 
         for (u32 i = 0; i < mesh->mNumVertices; ++i)
         {
-            // Convert to glm data
             vertices.emplace_back
             (
                 glm::ai_cast(mesh->mVertices[i]),
@@ -113,16 +112,16 @@ namespace Models
         for (u32 i = 0; i < mesh->mNumFaces; ++i)
         {
             const aiFace& face = mesh->mFaces[i];
-            // Assume that we only have triangles
+            // Assume triangles
             indices.emplace_back(face.mIndices[0]);
             indices.emplace_back(face.mIndices[1]);
             indices.emplace_back(face.mIndices[2]);
         }
 
-        return {context, vertices, indices, ProcessTextures(mesh, scene, directory, context)};
+        return {context, vertices, indices, ProcessMaterial(mesh, scene, directory, context)};
     }
 
-    Material Model::ProcessTextures
+    Material Model::ProcessMaterial
     (
         aiMesh* mesh,
         const aiScene* scene,
@@ -161,7 +160,6 @@ namespace Models
 
     std::vector<Models::Material> Model::GetMaterials() const
     {
-        // Pre-allocate
         std::vector<Models::Material> materials = {};
         materials.reserve(meshes.size());
 

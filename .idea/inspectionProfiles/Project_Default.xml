@@ -4,6 +4,8 @@
     <inspection_tool class="ClangTidy" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="clangTidyChecks" value="-*,clang-analyzer-*,mpi-*,performance-*,bugprone-*,-bugprone-implicit-widening-of-multiplication-result,-bugprone-easily-swappable-parameters,cppcoreguidelines-*,-cppcoreguidelines-non-private-member-variables-in-classes,-cppcoreguidelines-pro-type-vararg,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-type-reinterpret-cast,-cppcoreguidelines-pro-type-union-access,-cppcoreguidelines-pro-bounds-constant-array-index,-cppcoreguidelines-avoid-magic-numbers,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,google-default-arguments,google-runtime-operator,google-explicit-constructor,hicpp-multiway-paths-covered,hicpp-exception-baseclass,misc-*,-misc-use-anonymous-namespace,-misc-non-private-member-variables-in-classes,modernize-*,-modernize-use-trailing-return-type,openmp-use-default-none,portability-simd-intrinsics,readability-*,-readability-avoid-const-params-in-decls,-readability-identifier-length,-readability-magic-numbers,-readability-qualified-auto,-readability-uppercase-literal-suffix,-readability-implicit-bool-conversion,-readability-convert-member-functions-to-static,-readability-braces-around-statements" />
     </inspection_tool>
+    <inspection_tool class="CppConstParameterInDeclaration" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="CppMemberFunctionMayBeStatic" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="UnusedValue" enabled="false" level="WARNING" enabled_by_default="false" />
   </profile>
 </component>

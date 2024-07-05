@@ -18,9 +18,8 @@
 #define VK_IMAGE_H
 
 #include "Buffer.h"
-#include "Context.h"
-#include "Util/Util.h"
 #include "CommandBuffer.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -32,7 +31,7 @@ namespace Vk
 
         Image
         (
-            const std::shared_ptr<Vk::Context>& context,
+            VmaAllocator allocator,
             u32 width,
             u32 height,
             u32 mipLevels,

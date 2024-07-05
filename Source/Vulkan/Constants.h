@@ -17,13 +17,12 @@
 #ifndef VK_CONSTANTS_H
 #define VK_CONSTANTS_H
 
-#include <array>
-#include <numeric>
 #include "Util/Util.h"
 
 namespace Vk
 {
-    constexpr usize FRAMES_IN_FLIGHT = 2;
+    constexpr auto  VULKAN_API_VERSION = VK_API_VERSION_1_3;
+    constexpr usize FRAMES_IN_FLIGHT   = 2;
 }
 
 #endif

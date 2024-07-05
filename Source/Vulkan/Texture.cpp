@@ -18,18 +18,17 @@
 
 #include "Texture.h"
 #include "Util.h"
-#include "Util/Log.h"
 #include "Buffer.h"
+#include "Util/Log.h"
+#include "Util/Enum.h"
 
 namespace Vk
 {
     Texture::Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Texture::Flags flags)
     {
-        Logger::Info("Loading texture {}\n", path.data());
-
-        auto candidates = (flags & Flags::IsSRGB) == Flags::IsSRGB ?
-                                         std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
-                                         std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
+        auto candidates = IsFlagSet(flags, Flags::IsSRGB) ?
+                          std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
+                          std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
 
         auto format = Vk::FindSupportedFormat
         (
@@ -67,13 +66,13 @@ namespace Vk
             std::span(static_cast<const stbi_uc*>(imageData.data), imageSize / sizeof(stbi_uc))
         );
 
-        auto mipLevels = (flags & Flags::GenMipmaps) == Flags::GenMipmaps ?
-                              static_cast<u32>(std::floor(std::log2(std::max(imageData.width, imageData.height)))) + 1 :
-                              1;
+        auto mipLevels = IsFlagSet(flags, Flags::GenMipmaps) ?
+                         static_cast<u32>(std::floor(std::log2(std::max(imageData.width, imageData.height)))) + 1 :
+                         1;
 
         image = Vk::Image
         (
-            context,
+            context->allocator,
             imageData.width,
             imageData.height,
             mipLevels,
@@ -100,7 +99,7 @@ namespace Vk
             image,
             VK_IMAGE_VIEW_TYPE_2D,
             image.format,
-            static_cast<VkImageAspectFlagBits>(image.aspect),
+            image.aspect,
             0,
             image.mipLevels,
             0,
@@ -113,6 +112,11 @@ namespace Vk
     bool Texture::operator==(const Texture& rhs) const
     {
         return image == rhs.image && imageView == rhs.imageView;
+    }
+
+    bool Texture::IsFlagSet(Texture::Flags combined, Texture::Flags flag)
+    {
+        return (combined & flag) == flag;
     }
 
     void Texture::Destroy(VkDevice device, VmaAllocator allocator) const

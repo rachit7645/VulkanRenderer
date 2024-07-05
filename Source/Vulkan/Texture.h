@@ -42,9 +42,10 @@ namespace Vk
 
         bool operator==(const Texture& rhs) const;
 
-        // Texture image data
         Vk::Image     image     = {};
         Vk::ImageView imageView = {};
+    private:
+        bool IsFlagSet(Flags combined, Flags flag);
     };
 }
 

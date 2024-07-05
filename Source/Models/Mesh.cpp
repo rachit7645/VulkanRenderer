@@ -25,10 +25,10 @@ namespace Models
         const std::shared_ptr<Vk::Context>& context,
         const std::vector<Models::Vertex>& vertices,
         const std::vector<Models::Index>& indices,
-        const Models::Material& textures
+        const Models::Material& material
     )
         : vertexBuffer(context, vertices, indices),
-          material(textures)
+          material(material)
     {
     }
 

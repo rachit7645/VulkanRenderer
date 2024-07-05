@@ -34,7 +34,7 @@ namespace Vk
             const Vk::Image& image,
             VkImageViewType viewType,
             VkFormat format,
-            VkImageAspectFlagBits aspectMask,
+            VkImageAspectFlags aspectMask,
             u32 baseMipLevel,
             u32 levelCount,
             u32 baseArrayLayer,

@@ -24,7 +24,7 @@ namespace Vk
 {
     Image::Image
     (
-        const std::shared_ptr<Vk::Context>& context,
+        VmaAllocator allocator,
         u32 width,
         u32 height,
         u32 mipLevels,
@@ -36,7 +36,7 @@ namespace Vk
     )
         : Image(VK_NULL_HANDLE, width, height, mipLevels, format, tiling, aspect)
     {
-        CreateImage(context->allocator, usage, properties);
+        CreateImage(allocator, usage, properties);
         Logger::Debug("Created image! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 

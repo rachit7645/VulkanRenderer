@@ -31,7 +31,7 @@ namespace Vk
         VmaMemoryUsage memoryUsage
     )
     {
-        VkBufferCreateInfo createInfo =
+        const VkBufferCreateInfo createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .pNext                 = nullptr,
@@ -43,7 +43,7 @@ namespace Vk
             .pQueueFamilyIndices   = nullptr
         };
 
-        VmaAllocationCreateInfo allocCreateInfo =
+        const VmaAllocationCreateInfo allocCreateInfo =
         {
             .flags          = allocationFlags,
             .usage          = memoryUsage,
@@ -81,7 +81,7 @@ namespace Vk
     template <typename T>
     void Buffer::LoadData(VmaAllocator allocator, const std::span<const T> data)
     {
-        bool isPersistentlyMapped = allocInfo.pMappedData != nullptr;
+        const bool isPersistentlyMapped = allocInfo.pMappedData != nullptr;
 
         if (!isPersistentlyMapped)
             Map(allocator);
@@ -94,7 +94,7 @@ namespace Vk
 
     void Buffer::GetDeviceAddress(VkDevice device)
     {
-        VkBufferDeviceAddressInfo bdaInfo =
+        const VkBufferDeviceAddressInfo bdaInfo =
         {
             .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
             .pNext  = nullptr,
@@ -114,8 +114,7 @@ namespace Vk
     {
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
-            // Copy region
-            VkBufferCopy2 copyRegion =
+            const VkBufferCopy2 copyRegion =
             {
                 .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
                 .pNext     = nullptr,
@@ -124,8 +123,7 @@ namespace Vk
                 .size      = copySize
             };
 
-            // Copy info
-            VkCopyBufferInfo2 copyInfo =
+            const VkCopyBufferInfo2 copyInfo =
             {
                 .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
                 .pNext       = nullptr,
@@ -135,21 +133,19 @@ namespace Vk
                 .pRegions    = &copyRegion
             };
 
-            // Copy
             vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
         });
     }
 
     void Buffer::Destroy(VmaAllocator allocator) const
     {
-        // Log
         Logger::Debug
         (
             "Destroying buffer [buffer={}] [allocation={}]\n",
             std::bit_cast<void*>(handle),
             std::bit_cast<void*>(allocation)
         );
-        // Destroy
+
         vmaDestroyBuffer(allocator, handle, allocation);
     }
 

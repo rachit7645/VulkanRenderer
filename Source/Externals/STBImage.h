@@ -26,7 +26,15 @@ namespace STB
         explicit Image(const std::string_view path, s32 requiredComponents);
         ~Image();
 
-        // Pixel data (PLEASE DON'T BE INCOMPATIBLE SOME DAY 60 YEARS LATER)
+        // No copying
+        Image(const Image&)            = delete;
+        Image& operator=(const Image&) = delete;
+
+        // Only moving
+        Image(Image&& other)            noexcept = default;
+        Image& operator=(Image&& other) noexcept = default;
+
+        // Pixel data (FIXME: Assumes pixel data is unsigned 8-bit LDR)
         u8* data = nullptr;
 
         // Metadata

@@ -21,9 +21,6 @@
 
 #define UNUSED [[maybe_unused]]
 
-// STD140 / STD430 alignment
-#define VULKAN_GLSL_DATA alignas(16)
-
 // Signed integer types
 using s8  = std::int8_t;
 using s16 = std::int16_t;
@@ -43,25 +40,5 @@ using f64 = double;
 // Size types
 using ssize = ssize_t;
 using usize = std::size_t;
-
-// Enum class combiner
-template<typename T>
-constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
-{
-    return static_cast<T>(
-        static_cast<std::underlying_type_t<T>>(lhs) |
-        static_cast<std::underlying_type_t<T>>(rhs)
-    );
-}
-
-// Enum class checker
-template<typename T>
-constexpr T operator&(T lhs, T rhs) requires (std::is_enum_v<T>)
-{
-    return static_cast<T>(
-        static_cast<std::underlying_type_t<T>>(lhs) &
-        static_cast<std::underlying_type_t<T>>(rhs)
-    );
-}
 
 #endif
