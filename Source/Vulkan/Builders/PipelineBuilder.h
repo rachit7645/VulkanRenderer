@@ -19,13 +19,10 @@
 
 #include <string_view>
 #include <vector>
-#include <functional>
 #include <span>
-#include <memory>
 #include <vulkan/vulkan.h>
 
 #include "Vulkan/Context.h"
-#include "Vulkan/Pipeline.h"
 #include "Vulkan/ShaderModule.h"
 
 namespace Vk::Builders
@@ -33,7 +30,9 @@ namespace Vk::Builders
     class PipelineBuilder
     {
     public:
-        explicit PipelineBuilder(const std::shared_ptr<Vk::Context>& context);
+        using Products = std::pair<VkPipeline, VkPipelineLayout>;
+
+        explicit PipelineBuilder(Vk::Context& context);
         ~PipelineBuilder();
 
         // No copying
@@ -44,7 +43,7 @@ namespace Vk::Builders
         PipelineBuilder(PipelineBuilder&&) = default;
         PipelineBuilder& operator=(PipelineBuilder&&) = default;
 
-        Vk::Pipeline Build();
+        Products Build();
 
         [[nodiscard]] PipelineBuilder& SetRenderingInfo
         (
@@ -63,7 +62,7 @@ namespace Vk::Builders
         );
 
         [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
-        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode);
+        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode);
         [[nodiscard]] PipelineBuilder& SetMSAAState();
 
         [[nodiscard]] PipelineBuilder& SetDepthStencilState
@@ -72,8 +71,8 @@ namespace Vk::Builders
             VkBool32 depthWriteEnable,
             VkCompareOp depthCompareOp,
             VkBool32 stencilTestEnable,
-            VkStencilOpState front,
-            VkStencilOpState back
+            const VkStencilOpState& front,
+            const VkStencilOpState& back
         );
 
         [[nodiscard]] PipelineBuilder& SetBlendState();
@@ -82,14 +81,14 @@ namespace Vk::Builders
 
         // Dynamic rendering info
         VkPipelineRenderingCreateInfo renderingCreateInfo   = {};
-        std::vector<VkFormat>         renderingColorFormats = {};
+        std::vector<VkFormat>         renderingColorFormats;
 
         // Shaders
-        std::vector<Vk::ShaderModule>                shaderModules          = {};
-        std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
+        std::vector<Vk::ShaderModule>                shaderModules;
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
 
         // Dynamic states
-        std::vector<VkDynamicState>      dynamicStates    = {};
+        std::vector<VkDynamicState>      dynamicStates;
         VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
 
         // Viewport state (WHY DO I STILL NEED THIS LMAO)
@@ -97,8 +96,8 @@ namespace Vk::Builders
 
         // Vertex info
         VkPipelineVertexInputStateCreateInfo           vertexInputInfo          = {};
-        std::vector<VkVertexInputBindingDescription>   vertexInputBindings      = {};
-        std::vector<VkVertexInputAttributeDescription> vertexAttribDescriptions = {};
+        std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
+        std::vector<VkVertexInputAttributeDescription> vertexAttribDescriptions;
 
         // Input assembly state
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
@@ -111,16 +110,16 @@ namespace Vk::Builders
         VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {};
 
         // Blend info
-        std::vector<VkPipelineColorBlendAttachmentState> colorBlendStates = {};
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendStates;
         VkPipelineColorBlendStateCreateInfo              colorBlendInfo   = {};
 
         // Push constant data
-        std::vector<VkPushConstantRange> pushConstantRanges = {};
+        std::vector<VkPushConstantRange> pushConstantRanges;
         // Descriptor states
-        std::vector<VkDescriptorSetLayout> descriptorLayouts = {};
+        std::vector<VkDescriptorSetLayout> descriptorLayouts;
     private:
         // We only need this pointer here temporarily
-        std::shared_ptr<Vk::Context> m_context = nullptr;
+        Vk::Context* m_context = nullptr;
     };
 }
 

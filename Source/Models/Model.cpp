@@ -29,7 +29,7 @@ namespace Models
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
-    Model::Model(const std::shared_ptr<Vk::Context>& context, const std::string_view path)
+    Model::Model(const Vk::Context& context, const std::string_view path)
     {
         Logger::Info("Loading model: {}\n", path);
 
@@ -67,10 +67,10 @@ namespace Models
 
     void Model::ProcessNode
     (
-        aiNode* node,
+        const aiNode* node,
         const aiScene* scene,
         const std::string& directory,
-        const std::shared_ptr<Vk::Context>& context
+        const Vk::Context& context
     )
     {
         for (u32 i = 0; i < node->mNumMeshes; ++i)
@@ -86,10 +86,10 @@ namespace Models
 
     Mesh Model::ProcessMesh
     (
-        aiMesh* mesh,
+        const aiMesh* mesh,
         const aiScene* scene,
         const std::string& directory,
-        const std::shared_ptr<Vk::Context>& context
+        const Vk::Context& context
     )
     {
         std::vector<Vertex> vertices = {};
@@ -123,10 +123,10 @@ namespace Models
 
     Material Model::ProcessMaterial
     (
-        aiMesh* mesh,
+        const aiMesh* mesh,
         const aiScene* scene,
         const std::string& directory,
-        const std::shared_ptr<Vk::Context>& context
+        const Vk::Context& context
     )
     {
         // Default textures
@@ -158,9 +158,9 @@ namespace Models
         };
     }
 
-    std::vector<Models::Material> Model::GetMaterials() const
+    std::vector<Material> Model::GetMaterials() const
     {
-        std::vector<Models::Material> materials = {};
+        std::vector<Material> materials = {};
         materials.reserve(meshes.size());
 
         for (const auto& mesh : meshes)

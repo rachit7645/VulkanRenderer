@@ -24,7 +24,7 @@ namespace Vk
 {
     void ImmediateSubmit
     (
-        const std::shared_ptr<Vk::Context>& context,
+        const Vk::Context& context,
         const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
         const std::source_location location
     )
@@ -62,7 +62,7 @@ namespace Vk
         };
 
         Vk::CheckResult(vkQueueSubmit2(
-            context->graphicsQueue,
+            context.graphicsQueue,
             1,
             &submitInfo,
             VK_NULL_HANDLE),
@@ -70,7 +70,7 @@ namespace Vk
         );
 
         // FIXME: Should we wait like this? Or use a fence...
-        Vk::CheckResult(vkQueueWaitIdle(context->graphicsQueue), "Error while waiting for queue to idle!");
+        Vk::CheckResult(vkQueueWaitIdle(context.graphicsQueue), "Error while waiting for queue to idle!");
 
         cmdBuffer.Free(context);
     }

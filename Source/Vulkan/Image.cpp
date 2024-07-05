@@ -253,7 +253,7 @@ namespace Vk
         layout = newLayout;
     }
 
-    void Image::CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer)
+    void Image::CopyFromBuffer(const Vk::Context& context, Vk::Buffer& buffer)
     {
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
@@ -289,7 +289,7 @@ namespace Vk
         });
     }
 
-    void Image::GenerateMipmaps(const std::shared_ptr<Vk::Context>& context)
+    void Image::GenerateMipmaps(const Vk::Context& context)
     {
         Vk::ImmediateSubmit(context, [&] (const Vk::CommandBuffer& cmdBuffer)
         {

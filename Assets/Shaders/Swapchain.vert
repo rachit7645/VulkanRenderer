@@ -16,15 +16,12 @@
 
 #version 460
 
-// Vertex inputs
-layout(location = 0) in vec2 position;
-
 // Vertex outputs
-layout(location = 0) out vec2 fragTexCoords;
+layout(location = 0) out vec2 uv;
 
 void main()
 {
-    gl_Position = vec4(position.xy, 0.0f, 1.0f);
-    // This generates texture coordinates from the position itself
-    fragTexCoords = 0.5f * (position + vec2(1.0));
+    // https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
+    uv          = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
+    gl_Position = vec4(uv * 2.0f - 1.0f, 0.0f, 1.0f);
 }

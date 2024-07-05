@@ -19,26 +19,26 @@
 
 #include "Vulkan/DepthBuffer.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Renderer/Pipelines/SwapPipeline.h"
+#include "Renderer/Pipelines/SwapchainPipeline.h"
 
 namespace Renderer::RenderPasses
 {
     class SwapchainPass
     {
     public:
-        SwapchainPass(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        void Recreate(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        void Destroy(const std::shared_ptr<Vk::Context>& context);
+        SwapchainPass(Engine::Window& window, Vk::Context& context);
+        void Recreate(Engine::Window& window, Vk::Context& context);
+        void Destroy(const Vk::Context& context);
 
         void Render(Vk::DescriptorCache& descriptorCache, usize FIF);
         void Present(VkQueue queue, usize FIF);
 
         Vk::Swapchain           swapchain;
-        Pipelines::SwapPipeline pipeline;
+        Pipelines::SwapchainPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
     private:
-        void CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context);
+        void CreateCmdBuffers(const Vk::Context& context);
     };
 }
 

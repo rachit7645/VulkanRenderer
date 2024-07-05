@@ -20,12 +20,6 @@
 
 namespace Vk
 {
-    Pipeline::Pipeline(VkPipeline handle, VkPipelineLayout layout)
-        : handle(handle),
-          layout(layout)
-    {
-    }
-
     void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const
     {
         vkCmdBindPipeline
@@ -77,11 +71,11 @@ namespace Vk
         );
     }
 
-    void Pipeline::Destroy(const std::shared_ptr<Vk::Context>& context)
+    void Pipeline::Destroy(VkDevice device)
     {
         m_deletionQueue.FlushQueue();
 
-        vkDestroyPipeline(context->device, handle, nullptr);
-        vkDestroyPipelineLayout(context->device, layout, nullptr);
+        vkDestroyPipeline(device, handle, nullptr);
+        vkDestroyPipelineLayout(device, layout, nullptr);
     }
 }

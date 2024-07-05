@@ -28,9 +28,9 @@ namespace Renderer::RenderPasses
     class ForwardPass
     {
     public:
-        ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
-        void Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
-        void Destroy(const std::shared_ptr<Vk::Context>& context);
+        ForwardPass(Vk::Context& context, VkExtent2D extent);
+        void Recreate(const Vk::Context& context, VkExtent2D extent);
+        void Destroy(const Vk::Context& context);
 
         void Render
         (
@@ -46,9 +46,9 @@ namespace Renderer::RenderPasses
         std::array<Vk::Image,         Vk::FRAMES_IN_FLIGHT> images     = {};
         std::array<Vk::ImageView,     Vk::FRAMES_IN_FLIGHT> imageViews = {};
 
-        Vk::DepthBuffer depthBuffer = {};
+        Vk::DepthBuffer depthBuffer;
     private:
-        void InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent);
+        void InitData(const Vk::Context& context, VkExtent2D extent);
 
         VkFormat GetColorFormat(VkPhysicalDevice physicalDevice);
 

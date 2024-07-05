@@ -59,8 +59,8 @@ namespace Renderer
         void CreateSyncObjects();
 
         // Object handles
-        std::shared_ptr<Engine::Window> m_window  = nullptr;
-        std::shared_ptr<Vk::Context>    m_context = nullptr;
+        std::shared_ptr<Engine::Window> m_window = nullptr;
+        Vk::Context                     m_context;
 
         // Render Passes
         RenderPasses::SwapchainPass m_swapPass;
@@ -68,7 +68,7 @@ namespace Renderer
 
         // Scene objects
         Models::Model        m_model;
-        Renderer::FreeCamera m_camera = {};
+        Renderer::FreeCamera m_camera;
 
         // Sync objects
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};

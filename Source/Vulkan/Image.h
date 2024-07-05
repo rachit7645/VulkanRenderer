@@ -58,8 +58,8 @@ namespace Vk
 
         void TransitionLayout(const Vk::CommandBuffer& cmdBuffer, VkImageLayout newLayout);
 
-        void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
-        void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
+        void CopyFromBuffer(const Vk::Context& context, Vk::Buffer& buffer);
+        void GenerateMipmaps(const Vk::Context& context);
 
         void Destroy(VmaAllocator allocator) const;
 

@@ -16,8 +16,6 @@
 
 #include "RenderManager.h"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
 #include "Engine/Inputs.h"
@@ -27,8 +25,8 @@ namespace Renderer
 {
     RenderManager::RenderManager(const std::shared_ptr<Engine::Window>& window)
         : m_window(window),
-          m_context(std::make_shared<Vk::Context>(m_window)),
-          m_swapPass(window, m_context),
+          m_context(m_window),
+          m_swapPass(*window, m_context),
           m_forwardPass(m_context, m_swapPass.swapchain.extent),
           m_model(m_context, "Sponza/glTF/Sponza.gltf")
     {
@@ -36,8 +34,8 @@ namespace Renderer
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_context->descriptorCache, m_forwardPass.imageViews);
-        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_context->descriptorCache, m_model.GetMaterials());
+        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageViews);
+        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context.device, m_context.descriptorCache, m_model.GetMaterials());
 
         m_frameCounter.Reset();
     }
@@ -55,11 +53,11 @@ namespace Renderer
 
         Update();
 
-        m_forwardPass.Render(m_currentFIF, m_context->descriptorCache, m_camera, m_model);
-        m_swapPass.Render(m_context->descriptorCache, m_currentFIF);
+        m_forwardPass.Render(m_currentFIF, m_context.descriptorCache, m_camera, m_model);
+        m_swapPass.Render(m_context.descriptorCache, m_currentFIF);
 
         SubmitQueue();
-        m_swapPass.Present(m_context->graphicsQueue, m_currentFIF);
+        m_swapPass.Present(m_context.graphicsQueue, m_currentFIF);
 
         EndFrame();
     }
@@ -82,26 +80,26 @@ namespace Renderer
             .color      = {}
         };
 
-        vkQueueBeginDebugUtilsLabelEXT(m_context->graphicsQueue, &label);
+        vkQueueBeginDebugUtilsLabelEXT(m_context.graphicsQueue, &label);
         #endif
 
         m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
 
         vkWaitForFences
         (
-            m_context->device,
+            m_context.device,
             1,
             &inFlightFences[m_currentFIF],
             VK_TRUE,
             std::numeric_limits<u64>::max()
         );
 
-        vkResetFences(m_context->device, 1, &inFlightFences[m_currentFIF]);
+        vkResetFences(m_context.device, 1, &inFlightFences[m_currentFIF]);
 
-        m_swapPass.swapchain.AcquireSwapChainImage(m_context->device, m_currentFIF);
+        m_swapPass.swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
 
         ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplSDL2_NewFrame(m_window->handle);
+        ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
     }
 
@@ -163,7 +161,7 @@ namespace Renderer
         };
 
         Vk::CheckResult(vkQueueSubmit2(
-            m_context->graphicsQueue,
+            m_context.graphicsQueue,
             1,
             &submitInfo,
             inFlightFences[m_currentFIF]),
@@ -171,41 +169,51 @@ namespace Renderer
         );
 
         #ifdef ENGINE_DEBUG
-        vkQueueEndDebugUtilsLabelEXT(m_context->graphicsQueue);
+        vkQueueEndDebugUtilsLabelEXT(m_context.graphicsQueue);
         #endif
     }
 
     void RenderManager::Reset()
     {
-        vkDeviceWaitIdle(m_context->device);
+        vkDeviceWaitIdle(m_context.device);
 
-        m_swapPass.Recreate(m_window, m_context);
+        m_swapPass.Recreate(*m_window, m_context);
         m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context->device, m_context->descriptorCache, m_forwardPass.imageViews);
-        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context->device, m_context->descriptorCache, m_model.GetMaterials());
+        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageViews);
     }
 
     void RenderManager::InitImGui()
     {
+        auto swapchainFormat = m_swapPass.swapchain.imageFormat;
+
         ImGui_ImplVulkan_InitInfo imguiInitInfo =
         {
-            .Instance              = m_context->instance,
-            .PhysicalDevice        = m_context->physicalDevice,
-            .Device                = m_context->device,
-            .QueueFamily           = m_context->queueFamilies.graphicsFamily.value_or(0),
-            .Queue                 = m_context->graphicsQueue,
-            .PipelineCache         = nullptr,
-            .DescriptorPool        = m_context->imguiDescriptorPool,
-            .Subpass               = 0,
-            .MinImageCount         = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
-            .ImageCount            = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
-            .MSAASamples           = VK_SAMPLE_COUNT_1_BIT,
-            .UseDynamicRendering   = true,
-            .ColorAttachmentFormat = m_swapPass.swapchain.imageFormat,
-            .Allocator             = nullptr,
-            .CheckVkResultFn       = &Vk::CheckResult,
-            .MinAllocationSize     = 0
+            .Instance                    = m_context.instance,
+            .PhysicalDevice              = m_context.physicalDevice,
+            .Device                      = m_context.device,
+            .QueueFamily                 = m_context.queueFamilies.graphicsFamily.value_or(0),
+            .Queue                       = m_context.graphicsQueue,
+            .DescriptorPool              = m_context.imguiDescriptorPool,
+            .RenderPass                  = VK_NULL_HANDLE,
+            .MinImageCount               = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
+            .ImageCount                  = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
+            .MSAASamples                 = VK_SAMPLE_COUNT_1_BIT,
+            .PipelineCache               = VK_NULL_HANDLE,
+            .Subpass                     = 0,
+            .UseDynamicRendering         = true,
+            .PipelineRenderingCreateInfo = {
+                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                .pNext                   = nullptr,
+                .viewMask                = 0,
+                .colorAttachmentCount    = 1,
+                .pColorAttachmentFormats = &swapchainFormat,
+                .depthAttachmentFormat   = VK_FORMAT_UNDEFINED,
+                .stencilAttachmentFormat = VK_FORMAT_UNDEFINED
+            },
+            .Allocator                   = nullptr,
+            .CheckVkResultFn             = &Vk::CheckResult,
+            .MinAllocationSize           = 0
         };
 
         Logger::Info("Initializing Dear ImGui [version = {}]\n", ImGui::GetVersion());
@@ -214,7 +222,7 @@ namespace Renderer
         ImGui::StyleColorsDark();
 
         ImGui_ImplSDL2_InitForVulkan(m_window->handle);
-        ImGui_ImplVulkan_Init(&imguiInitInfo, VK_NULL_HANDLE);
+        ImGui_ImplVulkan_Init(&imguiInitInfo);
 
         ImGui_ImplVulkan_CreateFontsTexture();
     }
@@ -231,7 +239,7 @@ namespace Renderer
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
             Vk::CheckResult(vkCreateFence(
-                m_context->device,
+                m_context.device,
                 &fenceInfo,
                 nullptr,
                 &inFlightFences[i]),
@@ -244,7 +252,7 @@ namespace Renderer
 
     RenderManager::~RenderManager()
     {
-        vkDeviceWaitIdle(m_context->device);
+        vkDeviceWaitIdle(m_context.device);
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -252,13 +260,13 @@ namespace Renderer
         m_swapPass.Destroy(m_context);
         m_forwardPass.Destroy(m_context);
 
-        m_model.Destroy(m_context->device, m_context->allocator);
+        m_model.Destroy(m_context.device, m_context.allocator);
 
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {
-            vkDestroyFence(m_context->device, inFlightFences[i], nullptr);
+            vkDestroyFence(m_context.device, inFlightFences[i], nullptr);
         }
 
-        m_context->Destroy();
+        m_context.Destroy();
     }
 }

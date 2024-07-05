@@ -24,7 +24,7 @@
 
 namespace Vk
 {
-    Texture::Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Texture::Flags flags)
+    Texture::Texture(const Vk::Context& context, const std::string_view path, Texture::Flags flags)
     {
         auto candidates = IsFlagSet(flags, Flags::IsSRGB) ?
                           std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
@@ -32,7 +32,7 @@ namespace Vk
 
         auto format = Vk::FindSupportedFormat
         (
-            context->physicalDevice,
+            context.physicalDevice,
             candidates,
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT  |
@@ -52,7 +52,7 @@ namespace Vk
 
         auto stagingBuffer = Vk::Buffer
         (
-            context->allocator,
+            context.allocator,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -62,7 +62,7 @@ namespace Vk
 
         stagingBuffer.LoadData
         (
-            context->allocator,
+            context.allocator,
             std::span(static_cast<const stbi_uc*>(imageData.data), imageSize / sizeof(stbi_uc))
         );
 
@@ -72,7 +72,7 @@ namespace Vk
 
         image = Vk::Image
         (
-            context->allocator,
+            context.allocator,
             imageData.width,
             imageData.height,
             mipLevels,
@@ -91,11 +91,11 @@ namespace Vk
 
         image.CopyFromBuffer(context, stagingBuffer);
 
-        stagingBuffer.Destroy(context->allocator);
+        stagingBuffer.Destroy(context.allocator);
 
         imageView = Vk::ImageView
         (
-            context->device,
+            context.device,
             image,
             VK_IMAGE_VIEW_TYPE_2D,
             image.format,

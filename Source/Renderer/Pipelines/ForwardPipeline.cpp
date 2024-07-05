@@ -31,16 +31,11 @@ namespace Renderer::Pipelines
     constexpr auto MATERIAL_LAYOUT_ID = "FORWARD_PIPELINE_MATERIAL_LAYOUT";
     constexpr auto MATERIAL_SET_ID    = "FORWARD_PIPELINE_MATERIAL_SETS";
 
-    ForwardPipeline::ForwardPipeline
-    (
-        const std::shared_ptr<Vk::Context>& context,
-        VkFormat colorFormat,
-        VkFormat depthFormat
-    )
-        : Vk::Pipeline(CreatePipeline(context, colorFormat, depthFormat))
+    ForwardPipeline::ForwardPipeline(Vk::Context& context, VkFormat colorFormat, VkFormat depthFormat)
     {
+        CreatePipeline(context, colorFormat, depthFormat);
         CreatePipelineData(context);
-        WriteStaticDescriptors(context->device, context->descriptorCache);
+        WriteStaticDescriptors(context.device, context.descriptorCache);
     }
 
     void ForwardPipeline::WriteMaterialDescriptors
@@ -95,36 +90,31 @@ namespace Renderer::Pipelines
         return descriptorCache.GetSets(STATIC_SET_ID);
     }
 
-    Vk::Pipeline ForwardPipeline::CreatePipeline
-    (
-        const std::shared_ptr<Vk::Context>& context,
-        VkFormat colorFormat,
-        VkFormat depthFormat
-    )
+    void ForwardPipeline::CreatePipeline(Vk::Context& context, VkFormat colorFormat, VkFormat depthFormat)
     {
         constexpr std::array<VkDynamicState, 2> DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         auto colorFormats = std::span(&colorFormat, 1);
 
-        auto staticLayout = context->descriptorCache.AddLayout
+        auto staticLayout = context.descriptorCache.AddLayout
         (
             STATIC_LAYOUT_ID,
-            context->device,
+            context.device,
             Vk::Builders::DescriptorLayoutBuilder()
                 .AddBinding(0, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .Build(context->device)
+                .Build(context.device)
         );
 
-        auto materialLayout = context->descriptorCache.AddLayout
+        auto materialLayout = context.descriptorCache.AddLayout
         (
             MATERIAL_LAYOUT_ID,
-            context->device,
+            context.device,
             Vk::Builders::DescriptorLayoutBuilder()
                 .AddBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Models::Material::MATERIAL_COUNT, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .Build(context->device)
+                .Build(context.device)
         );
 
-        auto pipeline = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
             .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -140,33 +130,31 @@ namespace Renderer::Pipelines
             .AddDescriptorLayout(materialLayout)
             .Build();
 
-        context->descriptorCache.AllocateSets(STATIC_SET_ID, STATIC_LAYOUT_ID, context->device);
-
-        return pipeline;
+        context.descriptorCache.AllocateSets(STATIC_SET_ID, STATIC_LAYOUT_ID, context.device);
     }
 
-    void ForwardPipeline::CreatePipelineData(const std::shared_ptr<Vk::Context>& context)
+    void ForwardPipeline::CreatePipelineData(const Vk::Context& context)
     {
         for (auto&& sceneSSBO : sceneSSBOs)
         {
             sceneSSBO = Vk::Buffer
             (
-                context->allocator,
-                static_cast<u32>(sizeof(SceneBuffer)),
+                context.allocator,
+                sizeof(SceneBuffer),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            sceneSSBO.GetDeviceAddress(context->device);
+            sceneSSBO.GetDeviceAddress(context.device);
         }
 
-        auto anisotropy = std::min(4.0f, context->physicalDeviceLimits.maxSamplerAnisotropy);
+        auto anisotropy = std::min(4.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
         textureSampler = Vk::Sampler
         (
-            context->device,
+            context.device,
             {VK_FILTER_LINEAR, VK_FILTER_LINEAR},
             VK_SAMPLER_MIPMAP_MODE_LINEAR,
             {VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT},
@@ -178,14 +166,14 @@ namespace Renderer::Pipelines
             VK_FALSE
         );
 
-        m_deletionQueue.PushDeletor([buffers = sceneSSBOs, sampler = textureSampler, context]()
+        m_deletionQueue.PushDeletor([buffers = sceneSSBOs, sampler = textureSampler, &context]()
         {
             for (auto&& buffer : buffers)
             {
-                buffer.Destroy(context->allocator);
+                buffer.Destroy(context.allocator);
             }
 
-            sampler.Destroy(context->device);
+            sampler.Destroy(context.device);
         });
     }
 

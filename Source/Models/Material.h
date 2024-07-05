@@ -53,7 +53,7 @@ namespace std
     template <>
     struct hash<Models::Material>
     {
-        usize operator()(const Models::Material& material) const
+        usize operator()(const Models::Material& material) const noexcept
         {
             return std::hash<Vk::Texture>()(material.albedo) ^
                    std::hash<Vk::Texture>()(material.normal) ^

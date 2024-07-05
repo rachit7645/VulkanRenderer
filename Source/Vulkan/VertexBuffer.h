@@ -34,11 +34,12 @@ namespace Vk
 
         VertexBuffer
         (
-            const std::shared_ptr<Vk::Context>& context,
+            const Vk::Context& context,
             const std::span<const Models::Vertex> vertices,
             const std::span<const Models::Index> indices
         );
-        VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices);
+
+        VertexBuffer(const Vk::Context& context, const std::span<const f32> vertices);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator) const;
@@ -56,7 +57,7 @@ namespace Vk
         template<typename T>
         void InitBuffer
         (
-            const std::shared_ptr<Vk::Context>& context,
+            const Vk::Context& context,
             Vk::Buffer& buffer,
             VkBufferUsageFlags usage,
             const std::span<const T> data

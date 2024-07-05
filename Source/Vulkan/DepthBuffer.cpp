@@ -23,14 +23,14 @@
 
 namespace Vk
 {
-    DepthBuffer::DepthBuffer(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
+    DepthBuffer::DepthBuffer(const Vk::Context& context, VkExtent2D swapchainExtent)
     {
-        const auto depthFormat = GetDepthFormat(context->physicalDevice);
+        const auto depthFormat = GetDepthFormat(context.physicalDevice);
         const bool hasStencil  = vkuFormatHasStencil(depthFormat);
 
         depthImage = Vk::Image
         (
-            context->allocator,
+            context.allocator,
             swapchainExtent.width,
             swapchainExtent.height,
             1,
@@ -43,7 +43,7 @@ namespace Vk
 
         depthImageView = Vk::ImageView
         (
-            context->device,
+            context.device,
             depthImage,
             VK_IMAGE_VIEW_TYPE_2D,
             depthImage.format,

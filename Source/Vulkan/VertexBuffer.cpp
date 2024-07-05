@@ -25,7 +25,7 @@ namespace Vk
 {
     VertexBuffer::VertexBuffer
     (
-        const std::shared_ptr<Vk::Context>& context,
+        const Vk::Context& context,
         const std::span<const Vertex> vertices,
         const std::span<const Index> indices
     )
@@ -36,7 +36,7 @@ namespace Vk
         InitBuffer(context, indexBuffer,  VK_BUFFER_USAGE_INDEX_BUFFER_BIT,   indices);
     }
 
-    VertexBuffer::VertexBuffer(const std::shared_ptr<Vk::Context>& context, const std::span<const f32> vertices)
+    VertexBuffer::VertexBuffer(const Vk::Context& context, const std::span<const f32> vertices)
         : vertexCount(vertices.size())
     {
         // No index buffer
@@ -68,7 +68,7 @@ namespace Vk
     template <typename T>
     void VertexBuffer::InitBuffer
     (
-        const std::shared_ptr<Vk::Context>& context,
+        const Vk::Context& context,
         Vk::Buffer& buffer,
         VkBufferUsageFlags usage,
         const std::span<const T> data
@@ -79,7 +79,7 @@ namespace Vk
 
         auto stagingBuffer = Vk::Buffer
         (
-            context->allocator,
+            context.allocator,
             size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -87,11 +87,11 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        stagingBuffer.LoadData(context->allocator, data);
+        stagingBuffer.LoadData(context.allocator, data);
 
         buffer = Vk::Buffer
         (
-            context->allocator,
+            context.allocator,
             size,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -101,7 +101,7 @@ namespace Vk
 
         Vk::Buffer::CopyBuffer(context, stagingBuffer, buffer, size);
 
-        stagingBuffer.Destroy(context->allocator);
+        stagingBuffer.Destroy(context.allocator);
     }
 
     void VertexBuffer::Destroy(VmaAllocator allocator) const

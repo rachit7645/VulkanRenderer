@@ -20,30 +20,30 @@
 
 namespace Vk
 {
-    Swapchain::Swapchain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    Swapchain::Swapchain(Engine::Window& window, const Vk::Context& context)
     {
         CreateSwapChain(window, context);
-        CreateImageViews(context->device);
-        CreateSyncObjects(context->device);
+        CreateImageViews(context.device);
+        CreateSyncObjects(context.device);
         Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    void Swapchain::RecreateSwapChain(Engine::Window& window, const Vk::Context& context)
     {
-        DestroySwapchain(context->device);
-        window->WaitForRestoration();
+        DestroySwapchain(context.device);
+        window.WaitForRestoration();
 
         CreateSwapChain(window, context);
-        CreateImageViews(context->device);
+        CreateImageViews(context.device);
 
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Swapchain::Present(VkQueue queue, usize FIF)
     {
-        std::array<VkSemaphore,    1> signalSemaphores = {renderFinishedSemaphores[FIF]};
-        std::array<VkSwapchainKHR, 1> swapChains       = {handle};
-        std::array<u32,            1> imageIndices     = {imageIndex};
+        std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
+        std::array swapChains       = {handle};
+        std::array imageIndices     = {imageIndex};
 
         VkPresentInfoKHR presentInfo =
         {
@@ -88,10 +88,10 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    void Swapchain::CreateSwapChain(const Engine::Window& window, const Vk::Context& context)
     {
-        m_swapChainInfo = SwapchainInfo(context->physicalDevice, context->surface);
-        extent = ChooseSwapExtent(window->handle);
+        m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
+        extent          = ChooseSwapExtent(window.handle);
 
         VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat();
         VkPresentModeKHR   presentMode   = ChoosePresentationMode();
@@ -108,7 +108,7 @@ namespace Vk
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext                 = nullptr,
             .flags                 = 0,
-            .surface               = context->surface,
+            .surface               = context.surface,
             .minImageCount         = imageCount,
             .imageFormat           = surfaceFormat.format,
             .imageColorSpace       = surfaceFormat.colorSpace,
@@ -122,20 +122,22 @@ namespace Vk
             .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode           = presentMode,
             .clipped               = VK_TRUE,
-            .oldSwapchain          = VK_NULL_HANDLE
+            .oldSwapchain          = handle
         };
 
         Vk::CheckResult(vkCreateSwapchainKHR(
-            context->device,
+            context.device,
             &createInfo,
             nullptr,
             &handle),
             "Failed to create swap chain!"
         );
 
+        vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
+
         Vk::CheckResult(vkGetSwapchainImagesKHR
         (
-            context->device,
+            context.device,
             handle,
             &imageCount,
             nullptr),
@@ -148,14 +150,14 @@ namespace Vk
             (
                 "Failed to get any swapchain images! [handle={}] [device={}]\n",
                 std::bit_cast<void*>(handle),
-                std::bit_cast<void*>(context->device)
+                std::bit_cast<void*>(context.device)
             );
         }
 
         auto _images = std::vector<VkImage>(imageCount);
         Vk::CheckResult(vkGetSwapchainImagesKHR
         (
-            context->device,
+            context.device,
             handle,
             &imageCount,
             _images.data()),
@@ -304,8 +306,6 @@ namespace Vk
             imageView.Destroy(device);
         }
 
-        vkDestroySwapchainKHR(device, handle, nullptr);
-
         images.clear();
         imageViews.clear();
     }
@@ -315,6 +315,8 @@ namespace Vk
         Logger::Debug("{}\n", "Destroying swapchain!");
 
         DestroySwapchain(device);
+
+        vkDestroySwapchainKHR(device, handle, nullptr);
 
         for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
         {

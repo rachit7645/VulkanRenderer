@@ -27,8 +27,8 @@ namespace Vk
     class CommandBuffer
     {
     public:
-        CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level, const std::string_view name);
-        void Free(const std::shared_ptr<Vk::Context>& context);
+        CommandBuffer(const Vk::Context& context, VkCommandBufferLevel level, const std::string_view name);
+        void Free(const Vk::Context& context);
 
         CommandBuffer()  = default;
         ~CommandBuffer() = default;

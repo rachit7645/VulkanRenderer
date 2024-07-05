@@ -22,7 +22,7 @@ namespace Models
 {
     Mesh::Mesh
     (
-        const std::shared_ptr<Vk::Context>& context,
+        const Vk::Context& context,
         const std::vector<Models::Vertex>& vertices,
         const std::vector<Models::Index>& indices,
         const Models::Material& material

@@ -17,15 +17,12 @@
 #ifndef VK_CONTEXT_H
 #define VK_CONTEXT_H
 
-#include <array>
-#include <vector>
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
 
 #include "ValidationLayers.h"
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
-#include "Constants.h"
 #include "DescriptorCache.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
@@ -54,17 +51,17 @@ namespace Vk
         VkSurfaceKHR surface = VK_NULL_HANDLE;
 
         // Queues
-        Vk::QueueFamilyIndices queueFamilies = {};
+        Vk::QueueFamilyIndices queueFamilies;
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
 
         // Pools
-        VkCommandPool    commandPool    = VK_NULL_HANDLE;
+        VkCommandPool    commandPool         = VK_NULL_HANDLE;
         VkDescriptorPool imguiDescriptorPool = VK_NULL_HANDLE;
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
         // Descriptor allocator
-        Vk::DescriptorCache descriptorCache = {};
+        Vk::DescriptorCache descriptorCache;
     private:
         void CreateInstance(SDL_Window* window);
         void CreateSurface(SDL_Window* window);
@@ -89,7 +86,7 @@ namespace Vk
 
         #ifdef ENGINE_DEBUG
         // Vulkan validation layers
-        Vk::ValidationLayers m_layers = {};
+        Vk::ValidationLayers m_layers;
         #endif
 
         // Deletion queue

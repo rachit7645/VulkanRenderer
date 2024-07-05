@@ -17,13 +17,11 @@
 #include "PipelineBuilder.h"
 
 #include "Util/Log.h"
-#include "Util/Ranges.h"
 #include "Vulkan/Util.h"
-#include "DescriptorLayoutBuilder.h"
 
 namespace Vk::Builders
 {
-    Vk::Pipeline PipelineBuilder::Build()
+    PipelineBuilder::Products PipelineBuilder::Build()
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         {
@@ -84,8 +82,8 @@ namespace Vk::Builders
         return {pipeline, pipelineLayout};
     }
 
-    PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context)
-        : m_context(context)
+    PipelineBuilder::PipelineBuilder(Vk::Context& context)
+        : m_context(&context)
     {
     }
 
@@ -182,7 +180,7 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
+    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
     {
         rasterizationInfo =
         {
@@ -243,8 +241,8 @@ namespace Vk::Builders
         VkBool32 depthWriteEnable,
         VkCompareOp depthCompareOp,
         VkBool32 stencilTestEnable,
-        VkStencilOpState front,
-        VkStencilOpState back
+        const VkStencilOpState& front,
+        const VkStencilOpState& back
     )
     {
         depthStencilInfo =

@@ -77,7 +77,7 @@ add_executable(VulkanRenderer
 	Source/Renderer/FreeCamera.cpp
 	Source/Renderer/Camera.cpp
 	# Render pipeline sources
-	Source/Renderer/Pipelines/SwapPipeline.cpp
+	Source/Renderer/Pipelines/SwapchainPipeline.cpp
 	Source/Renderer/Pipelines/ForwardPipeline.cpp
 	# Render passes sources
 	Source/Renderer/RenderPasses/SwapchainPass.cpp

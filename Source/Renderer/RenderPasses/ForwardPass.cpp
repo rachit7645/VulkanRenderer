@@ -23,8 +23,8 @@
 
 namespace Renderer::RenderPasses
 {
-    ForwardPass::ForwardPass(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
-        : pipeline(context, GetColorFormat(context->physicalDevice), Vk::DepthBuffer::GetDepthFormat(context->physicalDevice))
+    ForwardPass::ForwardPass(Vk::Context& context, VkExtent2D extent)
+        : pipeline(context, GetColorFormat(context.physicalDevice), Vk::DepthBuffer::GetDepthFormat(context.physicalDevice))
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -41,7 +41,7 @@ namespace Renderer::RenderPasses
         Logger::Info("{}\n", "Created forward pass!");
     }
 
-    void ForwardPass::Recreate(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
+    void ForwardPass::Recreate(const Vk::Context& context, VkExtent2D extent)
     {
         m_deletionQueue.FlushQueue();
         InitData(context, extent);
@@ -238,11 +238,11 @@ namespace Renderer::RenderPasses
         currentCmdBuffer.EndRecording();
     }
 
-    void ForwardPass::InitData(const std::shared_ptr<Vk::Context>& context, VkExtent2D extent)
+    void ForwardPass::InitData(const Vk::Context& context, VkExtent2D extent)
     {
         m_renderSize = {extent.width, extent.height};
 
-        auto colorFormat = GetColorFormat(context->physicalDevice);
+        auto colorFormat = GetColorFormat(context.physicalDevice);
 
         depthBuffer = Vk::DepthBuffer(context, extent);
 
@@ -250,7 +250,7 @@ namespace Renderer::RenderPasses
         {
             images[i] = Vk::Image
             (
-                context->allocator,
+                context.allocator,
                 m_renderSize.x,
                 m_renderSize.y,
                 1,
@@ -263,7 +263,7 @@ namespace Renderer::RenderPasses
 
             imageViews[i] = Vk::ImageView
             (
-                context->device,
+                context.device,
                 images[i],
                 VK_IMAGE_VIEW_TYPE_2D,
                 images[i].format,
@@ -279,15 +279,15 @@ namespace Renderer::RenderPasses
         {
             for (auto&& imageView : imageViews)
             {
-                imageView.Destroy(context->device);
+                imageView.Destroy(context.device);
             }
 
             for (auto&& image : images)
             {
-                image.Destroy(context->allocator);
+                image.Destroy(context.allocator);
             }
 
-            depthBuffer.Destroy(context->device, context->allocator);
+            depthBuffer.Destroy(context.device, context.allocator);
 
             images     = {};
             imageViews = {};
@@ -313,7 +313,7 @@ namespace Renderer::RenderPasses
         );
     }
 
-    void ForwardPass::Destroy(const std::shared_ptr<Vk::Context>& context)
+    void ForwardPass::Destroy(const Vk::Context& context)
     {
         Logger::Debug("{}\n", "Destroying forward pass!");
 
@@ -324,6 +324,6 @@ namespace Renderer::RenderPasses
             cmdBuffer.Free(context);
         }
 
-        pipeline.Destroy(context);
+        pipeline.Destroy(context.device);
     }
 }

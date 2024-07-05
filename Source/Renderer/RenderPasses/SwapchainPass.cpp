@@ -20,7 +20,7 @@
 
 namespace Renderer::RenderPasses
 {
-    SwapchainPass::SwapchainPass(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    SwapchainPass::SwapchainPass(Engine::Window& window, Vk::Context& context)
         : swapchain(window, context),
           pipeline(context, swapchain.imageFormat)
     {
@@ -28,12 +28,12 @@ namespace Renderer::RenderPasses
         Logger::Info("{}\n", "Created swapchain pass!");
     }
 
-    void SwapchainPass::Recreate(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    void SwapchainPass::Recreate(Engine::Window& window, Vk::Context& context)
     {
         swapchain.RecreateSwapChain(window, context);
 
-        pipeline.Destroy(context);
-        pipeline = Pipelines::SwapPipeline(context, swapchain.imageFormat);
+        pipeline.Destroy(context.device);
+        pipeline = Pipelines::SwapchainPipeline(context, swapchain.imageFormat);
 
         Logger::Info("{}\n", "Recreated swapchain pass!");
     }
@@ -118,12 +118,10 @@ namespace Renderer::RenderPasses
             std::span(&pipeline.GetImageSets(descriptorCache)[FIF].handle, 1)
         );
 
-        pipeline.screenQuad.Bind(currentCmdBuffer);
-
         vkCmdDraw
         (
             currentCmdBuffer.handle,
-            pipeline.screenQuad.vertexCount,
+            3,
             1,
             0,
             0
@@ -145,7 +143,7 @@ namespace Renderer::RenderPasses
         swapchain.Present(queue, FIF);
     }
 
-    void SwapchainPass::CreateCmdBuffers(const std::shared_ptr<Vk::Context>& context)
+    void SwapchainPass::CreateCmdBuffers(const Vk::Context& context)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -158,7 +156,7 @@ namespace Renderer::RenderPasses
         }
     }
 
-    void SwapchainPass::Destroy(const std::shared_ptr<Vk::Context>& context)
+    void SwapchainPass::Destroy(const Vk::Context& context)
     {
         Logger::Debug("{}\n", "Destroying swapchain pass!");
 
@@ -167,7 +165,7 @@ namespace Renderer::RenderPasses
             cmdBuffer.Free(context);
         }
 
-        swapchain.Destroy(context->device);
-        pipeline.Destroy(context);
+        swapchain.Destroy(context.device);
+        pipeline.Destroy(context.device);
     }
 }

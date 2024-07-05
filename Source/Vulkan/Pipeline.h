@@ -33,8 +33,6 @@ namespace Vk
         Pipeline() = default;
         virtual ~Pipeline() = default;
 
-        Pipeline(VkPipeline handle, VkPipelineLayout layout);
-
         // No copying
         Pipeline(const Pipeline&) = delete;
         Pipeline& operator=(const Pipeline&) = delete;
@@ -62,7 +60,7 @@ namespace Vk
             void* pValues
         ) const;
 
-        void Destroy(const std::shared_ptr<Vk::Context>& context);
+        void Destroy(VkDevice device);
 
         // Handles
         VkPipeline       handle = {};

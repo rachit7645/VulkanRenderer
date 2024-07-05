@@ -51,7 +51,7 @@ namespace Vk
         // FIXME: Should this be here at all?
         static void CopyBuffer
         (
-            const std::shared_ptr<Vk::Context>& context,
+            const Vk::Context& context,
             Vk::Buffer& srcBuffer,
             Vk::Buffer& dstBuffer,
             VkDeviceSize copySize

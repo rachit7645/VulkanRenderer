@@ -21,7 +21,7 @@
 #include <set>
 #include <vulkan/vulkan.h>
 
-#include "../Util/Util.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -31,7 +31,7 @@ namespace Vk
         QueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface);
 
         // Graphics + Presentation family
-        std::optional<u32> graphicsFamily = {};
+        std::optional<u32> graphicsFamily;
 
         [[nodiscard]] std::set<u32> GetUniqueFamilies() const;
         [[nodiscard]] bool IsComplete() const;

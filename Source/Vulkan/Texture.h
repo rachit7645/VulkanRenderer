@@ -37,7 +37,7 @@ namespace Vk
             GenMipmaps = 1U << 1
         };
 
-        Texture(const std::shared_ptr<Vk::Context>& context, const std::string_view path, Flags flags = Flags::None);
+        Texture(const Vk::Context& context, const std::string_view path, Flags flags = Flags::None);
         void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         bool operator==(const Texture& rhs) const;

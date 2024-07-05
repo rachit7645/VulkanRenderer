@@ -24,7 +24,7 @@
 #include "ACES.glsl"
 
 // Fragment inputs
-layout(location = 0) in vec2 fragTexCoords;
+layout(location = 0) in vec2 uv;
 
 // Images
 layout(set = 0, binding = 0) uniform sampler2D colorOutput;
@@ -34,5 +34,5 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = vec4(GammaCorrect(ACES(texture(colorOutput, fragTexCoords).rgb)), 1.0f);
+    outColor = vec4(GammaCorrect(ACES(texture(colorOutput, uv).rgb)), 1.0f);
 }

@@ -34,8 +34,8 @@ namespace Vk
     class Swapchain
     {
     public:
-        Swapchain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
+        Swapchain(Engine::Window& window, const Vk::Context& context);
+        void RecreateSwapChain(Engine::Window& window, const Vk::Context& context);
         void Destroy(VkDevice device);
 
         void Present(VkQueue queue, usize FIF);
@@ -56,7 +56,7 @@ namespace Vk
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
     private:
-        void CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
+        void CreateSwapChain(const Engine::Window& window, const Vk::Context& context);
         void DestroySwapchain(VkDevice device);
 
         void CreateImageViews(VkDevice device);

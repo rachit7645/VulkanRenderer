@@ -18,10 +18,7 @@
 #define SHADER_MODULE_H
 
 #include <string_view>
-#include <vector>
 #include <vulkan/vulkan.h>
-
-#include "Util/Util.h"
 
 namespace Vk
 {

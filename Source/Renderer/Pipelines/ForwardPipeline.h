@@ -52,12 +52,7 @@ namespace Renderer::Pipelines
 
         ForwardPipeline() = default;
 
-        ForwardPipeline
-        (
-            const std::shared_ptr<Vk::Context>& context,
-            VkFormat colorFormat,
-            VkFormat depthFormat
-        );
+        ForwardPipeline(Vk::Context& context, VkFormat colorFormat, VkFormat depthFormat);
 
         void WriteMaterialDescriptors
         (
@@ -72,17 +67,11 @@ namespace Renderer::Pipelines
         // Updated coherently so needs to be duplicated
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneSSBOs = {};
 
-        Vk::Sampler textureSampler = {};
-        MaterialMap materialMap    = {};
+        Vk::Sampler textureSampler;
+        MaterialMap materialMap;
     private:
-        [[nodiscard]] Vk::Pipeline CreatePipeline
-        (
-            const std::shared_ptr<Vk::Context>& context,
-            VkFormat colorFormat,
-            VkFormat depthFormat
-        );
-
-        void CreatePipelineData(const std::shared_ptr<Vk::Context>& context);
+        void CreatePipeline(Vk::Context& context, VkFormat colorFormat, VkFormat depthFormat);
+        void CreatePipelineData(const Vk::Context& context);
 
         void WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache) const;
 

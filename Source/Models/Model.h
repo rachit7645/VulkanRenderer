@@ -33,7 +33,7 @@ namespace Models
     class Model
     {
     public:
-        Model(const std::shared_ptr<Vk::Context>& context, const std::string_view path);
+        Model(const Vk::Context& context, const std::string_view path);
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         [[nodiscard]] std::vector<Models::Material> GetMaterials() const;
@@ -42,26 +42,26 @@ namespace Models
     private:
         void ProcessNode
         (
-            aiNode* node,
+            const aiNode* node,
             const aiScene* scene,
             const std::string& directory,
-            const std::shared_ptr<Vk::Context>& context
+            const Vk::Context& context
         );
 
         [[nodiscard]] Models::Mesh ProcessMesh
         (
-            aiMesh* mesh,
+            const aiMesh* mesh,
             const aiScene* scene,
             const std::string& directory,
-            const std::shared_ptr<Vk::Context>& context
+            const Vk::Context& context
         );
 
         [[nodiscard]] Material ProcessMaterial
         (
-            aiMesh* mesh,
+            const aiMesh* mesh,
             const aiScene* scene,
             const std::string& directory,
-            const std::shared_ptr<Vk::Context>& context
+            const Vk::Context& context
         );
     };
 }

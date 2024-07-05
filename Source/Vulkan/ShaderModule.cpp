@@ -14,10 +14,13 @@
  *    limitations under the License.
  */
 
+#include <vector>
+
 #include "ShaderModule.h"
 
 #include "Util/Log.h"
 #include "Util/Files.h"
+#include "Util/Util.h"
 #include "Util.h"
 
 namespace Vk

@@ -20,7 +20,7 @@
 
 namespace Vk
 {
-    CommandBuffer::CommandBuffer(const std::shared_ptr<Vk::Context>& context, VkCommandBufferLevel level, const std::string_view name)
+    CommandBuffer::CommandBuffer(const Vk::Context& context, VkCommandBufferLevel level, const std::string_view name)
         : level(level),
           m_name(name)
     {
@@ -28,25 +28,25 @@ namespace Vk
         {
             .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext              = nullptr,
-            .commandPool        = context->commandPool,
+            .commandPool        = context.commandPool,
             .level              = level,
             .commandBufferCount = 1
         };
 
         Vk::CheckResult(vkAllocateCommandBuffers(
-            context->device,
+            context.device,
             &allocInfo,
             &handle),
             "Failed to allocate command buffers!"
         );
     }
 
-    void CommandBuffer::Free(const std::shared_ptr<Vk::Context>& context)
+    void CommandBuffer::Free(const Vk::Context& context)
     {
         vkFreeCommandBuffers
         (
-            context->device,
-            context->commandPool,
+            context.device,
+            context.commandPool,
             1,
             &handle
         );
