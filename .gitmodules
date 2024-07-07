@@ -1,6 +1,6 @@
-[submodule "Vulkan Memory Allocator"]
-	path = Externals/vma
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "Dear ImGui"]
 	path = Externals/imgui
 	url = https://github.com/rachit7645/imgui.git
+[submodule "Vulkan Memory Allocator"]
+	path = Externals/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
