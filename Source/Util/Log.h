@@ -35,7 +35,6 @@ namespace Logger
     {
          /// @brief Internal logging function
          /// @param fgColor  Foreground color for the terminal
-         /// @param bgColor  Background color for the terminal
          /// @param type     Logger Type
          /// @param location Source Location Information
          /// @param format   Format string
@@ -55,7 +54,7 @@ namespace Logger
             (
                 stderr,
                 fmt::fg(fgColor),
-                std::string("[{}] [{}] [{}:{}] ") + format.data(),
+                fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
                 Util::GetTime(),
                 Engine::Files::GetName(location.file_name()),
@@ -66,7 +65,6 @@ namespace Logger
 
         /// @brief Internal error logger
         /// @param fgColor  Foreground color for the terminal
-        /// @param bgColor  Background color for the terminal
         /// @param type     Logger Type
         /// @param location Source Location Information
         /// @param format   Format string

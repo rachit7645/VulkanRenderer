@@ -74,7 +74,7 @@ namespace Renderer
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
 
         // Frame index
-        usize m_currentFIF = 0;
+        usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
     };

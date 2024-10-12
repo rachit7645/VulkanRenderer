@@ -34,7 +34,7 @@ namespace Renderer
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageViews);
+        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageView);
         m_forwardPass.pipeline.WriteMaterialDescriptors(m_context.device, m_context.descriptorCache, m_model.GetMaterials());
 
         m_frameCounter.Reset();
@@ -180,7 +180,7 @@ namespace Renderer
         m_swapPass.Recreate(*m_window, m_context);
         m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageViews);
+        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageView);
     }
 
     void RenderManager::InitImGui()

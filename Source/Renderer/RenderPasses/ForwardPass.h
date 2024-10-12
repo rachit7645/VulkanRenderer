@@ -40,17 +40,17 @@ namespace Renderer::RenderPasses
             const Models::Model& model
         );
 
-        Pipelines::ForwardPipeline pipeline = {};
+        Pipelines::ForwardPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
-        std::array<Vk::Image,         Vk::FRAMES_IN_FLIGHT> images     = {};
-        std::array<Vk::ImageView,     Vk::FRAMES_IN_FLIGHT> imageViews = {};
 
+        Vk::Image       image;
+        Vk::ImageView   imageView;
         Vk::DepthBuffer depthBuffer;
     private:
         void InitData(const Vk::Context& context, VkExtent2D extent);
 
-        VkFormat GetColorFormat(VkPhysicalDevice physicalDevice);
+        VkFormat GetColorFormat(VkPhysicalDevice physicalDevice) const;
 
         glm::uvec2 m_renderSize = {0, 0};
 

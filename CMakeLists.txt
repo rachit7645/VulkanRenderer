@@ -69,6 +69,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DescriptorAllocator.cpp
 	Source/Vulkan/DescriptorWriter.cpp
 	Source/Vulkan/DescriptorCache.cpp
+	Source/Vulkan/TextureManager.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp

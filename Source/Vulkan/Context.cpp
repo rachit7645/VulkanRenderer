@@ -49,6 +49,7 @@ namespace Vk
 
         CreateCommandPool();
         CreateDescriptorPool();
+        CreateTextureManager();
         CreateAllocator();
 
         Logger::Info("{}\n", "Initialised vulkan context!");
@@ -234,18 +235,28 @@ namespace Vk
         }
 
         // Vulkan 1.2 features
-        const bool hasBDA          = vk12Features->bufferDeviceAddress;
-        const bool hasScalarLayout = vk12Features->scalarBlockLayout;
+        const bool hasBDA                         = vk12Features->bufferDeviceAddress;
+        const bool hasScalarLayout                = vk12Features->scalarBlockLayout;
+        const bool hasDescriptorIndexing          = vk12Features->descriptorIndexing;
+        const bool hasNonUniformIndexing          = vk12Features->shaderSampledImageArrayNonUniformIndexing;
+        const bool hasRuntimeDescriptorArray      = vk12Features->runtimeDescriptorArray;
+        const bool hasVariableDescriptorCount     = vk12Features->descriptorBindingVariableDescriptorCount;
+        const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
+        const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
         const bool hasDynRender    = vk13Features->dynamicRendering;
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
-        return isQueueValid    * hasExtensions * isSwapChainAdequate *
-               hasAnisotropy   * hasWireframe  * hasBDA              *
-               hasScalarLayout * hasSync2      * hasDynRender        *
-               hasMaintenance4 * discreteGPU;
+        const bool standard   = isQueueValid && hasExtensions && hasAnisotropy && hasWireframe;
+        const bool extensions = isSwapChainAdequate;
+        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing      && hasNonUniformIndexing        &&
+                                hasRuntimeDescriptorArray && hasVariableDescriptorCount && hasPartiallyBoundDescriptors &&
+                                hasSampledImageUpdateAfterBind;
+        const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
+
+        return (standard && extensions && vk12 && vk13) * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -273,10 +284,16 @@ namespace Vk
 
         // Add required Vulkan 1.2 features here
         VkPhysicalDeviceVulkan12Features vk12Features = {};
-        vk12Features.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-        vk12Features.pNext               = nullptr;
-        vk12Features.bufferDeviceAddress = VK_TRUE;
-        vk12Features.scalarBlockLayout   = VK_TRUE;
+        vk12Features.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        vk12Features.pNext                                        = nullptr;
+        vk12Features.bufferDeviceAddress                          = VK_TRUE;
+        vk12Features.scalarBlockLayout                            = VK_TRUE;
+        vk12Features.descriptorIndexing                           = VK_TRUE;
+        vk12Features.shaderSampledImageArrayNonUniformIndexing    = VK_TRUE;
+        vk12Features.runtimeDescriptorArray                       = VK_TRUE;
+        vk12Features.descriptorBindingVariableDescriptorCount     = VK_TRUE;
+        vk12Features.descriptorBindingPartiallyBound              = VK_TRUE;
+        vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
@@ -396,6 +413,18 @@ namespace Vk
         {
             vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
             descriptorCache.Destroy(device);
+        });
+    }
+
+    void Context::CreateTextureManager()
+    {
+        textureManager = Vk::TextureManager(device, physicalDeviceLimits);
+
+        Logger::Info("{}\n", "Created texture manager!");
+
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            textureManager.Destroy(device);
         });
     }
 

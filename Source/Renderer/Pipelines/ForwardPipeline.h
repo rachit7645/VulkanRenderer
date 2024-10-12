@@ -33,7 +33,7 @@ namespace Renderer::Pipelines
     {
     public:
         // Usings
-        using MaterialMap = std::unordered_map<Models::Material, std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>>;
+        using MaterialMap = std::unordered_map<Models::Material, Vk::DescriptorSet>;
 
         struct VULKAN_GLSL_DATA PushConstant
         {
@@ -61,7 +61,7 @@ namespace Renderer::Pipelines
             const std::span<const Models::Material> materials
         );
 
-        const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& GetStaticSets(Vk::DescriptorCache& descriptorCache) const;
+        Vk::DescriptorSet GetStaticSet(Vk::DescriptorCache& descriptorCache) const;
 
         PushConstant pushConstant = {};
         // Updated coherently so needs to be duplicated
@@ -73,7 +73,7 @@ namespace Renderer::Pipelines
         void CreatePipeline(Vk::Context& context, VkFormat colorFormat, VkFormat depthFormat);
         void CreatePipelineData(const Vk::Context& context);
 
-        void WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache) const;
+        void WriteStaticDescriptor(VkDevice device, Vk::DescriptorCache& cache) const;
 
         usize materialDescriptorIDOffset = 0;
     };

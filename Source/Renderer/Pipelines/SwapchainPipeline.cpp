@@ -36,7 +36,7 @@ namespace Renderer::Pipelines
     (
         VkDevice device,
         Vk::DescriptorCache& descriptorCache,
-        const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews
+        const Vk::ImageView& imageView
     ) const
     {
         const auto& imageData = GetImageSets(descriptorCache);
@@ -51,7 +51,7 @@ namespace Renderer::Pipelines
                 0,
                 0,
                 colorSampler.handle,
-                imageViews[i].handle,
+                imageView.handle,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
             );

@@ -62,13 +62,13 @@ namespace Renderer::RenderPasses
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         // Transition for rendering
-        images[FIF].TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        image.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = imageViews[FIF].handle,
+            .imageView          = imageView.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -194,7 +194,7 @@ namespace Renderer::RenderPasses
         );
 
         // Scene specific descriptor sets
-        std::array<VkDescriptorSet, 1> sceneDescriptorSets = {pipeline.GetStaticSets(descriptorCache)[FIF].handle};
+        std::array sceneDescriptorSets = {pipeline.GetStaticSet(descriptorCache).handle};
 
         pipeline.BindDescriptors
         (
@@ -209,7 +209,7 @@ namespace Renderer::RenderPasses
             mesh.vertexBuffer.Bind(currentCmdBuffer);
 
             // Mesh-specific descriptors
-            std::array<VkDescriptorSet, 1> meshDescriptorSets = {pipeline.materialMap[mesh.material][FIF].handle};
+            std::array meshDescriptorSets = {pipeline.materialMap[mesh.material].handle};
 
             pipeline.BindDescriptors
             (
@@ -233,7 +233,7 @@ namespace Renderer::RenderPasses
         vkCmdEndRendering(currentCmdBuffer.handle);
 
         // Transition to shader readable layout
-        images[FIF].TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        image.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         currentCmdBuffer.EndRecording();
     }
@@ -246,55 +246,41 @@ namespace Renderer::RenderPasses
 
         depthBuffer = Vk::DepthBuffer(context, extent);
 
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
-        {
-            images[i] = Vk::Image
-            (
-                context.allocator,
-                m_renderSize.x,
-                m_renderSize.y,
-                1,
-                colorFormat,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_ASPECT_COLOR_BIT,
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            );
+        image = Vk::Image
+        (
+            context.allocator,
+            m_renderSize.x,
+            m_renderSize.y,
+            1,
+            colorFormat,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_ASPECT_COLOR_BIT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
 
-            imageViews[i] = Vk::ImageView
-            (
-                context.device,
-                images[i],
-                VK_IMAGE_VIEW_TYPE_2D,
-                images[i].format,
-                VK_IMAGE_ASPECT_COLOR_BIT,
-                0,
-                1,
-                0,
-                1
-            );
-        }
+        imageView = Vk::ImageView
+        (
+            context.device,
+            image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            image.format,
+            VK_IMAGE_ASPECT_COLOR_BIT,
+            0,
+            1,
+            0,
+            1
+        );
 
         m_deletionQueue.PushDeletor([&] ()
         {
-            for (auto&& imageView : imageViews)
-            {
-                imageView.Destroy(context.device);
-            }
-
-            for (auto&& image : images)
-            {
-                image.Destroy(context.allocator);
-            }
-
+            imageView.Destroy(context.device);
+            image.Destroy(context.allocator);
             depthBuffer.Destroy(context.device, context.allocator);
-
-            images     = {};
-            imageViews = {};
         });
     }
 
-    VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice)
+    VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice) const
     {
         return Vk::FindSupportedFormat
         (

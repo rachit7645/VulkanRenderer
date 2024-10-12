@@ -29,11 +29,18 @@ namespace Renderer
         FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
 
         void Update(f32 frameDelta) override;
+    protected:
+        void ImGuiDisplay() override;
     private:
         void CheckInputs(f32 frameDelta);
         void Move(f32 frameDelta);
         void Rotate(f32 frameDelta);
         void Zoom(f32 frameDelta);
+
+        // Settings
+        f32 speed       = 0.00025f;
+        f32 sensitivity = 0.0001f;
+        f32 zoom        = 0.000045f;
     };
 }
 

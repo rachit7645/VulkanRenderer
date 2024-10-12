@@ -37,7 +37,7 @@ namespace Vk::Builders
             VkShaderStageFlags shaderStages
         );
 
-        std::vector<VkDescriptorSetLayoutBinding> bindings = {};
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
     };
 }
 

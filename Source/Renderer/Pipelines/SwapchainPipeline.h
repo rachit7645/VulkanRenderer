@@ -36,7 +36,7 @@ namespace Renderer::Pipelines
         (
             VkDevice device,
             Vk::DescriptorCache& descriptorCache,
-            const std::span<Vk::ImageView, Vk::FRAMES_IN_FLIGHT> imageViews
+            const Vk::ImageView& imageView
         ) const;
 
         [[nodiscard]] const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& GetImageSets(Vk::DescriptorCache& descriptorCache) const;

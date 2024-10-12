@@ -22,11 +22,6 @@
 
 namespace Renderer
 {
-    // Constants (per us)
-    constexpr f32 CAMERA_SPEED       = 0.00025f;
-    constexpr f32 CAMERA_SENSITIVITY = 0.0001f;
-    constexpr f32 CAMERA_ZOOM        = 0.000045f;
-
     FreeCamera::FreeCamera()
         : FreeCamera(glm::vec3(30.0f, 30.0f, 4.0f), glm::vec3(0.0f, std::numbers::pi, 0.0f), Renderer::DEFAULT_FOV)
     {
@@ -63,7 +58,7 @@ namespace Renderer
     {
         const auto& inputs = Engine::Inputs::Get();
 
-        f32 velocity = CAMERA_SPEED * frameDelta;
+        f32 velocity = speed * frameDelta;
 
         // Forward
         if (inputs.IsKeyPressed(SDL_SCANCODE_W))
@@ -98,7 +93,7 @@ namespace Renderer
     {
         auto& inputs = Engine::Inputs::Get();
 
-        auto speed = CAMERA_SENSITIVITY * frameDelta;
+        auto speed = sensitivity * frameDelta;
 
         // Avoids freaking out
         if (inputs.WasMouseMoved())
@@ -126,8 +121,29 @@ namespace Renderer
         // Stops things from going haywire
         if (inputs.WasMouseScrolled())
         {
-            FOV -= static_cast<f32>(inputs.GetMouseScroll().y) * CAMERA_ZOOM * frameDelta;
+            FOV -= static_cast<f32>(inputs.GetMouseScroll().y) * zoom * frameDelta;
             FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }
+
+    void FreeCamera::ImGuiDisplay()
+    {
+        Camera::ImGuiDisplay();
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Camera"))
+            {
+                // Camera Settings
+                ImGui::DragFloat("Speed",       &speed,       1.0f, 0.0f, 0.0f, "%.7f");
+                ImGui::DragFloat("Sensitivity", &sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
+                ImGui::DragFloat("Zoom",        &zoom,        1.0f, 0.0f, 0.0f, "%.7f");
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+    }
+
 }

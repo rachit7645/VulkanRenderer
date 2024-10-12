@@ -50,7 +50,7 @@ namespace Renderer
         glm::vec3 up    = {0.0f, 1.0f,  0.0f};
         glm::vec3 right = glm::normalize(glm::cross(front, up));
     protected:
-        void ImGuiDisplay();
+        virtual void ImGuiDisplay();
     };
 }
 

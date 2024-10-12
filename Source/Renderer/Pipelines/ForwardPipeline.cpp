@@ -35,7 +35,7 @@ namespace Renderer::Pipelines
     {
         CreatePipeline(context, colorFormat, depthFormat);
         CreatePipelineData(context);
-        WriteStaticDescriptors(context.device, context.descriptorCache);
+        WriteStaticDescriptor(context.device, context.descriptorCache);
     }
 
     void ForwardPipeline::WriteMaterialDescriptors
@@ -51,9 +51,9 @@ namespace Renderer::Pipelines
 
         for (usize i = 0; i < materialCount; ++i)
         {
-            const auto& currentSets  = descriptorCache.AllocateSets
+            const auto& currentSet  = descriptorCache.AllocateSet
             (
-                MATERIAL_SET_ID + std::to_string(i + materialDescriptorIDOffset),
+                MATERIAL_SET_ID + fmt::to_string(i + materialDescriptorIDOffset),
                 MATERIAL_LAYOUT_ID,
                 device
             );
@@ -62,22 +62,19 @@ namespace Renderer::Pipelines
 
             for (usize j = 0; j < currentViews.size(); ++j)
             {
-                for (usize FIF = 0; FIF < Vk::FRAMES_IN_FLIGHT; ++FIF)
-                {
-                    writer.WriteImage
-                    (
-                        currentSets[FIF].handle,
-                        0,
-                        static_cast<u32>(j),
-                        VK_NULL_HANDLE,
-                        currentViews[j].handle,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
-                    );
-                }
+                writer.WriteImage
+                (
+                    currentSet.handle,
+                    0,
+                    static_cast<u32>(j),
+                    VK_NULL_HANDLE,
+                    currentViews[j].handle,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+                );
             }
 
-            materialMap.emplace(materials[i], currentSets);
+            materialMap.emplace(materials[i], currentSet);
         }
 
         materialDescriptorIDOffset += materialCount;
@@ -85,14 +82,14 @@ namespace Renderer::Pipelines
         writer.Update(device);
     }
 
-    const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& ForwardPipeline::GetStaticSets(Vk::DescriptorCache& descriptorCache) const
+    Vk::DescriptorSet ForwardPipeline::GetStaticSet(Vk::DescriptorCache& descriptorCache) const
     {
-        return descriptorCache.GetSets(STATIC_SET_ID);
+        return descriptorCache.GetSet(STATIC_SET_ID);
     }
 
     void ForwardPipeline::CreatePipeline(Vk::Context& context, VkFormat colorFormat, VkFormat depthFormat)
     {
-        constexpr std::array<VkDynamicState, 2> DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         auto colorFormats = std::span(&colorFormat, 1);
 
@@ -130,7 +127,7 @@ namespace Renderer::Pipelines
             .AddDescriptorLayout(materialLayout)
             .Build();
 
-        context.descriptorCache.AllocateSets(STATIC_SET_ID, STATIC_LAYOUT_ID, context.device);
+        context.descriptorCache.AllocateSet(STATIC_SET_ID, STATIC_LAYOUT_ID, context.device);
     }
 
     void ForwardPipeline::CreatePipelineData(const Vk::Context& context)
@@ -177,25 +174,22 @@ namespace Renderer::Pipelines
         });
     }
 
-    void ForwardPipeline::WriteStaticDescriptors(VkDevice device, Vk::DescriptorCache& cache) const
+    void ForwardPipeline::WriteStaticDescriptor(VkDevice device, Vk::DescriptorCache& cache) const
     {
-        const auto& staticSets = GetStaticSets(cache);
+        auto staticSet = GetStaticSet(cache);
 
         Vk::DescriptorWriter writer = {};
 
-        for (auto&& staticSet : staticSets)
-        {
-            writer.WriteImage
-            (
-                staticSet.handle,
-                0,
-                0,
-                textureSampler.handle,
-                VK_NULL_HANDLE,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_DESCRIPTOR_TYPE_SAMPLER
-            );
-        }
+        writer.WriteImage
+        (
+            staticSet.handle,
+            0,
+            0,
+            textureSampler.handle,
+            VK_NULL_HANDLE,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_DESCRIPTOR_TYPE_SAMPLER
+        );
 
         writer.Update(device);
     }

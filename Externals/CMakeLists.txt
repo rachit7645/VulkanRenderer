@@ -47,7 +47,6 @@ target_precompile_headers(imgui PRIVATE
 	imgui/imstb_truetype.h
 	imgui/backends/imgui_impl_sdl2.h
 	imgui/backends/imgui_impl_vulkan.h
-	imgui/misc/cpp/imgui_stdlib.h
 )
 
 # SDL2 Includes
