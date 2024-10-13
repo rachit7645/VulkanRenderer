@@ -24,7 +24,6 @@
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
 #include "DescriptorCache.h"
-#include "TextureManager.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
 #include "Util/DeletionQueue.h"
@@ -63,8 +62,6 @@ namespace Vk
         VmaAllocator allocator = VK_NULL_HANDLE;
         // Descriptor allocator
         Vk::DescriptorCache descriptorCache;
-        // Texture Manager
-        Vk::TextureManager textureManager;
     private:
         void CreateInstance(SDL_Window* window);
         void CreateSurface(SDL_Window* window);
@@ -81,7 +78,6 @@ namespace Vk
 
         void CreateCommandPool();
         void CreateDescriptorPool();
-        void CreateTextureManager();
         void CreateAllocator();
 
         // Extensions

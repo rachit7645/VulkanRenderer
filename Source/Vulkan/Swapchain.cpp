@@ -97,7 +97,7 @@ namespace Vk
         VkPresentModeKHR   presentMode   = ChoosePresentationMode();
 
         // Try to allocate 1 more than the min
-        u32 imageCount = glm::min
+        u32 imageCount = std::min
         (
             m_swapChainInfo.capabilities.minImageCount + 1,
             m_swapChainInfo.capabilities.maxImageCount

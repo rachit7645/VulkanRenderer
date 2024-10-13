@@ -25,7 +25,7 @@
 #include "RenderPasses/ForwardPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/VertexBuffer.h"
-#include "Vulkan/Swapchain.h"
+#include "Vulkan/TextureManager.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -61,6 +61,7 @@ namespace Renderer
         // Object handles
         std::shared_ptr<Engine::Window> m_window = nullptr;
         Vk::Context                     m_context;
+        Vk::TextureManager              m_textureManager;
 
         // Render Passes
         RenderPasses::SwapchainPass m_swapPass;

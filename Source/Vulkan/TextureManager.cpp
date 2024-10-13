@@ -14,8 +14,10 @@
 
 #include "TextureManager.h"
 
+#include "Texture.h"
 #include "Util.h"
-#include "Builders/DescriptorLayoutBuilder.h"
+#include "Util/Log.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -26,6 +28,33 @@ namespace Vk
         CreatePool(device);
         CreateLayout(device, deviceLimits);
         CreateSet(device, deviceLimits);
+
+        Logger::Info("{}\n", "Initialised texture manager!");
+    }
+
+    u32 TextureManager::AddTexture(const Vk::Texture& texture)
+    {
+        u32 id = m_lastID++;
+        textureMap.emplace(id, texture);
+
+        m_writer.WriteImage
+        (
+            textureSet.handle,
+            0,
+            id,
+            VK_NULL_HANDLE,
+            texture.imageView.handle,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+        );
+
+        return id;
+    }
+
+    void TextureManager::Update(VkDevice device)
+    {
+        m_writer.Update(device);
+        m_writer.Clear();
     }
 
     void TextureManager::CreatePool(VkDevice device)
@@ -50,7 +79,7 @@ namespace Vk
             device,
             &poolCreateInfo,
             nullptr,
-            &texturePool),
+            &m_texturePool),
             "Failed to create texture descriptor pool!"
         );
     }
@@ -93,7 +122,7 @@ namespace Vk
             device,
             &createInfo,
             nullptr,
-            &textureLayout),
+            &textureSet.layout),
             "Failed to create texture descriptor set layout!"
         );
     }
@@ -114,17 +143,24 @@ namespace Vk
         {
             .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .pNext              = &setCounts,
-            .descriptorPool     = texturePool,
+            .descriptorPool     = m_texturePool,
             .descriptorSetCount = 1,
-            .pSetLayouts        = &textureLayout
+            .pSetLayouts        = &textureSet.layout
         };
 
-        Vk::CheckResult(vkAllocateDescriptorSets(device, &allocInfo, &textureSet), "Failed to allocate texture descriptor set!");
+        Vk::CheckResult(vkAllocateDescriptorSets(device, &allocInfo, &textureSet.handle), "Failed to allocate texture descriptor set!");
     }
 
-    void TextureManager::Destroy(VkDevice device) const
+    void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        vkDestroyDescriptorPool(device, texturePool, nullptr);
-        vkDestroyDescriptorSetLayout(device, textureLayout, nullptr);
+        vkDestroyDescriptorPool(device, m_texturePool, nullptr);
+        vkDestroyDescriptorSetLayout(device, textureSet.layout, nullptr);
+
+        for (auto& texture : textureMap | std::views::values)
+        {
+            texture.Destroy(device, allocator);
+        }
+
+        Logger::Info("{}\n", "Destroyed texture manager!");
     }
 }

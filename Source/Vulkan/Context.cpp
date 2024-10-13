@@ -49,7 +49,6 @@ namespace Vk
 
         CreateCommandPool();
         CreateDescriptorPool();
-        CreateTextureManager();
         CreateAllocator();
 
         Logger::Info("{}\n", "Initialised vulkan context!");
@@ -413,18 +412,6 @@ namespace Vk
         {
             vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
             descriptorCache.Destroy(device);
-        });
-    }
-
-    void Context::CreateTextureManager()
-    {
-        textureManager = Vk::TextureManager(device, physicalDeviceLimits);
-
-        Logger::Info("{}\n", "Created texture manager!");
-
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            textureManager.Destroy(device);
         });
     }
 

@@ -21,6 +21,7 @@
 #include "Buffer.h"
 #include "Util/Log.h"
 #include "Util/Enum.h"
+#include "Externals/STBImage.h"
 
 namespace Vk
 {

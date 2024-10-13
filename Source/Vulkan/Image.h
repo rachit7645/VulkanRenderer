@@ -87,19 +87,15 @@ namespace Vk
     };
 }
 
-// Don't nuke me for this
-namespace std
+// Hashing
+template<>
+struct std::hash<Vk::Image>
 {
-    // Hashing
-    template<>
-    struct hash<Vk::Image>
+    std::size_t operator()(const Vk::Image& image) const noexcept
     {
-        std::size_t operator()(const Vk::Image& image) const
-        {
-            // This is basic but it should work
-            return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
-        }
-    };
-}
+        // This is basic but it should work
+        return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
+    }
+};
 
 #endif

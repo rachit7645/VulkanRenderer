@@ -26,6 +26,7 @@ namespace Renderer
     RenderManager::RenderManager(const std::shared_ptr<Engine::Window>& window)
         : m_window(window),
           m_context(m_window),
+          m_textureManager(m_context.device, m_context.physicalDeviceLimits),
           m_swapPass(*window, m_context),
           m_forwardPass(m_context, m_swapPass.swapchain.extent),
           m_model(m_context, "Sponza/glTF/Sponza.gltf")
@@ -256,6 +257,8 @@ namespace Renderer
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
+
+        m_textureManager.Destroy(m_context.device, m_context.allocator);
 
         m_swapPass.Destroy(m_context);
         m_forwardPass.Destroy(m_context);

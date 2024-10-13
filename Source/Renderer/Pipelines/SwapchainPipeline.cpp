@@ -67,9 +67,9 @@ namespace Renderer::Pipelines
 
     void SwapchainPipeline::CreatePipeline(Vk::Context& context, VkFormat colorFormat)
     {
-        constexpr std::array<VkDynamicState, 2> DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array<VkFormat, 1> colorFormats = {colorFormat};
+        std::array colorFormats = {colorFormat};
 
         auto colorLayout = context.descriptorCache.AddLayout
         (

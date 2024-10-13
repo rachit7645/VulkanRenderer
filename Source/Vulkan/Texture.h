@@ -23,7 +23,6 @@
 #include "ImageView.h"
 #include "Context.h"
 #include "Util/Util.h"
-#include "Externals/STBImage.h"
 
 namespace Vk
 {
@@ -42,25 +41,22 @@ namespace Vk
 
         bool operator==(const Texture& rhs) const;
 
-        Vk::Image     image     = {};
-        Vk::ImageView imageView = {};
+        Vk::Image     image;
+        Vk::ImageView imageView;
     private:
         bool IsFlagSet(Flags combined, Flags flag);
     };
 }
 
 // Don't nuke me for this
-namespace std
+template <>
+struct std::hash<Vk::Texture>
 {
-    template <>
-    struct hash<Vk::Texture>
+    std::size_t operator()(const Vk::Texture& texture) const noexcept
     {
-        std::size_t operator()(const Vk::Texture& texture) const
-        {
-            // Again not the best way but ehh it's fine don't worry about it
-            return hash<Vk::Image>()(texture.image) ^ hash<Vk::ImageView>()(texture.imageView);
-        }
-    };
-}
+        // Again not the best way but ehh it's fine don't worry about it
+        return hash<Vk::Image>()(texture.image) ^ hash<Vk::ImageView>()(texture.imageView);
+    }
+};
 
 #endif

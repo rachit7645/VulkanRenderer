@@ -101,8 +101,8 @@ namespace Vk
     DescriptorWriter& DescriptorWriter::Clear()
     {
         imageInfos.clear();
-        writes.clear();
         bufferInfos.clear();
+        writes.clear();
 
         return *this;
     }

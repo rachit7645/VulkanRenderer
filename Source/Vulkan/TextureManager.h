@@ -12,8 +12,12 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef TEXTUREMANAGER_H
-#define TEXTUREMANAGER_H
+#ifndef TEXTURE_MANAGER_H
+#define TEXTURE_MANAGER_H
+
+#include "Texture.h"
+#include "DescriptorWriter.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -22,15 +26,22 @@ namespace Vk
     public:
         TextureManager() = default;
         TextureManager(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits);
-        void Destroy(VkDevice device) const;
 
-        VkDescriptorPool      texturePool   = VK_NULL_HANDLE;
-        VkDescriptorSet       textureSet    = VK_NULL_HANDLE;
-        VkDescriptorSetLayout textureLayout = VK_NULL_HANDLE;
+        u32 AddTexture(const Vk::Texture& texture);
+        void Update(VkDevice device);
+
+        void Destroy(VkDevice device, VmaAllocator allocator);
+
+        Vk::DescriptorSet                    textureSet;
+        std::unordered_map<u32, Vk::Texture> textureMap;
     private:
         void CreatePool(VkDevice device);
         void CreateLayout(VkDevice device, const VkPhysicalDeviceLimits& physicalDeviceLimits);
         void CreateSet(VkDevice device, const VkPhysicalDeviceLimits& physicalDeviceLimits);
+
+        VkDescriptorPool     m_texturePool = VK_NULL_HANDLE;
+        u32                  m_lastID      = 0;
+        Vk::DescriptorWriter m_writer      = {};
     };
 }
 
