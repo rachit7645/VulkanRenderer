@@ -23,13 +23,20 @@
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Util/Enum.h"
+#include "Util/Util.h"
 
 namespace Models
 {
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
-    Model::Model(const Vk::Context& context, const std::string_view path)
+    Model::Model
+    (
+        const Vk::Context& context,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
+        const std::string_view path
+    )
     {
         Logger::Info("Loading model: {}\n", path);
 
@@ -62,7 +69,18 @@ namespace Models
         }
 
         assert(scene != nullptr && "clang-tidy is being dumb and hurting my feelings :(");
-        ProcessNode(scene->mRootNode, scene, Engine::Files::GetDirectory(path), context);
+
+        ProcessNode
+        (
+            scene->mRootNode,
+            scene,
+            Engine::Files::GetDirectory(path),
+            context,
+            geometryBuffer,
+            textureManager
+        );
+
+        textureManager.Update(context.device);
     }
 
     void Model::ProcessNode
@@ -70,17 +88,34 @@ namespace Models
         const aiNode* node,
         const aiScene* scene,
         const std::string& directory,
-        const Vk::Context& context
+        const Vk::Context& context,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager
     )
     {
         for (u32 i = 0; i < node->mNumMeshes; ++i)
         {
-            meshes.emplace_back(ProcessMesh(scene->mMeshes[node->mMeshes[i]], scene, directory, context));
+            meshes.emplace_back(ProcessMesh(
+                scene->mMeshes[node->mMeshes[i]],
+                scene,
+                directory,
+                context,
+                geometryBuffer,
+                textureManager
+            ));
         }
 
         for (u32 i = 0; i < node->mNumChildren; ++i)
         {
-            ProcessNode(node->mChildren[i], scene, directory, context);
+            ProcessNode
+            (
+                node->mChildren[i],
+                scene,
+                directory,
+                context,
+                geometryBuffer,
+                textureManager
+            );
         }
     }
 
@@ -89,7 +124,9 @@ namespace Models
         const aiMesh* mesh,
         const aiScene* scene,
         const std::string& directory,
-        const Vk::Context& context
+        const Vk::Context& context,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager
     )
     {
         std::vector<Vertex> vertices = {};
@@ -118,7 +155,18 @@ namespace Models
             indices.emplace_back(face.mIndices[2]);
         }
 
-        return {context, vertices, indices, ProcessMaterial(mesh, scene, directory, context)};
+        auto infos = geometryBuffer.LoadData(context, vertices, indices);
+        return {
+            infos[0],
+            infos[1],
+            ProcessMaterial(
+                mesh,
+                scene,
+                directory,
+                context,
+                textureManager
+            )
+        };
     }
 
     Material Model::ProcessMaterial
@@ -126,7 +174,8 @@ namespace Models
         const aiMesh* mesh,
         const aiScene* scene,
         const std::string& directory,
-        const Vk::Context& context
+        const Vk::Context& context,
+        Vk::TextureManager& textureManager
     )
     {
         // Default textures
@@ -152,30 +201,9 @@ namespace Models
 
         return
         {
-            Vk::Texture(context, GetTexturePath(aiTextureType_BASE_COLOR,        DEFAULT_TEXTURE_ALBEDO),   Vk::Texture::Flags::IsSRGB | Vk::Texture::Flags::GenMipmaps),
-            Vk::Texture(context, GetTexturePath(aiTextureType_NORMALS,           DEFAULT_TEXTURE_NORMAL),   Vk::Texture::Flags::GenMipmaps),
-            Vk::Texture(context, GetTexturePath(aiTextureType_DIFFUSE_ROUGHNESS, DEFAULT_TEXTURE_MATERIAL), Vk::Texture::Flags::GenMipmaps)
+            textureManager.AddTexture(context, GetTexturePath(aiTextureType_BASE_COLOR,        DEFAULT_TEXTURE_ALBEDO),   Vk::Texture::Flags::IsSRGB | Vk::Texture::Flags::GenMipmaps),
+            textureManager.AddTexture(context, GetTexturePath(aiTextureType_NORMALS,           DEFAULT_TEXTURE_NORMAL),   Vk::Texture::Flags::GenMipmaps),
+            textureManager.AddTexture(context, GetTexturePath(aiTextureType_DIFFUSE_ROUGHNESS, DEFAULT_TEXTURE_MATERIAL), Vk::Texture::Flags::GenMipmaps)
         };
-    }
-
-    std::vector<Material> Model::GetMaterials() const
-    {
-        std::vector<Material> materials = {};
-        materials.reserve(meshes.size());
-
-        for (const auto& mesh : meshes)
-        {
-            materials.emplace_back(mesh.material);
-        }
-
-        return materials;
-    }
-
-    void Model::Destroy(VkDevice device, VmaAllocator allocator)
-    {
-        for (auto&& mesh : meshes)
-        {
-            mesh.Destroy(device, allocator);
-        }
     }
 }

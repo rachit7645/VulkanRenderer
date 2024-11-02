@@ -21,8 +21,9 @@
 #include <vulkan/vulkan.h>
 
 #include "FreeCamera.h"
-#include "RenderPasses/SwapchainPass.h"
-#include "RenderPasses/ForwardPass.h"
+#include "RenderObject.h"
+#include "Swapchain/SwapchainPass.h"
+#include "Forward/ForwardPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/VertexBuffer.h"
 #include "Vulkan/TextureManager.h"
@@ -30,6 +31,7 @@
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Models/Model.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer
 {
@@ -62,14 +64,15 @@ namespace Renderer
         std::shared_ptr<Engine::Window> m_window = nullptr;
         Vk::Context                     m_context;
         Vk::TextureManager              m_textureManager;
+        Models::ModelManager            m_modelManager;
 
         // Render Passes
-        RenderPasses::SwapchainPass m_swapPass;
-        RenderPasses::ForwardPass   m_forwardPass;
+        Swapchain::SwapchainPass m_swapPass;
+        Forward::ForwardPass     m_forwardPass;
 
         // Scene objects
-        Models::Model        m_model;
-        Renderer::FreeCamera m_camera;
+        std::vector<Renderer::RenderObject> m_renderObjects;
+        Renderer::FreeCamera                m_camera;
 
         // Sync objects
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};

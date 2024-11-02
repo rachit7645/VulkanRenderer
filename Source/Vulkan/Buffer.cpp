@@ -104,39 +104,6 @@ namespace Vk
         deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
     }
 
-    void Buffer::CopyBuffer
-    (
-        const Vk::Context& context,
-        Vk::Buffer& srcBuffer,
-        Vk::Buffer& dstBuffer,
-        VkDeviceSize copySize
-    )
-    {
-        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
-        {
-            const VkBufferCopy2 copyRegion =
-            {
-                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                .pNext     = nullptr,
-                .srcOffset = 0,
-                .dstOffset = 0,
-                .size      = copySize
-            };
-
-            const VkCopyBufferInfo2 copyInfo =
-            {
-                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-                .pNext       = nullptr,
-                .srcBuffer   = srcBuffer.handle,
-                .dstBuffer   = dstBuffer.handle,
-                .regionCount = 1,
-                .pRegions    = &copyRegion
-            };
-
-            vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
-        });
-    }
-
     void Buffer::Destroy(VmaAllocator allocator) const
     {
         Logger::Debug

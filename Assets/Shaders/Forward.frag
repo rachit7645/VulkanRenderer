@@ -26,6 +26,8 @@
 #include "Texture.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
+#include "Instance.glsl"
+#include "Scene.glsl"
 
 // Fragment inputs
 layout(location = 0) in vec3 fragPosition;
@@ -36,20 +38,10 @@ layout(location = 3) in mat3 fragTBNMatrix;
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
-{
-    mat4 projection;
-    mat4 view;
-    vec4 cameraPos;
-    // Add more lights
-    DirLight light;
-};
-
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    mat4        transform;
-    mat4        normalMatrix;
-    SceneBuffer Scene;
+    SceneBuffer    Scene;
+    InstanceBuffer Instances;
 } Constants;
 
 layout(set = 0, binding = 0) uniform sampler texSampler;
@@ -58,9 +50,9 @@ layout(set = 1, binding = 0) uniform texture2D textures[];
 void main()
 {
     // This is assumed to be an SRGB texture
-    vec3 albedo   = SampleLinear(ALBEDO(textures), texSampler, fragTexCoords);
-    vec3 normal   = GetNormalFromMap(Sample(NORMAL(textures), texSampler, fragTexCoords), fragTBNMatrix);
-    vec3 aoRghMtl = Sample(AO_RGH_MTL(textures), texSampler, fragTexCoords);
+    vec3 albedo   = SampleLinear(textures[0], texSampler, fragTexCoords);
+    vec3 normal   = GetNormalFromMap(Sample(textures[1], texSampler, fragTexCoords), fragTBNMatrix);
+    vec3 aoRghMtl = Sample(textures[2], texSampler, fragTexCoords);
 
     vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
     vec3 Lo = CalculateLight(GetDirLightInfo(Constants.Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);

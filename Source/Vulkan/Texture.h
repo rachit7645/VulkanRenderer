@@ -44,7 +44,7 @@ namespace Vk
         Vk::Image     image;
         Vk::ImageView imageView;
     private:
-        bool IsFlagSet(Flags combined, Flags flag);
+        bool IsFlagSet(Flags combined, Flags flag) const;
     };
 }
 

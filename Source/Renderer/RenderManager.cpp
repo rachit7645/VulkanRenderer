@@ -27,16 +27,22 @@ namespace Renderer
         : m_window(window),
           m_context(m_window),
           m_textureManager(m_context.device, m_context.physicalDeviceLimits),
+          m_modelManager(m_context.allocator),
           m_swapPass(*window, m_context),
-          m_forwardPass(m_context, m_swapPass.swapchain.extent),
-          m_model(m_context, "Sponza/glTF/Sponza.gltf")
+          m_forwardPass(m_context, m_textureManager, m_swapPass.swapchain.extent)
     {
+        m_renderObjects.emplace_back(RenderObject(
+            m_modelManager.AddModel(m_context, m_textureManager, "Sponza/glTF/Sponza.gltf"),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.25f, 0.25f, 0.25f)
+        ));
+
         // ImGui Yoy
         InitImGui();
         CreateSyncObjects();
 
         m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageView);
-        m_forwardPass.pipeline.WriteMaterialDescriptors(m_context.device, m_context.descriptorCache, m_model.GetMaterials());
 
         m_frameCounter.Reset();
     }
@@ -54,7 +60,16 @@ namespace Renderer
 
         Update();
 
-        m_forwardPass.Render(m_currentFIF, m_context.descriptorCache, m_camera, m_model);
+        m_forwardPass.Render
+        (
+            m_currentFIF,
+            m_context.descriptorCache,
+            m_textureManager,
+            m_modelManager,
+            m_camera,
+            m_renderObjects
+        );
+
         m_swapPass.Render(m_context.descriptorCache, m_currentFIF);
 
         SubmitQueue();
@@ -65,6 +80,20 @@ namespace Renderer
 
     void RenderManager::Update()
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Mesh"))
+            {
+                // Transform modifiers
+                ImGui::DragFloat3("Position", &m_renderObjects[0].position[0]);
+                ImGui::DragFloat3("Rotation", &m_renderObjects[0].rotation[0]);
+                ImGui::DragFloat3("Scale",    &m_renderObjects[0].scale[0]);
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         m_frameCounter.Update();
         m_camera.Update(m_frameCounter.frameDelta);
         Engine::Inputs::Get().ImGuiDisplay();
@@ -259,11 +288,10 @@ namespace Renderer
         ImGui_ImplSDL2_Shutdown();
 
         m_textureManager.Destroy(m_context.device, m_context.allocator);
+        m_modelManager.Destroy(m_context.allocator);
 
         m_swapPass.Destroy(m_context);
         m_forwardPass.Destroy(m_context);
-
-        m_model.Destroy(m_context.device, m_context.allocator);
 
         for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
         {

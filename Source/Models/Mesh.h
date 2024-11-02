@@ -17,9 +17,8 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include "VertexInfo.h"
 #include "Material.h"
-#include "Vulkan/VertexBuffer.h"
-#include "Vulkan/Context.h"
 
 namespace Models
 {
@@ -27,16 +26,14 @@ namespace Models
     {
         Mesh
         (
-            const Vk::Context& context,
-            const std::vector<Models::Vertex>& vertices,
-            const std::vector<Models::Index>& indices,
+            const Models::VertexInfo& vertexData,
+            const Models::VertexInfo& indexData,
             const Models::Material& material
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator) const;
-
-        Vk::VertexBuffer vertexBuffer;
-        Models::Material material;
+        VertexInfo vertexData;
+        VertexInfo indexData;
+        Material   material;
     };
 }
 

@@ -12,19 +12,8 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#include "RenderObject.h"
 
-#include "Util/Util.h"
-
-namespace Models
+namespace Renderer
 {
-	struct Material
-    {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
-    };
 }
-
-#endif

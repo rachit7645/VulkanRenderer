@@ -32,10 +32,41 @@ namespace Vk
         Logger::Info("{}\n", "Initialised texture manager!");
     }
 
-    u32 TextureManager::AddTexture(const Vk::Texture& texture)
+    usize TextureManager::AddTexture(const Vk::Context& context, const std::string_view path, Texture::Flags flags)
     {
-        u32 id = m_lastID++;
-        textureMap.emplace(id, texture);
+        usize pathHash = std::hash<std::string_view>()(path);
+
+        if (!textureMap.contains(pathHash))
+        {
+            const u32  id      = m_lastID++;
+            const auto texture = Vk::Texture(context, path, flags);
+            textureMap.emplace(pathHash, TextureInfo(id, texture));
+
+            m_writer.WriteImage
+            (
+                textureSet.handle,
+                0,
+                id,
+                VK_NULL_HANDLE,
+                texture.imageView.handle,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+            );
+        }
+        else
+        {
+            Logger::Debug("Loading cached texture! [Path={}]\n", path);
+        }
+
+        return pathHash;
+    }
+
+    usize TextureManager::AddTexture(const Vk::Texture& texture)
+    {
+        const u32 id = m_lastID++;
+
+        usize pathHash = std::hash<std::string>()("DummyTexturePath" + std::to_string(id));
+        textureMap.emplace(pathHash, TextureInfo(id, texture));
 
         m_writer.WriteImage
         (
@@ -48,13 +79,37 @@ namespace Vk
             VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
         );
 
-        return id;
+        return pathHash;
     }
 
     void TextureManager::Update(VkDevice device)
     {
         m_writer.Update(device);
         m_writer.Clear();
+    }
+
+    u32 TextureManager::GetID(usize pathHash) const
+    {
+        const auto iter = textureMap.find(pathHash);
+
+        if (iter == textureMap.end())
+        {
+            Logger::Error("Invalid path hash! [Hash={}]\n", pathHash);
+        }
+
+        return iter->second.textureID;
+    }
+
+    const Texture& TextureManager::GetTexture(usize pathHash) const
+    {
+        const auto iter = textureMap.find(pathHash);
+
+        if (iter == textureMap.end())
+        {
+            Logger::Error("Invalid path hash! [Hash={}]\n", pathHash);
+        }
+
+        return iter->second.texture;
     }
 
     void TextureManager::CreatePool(VkDevice device)
@@ -156,7 +211,7 @@ namespace Vk
         vkDestroyDescriptorPool(device, m_texturePool, nullptr);
         vkDestroyDescriptorSetLayout(device, textureSet.layout, nullptr);
 
-        for (auto& texture : textureMap | std::views::values)
+        for (auto& [textureID, texture] : textureMap | std::views::values)
         {
             texture.Destroy(device, allocator);
         }

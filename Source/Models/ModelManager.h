@@ -12,18 +12,28 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef MODELMANAGER_H
+#define MODELMANAGER_H
 
+#include <unordered_map>
+
+#include "Model.h"
+#include "Vulkan/TextureManager.h"
 #include "Util/Util.h"
 
 namespace Models
 {
-	struct Material
+    class ModelManager
     {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
+    public:
+        explicit ModelManager(VmaAllocator allocator);
+        void Destroy(VmaAllocator allocator);
+
+        usize AddModel(const Vk::Context& context, Vk::TextureManager& textureManager, const std::string_view path);
+        const Model& GetModel(usize modelID) const;
+
+        std::unordered_map<u32, Models::Model> modelMap;
+        Vk::GeometryBuffer                     geometryBuffer;
     };
 }
 

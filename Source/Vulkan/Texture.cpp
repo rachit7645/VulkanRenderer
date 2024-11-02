@@ -28,8 +28,8 @@ namespace Vk
     Texture::Texture(const Vk::Context& context, const std::string_view path, Texture::Flags flags)
     {
         auto candidates = IsFlagSet(flags, Flags::IsSRGB) ?
-                          std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
-                          std::array<VkFormat, 2>{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
+                          std::array{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
+                          std::array{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
 
         auto format = Vk::FindSupportedFormat
         (
@@ -107,7 +107,12 @@ namespace Vk
             1
         );
 
-        image.GenerateMipmaps(context);
+        if (IsFlagSet(flags, Flags::GenMipmaps))
+        {
+            image.GenerateMipmaps(context);
+        }
+
+        Logger::Debug("Loaded texture! [Path={}]\n", path);
     }
 
     bool Texture::operator==(const Texture& rhs) const
@@ -115,7 +120,7 @@ namespace Vk
         return image == rhs.image && imageView == rhs.imageView;
     }
 
-    bool Texture::IsFlagSet(Texture::Flags combined, Texture::Flags flag)
+    bool Texture::IsFlagSet(Texture::Flags combined, Texture::Flags flag) const
     {
         return (combined & flag) == flag;
     }

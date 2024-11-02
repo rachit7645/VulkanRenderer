@@ -17,7 +17,6 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include <memory>
 #include <vector>
 #include <string_view>
 
@@ -25,18 +24,21 @@
 
 #include "Mesh.h"
 #include "Vulkan/Context.h"
-#include "Vulkan/ImageView.h"
-#include "Util/Util.h"
+#include "Vulkan/TextureManager.h"
+#include "Vulkan/GeometryBuffer.h"
 
 namespace Models
 {
     class Model
     {
     public:
-        Model(const Vk::Context& context, const std::string_view path);
-        void Destroy(VkDevice device, VmaAllocator allocator);
-
-        [[nodiscard]] std::vector<Models::Material> GetMaterials() const;
+        Model
+        (
+            const Vk::Context& context,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            const std::string_view path
+        );
 
         std::vector<Models::Mesh> meshes;
     private:
@@ -45,7 +47,9 @@ namespace Models
             const aiNode* node,
             const aiScene* scene,
             const std::string& directory,
-            const Vk::Context& context
+            const Vk::Context& context,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager
         );
 
         [[nodiscard]] Models::Mesh ProcessMesh
@@ -53,7 +57,9 @@ namespace Models
             const aiMesh* mesh,
             const aiScene* scene,
             const std::string& directory,
-            const Vk::Context& context
+            const Vk::Context& context,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager
         );
 
         [[nodiscard]] Material ProcessMaterial
@@ -61,7 +67,8 @@ namespace Models
             const aiMesh* mesh,
             const aiScene* scene,
             const std::string& directory,
-            const Vk::Context& context
+            const Vk::Context& context,
+            Vk::TextureManager& textureManager
         );
     };
 }

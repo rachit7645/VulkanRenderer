@@ -70,6 +70,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DescriptorWriter.cpp
 	Source/Vulkan/DescriptorCache.cpp
 	Source/Vulkan/TextureManager.cpp
+	Source/Vulkan/GeometryBuffer.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
@@ -77,17 +78,19 @@ add_executable(VulkanRenderer
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/FreeCamera.cpp
 	Source/Renderer/Camera.cpp
-	# Render pipeline sources
-	Source/Renderer/Pipelines/SwapchainPipeline.cpp
-	Source/Renderer/Pipelines/ForwardPipeline.cpp
-	# Render passes sources
-	Source/Renderer/RenderPasses/SwapchainPass.cpp
-	Source/Renderer/RenderPasses/ForwardPass.cpp
+	Source/Renderer/RenderObject.cpp
+	# Swapchain Pass Sources
+	Source/Renderer/Swapchain/SwapchainPipeline.cpp
+	Source/Renderer/Swapchain/SwapchainPass.cpp
+	# Forward Pass Sources
+	Source/Renderer/Forward/ForwardPipeline.cpp
+	Source/Renderer/Forward/ForwardPass.cpp
+	Source/Renderer/Forward/ForwardInstanceBuffer.cpp
 	# Model sources
-	Source/Models/Mesh.cpp
 	Source/Models/Vertex.cpp
 	Source/Models/Model.cpp
-    Source/Models/Material.cpp
+	Source/Models/Mesh.cpp
+	Source/Models/ModelManager.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/STBImage.cpp

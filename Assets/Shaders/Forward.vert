@@ -23,6 +23,9 @@
 
 // Includes
 #include "Lights.glsl"
+#include "Instance.glsl"
+#include "Instance.glsl"
+#include "Scene.glsl"
 
 // Vertex inputs
 layout(location = 0) in vec3 position;
@@ -36,32 +39,22 @@ layout(location = 1) out vec2 fragTexCoords;
 layout(location = 2) out vec3 fragToCamera;
 layout(location = 3) out mat3 fragTBNMatrix;
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    mat4 projection;
-    mat4 view;
-    vec4 cameraPos;
-    // Add more lights
-    DirLight light;
-};
-
-layout(push_constant, std430, buffer_reference_align = 16) uniform ConstantsBuffer
-{
-    mat4        transform;
-    mat4        normalMatrix;
-    SceneBuffer Scene;
+    SceneBuffer    Scene;
+    InstanceBuffer Instances;
 } Constants;
 
 void main()
 {
-    vec4 fragPos = Constants.transform * vec4(position, 1.0f);
+    vec4 fragPos = Constants.Instances.instances[0].transform * vec4(position, 1.0f);
     fragPosition = fragPos.xyz;
     gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
 
     fragTexCoords = texCoords;
 
-    vec3 N = normalize(mat3(Constants.normalMatrix) * normal);
-    vec3 T = normalize(mat3(Constants.normalMatrix) * tangent);
+    vec3 N = normalize(mat3(Constants.Instances.instances[0].normalMatrix) * normal);
+    vec3 T = normalize(mat3(Constants.Instances.instances[0].normalMatrix) * tangent);
          T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 

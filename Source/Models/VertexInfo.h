@@ -12,18 +12,17 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef VERTEX_INFO_H
+#define VERTEX_INFO_H
 
 #include "Util/Util.h"
 
 namespace Models
 {
-	struct Material
+    struct VertexInfo
     {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
+        u32 offset = 0;
+        u32 count  = 0;
     };
 }
 

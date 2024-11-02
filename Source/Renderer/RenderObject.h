@@ -12,18 +12,20 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef RENDER_OBJECT_H
+#define RENDER_OBJECT_H
 
 #include "Util/Util.h"
 
-namespace Models
+namespace Renderer
 {
-	struct Material
+    class RenderObject
     {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
+    public:
+        usize     modelID  = 0;
+        glm::vec3 position = {};
+        glm::vec3 rotation = {};
+        glm::vec3 scale    = {};
     };
 }
 

@@ -15,6 +15,8 @@
  */
 
 #include "VertexBuffer.h"
+
+#include "Util.h"
 #include "Util/Log.h"
 
 // Usings
@@ -99,7 +101,29 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        Vk::Buffer::CopyBuffer(context, stagingBuffer, buffer, size);
+        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
+        {
+            const VkBufferCopy2 copyRegion =
+            {
+                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext     = nullptr,
+                .srcOffset = 0,
+                .dstOffset = 0,
+                .size      = size
+            };
+
+            const VkCopyBufferInfo2 copyInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                .pNext       = nullptr,
+                .srcBuffer   = stagingBuffer.handle,
+                .dstBuffer   = buffer.handle,
+                .regionCount = 1,
+                .pRegions    = &copyRegion
+            };
+
+            vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+        });
 
         stagingBuffer.Destroy(context.allocator);
     }

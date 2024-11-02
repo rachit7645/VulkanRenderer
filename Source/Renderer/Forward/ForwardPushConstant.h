@@ -12,18 +12,20 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef FORWARD_PUSH_CONSTANT_H
+#define FORWARD_PUSH_CONSTANT_H
 
-#include "Util/Util.h"
+#include <vulkan/vulkan.h>
 
-namespace Models
+#include "Externals/GLM.h"
+#include "Vulkan/Util.h"
+
+namespace Renderer::Forward
 {
-	struct Material
+    struct VULKAN_GLSL_DATA PushConstant
     {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
+        VkDeviceAddress scene    = {};
+        VkDeviceAddress instance = {};
     };
 }
 

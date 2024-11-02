@@ -16,25 +16,17 @@
 
 #include "Mesh.h"
 
-#include "Vertex.h"
-
 namespace Models
 {
     Mesh::Mesh
     (
-        const Vk::Context& context,
-        const std::vector<Models::Vertex>& vertices,
-        const std::vector<Models::Index>& indices,
+        const Models::VertexInfo& vertexData,
+        const Models::VertexInfo& indexData,
         const Models::Material& material
     )
-        : vertexBuffer(context, vertices, indices),
+        : vertexData(vertexData),
+          indexData(indexData),
           material(material)
     {
-    }
-
-    void Mesh::Destroy(VkDevice device, VmaAllocator allocator) const
-    {
-        vertexBuffer.Destroy(allocator);
-        material.Destroy(device, allocator);
     }
 }

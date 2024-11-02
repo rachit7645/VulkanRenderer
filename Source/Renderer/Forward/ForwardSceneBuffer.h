@@ -12,18 +12,23 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef FORWARD_SCENE_BUFFER_H
+#define FORWARD_SCENE_BUFFER_H
 
-#include "Util/Util.h"
+#include <vulkan/vulkan.h>
 
-namespace Models
+#include "Externals/GLM.h"
+#include "Vulkan/Util.h"
+#include "Renderer/DirLight.h"
+
+namespace Renderer::Forward
 {
-	struct Material
+    struct VULKAN_GLSL_DATA SceneBuffer
     {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
+        glm::mat4 projection = {};
+        glm::mat4 view       = {};
+        glm::vec4 cameraPos  = {};
+        DirLight  dirLight   = {};
     };
 }
 

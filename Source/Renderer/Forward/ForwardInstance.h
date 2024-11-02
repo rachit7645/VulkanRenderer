@@ -12,18 +12,22 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef FORWARD_INSTANCE_H
+#define FORWARD_INSTANCE_H
 
+#include <vulkan/vulkan.h>
+
+#include "Externals/GLM.h"
+#include "Vulkan/Util.h"
 #include "Util/Util.h"
 
-namespace Models
+namespace Renderer::Forward
 {
-	struct Material
+    struct VULKAN_GLSL_DATA Instance
     {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
+        glm::mat4  transform    = {};
+        glm::mat4  normalMatrix = {};
+        glm::uvec4 textureIDs   = {};
     };
 }
 

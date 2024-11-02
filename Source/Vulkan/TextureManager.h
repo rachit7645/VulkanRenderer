@@ -24,16 +24,25 @@ namespace Vk
     class TextureManager
     {
     public:
-        TextureManager() = default;
+        struct TextureInfo
+        {
+            u32         textureID = 0;
+            Vk::Texture texture;
+        };
+
         TextureManager(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits);
 
-        u32 AddTexture(const Vk::Texture& texture);
+        [[nodiscard]] usize AddTexture(const Vk::Context& context, const std::string_view path, Texture::Flags flags);
+        [[nodiscard]] usize AddTexture(const Vk::Texture& texture);
         void Update(VkDevice device);
+
+        [[nodiscard]] u32 GetID(usize pathHash) const;
+        [[nodiscard]] const Texture& GetTexture(usize pathHash) const;
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         Vk::DescriptorSet                    textureSet;
-        std::unordered_map<u32, Vk::Texture> textureMap;
+        std::unordered_map<usize, TextureInfo> textureMap;
     private:
         void CreatePool(VkDevice device);
         void CreateLayout(VkDevice device, const VkPhysicalDeviceLimits& physicalDeviceLimits);

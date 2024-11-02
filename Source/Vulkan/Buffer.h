@@ -47,16 +47,6 @@ namespace Vk
         void LoadData(VmaAllocator allocator, const std::span<const T> data);
 
         void GetDeviceAddress(VkDevice device);
-
-        // FIXME: Should this be here at all?
-        static void CopyBuffer
-        (
-            const Vk::Context& context,
-            Vk::Buffer& srcBuffer,
-            Vk::Buffer& dstBuffer,
-            VkDeviceSize copySize
-        );
-
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
