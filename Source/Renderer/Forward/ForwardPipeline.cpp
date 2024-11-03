@@ -106,6 +106,7 @@ namespace Renderer::Forward
         }
 
         instanceBuffer = Forward::InstanceBuffer(context.device, context.allocator);
+        indirectBuffer = Forward::IndirectBuffer(context.allocator);
 
         auto anisotropy = std::min(4.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
@@ -126,6 +127,7 @@ namespace Renderer::Forward
         m_deletionQueue.PushDeletor([&]()
         {
             instanceBuffer.Destroy(context.allocator);
+            indirectBuffer.Destroy(context.allocator);
 
             for (auto&& buffer : sceneSSBOs)
             {

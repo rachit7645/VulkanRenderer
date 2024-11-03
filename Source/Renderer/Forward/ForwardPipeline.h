@@ -15,6 +15,7 @@
 #ifndef FORWARD_PIPELINE_H
 #define FORWARD_PIPELINE_H
 
+#include "ForwardIndirectBuffer.h"
 #include "ForwardInstanceBuffer.h"
 #include "ForwardPushConstant.h"
 #include "Vulkan/Buffer.h"
@@ -38,9 +39,11 @@ namespace Renderer::Forward
         Vk::DescriptorSet GetStaticSet(Vk::DescriptorCache& descriptorCache) const;
 
         PushConstant pushConstant = {};
-        // Updated coherently so needs to be duplicated
+
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneSSBOs = {};
-        InstanceBuffer                               instanceBuffer;
+
+        InstanceBuffer instanceBuffer;
+        IndirectBuffer indirectBuffer;
 
         Vk::Sampler textureSampler;
     private:

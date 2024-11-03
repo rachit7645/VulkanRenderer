@@ -57,9 +57,11 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VmaAllocator allocator,
             const Vk::Buffer& buffer,
-            u32& currentCount,
+            u32 currentCount,
             const std::span<const T> data
         );
+
+        Vk::Buffer m_stagingBuffer;
     };
 }
 

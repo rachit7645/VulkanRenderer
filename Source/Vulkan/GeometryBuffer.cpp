@@ -14,11 +14,16 @@
 
 #include "GeometryBuffer.h"
 
+#include <Util/Log.h>
+
 #include "Util.h"
 
 namespace Vk
 {
+    // TODO: Implement resizing
+
     constexpr VkDeviceSize INITIAL_BUFFER_SIZE = 64 * 1024 * 1024;
+    constexpr VkDeviceSize STAGING_BUFFER_SIZE = 16 * 1024 * 1024;
     constexpr f32          BUFFER_GROWTH_RATE  = 1.5f;
 
     GeometryBuffer::GeometryBuffer(VmaAllocator allocator)
@@ -40,6 +45,16 @@ namespace Vk
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        m_stagingBuffer = Vk::Buffer
+        (
+            allocator,
+            STAGING_BUFFER_SIZE,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
     }
@@ -74,8 +89,13 @@ namespace Vk
 
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
+            Logger::Warning("Current Vertex/Index Count: {}/{}\n", vertexCount, indexCount);
+
             infos[0] = UploadData(cmdBuffer, context.allocator, vertexBuffer, vertexCount, vertices);
-            infos[1] = UploadData(cmdBuffer, context.allocator, indexBuffer,  indexCount,  indices );
+            vertexCount += infos[0].count;
+
+            infos[1] = UploadData(cmdBuffer, context.allocator, indexBuffer, indexCount, indices);
+            indexCount += infos[1].count;
         });
 
         return infos;
@@ -87,7 +107,7 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VmaAllocator allocator,
         const Vk::Buffer& buffer,
-        u32& currentCount,
+        u32 currentCount,
         const std::span<const T> data
     )
     {
@@ -95,17 +115,9 @@ namespace Vk
         const VkDeviceSize size   = data.size()  * sizeof(T);
         const VkDeviceSize offset = currentCount * sizeof(T);
 
-        auto stagingBuffer = Vk::Buffer
-        (
-            allocator,
-            size,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
-        );
-
-        stagingBuffer.LoadData(allocator, data);
+        m_stagingBuffer.Map(allocator);
+            std::memcpy(m_stagingBuffer.allocInfo.pMappedData, data.data(), size);
+        m_stagingBuffer.Unmap(allocator);
 
         const VkBufferCopy2 copyRegion =
         {
@@ -120,7 +132,7 @@ namespace Vk
         {
             .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
             .pNext       = nullptr,
-            .srcBuffer   = stagingBuffer.handle,
+            .srcBuffer   = m_stagingBuffer.handle,
             .dstBuffer   = buffer.handle,
             .regionCount = 1,
             .pRegions    = &copyRegion
@@ -128,12 +140,41 @@ namespace Vk
 
         vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
 
-        stagingBuffer.Destroy(allocator);
+        VkBufferMemoryBarrier2 barrier =
+        {
+            .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+            .dstAccessMask       = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_2_INDEX_READ_BIT,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer              = buffer.handle,
+            .offset              = offset,
+            .size                = size
+        };
 
-        auto vertexInfo = Models::VertexInfo(currentCount, data.size());
-        currentCount   += data.size();
+        VkDependencyInfo dependencyInfo =
+        {
+            .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pNext                    = nullptr,
+            .dependencyFlags          = 0,
+            .memoryBarrierCount       = 0,
+            .pMemoryBarriers          = nullptr,
+            .bufferMemoryBarrierCount = 0,
+            .pBufferMemoryBarriers    = &barrier,
+            .imageMemoryBarrierCount  = 0,
+            .pImageMemoryBarriers     = nullptr
+        };
 
-        return vertexInfo;
+        vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+
+        return
+        {
+            .offset = static_cast<u32>(offset / sizeof(T)),
+            .count  = static_cast<u32>(size   / sizeof(T))
+        };
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator) const
@@ -141,5 +182,6 @@ namespace Vk
         // Delete buffers
         vertexBuffer.Destroy(allocator);
         indexBuffer.Destroy(allocator);
+        m_stagingBuffer.Destroy(allocator);
     }
 }

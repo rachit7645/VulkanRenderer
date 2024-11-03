@@ -89,7 +89,11 @@ namespace Logger
                 std::forward<Args>(args)...
             );
 
+            #ifdef ENGINE_DEBUG
+            while (true) {}
+            #else
             std::exit(ErrorCode);
+            #endif
         }
     }
 

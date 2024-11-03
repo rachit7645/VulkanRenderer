@@ -17,7 +17,6 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#include <span>
 #include <vulkan/vulkan.h>
 
 #include "Context.h"
@@ -42,9 +41,6 @@ namespace Vk
 
         void Map(VmaAllocator allocator);
         void Unmap(VmaAllocator allocator) const;
-
-        template <typename T>
-        void LoadData(VmaAllocator allocator, const std::span<const T> data);
 
         void GetDeviceAddress(VkDevice device);
         void Destroy(VmaAllocator allocator) const;

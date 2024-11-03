@@ -12,32 +12,27 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#ifndef FORWARD_INSTANCE_BUFFER_H
-#define FORWARD_INSTANCE_BUFFER_H
-
-#include <array>
-#include <vulkan/vulkan.h>
+#ifndef FORWARD_INDIRECT_BUFFER_H
+#define FORWARD_INDIRECT_BUFFER_H
 
 #include "Renderer/RenderObject.h"
 #include "Util/Util.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
-#include "Vulkan/TextureManager.h"
 #include "Externals/VMA.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer::Forward
 {
-    class InstanceBuffer
+    class IndirectBuffer
     {
     public:
-        InstanceBuffer() = default;
-        InstanceBuffer(VkDevice device, VmaAllocator allocator);
+        IndirectBuffer() = default;
+        IndirectBuffer(VmaAllocator allocator);
 
-        void LoadInstances
+        u32 WriteDrawCalls
         (
             usize FIF,
-            const Vk::TextureManager& textureManager,
             const Models::ModelManager& modelManager,
             const std::vector<Renderer::RenderObject>& renderObjects
         );

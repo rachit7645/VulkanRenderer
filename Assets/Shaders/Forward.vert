@@ -38,6 +38,7 @@ layout(location = 0) out vec3 fragPosition;
 layout(location = 1) out vec2 fragTexCoords;
 layout(location = 2) out vec3 fragToCamera;
 layout(location = 3) out mat3 fragTBNMatrix;
+layout(location = 6) flat out uint fragDrawID;
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
@@ -47,17 +48,19 @@ layout(push_constant, scalar) uniform ConstantsBuffer
 
 void main()
 {
-    vec4 fragPos = Constants.Instances.instances[0].transform * vec4(position, 1.0f);
+    vec4 fragPos = Constants.Instances.instances[gl_DrawID].transform * vec4(position, 1.0f);
     fragPosition = fragPos.xyz;
     gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
 
     fragTexCoords = texCoords;
 
-    vec3 N = normalize(mat3(Constants.Instances.instances[0].normalMatrix) * normal);
-    vec3 T = normalize(mat3(Constants.Instances.instances[0].normalMatrix) * tangent);
+    vec3 N = normalize(mat3(Constants.Instances.instances[gl_DrawID].normalMatrix) * normal);
+    vec3 T = normalize(mat3(Constants.Instances.instances[gl_DrawID].normalMatrix) * tangent);
          T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 
     fragTBNMatrix = mat3(T, B, N);
     fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);
+
+    fragDrawID = gl_DrawID;
 }

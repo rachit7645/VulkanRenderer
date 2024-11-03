@@ -80,6 +80,10 @@ namespace Renderer
 
     void RenderManager::Update()
     {
+        m_frameCounter.Update();
+        m_camera.Update(m_frameCounter.frameDelta);
+        Engine::Inputs::Get().ImGuiDisplay();
+
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("Mesh"))
@@ -93,10 +97,6 @@ namespace Renderer
 
             ImGui::EndMainMenuBar();
         }
-
-        m_frameCounter.Update();
-        m_camera.Update(m_frameCounter.frameDelta);
-        Engine::Inputs::Get().ImGuiDisplay();
     }
 
     void RenderManager::BeginFrame()

@@ -163,8 +163,12 @@ namespace Vk
             VkPhysicalDeviceProperties2 propertySet = {};
             propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
+            VkPhysicalDeviceVulkan11Features vk11Features = {};
+            vk11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+
             VkPhysicalDeviceVulkan12Features vk12Features = {};
             vk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+            vk12Features.pNext = &vk11Features;
 
             VkPhysicalDeviceVulkan13Features vk13Features = {};
             vk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -214,15 +218,19 @@ namespace Vk
         const auto queue = QueueFamilyIndices(phyDevice, surface);
         const auto vk13Features = static_cast<VkPhysicalDeviceVulkan13Features*>(featureSet.pNext);
         const auto vk12Features = static_cast<VkPhysicalDeviceVulkan12Features*>(vk13Features->pNext);
+        const auto vk11Features = static_cast<VkPhysicalDeviceVulkan11Features*>(vk12Features->pNext);
 
         // Score parts
         const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
 
-        // Standard features
+        // Requirements
         const bool isQueueValid  = queue.IsComplete();
         const bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(phyDevice, REQUIRED_EXTENSIONS);
-        const bool hasAnisotropy = featureSet.features.samplerAnisotropy;
-        const bool hasWireframe  = featureSet.features.fillModeNonSolid;
+
+        // Standard features
+        const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
+        const bool hasWireframe         = featureSet.features.fillModeNonSolid;
+        const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = false;
@@ -232,6 +240,9 @@ namespace Vk
             const auto swapChainInfo = Vk::SwapchainInfo(phyDevice, surface);
             isSwapChainAdequate = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
         }
+
+        // Vulkan 1.1 features
+        const bool hasShaderDrawParameters = vk11Features->shaderDrawParameters;
 
         // Vulkan 1.2 features
         const bool hasBDA                         = vk12Features->bufferDeviceAddress;
@@ -248,14 +259,16 @@ namespace Vk
         const bool hasDynRender    = vk13Features->dynamicRendering;
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
-        const bool standard   = isQueueValid && hasExtensions && hasAnisotropy && hasWireframe;
+        const bool required   = isQueueValid && hasExtensions;
+        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect;
         const bool extensions = isSwapChainAdequate;
+        const bool vk11       = hasShaderDrawParameters;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing      && hasNonUniformIndexing        &&
                                 hasRuntimeDescriptorArray && hasVariableDescriptorCount && hasPartiallyBoundDescriptors &&
                                 hasSampledImageUpdateAfterBind;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
-        return (standard && extensions && vk12 && vk13) * discreteGPU;
+        return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -281,10 +294,16 @@ namespace Vk
             });
         }
 
+        // Add required Vulkan 1.1 features here
+        VkPhysicalDeviceVulkan11Features vk11Features = {};
+        vk11Features.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+        vk11Features.pNext                = nullptr;
+        vk11Features.shaderDrawParameters = VK_TRUE;
+
         // Add required Vulkan 1.2 features here
         VkPhysicalDeviceVulkan12Features vk12Features = {};
         vk12Features.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-        vk12Features.pNext                                        = nullptr;
+        vk12Features.pNext                                        = &vk11Features;
         vk12Features.bufferDeviceAddress                          = VK_TRUE;
         vk12Features.scalarBlockLayout                            = VK_TRUE;
         vk12Features.descriptorIndexing                           = VK_TRUE;
@@ -308,6 +327,7 @@ namespace Vk
         deviceFeatures.pNext                      = &vk13Features;
         deviceFeatures.features.samplerAnisotropy = VK_TRUE;
         deviceFeatures.features.fillModeNonSolid  = VK_TRUE;
+        deviceFeatures.features.multiDrawIndirect = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

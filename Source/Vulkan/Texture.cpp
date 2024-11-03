@@ -61,11 +61,9 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        stagingBuffer.LoadData
-        (
-            context.allocator,
-            std::span(static_cast<const stbi_uc*>(imageData.data), imageSize / sizeof(stbi_uc))
-        );
+        stagingBuffer.Map(context.allocator);
+            std::memcpy(stagingBuffer.allocInfo.pMappedData, imageData.data, imageSize);
+        stagingBuffer.Unmap(context.allocator);
 
         auto mipLevels = IsFlagSet(flags, Flags::GenMipmaps) ?
                          static_cast<u32>(std::floor(std::log2(std::max(imageData.width, imageData.height)))) + 1 :

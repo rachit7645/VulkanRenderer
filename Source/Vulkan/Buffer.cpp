@@ -78,20 +78,6 @@ namespace Vk
         vmaUnmapMemory(allocator, allocation);
     }
 
-    template <typename T>
-    void Buffer::LoadData(VmaAllocator allocator, const std::span<const T> data)
-    {
-        const bool isPersistentlyMapped = allocInfo.pMappedData != nullptr;
-
-        if (!isPersistentlyMapped)
-            Map(allocator);
-
-        std::memcpy(allocInfo.pMappedData, data.data(), allocInfo.size);
-
-        if (!isPersistentlyMapped)
-            Unmap(allocator);
-    }
-
     void Buffer::GetDeviceAddress(VkDevice device)
     {
         const VkBufferDeviceAddressInfo bdaInfo =
@@ -115,10 +101,4 @@ namespace Vk
 
         vmaDestroyBuffer(allocator, handle, allocation);
     }
-
-    // Explicit template initialisations
-    template void Buffer::LoadData(VmaAllocator, std::span<const Models::Vertex>);
-    template void Buffer::LoadData(VmaAllocator, std::span<const f32>);
-    template void Buffer::LoadData(VmaAllocator, std::span<const u8>);
-    template void Buffer::LoadData(VmaAllocator, std::span<const u32>);
 }

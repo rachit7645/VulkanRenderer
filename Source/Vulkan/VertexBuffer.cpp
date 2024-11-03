@@ -89,7 +89,9 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        stagingBuffer.LoadData(context.allocator, data);
+        stagingBuffer.Map(context.allocator);
+            std::memcpy(stagingBuffer.allocInfo.pMappedData, data.data(), size);
+        stagingBuffer.Unmap(context.allocator);
 
         buffer = Vk::Buffer
         (

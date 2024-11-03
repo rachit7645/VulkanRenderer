@@ -170,6 +170,7 @@ namespace Renderer::Forward
         std::memcpy(sceneSSBO.allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
 
         pipeline.instanceBuffer.LoadInstances(FIF, textureManager, modelManager, renderObjects);
+        auto drawCount = pipeline.indirectBuffer.WriteDrawCalls(FIF, modelManager, renderObjects);
 
         pipeline.pushConstant =
         {
@@ -202,21 +203,14 @@ namespace Renderer::Forward
 
         modelManager.geometryBuffer.Bind(currentCmdBuffer);
 
-        for (const auto& renderObject : renderObjects)
-        {
-            for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
-            {
-                vkCmdDrawIndexed
-                (
-                    currentCmdBuffer.handle,
-                    mesh.indexData.count,
-                    1,
-                    mesh.indexData.offset,
-                    static_cast<s32>(mesh.vertexData.offset),
-                    0
-                );
-            }
-        }
+        vkCmdDrawIndexedIndirect
+        (
+            currentCmdBuffer.handle,
+            pipeline.indirectBuffer.buffers[FIF].handle,
+            0,
+            drawCount,
+            sizeof(VkDrawIndexedIndirectCommand)
+        );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 
