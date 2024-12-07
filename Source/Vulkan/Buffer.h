@@ -48,7 +48,7 @@ namespace Vk
         // Vulkan handles
         VkBuffer        handle        = VK_NULL_HANDLE;
         VmaAllocation   allocation    = {};
-        VkDeviceAddress deviceAddress = VK_NULL_HANDLE;
+        VkDeviceAddress deviceAddress = 0;
 
         // Buffer allocation info
         VmaAllocationInfo allocInfo = {};

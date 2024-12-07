@@ -55,9 +55,8 @@ namespace Vk
         Models::VertexInfo UploadData
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VmaAllocator allocator,
             const Vk::Buffer& buffer,
-            u32 currentCount,
+            u32& currentCount,
             const std::span<const T> data
         );
 

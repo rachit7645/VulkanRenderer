@@ -54,7 +54,7 @@ namespace Vk
             STAGING_BUFFER_SIZE,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
     }
@@ -89,13 +89,8 @@ namespace Vk
 
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
-            Logger::Warning("Current Vertex/Index Count: {}/{}\n", vertexCount, indexCount);
-
-            infos[0] = UploadData(cmdBuffer, context.allocator, vertexBuffer, vertexCount, vertices);
-            vertexCount += infos[0].count;
-
-            infos[1] = UploadData(cmdBuffer, context.allocator, indexBuffer, indexCount, indices);
-            indexCount += infos[1].count;
+            infos[0] = UploadData(cmdBuffer, vertexBuffer, vertexCount, vertices);
+            infos[1] = UploadData(cmdBuffer, indexBuffer,  indexCount,  indices);
         });
 
         return infos;
@@ -105,9 +100,8 @@ namespace Vk
     Models::VertexInfo GeometryBuffer::UploadData
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VmaAllocator allocator,
         const Vk::Buffer& buffer,
-        u32 currentCount,
+        u32& currentCount,
         const std::span<const T> data
     )
     {
@@ -115,9 +109,27 @@ namespace Vk
         const VkDeviceSize size   = data.size()  * sizeof(T);
         const VkDeviceSize offset = currentCount * sizeof(T);
 
-        m_stagingBuffer.Map(allocator);
-            std::memcpy(m_stagingBuffer.allocInfo.pMappedData, data.data(), size);
-        m_stagingBuffer.Unmap(allocator);
+        if (size > m_stagingBuffer.allocInfo.size)
+        {
+            Logger::Error
+            (
+                "Not enough space in staging buffer! [Required={}] [Available={}]\n",
+                size,
+                m_stagingBuffer.allocInfo.size
+            );
+        }
+
+        if ((size + offset) > buffer.allocInfo.size)
+        {
+            Logger::Error
+            (
+                "Not enough space in buffer! [Required={}] [Available={}]\n",
+                size,
+                buffer.allocInfo.size
+            );
+        }
+
+        std::memcpy(m_stagingBuffer.allocInfo.pMappedData, data.data(), size);
 
         const VkBufferCopy2 copyRegion =
         {
@@ -140,7 +152,7 @@ namespace Vk
 
         vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
 
-        VkBufferMemoryBarrier2 barrier =
+        const VkBufferMemoryBarrier2 barrier =
         {
             .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
             .pNext               = nullptr,
@@ -155,14 +167,14 @@ namespace Vk
             .size                = size
         };
 
-        VkDependencyInfo dependencyInfo =
+        const VkDependencyInfo dependencyInfo =
         {
             .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             .pNext                    = nullptr,
             .dependencyFlags          = 0,
             .memoryBarrierCount       = 0,
             .pMemoryBarriers          = nullptr,
-            .bufferMemoryBarrierCount = 0,
+            .bufferMemoryBarrierCount = 1,
             .pBufferMemoryBarriers    = &barrier,
             .imageMemoryBarrierCount  = 0,
             .pImageMemoryBarriers     = nullptr
@@ -170,11 +182,15 @@ namespace Vk
 
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
 
-        return
+        Models::VertexInfo info =
         {
-            .offset = static_cast<u32>(offset / sizeof(T)),
-            .count  = static_cast<u32>(size   / sizeof(T))
+            .offset = currentCount,
+            .count  = static_cast<u32>(data.size())
         };
+
+        currentCount += info.count;
+
+        return info;
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator) const
