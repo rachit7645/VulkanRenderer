@@ -130,7 +130,7 @@ namespace Models
     )
     {
         std::vector<Vertex> vertices = {};
-        std::vector<Index> indices   = {};
+        std::vector<Index>  indices   = {};
 
         vertices.reserve(mesh->mNumVertices);
         indices.reserve(mesh->mNumFaces * 3); // Assume triangles
@@ -149,7 +149,15 @@ namespace Models
         for (u32 i = 0; i < mesh->mNumFaces; ++i)
         {
             const aiFace& face = mesh->mFaces[i];
+
+            #ifdef ENGINE_DEBUG
             // Assume triangles
+            if (face.mNumIndices != 3)
+            {
+                Logger::Error("Face is not a triangle! [mNumIndices={}]\n", face.mNumIndices);
+            }
+            #endif
+
             indices.emplace_back(face.mIndices[0]);
             indices.emplace_back(face.mIndices[1]);
             indices.emplace_back(face.mIndices[2]);

@@ -18,8 +18,8 @@
 
 namespace Models
 {
-    ModelManager::ModelManager(VmaAllocator allocator)
-        : geometryBuffer(allocator)
+    ModelManager::ModelManager(VkDevice device, VmaAllocator allocator)
+        : geometryBuffer(device, allocator)
     {
     }
 

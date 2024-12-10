@@ -26,7 +26,7 @@ namespace Models
     class ModelManager
     {
     public:
-        explicit ModelManager(VmaAllocator allocator);
+        explicit ModelManager(VkDevice device, VmaAllocator allocator);
         void Destroy(VmaAllocator allocator);
 
         usize AddModel(const Vk::Context& context, Vk::TextureManager& textureManager, const std::string_view path);

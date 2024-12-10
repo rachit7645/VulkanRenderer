@@ -17,7 +17,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Externals/GLM.h"
 #include "Vulkan/Util.h"
 
 namespace Renderer::Forward
@@ -26,6 +25,7 @@ namespace Renderer::Forward
     {
         VkDeviceAddress scene    = {};
         VkDeviceAddress instance = {};
+        VkDeviceAddress vertices = {};
     };
 }
 

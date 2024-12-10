@@ -95,7 +95,7 @@ namespace Vk::Builders
         VkPipelineViewportStateCreateInfo viewportInfo = {};
 
         // Vertex info
-        VkPipelineVertexInputStateCreateInfo           vertexInputInfo          = {};
+        VkPipelineVertexInputStateCreateInfo           vertexInputInfo = {};
         std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
         std::vector<VkVertexInputAttributeDescription> vertexAttribDescriptions;
 

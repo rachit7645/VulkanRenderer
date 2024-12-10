@@ -29,22 +29,17 @@
 #include "PBR.glsl"
 #include "Instance.glsl"
 #include "Scene.glsl"
+#include "ForwardPushConstant.glsl"
 
 // Fragment inputs
-layout(location = 0) in vec3 fragPosition;
-layout(location = 1) in vec2 fragTexCoords;
-layout(location = 2) in vec3 fragToCamera;
-layout(location = 3) in mat3 fragTBNMatrix;
-layout(location = 6) flat in uint fragDrawID;
+layout(location = 0)      in vec3 fragPosition;
+layout(location = 1)      in vec2 fragTexCoords;
+layout(location = 2)      in vec3 fragToCamera;
+layout(location = 3) flat in uint fragDrawID;
+layout(location = 4)      in mat3 fragTBNMatrix;
 
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
-
-layout(push_constant, scalar) uniform ConstantsBuffer
-{
-    SceneBuffer    Scene;
-    InstanceBuffer Instances;
-} Constants;
 
 layout(set = 0, binding = 0) uniform sampler texSampler;
 layout(set = 1, binding = 0) uniform texture2D textures[];

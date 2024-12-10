@@ -23,44 +23,32 @@
 
 // Includes
 #include "Lights.glsl"
-#include "Instance.glsl"
-#include "Instance.glsl"
-#include "Scene.glsl"
-
-// Vertex inputs
-layout(location = 0) in vec3 position;
-layout(location = 1) in vec2 texCoords;
-layout(location = 2) in vec3 normal;
-layout(location = 3) in vec3 tangent;
+#include "ForwardPushConstant.glsl"
 
 // Vertex outputs
-layout(location = 0) out vec3 fragPosition;
-layout(location = 1) out vec2 fragTexCoords;
-layout(location = 2) out vec3 fragToCamera;
-layout(location = 3) out mat3 fragTBNMatrix;
-layout(location = 6) flat out uint fragDrawID;
-
-layout(push_constant, scalar) uniform ConstantsBuffer
-{
-    SceneBuffer    Scene;
-    InstanceBuffer Instances;
-} Constants;
+layout(location = 0)      out vec3 fragPosition;
+layout(location = 1)      out vec2 fragTexCoords;
+layout(location = 2)      out vec3 fragToCamera;
+layout(location = 3) flat out uint fragDrawID;
+layout(location = 4)      out mat3 fragTBNMatrix;
 
 void main()
 {
-    vec4 fragPos = Constants.Instances.instances[gl_DrawID].transform * vec4(position, 1.0f);
+    Vertex   vertex   = Constants.Vertices.vertices[gl_VertexIndex];
+    Instance instance = Constants.Instances.instances[gl_DrawID];
+
+    vec4 fragPos = instance.transform * vec4(vertex.attrib0.xyz, 1.0f);
     fragPosition = fragPos.xyz;
     gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
 
-    fragTexCoords = texCoords;
+    fragTexCoords = vec2(vertex.attrib0.w, vertex.attrib1.x);
+    fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);
+    fragDrawID    = gl_DrawID;
 
-    vec3 N = normalize(mat3(Constants.Instances.instances[gl_DrawID].normalMatrix) * normal);
-    vec3 T = normalize(mat3(Constants.Instances.instances[gl_DrawID].normalMatrix) * tangent);
+    vec3 N = normalize(mat3(instance.normalMatrix) * vertex.attrib1.yzw);
+    vec3 T = normalize(mat3(instance.normalMatrix) * vertex.attrib2.xyz);
          T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 
     fragTBNMatrix = mat3(T, B, N);
-    fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);
-
-    fragDrawID = gl_DrawID;
 }

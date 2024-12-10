@@ -27,12 +27,12 @@ namespace Renderer
         : m_window(window),
           m_context(m_window),
           m_textureManager(m_context.device, m_context.physicalDeviceLimits),
-          m_modelManager(m_context.allocator),
+          m_modelManager(m_context.device, m_context.allocator),
           m_swapPass(*window, m_context),
           m_forwardPass(m_context, m_textureManager, m_swapPass.swapchain.extent)
     {
         m_renderObjects.emplace_back(RenderObject(
-            m_modelManager.AddModel(m_context, m_textureManager, "Plane/Plane.gltf"),
+            m_modelManager.AddModel(m_context, m_textureManager, "Sponza/glTF/Sponza.gltf"),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.25f, 0.25f, 0.25f)

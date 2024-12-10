@@ -14,6 +14,7 @@
 
 #include "GeometryBuffer.h"
 
+#include <thread>
 #include <Util/Log.h>
 
 #include "Util.h"
@@ -26,17 +27,19 @@ namespace Vk
     constexpr VkDeviceSize STAGING_BUFFER_SIZE = 16 * 1024 * 1024;
     constexpr f32          BUFFER_GROWTH_RATE  = 1.5f;
 
-    GeometryBuffer::GeometryBuffer(VmaAllocator allocator)
+    GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
     {
         vertexBuffer = Vk::Buffer
         (
             allocator,
             INITIAL_BUFFER_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            0,
+            VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
+
+        vertexBuffer.GetDeviceAddress(device);
 
         indexBuffer = Vk::Buffer
         (
@@ -61,20 +64,6 @@ namespace Vk
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
-        const std::array<VkBuffer, 1>     buffers = {vertexBuffer.handle};
-        const std::array<VkDeviceSize, 1> offsets = {0};
-
-        vkCmdBindVertexBuffers2
-        (
-            cmdBuffer.handle,
-            0,
-            static_cast<u32>(buffers.size()),
-            buffers.data(),
-            offsets.data(),
-            nullptr,
-            nullptr
-        );
-
         vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, indexType);
     }
 
@@ -158,8 +147,8 @@ namespace Vk
             .pNext               = nullptr,
             .srcStageMask        = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
             .srcAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            .dstStageMask        = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
-            .dstAccessMask       = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_2_INDEX_READ_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+            .dstAccessMask       = VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_INDEX_READ_BIT,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .buffer              = buffer.handle,

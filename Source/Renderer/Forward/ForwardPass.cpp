@@ -175,7 +175,8 @@ namespace Renderer::Forward
         pipeline.pushConstant =
         {
             .scene    = sceneSSBO.deviceAddress,
-            .instance = pipeline.instanceBuffer.buffers[FIF].deviceAddress
+            .instance = pipeline.instanceBuffer.buffers[FIF].deviceAddress,
+            .vertices = modelManager.geometryBuffer.vertexBuffer.deviceAddress
         };
 
         pipeline.LoadPushConstants
