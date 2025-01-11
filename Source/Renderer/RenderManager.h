@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef RENDER_MANAGER_H
@@ -21,61 +21,64 @@
 #include <vulkan/vulkan.h>
 
 #include "FreeCamera.h"
-#include "RenderPasses/SwapPass.h"
-#include "RenderPasses/ForwardPass.h"
+#include "RenderObject.h"
+#include "Swapchain/SwapchainPass.h"
+#include "Forward/ForwardPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/VertexBuffer.h"
-#include "Vulkan/Swapchain.h"
+#include "Vulkan/TextureManager.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Models/Model.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer
 {
     class RenderManager
     {
     public:
-        // Constructor
         explicit RenderManager(const std::shared_ptr<Engine::Window>& window);
-        // Destructor
         ~RenderManager();
 
-        // Render frame
+        // No copying
+        RenderManager(const RenderManager&)            = delete;
+        RenderManager& operator=(const RenderManager&) = delete;
+
+        // Only moving
+        RenderManager(RenderManager&& other)            = default;
+        RenderManager& operator=(RenderManager&& other) = default;
+
         void Render();
     private:
-        // Begin frame
         void BeginFrame();
-        // Update
         void Update();
-        // End frame
         void EndFrame();
-        // Submit queue
         void SubmitQueue();
+        void Reset();
 
-        // Initialise ImGui
         void InitImGui();
-        // Create sync objects
         void CreateSyncObjects();
 
-        // Pointer to window
+        // Object handles
         std::shared_ptr<Engine::Window> m_window = nullptr;
-        // Vulkan context
-        std::shared_ptr<Vk::Context> m_context = nullptr;
-        // Swap pass
-        RenderPasses::SwapPass m_swapPass;
-        // Forward pipeline
-        RenderPasses::ForwardPass m_forwardPass;
-        // Model
-        Models::Model m_model;
-        // Camera
-        Renderer::FreeCamera m_camera = {};
+        Vk::Context                     m_context;
+        Vk::TextureManager              m_textureManager;
+        Models::ModelManager            m_modelManager;
 
-        // Fences
+        // Render Passes
+        Swapchain::SwapchainPass m_swapPass;
+        Forward::ForwardPass     m_forwardPass;
+
+        // Scene objects
+        std::vector<Renderer::RenderObject> m_renderObjects;
+        Renderer::FreeCamera                m_camera;
+
+        // Sync objects
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
 
         // Frame index
-        usize m_currentFIF = 0;
+        usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
     };

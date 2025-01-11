@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <numbers>
@@ -22,11 +22,6 @@
 
 namespace Renderer
 {
-    // Constants (per us)
-    constexpr f32 CAMERA_SPEED       = 0.00025f;
-    constexpr f32 CAMERA_SENSITIVITY = 0.0001f;
-    constexpr f32 CAMERA_ZOOM        = 0.000045f;
-
     FreeCamera::FreeCamera()
         : FreeCamera(glm::vec3(30.0f, 30.0f, 4.0f), glm::vec3(0.0f, std::numbers::pi, 0.0f), Renderer::DEFAULT_FOV)
     {
@@ -61,9 +56,9 @@ namespace Renderer
 
     void FreeCamera::Move(f32 frameDelta)
     {
-        const auto& inputs = Engine::Inputs::GetInstance();
+        const auto& inputs = Engine::Inputs::Get();
 
-        f32 velocity = CAMERA_SPEED * frameDelta;
+        f32 velocity = speed * frameDelta;
 
         // Forward
         if (inputs.IsKeyPressed(SDL_SCANCODE_W))
@@ -96,9 +91,9 @@ namespace Renderer
 
     void FreeCamera::Rotate(f32 frameDelta)
     {
-        auto& inputs = Engine::Inputs::GetInstance();
+        auto& inputs = Engine::Inputs::Get();
 
-        auto speed = CAMERA_SENSITIVITY * frameDelta;
+        auto speed = sensitivity * frameDelta;
 
         // Avoids freaking out
         if (inputs.WasMouseMoved())
@@ -121,13 +116,34 @@ namespace Renderer
 
     void FreeCamera::Zoom(f32 frameDelta)
     {
-        auto& inputs = Engine::Inputs::GetInstance();
+        auto& inputs = Engine::Inputs::Get();
 
         // Stops things from going haywire
         if (inputs.WasMouseScrolled())
         {
-            FOV -= static_cast<f32>(inputs.GetMouseScroll().y) * CAMERA_ZOOM * frameDelta;
+            FOV -= static_cast<f32>(inputs.GetMouseScroll().y) * zoom * frameDelta;
             FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }
+
+    void FreeCamera::ImGuiDisplay()
+    {
+        Camera::ImGuiDisplay();
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Camera"))
+            {
+                // Camera Settings
+                ImGui::DragFloat("Speed",       &speed,       1.0f, 0.0f, 0.0f, "%.7f");
+                ImGui::DragFloat("Sensitivity", &sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
+                ImGui::DragFloat("Zoom",        &zoom,        1.0f, 0.0f, 0.0f, "%.7f");
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+    }
+
 }

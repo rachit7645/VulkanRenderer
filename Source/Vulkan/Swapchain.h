@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef VK_SWAPCHAIN_H
@@ -34,8 +34,8 @@ namespace Vk
     class Swapchain
     {
     public:
-        Swapchain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
-        void RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
+        Swapchain(Engine::Window& window, const Vk::Context& context);
+        void RecreateSwapChain(Engine::Window& window, const Vk::Context& context);
         void Destroy(VkDevice device);
 
         void Present(VkQueue queue, usize FIF);
@@ -43,7 +43,7 @@ namespace Vk
         void AcquireSwapChainImage(VkDevice device, usize FIF);
 
         // Swap chain data
-        VkSwapchainKHR handle = {};
+        VkSwapchainKHR handle = VK_NULL_HANDLE;
         VkExtent2D     extent = {};
 
         // Swapchain images data
@@ -56,7 +56,7 @@ namespace Vk
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
     private:
-        void CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context);
+        void CreateSwapChain(const Engine::Window& window, const Vk::Context& context);
         void DestroySwapchain(VkDevice device);
 
         void CreateImageViews(VkDevice device);

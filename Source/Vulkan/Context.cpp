@@ -1,46 +1,42 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "Context.h"
 
 #include <map>
 #include <unordered_map>
+#include <array>
+#include <vector>
 #include <vulkan/vk_enum_string_helper.h>
 
 #include "Extensions.h"
 #include "SwapchainInfo.h"
-#include "Util/Log.h"
 #include "Util.h"
+#include "Constants.h"
+#include "Util/Log.h"
 
 namespace Vk
 {
-    // Constants
-    constexpr auto VULKAN_API_VERSION = VK_API_VERSION_1_3;
-
     // Required validation layers
     #ifdef ENGINE_DEBUG
-    constexpr std::array<const char*, 2> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
+    constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     #endif
 
     // Required device extensions
-    #ifdef ENGINE_DEBUG
-    constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    #else
-    constexpr std::array<const char*, 1> REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    #endif
+    constexpr std::array REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME};
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
     {
@@ -58,33 +54,9 @@ namespace Vk
         Logger::Info("{}\n", "Initialised vulkan context!");
     }
 
-    std::vector<VkDescriptorSet> Context::AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts)
-    {
-        VkDescriptorSetAllocateInfo allocInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .descriptorPool     = descriptorPool,
-            .descriptorSetCount = static_cast<u32>(descriptorLayouts.size()),
-            .pSetLayouts        = descriptorLayouts.data()
-        };
-
-        auto descriptorSets = std::vector<VkDescriptorSet>(descriptorLayouts.size(), VK_NULL_HANDLE);
-
-        Vk::CheckResult(vkAllocateDescriptorSets(
-            device,
-            &allocInfo,
-            descriptorSets.data()),
-            "Failed to allocate descriptor sets!"
-        );
-
-        // Return
-        return descriptorSets;
-    }
-
     void Context::CreateInstance(SDL_Window* window)
     {
-        VkApplicationInfo appInfo =
+        constexpr VkApplicationInfo appInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pNext              = nullptr,
@@ -101,11 +73,11 @@ namespace Vk
         m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
         #endif
 
-        VkInstanceCreateInfo createInfo =
+        const VkInstanceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             #ifdef ENGINE_DEBUG
-            .pNext                   = reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&m_layers.messengerInfo),
+            .pNext                   = &m_layers.messengerInfo,
             #else
             .pNext                   = nullptr,
             #endif
@@ -151,6 +123,11 @@ namespace Vk
         }
 
         Logger::Info("Initialised window surface! [handle={}]\n", std::bit_cast<void*>(surface));
+
+        m_deletionQueue.PushDeletor([this] ()
+        {
+            vkDestroySurfaceKHR(instance, surface, nullptr);
+        });
     }
 
     void Context::PickPhysicalDevice()
@@ -183,23 +160,23 @@ namespace Vk
 
         for (const auto& currentDevice : devices)
         {
-            VkPhysicalDeviceProperties2 propertySet =
-            {
-                .sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-                .pNext      = nullptr,
-                .properties = {}
-            };
+            VkPhysicalDeviceProperties2 propertySet = {};
+            propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+            VkPhysicalDeviceVulkan11Features vk11Features = {};
+            vk11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+
+            VkPhysicalDeviceVulkan12Features vk12Features = {};
+            vk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+            vk12Features.pNext = &vk11Features;
 
             VkPhysicalDeviceVulkan13Features vk13Features = {};
             vk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-            vk13Features.pNext = nullptr;
+            vk13Features.pNext = &vk12Features;
 
-            VkPhysicalDeviceFeatures2 featureSet =
-            {
-                .sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                .pNext    = &vk13Features,
-                .features = {}
-            };
+            VkPhysicalDeviceFeatures2 featureSet = {};
+            featureSet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            featureSet.pNext = &vk13Features;
 
             vkGetPhysicalDeviceProperties2(currentDevice, &propertySet);
             vkGetPhysicalDeviceFeatures2(currentDevice, &featureSet);
@@ -211,11 +188,10 @@ namespace Vk
         }
 
         // Best GPU => Highest score
-        auto [highestScore, bestDevice] = *scores.rbegin();
+        const auto [highestScore, bestDevice] = *scores.crbegin();
         // Score = 0 => Required features not supported
         if (highestScore == 0)
         {
-            // Log
             Logger::VulkanError("Failed to find any suitable physical device!");
         }
 
@@ -226,48 +202,73 @@ namespace Vk
 
         Logger::Info
         (
-            "Selecting GPU: {} [{}] [DriverVersion={}] [APIVersion={}]\n",
+            "Selecting GPU: {} [{}]\n",
             properties[physicalDevice].properties.deviceName,
-            string_VkPhysicalDeviceType(properties[physicalDevice].properties.deviceType),
-            properties[physicalDevice].properties.driverVersion,
-            properties[physicalDevice].properties.apiVersion
+            string_VkPhysicalDeviceType(properties[physicalDevice].properties.deviceType)
         );
     }
 
     usize Context::CalculateScore
     (
-        VkPhysicalDevice logicalDevice,
-        VkPhysicalDeviceProperties2& propertySet,
-        VkPhysicalDeviceFeatures2& featureSet
+        const VkPhysicalDevice phyDevice,
+        const VkPhysicalDeviceProperties2& propertySet,
+        const VkPhysicalDeviceFeatures2& featureSet
     )
     {
-        auto queue = QueueFamilyIndices(logicalDevice, surface);
-        auto vk13Features = reinterpret_cast<VkPhysicalDeviceVulkan13Features*>(featureSet.pNext);
+        const auto queue = QueueFamilyIndices(phyDevice, surface);
+        const auto vk13Features = static_cast<VkPhysicalDeviceVulkan13Features*>(featureSet.pNext);
+        const auto vk12Features = static_cast<VkPhysicalDeviceVulkan12Features*>(vk13Features->pNext);
+        const auto vk11Features = static_cast<VkPhysicalDeviceVulkan11Features*>(vk12Features->pNext);
 
-        // Calculate score parts
-        usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
+        // Score parts
+        const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
 
-        // Calculate score multipliers
-        bool isQueueValid  = queue.IsComplete();
-        bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(logicalDevice, REQUIRED_EXTENSIONS);
-        bool hasAnisotropy = featureSet.features.samplerAnisotropy;
-        bool hasWireframe  = featureSet.features.fillModeNonSolid;
-        bool multiViewport = featureSet.features.multiViewport;
-        bool hasSync2      = vk13Features->synchronization2;
-        bool hasDynRender  = vk13Features->dynamicRendering;
+        // Requirements
+        const bool isQueueValid  = queue.IsComplete();
+        const bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(phyDevice, REQUIRED_EXTENSIONS);
+
+        // Standard features
+        const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
+        const bool hasWireframe         = featureSet.features.fillModeNonSolid;
+        const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = false;
 
         if (hasExtensions)
         {
-            auto swapChainInfo = Vk::SwapchainInfo(logicalDevice, surface);
+            const auto swapChainInfo = Vk::SwapchainInfo(phyDevice, surface);
             isSwapChainAdequate = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
         }
 
-        return hasExtensions * isQueueValid * isSwapChainAdequate *
-               hasAnisotropy * hasWireframe * multiViewport *
-               hasSync2      * hasDynRender * discreteGPU;
+        // Vulkan 1.1 features
+        const bool hasShaderDrawParameters = vk11Features->shaderDrawParameters;
+
+        // Vulkan 1.2 features
+        const bool hasBDA                         = vk12Features->bufferDeviceAddress;
+        const bool hasScalarLayout                = vk12Features->scalarBlockLayout;
+        const bool hasDescriptorIndexing          = vk12Features->descriptorIndexing;
+        const bool hasNonUniformIndexing          = vk12Features->shaderSampledImageArrayNonUniformIndexing;
+        const bool hasRuntimeDescriptorArray      = vk12Features->runtimeDescriptorArray;
+        const bool hasVariableDescriptorCount     = vk12Features->descriptorBindingVariableDescriptorCount;
+        const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
+        const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
+
+        // Vulkan 1.3 features
+        const bool hasSync2        = vk13Features->synchronization2;
+        const bool hasDynRender    = vk13Features->dynamicRendering;
+        const bool hasMaintenance4 = vk13Features->maintenance4;
+
+        const bool required   = isQueueValid && hasExtensions;
+        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect;
+        const bool extensions = isSwapChainAdequate;
+        const bool vk11       = hasShaderDrawParameters;
+        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing      && hasNonUniformIndexing        &&
+                                hasRuntimeDescriptorArray && hasVariableDescriptorCount && hasPartiallyBoundDescriptors &&
+                                hasSampledImageUpdateAfterBind;
+        const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
+
+        return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
     }
 
     void Context::CreateLogicalDevice()
@@ -275,42 +276,63 @@ namespace Vk
         queueFamilies = QueueFamilyIndices(physicalDevice, surface);
 
         auto uniqueQueueFamilies = queueFamilies.GetUniqueFamilies();
+
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        queueCreateInfos.reserve(uniqueQueueFamilies.size());
 
         constexpr f32 QUEUE_PRIORITY = 1.0f;
 
         for (auto queueFamily : uniqueQueueFamilies)
         {
-            VkDeviceQueueCreateInfo queueCreateInfo =
-            {
+            queueCreateInfos.emplace_back(VkDeviceQueueCreateInfo{
                 .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 .pNext            = nullptr,
                 .flags            = 0,
                 .queueFamilyIndex = queueFamily,
                 .queueCount       = 1,
                 .pQueuePriorities = &QUEUE_PRIORITY
-            };
-
-            queueCreateInfos.push_back(queueCreateInfo);
+            });
         }
 
-        // Add required features here
-        VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
-        deviceFeatures.fillModeNonSolid  = VK_TRUE;
-        deviceFeatures.multiViewport     = VK_TRUE;
+        // Add required Vulkan 1.1 features here
+        VkPhysicalDeviceVulkan11Features vk11Features = {};
+        vk11Features.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+        vk11Features.pNext                = nullptr;
+        vk11Features.shaderDrawParameters = VK_TRUE;
+
+        // Add required Vulkan 1.2 features here
+        VkPhysicalDeviceVulkan12Features vk12Features = {};
+        vk12Features.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        vk12Features.pNext                                        = &vk11Features;
+        vk12Features.bufferDeviceAddress                          = VK_TRUE;
+        vk12Features.scalarBlockLayout                            = VK_TRUE;
+        vk12Features.descriptorIndexing                           = VK_TRUE;
+        vk12Features.shaderSampledImageArrayNonUniformIndexing    = VK_TRUE;
+        vk12Features.runtimeDescriptorArray                       = VK_TRUE;
+        vk12Features.descriptorBindingVariableDescriptorCount     = VK_TRUE;
+        vk12Features.descriptorBindingPartiallyBound              = VK_TRUE;
+        vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
 
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-        vk13Features.pNext            = nullptr;
+        vk13Features.pNext            = &vk12Features;
         vk13Features.synchronization2 = VK_TRUE;
         vk13Features.dynamicRendering = VK_TRUE;
+        vk13Features.maintenance4     = VK_TRUE;
 
-        VkDeviceCreateInfo createInfo =
+        // Add required features here
+        VkPhysicalDeviceFeatures2 deviceFeatures = {};
+        deviceFeatures.sType                      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext                      = &vk13Features;
+        deviceFeatures.features.samplerAnisotropy = VK_TRUE;
+        deviceFeatures.features.fillModeNonSolid  = VK_TRUE;
+        deviceFeatures.features.multiDrawIndirect = VK_TRUE;
+
+        const VkDeviceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext                   = &vk13Features,
+            .pNext                   = &deviceFeatures,
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
@@ -323,7 +345,7 @@ namespace Vk
         #endif
             .enabledExtensionCount   = static_cast<u32>(REQUIRED_EXTENSIONS.size()),
             .ppEnabledExtensionNames = REQUIRED_EXTENSIONS.data(),
-            .pEnabledFeatures        = &deviceFeatures
+            .pEnabledFeatures        = nullptr
         };
 
         Vk::CheckResult(vkCreateDevice(
@@ -336,10 +358,10 @@ namespace Vk
 
         m_extensions.LoadDeviceFunctions(device);
 
-        Logger::Info("Successfully created vulkan logical device! [handle={}]\n", std::bit_cast<void*>(device));
+        Logger::Info("Created logical device! [handle={}]\n", std::bit_cast<void*>(device));
 
         // We assume that this graphics queue also has transfer capabilities
-        // Also we make sure that it has presentation capabilities
+        // We already know that it has presentation capabilities
         vkGetDeviceQueue
         (
             device,
@@ -351,7 +373,7 @@ namespace Vk
 
     void Context::CreateCommandPool()
     {
-        VkCommandPoolCreateInfo createInfo =
+        const VkCommandPoolCreateInfo createInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext            = nullptr,
@@ -371,43 +393,53 @@ namespace Vk
 
         m_deletionQueue.PushDeletor([this] ()
         {
+            Vk::CheckResult(vkResetCommandPool(device, commandPool, 0), "Failed to reset command pool!");
             vkDestroyCommandPool(device, commandPool, nullptr);
         });
     }
 
     void Context::CreateDescriptorPool()
     {
-        VkDescriptorPoolCreateInfo poolCreateInfo =
+        constexpr VkDescriptorPoolSize samplerPoolSize =
+        {
+            .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = (1 << 4) * FRAMES_IN_FLIGHT
+        };
+
+        const VkDescriptorPoolCreateInfo poolCreateInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext         = nullptr,
             .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-            .maxSets       = static_cast<u32>(Vk::GetDescriptorPoolSize()),
-            .poolSizeCount = Vk::DESCRIPTOR_POOL_SIZES.size(),
-            .pPoolSizes    = Vk::DESCRIPTOR_POOL_SIZES.data()
+            .maxSets       = static_cast<u32>(samplerPoolSize.descriptorCount),
+            .poolSizeCount = 1,
+            .pPoolSizes    = &samplerPoolSize
         };
 
         Vk::CheckResult(vkCreateDescriptorPool(
             device,
             &poolCreateInfo,
             nullptr,
-            &descriptorPool),
-            "Failed to create descriptor pool!"
+            &imguiDescriptorPool),
+            "Failed to create ImGui descriptor pool!"
         );
 
-        Logger::Info("Created descriptor pool! [handle={}]\n", std::bit_cast<void*>(descriptorPool));
+        Logger::Info("Created ImGui descriptor pool! [handle={}]\n", std::bit_cast<void*>(imguiDescriptorPool));
+
+        descriptorCache = Vk::DescriptorCache(device);
 
         m_deletionQueue.PushDeletor([this] ()
         {
-            vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+            vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
+            descriptorCache.Destroy(device);
         });
     }
 
     void Context::CreateAllocator()
     {
-        VmaAllocatorCreateInfo createInfo =
+        const VmaAllocatorCreateInfo createInfo =
         {
-            .flags                       = 0,
+            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
             .physicalDevice              = physicalDevice,
             .device                      = device,
             .preferredLargeHeapBlockSize = 0,
@@ -436,7 +468,6 @@ namespace Vk
     {
         m_deletionQueue.FlushQueue();
 
-        vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyDevice(device, nullptr);
 
         #ifdef ENGINE_DEBUG
@@ -444,6 +475,7 @@ namespace Vk
         #endif
 
         m_extensions.Destroy();
+
         vkDestroyInstance(instance, nullptr);
 
         Logger::Info("{}\n", "Destroyed vulkan context!");

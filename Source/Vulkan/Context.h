@@ -1,31 +1,29 @@
-/*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+    /*
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef VK_CONTEXT_H
 #define VK_CONTEXT_H
 
-#include <array>
-#include <vector>
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
 
 #include "ValidationLayers.h"
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
-#include "Constants.h"
+#include "DescriptorCache.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
 #include "Util/DeletionQueue.h"
@@ -38,8 +36,6 @@ namespace Vk
     public:
         explicit Context(const std::shared_ptr<Engine::Window>& window);
         void Destroy();
-
-        std::vector<VkDescriptorSet> AllocateDescriptorSets(const std::span<VkDescriptorSetLayout> descriptorLayouts);
 
         // Vulkan instance
         VkInstance instance = VK_NULL_HANDLE;
@@ -54,16 +50,18 @@ namespace Vk
         // Surface
         VkSurfaceKHR surface = VK_NULL_HANDLE;
 
-        // Queue families
-        Vk::QueueFamilyIndices queueFamilies = {};
+        // Queues
+        Vk::QueueFamilyIndices queueFamilies;
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
 
         // Pools
-        VkCommandPool    commandPool    = VK_NULL_HANDLE;
-        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+        VkCommandPool    commandPool         = VK_NULL_HANDLE;
+        VkDescriptorPool imguiDescriptorPool = VK_NULL_HANDLE;
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
+        // Descriptor cache
+        Vk::DescriptorCache descriptorCache;
     private:
         void CreateInstance(SDL_Window* window);
         void CreateSurface(SDL_Window* window);
@@ -73,14 +71,13 @@ namespace Vk
 
         [[nodiscard]] usize CalculateScore
         (
-            VkPhysicalDevice logicalDevice,
-            VkPhysicalDeviceProperties2& propertySet,
-            VkPhysicalDeviceFeatures2& featureSet
+            VkPhysicalDevice phyDevice,
+            const VkPhysicalDeviceProperties2& propertySet,
+            const VkPhysicalDeviceFeatures2& featureSet
         );
 
         void CreateCommandPool();
         void CreateDescriptorPool();
-
         void CreateAllocator();
 
         // Extensions
@@ -88,7 +85,7 @@ namespace Vk
 
         #ifdef ENGINE_DEBUG
         // Vulkan validation layers
-        Vk::ValidationLayers m_layers = {};
+        Vk::ValidationLayers m_layers;
         #endif
 
         // Deletion queue

@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "Extensions.h"
@@ -24,10 +24,6 @@
 
 namespace Vk
 {
-    // Usings
-    using CreateDebugUtilsMessengerEXT  = ExtensionState::CreateDebugUtilsMessengerEXT;
-    using DestroyDebugUtilsMessengerEXT = ExtensionState::DestroyDebugUtilsMessengerEXT;
-
     // Internal extension function pointers (Global state, I know)
     static inline ExtensionState g_ExtensionState = {};
 
@@ -67,12 +63,28 @@ namespace Vk
     void Extensions::LoadInstanceFunctions(UNUSED VkInstance instance)
     {
         #ifdef ENGINE_DEBUG
-        g_ExtensionState.p_CreateDebugUtilsMessengerEXT = LoadExtension<CreateDebugUtilsMessengerEXT>(
+        g_ExtensionState.p_CreateDebugUtilsMessengerEXT = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT>(
             instance, "vkCreateDebugUtilsMessengerEXT"
         );
 
-        g_ExtensionState.p_DestroyDebugUtilsMessengerEXT = LoadExtension<DestroyDebugUtilsMessengerEXT>(
+        g_ExtensionState.p_DestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>(
             instance, "vkDestroyDebugUtilsMessengerEXT"
+        );
+
+        g_ExtensionState.p_CmdBeginDebugUtilsLabelEXT = LoadExtension<PFN_vkCmdBeginDebugUtilsLabelEXT>(
+            instance, "vkCmdBeginDebugUtilsLabelEXT"
+        );
+
+        g_ExtensionState.p_CmdEndDebugUtilsLabelEXT = LoadExtension<PFN_vkCmdEndDebugUtilsLabelEXT>(
+            instance, "vkCmdEndDebugUtilsLabelEXT"
+        );
+
+        g_ExtensionState.p_QueueBeginDebugUtilsLabelEXT = LoadExtension<PFN_vkQueueBeginDebugUtilsLabelEXT>(
+            instance, "vkQueueBeginDebugUtilsLabelEXT"
+        );
+
+        g_ExtensionState.p_QueueEndDebugUtilsLabelEXT = LoadExtension<PFN_vkQueueEndDebugUtilsLabelEXT>(
+            instance, "vkQueueEndDebugUtilsLabelEXT"
         );
         #endif
     }
@@ -119,6 +131,8 @@ namespace Vk
 
 extern "C"
 {
+    #ifdef ENGINE_DEBUG
+
     VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT
     (
         VkInstance instance,
@@ -127,7 +141,7 @@ extern "C"
         VkDebugUtilsMessengerEXT* pMessenger
     )
     {
-        Vk::CreateDebugUtilsMessengerEXT fn = Vk::g_ExtensionState.p_CreateDebugUtilsMessengerEXT;
+        auto fn = Vk::g_ExtensionState.p_CreateDebugUtilsMessengerEXT;
         return fn != nullptr ? fn(instance, pCreateInfo, pAllocator, pMessenger) : VK_ERROR_EXTENSION_NOT_PRESENT;
     }
     
@@ -138,7 +152,33 @@ extern "C"
         const VkAllocationCallbacks* pAllocator
     )
     {
-        Vk::DestroyDebugUtilsMessengerEXT fn = Vk::g_ExtensionState.p_DestroyDebugUtilsMessengerEXT;
+        auto fn = Vk::g_ExtensionState.p_DestroyDebugUtilsMessengerEXT;
         fn != nullptr ? fn(instance, messenger, pAllocator) : (void) fn;
     }
+
+    VKAPI_ATTR void VKAPI_CALL vkCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo)
+    {
+        auto fn = Vk::g_ExtensionState.p_CmdBeginDebugUtilsLabelEXT;
+        fn != nullptr ? fn(commandBuffer, pLabelInfo) : (void) fn;
+    }
+
+    VKAPI_ATTR void VKAPI_CALL vkCmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer)
+    {
+        auto fn = Vk::g_ExtensionState.p_CmdEndDebugUtilsLabelEXT;
+        fn != nullptr ? fn(commandBuffer) : (void) fn;
+    }
+
+    VKAPI_ATTR void VKAPI_CALL vkQueueBeginDebugUtilsLabelEXT(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo)
+    {
+        auto fn = Vk::g_ExtensionState.p_QueueBeginDebugUtilsLabelEXT;
+        fn != nullptr ? fn(queue, pLabelInfo) : (void) fn;
+    }
+
+    VKAPI_ATTR void VKAPI_CALL vkQueueEndDebugUtilsLabelEXT(VkQueue queue)
+    {
+        auto fn = Vk::g_ExtensionState.p_QueueEndDebugUtilsLabelEXT;
+        fn != nullptr ? fn(queue) : (void) fn;
+    }
+
+    #endif
 }

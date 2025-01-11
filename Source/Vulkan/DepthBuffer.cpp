@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "DepthBuffer.h"
@@ -23,14 +23,14 @@
 
 namespace Vk
 {
-    DepthBuffer::DepthBuffer(const std::shared_ptr<Vk::Context>& context, VkExtent2D swapchainExtent)
+    DepthBuffer::DepthBuffer(const Vk::Context& context, VkExtent2D swapchainExtent)
     {
-        auto depthFormat = GetDepthFormat(context->physicalDevice);
-        bool hasStencil  = vkuFormatHasStencil(depthFormat);
+        const auto depthFormat = GetDepthFormat(context.physicalDevice);
+        const bool hasStencil  = vkuFormatHasStencil(depthFormat);
 
         depthImage = Vk::Image
         (
-            context,
+            context.allocator,
             swapchainExtent.width,
             swapchainExtent.height,
             1,
@@ -43,7 +43,7 @@ namespace Vk
 
         depthImageView = Vk::ImageView
         (
-            context->device,
+            context.device,
             depthImage,
             VK_IMAGE_VIEW_TYPE_2D,
             depthImage.format,
@@ -56,12 +56,7 @@ namespace Vk
 
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
-            depthImage.TransitionLayout
-            (
-                cmdBuffer,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-            );
+            depthImage.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         });
     }
 
@@ -70,9 +65,16 @@ namespace Vk
         return Vk::FindSupportedFormat
         (
             physicalDevice,
-            std::array<VkFormat, 3>{VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT},
+            std::array<VkFormat, 5>
+            {
+                VK_FORMAT_D32_SFLOAT,
+                VK_FORMAT_D24_UNORM_S8_UINT,
+                VK_FORMAT_D32_SFLOAT_S8_UINT,
+                VK_FORMAT_D16_UNORM,
+                VK_FORMAT_D16_UNORM_S8_UINT,
+            },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT
         );
     }
 

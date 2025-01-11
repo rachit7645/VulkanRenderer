@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "ImageView.h"
@@ -26,7 +26,7 @@ namespace Vk
         const Vk::Image& image,
         VkImageViewType viewType,
         VkFormat format,
-        VkImageAspectFlagBits aspectMask,
+        VkImageAspectFlags aspectMask,
         u32 baseMipLevel,
         u32 levelCount,
         u32 baseArrayLayer,
@@ -72,7 +72,7 @@ namespace Vk
 
     void ImageView::Destroy(VkDevice device) const
     {
-        Logger::Debug("Destroying image view! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Debug("Destroying image view! [handle={}]\n", std::bit_cast<void*>(handle));
         vkDestroyImageView(device, handle, nullptr);
     }
 }

@@ -1,16 +1,16 @@
-#  Copyright 2023 - 2024 Rachit Khandelwal
+# Copyright 2023 - 2025 Rachit
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 cmake_minimum_required(VERSION 3.25)
 project(VulkanRenderer)
@@ -24,11 +24,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL2     REQUIRED)
-find_package(Vulkan   REQUIRED)
-find_package(glm      REQUIRED)
-find_package(assimp   REQUIRED)
-find_package(fmt      REQUIRED)
+find_package(SDL2   REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(glm    REQUIRED)
+find_package(assimp REQUIRED)
+find_package(fmt    REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -66,23 +66,30 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/CommandBuffer.cpp
+	Source/Vulkan/DescriptorAllocator.cpp
+	Source/Vulkan/DescriptorWriter.cpp
+	Source/Vulkan/DescriptorCache.cpp
+	Source/Vulkan/TextureManager.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
+	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/FreeCamera.cpp
 	Source/Renderer/Camera.cpp
-	# Render pipeline sources
-	Source/Renderer/Pipelines/SwapPipeline.cpp
-	Source/Renderer/Pipelines/ForwardPipeline.cpp
-	# Render passes sources
-	Source/Renderer/RenderPasses/SwapPass.cpp
-	Source/Renderer/RenderPasses/ForwardPass.cpp
+	Source/Renderer/RenderObject.cpp
+	# Swapchain Pass Sources
+	Source/Renderer/Swapchain/SwapchainPipeline.cpp
+	Source/Renderer/Swapchain/SwapchainPass.cpp
+	# Forward Pass Sources
+	Source/Renderer/Forward/ForwardPipeline.cpp
+	Source/Renderer/Forward/ForwardPass.cpp
+	Source/Renderer/Forward/ForwardInstanceBuffer.cpp
 	# Model sources
-	Source/Models/Mesh.cpp
 	Source/Models/Vertex.cpp
 	Source/Models/Model.cpp
-    Source/Models/Material.cpp
+	Source/Models/Mesh.cpp
+	Source/Models/ModelManager.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/STBImage.cpp
@@ -151,6 +158,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<source_location>
 	<iostream>
 	<numbers>
+	<deque>
     # C STL Headers
     <cstdint>
     <cstddef>

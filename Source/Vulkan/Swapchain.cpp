@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "Swapchain.h"
@@ -20,30 +20,30 @@
 
 namespace Vk
 {
-    Swapchain::Swapchain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    Swapchain::Swapchain(Engine::Window& window, const Vk::Context& context)
     {
         CreateSwapChain(window, context);
-        CreateImageViews(context->device);
-        CreateSyncObjects(context->device);
-        Logger::Info("Initialised swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
+        CreateImageViews(context.device);
+        CreateSyncObjects(context.device);
+        Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::RecreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    void Swapchain::RecreateSwapChain(Engine::Window& window, const Vk::Context& context)
     {
-        DestroySwapchain(context->device);
-        window->WaitForRestoration();
+        DestroySwapchain(context.device);
+        window.WaitForRestoration();
 
         CreateSwapChain(window, context);
-        CreateImageViews(context->device);
+        CreateImageViews(context.device);
 
-        Logger::Info("Recreated swap chain! [handle={}]\n", reinterpret_cast<void*>(handle));
+        Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Swapchain::Present(VkQueue queue, usize FIF)
     {
-        std::array<VkSemaphore,    1> signalSemaphores = {renderFinishedSemaphores[FIF]};
-        std::array<VkSwapchainKHR, 1> swapChains       = {handle};
-        std::array<u32,            1> imageIndices     = {imageIndex};
+        std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
+        std::array swapChains       = {handle};
+        std::array imageIndices     = {imageIndex};
 
         VkPresentInfoKHR presentInfo =
         {
@@ -88,16 +88,16 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const std::shared_ptr<Engine::Window>& window, const std::shared_ptr<Vk::Context>& context)
+    void Swapchain::CreateSwapChain(const Engine::Window& window, const Vk::Context& context)
     {
-        m_swapChainInfo = SwapchainInfo(context->physicalDevice, context->surface);
-        extent          = ChooseSwapExtent(window->handle);
+        m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
+        extent          = ChooseSwapExtent(window.handle);
 
         VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat();
         VkPresentModeKHR   presentMode   = ChoosePresentationMode();
 
         // Try to allocate 1 more than the min
-        u32 imageCount = glm::min
+        u32 imageCount = std::min
         (
             m_swapChainInfo.capabilities.minImageCount + 1,
             m_swapChainInfo.capabilities.maxImageCount
@@ -108,7 +108,7 @@ namespace Vk
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext                 = nullptr,
             .flags                 = 0,
-            .surface               = context->surface,
+            .surface               = context.surface,
             .minImageCount         = imageCount,
             .imageFormat           = surfaceFormat.format,
             .imageColorSpace       = surfaceFormat.colorSpace,
@@ -122,30 +122,42 @@ namespace Vk
             .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode           = presentMode,
             .clipped               = VK_TRUE,
-            .oldSwapchain          = VK_NULL_HANDLE
+            .oldSwapchain          = handle
         };
 
         Vk::CheckResult(vkCreateSwapchainKHR(
-            context->device,
+            context.device,
             &createInfo,
             nullptr,
             &handle),
             "Failed to create swap chain!"
         );
 
+        vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
+
         Vk::CheckResult(vkGetSwapchainImagesKHR
         (
-            context->device,
+            context.device,
             handle,
             &imageCount,
             nullptr),
             "Failed to get swapchain image count!"
         );
 
+        if (imageCount == 0)
+        {
+            Logger::VulkanError
+            (
+                "Failed to get any swapchain images! [handle={}] [device={}]\n",
+                std::bit_cast<void*>(handle),
+                std::bit_cast<void*>(context.device)
+            );
+        }
+
         auto _images = std::vector<VkImage>(imageCount);
         Vk::CheckResult(vkGetSwapchainImagesKHR
         (
-            context->device,
+            context.device,
             handle,
             &imageCount,
             _images.data()),
@@ -171,14 +183,9 @@ namespace Vk
         // Transition for presentation
         Vk::ImmediateSubmit(context, [this] (const Vk::CommandBuffer& cmdBuffer)
         {
-            for (const auto& image : images)
+            for (auto&& image : images)
             {
-                image.TransitionLayout
-                (
-                    cmdBuffer,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                );
+                image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
             }
         });
     }
@@ -299,8 +306,6 @@ namespace Vk
             imageView.Destroy(device);
         }
 
-        vkDestroySwapchainKHR(device, handle, nullptr);
-
         images.clear();
         imageViews.clear();
     }
@@ -310,6 +315,8 @@ namespace Vk
         Logger::Debug("{}\n", "Destroying swapchain!");
 
         DestroySwapchain(device);
+
+        vkDestroySwapchainKHR(device, handle, nullptr);
 
         for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
         {

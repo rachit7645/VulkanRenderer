@@ -1,7 +1,17 @@
-/Bin/
-/Build/
-/Externals/imgui/
-/Externals/vma/
-/Assets/GFX/Mario
-/Assets/GFX/Sponza
-/Assets/Grass.png
+/.idea/*
+/.git/*
+
+# Excludes
+/Bin/*
+/Build/*
+/Externals/*
+
+# Get your own assets lol
+/Assets/GFX/*
+
+# Includes
+!/Bin/vk_layer_settings.txt
+!/Externals/CMakeLists.txt
+!/Assets/GFX/def.png
+!/Assets/GFX/defEmm.png
+!/Assets/GFX/defNrm.png

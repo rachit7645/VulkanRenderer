@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "Buffer.h"
@@ -31,7 +31,7 @@ namespace Vk
         VmaMemoryUsage memoryUsage
     )
     {
-        VkBufferCreateInfo createInfo =
+        const VkBufferCreateInfo createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .pNext                 = nullptr,
@@ -43,7 +43,7 @@ namespace Vk
             .pQueueFamilyIndices   = nullptr
         };
 
-        VmaAllocationCreateInfo allocCreateInfo =
+        const VmaAllocationCreateInfo allocCreateInfo =
         {
             .flags          = allocationFlags,
             .usage          = memoryUsage,
@@ -78,72 +78,27 @@ namespace Vk
         vmaUnmapMemory(allocator, allocation);
     }
 
-    template <typename T>
-    void Buffer::LoadData(VmaAllocator allocator, const std::span<const T> data)
+    void Buffer::GetDeviceAddress(VkDevice device)
     {
-        bool isPersistentlyMapped = allocInfo.pMappedData != nullptr;
-
-        if (!isPersistentlyMapped)
-            Map(allocator);
-
-        std::memcpy(allocInfo.pMappedData, data.data(), allocInfo.size);
-
-        if (!isPersistentlyMapped)
-            Unmap(allocator);
-    }
-
-    void Buffer::CopyBuffer
-    (
-        const std::shared_ptr<Vk::Context>& context,
-        Vk::Buffer& srcBuffer,
-        Vk::Buffer& dstBuffer,
-        VkDeviceSize copySize
-    )
-    {
-        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
+        const VkBufferDeviceAddressInfo bdaInfo =
         {
-            // Copy region
-            VkBufferCopy2 copyRegion =
-            {
-                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                .pNext     = nullptr,
-                .srcOffset = 0,
-                .dstOffset = 0,
-                .size      = copySize
-            };
+            .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+            .pNext  = nullptr,
+            .buffer = handle
+        };
 
-            // Copy info
-            VkCopyBufferInfo2 copyInfo =
-            {
-                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-                .pNext       = nullptr,
-                .srcBuffer   = srcBuffer.handle,
-                .dstBuffer   = dstBuffer.handle,
-                .regionCount = 1,
-                .pRegions    = &copyRegion
-            };
-
-            // Copy
-            vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
-        });
+        deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
     }
 
     void Buffer::Destroy(VmaAllocator allocator) const
     {
-        // Log
         Logger::Debug
         (
             "Destroying buffer [buffer={}] [allocation={}]\n",
-            reinterpret_cast<void*>(handle),
-            reinterpret_cast<void*>(allocation)
+            std::bit_cast<void*>(handle),
+            std::bit_cast<void*>(allocation)
         );
-        // Destroy
+
         vmaDestroyBuffer(allocator, handle, allocation);
     }
-
-    // Explicit template initialisations
-    template void Buffer::LoadData(VmaAllocator, std::span<const Models::Vertex>);
-    template void Buffer::LoadData(VmaAllocator, std::span<const f32>);
-    template void Buffer::LoadData(VmaAllocator, std::span<const u8>);
-    template void Buffer::LoadData(VmaAllocator, std::span<const u32>);
 }

@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef LOG_H
@@ -35,7 +35,6 @@ namespace Logger
     {
          /// @brief Internal logging function
          /// @param fgColor  Foreground color for the terminal
-         /// @param bgColor  Background color for the terminal
          /// @param type     Logger Type
          /// @param location Source Location Information
          /// @param format   Format string
@@ -44,19 +43,18 @@ namespace Logger
         void Log
         (
             const fmt::color& fgColor,
-            const fmt::color& bgColor,
             const std::string_view type,
             const std::source_location location,
             const std::string_view format,
-            Args&& ... args
+            Args&&... args
         )
         {
             // Format & print additional data
             fmt::print
             (
                 stderr,
-                fmt::fg(fgColor) | fmt::bg(bgColor),
-                std::string("[{}] [{}] [{}:{}] ") + format.data(),
+                fmt::fg(fgColor),
+                fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
                 Util::GetTime(),
                 Engine::Files::GetName(location.file_name()),
@@ -67,7 +65,6 @@ namespace Logger
 
         /// @brief Internal error logger
         /// @param fgColor  Foreground color for the terminal
-        /// @param bgColor  Background color for the terminal
         /// @param type     Logger Type
         /// @param location Source Location Information
         /// @param format   Format string
@@ -76,25 +73,27 @@ namespace Logger
         [[noreturn]] void LogAndExit
         (
             const fmt::color& fgColor,
-            const fmt::color& bgColor,
             const std::string_view type,
             const std::source_location location,
             const std::string_view format,
-            Args&& ... args
+            Args&&... args
         )
         {
             // Call regular logger
             Log
             (
                 fgColor,
-                bgColor,
                 type,
                 location,
                 format,
                 std::forward<Args>(args)...
             );
 
+            #ifdef ENGINE_DEBUG
+            while (true) {}
+            #else
             std::exit(ErrorCode);
+            #endif
         }
     }
 
@@ -116,7 +115,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::forest_green,
-                fmt::color::black,
                 "INFO",
                 location,
                 format,
@@ -143,7 +141,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::yellow,
-                fmt::color::black,
                 "WARNING",
                 location,
                 format,
@@ -172,7 +169,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::cyan,
-                fmt::color::black,
                 "DEBUG",
                 location,
                 format,
@@ -202,7 +198,6 @@ namespace Logger
             Detail::Log
             (
                 fmt::color::orange,
-                fmt::color::black,
                 "VULKAN",
                 location,
                 format,
@@ -231,7 +226,6 @@ namespace Logger
             Detail::LogAndExit<-1>
             (
                 fmt::color::red,
-                fmt::color::black,
                 "ERROR",
                 location,
                 format,
@@ -258,8 +252,7 @@ namespace Logger
             Detail::LogAndExit<-1>
             (
                 fmt::color::orange_red,
-                fmt::color::black,
-                "VULKAN ERROR",
+                "VKERROR",
                 location,
                 format,
                 std::forward<Args>(args)...

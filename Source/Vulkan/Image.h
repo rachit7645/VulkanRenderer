@@ -1,26 +1,25 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef VK_IMAGE_H
 #define VK_IMAGE_H
 
 #include "Buffer.h"
-#include "Context.h"
-#include "Util/Util.h"
 #include "CommandBuffer.h"
+#include "Util/Util.h"
 
 namespace Vk
 {
@@ -32,7 +31,7 @@ namespace Vk
 
         Image
         (
-            const std::shared_ptr<Vk::Context>& context,
+            VmaAllocator allocator,
             u32 width,
             u32 height,
             u32 mipLevels,
@@ -57,15 +56,8 @@ namespace Vk
 
         bool operator==(const Image& rhs) const;
 
-        void TransitionLayout
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            VkImageLayout oldLayout,
-            VkImageLayout newLayout
-        ) const;
-
-        void CopyFromBuffer(const std::shared_ptr<Vk::Context>& context, Vk::Buffer& buffer);
-        void GenerateMipmaps(const std::shared_ptr<Vk::Context>& context);
+        void TransitionLayout(const Vk::CommandBuffer& cmdBuffer, VkImageLayout newLayout);
+        void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer);
 
         void Destroy(VmaAllocator allocator) const;
 
@@ -82,6 +74,7 @@ namespace Vk
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+        VkImageLayout      layout = VK_IMAGE_LAYOUT_UNDEFINED;
     private:
         void CreateImage
         (
@@ -92,19 +85,15 @@ namespace Vk
     };
 }
 
-// Don't nuke me for this
-namespace std
+// Hashing
+template<>
+struct std::hash<Vk::Image>
 {
-    // Hashing
-    template<>
-    struct hash<Vk::Image>
+    std::size_t operator()(const Vk::Image& image) const noexcept
     {
-        std::size_t operator()(const Vk::Image& image) const
-        {
-            // This is basic but it should work
-            return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
-        }
-    };
-}
+        // This is basic but it should work
+        return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
+    }
+};
 
 #endif

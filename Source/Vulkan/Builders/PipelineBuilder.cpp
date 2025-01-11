@@ -1,39 +1,29 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "PipelineBuilder.h"
 
-#include <utility>
-
 #include "Util/Log.h"
-#include "Util/Ranges.h"
 #include "Vulkan/Util.h"
 
 namespace Vk::Builders
 {
-    PipelineBuilder::PipelineBuilder(const std::shared_ptr<Vk::Context>& context)
-        : m_context(context)
+    PipelineBuilder::Products PipelineBuilder::Build()
     {
-    }
-
-    Vk::Pipeline PipelineBuilder::Build()
-    {
-        auto descriptorLayouts = CreateDescriptorSetLayouts();
-
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+        const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
@@ -53,7 +43,7 @@ namespace Vk::Builders
             "Failed to create pipeline layout!"
         );
 
-        VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+        const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
         {
             .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .pNext               = &renderingCreateInfo,
@@ -87,11 +77,14 @@ namespace Vk::Builders
             "Failed to create pipeline!"
         );
 
-        auto descriptorData = AllocateDescriptorSets();
+        Logger::Debug("Created pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
 
-        Logger::Info("Created pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
+        return {pipeline, pipelineLayout};
+    }
 
-        return {pipeline, pipelineLayout, descriptorData};
+    PipelineBuilder::PipelineBuilder(Vk::Context& context)
+        : m_context(&context)
+    {
     }
 
     PipelineBuilder& PipelineBuilder::SetRenderingInfo
@@ -121,7 +114,7 @@ namespace Vk::Builders
     {
         shaderModules.emplace_back(m_context->device, path);
 
-        VkPipelineShaderStageCreateInfo stageCreateInfo =
+        const VkPipelineShaderStageCreateInfo stageCreateInfo =
         {
             .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             .pNext               = nullptr,
@@ -137,11 +130,7 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetDynamicStates
-    (
-        const std::span<const VkDynamicState> vkDynamicStates,
-        const std::function<void(PipelineBuilder&)>& SetDynStates
-    )
+    PipelineBuilder& PipelineBuilder::SetDynamicStates(const std::span<const VkDynamicState> vkDynamicStates)
     {
         dynamicStates = std::vector(vkDynamicStates.begin(), vkDynamicStates.end());
 
@@ -154,7 +143,16 @@ namespace Vk::Builders
             .pDynamicStates    = dynamicStates.data()
         };
 
-        SetDynStates(*this);
+        viewportInfo =
+        {
+            .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            .pNext         = nullptr,
+            .flags         = 0,
+            .viewportCount = 0,
+            .pViewports    = nullptr,
+            .scissorCount  = 0,
+            .pScissors     = nullptr
+        };
 
         return *this;
     }
@@ -182,7 +180,7 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlagBits cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
+    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
     {
         rasterizationInfo =
         {
@@ -243,8 +241,8 @@ namespace Vk::Builders
         VkBool32 depthWriteEnable,
         VkCompareOp depthCompareOp,
         VkBool32 stencilTestEnable,
-        VkStencilOpState front,
-        VkStencilOpState back
+        const VkStencilOpState& front,
+        const VkStencilOpState& back
     )
     {
         depthStencilInfo =
@@ -303,7 +301,7 @@ namespace Vk::Builders
 
     PipelineBuilder& PipelineBuilder::AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size)
     {
-        VkPushConstantRange pushConstant =
+        const VkPushConstantRange pushConstant =
         {
             .stageFlags = stages,
             .offset     = offset,
@@ -315,86 +313,11 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::AddDescriptor
-    (
-        u32 binding,
-        VkDescriptorType type,
-        VkShaderStageFlags stages,
-        u32 useCount,
-        u32 copyCount
-    )
+    PipelineBuilder& PipelineBuilder::AddDescriptorLayout(VkDescriptorSetLayout layout)
     {
-        VkDescriptorSetLayoutBinding layoutBinding =
-        {
-            .binding            = binding,
-            .descriptorType     = type,
-            .descriptorCount    = useCount,
-            .stageFlags         = stages,
-            .pImmutableSamplers = nullptr
-        };
-
-        descriptorStates.emplace_back(copyCount * useCount, type, layoutBinding, nullptr);
+        descriptorLayouts.emplace_back(layout);
 
         return *this;
-    }
-
-    std::vector<VkDescriptorSetLayout> PipelineBuilder::CreateDescriptorSetLayouts()
-    {
-        // Pre-allocate for SPEED
-        std::vector<VkDescriptorSetLayout> descriptorLayouts = {};
-        descriptorLayouts.reserve(descriptorStates.size());
-
-        for (auto&& state : descriptorStates)
-        {
-            VkDescriptorSetLayoutCreateInfo layoutInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-                .pNext        = nullptr,
-                .flags        = 0,
-                .bindingCount = 1,
-                .pBindings    = &state.binding
-            };
-
-            VkDescriptorSetLayout descriptorLayout = VK_NULL_HANDLE;
-            Vk::CheckResult(vkCreateDescriptorSetLayout(
-                m_context->device,
-                &layoutInfo,
-                nullptr,
-                &descriptorLayout),
-                "Failed to create descriptor layout!"
-            );
-
-            descriptorLayouts.emplace_back(descriptorLayout);
-            state.layout = descriptorLayout;
-        }
-
-        // NVRO please
-        return descriptorLayouts;
-    }
-
-    std::vector<Vk::DescriptorSetData> PipelineBuilder::AllocateDescriptorSets()
-    {
-        // Pre-allocate for SPEED
-        auto data = std::vector<Vk::DescriptorSetData>();
-        data.reserve(descriptorStates.size());
-
-        for (const auto& state : descriptorStates)
-        {
-            auto count   = static_cast<u32>(state.count * Vk::FRAMES_IN_FLIGHT);
-            auto layouts = std::vector<VkDescriptorSetLayout>(count, state.layout);
-
-            auto sets = m_context->AllocateDescriptorSets(layouts);
-            data.emplace_back
-            (
-                state.binding.binding,
-                state.type,
-                state.layout,
-                Util::SplitVector<VkDescriptorSet, Vk::FRAMES_IN_FLIGHT>(sets)
-            );
-        }
-
-        // NVRO please work
-        return data;
     }
 
     PipelineBuilder::~PipelineBuilder()

@@ -1,17 +1,17 @@
 /*
- *    Copyright 2023 - 2024 Rachit Khandelwal
+ * Copyright (c) 2023 - 2025 Rachit
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef PIPELINE_H
@@ -20,10 +20,10 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-#include "DescriptorSetData.h"
 #include "Context.h"
 #include "Util/Util.h"
 #include "CommandBuffer.h"
+#include "DescriptorSet.h"
 
 namespace Vk
 {
@@ -32,8 +32,6 @@ namespace Vk
     public:
         Pipeline() = default;
         virtual ~Pipeline() = default;
-
-        Pipeline(VkPipeline handle, VkPipelineLayout layout, const std::vector<Vk::DescriptorSetData>& descriptorData);
 
         // No copying
         Pipeline(const Pipeline&) = delete;
@@ -56,21 +54,20 @@ namespace Vk
         void LoadPushConstants
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkPipelineStageFlags stage,
+            VkShaderStageFlags stages,
             u32 offset,
             u32 size,
             void* pValues
         ) const;
 
-        void Destroy(const std::shared_ptr<Vk::Context>& context);
+        void Destroy(VkDevice device);
 
         // Handles
         VkPipeline       handle = {};
         VkPipelineLayout layout = {};
-        // Descriptor data
-        std::vector<Vk::DescriptorSetData> descriptorSetData = {};
-    private:
-        virtual void DestroyPipelineData(VkDevice device, VmaAllocator allocator);
+
+        // Deletion queue
+        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 
