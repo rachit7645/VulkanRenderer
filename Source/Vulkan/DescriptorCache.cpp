@@ -23,12 +23,10 @@ namespace Vk
     constexpr u32 ALLOCATOR_INITIAL_SETS = 64;
 
     // Ratios
-    constexpr std::array<DescriptorAllocator::PoolRatio, 4> ALLOCATOR_RATIOS =
+    constexpr std::array<DescriptorAllocator::PoolRatio, 2> ALLOCATOR_RATIOS =
     {
-        DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         4},
         DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_SAMPLER,                4},
         DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
-        DescriptorAllocator::PoolRatio{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          16}
     };
 
     DescriptorCache::DescriptorCache(VkDevice device)

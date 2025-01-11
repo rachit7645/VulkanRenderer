@@ -19,13 +19,12 @@
 
 #include "Instance.glsl"
 #include "Scene.glsl"
-#include "Vertex.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
     SceneBuffer    Scene;
     InstanceBuffer Instances;
-    VertexBuffer   Vertices;
+    uint           DrawID;
 } Constants;
 
 #endif

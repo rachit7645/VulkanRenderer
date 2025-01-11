@@ -26,14 +26,12 @@ namespace Models
     class ModelManager
     {
     public:
-        explicit ModelManager(VkDevice device, VmaAllocator allocator);
         void Destroy(VmaAllocator allocator);
 
         usize AddModel(const Vk::Context& context, Vk::TextureManager& textureManager, const std::string_view path);
         const Model& GetModel(usize modelID) const;
 
         std::unordered_map<u32, Models::Model> modelMap;
-        Vk::GeometryBuffer                     geometryBuffer;
     };
 }
 

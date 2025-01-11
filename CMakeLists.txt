@@ -70,7 +70,6 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DescriptorWriter.cpp
 	Source/Vulkan/DescriptorCache.cpp
 	Source/Vulkan/TextureManager.cpp
-	Source/Vulkan/GeometryBuffer.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
@@ -86,7 +85,6 @@ add_executable(VulkanRenderer
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
 	Source/Renderer/Forward/ForwardInstanceBuffer.cpp
-	Source/Renderer/Forward/ForwardIndirectBuffer.cpp
 	# Model sources
 	Source/Models/Vertex.cpp
 	Source/Models/Model.cpp

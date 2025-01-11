@@ -25,7 +25,6 @@
 #include "Mesh.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
-#include "Vulkan/GeometryBuffer.h"
 
 namespace Models
 {
@@ -35,7 +34,6 @@ namespace Models
         Model
         (
             const Vk::Context& context,
-            Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             const std::string_view path
         );
@@ -48,7 +46,6 @@ namespace Models
             const aiScene* scene,
             const std::string& directory,
             const Vk::Context& context,
-            Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager
         );
 
@@ -58,7 +55,6 @@ namespace Models
             const aiScene* scene,
             const std::string& directory,
             const Vk::Context& context,
-            Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager
         );
 

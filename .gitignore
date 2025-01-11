@@ -7,14 +7,11 @@
 /Externals/*
 
 # Get your own assets lol
-/Assets/GFX/Mario/
-/Assets/GFX/Sponza/
-/Assets/GFX/VirtualCity/
-/Assets/GFX/Bistro/
-/Assets/GFX/Cottage/
-/Assets/GFX/Plane/
-/Assets/Grass.png
+/Assets/GFX/*
 
 # Includes
 !/Bin/vk_layer_settings.txt
 !/Externals/CMakeLists.txt
+!/Assets/GFX/def.png
+!/Assets/GFX/defEmm.png
+!/Assets/GFX/defNrm.png

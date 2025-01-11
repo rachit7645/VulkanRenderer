@@ -32,11 +32,10 @@
 #include "ForwardPushConstant.glsl"
 
 // Fragment inputs
-layout(location = 0)      in vec3 fragPosition;
-layout(location = 1)      in vec2 fragTexCoords;
-layout(location = 2)      in vec3 fragToCamera;
-layout(location = 3) flat in uint fragDrawID;
-layout(location = 4)      in mat3 fragTBNMatrix;
+layout(location = 0) in vec3 fragPosition;
+layout(location = 1) in vec2 fragTexCoords;
+layout(location = 2) in vec3 fragToCamera;
+layout(location = 3) in mat3 fragTBNMatrix;
 
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
@@ -46,7 +45,7 @@ layout(set = 1, binding = 0) uniform texture2D textures[];
 
 void main()
 {
-    uvec4 textureIDs = Constants.Instances.instances[fragDrawID].textureIDs;
+    uvec4 textureIDs = Constants.Instances.instances[Constants.DrawID].textureIDs;
 
     // This is assumed to be an SRGB texture
     vec3 albedo   = SampleLinear(textures[textureIDs.x], texSampler, fragTexCoords);
@@ -54,8 +53,8 @@ void main()
     vec3 aoRghMtl = Sample(textures[textureIDs.z], texSampler, fragTexCoords);
 
     vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
-    volatile vec3 Lo = CalculateLight(GetDirLightInfo(Constants.Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);
+    vec3 Lo = CalculateLight(GetDirLightInfo(Constants.Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);
          Lo += albedo * vec3(0.03f);
 
-    outColor = vec4(albedo, 1.0f);
+    outColor = vec4(Lo, 1.0f);
 }

@@ -26,14 +26,23 @@
 
 namespace Models
 {
-    // TODO: 4 extra bytes are required, might be possible to optimize this
-    struct VULKAN_GLSL_DATA Vertex
+    struct Vertex
     {
+        static constexpr usize VERTEX_NUM_BINDINGS = 1;
+        static constexpr usize VERTEX_NUM_ATTRIBS  = 4;
+
+        using VertexBindings = std::array<VkVertexInputBindingDescription,   VERTEX_NUM_BINDINGS>;
+        using VertexAttribs  = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
+
         Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent);
 
-        glm::vec4 attrib0 = {}; // Position + Texture X Coordinate
-        glm::vec4 attrib1 = {}; // Texture Y Coordinate + Normal
-        glm::vec4 attrib2 = {}; // Tangent + Padding
+        glm::vec3 position  = {};
+        glm::vec2 texCoords = {};
+        glm::vec3 normal    = {};
+        glm::vec3 tangent   = {};
+
+        static VertexBindings GetBindingDescription();
+        static VertexAttribs GetVertexAttribDescription();
     };
 
     using Index = u32;

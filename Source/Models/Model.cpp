@@ -33,7 +33,6 @@ namespace Models
     Model::Model
     (
         const Vk::Context& context,
-        Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         const std::string_view path
     )
@@ -76,7 +75,6 @@ namespace Models
             scene,
             Engine::Files::GetDirectory(path),
             context,
-            geometryBuffer,
             textureManager
         );
 
@@ -89,7 +87,6 @@ namespace Models
         const aiScene* scene,
         const std::string& directory,
         const Vk::Context& context,
-        Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager
     )
     {
@@ -100,7 +97,6 @@ namespace Models
                 scene,
                 directory,
                 context,
-                geometryBuffer,
                 textureManager
             ));
         }
@@ -113,7 +109,6 @@ namespace Models
                 scene,
                 directory,
                 context,
-                geometryBuffer,
                 textureManager
             );
         }
@@ -125,7 +120,6 @@ namespace Models
         const aiScene* scene,
         const std::string& directory,
         const Vk::Context& context,
-        Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager
     )
     {
@@ -163,10 +157,13 @@ namespace Models
             indices.emplace_back(face.mIndices[2]);
         }
 
-        auto infos = geometryBuffer.LoadData(context, vertices, indices);
         return {
-            infos[0],
-            infos[1],
+            Vk::VertexBuffer
+            (
+                context,
+                vertices,
+                indices
+            ),
             ProcessMaterial(
                 mesh,
                 scene,

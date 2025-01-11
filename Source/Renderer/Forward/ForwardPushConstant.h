@@ -21,11 +21,11 @@
 
 namespace Renderer::Forward
 {
-    struct VULKAN_GLSL_DATA PushConstant
+    struct __attribute__((packed)) PushConstant
     {
         VkDeviceAddress scene    = {};
         VkDeviceAddress instance = {};
-        VkDeviceAddress vertices = {};
+        u32             drawID   = 0;
     };
 }
 

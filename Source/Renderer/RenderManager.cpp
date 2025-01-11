@@ -27,7 +27,6 @@ namespace Renderer
         : m_window(window),
           m_context(m_window),
           m_textureManager(m_context.device, m_context.physicalDeviceLimits),
-          m_modelManager(m_context.device, m_context.allocator),
           m_swapPass(*window, m_context),
           m_forwardPass(m_context, m_textureManager, m_swapPass.swapchain.extent)
     {
@@ -123,7 +122,6 @@ namespace Renderer
             VK_TRUE,
             std::numeric_limits<u64>::max()
         );
-
         vkResetFences(m_context.device, 1, &inFlightFences[m_currentFIF]);
 
         m_swapPass.swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
@@ -135,6 +133,9 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
+        #ifdef ENGINE_DEBUG
+        vkQueueEndDebugUtilsLabelEXT(m_context.graphicsQueue);
+        #endif
     }
 
     void RenderManager::SubmitQueue()
@@ -197,10 +198,6 @@ namespace Renderer
             inFlightFences[m_currentFIF]),
             "Failed to submit queue!"
         );
-
-        #ifdef ENGINE_DEBUG
-        vkQueueEndDebugUtilsLabelEXT(m_context.graphicsQueue);
-        #endif
     }
 
     void RenderManager::Reset()

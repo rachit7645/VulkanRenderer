@@ -27,8 +27,8 @@ namespace Renderer::Forward
     using Models::Vertex;
 
     // Constants
-    constexpr auto STATIC_LAYOUT_ID   = "FORWARD_PIPELINE_STATIC_LAYOUT";
-    constexpr auto STATIC_SET_ID      = "FORWARD_PIPELINE_STATIC_SETS";
+    constexpr auto STATIC_LAYOUT_ID = "FORWARD_PIPELINE_STATIC_LAYOUT";
+    constexpr auto STATIC_SET_ID    = "FORWARD_PIPELINE_STATIC_SETS";
 
     ForwardPipeline::ForwardPipeline
     (
@@ -69,17 +69,12 @@ namespace Renderer::Forward
                 .Build(context.device)
         );
 
-        const std::array<VkVertexInputBindingDescription,   0> vertexBindings = {};
-        const std::array<VkVertexInputAttributeDescription, 0> vertexAttribs  = {};
-
-        assert(vertexBindings.empty() && vertexAttribs.empty());
-
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
             .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetVertexInputState({}, {})
+            .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
@@ -111,7 +106,6 @@ namespace Renderer::Forward
         }
 
         instanceBuffer = Forward::InstanceBuffer(context.device, context.allocator);
-        indirectBuffer = Forward::IndirectBuffer(context.allocator);
 
         auto anisotropy = std::min(4.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
@@ -132,7 +126,6 @@ namespace Renderer::Forward
         m_deletionQueue.PushDeletor([&]()
         {
             instanceBuffer.Destroy(context.allocator);
-            indirectBuffer.Destroy(context.allocator);
 
             for (auto&& buffer : sceneSSBOs)
             {
