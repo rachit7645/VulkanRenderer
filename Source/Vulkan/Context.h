@@ -55,8 +55,7 @@ namespace Vk
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
 
         // Pools
-        VkCommandPool    commandPool         = VK_NULL_HANDLE;
-        VkDescriptorPool imguiDescriptorPool = VK_NULL_HANDLE;
+        VkCommandPool commandPool = VK_NULL_HANDLE;
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
@@ -77,7 +76,7 @@ namespace Vk
         );
 
         void CreateCommandPool();
-        void CreateDescriptorPool();
+        void CreateDescriptorCache();
         void CreateAllocator();
 
         // Extensions

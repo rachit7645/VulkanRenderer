@@ -48,7 +48,7 @@ namespace Vk
         CreateLogicalDevice();
 
         CreateCommandPool();
-        CreateDescriptorPool();
+        CreateDescriptorCache();
         CreateAllocator();
 
         Logger::Info("{}\n", "Initialised vulkan context!");
@@ -398,39 +398,12 @@ namespace Vk
         });
     }
 
-    void Context::CreateDescriptorPool()
+    void Context::CreateDescriptorCache()
     {
-        constexpr VkDescriptorPoolSize samplerPoolSize =
-        {
-            .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = (1 << 4) * FRAMES_IN_FLIGHT
-        };
-
-        const VkDescriptorPoolCreateInfo poolCreateInfo =
-        {
-            .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .pNext         = nullptr,
-            .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-            .maxSets       = static_cast<u32>(samplerPoolSize.descriptorCount),
-            .poolSizeCount = 1,
-            .pPoolSizes    = &samplerPoolSize
-        };
-
-        Vk::CheckResult(vkCreateDescriptorPool(
-            device,
-            &poolCreateInfo,
-            nullptr,
-            &imguiDescriptorPool),
-            "Failed to create ImGui descriptor pool!"
-        );
-
-        Logger::Info("Created ImGui descriptor pool! [handle={}]\n", std::bit_cast<void*>(imguiDescriptorPool));
-
         descriptorCache = Vk::DescriptorCache(device);
 
         m_deletionQueue.PushDeletor([this] ()
         {
-            vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
             descriptorCache.Destroy(device);
         });
     }
