@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef INSTANCE_GLSL
-#define INSTANCE_GLSL
+#ifndef FORWARD_INSTANCE_H
+#define FORWARD_INSTANCE_H
 
-struct Instance
-{
-    mat4  transform;
-    mat4  normalMatrix;
-    uvec4 textureIDs;
-};
+#include <vulkan/vulkan.h>
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer InstanceBuffer
+#include "Externals/GLM.h"
+#include "Vulkan/Util.h"
+#include "Util/Util.h"
+
+namespace Renderer::Forward
 {
-    Instance instances[];
-};
+    struct VULKAN_GLSL_DATA Mesh
+    {
+        glm::mat4  transform    = {};
+        glm::mat4  normalMatrix = {};
+        glm::uvec4 textureIDs   = {};
+    };
+}
 
 #endif

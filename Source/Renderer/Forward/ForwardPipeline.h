@@ -17,8 +17,8 @@
 #ifndef FORWARD_PIPELINE_H
 #define FORWARD_PIPELINE_H
 
-#include "ForwardInstanceBuffer.h"
-#include "ForwardPushConstant.h"
+#include "ForwardMeshBuffer.h"
+#include "ForwardConstants.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
@@ -43,7 +43,7 @@ namespace Renderer::Forward
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneSSBOs = {};
 
-        InstanceBuffer instanceBuffer;
+        MeshBuffer meshBuffer;
 
         Vk::Sampler textureSampler;
     private:

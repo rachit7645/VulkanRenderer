@@ -34,8 +34,10 @@ namespace Vk
         : vertexCount(static_cast<u32>(vertices.size())),
           indexCount(static_cast<u32>(indices.size()))
     {
-        vertexBuffer = InitBuffer(context, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices);
-        indexBuffer  = InitBuffer(context, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  indices);
+        vertexBuffer = InitBuffer(context, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, vertices);
+        indexBuffer  = InitBuffer(context, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,          indices);
+
+        vertexBuffer.GetDeviceAddress(context.device);
     }
 
     VertexBuffer::VertexBuffer(const Vk::Context& context, const std::span<const f32> vertices)
@@ -47,20 +49,6 @@ namespace Vk
 
     void VertexBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
-        std::array<VkBuffer, 1>     buffers = {vertexBuffer.handle};
-        std::array<VkDeviceSize, 1> offsets = {0};
-
-        vkCmdBindVertexBuffers2
-        (
-            cmdBuffer.handle,
-            0,
-            static_cast<u32>(buffers.size()),
-            buffers.data(),
-            offsets.data(),
-            nullptr,
-            nullptr
-        );
-
         if (indexBuffer.has_value())
         {
             vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer->handle, 0, indexType);

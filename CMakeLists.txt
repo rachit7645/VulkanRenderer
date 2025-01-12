@@ -84,7 +84,7 @@ add_executable(VulkanRenderer
 	# Forward Pass Sources
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
-	Source/Renderer/Forward/ForwardInstanceBuffer.cpp
+	Source/Renderer/Forward/ForwardMeshBuffer.cpp
 	# Model sources
 	Source/Models/Vertex.cpp
 	Source/Models/Model.cpp

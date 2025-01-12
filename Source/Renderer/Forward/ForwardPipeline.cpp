@@ -76,7 +76,7 @@ namespace Renderer::Forward
             .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetVertexInputState(Vertex::GetBindingDescription(), Vertex::GetVertexAttribDescription())
+            .SetVertexInputState({}, {})
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
@@ -107,7 +107,7 @@ namespace Renderer::Forward
             sceneSSBO.GetDeviceAddress(context.device);
         }
 
-        instanceBuffer = Forward::InstanceBuffer(context.device, context.allocator);
+        meshBuffer = Forward::MeshBuffer(context.device, context.allocator);
 
         auto anisotropy = std::min(4.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
@@ -127,7 +127,7 @@ namespace Renderer::Forward
 
         m_deletionQueue.PushDeletor([&]()
         {
-            instanceBuffer.Destroy(context.allocator);
+            meshBuffer.Destroy(context.allocator);
 
             for (auto&& buffer : sceneSSBOs)
             {

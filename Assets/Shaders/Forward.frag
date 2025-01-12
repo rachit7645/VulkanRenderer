@@ -27,9 +27,7 @@
 #include "Texture.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
-#include "Instance.glsl"
-#include "Scene.glsl"
-#include "ForwardPushConstant.glsl"
+#include "ForwardConstants.glsl"
 
 // Fragment inputs
 layout(location = 0) in vec3 fragPosition;
@@ -45,12 +43,12 @@ layout(set = 1, binding = 0) uniform texture2D textures[];
 
 void main()
 {
-    uvec4 textureIDs = Constants.Instances.instances[Constants.DrawID].textureIDs;
+    uvec4 textureIDs = Constants.Meshes.meshes[Constants.DrawID].textureIDs;
 
     // This is assumed to be an SRGB texture
-    vec3 albedo   = SampleLinear(textures[textureIDs.x], texSampler, fragTexCoords);
-    vec3 normal   = GetNormalFromMap(Sample(textures[textureIDs.y], texSampler, fragTexCoords), fragTBNMatrix);
-    vec3 aoRghMtl = Sample(textures[textureIDs.z], texSampler, fragTexCoords);
+    vec3 albedo   = SampleLinear(textures[MESH_ALBEDO_ID], texSampler, fragTexCoords);
+    vec3 normal   = GetNormalFromMap(Sample(textures[MESH_NORMAL_ID], texSampler, fragTexCoords), fragTBNMatrix);
+    vec3 aoRghMtl = Sample(textures[MESH_AO_RGH_MTL_ID], texSampler, fragTexCoords);
 
     vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
     vec3 Lo = CalculateLight(GetDirLightInfo(Constants.Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);

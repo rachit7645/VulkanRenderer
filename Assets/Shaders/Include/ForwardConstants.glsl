@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_INSTANCE_H
-#define FORWARD_INSTANCE_H
+#ifndef FORWARD_PUSH_CONSTANT
+#define FORWARD_PUSH_CONSTANT
 
-#include <vulkan/vulkan.h>
+#include "Mesh.glsl"
+#include "Scene.glsl"
+#include "Vertex.glsl"
 
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
-#include "Util/Util.h"
-
-namespace Renderer::Forward
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    struct VULKAN_GLSL_DATA Instance
-    {
-        glm::mat4  transform    = {};
-        glm::mat4  normalMatrix = {};
-        glm::uvec4 textureIDs   = {};
-    };
-}
+    SceneBuffer  Scene;
+    MeshBuffer   Meshes;
+    VertexBuffer Vertices;
+    uint         DrawID;
+} Constants;
 
 #endif

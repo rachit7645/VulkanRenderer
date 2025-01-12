@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-#include "ForwardInstanceBuffer.h"
-#include "ForwardInstance.h"
+#include "ForwardMeshBuffer.h"
+#include "ForwardMesh.h"
 
 #include "Util/Maths.h"
 
 namespace Renderer::Forward
 {
-    constexpr usize MAX_INSTANCE_COUNT = 1 << 16;
+    constexpr usize MAX_MESH_COUNT = 1 << 16;
 
-    InstanceBuffer::InstanceBuffer(VkDevice device, VmaAllocator allocator)
+    MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
         for (auto& buffer : buffers)
         {
             buffer = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(MAX_INSTANCE_COUNT * sizeof(Forward::Instance)),
+                static_cast<u32>(MAX_MESH_COUNT * sizeof(Forward::Mesh)),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -41,7 +41,7 @@ namespace Renderer::Forward
         }
     }
 
-    void InstanceBuffer::LoadInstances
+    void MeshBuffer::LoadMeshes
     (
         usize FIF,
         const Vk::TextureManager& textureManager,
@@ -49,7 +49,7 @@ namespace Renderer::Forward
         const std::vector<Renderer::RenderObject>& renderObjects
     )
     {
-        std::vector<Forward::Instance> instances = {};
+        std::vector<Forward::Mesh> instances = {};
 
         for (const auto& renderObject : renderObjects)
         {
@@ -58,23 +58,28 @@ namespace Renderer::Forward
 
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
-                instances.emplace_back(Forward::Instance(
+                instances.emplace_back(
                     transform,
                     normalMatrix,
                     glm::uvec4(
                         textureManager.GetID(mesh.material.albedo),
                         textureManager.GetID(mesh.material.normal),
                         textureManager.GetID(mesh.material.aoRghMtl),
-                        0
+                        69
                     )
-                ));
+                );
             }
         }
 
-        std::memcpy(buffers[FIF].allocInfo.pMappedData, instances.data(), sizeof(Forward::Instance) * instances.size());
+        std::memcpy
+        (
+            buffers[FIF].allocInfo.pMappedData,
+            instances.data(),
+            sizeof(Forward::Mesh) * instances.size()
+        );
     }
 
-    void InstanceBuffer::Destroy(VmaAllocator allocator)
+    void MeshBuffer::Destroy(VmaAllocator allocator)
     {
         for (auto& buffer : buffers)
         {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_INSTANCE_BUFFER_H
-#define FORWARD_INSTANCE_BUFFER_H
+#ifndef FORWARD_MESH_BUFFER_H
+#define FORWARD_MESH_BUFFER_H
 
 #include <array>
 #include <vulkan/vulkan.h>
@@ -30,13 +30,13 @@
 
 namespace Renderer::Forward
 {
-    class InstanceBuffer
+    class MeshBuffer
     {
     public:
-        InstanceBuffer() = default;
-        InstanceBuffer(VkDevice device, VmaAllocator allocator);
+        MeshBuffer() = default;
+        MeshBuffer(VkDevice device, VmaAllocator allocator);
 
-        void LoadInstances
+        void LoadMeshes
         (
             usize FIF,
             const Vk::TextureManager& textureManager,

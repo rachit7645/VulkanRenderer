@@ -19,68 +19,9 @@
 namespace Models
 {
     Vertex::Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent)
-        : position(position),
-          texCoords(texCoords),
-          normal(normal),
-          tangent(tangent)
+        : position_uvX(position, texCoords.x),
+          normal_uvY(normal, texCoords.y),
+          tangent_padf32(tangent, 6.9f)
     {
-    }
-
-    Vertex::VertexBindings Vertex::GetBindingDescription()
-    {
-        VertexBindings bindings = {};
-
-        // First (and only) binding
-        bindings[0] =
-        {
-            .binding   = 0,
-            .stride    = static_cast<u32>(sizeof(Vertex)),
-            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-        };
-
-        return bindings;
-    }
-
-    Vertex::VertexAttribs Vertex::GetVertexAttribDescription()
-    {
-        VertexAttribs attribs = {};
-
-        // First attrib (position)
-        attribs[0] =
-        {
-            .location = 0,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset   = offsetof(Vertex, position)
-        };
-
-        // Second attrib (texCoord)
-        attribs[1] =
-        {
-            .location = 1,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32_SFLOAT,
-            .offset   = offsetof(Vertex, texCoords)
-        };
-
-        // Third attrib (normal)
-        attribs[2] =
-        {
-            .location = 2,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset   = offsetof(Vertex, normal)
-        };
-
-        // Fourth attrib (tangent)
-        attribs[3] =
-        {
-            .location = 3,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset   = offsetof(Vertex, tangent)
-        };
-
-        return attribs;
     }
 }

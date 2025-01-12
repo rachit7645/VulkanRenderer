@@ -25,9 +25,10 @@ namespace Renderer::Forward
 {
     struct __attribute__((packed)) PushConstant
     {
-        VkDeviceAddress scene    = {};
-        VkDeviceAddress instance = {};
-        u32             drawID   = 0;
+        VkDeviceAddress scene;
+        VkDeviceAddress instance;
+        VkDeviceAddress vertexBuffer;
+        u32             drawID;
     };
 }
 

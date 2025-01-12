@@ -167,14 +167,11 @@ namespace Renderer::Forward
 
         std::memcpy(pipeline.sceneSSBOs[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
 
-        pipeline.instanceBuffer.LoadInstances(FIF, textureManager, modelManager, renderObjects);
+        pipeline.meshBuffer.LoadMeshes(FIF, textureManager, modelManager, renderObjects);
 
-        pipeline.pushConstant =
-        {
-            .scene    = pipeline.sceneSSBOs[FIF].deviceAddress,
-            .instance = pipeline.instanceBuffer.buffers[FIF].deviceAddress,
-            .drawID   = std::numeric_limits<u32>::max()
-        };
+        pipeline.pushConstant          = {};
+        pipeline.pushConstant.scene    = pipeline.sceneSSBOs[FIF].deviceAddress;
+        pipeline.pushConstant.instance = pipeline.meshBuffer.buffers[FIF].deviceAddress;
 
         pipeline.LoadPushConstants
         (
@@ -205,13 +202,15 @@ namespace Renderer::Forward
 
             for (usize i = 0; i < meshes.size(); ++i)
             {
-                pipeline.pushConstant.drawID = i;
+                pipeline.pushConstant.vertexBuffer = meshes[i].vertexBuffer.vertexBuffer.deviceAddress;
+                pipeline.pushConstant.drawID       = i;
+
                 pipeline.LoadPushConstants
                 (
                     currentCmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    offsetof(Forward::PushConstant, drawID), sizeof(Forward::PushConstant::drawID),
-                    reinterpret_cast<void*>(&pipeline.pushConstant.drawID)
+                    offsetof(Forward::PushConstant, vertexBuffer), sizeof(Forward::PushConstant) - offsetof(Forward::PushConstant, vertexBuffer),
+                    reinterpret_cast<void*>(&pipeline.pushConstant.vertexBuffer)
                 );
 
                 meshes[i].vertexBuffer.Bind(currentCmdBuffer);

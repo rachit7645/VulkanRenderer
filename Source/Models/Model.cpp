@@ -188,7 +188,7 @@ namespace Models
         constexpr auto DEFAULT_TEXTURE_NORMAL   = "defNrm.png";
         constexpr auto DEFAULT_TEXTURE_MATERIAL = "def.png";
 
-        aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
+        const aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
 
         auto GetTexturePath = [&] (aiTextureType type, const std::string_view defaultPath)
         {

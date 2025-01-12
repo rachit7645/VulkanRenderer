@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PUSH_CONSTANT
-#define FORWARD_PUSH_CONSTANT
+#ifndef MESH_GLSL
+#define MESH_GLSL
 
-#include "Instance.glsl"
-#include "Scene.glsl"
+#define MESH_ALBEDO_ID     textureIDs.x
+#define MESH_NORMAL_ID     textureIDs.y
+#define MESH_AO_RGH_MTL_ID textureIDs.z
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+struct Mesh
 {
-    SceneBuffer    Scene;
-    InstanceBuffer Instances;
-    uint           DrawID;
-} Constants;
+    mat4  transform;
+    mat4  normalMatrix;
+    uvec4 textureIDs;
+};
+
+layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer MeshBuffer
+{
+    Mesh meshes[];
+};
 
 #endif
