@@ -49,16 +49,16 @@ namespace Renderer::Forward
         const std::vector<Renderer::RenderObject>& renderObjects
     )
     {
-        std::vector<Forward::Mesh> instances = {};
+        std::vector<Forward::Mesh> meshes = {};
 
         for (const auto& renderObject : renderObjects)
         {
             const auto transform    = Maths::CreateTransformMatrix(renderObject.position, renderObject.rotation, renderObject.scale);
-            const auto normalMatrix = glm::mat4(glm::mat3(transform));
+            const auto normalMatrix = glm::mat4(Maths::CreateNormalMatrix(transform));
 
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
-                instances.emplace_back(
+                meshes.emplace_back(
                     transform,
                     normalMatrix,
                     glm::uvec4(
@@ -66,7 +66,8 @@ namespace Renderer::Forward
                         textureManager.GetID(mesh.material.normal),
                         textureManager.GetID(mesh.material.aoRghMtl),
                         69
-                    )
+                    ),
+                    mesh.vertexBuffer.vertexBuffer.deviceAddress
                 );
             }
         }
@@ -74,8 +75,8 @@ namespace Renderer::Forward
         std::memcpy
         (
             buffers[FIF].allocInfo.pMappedData,
-            instances.data(),
-            sizeof(Forward::Mesh) * instances.size()
+            meshes.data(),
+            sizeof(Forward::Mesh) * meshes.size()
         );
     }
 

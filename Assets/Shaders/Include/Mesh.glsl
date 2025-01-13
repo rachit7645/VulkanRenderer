@@ -21,11 +21,14 @@
 #define MESH_NORMAL_ID     textureIDs.y
 #define MESH_AO_RGH_MTL_ID textureIDs.z
 
+#include "Vertex.glsl"
+
 struct Mesh
 {
-    mat4  transform;
-    mat4  normalMatrix;
-    uvec4 textureIDs;
+    mat4         transform;
+    mat4         normalMatrix;
+    uvec4        textureIDs;
+    VertexBuffer vertexBuffer;
 };
 
 layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer MeshBuffer

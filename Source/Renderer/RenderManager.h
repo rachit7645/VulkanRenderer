@@ -81,6 +81,8 @@ namespace Renderer
         usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
+
+        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

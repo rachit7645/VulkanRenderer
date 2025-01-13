@@ -70,8 +70,23 @@ namespace Renderer::Forward
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        // Transition for rendering
-        image.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
 
         VkRenderingAttachmentInfo colorAttachmentInfo =
         {
@@ -169,9 +184,9 @@ namespace Renderer::Forward
 
         pipeline.meshBuffer.LoadMeshes(FIF, textureManager, modelManager, renderObjects);
 
-        pipeline.pushConstant          = {};
-        pipeline.pushConstant.scene    = pipeline.sceneSSBOs[FIF].deviceAddress;
-        pipeline.pushConstant.instance = pipeline.meshBuffer.buffers[FIF].deviceAddress;
+        pipeline.pushConstant = {};
+        pipeline.pushConstant.scene  = pipeline.sceneSSBOs[FIF].deviceAddress;
+        pipeline.pushConstant.meshes = pipeline.meshBuffer.buffers[FIF].deviceAddress;
 
         pipeline.LoadPushConstants
         (
@@ -202,15 +217,13 @@ namespace Renderer::Forward
 
             for (usize i = 0; i < meshes.size(); ++i)
             {
-                pipeline.pushConstant.vertexBuffer = meshes[i].vertexBuffer.vertexBuffer.deviceAddress;
-                pipeline.pushConstant.drawID       = i;
-
+                pipeline.pushConstant.drawID = i;
                 pipeline.LoadPushConstants
                 (
                     currentCmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    offsetof(Forward::PushConstant, vertexBuffer), sizeof(Forward::PushConstant) - offsetof(Forward::PushConstant, vertexBuffer),
-                    reinterpret_cast<void*>(&pipeline.pushConstant.vertexBuffer)
+                    offsetof(Forward::PushConstant, drawID), sizeof(Forward::PushConstant) - offsetof(Forward::PushConstant, drawID),
+                    reinterpret_cast<void*>(&pipeline.pushConstant.drawID)
                 );
 
                 meshes[i].vertexBuffer.Bind(currentCmdBuffer);
@@ -229,8 +242,23 @@ namespace Renderer::Forward
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 
-        // Transition to shader readable layout
-        image.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
 
         currentCmdBuffer.EndRecording();
     }
@@ -240,6 +268,7 @@ namespace Renderer::Forward
         m_renderSize = {extent.width, extent.height};
 
         auto colorFormat = GetColorFormat(context.physicalDevice);
+        Logger::Debug("Found forward color attachment format! [Format={}] \n", string_VkFormat(colorFormat));
 
         depthBuffer = Vk::DepthBuffer(context, extent);
 
@@ -269,6 +298,27 @@ namespace Renderer::Forward
             1
         );
 
+        Vk::ImmediateSubmit(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        {
+            image.Barrier
+            (
+                cmdBuffer,
+                VK_PIPELINE_STAGE_2_NONE,
+                VK_ACCESS_2_NONE,
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                {
+                    .aspectMask     = image.aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                }
+            );
+        });
+
         m_deletionQueue.PushDeletor([&] ()
         {
             imageView.Destroy(context.device);
@@ -282,14 +332,11 @@ namespace Renderer::Forward
         return Vk::FindSupportedFormat
         (
             physicalDevice,
-            std::array<VkFormat, 6>
+            std::array
             {
                 VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-                VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-                VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-                VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-                VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-                VK_FORMAT_R16G16B16A16_SFLOAT
+                VK_FORMAT_R16G16B16A16_SFLOAT,
+                VK_FORMAT_R32G32B32A32_SFLOAT
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT

@@ -30,6 +30,17 @@ namespace Renderer
           m_swapPass(*window, m_context),
           m_forwardPass(m_context, m_textureManager, m_swapPass.swapchain.extent)
     {
+        m_deletionQueue.PushDeletor([&] ()
+        {
+            m_textureManager.Destroy(m_context.device, m_context.allocator);
+            m_modelManager.Destroy(m_context.allocator);
+
+            m_swapPass.Destroy(m_context);
+            m_forwardPass.Destroy(m_context);
+
+            m_context.Destroy();
+        });
+
         m_renderObjects.emplace_back(RenderObject(
             m_modelManager.AddModel(m_context, m_textureManager, "Sponza/glTF/Sponza.gltf"),
             glm::vec3(0.0f, 0.0f, 0.0f),
@@ -42,7 +53,6 @@ namespace Renderer
         CreateSyncObjects();
 
         m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageView);
-
         m_frameCounter.Reset();
     }
 
@@ -253,6 +263,12 @@ namespace Renderer
         ImGui_ImplVulkan_Init(&imguiInitInfo);
 
         ImGui_ImplVulkan_CreateFontsTexture();
+
+        m_deletionQueue.PushDeletor([&] ()
+        {
+            ImGui_ImplVulkan_Shutdown();
+            ImGui_ImplSDL2_Shutdown();
+        });
     }
 
     void RenderManager::CreateSyncObjects()
@@ -275,6 +291,14 @@ namespace Renderer
             );
         }
 
+        m_deletionQueue.PushDeletor([&] ()
+        {
+            for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+            {
+                vkDestroyFence(m_context.device, inFlightFences[i], nullptr);
+            }
+        });
+
         Logger::Info("{}\n", "Created synchronisation objects!");
     }
 
@@ -282,20 +306,6 @@ namespace Renderer
     {
         vkDeviceWaitIdle(m_context.device);
 
-        ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplSDL2_Shutdown();
-
-        m_textureManager.Destroy(m_context.device, m_context.allocator);
-        m_modelManager.Destroy(m_context.allocator);
-
-        m_swapPass.Destroy(m_context);
-        m_forwardPass.Destroy(m_context);
-
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
-        {
-            vkDestroyFence(m_context.device, inFlightFences[i], nullptr);
-        }
-
-        m_context.Destroy();
+        m_deletionQueue.FlushQueue();
     }
 }

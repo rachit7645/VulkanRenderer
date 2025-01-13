@@ -48,8 +48,23 @@ namespace Renderer::Swapchain
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        // Transition to color attachment
-        currentImage.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        currentImage.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+            VK_ACCESS_2_NONE,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = currentImage.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = currentImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
 
         VkRenderingAttachmentInfo colorAttachmentInfo =
         {
@@ -133,8 +148,23 @@ namespace Renderer::Swapchain
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 
-        // Transition for presentation
-        currentImage.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        currentImage.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_NONE,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            {
+                .aspectMask     = currentImage.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = currentImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
 
         currentCmdBuffer.EndRecording();
     }

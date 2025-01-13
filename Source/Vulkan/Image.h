@@ -56,7 +56,18 @@ namespace Vk
 
         bool operator==(const Image& rhs) const;
 
-        void TransitionLayout(const Vk::CommandBuffer& cmdBuffer, VkImageLayout newLayout);
+        void Barrier
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkPipelineStageFlags2 srcStageMask,
+            VkAccessFlags2 srcAccessMask,
+            VkPipelineStageFlags2 dstStageMask,
+            VkAccessFlags2 dstAccessMask,
+            VkImageLayout oldLayout,
+            VkImageLayout newLayout,
+            VkImageSubresourceRange subresourceRange
+        );
+
         void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer);
 
         void Destroy(VmaAllocator allocator) const;
@@ -73,8 +84,7 @@ namespace Vk
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
-        VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-        VkImageLayout      layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     private:
         void CreateImage
         (

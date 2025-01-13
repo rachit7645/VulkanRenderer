@@ -34,7 +34,7 @@ layout(location = 3) out mat3 fragTBNMatrix;
 void main()
 {
     Mesh   mesh   = Constants.Meshes.meshes[Constants.DrawID];
-    Vertex vertex = Constants.Vertices.vertices[gl_VertexIndex];
+    Vertex vertex = mesh.vertexBuffer.vertices[gl_VertexIndex];
 
     vec4 fragPos = mesh.transform * vec4(vertex.position_uvX.xyz, 1.0f);
     fragPosition = fragPos.xyz;

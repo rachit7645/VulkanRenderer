@@ -95,8 +95,8 @@ namespace Vk
 
             vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &properties2);
 
-            bool isValidLinear  = tiling == VK_IMAGE_TILING_LINEAR  && (properties3.linearTilingFeatures  & features) == features;
-            bool isValidOptimal = tiling == VK_IMAGE_TILING_OPTIMAL && (properties3.optimalTilingFeatures & features) == features;
+            bool isValidLinear  = (tiling == VK_IMAGE_TILING_LINEAR)  && ((properties3.linearTilingFeatures  & features) == features);
+            bool isValidOptimal = (tiling == VK_IMAGE_TILING_OPTIMAL) && ((properties3.optimalTilingFeatures & features) == features);
 
             if (isValidLinear || isValidOptimal)
             {

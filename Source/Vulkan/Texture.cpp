@@ -85,44 +85,23 @@ namespace Vk
         // Transfer
         Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
         {
-            VkImageMemoryBarrier2 barrier =
-            {
-                .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                .pNext               = nullptr,
-                .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                .dstAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .oldLayout           = image.layout, // Should be VK_IMAGE_LAYOUT_UNDEFINED, but you never know
-                .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image               = image.handle,
-                .subresourceRange    = {
+            image.Barrier
+            (
+                cmdBuffer,
+                VK_PIPELINE_STAGE_2_NONE,
+                VK_ACCESS_2_NONE,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                {
                     .aspectMask     = image.aspect,
                     .baseMipLevel   = 0,
-                    .levelCount     = mipLevels,
+                    .levelCount     = image.mipLevels,
                     .baseArrayLayer = 0,
                     .layerCount     = 1
                 }
-            };
-
-            image.layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-            VkDependencyInfo dependencyInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                .pNext                    = nullptr,
-                .dependencyFlags          = 0,
-                .memoryBarrierCount       = 0,
-                .pMemoryBarriers          = nullptr,
-                .bufferMemoryBarrierCount = 0,
-                .pBufferMemoryBarriers    = nullptr,
-                .imageMemoryBarrierCount  = 1,
-                .pImageMemoryBarriers     = &barrier
-            };
-
-            vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+            );
 
             VkBufferImageCopy2 copyRegion =
             {
@@ -160,19 +139,24 @@ namespace Vk
             }
             else
             {
-                // Mipmap generation would set the layout automatically, so must set manually here
-
-                barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-                barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-                barrier.dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-                barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
-
-                barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-                vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
-
-                image.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                // Mipmap generation would change layout automatically
+                image.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_READ_BIT,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    {
+                        .aspectMask     = image.aspect,
+                        .baseMipLevel   = 0,
+                        .levelCount     = image.mipLevels,
+                        .baseArrayLayer = 0,
+                        .layerCount     = 1
+                    }
+                );
             }
         });
 

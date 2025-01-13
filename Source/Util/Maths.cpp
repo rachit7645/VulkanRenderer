@@ -52,4 +52,15 @@ namespace Maths
 
         return reverseZ * projection;
     }
+
+    glm::mat3 CreateNormalMatrix(const glm::mat4& transform)
+    {
+        // https://www.shadertoy.com/view/3s33zj
+        return
+        {
+            glm::cross(glm::vec3(transform[1]), glm::vec3(transform[2])),
+            glm::cross(glm::vec3(transform[2]), glm::vec3(transform[0])),
+            glm::cross(glm::vec3(transform[0]), glm::vec3(transform[1]))
+        };
+    }
 }

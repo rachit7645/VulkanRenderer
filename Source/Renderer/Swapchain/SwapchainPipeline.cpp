@@ -87,7 +87,7 @@ namespace Renderer::Swapchain
             .SetDynamicStates(DYNAMIC_STATES)
             .SetVertexInputState({}, {})
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-            .SetRasterizerState(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
             .SetBlendState()
             .AddDescriptorLayout(colorLayout)

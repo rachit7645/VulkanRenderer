@@ -185,7 +185,23 @@ namespace Vk
         {
             for (auto&& image : images)
             {
-                image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+                image.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+                    VK_ACCESS_2_NONE,
+                    VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+                    VK_ACCESS_2_NONE,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                    {
+                        .aspectMask     = image.aspect,
+                        .baseMipLevel   = 0,
+                        .levelCount     = image.mipLevels,
+                        .baseArrayLayer = 0,
+                        .layerCount     = 1
+                    }
+                );
             }
         });
     }

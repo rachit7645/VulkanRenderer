@@ -22,20 +22,9 @@
 
 namespace Maths
 {
-    /// @brief Creates a transformation matrix
-    /// @param translation Translation vector
-    /// @param rotation Euler Rotation vector (in radians)
-    /// @param scale Scaling vector
-    /// @returns Transformation matrix
     glm::mat4 CreateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
-
-    /// @brief Create a projection matrix for reverse-z
-    /// @param FOV Field of View (in radians)
-    /// @param aspectRatio Aspect ratio
-    /// @param nearPlane Near Plane of View Frustum
-    /// @param farPlane Far Plane of View Frustum
-    /// @returns Projection matrix for reverse-z
     glm::mat4 CreateProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane);
+    glm::mat3 CreateNormalMatrix(const glm::mat4& transform);
 }
 
 #endif

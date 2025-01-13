@@ -27,9 +27,10 @@ namespace Renderer::Forward
 {
     struct VULKAN_GLSL_DATA Mesh
     {
-        glm::mat4  transform    = {};
-        glm::mat4  normalMatrix = {};
-        glm::uvec4 textureIDs   = {};
+        glm::mat4       transform    = {};
+        glm::mat4       normalMatrix = {};
+        glm::uvec4      textureIDs   = {};
+        VkDeviceAddress vertexBuffer = {};
     };
 }
 
