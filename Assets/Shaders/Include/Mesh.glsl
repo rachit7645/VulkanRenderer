@@ -17,10 +17,6 @@
 #ifndef MESH_GLSL
 #define MESH_GLSL
 
-#define MESH_ALBEDO_ID     textureIDs.x
-#define MESH_NORMAL_ID     textureIDs.y
-#define MESH_AO_RGH_MTL_ID textureIDs.z
-
 #include "Vertex.glsl"
 
 struct Mesh

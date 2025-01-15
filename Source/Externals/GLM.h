@@ -47,14 +47,14 @@
 // Matrix transformations
 #include <glm/gtc/matrix_transform.hpp>
 
-// Assimp types
-#include <assimp/types.h>
+// Fastgltf math types
+#include <fastgltf/math.hpp>
+#include <fastgltf/types.hpp>
 
 namespace glm
 {
-    // Assimp to GLM conversions
-    vec2 ai_cast(const aiVector2D& vector);
-    vec3 ai_cast(const aiVector3D& vector);
+    // fastgtlf to GLM conversions
+    vec4 fastgltf_cast(const fastgltf::math::nvec4& vector);
 }
 
 #endif

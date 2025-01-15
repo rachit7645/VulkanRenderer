@@ -53,11 +53,15 @@ namespace Renderer::Forward
 
         for (const auto& renderObject : renderObjects)
         {
-            const auto transform    = Maths::CreateTransformMatrix(renderObject.position, renderObject.rotation, renderObject.scale);
-            const auto normalMatrix = glm::mat4(Maths::CreateNormalMatrix(transform));
+            const auto transform = Maths::CreateTransformMatrix(renderObject.position, renderObject.rotation, renderObject.scale);
+            auto normalMatrix    = glm::mat4(Maths::CreateNormalMatrix(transform));
 
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
+                normalMatrix[0].w = mesh.material.roughnessFactor;
+                normalMatrix[1].w = mesh.material.metallicFactor;
+                normalMatrix[3]   = mesh.material.albedoFactor;
+
                 meshes.emplace_back(
                     transform,
                     normalMatrix,

@@ -20,7 +20,8 @@
 #include <vector>
 #include <string_view>
 
-#include <assimp/scene.h>
+#include <fastgltf/core.hpp>
+#include <fastgltf/types.hpp>
 
 #include "Mesh.h"
 #include "Vulkan/Context.h"
@@ -40,31 +41,15 @@ namespace Models
 
         std::vector<Models::Mesh> meshes;
     private:
-        void ProcessNode
+        usize LoadTexture
         (
-            const aiNode* node,
-            const aiScene* scene,
-            const std::string& directory,
             const Vk::Context& context,
-            Vk::TextureManager& textureManager
-        );
-
-        [[nodiscard]] Models::Mesh ProcessMesh
-        (
-            const aiMesh* mesh,
-            const aiScene* scene,
+            Vk::TextureManager& textureManager,
+            const std::string_view path,
             const std::string& directory,
-            const Vk::Context& context,
-            Vk::TextureManager& textureManager
-        );
-
-        [[nodiscard]] Material ProcessMaterial
-        (
-            const aiMesh* mesh,
-            const aiScene* scene,
-            const std::string& directory,
-            const Vk::Context& context,
-            Vk::TextureManager& textureManager
+            const fastgltf::Asset& asset,
+            usize textureIndex,
+            Vk::Texture::Flags flags
         );
     };
 }

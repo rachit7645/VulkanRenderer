@@ -18,13 +18,14 @@
 
 namespace glm
 {
-    vec2 ai_cast(const aiVector2D& vector)
+    vec4 fastgltf_cast(const fastgltf::math::nvec4& vector)
     {
-        return {vector.x, vector.y};
-    }
-
-    vec3 ai_cast(const aiVector3D& vector)
-    {
-        return {vector.x, vector.y, vector.z};
+        return
+        {
+            vector.x(),
+            vector.y(),
+            vector.z(),
+            vector.w()
+        };
     }
 }

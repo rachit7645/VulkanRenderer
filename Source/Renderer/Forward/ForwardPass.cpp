@@ -176,7 +176,7 @@ namespace Renderer::Forward
             .dirLight = {
                 .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
                 .color     = {1.0f,   0.956f, 0.898f, 1.0f},
-                .intensity = {3.5f,   3.5f,   3.5f,   1.0f}
+                .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
             }
         };
 

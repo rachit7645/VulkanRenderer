@@ -24,11 +24,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL2   REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(glm    REQUIRED)
-find_package(assimp REQUIRED)
-find_package(fmt    REQUIRED)
+find_package(SDL2     REQUIRED)
+find_package(Vulkan   REQUIRED)
+find_package(glm      REQUIRED)
+find_package(fastgltf REQUIRED)
+find_package(simdjson REQUIRED)
+find_package(fmt      REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -86,7 +87,6 @@ add_executable(VulkanRenderer
 	Source/Renderer/Forward/ForwardPass.cpp
 	Source/Renderer/Forward/ForwardMeshBuffer.cpp
 	# Model sources
-	Source/Models/Vertex.cpp
 	Source/Models/Model.cpp
 	Source/Models/Mesh.cpp
 	Source/Models/ModelManager.cpp
@@ -112,11 +112,6 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/imgui/backends/imgui_impl_vulkan.h
     # STB Headers
     <stb/stb_image.h>
-	# Assimp Headers
-    <assimp/Importer.hpp>
-    <assimp/scene.h>
-    <assimp/postprocess.h>
-    <assimp/types.h>
     # FMT Headers
     <fmt/core.h>
     <fmt/format.h>
@@ -193,7 +188,7 @@ target_link_libraries(VulkanRenderer
 	SDL2::SDL2main
 	SDL2::SDL2
 	fmt::fmt
-	assimp::assimp
+	fastgltf::fastgltf
 	GPUOpen::VulkanMemoryAllocator
 	imgui
 )

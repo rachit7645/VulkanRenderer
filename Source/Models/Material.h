@@ -23,9 +23,12 @@ namespace Models
 {
 	struct Material
     {
-	    usize albedo   = 0;
-	    usize normal   = 0;
-	    usize aoRghMtl = 0;
+	    usize     albedo          = 0;
+	    usize     normal          = 0;
+	    usize     aoRghMtl        = 0;
+		glm::vec4 albedoFactor    = {1.0f, 1.0f, 1.0f, 1.0f};
+		f32       roughnessFactor = 1.0f;
+		f32       metallicFactor  = 1.0f;
     };
 }
 

@@ -27,10 +27,10 @@ namespace Renderer::Forward
 {
     struct VULKAN_GLSL_DATA Mesh
     {
-        glm::mat4       transform    = {};
-        glm::mat4       normalMatrix = {};
-        glm::uvec4      textureIDs   = {};
-        VkDeviceAddress vertexBuffer = {};
+        glm::mat4       transform;
+        glm::mat4       normalMatrix; // albedoFactor = mat[3], roughnessFactor = mat[0].w & metallicFactor = mat[1].w (mat[2].w is unused)
+        glm::uvec4      textureIDs;   // Albedo, Normal, AoRghMtl (textureIDs.w is unused)
+        VkDeviceAddress vertexBuffer;
     };
 }
 

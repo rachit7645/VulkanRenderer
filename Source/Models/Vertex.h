@@ -28,8 +28,6 @@ namespace Models
 {
     struct Vertex
     {
-        Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent);
-
         glm::vec4 position_uvX;
         glm::vec4 normal_uvY;
         glm::vec4 tangent_padf32;

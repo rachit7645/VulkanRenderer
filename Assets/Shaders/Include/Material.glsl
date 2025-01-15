@@ -19,10 +19,29 @@
 #ifndef MATERIAL_GLSL
 #define MATERIAL_GLSL
 
+#define MAT_ALBEDO_ID     mesh.textureIDs.x
+#define MAT_NORMAL_ID     mesh.textureIDs.y
+#define MAT_AO_RGH_MTL_ID mesh.textureIDs.z
+
 vec3 GetNormalFromMap(vec3 normal, mat3 TBN)
 {
     normal = normal * 2.0f - 1.0f;
     return normalize(TBN * normal);
+}
+
+vec4 GetAlbedoFactor(mat4 normalMatrix)
+{
+    return normalMatrix[3];
+}
+
+float GetRoughnessFactor(mat4 normalMatrix)
+{
+    return normalMatrix[0].w;
+}
+
+float GetMetallicFactor(mat4 normalMatrix)
+{
+    return normalMatrix[1].w;
 }
 
 #endif

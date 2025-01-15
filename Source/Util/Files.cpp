@@ -33,9 +33,7 @@ namespace Engine::Files
 
     std::string GetDirectory(const std::string_view path)
     {
-        auto directory = filesystem::path(path).parent_path().string();
-        auto separator = static_cast<char>(filesystem::path::preferred_separator);
-        return directory + separator;
+        return filesystem::path(path).parent_path().string();
     }
 
     usize GetFileSize(const std::string_view path)

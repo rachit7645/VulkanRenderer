@@ -24,7 +24,7 @@
 
 // Includes
 #include "Material.glsl"
-#include "Texture.glsl"
+#include "GammaCorrect.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
 #include "ForwardConstants.glsl"
@@ -43,16 +43,33 @@ layout(set = 1, binding = 0) uniform texture2D textures[];
 
 void main()
 {
-    uvec4 textureIDs = Constants.Meshes.meshes[Constants.DrawID].textureIDs;
+    Mesh mesh = Constants.Meshes.meshes[Constants.DrawID];
 
-    // This is assumed to be an SRGB texture
-    vec3 albedo   = SampleLinear(textures[MESH_ALBEDO_ID], texSampler, fragTexCoords);
-    vec3 normal   = GetNormalFromMap(Sample(textures[MESH_NORMAL_ID], texSampler, fragTexCoords), fragTBNMatrix);
-    vec3 aoRghMtl = Sample(textures[MESH_AO_RGH_MTL_ID], texSampler, fragTexCoords);
+    vec3 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], texSampler), fragTexCoords).rgb;
+    albedo      = ToLinear(albedo);
+    albedo     *= GetAlbedoFactor(mesh.normalMatrix).rgb;
+
+    vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], texSampler), fragTexCoords).rgb;
+    normal      = GetNormalFromMap(normal, fragTBNMatrix);
+
+    vec3 aoRghMtl = texture(sampler2D(textures[MAT_AO_RGH_MTL_ID], texSampler), fragTexCoords).rgb;
+    aoRghMtl.g   *= GetRoughnessFactor(mesh.normalMatrix);
+    aoRghMtl.b   *= GetMetallicFactor(mesh.normalMatrix);
 
     vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
-    vec3 Lo = CalculateLight(GetDirLightInfo(Constants.Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);
-         Lo += albedo * vec3(0.03f);
+
+    vec3 Lo = CalculateLight
+    (
+        GetDirLightInfo(Constants.Scene.light),
+        normal,
+        fragToCamera,
+        F0,
+        albedo,
+        aoRghMtl.g,
+        aoRghMtl.b
+    );
+
+    Lo += albedo * vec3(0.03f);
 
     outColor = vec4(Lo, 1.0f);
 }
