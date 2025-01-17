@@ -28,10 +28,25 @@ namespace Models
 {
     struct Vertex
     {
-        glm::vec4 position_uvX;
-        glm::vec4 normal_uvY;
-        glm::vec4 tangent_padf32;
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec2 uv0;
+        glm::vec3 tangent;
     };
+
+    #ifdef ENGINE_DEBUG
+    static_assert
+    (
+        sizeof(Vertex) ==
+        (
+            sizeof(glm::vec3) +
+            sizeof(glm::vec3) +
+            sizeof(glm::vec2) +
+            sizeof(glm::vec3)
+        ),
+        "Incompatible vertex structure!"
+    );
+    #endif
 
     using Index = u32;
 }

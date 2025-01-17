@@ -30,10 +30,12 @@ namespace Models
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR   = "GFX/";
 
+    // Default texture paths
     constexpr auto DEFAULT_ALBEDO     = "Albedo.png";
     constexpr auto DEFAULT_NORMAL     = "Normal.png";
     constexpr auto DEFAULT_AO_RGH_MTL = "Metal-Roughness.png";
 
+    // Texture flags
     constexpr auto ALBEDO_FLAGS     = Vk::Texture::Flags::IsSRGB | Vk::Texture::Flags::GenMipmaps;
     constexpr auto NORMAL_FLAGS     = Vk::Texture::Flags::GenMipmaps;
     constexpr auto AO_RGH_MTL_FLAGS = Vk::Texture::Flags::GenMipmaps;
@@ -41,6 +43,7 @@ namespace Models
     Model::Model
     (
         const Vk::Context& context,
+        Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         const std::string_view path
     )
@@ -210,7 +213,7 @@ namespace Models
                     fastgltf::iterateAccessor<glm::vec3>(asset.get(), positionAccessor, [&] (const glm::vec3& position)
                     {
                         Vertex vertex = {};
-                        vertex.position_uvX = {position, 0.0f};
+                        vertex.position = position;
                         vertices.emplace_back(vertex);
                     });
                 }
@@ -238,7 +241,7 @@ namespace Models
 
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(asset.get(), normalAccessor, [&] (const glm::vec3& normal, usize index)
                     {
-                        vertices[index].normal_uvY = {normal, 0.0f};
+                        vertices[index].normal = normal;
                     });
                 }
 
@@ -264,8 +267,7 @@ namespace Models
 
                     fastgltf::iterateAccessorWithIndex<glm::vec2>(asset.get(), uvAccessor, [&] (const glm::vec2& uv, usize index)
                     {
-                        vertices[index].position_uvX.w = uv.x;
-                        vertices[index].normal_uvY.w   = uv.y;
+                        vertices[index].uv0 = uv;
                     });
                 }
 
@@ -291,7 +293,7 @@ namespace Models
 
                     fastgltf::iterateAccessorWithIndex<glm::vec4>(asset.get(), tangentAccessor, [&] (const glm::vec4& tangent, usize index)
                     {
-                        vertices[index].tangent_padf32 = tangent;
+                        vertices[index].tangent = tangent;
                     });
                 }
 
@@ -424,6 +426,7 @@ namespace Models
                 meshes.emplace_back
                 (
                     Vk::VertexBuffer(context, vertices, indices),
+                    geometryBuffer.LoadIndices(context, indices),
                     material
                 );
             }

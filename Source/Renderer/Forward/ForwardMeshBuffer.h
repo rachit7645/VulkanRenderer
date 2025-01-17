@@ -39,7 +39,6 @@ namespace Renderer::Forward
         void LoadMeshes
         (
             usize FIF,
-            const Vk::TextureManager& textureManager,
             const Models::ModelManager& modelManager,
             const std::vector<Renderer::RenderObject>& renderObjects
         );

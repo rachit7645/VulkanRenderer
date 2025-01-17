@@ -19,12 +19,13 @@
 
 struct Vertex
 {
-    vec4 position_uvX;
-    vec4 normal_uvY;
-    vec4 tangent_padf32;
+    vec3 position;
+    vec3 normal;
+    vec2 uv0;
+    vec3 tangent;
 };
 
-layout(buffer_reference, std430, buffer_reference_align=16) readonly buffer VertexBuffer
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
 {
     Vertex vertices[];
 };

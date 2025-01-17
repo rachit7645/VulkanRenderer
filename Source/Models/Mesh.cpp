@@ -21,9 +21,11 @@ namespace Models
     Mesh::Mesh
     (
         const Vk::VertexBuffer& vertexBuffer,
+        const Models::Info& indexInfo,
         const Models::Material& material
     )
         : vertexBuffer(vertexBuffer),
+          indexInfo(indexInfo),
           material(material)
     {
     }

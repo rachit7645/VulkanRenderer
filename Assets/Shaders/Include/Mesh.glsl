@@ -22,12 +22,15 @@
 struct Mesh
 {
     mat4         transform;
-    mat4         normalMatrix;
-    uvec4        textureIDs;
+    mat3         normalMatrix;
+    uvec3        textureIDs;
+    vec4         albedoFactor;
+    float        roughnessFactor;
+    float        metallicFactor;
     VertexBuffer vertexBuffer;
 };
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer MeshBuffer
+layout(buffer_reference, scalar) readonly buffer MeshBuffer
 {
     Mesh meshes[];
 };

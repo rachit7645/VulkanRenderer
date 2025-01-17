@@ -26,14 +26,13 @@ namespace Renderer
     RenderManager::RenderManager(const std::shared_ptr<Engine::Window>& window)
         : m_window(window),
           m_context(m_window),
-          m_textureManager(m_context.device, m_context.physicalDeviceLimits),
+          m_modelManager(m_context),
           m_swapPass(*window, m_context),
-          m_forwardPass(m_context, m_textureManager, m_swapPass.swapchain.extent)
+          m_forwardPass(m_context, m_modelManager.textureManager, m_swapPass.swapchain.extent)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
-            m_textureManager.Destroy(m_context.device, m_context.allocator);
-            m_modelManager.Destroy(m_context.allocator);
+            m_modelManager.Destroy(m_context.device, m_context.allocator);
 
             m_swapPass.Destroy(m_context);
             m_forwardPass.Destroy(m_context);
@@ -42,7 +41,7 @@ namespace Renderer
         });
 
         m_renderObjects.emplace_back(RenderObject(
-            m_modelManager.AddModel(m_context, m_textureManager, "Sponza/glTF/Sponza.gltf"),
+            m_modelManager.AddModel(m_context, "Sponza/glTF/Sponza.gltf"),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.25f, 0.25f, 0.25f)
@@ -73,7 +72,6 @@ namespace Renderer
         (
             m_currentFIF,
             m_context.descriptorCache,
-            m_textureManager,
             m_modelManager,
             m_camera,
             m_renderObjects

@@ -45,18 +45,25 @@ void main()
 {
     Mesh mesh = Constants.Meshes.meshes[Constants.DrawID];
 
-    vec3 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], texSampler), fragTexCoords).rgb;
-    albedo      = ToLinear(albedo);
-    albedo     *= GetAlbedoFactor(mesh.normalMatrix).rgb;
+    vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], texSampler), fragTexCoords);
+
+    // Transparency check
+    if (albedo.a < 0.5f)
+    {
+        discard;
+    }
+
+    albedo.xyz  = ToLinear(albedo.xyz);
+    albedo     *= mesh.albedoFactor;
 
     vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], texSampler), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
 
     vec3 aoRghMtl = texture(sampler2D(textures[MAT_AO_RGH_MTL_ID], texSampler), fragTexCoords).rgb;
-    aoRghMtl.g   *= GetRoughnessFactor(mesh.normalMatrix);
-    aoRghMtl.b   *= GetMetallicFactor(mesh.normalMatrix);
+    aoRghMtl.g   *= mesh.roughnessFactor;
+    aoRghMtl.b   *= mesh.metallicFactor;
 
-    vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
+    vec3 F0 = mix(vec3(0.04f), albedo.rgb, aoRghMtl.b);
 
     vec3 Lo = CalculateLight
     (
@@ -64,12 +71,12 @@ void main()
         normal,
         fragToCamera,
         F0,
-        albedo,
+        albedo.rgb,
         aoRghMtl.g,
         aoRghMtl.b
     );
 
-    Lo += albedo * vec3(0.03f);
+    Lo += albedo.rgb * vec3(0.03f);
 
     outColor = vec4(Lo, 1.0f);
 }

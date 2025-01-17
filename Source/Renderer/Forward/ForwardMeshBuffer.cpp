@@ -44,7 +44,6 @@ namespace Renderer::Forward
     void MeshBuffer::LoadMeshes
     (
         usize FIF,
-        const Vk::TextureManager& textureManager,
         const Models::ModelManager& modelManager,
         const std::vector<Renderer::RenderObject>& renderObjects
     )
@@ -54,23 +53,21 @@ namespace Renderer::Forward
         for (const auto& renderObject : renderObjects)
         {
             const auto transform = Maths::CreateTransformMatrix(renderObject.position, renderObject.rotation, renderObject.scale);
-            auto normalMatrix    = glm::mat4(Maths::CreateNormalMatrix(transform));
+            auto normalMatrix    = Maths::CreateNormalMatrix(transform);
 
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
-                normalMatrix[0].w = mesh.material.roughnessFactor;
-                normalMatrix[1].w = mesh.material.metallicFactor;
-                normalMatrix[3]   = mesh.material.albedoFactor;
-
                 meshes.emplace_back(
                     transform,
                     normalMatrix,
-                    glm::uvec4(
-                        textureManager.GetID(mesh.material.albedo),
-                        textureManager.GetID(mesh.material.normal),
-                        textureManager.GetID(mesh.material.aoRghMtl),
-                        69
+                    glm::uvec3(
+                        modelManager.textureManager.GetID(mesh.material.albedo),
+                        modelManager.textureManager.GetID(mesh.material.normal),
+                        modelManager.textureManager.GetID(mesh.material.aoRghMtl)
                     ),
+                    mesh.material.albedoFactor,
+                    mesh.material.roughnessFactor,
+                    mesh.material.metallicFactor,
                     mesh.vertexBuffer.vertexBuffer.deviceAddress
                 );
             }

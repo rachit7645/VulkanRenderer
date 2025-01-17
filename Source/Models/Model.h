@@ -20,12 +20,12 @@
 #include <vector>
 #include <string_view>
 
-#include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
 
 #include "Mesh.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
+#include "Vulkan/GeometryBuffer.h"
 
 namespace Models
 {
@@ -35,6 +35,7 @@ namespace Models
         Model
         (
             const Vk::Context& context,
+            Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             const std::string_view path
         );

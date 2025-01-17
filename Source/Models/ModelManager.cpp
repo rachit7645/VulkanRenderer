@@ -20,13 +20,19 @@
 
 namespace Models
 {
-    usize ModelManager::AddModel(const Vk::Context& context, Vk::TextureManager& textureManager, const std::string_view path)
+    ModelManager::ModelManager(const Vk::Context& context)
+        : geometryBuffer(context.allocator),
+          textureManager(context.device, context.physicalDeviceLimits)
+    {
+    }
+
+    usize ModelManager::AddModel(const Vk::Context& context, const std::string_view path)
     {
         usize pathHash = std::hash<std::string_view>()(path);
 
         if (!modelMap.contains(pathHash))
         {
-            modelMap.emplace(pathHash, Model(context, textureManager, path));
+            modelMap.emplace(pathHash, Model(context, geometryBuffer, textureManager, path));
         }
 
         return pathHash;
@@ -44,7 +50,7 @@ namespace Models
         return iter->second;
     }
 
-    void ModelManager::Destroy(VmaAllocator allocator)
+    void ModelManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
         for (auto& model : modelMap | std::views::values)
         {
@@ -53,5 +59,8 @@ namespace Models
                 mesh.Destroy(allocator);
             }
         }
+
+        geometryBuffer.Destroy(allocator);
+        textureManager.Destroy(device, allocator);
     }
 }

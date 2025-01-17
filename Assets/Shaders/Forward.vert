@@ -36,15 +36,15 @@ void main()
     Mesh   mesh   = Constants.Meshes.meshes[Constants.DrawID];
     Vertex vertex = mesh.vertexBuffer.vertices[gl_VertexIndex];
 
-    vec4 fragPos = mesh.transform * vec4(vertex.position_uvX.xyz, 1.0f);
+    vec4 fragPos = mesh.transform * vec4(vertex.position, 1.0f);
     fragPosition = fragPos.xyz;
     gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
 
-    fragTexCoords = vec2(vertex.position_uvX.w, vertex.normal_uvY.w);
+    fragTexCoords = vertex.uv0;
     fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);
 
-    vec3 N = normalize(mat3(mesh.normalMatrix) * vertex.normal_uvY.xyz);
-    vec3 T = normalize(mat3(mesh.normalMatrix) * vertex.tangent_padf32.xyz);
+    vec3 N = normalize(mesh.normalMatrix * vertex.normal);
+    vec3 T = normalize(mesh.normalMatrix * vertex.tangent);
          T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 

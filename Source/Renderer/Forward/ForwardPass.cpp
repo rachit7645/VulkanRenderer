@@ -59,7 +59,6 @@ namespace Renderer::Forward
     (
         usize FIF,
         Vk::DescriptorCache& descriptorCache,
-        const Vk::TextureManager& textureManager,
         const Models::ModelManager& modelManager,
         const Renderer::Camera& camera,
         const std::vector<Renderer::RenderObject>& renderObjects
@@ -182,7 +181,7 @@ namespace Renderer::Forward
 
         std::memcpy(pipeline.sceneSSBOs[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
 
-        pipeline.meshBuffer.LoadMeshes(FIF, textureManager, modelManager, renderObjects);
+        pipeline.meshBuffer.LoadMeshes(FIF, modelManager, renderObjects);
 
         pipeline.pushConstant = {};
         pipeline.pushConstant.scene  = pipeline.sceneSSBOs[FIF].deviceAddress;
@@ -200,7 +199,7 @@ namespace Renderer::Forward
         std::array sceneDescriptorSets =
         {
             pipeline.GetStaticSet(descriptorCache).handle,
-            textureManager.textureSet.handle
+            modelManager.textureManager.textureSet.handle
         };
 
         pipeline.BindDescriptors
@@ -210,6 +209,8 @@ namespace Renderer::Forward
             0,
             sceneDescriptorSets
         );
+
+        modelManager.geometryBuffer.Bind(currentCmdBuffer);
 
         for (const auto& renderObject : renderObjects)
         {
@@ -231,9 +232,9 @@ namespace Renderer::Forward
                 vkCmdDrawIndexed
                 (
                     currentCmdBuffer.handle,
-                    meshes[i].vertexBuffer.indexCount,
+                    meshes[i].indexInfo.count,
                     1,
-                    0,
+                    meshes[i].indexInfo.offset,
                     0,
                     0
                 );

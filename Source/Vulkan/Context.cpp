@@ -36,7 +36,11 @@ namespace Vk
     #endif
 
     // Required device extensions
-    constexpr std::array REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME};
+    constexpr std::array REQUIRED_EXTENSIONS =
+    {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
+    };
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
     {

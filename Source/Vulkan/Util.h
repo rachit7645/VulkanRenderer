@@ -28,8 +28,6 @@
 
 // STD140 / STD430 alignment
 #define VULKAN_GLSL_DATA alignas(16)
-// Scalr layout
-#define VULKAN_SCALAR_DATA __attribute__((packed))
 
 namespace Vk
 {

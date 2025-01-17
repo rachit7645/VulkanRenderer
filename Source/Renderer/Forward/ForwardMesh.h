@@ -25,13 +25,33 @@
 
 namespace Renderer::Forward
 {
-    struct VULKAN_GLSL_DATA Mesh
+    struct Mesh
     {
         glm::mat4       transform;
-        glm::mat4       normalMatrix; // albedoFactor = mat[3], roughnessFactor = mat[0].w & metallicFactor = mat[1].w (mat[2].w is unused)
-        glm::uvec4      textureIDs;   // Albedo, Normal, AoRghMtl (textureIDs.w is unused)
+        glm::mat3       normalMatrix;
+        glm::uvec3      textureIDs;
+        glm::vec4       albedoFactor;
+        f32             roughnessFactor;
+        f32             metallicFactor;
         VkDeviceAddress vertexBuffer;
     };
+
+    #ifdef ENGINE_DEBUG
+    static_assert
+    (
+        sizeof(Mesh) ==
+        (
+            sizeof(glm::mat4)  +
+            sizeof(glm::mat3)  +
+            sizeof(glm::uvec3) +
+            sizeof(glm::vec4)  +
+            sizeof(f32)        +
+            sizeof(f32)        +
+            sizeof(VkDeviceAddress)
+        ),
+        "Incompatible mesh structure!"
+    );
+    #endif
 }
 
 #endif

@@ -71,6 +71,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DescriptorWriter.cpp
 	Source/Vulkan/DescriptorCache.cpp
 	Source/Vulkan/TextureManager.cpp
+	Source/Vulkan/GeometryBuffer.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
@@ -130,6 +131,12 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <glm/gtc/matrix_transform.hpp>
     # VMA Headers
 	Externals/vma/include/vk_mem_alloc.h
+    # fastgltf Headers
+    <fastgltf/core.hpp>
+    <fastgltf/types.hpp>
+    <fastgltf/tools.hpp>
+    <fastgltf/glm_element_traits.hpp>
+    <fastgltf/math.hpp>
     # C++ STL Headers
 	<map>
     <unordered_map>

@@ -29,19 +29,4 @@ vec3 GetNormalFromMap(vec3 normal, mat3 TBN)
     return normalize(TBN * normal);
 }
 
-vec4 GetAlbedoFactor(mat4 normalMatrix)
-{
-    return normalMatrix[3];
-}
-
-float GetRoughnessFactor(mat4 normalMatrix)
-{
-    return normalMatrix[0].w;
-}
-
-float GetMetallicFactor(mat4 normalMatrix)
-{
-    return normalMatrix[1].w;
-}
-
 #endif

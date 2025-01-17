@@ -20,15 +20,15 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(SHADERS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/Bin/Assets/Shaders)
 
 # Get glsl compiler
-find_package(Vulkan REQUIRED COMPONENTS glslangValidator)
-find_program(GLSL_COMPILER NAMES glslangValidator HINTS Vulkan::glslangValidator)
+find_package(Vulkan REQUIRED COMPONENTS glslang)
+find_program(GLSL_COMPILER NAMES glslang HINTS Vulkan::glslang)
 
 # Shader locations
 set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPIRV_BINARY_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 # Shader flags
-set(SHADER_FLAGS --target-env vulkan1.3)
+set(SHADER_FLAGS --target-env vulkan1.3 --enhanced-msgs)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
@@ -46,6 +46,20 @@ file(GLOB SHADER_SOURCES
     Forward.frag
 )
 
+# Shader files
+file(GLOB SHADER_HEADERS
+    Include/ACES.glsl
+    Include/Constants.glsl
+    Include/ForwardConstants.glsl
+    Include/GammaCorrect.glsl
+    Include/Lights.glsl
+    Include/Material.glsl
+    Include/Mesh.glsl
+    Include/PBR.glsl
+    Include/Scene.glsl
+    Include/Vertex.glsl
+)
+
 # For each shader to be compiled
 foreach(Shader ${SHADER_SOURCES})
     # Get file name
@@ -57,7 +71,7 @@ foreach(Shader ${SHADER_SOURCES})
         OUTPUT ${SPIRV}
         COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_BINARY_DIR}"
         COMMAND ${GLSL_COMPILER} ${Shader} ${SHADER_FLAGS} ${SHADER_INCLUDES} -o ${SPIRV}
-        DEPENDS ${Shader}
+        DEPENDS ${Shader} ${SHADER_HEADERS}
         COMMENT "Building GLSL shader ${Shader}"
     )
     # Add compiled shader to list

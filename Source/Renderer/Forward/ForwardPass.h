@@ -43,7 +43,6 @@ namespace Renderer::Forward
         (
             usize FIF,
             Vk::DescriptorCache& descriptorCache,
-            const Vk::TextureManager& textureManager,
             const Models::ModelManager& modelManager,
             const Renderer::Camera& camera,
             const std::vector<Renderer::RenderObject>& renderObjects

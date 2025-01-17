@@ -23,7 +23,7 @@
 
 namespace Renderer::Forward
 {
-    struct VULKAN_SCALAR_DATA PushConstant
+    struct __attribute__((packed)) PushConstant
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;

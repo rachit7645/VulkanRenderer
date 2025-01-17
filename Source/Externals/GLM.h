@@ -21,6 +21,8 @@
 #define GLM_FORCE_INTRINSICS
 // Vulkan uses this format
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+// Silence
+#define GLM_FORCE_SILENT_WARNINGS
 
 // Standard vector types
 #include <glm/vec2.hpp>
@@ -48,7 +50,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 // Fastgltf math types
-#include <fastgltf/math.hpp>
 #include <fastgltf/types.hpp>
 
 namespace glm

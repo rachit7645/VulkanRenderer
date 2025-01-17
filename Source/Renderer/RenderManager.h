@@ -63,7 +63,6 @@ namespace Renderer
         // Object handles
         std::shared_ptr<Engine::Window> m_window = nullptr;
         Vk::Context                     m_context;
-        Vk::TextureManager              m_textureManager;
         Models::ModelManager            m_modelManager;
 
         // Render Passes
