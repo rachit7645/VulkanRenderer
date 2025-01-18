@@ -16,7 +16,7 @@
 
 #include "Extensions.h"
 
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include "ExtensionState.h"
 #include "ExtensionLoader.h"
@@ -27,31 +27,17 @@ namespace Vk
     // Internal extension function pointers (Global state, I know)
     static inline ExtensionState g_ExtensionState = {};
 
-    std::vector<const char*> Extensions::LoadInstanceExtensions(SDL_Window* window)
+    std::vector<const char*> Extensions::LoadInstanceExtensions()
     {
         u32 extensionCount = 0;
-        SDL_Vulkan_GetInstanceExtensions
-        (
-            window,
-            &extensionCount,
-            nullptr
-        );
+        const auto instanceExtensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
 
-        auto instanceExtensions = reinterpret_cast<const char**>(SDL_malloc(sizeof(const char*) * extensionCount));
-        auto extensionsLoaded = SDL_Vulkan_GetInstanceExtensions
-        (
-            window,
-            &extensionCount,
-            instanceExtensions
-        );
-
-        if (extensionsLoaded == SDL_FALSE)
+        if (instanceExtensions == nullptr)
         {
             Logger::VulkanError("Failed to load extensions!: {}\n", SDL_GetError());
         }
 
         auto extensionStrings = std::vector<const char*>(instanceExtensions, instanceExtensions + extensionCount);
-        SDL_free(reinterpret_cast<void*>(instanceExtensions));
 
         #ifdef ENGINE_DEBUG
         extensionStrings.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

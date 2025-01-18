@@ -27,7 +27,7 @@ namespace Vk
     public:
         void Destroy();
 
-        [[nodiscard]] std::vector<const char*> LoadInstanceExtensions(SDL_Window* window);
+        [[nodiscard]] std::vector<const char*> LoadInstanceExtensions();
         void LoadInstanceFunctions(VkInstance instance);
 
         [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions);

@@ -17,9 +17,9 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
-#include "../Externals/GLM.h"
+#include "Externals/GLM.h"
 
 namespace Engine
 {
@@ -43,12 +43,10 @@ namespace Engine
         // SDL window handle
         SDL_Window* handle = nullptr;
         // Window size
-        glm::ivec2 size = {1280, 768};
+        glm::ivec2 size = {1600, 900};
     private:
         // SDL event
         SDL_Event m_event = {};
-        // Is input captured?
-        bool m_isInputCaptured = true;
     };
 }
 

@@ -16,7 +16,7 @@
 
 #include "AppInstance.h"
 
-#include "../Util/Log.h"
+#include "Util/Log.h"
 
 namespace Engine
 {

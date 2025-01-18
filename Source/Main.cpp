@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
+#include <SDL3/SDL_main.h>
 
 #include "Util/Util.h"
 #include "Engine/AppInstance.h"

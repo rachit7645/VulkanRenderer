@@ -28,7 +28,7 @@ namespace Engine
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
 
-        FindController();
+        FindGamepad();
     }
 
     Inputs& Inputs::Get()
@@ -37,28 +37,37 @@ namespace Engine
         return inputs;
     }
 
-    void Inputs::SetMousePosition(const glm::ivec2& position)
+    void Inputs::SetMousePosition(const glm::vec2& position)
     {
         m_mousePosition = position;
         m_wasMouseMoved = true;
     }
 
-    void Inputs::SetMouseScroll(const glm::ivec2& scroll)
+    void Inputs::SetMouseScroll(const glm::vec2& scroll)
     {
         m_mouseScroll      = scroll;
         m_wasMouseScrolled = true;
     }
 
-    void Inputs::FindController()
+    void Inputs::FindGamepad()
     {
-        m_controller = nullptr;
+        m_gamepad = nullptr;
 
-        for (s32 i = 0; i < SDL_NumJoysticks(); ++i)
+        s32 joystickCount = 0;
+        auto* joysticks = SDL_GetJoysticks(&joystickCount);
+
+        // No joystick found, abort
+        if (joysticks == nullptr)
+        {
+            return;
+        }
+
+        for (s32 i = 0; i < joystickCount; ++i)
         {
             // We need a proper game controller
-            if (SDL_IsGameController(i))
+            if (SDL_IsGamepad(i))
             {
-                m_controller = SDL_GameControllerOpen(i);
+                m_gamepad = SDL_OpenGamepad(i);
                 break;
             }
         }
@@ -69,13 +78,13 @@ namespace Engine
         return static_cast<bool>(m_keys[key]);
     }
 
-    const glm::ivec2& Inputs::GetMousePosition()
+    const glm::vec2& Inputs::GetMousePosition()
     {
         m_wasMouseMoved = false;
         return m_mousePosition;
     }
 
-    const glm::ivec2& Inputs::GetMouseScroll()
+    const glm::vec2& Inputs::GetMouseScroll()
     {
         m_wasMouseScrolled = false;
         return m_mouseScroll;
@@ -85,8 +94,8 @@ namespace Engine
     {
         return GetNormalisedAxisDirection
         (
-            SDL_CONTROLLER_AXIS_LEFTX,
-            SDL_CONTROLLER_AXIS_LEFTY,
+            SDL_GAMEPAD_AXIS_LEFTX,
+            SDL_GAMEPAD_AXIS_LEFTY,
             {0.3f, 0.3f}
         );
     }
@@ -95,20 +104,20 @@ namespace Engine
     {
         return GetNormalisedAxisDirection
         (
-            SDL_CONTROLLER_AXIS_RIGHTX,
-            SDL_CONTROLLER_AXIS_RIGHTY,
+            SDL_GAMEPAD_AXIS_RIGHTX,
+            SDL_GAMEPAD_AXIS_RIGHTY,
             {0.1f, 0.1f}
         );
     }
 
-    SDL_GameController* Inputs::GetController() const
+    SDL_Gamepad* Inputs::GetGamepad() const
     {
-        return m_controller;
+        return m_gamepad;
     }
 
-    SDL_JoystickID Inputs::GetControllerID() const
+    SDL_JoystickID Inputs::GetGamepadID() const
     {
-        return SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(m_controller));
+        return SDL_GetJoystickID(SDL_GetGamepadJoystick(m_gamepad));
     }
 
     bool Inputs::WasMouseMoved() const
@@ -123,19 +132,19 @@ namespace Engine
 
     glm::vec2 Inputs::GetNormalisedAxisDirection
     (
-        SDL_GameControllerAxis axisHorizontal,
-        SDL_GameControllerAxis axisVertical,
+        SDL_GamepadAxis axisHorizontal,
+        SDL_GamepadAxis axisVertical,
         const glm::vec2& deadZone
     ) const
     {
         // No controller connected
-        if (m_controller == nullptr)
+        if (m_gamepad == nullptr)
         {
             return {0, 0};
         }
 
-        auto x = SDL_GameControllerGetAxis(m_controller, axisHorizontal);
-        auto y = SDL_GameControllerGetAxis(m_controller, axisVertical);
+        auto x = SDL_GetGamepadAxis(m_gamepad, axisHorizontal);
+        auto y = SDL_GetGamepadAxis(m_gamepad, axisVertical);
 
         constexpr auto AXIS_MAX = static_cast<f32>(SDL_JOYSTICK_AXIS_MAX);
         f32 normalizedX = static_cast<f32>(x) / AXIS_MAX;
@@ -166,40 +175,19 @@ namespace Engine
             if (ImGui::BeginMenu("Input"))
             {
                 // Realtime(ish) mouse position
-                glm::ivec2 mousePos = {};
+                glm::vec2 mousePos = {};
                 SDL_GetMouseState(&mousePos.x, &mousePos.y);
 
                 // Mouse data
-                ImGui::DragInt2("Mouse Position", &mousePos[0]);
-                ImGui::DragInt2("Mouse Relative", &m_mousePosition[0]);
-                ImGui::DragInt2("Mouse Scroll", &m_mouseScroll[0]);
+                ImGui::DragFloat2("Mouse Position", &mousePos[0]);
+                ImGui::DragFloat2("Mouse Relative", &m_mousePosition[0]);
+                ImGui::DragFloat2("Mouse Scroll",   &m_mouseScroll[0]);
 
                 // If controller is connected
-                if (m_controller != nullptr)
+                if (m_gamepad != nullptr)
                 {
-                    auto controllerType = [] (SDL_GameControllerType controllerType)
-                    {
-                        switch (controllerType)
-                        {
-                            case SDL_CONTROLLER_TYPE_UNKNOWN:                      return "Unknown";
-                            case SDL_CONTROLLER_TYPE_XBOX360:                      return "Xbox 360";
-                            case SDL_CONTROLLER_TYPE_XBOXONE:                      return "Xbox One";
-                            case SDL_CONTROLLER_TYPE_PS3:                          return "PlayStation 3";
-                            case SDL_CONTROLLER_TYPE_PS4:                          return "PlayStation 4";
-                            case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO:          return "Nintendo Switch Pro";
-                            case SDL_CONTROLLER_TYPE_VIRTUAL:                      return "Virtual";
-                            case SDL_CONTROLLER_TYPE_PS5:                          return "PlayStation 5";
-                            case SDL_CONTROLLER_TYPE_AMAZON_LUNA:                  return "Amazon Luna";
-                            case SDL_CONTROLLER_TYPE_GOOGLE_STADIA:                return "Google Stadia";
-                            case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:  return "Nintendo Switch Joy-Con (Left)";
-                            case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT: return "Nintendo Switch Joy-Con (Right)";
-                            case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:  return "Nintendo Switch Joy-Con (Pair)";
-                            default:                                               return "Unknown";
-                        }
-                    }(SDL_GameControllerGetType(m_controller));
-
                     // Controller data
-                    ImGui::Text("%s", controllerType);
+                    ImGui::Text("%s", SDL_GetGamepadName(m_gamepad));
                     ImGui::DragFloat2("LStick", &GetLStick()[0], 1.0f, 0.0f, 0.0f, "%.3f");
                     ImGui::DragFloat2("RStick", &GetRStick()[0], 1.0f, 0.0f, 0.0f, "%.3f");
                 }
@@ -213,10 +201,10 @@ namespace Engine
 
     void Inputs::Destroy()
     {
-        SDL_GameControllerClose(m_controller);
+        SDL_CloseGamepad(m_gamepad);
 
         m_keys       = nullptr;
-        m_controller = nullptr;
+        m_gamepad = nullptr;
 
         m_mousePosition = {};
         m_mouseScroll   = {};

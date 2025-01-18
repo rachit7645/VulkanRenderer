@@ -301,10 +301,13 @@ namespace Vk
         }
 
         glm::ivec2 size = {};
-        SDL_Vulkan_GetDrawableSize(window, &size.x, &size.y);
+        if (!SDL_GetWindowSizeInPixels(window, &size.x, &size.y))
+        {
+            Logger::Error("SDL_GetWindowSizeInPixels Failed : {}\n", SDL_GetError());
+        }
 
-        auto minSize = glm::ivec2(capabilities.minImageExtent.width, capabilities.minImageExtent.height);
-        auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
+        const auto minSize = glm::ivec2(capabilities.minImageExtent.width, capabilities.minImageExtent.height);
+        const auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
 
         auto actualExtent = glm::clamp(size, minSize, maxSize);
 

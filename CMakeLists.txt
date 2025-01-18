@@ -24,7 +24,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL2     REQUIRED)
+find_package(SDL3     REQUIRED)
 find_package(Vulkan   REQUIRED)
 find_package(glm      REQUIRED)
 find_package(fastgltf REQUIRED)
@@ -101,8 +101,8 @@ add_executable(VulkanRenderer
 # Precompiled Headers
 target_precompile_headers(VulkanRenderer PRIVATE
 	# SDL headers
-	<SDL2/SDL.h>
-	<SDL2/SDL_vulkan.h>
+	<SDL3/SDL.h>
+	<SDL3/SDL_vulkan.h>
 	# Vulkan headers
 	<vulkan/vulkan.h>
 	<vulkan/vulkan_core.h>
@@ -195,8 +195,7 @@ add_dependencies(VulkanRenderer Shaders)
 # Link libraries
 target_link_libraries(VulkanRenderer
 	Vulkan::Vulkan
-	SDL2::SDL2main
-	SDL2::SDL2
+	SDL3::SDL3
 	fmt::fmt
 	fastgltf::fastgltf
 	GPUOpen::VulkanMemoryAllocator

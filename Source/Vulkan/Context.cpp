@@ -44,7 +44,7 @@ namespace Vk
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
     {
-        CreateInstance(window->handle);
+        CreateInstance();
 
         CreateSurface(window->handle);
 
@@ -58,7 +58,7 @@ namespace Vk
         Logger::Info("{}\n", "Initialised vulkan context!");
     }
 
-    void Context::CreateInstance(SDL_Window* window)
+    void Context::CreateInstance()
     {
         constexpr VkApplicationInfo appInfo =
         {
@@ -71,7 +71,7 @@ namespace Vk
             .apiVersion         = VULKAN_API_VERSION
         };
 
-        auto extensions = m_extensions.LoadInstanceExtensions(window);
+        auto extensions = m_extensions.LoadInstanceExtensions();
 
         #ifdef ENGINE_ENABLE_VALIDATION
         m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
@@ -116,7 +116,7 @@ namespace Vk
 
     void Context::CreateSurface(SDL_Window* window)
     {
-        if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE)
+        if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface))
         {
             Logger::Error
             (
@@ -257,6 +257,7 @@ namespace Vk
         const bool hasVariableDescriptorCount     = vk12Features->descriptorBindingVariableDescriptorCount;
         const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
         const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
+        const bool hasUpdateUnusedWhilePending    = vk12Features->descriptorBindingUpdateUnusedWhilePending;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
@@ -267,9 +268,9 @@ namespace Vk
         const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect;
         const bool extensions = isSwapChainAdequate;
         const bool vk11       = hasShaderDrawParameters;
-        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing      && hasNonUniformIndexing        &&
+        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
                                 hasRuntimeDescriptorArray && hasVariableDescriptorCount && hasPartiallyBoundDescriptors &&
-                                hasSampledImageUpdateAfterBind;
+                                hasSampledImageUpdateAfterBind && hasUpdateUnusedWhilePending;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
         return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
@@ -316,6 +317,7 @@ namespace Vk
         vk12Features.descriptorBindingVariableDescriptorCount     = VK_TRUE;
         vk12Features.descriptorBindingPartiallyBound              = VK_TRUE;
         vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+        vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
 
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};

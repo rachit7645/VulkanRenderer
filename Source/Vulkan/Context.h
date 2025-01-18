@@ -62,7 +62,7 @@ namespace Vk
         // Descriptor cache
         Vk::DescriptorCache descriptorCache;
     private:
-        void CreateInstance(SDL_Window* window);
+        void CreateInstance();
         void CreateSurface(SDL_Window* window);
 
         void PickPhysicalDevice();

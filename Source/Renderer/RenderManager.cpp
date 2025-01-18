@@ -108,6 +108,19 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
+        m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
+
+        vkWaitForFences
+        (
+            m_context.device,
+            1,
+            &inFlightFences[m_currentFIF],
+            VK_TRUE,
+            std::numeric_limits<u64>::max()
+        );
+
+        vkResetFences(m_context.device, 1, &inFlightFences[m_currentFIF]);
+
         #ifdef ENGINE_DEBUG
         VkDebugUtilsLabelEXT label =
         {
@@ -120,22 +133,10 @@ namespace Renderer
         vkQueueBeginDebugUtilsLabelEXT(m_context.graphicsQueue, &label);
         #endif
 
-        m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
-
-        vkWaitForFences
-        (
-            m_context.device,
-            1,
-            &inFlightFences[m_currentFIF],
-            VK_TRUE,
-            std::numeric_limits<u64>::max()
-        );
-        vkResetFences(m_context.device, 1, &inFlightFences[m_currentFIF]);
-
         m_swapPass.swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
 
         ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
     }
 
@@ -257,7 +258,7 @@ namespace Renderer
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
 
-        ImGui_ImplSDL2_InitForVulkan(m_window->handle);
+        ImGui_ImplSDL3_InitForVulkan(m_window->handle);
         ImGui_ImplVulkan_Init(&imguiInitInfo);
 
         ImGui_ImplVulkan_CreateFontsTexture();
@@ -265,7 +266,7 @@ namespace Renderer
         m_deletionQueue.PushDeletor([&] ()
         {
             ImGui_ImplVulkan_Shutdown();
-            ImGui_ImplSDL2_Shutdown();
+            ImGui_ImplSDL3_Shutdown();
         });
     }
 

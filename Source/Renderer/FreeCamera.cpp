@@ -99,9 +99,9 @@ namespace Renderer
         if (inputs.WasMouseMoved())
         {
             // Yaw
-            rotation.y += glm::radians(static_cast<f32>(inputs.GetMousePosition().x) * speed);
+            rotation.y += glm::radians(inputs.GetMousePosition().x * speed);
             // Pitch
-            rotation.x += glm::radians(static_cast<f32>(inputs.GetMousePosition().y) * speed);
+            rotation.x += glm::radians(inputs.GetMousePosition().y * speed);
         }
 
         auto rStick = inputs.GetRStick();
@@ -121,7 +121,7 @@ namespace Renderer
         // Stops things from going haywire
         if (inputs.WasMouseScrolled())
         {
-            FOV -= static_cast<f32>(inputs.GetMouseScroll().y) * zoom * frameDelta;
+            FOV -= inputs.GetMouseScroll().y * zoom * frameDelta;
             FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }

@@ -14,64 +14,67 @@
  * limitations under the License.
  */
 
-#include <SDL_vulkan.h>
 #include "Window.h"
 
 #include <thread>
+#include <SDL3/SDL_vulkan.h>
 
-#include "Util/Log.h"
-#include "Util/Files.h"
+#include "Externals/ImGui.h"
+
 #include "Inputs.h"
+#include "Util/Log.h"
 
 namespace Engine
 {
     Window::Window()
     {
-        SDL_version version = {};
-        SDL_GetVersion(&version);
-
         Logger::Info
         (
             "Initializing SDL2 version: {}.{}.{}\n",
-            static_cast<usize>(version.major),
-            static_cast<usize>(version.minor),
-            static_cast<usize>(version.patch)
+            SDL_MAJOR_VERSION,
+            SDL_MINOR_VERSION,
+            SDL_MICRO_VERSION
         );
 
-        constexpr u32 SDL_INIT_FLAGS = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER;
-        if (SDL_Init(SDL_INIT_FLAGS) != 0)
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         {
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
         }
 
-        if (SDL_Vulkan_LoadLibrary(nullptr) != 0)
+        if (!SDL_Vulkan_LoadLibrary(nullptr))
         {
             Logger::Error("SDL_Vulkan_LoadLibrary Failed: {}\n", SDL_GetError());
         }
 
-        constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
         handle = SDL_CreateWindow
         (
             "Rachit's Engine: Vulkan Edition",
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
             size.x,
             size.y,
-            SDL_WINDOW_FLAGS
+            SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_VULKAN
         );
 
         if (handle == nullptr)
         {
-            Logger::Error("SDL_CreateWindow Failed\n{}\n", SDL_GetError());
+            Logger::Error("SDL_CreateWindow Failed: {}\n", SDL_GetError());
         }
 
         Logger::Info("Succesfully created window handle! [handle={}]\n", std::bit_cast<void*>(handle));
 
-        SDL_RaiseWindow(handle);
-        SDL_SetWindowMinimumSize(handle, 1, 1);
+        if (!SDL_RaiseWindow(handle))
+        {
+            Logger::Error("SDL_RaiseWindow Failed: {}\n", SDL_GetError());
+        }
 
-        SDL_ShowCursor(SDL_FALSE);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
+        if (!SDL_SetWindowMinimumSize(handle, 1, 1))
+        {
+            Logger::Error("SDL_SetWindowMinimumSize Failed: {}\n", SDL_GetError());
+        }
+
+        if (!SDL_SetWindowRelativeMouseMode(handle, true))
+        {
+            Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
+        }
     }
 
     bool Window::PollEvents()
@@ -80,19 +83,21 @@ namespace Engine
 
         while (SDL_PollEvent(&m_event))
         {
-            ImGui_ImplSDL2_ProcessEvent(&m_event);
+            ImGui_ImplSDL3_ProcessEvent(&m_event);
 
             switch (m_event.type)
             {
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 return true;
 
-            case SDL_KEYDOWN:
-                switch (m_event.key.keysym.scancode)
+            case SDL_EVENT_KEY_DOWN:
+                switch (m_event.key.scancode)
                 {
                 case SDL_SCANCODE_F1:
-                    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!m_isInputCaptured));
-                    m_isInputCaptured = !m_isInputCaptured;
+                    if (!SDL_SetWindowRelativeMouseMode(handle, !SDL_GetWindowRelativeMouseMode(handle)))
+                    {
+                        Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
+                    }
                     break;
 
                 default:
@@ -100,26 +105,26 @@ namespace Engine
                 }
                 break;
 
-            case SDL_MOUSEMOTION:
-                inputs.SetMousePosition(glm::ivec2(m_event.motion.xrel, m_event.motion.yrel));
+            case SDL_EVENT_MOUSE_MOTION:
+                inputs.SetMousePosition(glm::vec2(m_event.motion.xrel, m_event.motion.yrel));
                 break;
 
-            case SDL_MOUSEWHEEL:
-                inputs.SetMouseScroll(glm::ivec2(m_event.wheel.x, m_event.wheel.y));
+            case SDL_EVENT_MOUSE_WHEEL:
+                inputs.SetMouseScroll(glm::vec2(m_event.wheel.x, m_event.wheel.y));
                 break;
 
-            case SDL_CONTROLLERDEVICEADDED:
-                if (inputs.GetController() == nullptr)
+            case SDL_EVENT_GAMEPAD_ADDED:
+                if (inputs.GetGamepad() == nullptr)
                 {
-                    inputs.FindController();
+                    inputs.FindGamepad();
                 }
                 break;
 
-            case SDL_CONTROLLERDEVICEREMOVED:
-                if (inputs.GetController() == nullptr && m_event.cdevice.which == inputs.GetControllerID())
+            case SDL_EVENT_GAMEPAD_REMOVED:
+                if (inputs.GetGamepad() == nullptr && m_event.gdevice.which == inputs.GetGamepadID())
                 {
-                    SDL_GameControllerClose(inputs.GetController());
-                    inputs.FindController();
+                    SDL_CloseGamepad(inputs.GetGamepad());
+                    inputs.FindGamepad();
                 }
                 break;
 
