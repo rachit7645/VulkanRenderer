@@ -30,10 +30,11 @@
 #include "ForwardConstants.glsl"
 
 // Fragment inputs
-layout(location = 0) in vec3 fragPosition;
-layout(location = 1) in vec2 fragTexCoords;
-layout(location = 2) in vec3 fragToCamera;
-layout(location = 3) in mat3 fragTBNMatrix;
+layout(location = 0) in      vec3 fragPosition;
+layout(location = 1) in      vec2 fragTexCoords;
+layout(location = 2) in      vec3 fragToCamera;
+layout(location = 3) in flat uint fragDrawID;
+layout(location = 4) in      mat3 fragTBNMatrix;
 
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
@@ -43,18 +44,14 @@ layout(set = 1, binding = 0) uniform texture2D textures[];
 
 void main()
 {
-    Mesh mesh = Constants.Meshes.meshes[Constants.DrawID];
+    Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
     vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], texSampler), fragTexCoords);
-
-    // Transparency check
-    if (albedo.a < 0.5f)
-    {
-        discard;
-    }
-
     albedo.xyz  = ToLinear(albedo.xyz);
     albedo     *= mesh.albedoFactor;
+
+    // Transparency check
+    if (albedo.a < 0.5f) discard;
 
     vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], texSampler), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
@@ -76,7 +73,7 @@ void main()
         aoRghMtl.b
     );
 
-    Lo += albedo.rgb * vec3(0.03f);
+    Lo += albedo.rgb * vec3(0.25f);
 
     outColor = vec4(Lo, 1.0f);
 }

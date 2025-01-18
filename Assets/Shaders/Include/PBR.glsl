@@ -79,9 +79,8 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0, float roughness)
 
 vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 F0, vec3 albedo, float roughness, float metallic)
 {
-	vec3  L     = lightInfo.L;      // Light direction vector
-	vec3  H     = normalize(V + L); // Half-way vector
-	float NdotL = max(dot(N, L), 0.0f);
+	vec3 L = lightInfo.L;      // Light direction vector
+	vec3 H = normalize(V + L); // Half-way vector
 
 	// Cook-Torrance BRDF
 	float NDF = DistributionGGX(N, H, roughness);
@@ -100,7 +99,7 @@ vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 F0, vec3 albedo, f
 	vec3 kD = vec3(1.0f) - kS;
 	kD     *= 1.0f - metallic;
 
-	return (kD * albedo / PI + specular) * lightInfo.radiance * NdotL;
+	return (kD * (albedo / PI) + specular) * lightInfo.radiance * max(dot(N, L), 0.0f);
 }
 
 #endif

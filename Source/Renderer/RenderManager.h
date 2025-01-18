@@ -25,12 +25,9 @@
 #include "Swapchain/SwapchainPass.h"
 #include "Forward/ForwardPass.h"
 #include "Vulkan/Context.h"
-#include "Vulkan/VertexBuffer.h"
-#include "Vulkan/TextureManager.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
-#include "Models/Model.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer

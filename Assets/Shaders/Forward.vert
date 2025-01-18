@@ -26,14 +26,15 @@
 #include "ForwardConstants.glsl"
 
 // Vertex outputs
-layout(location = 0) out vec3 fragPosition;
-layout(location = 1) out vec2 fragTexCoords;
-layout(location = 2) out vec3 fragToCamera;
-layout(location = 3) out mat3 fragTBNMatrix;
+layout(location = 0) out      vec3 fragPosition;
+layout(location = 1) out      vec2 fragTexCoords;
+layout(location = 2) out      vec3 fragToCamera;
+layout(location = 3) out flat uint fragDrawID;
+layout(location = 4) out      mat3 fragTBNMatrix;
 
 void main()
 {
-    Mesh   mesh   = Constants.Meshes.meshes[Constants.DrawID];
+    Mesh   mesh   = Constants.Meshes.meshes[gl_DrawID];
     Vertex vertex = Constants.Vertices.vertices[gl_VertexIndex];
 
     vec4 fragPos = mesh.transform * vec4(vertex.position, 1.0f);
@@ -42,6 +43,7 @@ void main()
 
     fragTexCoords = vertex.uv0;
     fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);
+    fragDrawID    = gl_DrawID;
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);
     vec3 T = normalize(mesh.normalMatrix * vertex.tangent);

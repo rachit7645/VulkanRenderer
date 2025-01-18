@@ -62,7 +62,7 @@ namespace Vk
 
     void Extensions::LoadInstanceFunctions(UNUSED VkInstance instance)
     {
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         g_ExtensionState.p_CreateDebugUtilsMessengerEXT = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT>(
             instance, "vkCreateDebugUtilsMessengerEXT"
         );
@@ -70,7 +70,9 @@ namespace Vk
         g_ExtensionState.p_DestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>(
             instance, "vkDestroyDebugUtilsMessengerEXT"
         );
+        #endif
 
+        #ifdef ENGINE_DEBUG
         g_ExtensionState.p_CmdBeginDebugUtilsLabelEXT = LoadExtension<PFN_vkCmdBeginDebugUtilsLabelEXT>(
             instance, "vkCmdBeginDebugUtilsLabelEXT"
         );

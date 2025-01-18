@@ -31,7 +31,7 @@
 namespace Vk
 {
     // Required validation layers
-    #ifdef ENGINE_DEBUG
+    #ifdef ENGINE_ENABLE_VALIDATION
     constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     #endif
 
@@ -73,21 +73,21 @@ namespace Vk
 
         auto extensions = m_extensions.LoadInstanceExtensions(window);
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
         #endif
 
         const VkInstanceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            #ifdef ENGINE_DEBUG
+            #ifdef ENGINE_ENABLE_VALIDATION
             .pNext                   = &m_layers.messengerInfo,
             #else
             .pNext                   = nullptr,
             #endif
             .flags                   = 0,
             .pApplicationInfo        = &appInfo,
-            #ifdef ENGINE_DEBUG
+            #ifdef ENGINE_ENABLE_VALIDATION
             .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
             .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
             #else
@@ -109,7 +109,7 @@ namespace Vk
 
         m_extensions.LoadInstanceFunctions(instance);
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         m_layers.SetupMessenger(instance);
         #endif
     }
@@ -340,13 +340,13 @@ namespace Vk
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
-        #ifdef ENGINE_DEBUG
+            #ifdef ENGINE_ENABLE_VALIDATION
             .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
             .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
-        #else
+            #else
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
-        #endif
+            #endif
             .enabledExtensionCount   = static_cast<u32>(REQUIRED_EXTENSIONS.size()),
             .ppEnabledExtensionNames = REQUIRED_EXTENSIONS.data(),
             .pEnabledFeatures        = nullptr
@@ -447,7 +447,7 @@ namespace Vk
 
         vkDestroyDevice(device, nullptr);
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         m_layers.Destroy(instance);
         #endif
 

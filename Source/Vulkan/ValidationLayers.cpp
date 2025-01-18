@@ -21,7 +21,7 @@
 
 namespace Vk
 {
-#ifdef ENGINE_DEBUG
+#ifdef ENGINE_ENABLE_VALIDATION
     ValidationLayers::ValidationLayers(const std::span<const char* const> layers)
     {
         if (!CheckLayers(layers))

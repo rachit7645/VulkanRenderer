@@ -179,23 +179,22 @@ namespace Renderer::Forward
             }
         };
 
-        std::memcpy(pipeline.sceneSSBOs[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
-
+        std::memcpy(pipeline.sceneSSBOs[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(Forward::SceneBuffer));
         pipeline.meshBuffer.LoadMeshes(FIF, modelManager, renderObjects);
+        auto drawCount = pipeline.indirectBuffer.WriteDrawCalls(FIF, modelManager, renderObjects);
 
         pipeline.pushConstant =
         {
             .scene    = pipeline.sceneSSBOs[FIF].deviceAddress,
             .meshes   = pipeline.meshBuffer.buffers[FIF].deviceAddress,
-            .vertices = modelManager.geometryBuffer.vertexBuffer.deviceAddress,
-            .drawID   = 0xFF
+            .vertices = modelManager.geometryBuffer.vertexBuffer.deviceAddress
         };
 
         pipeline.LoadPushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, offsetof(Forward::PushConstant, drawID),
+            0, sizeof(Forward::PushConstant),
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
@@ -216,32 +215,14 @@ namespace Renderer::Forward
 
         modelManager.geometryBuffer.Bind(currentCmdBuffer);
 
-        for (const auto& renderObject : renderObjects)
-        {
-            const auto& meshes = modelManager.GetModel(renderObject.modelID).meshes;
-
-            for (usize i = 0; i < meshes.size(); ++i)
-            {
-                pipeline.pushConstant.drawID = i;
-                pipeline.LoadPushConstants
-                (
-                    currentCmdBuffer,
-                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    offsetof(Forward::PushConstant, drawID), sizeof(Forward::PushConstant) - offsetof(Forward::PushConstant, drawID),
-                    reinterpret_cast<void*>(&pipeline.pushConstant.drawID)
-                );
-
-                vkCmdDrawIndexed
-                (
-                    currentCmdBuffer.handle,
-                    meshes[i].indexInfo.count,
-                    1,
-                    meshes[i].indexInfo.offset,
-                    static_cast<s32>(meshes[i].vertexInfo.offset),
-                    0
-                );
-            }
-        }
+        vkCmdDrawIndexedIndirect
+        (
+            currentCmdBuffer.handle,
+            pipeline.indirectBuffer.buffers[FIF].handle,
+            0,
+            drawCount,
+            sizeof(VkDrawIndexedIndirectCommand)
+        );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 

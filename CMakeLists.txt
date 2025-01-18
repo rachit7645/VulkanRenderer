@@ -87,6 +87,7 @@ add_executable(VulkanRenderer
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
 	Source/Renderer/Forward/ForwardMeshBuffer.cpp
+    Source/Renderer/Forward/ForwardIndirectBuffer.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/Mesh.cpp
@@ -182,6 +183,8 @@ target_compile_options(VulkanRenderer PRIVATE -march=native)
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Engine Debug Mode
 	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
+    # Enable validation layers
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_ENABLE_VALIDATION)
 	# Enable debug output
 	target_compile_options(VulkanRenderer PRIVATE -g)
 endif()
