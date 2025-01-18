@@ -17,6 +17,7 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
+#include <Vulkan/CommandBuffer.h>
 #include <vulkan/vulkan.h>
 
 #include "Context.h"
@@ -41,8 +42,19 @@ namespace Vk
 
         void Map(VmaAllocator allocator);
         void Unmap(VmaAllocator allocator) const;
-
         void GetDeviceAddress(VkDevice device);
+
+        void Barrier
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkPipelineStageFlags2 srcStageMask,
+            VkAccessFlags2 srcAccessMask,
+            VkPipelineStageFlags2 dstStageMask,
+            VkAccessFlags2 dstAccessMask,
+            VkDeviceSize offset,
+            VkDeviceSize size
+        );
+
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles

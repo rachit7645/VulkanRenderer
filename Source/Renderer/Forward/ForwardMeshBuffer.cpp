@@ -52,8 +52,8 @@ namespace Renderer::Forward
 
         for (const auto& renderObject : renderObjects)
         {
-            const auto transform = Maths::CreateTransformMatrix(renderObject.position, renderObject.rotation, renderObject.scale);
-            auto normalMatrix    = Maths::CreateNormalMatrix(transform);
+            const auto transform    = Maths::CreateTransformMatrix(renderObject.position, renderObject.rotation, renderObject.scale);
+            const auto normalMatrix = Maths::CreateNormalMatrix(transform);
 
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
@@ -67,8 +67,7 @@ namespace Renderer::Forward
                     ),
                     mesh.material.albedoFactor,
                     mesh.material.roughnessFactor,
-                    mesh.material.metallicFactor,
-                    mesh.vertexBuffer.vertexBuffer.deviceAddress
+                    mesh.material.metallicFactor
                 );
             }
         }

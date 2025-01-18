@@ -27,13 +27,12 @@ namespace Renderer::Forward
 {
     struct Mesh
     {
-        glm::mat4       transform;
-        glm::mat3       normalMatrix;
-        glm::uvec3      textureIDs;
-        glm::vec4       albedoFactor;
-        f32             roughnessFactor;
-        f32             metallicFactor;
-        VkDeviceAddress vertexBuffer;
+        glm::mat4  transform;
+        glm::mat3  normalMatrix;
+        glm::uvec3 textureIDs;
+        glm::vec4  albedoFactor;
+        f32        roughnessFactor;
+        f32        metallicFactor;
     };
 
     #ifdef ENGINE_DEBUG
@@ -41,13 +40,12 @@ namespace Renderer::Forward
     (
         sizeof(Mesh) ==
         (
-            sizeof(glm::mat4)  +
-            sizeof(glm::mat3)  +
+            sizeof(glm::mat4) +
+            sizeof(glm::mat3) +
             sizeof(glm::uvec3) +
-            sizeof(glm::vec4)  +
-            sizeof(f32)        +
-            sizeof(f32)        +
-            sizeof(VkDeviceAddress)
+            sizeof(glm::vec4) +
+            sizeof(f32) +
+            sizeof(f32)
         ),
         "Incompatible mesh structure!"
     );

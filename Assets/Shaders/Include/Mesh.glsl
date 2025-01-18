@@ -21,13 +21,12 @@
 
 struct Mesh
 {
-    mat4         transform;
-    mat3         normalMatrix;
-    uvec3        textureIDs;
-    vec4         albedoFactor;
-    float        roughnessFactor;
-    float        metallicFactor;
-    VertexBuffer vertexBuffer;
+    mat4  transform;
+    mat3  normalMatrix;
+    uvec3 textureIDs;
+    vec4  albedoFactor;
+    float roughnessFactor;
+    float metallicFactor;
 };
 
 layout(buffer_reference, scalar) readonly buffer MeshBuffer

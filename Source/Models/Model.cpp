@@ -191,24 +191,15 @@ namespace Models
 
                 // Position
                 {
-                    const auto positionIt = primitive.findAttribute("POSITION");
-                    if (positionIt == primitive.attributes.cend())
-                    {
-                        Logger::Error("Failed to find attribute! [Attrbute=POSITION] [Path={}]\n", path);
-                    }
+                    const auto& positionAccessor = GetAccesor
+                    (
+                        asset.get(),
+                        primitive,
+                        "POSITION",
+                        fastgltf::AccessorType::Vec3
+                    );
 
-                    const auto& positionAccessor = asset->accessors[positionIt->accessorIndex];
                     vertices.reserve(positionAccessor.count);
-
-                    if (positionAccessor.type != fastgltf::AccessorType::Vec3)
-                    {
-                        Logger::Error
-                        (
-                            "Invalid position accessor type! [AccessorType={}] [Path={}]\n",
-                            static_cast<std::underlying_type_t<fastgltf::AccessorType>>(positionAccessor.type),
-                            path
-                        );
-                    }
 
                     fastgltf::iterateAccessor<glm::vec3>(asset.get(), positionAccessor, [&] (const glm::vec3& position)
                     {
@@ -220,24 +211,13 @@ namespace Models
 
                 // Normals
                 {
-
-                    const auto normalIt = primitive.findAttribute("NORMAL");
-                    if (normalIt == primitive.attributes.cend())
-                    {
-                        Logger::Error("Failed to find attribute! [Attrbute=NORMAL] [Path={}]\n", path);
-                    }
-
-                    const auto& normalAccessor = asset->accessors[normalIt->accessorIndex];
-
-                    if (normalAccessor.type != fastgltf::AccessorType::Vec3)
-                    {
-                        Logger::Error
-                        (
-                            "Invalid normal accessor type! [AccessorType={}] [Path={}]\n",
-                            static_cast<std::underlying_type_t<fastgltf::AccessorType>>(normalAccessor.type),
-                            path
-                        );
-                    }
+                    const auto& normalAccessor = GetAccesor
+                    (
+                        asset.get(),
+                        primitive,
+                        "NORMAL",
+                        fastgltf::AccessorType::Vec3
+                    );
 
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(asset.get(), normalAccessor, [&] (const glm::vec3& normal, usize index)
                     {
@@ -247,23 +227,13 @@ namespace Models
 
                 // UVs
                 {
-                    const auto uvIt = primitive.findAttribute("TEXCOORD_0");
-                    if (uvIt == primitive.attributes.cend())
-                    {
-                        Logger::Error("Failed to find attribute! [Attrbute=TEXCOORD_0] [Path={}]\n", path);
-                    }
-
-                    const auto& uvAccessor = asset->accessors[uvIt->accessorIndex];
-
-                    if (uvAccessor.type != fastgltf::AccessorType::Vec2)
-                    {
-                        Logger::Error
-                        (
-                            "Invalid UV0 accessor type! [AccessorType={}] [Path={}]\n",
-                            static_cast<std::underlying_type_t<fastgltf::AccessorType>>(uvAccessor.type),
-                            path
-                        );
-                    }
+                    const auto& uvAccessor = GetAccesor
+                    (
+                        asset.get(),
+                        primitive,
+                        "TEXCOORD_0",
+                        fastgltf::AccessorType::Vec2
+                    );
 
                     fastgltf::iterateAccessorWithIndex<glm::vec2>(asset.get(), uvAccessor, [&] (const glm::vec2& uv, usize index)
                     {
@@ -273,23 +243,13 @@ namespace Models
 
                 // Tangent
                 {
-                    const auto tangentIt = primitive.findAttribute("TANGENT");
-                    if (tangentIt == primitive.attributes.cend())
-                    {
-                        Logger::Error("Failed to find attribute! [Attrbute=TANGENT] [Path={}]\n", path);
-                    }
-
-                    const auto& tangentAccessor = asset->accessors[tangentIt->accessorIndex];
-
-                    if (tangentAccessor.type != fastgltf::AccessorType::Vec4)
-                    {
-                        Logger::Error
-                        (
-                            "Invalid normal accessor type! [AccessorType={}] [Path={}]\n",
-                            static_cast<std::underlying_type_t<fastgltf::AccessorType>>(tangentAccessor.type),
-                            path
-                        );
-                    }
+                    const auto& tangentAccessor = GetAccesor
+                    (
+                        asset.get(),
+                        primitive,
+                        "TANGENT",
+                        fastgltf::AccessorType::Vec4
+                    );
 
                     fastgltf::iterateAccessorWithIndex<glm::vec4>(asset.get(), tangentAccessor, [&] (const glm::vec4& tangent, usize index)
                     {
@@ -304,9 +264,12 @@ namespace Models
 
                 const auto& mat = asset->materials[primitive.materialIndex.value()];
 
-                material.albedoFactor    = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
-                material.roughnessFactor = mat.pbrData.roughnessFactor;
-                material.metallicFactor  = mat.pbrData.metallicFactor;
+                // Material Factors
+                {
+                    material.albedoFactor    = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
+                    material.roughnessFactor = mat.pbrData.roughnessFactor;
+                    material.metallicFactor  = mat.pbrData.metallicFactor;
+                }
 
                 // Albedo
                 {
@@ -329,7 +292,6 @@ namespace Models
                         (
                             context,
                             textureManager,
-                            path,
                             assetDirectory,
                             asset.get(),
                             baseColorTexture->textureIndex,
@@ -366,7 +328,6 @@ namespace Models
                         (
                             context,
                             textureManager,
-                            path,
                             assetDirectory,
                             asset.get(),
                             mat.normalTexture->textureIndex,
@@ -405,7 +366,6 @@ namespace Models
                         (
                             context,
                             textureManager,
-                            path,
                             assetDirectory,
                             asset.get(),
                             metallicRoughnessTexture->textureIndex,
@@ -425,8 +385,8 @@ namespace Models
 
                 meshes.emplace_back
                 (
-                    Vk::VertexBuffer(context, vertices, indices),
                     geometryBuffer.LoadIndices(context, indices),
+                    geometryBuffer.LoadVertices(context, vertices),
                     material
                 );
             }
@@ -435,11 +395,39 @@ namespace Models
         textureManager.Update(context.device);
     }
 
+    const fastgltf::Accessor& Model::GetAccesor
+    (
+        const fastgltf::Asset& asset,
+        const fastgltf::Primitive& primitive,
+        const std::string_view attribute,
+        fastgltf::AccessorType type
+    )
+    {
+        const auto attributeIt = primitive.findAttribute(attribute);
+        if (attributeIt == primitive.attributes.cend())
+        {
+            Logger::Error("Failed to find attribute! [Attrbute={}]\n", attribute);
+        }
+
+        const auto& accessor = asset.accessors[attributeIt->accessorIndex];
+
+        if (accessor.type != type)
+        {
+            Logger::Error
+            (
+                "Invalid accessor type! [AccessorType={}] [Required={}]\n",
+                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(accessor.type),
+                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(type)
+            );
+        }
+
+        return accessor;
+    }
+
     usize Model::LoadTexture
     (
         const Vk::Context& context,
         Vk::TextureManager& textureManager,
-        const std::string_view path,
         const std::string& directory,
         const fastgltf::Asset& asset,
         usize textureIndex,
@@ -450,12 +438,7 @@ namespace Models
 
         if (!texture.imageIndex.has_value())
         {
-            Logger::Error
-            (
-                "Image index not found! [textureIndex={}] [Path={}] \n",
-                textureIndex,
-                path
-            );
+            Logger::Error("Image index not found! [textureIndex={}]\n", textureIndex);
         }
 
         const auto& image    = asset.images[texture.imageIndex.value()];
@@ -463,22 +446,12 @@ namespace Models
 
         if (filePath.fileByteOffset != 0)
         {
-            Logger::Error
-            (
-                "Unsupported file byte offset! [fileByteOffset={}] [Path={}]\n",
-                filePath.fileByteOffset,
-                path
-            );
+            Logger::Error("Unsupported file byte offset! [fileByteOffset={}]\n", filePath.fileByteOffset);
         }
 
         if (!filePath.uri.isLocalPath())
         {
-            Logger::Error
-            (
-                "Only local paths are supported! [UriPath={}] [Path={}]\n",
-                filePath.uri.c_str(),
-                path
-            );
+            Logger::Error("Only local paths are supported! [UriPath={}]\n", filePath.uri.c_str());
         }
 
         return textureManager.AddTexture

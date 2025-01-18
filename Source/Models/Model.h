@@ -42,11 +42,18 @@ namespace Models
 
         std::vector<Models::Mesh> meshes;
     private:
+        const fastgltf::Accessor& GetAccesor
+        (
+            const fastgltf::Asset& asset,
+            const fastgltf::Primitive& primitive,
+            const std::string_view attribute,
+            fastgltf::AccessorType type
+        );
+
         usize LoadTexture
         (
             const Vk::Context& context,
             Vk::TextureManager& textureManager,
-            const std::string_view path,
             const std::string& directory,
             const fastgltf::Asset& asset,
             usize textureIndex,

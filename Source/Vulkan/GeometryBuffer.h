@@ -29,19 +29,25 @@ namespace Vk
     class GeometryBuffer
     {
     public:
-        GeometryBuffer(VmaAllocator allocator);
+        explicit GeometryBuffer(VkDevice device, VmaAllocator allocator);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator) const;
 
         Models::Info LoadIndices(const Vk::Context& context, const std::span<const Models::Index> indices);
+        Models::Info LoadVertices(const Vk::Context& context, const std::span<const Models::Vertex> vertices);
 
         Vk::Buffer indexBuffer;
+        Vk::Buffer vertexBuffer;
 
-        u32         indexCount = 0;
-        VkIndexType indexType  = VK_INDEX_TYPE_UINT32;
+        u32         vertexCount = 0;
+        u32         indexCount  = 0;
+        VkIndexType indexType   = VK_INDEX_TYPE_UINT32;
     private:
-        Models::Info UploadIndices(const Vk::CommandBuffer& cmdBuffer, const std::span<const Models::Index> data);
+        Models::Info UploadIndices(const Vk::CommandBuffer& cmdBuffer, const std::span<const Models::Index> indices);
+        Models::Info UploadVertices(const Vk::CommandBuffer& cmdBuffer, const std::span<const Models::Vertex> vertices);
+
+        void CheckSize(usize sizeBytes, usize offsetBytes, usize bufferSize);
 
         Vk::Buffer m_stagingBuffer;
     };

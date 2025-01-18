@@ -21,7 +21,7 @@
 namespace Models
 {
     ModelManager::ModelManager(const Vk::Context& context)
-        : geometryBuffer(context.allocator),
+        : geometryBuffer(context.device, context.allocator),
           textureManager(context.device, context.physicalDeviceLimits)
     {
     }
@@ -52,14 +52,6 @@ namespace Models
 
     void ModelManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& model : modelMap | std::views::values)
-        {
-            for (auto& mesh : model.meshes)
-            {
-                mesh.Destroy(allocator);
-            }
-        }
-
         geometryBuffer.Destroy(allocator);
         textureManager.Destroy(device, allocator);
     }

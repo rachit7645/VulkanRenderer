@@ -19,7 +19,6 @@
 
 #include "Info.h"
 #include "Material.h"
-#include "Vulkan/VertexBuffer.h"
 
 namespace Models
 {
@@ -27,16 +26,14 @@ namespace Models
     {
         Mesh
         (
-            const Vk::VertexBuffer& vertexBuffer,
             const Models::Info& indexInfo,
+            const Models::Info& vertexInfo,
             const Models::Material& material
         );
 
-        void Destroy(VmaAllocator allocator) const;
-
-        Vk::VertexBuffer vertexBuffer;
-        Info             indexInfo;
-        Material         material;
+        Info     indexInfo;
+        Info     vertexInfo;
+        Material material;
     };
 }
 

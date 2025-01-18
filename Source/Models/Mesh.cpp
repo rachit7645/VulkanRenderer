@@ -20,18 +20,13 @@ namespace Models
 {
     Mesh::Mesh
     (
-        const Vk::VertexBuffer& vertexBuffer,
         const Models::Info& indexInfo,
+        const Models::Info& vertexInfo,
         const Models::Material& material
     )
-        : vertexBuffer(vertexBuffer),
-          indexInfo(indexInfo),
+        : indexInfo(indexInfo),
+          vertexInfo(vertexInfo),
           material(material)
     {
-    }
-
-    void Mesh::Destroy(VmaAllocator allocator) const
-    {
-        vertexBuffer.Destroy(allocator);
     }
 }

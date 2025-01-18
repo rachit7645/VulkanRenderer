@@ -183,9 +183,13 @@ namespace Renderer::Forward
 
         pipeline.meshBuffer.LoadMeshes(FIF, modelManager, renderObjects);
 
-        pipeline.pushConstant = {};
-        pipeline.pushConstant.scene  = pipeline.sceneSSBOs[FIF].deviceAddress;
-        pipeline.pushConstant.meshes = pipeline.meshBuffer.buffers[FIF].deviceAddress;
+        pipeline.pushConstant =
+        {
+            .scene    = pipeline.sceneSSBOs[FIF].deviceAddress,
+            .meshes   = pipeline.meshBuffer.buffers[FIF].deviceAddress,
+            .vertices = modelManager.geometryBuffer.vertexBuffer.deviceAddress,
+            .drawID   = 0xFF
+        };
 
         pipeline.LoadPushConstants
         (
@@ -227,15 +231,13 @@ namespace Renderer::Forward
                     reinterpret_cast<void*>(&pipeline.pushConstant.drawID)
                 );
 
-                meshes[i].vertexBuffer.Bind(currentCmdBuffer);
-
                 vkCmdDrawIndexed
                 (
                     currentCmdBuffer.handle,
                     meshes[i].indexInfo.count,
                     1,
                     meshes[i].indexInfo.offset,
-                    0,
+                    static_cast<s32>(meshes[i].vertexInfo.offset),
                     0
                 );
             }

@@ -35,7 +35,7 @@ namespace Vk
           indexCount(static_cast<u32>(indices.size()))
     {
         vertexBuffer = InitBuffer(context, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, vertices);
-        // indexBuffer  = InitBuffer(context, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,          indices);
+        indexBuffer  = InitBuffer(context, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,          indices);
 
         vertexBuffer.GetDeviceAddress(context.device);
     }
