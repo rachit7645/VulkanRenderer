@@ -17,7 +17,7 @@ project(VulkanRenderer)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin/)
+set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
@@ -56,7 +56,6 @@ add_executable(VulkanRenderer
 	Source/Vulkan/QueueFamilyIndices.cpp
 	Source/Vulkan/SwapchainInfo.cpp
 	Source/Vulkan/ShaderModule.cpp
-	Source/Vulkan/VertexBuffer.cpp
 	Source/Vulkan/Buffer.cpp
 	Source/Vulkan/Image.cpp
 	Source/Vulkan/Texture.cpp
@@ -67,11 +66,10 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/CommandBuffer.cpp
-	Source/Vulkan/DescriptorAllocator.cpp
 	Source/Vulkan/DescriptorWriter.cpp
-	Source/Vulkan/DescriptorCache.cpp
 	Source/Vulkan/TextureManager.cpp
 	Source/Vulkan/GeometryBuffer.cpp
+    Source/Vulkan/MegaSet.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
@@ -215,4 +213,4 @@ install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
 install(FILES $<TARGET_RUNTIME_DLLS:imgui>          DESTINATION ${INSTALL_DIR})
 
 # Copy other directories
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets/)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets)

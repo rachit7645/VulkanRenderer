@@ -21,18 +21,17 @@
 namespace Models
 {
     ModelManager::ModelManager(const Vk::Context& context)
-        : geometryBuffer(context.device, context.allocator),
-          textureManager(context.device, context.physicalDeviceLimits)
+        : geometryBuffer(context.device, context.allocator)
     {
     }
 
-    usize ModelManager::AddModel(const Vk::Context& context, const std::string_view path)
+    usize ModelManager::AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path)
     {
         usize pathHash = std::hash<std::string_view>()(path);
 
         if (!modelMap.contains(pathHash))
         {
-            modelMap.emplace(pathHash, Model(context, geometryBuffer, textureManager, path));
+            modelMap.emplace(pathHash, Model(context, megaSet, geometryBuffer, textureManager, path));
         }
 
         return pathHash;

@@ -32,7 +32,7 @@ namespace Models
         explicit ModelManager(const Vk::Context& context);
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        [[nodiscard]] usize AddModel(const Vk::Context& context, const std::string_view path);
+        [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);
         [[nodiscard]] const Model& GetModel(usize modelID) const;
 
         std::unordered_map<u32, Models::Model> modelMap;

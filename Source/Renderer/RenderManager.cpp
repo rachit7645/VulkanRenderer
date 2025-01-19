@@ -27,12 +27,14 @@ namespace Renderer
         : m_window(window),
           m_context(m_window),
           m_modelManager(m_context),
-          m_swapPass(*window, m_context),
-          m_forwardPass(m_context, m_modelManager.textureManager, m_swapPass.swapchain.extent)
+          m_megaSet(m_context.device, m_context.physicalDeviceLimits),
+          m_swapPass(*window, m_context, m_megaSet, m_modelManager.textureManager),
+          m_forwardPass(m_context, m_megaSet, m_modelManager.textureManager, m_swapPass.swapchain.extent)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
             m_modelManager.Destroy(m_context.device, m_context.allocator);
+            m_megaSet.Destroy(m_context.device);
 
             m_swapPass.Destroy(m_context);
             m_forwardPass.Destroy(m_context);
@@ -41,7 +43,7 @@ namespace Renderer
         });
 
         m_renderObjects.emplace_back(RenderObject(
-            m_modelManager.AddModel(m_context, "Sponza/glTF/Sponza.gltf"),
+            m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/Sponza.gltf"),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.25f, 0.25f, 0.25f)
@@ -51,7 +53,7 @@ namespace Renderer
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageView);
+        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_megaSet, m_forwardPass.imageView);
         m_frameCounter.Reset();
     }
 
@@ -71,13 +73,13 @@ namespace Renderer
         m_forwardPass.Render
         (
             m_currentFIF,
-            m_context.descriptorCache,
+            m_megaSet,
             m_modelManager,
             m_camera,
             m_renderObjects
         );
 
-        m_swapPass.Render(m_context.descriptorCache, m_currentFIF);
+        m_swapPass.Render(m_megaSet, m_currentFIF);
 
         SubmitQueue();
         m_swapPass.Present(m_context.graphicsQueue, m_currentFIF);
@@ -213,10 +215,10 @@ namespace Renderer
     {
         vkDeviceWaitIdle(m_context.device);
 
-        m_swapPass.Recreate(*m_window, m_context);
+        m_swapPass.Recreate(*m_window, m_context, m_megaSet, m_modelManager.textureManager);
         m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_context.descriptorCache, m_forwardPass.imageView);
+        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_megaSet, m_forwardPass.imageView);
     }
 
     void RenderManager::InitImGui()

@@ -265,6 +265,13 @@ namespace Vk
             if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
                 availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
             {
+                Logger::Debug
+                (
+                    "Choosing surface format! [Format={}] [ColorSpace={}]\n",
+                    string_VkFormat(availableFormat.format),
+                    string_VkColorSpaceKHR(availableFormat.colorSpace)
+                );
+
                 return availableFormat;
             }
         }
@@ -282,6 +289,12 @@ namespace Vk
             // Mailbox my beloved
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
+                Logger::Debug
+                (
+                    "Choosing presentation mode! [PresentMode={}]\n",
+                    string_VkPresentModeKHR(presentMode)
+                );
+
                 return presentMode;
             }
         }
@@ -297,6 +310,13 @@ namespace Vk
         // Some platforms set swap extents themselves
         if (capabilities.currentExtent.width != std::numeric_limits<u32>::max())
         {
+            Logger::Debug
+            (
+                "Choosing existing swap extent! [width={}] [height={}]\n",
+                capabilities.currentExtent.width,
+                capabilities.currentExtent.height
+            );
+
             return capabilities.currentExtent;
         }
 
@@ -310,6 +330,8 @@ namespace Vk
         const auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
 
         auto actualExtent = glm::clamp(size, minSize, maxSize);
+
+        Logger::Debug("Choosing swap extent! [X={}] [Y={}]\n", actualExtent.x, actualExtent.y);
 
         return
         {

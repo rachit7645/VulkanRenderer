@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_GLSL
-#define SCENE_GLSL
+#ifndef SWAPCHAIN_CONSTANTS_H
+#define SWAPCHAIN_CONSTANTS_H
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
+#include "Util/Util.h"
+#include "Vulkan/Util.h"
+
+namespace Renderer::Swapchain
 {
-    mat4     projection;
-    mat4     view;
-    vec4     cameraPos;
-    uint     samplerIndex;
-    DirLight light;
-};
+    struct __attribute__((packed)) PushConstant
+    {
+        u32 samplerIndex;
+        u32 imageIndex;
+    };
+}
 
 #endif

@@ -43,6 +43,7 @@ namespace Models
     Model::Model
     (
         const Vk::Context& context,
+        Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         const std::string_view path
@@ -175,7 +176,8 @@ namespace Models
 
                     case fastgltf::ComponentType::UnsignedInt:
                     {
-                        fastgltf::copyFromAccessor<Index>(asset.get(), indicesAccessor, indices.data());
+                        indices.resize(indicesAccessor.count);
+                        fastgltf::copyFromAccessor<u32>(asset.get(), indicesAccessor, indices.data());
                         break;
                     }
 
@@ -291,6 +293,7 @@ namespace Models
                         material.albedo = LoadTexture
                         (
                             context,
+                            megaSet,
                             textureManager,
                             assetDirectory,
                             asset.get(),
@@ -302,6 +305,7 @@ namespace Models
                     {
                         material.albedo = textureManager.AddTexture
                         (
+                            megaSet,
                             context,
                             Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO),
                             ALBEDO_FLAGS
@@ -327,6 +331,7 @@ namespace Models
                         material.normal = LoadTexture
                         (
                             context,
+                            megaSet,
                             textureManager,
                             assetDirectory,
                             asset.get(),
@@ -338,6 +343,7 @@ namespace Models
                     {
                         material.normal = textureManager.AddTexture
                         (
+                            megaSet,
                             context,
                             Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL),
                             NORMAL_FLAGS
@@ -365,6 +371,7 @@ namespace Models
                         material.aoRghMtl = LoadTexture
                         (
                             context,
+                            megaSet,
                             textureManager,
                             assetDirectory,
                             asset.get(),
@@ -376,12 +383,15 @@ namespace Models
                     {
                         material.aoRghMtl = textureManager.AddTexture
                         (
+                            megaSet,
                             context,
                             Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL),
                             AO_RGH_MTL_FLAGS
                         );
                     }
                 }
+
+                assert(indices.size() != 0);
 
                 meshes.emplace_back
                 (
@@ -392,7 +402,7 @@ namespace Models
             }
         }
 
-        textureManager.Update(context.device);
+        megaSet.Update(context.device);
     }
 
     const fastgltf::Accessor& Model::GetAccesor
@@ -427,6 +437,7 @@ namespace Models
     usize Model::LoadTexture
     (
         const Vk::Context& context,
+        Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         const std::string& directory,
         const fastgltf::Asset& asset,
@@ -456,6 +467,7 @@ namespace Models
 
         return textureManager.AddTexture
         (
+            megaSet,
             context,
             (directory + "/") + filePath.uri.c_str(),
             flags

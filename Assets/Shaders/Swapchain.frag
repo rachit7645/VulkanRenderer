@@ -18,21 +18,28 @@
 
 // Extensions
 #extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_EXT_nonuniform_qualifier : enable
 
 // Includes
+#include "SwapchainConstants.glsl"
 #include "GammaCorrect.glsl"
 #include "ACES.glsl"
 
 // Fragment inputs
-layout(location = 0) in vec2 uv;
+layout(location = 0) in vec2 fragUV;
 
-// Images
-layout(set = 0, binding = 0) uniform sampler2D colorOutput;
+// Mega set
+layout(set = 0, binding = 0) uniform sampler   samplers[];
+layout(set = 0, binding = 1) uniform texture2D textures[];
 
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = vec4(GammaCorrect(ACES(texture(colorOutput, uv).rgb)), 1.0f);
+    vec3 color = texture(sampler2D(textures[Constants.imageIndex], samplers[Constants.samplerIndex]), fragUV).rgb;
+         color = GammaCorrect(ACES(color));
+
+    outColor = vec4(color, 1.0f);
 }

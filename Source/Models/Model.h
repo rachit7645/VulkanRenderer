@@ -35,6 +35,7 @@ namespace Models
         Model
         (
             const Vk::Context& context,
+            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             const std::string_view path
@@ -53,6 +54,7 @@ namespace Models
         usize LoadTexture
         (
             const Vk::Context& context,
+            Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             const std::string& directory,
             const fastgltf::Asset& asset,

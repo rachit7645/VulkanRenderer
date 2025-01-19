@@ -23,7 +23,6 @@
 #include "ValidationLayers.h"
 #include "Extensions.h"
 #include "QueueFamilyIndices.h"
-#include "DescriptorCache.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
 #include "Util/DeletionQueue.h"
@@ -59,8 +58,6 @@ namespace Vk
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
-        // Descriptor cache
-        Vk::DescriptorCache descriptorCache;
     private:
         void CreateInstance();
         void CreateSurface(SDL_Window* window);

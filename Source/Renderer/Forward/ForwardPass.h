@@ -23,6 +23,7 @@
 #include "Vulkan/DepthBuffer.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"
+#include "Vulkan/MegaSet.h"
 
 namespace Renderer::Forward
 {
@@ -31,8 +32,9 @@ namespace Renderer::Forward
     public:
         ForwardPass
         (
-            Vk::Context& context,
-            const Vk::TextureManager& textureManager,
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
             VkExtent2D extent
         );
 
@@ -42,7 +44,7 @@ namespace Renderer::Forward
         void Render
         (
             usize FIF,
-            Vk::DescriptorCache& descriptorCache,
+            const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
             const Renderer::Camera& camera,
             const std::vector<Renderer::RenderObject>& renderObjects

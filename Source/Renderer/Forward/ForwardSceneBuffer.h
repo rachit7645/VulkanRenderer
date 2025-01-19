@@ -27,10 +27,11 @@ namespace Renderer::Forward
 {
     struct VULKAN_GLSL_DATA SceneBuffer
     {
-        glm::mat4 projection = {};
-        glm::mat4 view       = {};
-        glm::vec4 cameraPos  = {};
-        DirLight  dirLight   = {};
+        glm::mat4 projection   = {};
+        glm::mat4 view         = {};
+        glm::vec4 cameraPos    = {};
+        u32       samplerIndex = {};
+        DirLight  dirLight     = {};
     };
 }
 

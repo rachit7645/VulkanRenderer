@@ -17,10 +17,12 @@
 #ifndef SWAP_PIPELINE_H
 #define SWAP_PIPELINE_H
 
+#include "SwapchainConstants.h"
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/Swapchain.h"
-#include "Vulkan/DescriptorCache.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/TextureManager.h"
 #include "Vulkan/Context.h"
 
 namespace Renderer::Swapchain
@@ -28,21 +30,28 @@ namespace Renderer::Swapchain
     class SwapchainPipeline : public Vk::Pipeline
     {
     public:
-        SwapchainPipeline(Vk::Context& context, VkFormat colorFormat);
+        SwapchainPipeline
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            VkFormat colorFormat
+        );
 
         void WriteImageDescriptors
         (
             VkDevice device,
-            Vk::DescriptorCache& descriptorCache,
+            Vk::MegaSet& megaSet,
             const Vk::ImageView& imageView
-        ) const;
+        );
 
-        [[nodiscard]] const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& GetImageSets(Vk::DescriptorCache& descriptorCache) const;
+        PushConstant pushConstant = {};
 
-        Vk::Sampler colorSampler;
+        u32 samplerIndex = 0;
+        std::array<u32, Vk::FRAMES_IN_FLIGHT> colorAttachmentIndices = {};
     private:
-        void CreatePipeline(Vk::Context& context, VkFormat colorFormat);
-        void CreatePipelineData(const Vk::Context& context);
+        void CreatePipeline(const Vk::Context& context, Vk::MegaSet& megaSet, VkFormat colorFormat);
+        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

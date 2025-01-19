@@ -82,7 +82,7 @@ namespace Vk::Builders
         return {pipeline, pipelineLayout};
     }
 
-    PipelineBuilder::PipelineBuilder(Vk::Context& context)
+    PipelineBuilder::PipelineBuilder(const Vk::Context& context)
         : m_context(&context)
     {
     }

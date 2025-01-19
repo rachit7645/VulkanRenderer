@@ -39,24 +39,26 @@ layout(location = 4) in      mat3 fragTBNMatrix;
 // Fragment outputs
 layout(location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 0) uniform sampler texSampler;
-layout(set = 1, binding = 0) uniform texture2D textures[];
+// Mega set
+layout(set = 0, binding = 0) uniform sampler   samplers[];
+layout(set = 0, binding = 1) uniform texture2D textures[];
 
 void main()
 {
-    Mesh mesh = Constants.Meshes.meshes[fragDrawID];
+    Mesh mesh         = Constants.Meshes.meshes[fragDrawID];
+    uint samplerIndex = Constants.Scene.samplerIndex;
 
-    vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], texSampler), fragTexCoords);
+    vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], samplers[samplerIndex]), fragTexCoords);
     albedo.xyz  = ToLinear(albedo.xyz);
     albedo     *= mesh.albedoFactor;
 
     // Transparency check
     if (albedo.a < 0.5f) discard;
 
-    vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], texSampler), fragTexCoords).rgb;
+    vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], samplers[samplerIndex]), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
 
-    vec3 aoRghMtl = texture(sampler2D(textures[MAT_AO_RGH_MTL_ID], texSampler), fragTexCoords).rgb;
+    vec3 aoRghMtl = texture(sampler2D(textures[MAT_AO_RGH_MTL_ID], samplers[samplerIndex]), fragTexCoords).rgb;
     aoRghMtl.g   *= mesh.roughnessFactor;
     aoRghMtl.b   *= mesh.metallicFactor;
 

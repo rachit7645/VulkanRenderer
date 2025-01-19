@@ -21,25 +21,37 @@
 
 namespace Renderer::Swapchain
 {
-    SwapchainPass::SwapchainPass(Engine::Window& window, Vk::Context& context)
+    SwapchainPass::SwapchainPass
+    (
+        Engine::Window& window,
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
+    )
         : swapchain(window, context),
-          pipeline(context, swapchain.imageFormat)
+          pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
         CreateCmdBuffers(context);
         Logger::Info("{}\n", "Created swapchain pass!");
     }
 
-    void SwapchainPass::Recreate(Engine::Window& window, Vk::Context& context)
+    void SwapchainPass::Recreate
+    (
+        Engine::Window& window,
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
+    )
     {
         swapchain.RecreateSwapChain(window, context);
 
         pipeline.Destroy(context.device);
-        pipeline = Swapchain::SwapchainPipeline(context, swapchain.imageFormat);
+        pipeline = Swapchain::SwapchainPipeline(context, megaSet, textureManager, swapchain.imageFormat);
 
         Logger::Info("{}\n", "Recreated swapchain pass!");
     }
 
-    void SwapchainPass::Render(Vk::DescriptorCache& descriptorCache, usize FIF)
+    void SwapchainPass::Render(const Vk::MegaSet& megaSet, usize FIF)
     {
         auto& currentCmdBuffer = cmdBuffers[FIF];
         auto& currentImage     = swapchain.images[swapchain.imageIndex];
@@ -126,12 +138,29 @@ namespace Renderer::Swapchain
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
+        pipeline.pushConstant =
+        {
+            .samplerIndex = pipeline.samplerIndex,
+            .imageIndex   = pipeline.colorAttachmentIndices[FIF]
+        };
+
+        pipeline.LoadPushConstants
+        (
+            currentCmdBuffer,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0, sizeof(Swapchain::PushConstant),
+            reinterpret_cast<void*>(&pipeline.pushConstant)
+        );
+
+        // Mega set
+        std::array descriptorSets = {megaSet.descriptorSet.handle};
+
         pipeline.BindDescriptors
         (
             currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             0,
-            std::span(&pipeline.GetImageSets(descriptorCache)[FIF].handle, 1)
+            descriptorSets
         );
 
         vkCmdDraw

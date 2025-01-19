@@ -17,11 +17,11 @@
 #version 460
 
 // Vertex outputs
-layout(location = 0) out vec2 uv;
+layout(location = 0) out vec2 fragUV;
 
 void main()
 {
     // https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
-    uv          = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
-    gl_Position = vec4(uv * 2.0f - 1.0f, 0.0f, 1.0f);
+    fragUV      = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
+    gl_Position = vec4(fragUV * 2.0f - 1.0f, 0.0f, 1.0f);
 }

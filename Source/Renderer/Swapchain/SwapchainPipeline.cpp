@@ -23,62 +23,38 @@
 
 namespace Renderer::Swapchain
 {
-    constexpr auto COLOR_LAYOUT_ID = "SWAPCHAIN_PIPELINE_COLOR_LAYOUT";
-    constexpr auto IMAGE_SET_ID    = "SWAPCHAIN_PIPELINE_IMAGE_SETS";
-
-    SwapchainPipeline::SwapchainPipeline(Vk::Context& context, VkFormat colorFormat)
+    SwapchainPipeline::SwapchainPipeline
+    (
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        VkFormat colorFormat
+    )
     {
-        CreatePipeline(context, colorFormat);
-        CreatePipelineData(context);
+        CreatePipeline(context, megaSet, colorFormat);
+        CreatePipelineData(context.device, megaSet, textureManager);
     }
 
     void SwapchainPipeline::WriteImageDescriptors
     (
         VkDevice device,
-        Vk::DescriptorCache& descriptorCache,
+        Vk::MegaSet& megaSet,
         const Vk::ImageView& imageView
-    ) const
+    )
     {
-        const auto& imageData = GetImageSets(descriptorCache);
-
-        Vk::DescriptorWriter writer = {};
-
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+        for (auto& index : colorAttachmentIndices)
         {
-            writer.WriteImage
-            (
-                imageData[i].handle,
-                0,
-                0,
-                colorSampler.handle,
-                imageView.handle,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-            );
+            index = megaSet.WriteImage(imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
-        writer.Update(device);
+        megaSet.Update(device);
     }
 
-    const std::array<Vk::DescriptorSet, Vk::FRAMES_IN_FLIGHT>& SwapchainPipeline::GetImageSets(Vk::DescriptorCache& descriptorCache) const
-    {
-        return descriptorCache.GetSets(IMAGE_SET_ID);
-    }
-
-    void SwapchainPipeline::CreatePipeline(Vk::Context& context, VkFormat colorFormat)
+    void SwapchainPipeline::CreatePipeline(const Vk::Context& context, Vk::MegaSet& megaSet, VkFormat colorFormat)
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         std::array colorFormats = {colorFormat};
-
-        auto colorLayout = context.descriptorCache.AddLayout
-        (
-            COLOR_LAYOUT_ID,
-            context.device,
-            Vk::Builders::DescriptorLayoutBuilder()
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .Build(context.device)
-        );
 
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
             .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
@@ -90,31 +66,39 @@ namespace Renderer::Swapchain
             .SetRasterizerState(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
             .SetBlendState()
-            .AddDescriptorLayout(colorLayout)
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(Swapchain::PushConstant)))
+            .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
-
-        context.descriptorCache.AllocateSets(IMAGE_SET_ID, COLOR_LAYOUT_ID, context.device);
     }
 
-    void SwapchainPipeline::CreatePipelineData(const Vk::Context& context)
+    void SwapchainPipeline::CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager)
     {
-        colorSampler = Vk::Sampler
+        samplerIndex = textureManager.AddSampler
         (
-            context.device,
-            {VK_FILTER_NEAREST, VK_FILTER_NEAREST},
-            VK_SAMPLER_MIPMAP_MODE_NEAREST,
-            {VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE},
-            0.0f,
-            {VK_FALSE, 0.0f},
-            {VK_FALSE, VK_COMPARE_OP_ALWAYS},
-            {0.0f, 0.0f},
-            VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-            VK_FALSE
+            megaSet,
+            device,
+            {
+                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                .pNext                   = nullptr,
+                .flags                   = 0,
+                .magFilter               = VK_FILTER_NEAREST,
+                .minFilter               = VK_FILTER_NEAREST,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .mipLodBias              = 0.0f,
+                .anisotropyEnable        = VK_FALSE,
+                .maxAnisotropy           = 0.0f,
+                .compareEnable           = VK_FALSE,
+                .compareOp               = VK_COMPARE_OP_ALWAYS,
+                .minLod                  = 0.0f,
+                .maxLod                  = 0.0f,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+                .unnormalizedCoordinates = VK_FALSE
+            }
         );
 
-        m_deletionQueue.PushDeletor([sampler = colorSampler, &context] ()
-        {
-            sampler.Destroy(context.device);
-        });
+        megaSet.Update(device);
     }
 }

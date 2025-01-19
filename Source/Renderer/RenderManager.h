@@ -29,6 +29,7 @@
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Models/ModelManager.h"
+#include "Vulkan/MegaSet.h"
 
 namespace Renderer
 {
@@ -61,6 +62,7 @@ namespace Renderer
         std::shared_ptr<Engine::Window> m_window = nullptr;
         Vk::Context                     m_context;
         Models::ModelManager            m_modelManager;
+        Vk::MegaSet                     m_megaSet;
 
         // Render Passes
         Swapchain::SwapchainPass m_swapPass;

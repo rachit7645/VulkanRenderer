@@ -61,9 +61,9 @@ namespace Renderer::Forward
                     transform,
                     normalMatrix,
                     glm::uvec3(
-                        modelManager.textureManager.GetID(mesh.material.albedo),
-                        modelManager.textureManager.GetID(mesh.material.normal),
-                        modelManager.textureManager.GetID(mesh.material.aoRghMtl)
+                        modelManager.textureManager.GetTextureID(mesh.material.albedo),
+                        modelManager.textureManager.GetTextureID(mesh.material.normal),
+                        modelManager.textureManager.GetTextureID(mesh.material.aoRghMtl)
                     ),
                     mesh.material.albedoFactor,
                     mesh.material.roughnessFactor,

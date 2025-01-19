@@ -19,6 +19,8 @@
 
 #include "Texture.h"
 #include "DescriptorWriter.h"
+#include "Sampler.h"
+#include "MegaSet.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -32,27 +34,25 @@ namespace Vk
             Vk::Texture texture;
         };
 
-        TextureManager(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits);
+        [[nodiscard]] usize AddTexture
+        (
+            Vk::MegaSet& megaSet,
+            const Vk::Context& context,
+            const std::string_view path,
+            Texture::Flags flags
+        );
 
-        [[nodiscard]] usize AddTexture(const Vk::Context& context, const std::string_view path, Texture::Flags flags);
-        [[nodiscard]] usize AddTexture(const Vk::Texture& texture);
-        void Update(VkDevice device);
+        [[nodiscard]] u32 AddSampler(Vk::MegaSet& megaSet, VkDevice device, const VkSamplerCreateInfo& createInfo);
 
-        [[nodiscard]] u32 GetID(usize pathHash) const;
-        [[nodiscard]] const Texture& GetTexture(usize pathHash) const;
+        [[nodiscard]] u32 GetTextureID(usize pathHash) const;
+        [[nodiscard]] const Vk::Texture& GetTexture(usize pathHash) const;
+
+        [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        Vk::DescriptorSet                    textureSet;
         std::unordered_map<usize, TextureInfo> textureMap;
-    private:
-        void CreatePool(VkDevice device);
-        void CreateLayout(VkDevice device, const VkPhysicalDeviceLimits& physicalDeviceLimits);
-        void CreateSet(VkDevice device, const VkPhysicalDeviceLimits& physicalDeviceLimits);
-
-        VkDescriptorPool     m_texturePool = VK_NULL_HANDLE;
-        u32                  m_lastID      = 0;
-        Vk::DescriptorWriter m_writer      = {};
+        std::unordered_map<u32, Vk::Sampler>   samplerMap;
     };
 }
 

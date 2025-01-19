@@ -18,8 +18,6 @@
 
 #include "Models/Vertex.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
-#include "Vulkan/DescriptorWriter.h"
-#include "Vulkan/Builders/DescriptorLayoutBuilder.h"
 #include "ForwardSceneBuffer.h"
 #include "Util/Util.h"
 
@@ -34,26 +32,21 @@ namespace Renderer::Forward
 
     ForwardPipeline::ForwardPipeline
     (
-        Vk::Context& context,
-        const Vk::TextureManager& textureManager,
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
         VkFormat colorFormat,
         VkFormat depthFormat
     )
     {
-        CreatePipeline(context, textureManager, colorFormat, depthFormat);
-        CreatePipelineData(context);
-        WriteStaticDescriptor(context.device, context.descriptorCache);
-    }
-
-    Vk::DescriptorSet ForwardPipeline::GetStaticSet(Vk::DescriptorCache& descriptorCache) const
-    {
-        return descriptorCache.GetSet(STATIC_SET_ID);
+        CreatePipeline(context, megaSet, colorFormat, depthFormat);
+        CreatePipelineData(context, megaSet, textureManager);
     }
 
     void ForwardPipeline::CreatePipeline
     (
-        Vk::Context& context,
-        const Vk::TextureManager& textureManager,
+        const Vk::Context& context,
+        const Vk::MegaSet& megaSet,
         VkFormat colorFormat,
         VkFormat depthFormat
     )
@@ -61,15 +54,6 @@ namespace Renderer::Forward
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         auto colorFormats = std::span(&colorFormat, 1);
-
-        auto staticLayout = context.descriptorCache.AddLayout
-        (
-            STATIC_LAYOUT_ID,
-            context.device,
-            Vk::Builders::DescriptorLayoutBuilder()
-                .AddBinding(0, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .Build(context.device)
-        );
 
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
             .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
@@ -83,14 +67,16 @@ namespace Renderer::Forward
             .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER_OR_EQUAL, VK_FALSE, {}, {})
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
-            .AddDescriptorLayout(staticLayout)
-            .AddDescriptorLayout(textureManager.textureSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
-
-        context.descriptorCache.AllocateSet(STATIC_SET_ID, STATIC_LAYOUT_ID, context.device);
     }
 
-    void ForwardPipeline::CreatePipelineData(const Vk::Context& context)
+    void ForwardPipeline::CreatePipelineData
+    (
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
+    )
     {
         for (auto&& sceneSSBO : sceneSSBOs)
         {
@@ -110,21 +96,35 @@ namespace Renderer::Forward
         meshBuffer     = Forward::MeshBuffer(context.device, context.allocator);
         indirectBuffer = Forward::IndirectBuffer(context.allocator);
 
-        auto anisotropy = std::min(4.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
+        auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        textureSampler = Vk::Sampler
+        samplerIndex = textureManager.AddSampler
         (
+            megaSet,
             context.device,
-            {VK_FILTER_LINEAR, VK_FILTER_LINEAR},
-            VK_SAMPLER_MIPMAP_MODE_LINEAR,
-            {VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT},
-            0.0f,
-            {VK_TRUE, anisotropy},
-            {VK_FALSE, VK_COMPARE_OP_ALWAYS},
-            {0.0f, VK_LOD_CLAMP_NONE},
-            VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-            VK_FALSE
+            {
+                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                .pNext                   = nullptr,
+                .flags                   = 0,
+                .magFilter               = VK_FILTER_LINEAR,
+                .minFilter               = VK_FILTER_LINEAR,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .mipLodBias              = 0.0f,
+                .anisotropyEnable        = VK_TRUE,
+                .maxAnisotropy           = anisotropy,
+                .compareEnable           = VK_FALSE,
+                .compareOp               = VK_COMPARE_OP_ALWAYS,
+                .minLod                  = 0.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
+                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .unnormalizedCoordinates = VK_FALSE
+            }
         );
+
+        megaSet.Update(context.device);
 
         m_deletionQueue.PushDeletor([&]()
         {
@@ -135,28 +135,6 @@ namespace Renderer::Forward
             {
                 buffer.Destroy(context.allocator);
             }
-
-            textureSampler.Destroy(context.device);
         });
-    }
-
-    void ForwardPipeline::WriteStaticDescriptor(VkDevice device, Vk::DescriptorCache& cache) const
-    {
-        auto staticSet = GetStaticSet(cache);
-
-        Vk::DescriptorWriter writer = {};
-
-        writer.WriteImage
-        (
-            staticSet.handle,
-            0,
-            0,
-            textureSampler.handle,
-            VK_NULL_HANDLE,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_DESCRIPTOR_TYPE_SAMPLER
-        );
-
-        writer.Update(device);
     }
 }

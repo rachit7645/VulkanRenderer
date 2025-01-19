@@ -58,6 +58,7 @@ file(GLOB SHADER_HEADERS
     Include/PBR.glsl
     Include/Scene.glsl
     Include/Vertex.glsl
+    Include/SwapchainConstants.glsl
 )
 
 # For each shader to be compiled

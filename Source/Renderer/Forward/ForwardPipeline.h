@@ -23,7 +23,7 @@
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/TextureManager.h"
+#include "Vulkan/MegaSet.h"
 
 namespace Renderer::Forward
 {
@@ -32,13 +32,12 @@ namespace Renderer::Forward
     public:
         ForwardPipeline
         (
-            Vk::Context& context,
-            const Vk::TextureManager& textureManager,
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
             VkFormat colorFormat,
             VkFormat depthFormat
         );
-
-        Vk::DescriptorSet GetStaticSet(Vk::DescriptorCache& descriptorCache) const;
 
         PushConstant pushConstant = {};
 
@@ -47,18 +46,17 @@ namespace Renderer::Forward
         MeshBuffer     meshBuffer;
         IndirectBuffer indirectBuffer;
 
-        Vk::Sampler textureSampler;
+        u32 samplerIndex;
     private:
         void CreatePipeline
         (
-            Vk::Context& context,
-            const Vk::TextureManager& textureManager,
+            const Vk::Context& context,
+            const Vk::MegaSet& megaSet,
             VkFormat colorFormat,
             VkFormat depthFormat
         );
 
-        void CreatePipelineData(const Vk::Context& context);
-        void WriteStaticDescriptor(VkDevice device, Vk::DescriptorCache& cache) const;
+        void CreatePipelineData(const Vk::Context& context, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

@@ -27,11 +27,19 @@ namespace Renderer::Forward
 {
     ForwardPass::ForwardPass
     (
-        Vk::Context& context,
-        const Vk::TextureManager& textureManager,
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
         VkExtent2D extent
     )
-        : pipeline(context, textureManager, GetColorFormat(context.physicalDevice), Vk::DepthBuffer::GetDepthFormat(context.physicalDevice))
+        : pipeline
+          (
+              context,
+              megaSet,
+              textureManager,
+              GetColorFormat(context.physicalDevice),
+              Vk::DepthBuffer::GetDepthFormat(context.physicalDevice)
+          )
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -58,7 +66,7 @@ namespace Renderer::Forward
     void ForwardPass::Render
     (
         usize FIF,
-        Vk::DescriptorCache& descriptorCache,
+        const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
         const Renderer::Camera& camera,
         const std::vector<Renderer::RenderObject>& renderObjects
@@ -172,6 +180,7 @@ namespace Renderer::Forward
             ),
             .view = camera.GetViewMatrix(),
             .cameraPos = {camera.position, 1.0f},
+            .samplerIndex = pipeline.samplerIndex,
             .dirLight = {
                 .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
                 .color     = {1.0f,   0.956f, 0.898f, 1.0f},
@@ -198,19 +207,15 @@ namespace Renderer::Forward
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
-        // Scene specific descriptor sets
-        std::array sceneDescriptorSets =
-        {
-            pipeline.GetStaticSet(descriptorCache).handle,
-            modelManager.textureManager.textureSet.handle
-        };
+        // Mega set
+        std::array descriptorSets = {megaSet.descriptorSet.handle};
 
         pipeline.BindDescriptors
         (
             currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             0,
-            sceneDescriptorSets
+            descriptorSets
         );
 
         modelManager.geometryBuffer.Bind(currentCmdBuffer);

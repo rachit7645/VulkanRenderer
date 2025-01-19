@@ -32,7 +32,7 @@ namespace Vk::Builders
     public:
         using Products = std::pair<VkPipeline, VkPipelineLayout>;
 
-        explicit PipelineBuilder(Vk::Context& context);
+        explicit PipelineBuilder(const Vk::Context& context);
         ~PipelineBuilder();
 
         // No copying
@@ -119,7 +119,7 @@ namespace Vk::Builders
         std::vector<VkDescriptorSetLayout> descriptorLayouts;
     private:
         // We only need this pointer here temporarily
-        Vk::Context* m_context = nullptr;
+        const Vk::Context* m_context = nullptr;
     };
 }
 

@@ -26,11 +26,25 @@ namespace Renderer::Swapchain
     class SwapchainPass
     {
     public:
-        SwapchainPass(Engine::Window& window, Vk::Context& context);
-        void Recreate(Engine::Window& window, Vk::Context& context);
+        SwapchainPass
+        (
+            Engine::Window& window,
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
+        void Recreate
+        (
+            Engine::Window& window,
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
         void Destroy(const Vk::Context& context);
 
-        void Render(Vk::DescriptorCache& descriptorCache, usize FIF);
+        void Render(const Vk::MegaSet& megaSet, usize FIF);
         void Present(VkQueue queue, usize FIF);
 
         Vk::Swapchain                swapchain;

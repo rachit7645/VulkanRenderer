@@ -39,7 +39,10 @@ namespace Vk
     constexpr std::array REQUIRED_EXTENSIONS =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+        #ifdef ENGINE_DEBUG
         VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
+        #endif
     };
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
@@ -52,7 +55,6 @@ namespace Vk
         CreateLogicalDevice();
 
         CreateCommandPool();
-        CreateDescriptorCache();
         CreateAllocator();
 
         Logger::Info("{}\n", "Initialised vulkan context!");
@@ -254,10 +256,8 @@ namespace Vk
         const bool hasDescriptorIndexing          = vk12Features->descriptorIndexing;
         const bool hasNonUniformIndexing          = vk12Features->shaderSampledImageArrayNonUniformIndexing;
         const bool hasRuntimeDescriptorArray      = vk12Features->runtimeDescriptorArray;
-        const bool hasVariableDescriptorCount     = vk12Features->descriptorBindingVariableDescriptorCount;
         const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
         const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
-        const bool hasUpdateUnusedWhilePending    = vk12Features->descriptorBindingUpdateUnusedWhilePending;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
@@ -269,8 +269,8 @@ namespace Vk
         const bool extensions = isSwapChainAdequate;
         const bool vk11       = hasShaderDrawParameters;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
-                                hasRuntimeDescriptorArray && hasVariableDescriptorCount && hasPartiallyBoundDescriptors &&
-                                hasSampledImageUpdateAfterBind && hasUpdateUnusedWhilePending;
+                                hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
+                                hasSampledImageUpdateAfterBind;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
         return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
@@ -404,21 +404,14 @@ namespace Vk
         });
     }
 
-    void Context::CreateDescriptorCache()
-    {
-        descriptorCache = Vk::DescriptorCache(device);
-
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            descriptorCache.Destroy(device);
-        });
-    }
-
     void Context::CreateAllocator()
     {
         const VmaAllocatorCreateInfo createInfo =
         {
-            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT   |
+                                           VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT |
+                                           VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT       |
+                                           VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT,
             .physicalDevice              = physicalDevice,
             .device                      = device,
             .preferredLargeHeapBlockSize = 0,
