@@ -46,14 +46,21 @@ namespace Renderer
             m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/Sponza.gltf"),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.25f, 0.25f, 0.25f)
+            glm::vec3(1.0f, 1.0f, 1.0f)
+        ));
+
+        m_renderObjects.emplace_back(RenderObject(
+            m_modelManager.AddModel(m_context, m_megaSet, "Cottage/Cottage.gltf"),
+            glm::vec3(50.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f)
         ));
 
         // ImGui Yoy
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_megaSet, m_forwardPass.imageView);
+        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.imageView);
         m_frameCounter.Reset();
     }
 
@@ -91,21 +98,8 @@ namespace Renderer
     {
         m_frameCounter.Update();
         m_camera.Update(m_frameCounter.frameDelta);
+
         Engine::Inputs::Get().ImGuiDisplay();
-
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Mesh"))
-            {
-                // Transform modifiers
-                ImGui::DragFloat3("Position", &m_renderObjects[0].position[0]);
-                ImGui::DragFloat3("Rotation", &m_renderObjects[0].rotation[0]);
-                ImGui::DragFloat3("Scale",    &m_renderObjects[0].scale[0]);
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
     }
 
     void RenderManager::BeginFrame()
@@ -218,7 +212,7 @@ namespace Renderer
         m_swapPass.Recreate(*m_window, m_context, m_megaSet, m_modelManager.textureManager);
         m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
 
-        m_swapPass.pipeline.WriteImageDescriptors(m_context.device, m_megaSet, m_forwardPass.imageView);
+        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.imageView);
     }
 
     void RenderManager::InitImGui()

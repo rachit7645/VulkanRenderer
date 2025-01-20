@@ -24,6 +24,7 @@
 #include "Util/Files.h"
 #include "Util/Enum.h"
 #include "Util/Util.h"
+#include "Util/Maths.h"
 
 namespace Models
 {
@@ -97,8 +98,67 @@ namespace Models
         }
         #endif
 
-        for (const auto& mesh : asset->meshes)
+        ProcessScenes
+        (
+            context,
+            megaSet,
+            geometryBuffer,
+            textureManager,
+            assetDirectory,
+            asset.get()
+        );
+
+        megaSet.Update(context.device);
+    }
+
+    void Model::ProcessScenes
+    (
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
+        const std::string& directory,
+        const fastgltf::Asset& asset
+    )
+    {
+        for (const auto& scene : asset.scenes)
         {
+            for (const auto nodeIndex : scene.nodeIndices)
+            {
+                ProcessNode
+                (
+                    context,
+                    megaSet,
+                    geometryBuffer,
+                    textureManager,
+                    directory,
+                    asset,
+                    nodeIndex,
+                    glm::identity<glm::mat4>()
+                );
+            }
+        }
+    }
+
+    void Model::ProcessNode
+    (
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
+        const std::string& directory,
+        const fastgltf::Asset& asset,
+        usize nodeIndex,
+        glm::mat4 nodeMatrix
+    )
+    {
+        auto& node = asset.nodes[nodeIndex];
+        nodeMatrix = GetTranformMatrix(node, nodeMatrix);
+
+        if (node.meshIndex.has_value())
+        {
+            const auto& mesh = asset.meshes[node.meshIndex.value()];
+
             for (const auto& primitive : mesh.primitives)
             {
                 std::vector<Index>  indices  = {};
@@ -109,9 +169,9 @@ namespace Models
                 {
                     Logger::Warning
                     (
-                        "Unsupported primitive type! [Type={}] [Path={}]\n",
+                        "Unsupported primitive type! [Type={}] [Node={}]\n",
                         static_cast<std::underlying_type_t<fastgltf::PrimitiveType>>(primitive.type),
-                        path
+                        nodeIndex
                     );
                 }
 
@@ -119,19 +179,19 @@ namespace Models
                 {
                     if (!primitive.indicesAccessor.has_value())
                     {
-                        Logger::Error("Primitive does not contain indices accessor! [Path={}]\n", path);
+                        Logger::Error("Primitive does not contain indices accessor! [Node={}]\n", nodeIndex);
                     }
 
-                    const auto& indicesAccessor = asset->accessors[primitive.indicesAccessor.value()];
+                    const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
                     indices.reserve(indicesAccessor.count);
 
                     if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
                     {
                         Logger::Error
                         (
-                            "Invalid indices accessor type! [AccessorType={}] [Path={}]\n",
+                            "Invalid indices accessor type! [AccessorType={}] [Node={}]\n",
                             static_cast<std::underlying_type_t<fastgltf::AccessorType>>(indicesAccessor.type),
-                            path
+                            nodeIndex
                         );
                     }
 
@@ -140,7 +200,7 @@ namespace Models
                     {
                     case fastgltf::ComponentType::Byte:
                     {
-                        fastgltf::iterateAccessor<s8>(asset.get(), indicesAccessor, [&] (s8 index)
+                        fastgltf::iterateAccessor<s8>(asset, indicesAccessor, [&] (s8 index)
                         {
                             indices.push_back(static_cast<Index>(index));
                         });
@@ -149,7 +209,7 @@ namespace Models
 
                     case fastgltf::ComponentType::UnsignedByte:
                     {
-                        fastgltf::iterateAccessor<u8>(asset.get(), indicesAccessor, [&] (u8 index)
+                        fastgltf::iterateAccessor<u8>(asset, indicesAccessor, [&] (u8 index)
                         {
                             indices.push_back(static_cast<Index>(index));
                         });
@@ -158,7 +218,7 @@ namespace Models
 
                     case fastgltf::ComponentType::Short:
                     {
-                        fastgltf::iterateAccessor<s16>(asset.get(), indicesAccessor, [&] (s16 index)
+                        fastgltf::iterateAccessor<s16>(asset, indicesAccessor, [&] (s16 index)
                         {
                             indices.push_back(static_cast<Index>(index));
                         });
@@ -167,7 +227,7 @@ namespace Models
 
                     case fastgltf::ComponentType::UnsignedShort:
                     {
-                        fastgltf::iterateAccessor<u16>(asset.get(), indicesAccessor, [&] (u16 index)
+                        fastgltf::iterateAccessor<u16>(asset, indicesAccessor, [&] (u16 index)
                         {
                             indices.push_back(static_cast<Index>(index));
                         });
@@ -177,16 +237,16 @@ namespace Models
                     case fastgltf::ComponentType::UnsignedInt:
                     {
                         indices.resize(indicesAccessor.count);
-                        fastgltf::copyFromAccessor<u32>(asset.get(), indicesAccessor, indices.data());
+                        fastgltf::copyFromAccessor<u32>(asset, indicesAccessor, indices.data());
                         break;
                     }
 
                     default:
                         Logger::Error
                         (
-                            "Invalid index component type! [ComponentType={}] [Path={}]\n",
+                            "Invalid index component type! [ComponentType={}] [Node={}]\n",
                             static_cast<std::underlying_type_t<fastgltf::ComponentType>>(indicesAccessor.componentType),
-                            path
+                            nodeIndex
                         );
                     }
                 }
@@ -195,7 +255,7 @@ namespace Models
                 {
                     const auto& positionAccessor = GetAccesor
                     (
-                        asset.get(),
+                        asset,
                         primitive,
                         "POSITION",
                         fastgltf::AccessorType::Vec3
@@ -203,7 +263,7 @@ namespace Models
 
                     vertices.reserve(positionAccessor.count);
 
-                    fastgltf::iterateAccessor<glm::vec3>(asset.get(), positionAccessor, [&] (const glm::vec3& position)
+                    fastgltf::iterateAccessor<glm::vec3>(asset, positionAccessor, [&] (const glm::vec3& position)
                     {
                         Vertex vertex = {};
                         vertex.position = position;
@@ -215,13 +275,13 @@ namespace Models
                 {
                     const auto& normalAccessor = GetAccesor
                     (
-                        asset.get(),
+                        asset,
                         primitive,
                         "NORMAL",
                         fastgltf::AccessorType::Vec3
                     );
 
-                    fastgltf::iterateAccessorWithIndex<glm::vec3>(asset.get(), normalAccessor, [&] (const glm::vec3& normal, usize index)
+                    fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, normalAccessor, [&] (const glm::vec3& normal, usize index)
                     {
                         vertices[index].normal = normal;
                     });
@@ -231,13 +291,13 @@ namespace Models
                 {
                     const auto& uvAccessor = GetAccesor
                     (
-                        asset.get(),
+                        asset,
                         primitive,
                         "TEXCOORD_0",
                         fastgltf::AccessorType::Vec2
                     );
 
-                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset.get(), uvAccessor, [&] (const glm::vec2& uv, usize index)
+                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uvAccessor, [&] (const glm::vec2& uv, usize index)
                     {
                         vertices[index].uv0 = uv;
                     });
@@ -247,13 +307,13 @@ namespace Models
                 {
                     const auto& tangentAccessor = GetAccesor
                     (
-                        asset.get(),
+                        asset,
                         primitive,
                         "TANGENT",
                         fastgltf::AccessorType::Vec4
                     );
 
-                    fastgltf::iterateAccessorWithIndex<glm::vec4>(asset.get(), tangentAccessor, [&] (const glm::vec4& tangent, usize index)
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
                     {
                         vertices[index].tangent = tangent;
                     });
@@ -261,10 +321,10 @@ namespace Models
 
                 if (!primitive.materialIndex.has_value())
                 {
-                    Logger::Error("No material in primitive! [Path={}]\n", path);
+                    Logger::Error("No material in primitive! [Node={}]\n", nodeIndex);
                 }
 
-                const auto& mat = asset->materials[primitive.materialIndex.value()];
+                const auto& mat = asset.materials[primitive.materialIndex.value()];
 
                 // Material Factors
                 {
@@ -284,9 +344,9 @@ namespace Models
                         {
                             Logger::Warning
                             (
-                                "Albedo uses more than one UV channel! [texCoordIndex={}] [Path={}] \n",
+                                "Albedo uses more than one UV channel! [texCoordIndex={}] [Node={}] \n",
                                 baseColorTexture->texCoordIndex,
-                                path
+                                nodeIndex
                             );
                         }
 
@@ -295,8 +355,8 @@ namespace Models
                             context,
                             megaSet,
                             textureManager,
-                            assetDirectory,
-                            asset.get(),
+                            directory,
+                            asset,
                             baseColorTexture->textureIndex,
                             ALBEDO_FLAGS
                         );
@@ -322,9 +382,9 @@ namespace Models
                         {
                             Logger::Warning
                             (
-                                "Normal uses more than one UV channel! [texCoordIndex={}] [Path={}] \n",
+                                "Normal uses more than one UV channel! [texCoordIndex={}] [Node={}] \n",
                                 mat.normalTexture->texCoordIndex,
-                                path
+                                nodeIndex
                             );
                         }
 
@@ -333,8 +393,8 @@ namespace Models
                             context,
                             megaSet,
                             textureManager,
-                            assetDirectory,
-                            asset.get(),
+                            directory,
+                            asset,
                             mat.normalTexture->textureIndex,
                             NORMAL_FLAGS
                         );
@@ -362,9 +422,9 @@ namespace Models
                         {
                             Logger::Warning
                             (
-                                "AoRghMtl uses more than one UV channel! [texCoordIndex={}] [Path={}] \n",
+                                "AoRghMtl uses more than one UV channel! [texCoordIndex={}] [Node={}] \n",
                                 metallicRoughnessTexture->texCoordIndex,
-                                path
+                                nodeIndex
                             );
                         }
 
@@ -373,8 +433,8 @@ namespace Models
                             context,
                             megaSet,
                             textureManager,
-                            assetDirectory,
-                            asset.get(),
+                            directory,
+                            asset,
                             metallicRoughnessTexture->textureIndex,
                             AO_RGH_MTL_FLAGS
                         );
@@ -391,18 +451,49 @@ namespace Models
                     }
                 }
 
-                assert(indices.size() != 0);
-
                 meshes.emplace_back
                 (
                     geometryBuffer.LoadIndices(context, indices),
                     geometryBuffer.LoadVertices(context, vertices),
-                    material
+                    material,
+                    nodeMatrix
                 );
             }
         }
 
-        megaSet.Update(context.device);
+        for (const auto child : node.children)
+        {
+            ProcessNode
+            (
+                context,
+                megaSet,
+                geometryBuffer,
+                textureManager,
+                directory,
+                asset,
+                child,
+                nodeMatrix
+            );
+        }
+    }
+
+    glm::mat4 Model::GetTranformMatrix(const fastgltf::Node& node, const glm::mat4& base)
+    {
+        return std::visit(fastgltf::visitor {
+            [&] (const fastgltf::math::fmat4x4& matrix)
+            {
+                return base * glm::fastgltf_cast(matrix);
+            },
+            [&] (const fastgltf::TRS& trs)
+            {
+                return base * Maths::CreateTransformMatrix
+                (
+                    glm::fastgltf_cast(trs.translation),
+                    glm::eulerAngles(glm::fastgltf_cast(trs.rotation)),
+                    glm::fastgltf_cast(trs.scale)
+                );
+            }
+        }, node.transform);
     }
 
     const fastgltf::Accessor& Model::GetAccesor

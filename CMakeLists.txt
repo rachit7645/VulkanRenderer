@@ -88,7 +88,6 @@ add_executable(VulkanRenderer
     Source/Renderer/Forward/ForwardIndirectBuffer.cpp
 	# Model sources
 	Source/Models/Model.cpp
-	Source/Models/Mesh.cpp
 	Source/Models/ModelManager.cpp
 	# External sources
 	Source/Externals/GLM.cpp

@@ -141,7 +141,7 @@ namespace Renderer::Swapchain
         pipeline.pushConstant =
         {
             .samplerIndex = pipeline.samplerIndex,
-            .imageIndex   = pipeline.colorAttachmentIndices[FIF]
+            .imageIndex   = pipeline.colorAttachmentIndex
         };
 
         pipeline.LoadPushConstants

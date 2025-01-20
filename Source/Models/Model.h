@@ -43,6 +43,30 @@ namespace Models
 
         std::vector<Models::Mesh> meshes;
     private:
+        void ProcessScenes
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            const std::string& directory,
+            const fastgltf::Asset& asset
+        );
+
+        void ProcessNode
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            const std::string& directory,
+            const fastgltf::Asset& asset,
+            usize nodeIndex,
+            glm::mat4 nodeMatrix
+        );
+
+        glm::mat4 GetTranformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
+
         const fastgltf::Accessor& GetAccesor
         (
             const fastgltf::Asset& asset,

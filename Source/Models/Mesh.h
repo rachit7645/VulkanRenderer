@@ -24,16 +24,10 @@ namespace Models
 {
     struct Mesh
     {
-        Mesh
-        (
-            const Models::Info& indexInfo,
-            const Models::Info& vertexInfo,
-            const Models::Material& material
-        );
-
-        Info     indexInfo;
-        Info     vertexInfo;
-        Material material;
+        Info      indexInfo;
+        Info      vertexInfo;
+        Material  material;
+        glm::mat4 transform;
     };
 }
 

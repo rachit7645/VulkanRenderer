@@ -37,8 +37,7 @@ namespace Vk
             depthFormat,
             VK_IMAGE_TILING_OPTIMAL,
             hasStencil ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         );
 
         depthImageView = Vk::ImageView

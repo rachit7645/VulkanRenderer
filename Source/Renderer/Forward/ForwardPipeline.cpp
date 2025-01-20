@@ -26,10 +26,6 @@ namespace Renderer::Forward
     // Usings
     using Models::Vertex;
 
-    // Constants
-    constexpr auto STATIC_LAYOUT_ID = "FORWARD_PIPELINE_STATIC_LAYOUT";
-    constexpr auto STATIC_SET_ID    = "FORWARD_PIPELINE_STATIC_SETS";
-
     ForwardPipeline::ForwardPipeline
     (
         const Vk::Context& context,

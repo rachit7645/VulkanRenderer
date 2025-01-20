@@ -27,7 +27,7 @@ namespace Renderer
     // Default field of view
     constexpr f32 DEFAULT_FOV = glm::radians(80.0f);
     // Near and far plane
-    constexpr glm::vec2 PLANES = {0.1f, 2048.0f};
+    constexpr glm::vec2 PLANES = {0.1f, 1024.0f};
     // World Up direction
     constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
 }

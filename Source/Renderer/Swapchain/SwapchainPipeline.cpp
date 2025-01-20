@@ -35,18 +35,14 @@ namespace Renderer::Swapchain
         CreatePipelineData(context.device, megaSet, textureManager);
     }
 
-    void SwapchainPipeline::WriteImageDescriptors
+    void SwapchainPipeline::WriteColorAttachmentDescriptor
     (
         VkDevice device,
         Vk::MegaSet& megaSet,
         const Vk::ImageView& imageView
     )
     {
-        for (auto& index : colorAttachmentIndices)
-        {
-            index = megaSet.WriteImage(imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
-
+        colorAttachmentIndex = megaSet.WriteImage(imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         megaSet.Update(device);
     }
 

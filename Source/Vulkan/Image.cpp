@@ -31,12 +31,11 @@ namespace Vk
         VkFormat format,
         VkImageTiling tiling,
         VkImageAspectFlags aspect,
-        VkImageUsageFlags usage,
-        VkMemoryPropertyFlags properties
+        VkImageUsageFlags usage
     )
         : Image(VK_NULL_HANDLE, width, height, mipLevels, format, tiling, aspect)
     {
-        CreateImage(allocator, usage, properties);
+        CreateImage(allocator, usage);
         Logger::Debug("Created image! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
@@ -71,12 +70,7 @@ namespace Vk
                aspect == rhs.aspect;
     }
 
-    void Image::CreateImage
-    (
-        VmaAllocator allocator,
-        VkImageUsageFlags usage,
-        VkMemoryPropertyFlags properties
-    )
+    void Image::CreateImage(VmaAllocator allocator, VkImageUsageFlags usage)
     {
         VkImageCreateInfo imageInfo =
         {
@@ -99,10 +93,10 @@ namespace Vk
         
         VmaAllocationCreateInfo allocInfo =
         {
-            .flags          = 0,
+            .flags          = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
             .usage          = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-            .requiredFlags  = properties,
-            .preferredFlags = 0,
+            .requiredFlags  = 0,
+            .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             .memoryTypeBits = 0,
             .pool           = VK_NULL_HANDLE,
             .pUserData      = nullptr,
@@ -115,9 +109,23 @@ namespace Vk
             &allocInfo,
             &handle,
             &allocation,
-            nullptr),
+            &allocationInfo),
             "Failed to create image!"
         );
+
+        VkMemoryPropertyFlags flags;
+        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &flags);
+
+        if (!(flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+        {
+            Logger::Warning
+            (
+                "Image not allocated from device local memory! May harm performance. [handle={}] [allocation={}] [flags={}]\n",
+                std::bit_cast<void*>(handle),
+                std::bit_cast<void*>(allocation),
+                string_VkMemoryPropertyFlags(flags)
+            );
+        }
     }
 
     void Image::Barrier

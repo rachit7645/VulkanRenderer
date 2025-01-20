@@ -18,14 +18,30 @@
 
 namespace glm
 {
+    vec3 fastgltf_cast(const fastgltf::math::nvec3& vector)
+    {
+        vec3 ret = {};
+        std::memcpy(value_ptr(ret), vector.data(), vector.size_bytes());
+        return ret;
+    }
+
     vec4 fastgltf_cast(const fastgltf::math::nvec4& vector)
     {
-        return
-        {
-            vector.x(),
-            vector.y(),
-            vector.z(),
-            vector.w()
-        };
+        vec4 ret = {};
+        std::memcpy(value_ptr(ret), vector.data(), vector.size_bytes());
+        return ret;
+    }
+
+    mat4 fastgltf_cast(const fastgltf::math::fmat4x4& matrix)
+    {
+        mat4 ret = {};
+        std::memcpy(value_ptr(ret), matrix.data(), matrix.size_bytes());
+        return ret;
+    }
+
+    quat fastgltf_cast(const fastgltf::math::fquat& quat)
+    {
+        // glm uses wxyz layout by default
+        return {quat.w(), quat.x(), quat.y(), quat.z()};
     }
 }

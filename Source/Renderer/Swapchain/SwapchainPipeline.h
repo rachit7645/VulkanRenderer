@@ -38,7 +38,7 @@ namespace Renderer::Swapchain
             VkFormat colorFormat
         );
 
-        void WriteImageDescriptors
+        void WriteColorAttachmentDescriptor
         (
             VkDevice device,
             Vk::MegaSet& megaSet,
@@ -47,8 +47,8 @@ namespace Renderer::Swapchain
 
         PushConstant pushConstant = {};
 
-        u32 samplerIndex = 0;
-        std::array<u32, Vk::FRAMES_IN_FLIGHT> colorAttachmentIndices = {};
+        u32 samplerIndex         = 0;
+        u32 colorAttachmentIndex = 0;
     private:
         void CreatePipeline(const Vk::Context& context, Vk::MegaSet& megaSet, VkFormat colorFormat);
         void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);

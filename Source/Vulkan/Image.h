@@ -38,8 +38,7 @@ namespace Vk
             VkFormat format,
             VkImageTiling tiling,
             VkImageAspectFlags aspect,
-            VkImageUsageFlags usage,
-            VkMemoryPropertyFlags properties
+            VkImageUsageFlags usage
         );
 
         // Basic constructor for copying
@@ -73,8 +72,9 @@ namespace Vk
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
-        VkImage       handle     = VK_NULL_HANDLE;
-        VmaAllocation allocation = {};
+        VkImage           handle         = VK_NULL_HANDLE;
+        VmaAllocation     allocation     = {};
+        VmaAllocationInfo allocationInfo = {};
 
         // Image dimensions
         u32 width     = 0;
@@ -86,12 +86,7 @@ namespace Vk
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     private:
-        void CreateImage
-        (
-            VmaAllocator allocator,
-            VkImageUsageFlags usage,
-            VkMemoryPropertyFlags properties
-        );
+        void CreateImage(VmaAllocator allocator, VkImageUsageFlags usage);
     };
 }
 

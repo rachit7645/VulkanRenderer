@@ -52,11 +52,18 @@ namespace Renderer::Forward
 
         for (const auto& renderObject : renderObjects)
         {
-            const auto transform    = Maths::CreateTransformMatrix(renderObject.position, renderObject.rotation, renderObject.scale);
-            const auto normalMatrix = Maths::CreateNormalMatrix(transform);
+            const auto globalTransform = Maths::CreateTransformMatrix
+            (
+                renderObject.position,
+                renderObject.rotation,
+                renderObject.scale
+            );
 
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
+                const auto transform    = globalTransform * mesh.transform;
+                const auto normalMatrix = Maths::CreateNormalMatrix(transform);
+
                 meshes.emplace_back(
                     transform,
                     normalMatrix,

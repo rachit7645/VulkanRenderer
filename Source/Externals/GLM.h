@@ -45,6 +45,7 @@
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vector_relational.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // Matrix transformations
 #include <glm/gtc/matrix_transform.hpp>
@@ -55,7 +56,10 @@
 namespace glm
 {
     // fastgtlf to GLM conversions
+    vec3 fastgltf_cast(const fastgltf::math::nvec3& vector);
     vec4 fastgltf_cast(const fastgltf::math::nvec4& vector);
+    mat4 fastgltf_cast(const fastgltf::math::fmat4x4& matrix);
+    quat fastgltf_cast(const fastgltf::math::fquat& quat);
 }
 
 #endif
