@@ -24,20 +24,71 @@ namespace Vk
 {
     void ImmediateSubmit
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VkQueue queue,
+        VkCommandPool cmdPool,
         const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
-        const std::source_location location
+        UNUSED const std::source_location location
     )
     {
         auto cmdBuffer = Vk::CommandBuffer
         (
-            context,
-            VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location))
+            device,
+            cmdPool,
+            VK_COMMAND_BUFFER_LEVEL_PRIMARY
         );
 
+        VkFenceCreateInfo fenceCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        VkFence fence;
+        vkCreateFence(device, &fenceCreateInfo, nullptr, &fence);
+
+        #ifdef ENGINE_DEBUG
+        auto name = fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location));
+
+        VkDebugUtilsObjectNameInfoEXT nameInfo =
+        {
+            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .pNext        = nullptr,
+            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
+            .objectHandle = 0,
+            .pObjectName  = name.c_str()
+        };
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_COMMAND_BUFFER;
+        nameInfo.objectHandle = std::bit_cast<u64>(cmdBuffer.handle);
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_FENCE;
+        nameInfo.objectHandle = std::bit_cast<u64>(fence);
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+        #endif
+
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            CmdFunction(cmdBuffer);
+
+        #ifdef ENGINE_DEBUG
+        const VkDebugUtilsLabelEXT label =
+        {
+            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+            .pNext      = nullptr,
+            .pLabelName = name.c_str(),
+            .color      = {}
+        };
+
+        vkCmdBeginDebugUtilsLabelEXT(cmdBuffer.handle, &label);
+        #endif
+
+        CmdFunction(cmdBuffer);
+
+        #ifdef ENGINE_DEBUG
+        vkCmdEndDebugUtilsLabelEXT(cmdBuffer.handle);
+        #endif
+
         cmdBuffer.EndRecording();
 
         VkCommandBufferSubmitInfo cmdBufferInfo =
@@ -62,17 +113,24 @@ namespace Vk
         };
 
         Vk::CheckResult(vkQueueSubmit2(
-            context.graphicsQueue,
+            queue,
             1,
             &submitInfo,
-            VK_NULL_HANDLE),
+            fence),
             "Failed to submit immediate command buffer!"
         );
 
-        // FIXME: Should we wait like this? Or use a fence...
-        Vk::CheckResult(vkQueueWaitIdle(context.graphicsQueue), "Error while waiting for queue to idle!");
+        Vk::CheckResult(vkWaitForFences(
+            device,
+            1,
+            &fence,
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Error while waiting for command buffer to be executed!"
+        );
 
-        cmdBuffer.Free(context);
+        vkDestroyFence(device, fence, nullptr);
+        cmdBuffer.Free(device, cmdPool);
     }
 
     VkFormat FindSupportedFormat

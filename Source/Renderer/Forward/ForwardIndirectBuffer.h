@@ -30,7 +30,7 @@ namespace Renderer::Forward
     {
     public:
         IndirectBuffer() = default;
-        IndirectBuffer(VmaAllocator allocator);
+        IndirectBuffer(VkDevice device, VmaAllocator allocator);
 
         u32 WriteDrawCalls
         (

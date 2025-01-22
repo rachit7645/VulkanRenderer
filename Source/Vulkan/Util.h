@@ -33,7 +33,9 @@ namespace Vk
 {
     void ImmediateSubmit
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VkQueue queue,
+        VkCommandPool cmdPool,
         const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
         const std::source_location location = std::source_location::current()
     );

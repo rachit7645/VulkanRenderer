@@ -36,8 +36,8 @@ namespace Renderer
             m_modelManager.Destroy(m_context.device, m_context.allocator);
             m_megaSet.Destroy(m_context.device);
 
-            m_swapPass.Destroy(m_context);
-            m_forwardPass.Destroy(m_context);
+            m_swapPass.Destroy(m_context.device, m_context.commandPool);
+            m_forwardPass.Destroy(m_context.device, m_context.commandPool);
 
             m_context.Destroy();
         });
@@ -106,16 +106,21 @@ namespace Renderer
     {
         m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
 
-        vkWaitForFences
-        (
+        Vk::CheckResult(vkWaitForFences(
             m_context.device,
             1,
             &inFlightFences[m_currentFIF],
             VK_TRUE,
-            std::numeric_limits<u64>::max()
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fence!"
         );
 
-        vkResetFences(m_context.device, 1, &inFlightFences[m_currentFIF]);
+        Vk::CheckResult(vkResetFences(
+            m_context.device,
+            1,
+            &inFlightFences[m_currentFIF]),
+            "Unable to reset fence!"
+        );
 
         #ifdef ENGINE_DEBUG
         VkDebugUtilsLabelEXT label =
@@ -284,6 +289,21 @@ namespace Renderer
                 &inFlightFences[i]),
                 "Failed to create in flight fences!"
             );
+
+            #ifdef ENGINE_DEBUG
+            auto name = fmt::format("RenderManager/InFlightFence{}", i);
+
+            VkDebugUtilsObjectNameInfoEXT nameInfo =
+            {
+                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+                .pNext        = nullptr,
+                .objectType   = VK_OBJECT_TYPE_FENCE,
+                .objectHandle = std::bit_cast<u64>(inFlightFences[i]),
+                .pObjectName  = name.c_str()
+            };
+
+            vkSetDebugUtilsObjectNameEXT(m_context.device, &nameInfo);
+            #endif
         }
 
         m_deletionQueue.PushDeletor([&] ()

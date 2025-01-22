@@ -17,6 +17,7 @@
 #include "SwapchainPass.h"
 
 #include "Util/Log.h"
+#include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 
 namespace Renderer::Swapchain
@@ -31,7 +32,31 @@ namespace Renderer::Swapchain
         : swapchain(window, context),
           pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
-        CreateCmdBuffers(context);
+        for (usize i = 0; i < cmdBuffers.size(); ++i)
+        {
+            cmdBuffers[i] = Vk::CommandBuffer
+            (
+                context.device,
+                context.commandPool,
+                VK_COMMAND_BUFFER_LEVEL_PRIMARY
+            );
+
+            #ifdef ENGINE_DEBUG
+            auto name = fmt::format("SwapchainPass/FIF{}", i);
+
+            VkDebugUtilsObjectNameInfoEXT nameInfo =
+            {
+                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+                .pNext        = nullptr,
+                .objectType   = VK_OBJECT_TYPE_COMMAND_BUFFER,
+                .objectHandle = std::bit_cast<u64>(cmdBuffers[i].handle),
+                .pObjectName  = name.c_str()
+            };
+
+            vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+            #endif
+        }
+
         Logger::Info("{}\n", "Created swapchain pass!");
     }
 
@@ -59,6 +84,20 @@ namespace Renderer::Swapchain
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        #ifdef ENGINE_DEBUG
+        auto name = fmt::format("SwapchainPass/{}", FIF);
+
+        const VkDebugUtilsLabelEXT label =
+        {
+            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+            .pNext      = nullptr,
+            .pLabelName = name.c_str(),
+            .color      = {}
+        };
+
+        vkCmdBeginDebugUtilsLabelEXT(currentCmdBuffer.handle, &label);
+        #endif
 
         currentImage.Barrier
         (
@@ -195,6 +234,10 @@ namespace Renderer::Swapchain
             }
         );
 
+        #ifdef ENGINE_DEBUG
+        vkCmdEndDebugUtilsLabelEXT(currentCmdBuffer.handle);
+        #endif
+
         currentCmdBuffer.EndRecording();
     }
 
@@ -203,29 +246,16 @@ namespace Renderer::Swapchain
         swapchain.Present(queue, FIF);
     }
 
-    void SwapchainPass::CreateCmdBuffers(const Vk::Context& context)
-    {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                "SwapchainPass/FIF" + std::to_string(i)
-            );
-        }
-    }
-
-    void SwapchainPass::Destroy(const Vk::Context& context)
+    void SwapchainPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying swapchain pass!");
 
         for (auto&& cmdBuffer : cmdBuffers)
         {
-            cmdBuffer.Free(context);
+            cmdBuffer.Free(device, cmdPool);
         }
 
-        swapchain.Destroy(context.device);
-        pipeline.Destroy(context.device);
+        swapchain.Destroy(device);
+        pipeline.Destroy(device);
     }
 }

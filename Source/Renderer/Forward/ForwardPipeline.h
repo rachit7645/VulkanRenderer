@@ -41,7 +41,7 @@ namespace Renderer::Forward
 
         PushConstant pushConstant = {};
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneSSBOs = {};
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneBuffers = {};
 
         MeshBuffer     meshBuffer;
         IndirectBuffer indirectBuffer;

@@ -60,7 +60,6 @@ namespace Vk
         void CreateSwapChain(const Engine::Window& window, const Vk::Context& context);
         void DestroySwapchain(VkDevice device);
 
-        void CreateImageViews(VkDevice device);
         void CreateSyncObjects(VkDevice device);
 
         [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;

@@ -39,9 +39,9 @@ namespace Vk
     constexpr std::array REQUIRED_EXTENSIONS =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+        VK_EXT_MEMORY_BUDGET_EXTENSION_NAME
         #ifdef ENGINE_DEBUG
-        VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
+        , VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
         #endif
     };
 
@@ -56,6 +56,8 @@ namespace Vk
 
         CreateCommandPool();
         CreateAllocator();
+
+        AddDebugNames();
 
         Logger::Info("{}\n", "Initialised vulkan context!");
     }
@@ -434,6 +436,50 @@ namespace Vk
         {
             vmaDestroyAllocator(allocator);
         });
+    }
+
+    void Context::AddDebugNames()
+    {
+        #ifdef ENGINE_DEBUG
+        VkDebugUtilsObjectNameInfoEXT nameInfo =
+        {
+            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .pNext        = nullptr,
+            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
+            .objectHandle = 0,
+            .pObjectName  = nullptr
+        };
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_INSTANCE;
+        nameInfo.objectHandle = std::bit_cast<u64>(instance);
+        nameInfo.pObjectName  = "Instance";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_PHYSICAL_DEVICE;
+        nameInfo.objectHandle = std::bit_cast<u64>(physicalDevice);
+        nameInfo.pObjectName  = "PhysicalDevice";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_DEVICE;
+        nameInfo.objectHandle = std::bit_cast<u64>(device);
+        nameInfo.pObjectName  = "Device";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_SURFACE_KHR;
+        nameInfo.objectHandle = std::bit_cast<u64>(surface);
+        nameInfo.pObjectName  = "SDL3Surface";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_QUEUE;
+        nameInfo.objectHandle = std::bit_cast<u64>(graphicsQueue);
+        nameInfo.pObjectName  = "GraphicsQueue";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_COMMAND_POOL;
+        nameInfo.objectHandle = std::bit_cast<u64>(commandPool);
+        nameInfo.pObjectName  = "GlobalCommandPool";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+        #endif
     }
 
     void Context::Destroy()

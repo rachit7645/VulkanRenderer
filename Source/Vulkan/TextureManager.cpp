@@ -23,7 +23,34 @@
 
 namespace Vk
 {
-    constexpr u32 MAX_TEXTURE_COUNT = 1 << 16;
+    constexpr u32          MAX_TEXTURE_COUNT   = 1 << 16;
+    constexpr VkDeviceSize STAGING_BUFFER_SIZE = 64 * 1024 * 1024;
+
+    TextureManager::TextureManager(UNUSED VkDevice device, VmaAllocator allocator)
+    {
+        m_stagingBuffer = Vk::Buffer
+        (
+            allocator,
+            STAGING_BUFFER_SIZE,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        #ifdef ENGINE_DEBUG
+        VkDebugUtilsObjectNameInfoEXT nameInfo =
+        {
+            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .pNext        = nullptr,
+            .objectType   = VK_OBJECT_TYPE_BUFFER,
+            .objectHandle = std::bit_cast<u64>(m_stagingBuffer.handle),
+            .pObjectName  = "TextureManager/StagingBuffer"
+        };
+
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+        #endif
+    }
 
     usize TextureManager::AddTexture
     (
@@ -37,7 +64,7 @@ namespace Vk
 
         if (!textureMap.contains(pathHash))
         {
-            const auto texture = Vk::Texture(context, path, flags);
+            const auto texture = Vk::Texture(context, m_stagingBuffer, path, flags);
             const auto id      = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             textureMap.emplace(pathHash, TextureInfo(id, texture));
@@ -50,7 +77,12 @@ namespace Vk
         return pathHash;
     }
 
-    u32 TextureManager::AddSampler(Vk::MegaSet& megaSet, VkDevice device, const VkSamplerCreateInfo& createInfo)
+    u32 TextureManager::AddSampler
+    (
+        Vk::MegaSet& megaSet,
+        VkDevice device,
+        const VkSamplerCreateInfo& createInfo
+    )
     {
         const auto sampler = Vk::Sampler(device, createInfo);
         const auto id      = megaSet.WriteSampler(sampler);
@@ -98,6 +130,8 @@ namespace Vk
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
+        m_stagingBuffer.Destroy(allocator);
+
         for (auto& [textureID, texture] : textureMap | std::views::values)
         {
             texture.Destroy(device, allocator);

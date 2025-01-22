@@ -20,19 +20,34 @@ namespace Renderer::Forward
 {
     constexpr usize INDIRECT_BUFFER_SIZE = (1 << 16) * sizeof(VkDrawIndexedIndirectCommand);
 
-    IndirectBuffer::IndirectBuffer(VmaAllocator allocator)
+    IndirectBuffer::IndirectBuffer(UNUSED VkDevice device, VmaAllocator allocator)
     {
-        for (auto& buffer : buffers)
+        for (usize i = 0; i < buffers.size(); ++i)
         {
-            buffer = Vk::Buffer
+            buffers[i] = Vk::Buffer
             (
                 allocator,
                 INDIRECT_BUFFER_SIZE,
                 VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
+
+            #ifdef ENGINE_DEBUG
+            auto name = fmt::format("IndirectBuffer/{}", i);
+
+            VkDebugUtilsObjectNameInfoEXT nameInfo =
+            {
+                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+                .pNext        = nullptr,
+                .objectType   = VK_OBJECT_TYPE_BUFFER,
+                .objectHandle = std::bit_cast<u64>(buffers[i].handle),
+                .pObjectName  = name.c_str()
+            };
+
+            vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+            #endif
         }
     }
 

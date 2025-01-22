@@ -20,33 +20,32 @@
 
 namespace Vk
 {
-    CommandBuffer::CommandBuffer(const Vk::Context& context, VkCommandBufferLevel level, const std::string_view name)
-        : level(level),
-          m_name(name)
+    CommandBuffer::CommandBuffer(VkDevice device, VkCommandPool cmdPool, VkCommandBufferLevel level)
+        : level(level)
     {
         const VkCommandBufferAllocateInfo allocInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext              = nullptr,
-            .commandPool        = context.commandPool,
+            .commandPool        = cmdPool,
             .level              = level,
             .commandBufferCount = 1
         };
 
         Vk::CheckResult(vkAllocateCommandBuffers(
-            context.device,
+            device,
             &allocInfo,
             &handle),
             "Failed to allocate command buffers!"
         );
     }
 
-    void CommandBuffer::Free(const Vk::Context& context)
+    void CommandBuffer::Free(VkDevice device, VkCommandPool cmdPool)
     {
         vkFreeCommandBuffers
         (
-            context.device,
-            context.commandPool,
+            device,
+            cmdPool,
             1,
             &handle
         );
@@ -63,25 +62,10 @@ namespace Vk
         };
 
         Vk::CheckResult(vkBeginCommandBuffer(handle, &beginInfo), "Failed to begin recording command buffer!");
-
-        #ifdef ENGINE_DEBUG
-        const VkDebugUtilsLabelEXT label =
-        {
-            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext      = nullptr,
-            .pLabelName = m_name.c_str(),
-            .color      = {}
-        };
-
-        vkCmdBeginDebugUtilsLabelEXT(handle, &label);
-        #endif
     }
 
     void CommandBuffer::EndRecording() const
     {
-        #ifdef ENGINE_DEBUG
-        vkCmdEndDebugUtilsLabelEXT(handle);
-        #endif
         Vk::CheckResult(vkEndCommandBuffer(handle), "Failed to end command buffer recording!");
     }
 

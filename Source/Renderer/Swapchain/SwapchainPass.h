@@ -42,7 +42,7 @@ namespace Renderer::Swapchain
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(const Vk::Context& context);
+        void Destroy(VkDevice device, VkCommandPool cmdPool);
 
         void Render(const Vk::MegaSet& megaSet, usize FIF);
         void Present(VkQueue queue, usize FIF);
@@ -51,8 +51,6 @@ namespace Renderer::Swapchain
         Swapchain::SwapchainPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
-    private:
-        void CreateCmdBuffers(const Vk::Context& context);
     };
 }
 

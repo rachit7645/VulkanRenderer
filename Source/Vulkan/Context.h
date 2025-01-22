@@ -73,8 +73,9 @@ namespace Vk
         );
 
         void CreateCommandPool();
-        void CreateDescriptorCache();
         void CreateAllocator();
+
+        void AddDebugNames();
 
         // Extensions
         Vk::Extensions m_extensions = {};

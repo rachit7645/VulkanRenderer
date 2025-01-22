@@ -60,4 +60,9 @@ namespace Engine::Files
 
         return binary;
     }
+
+    std::string GetNameWithoutExtension(const std::string_view fileName)
+    {
+        return filesystem::path(fileName).stem().string();
+    }
 }

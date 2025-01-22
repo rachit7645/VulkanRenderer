@@ -34,6 +34,8 @@ namespace Vk
             Vk::Texture texture;
         };
 
+        TextureManager(VkDevice device, VmaAllocator allocator);
+
         [[nodiscard]] usize AddTexture
         (
             Vk::MegaSet& megaSet,
@@ -42,7 +44,12 @@ namespace Vk
             Texture::Flags flags
         );
 
-        [[nodiscard]] u32 AddSampler(Vk::MegaSet& megaSet, VkDevice device, const VkSamplerCreateInfo& createInfo);
+        [[nodiscard]] u32 AddSampler
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            const VkSamplerCreateInfo& createInfo
+        );
 
         [[nodiscard]] u32 GetTextureID(usize pathHash) const;
         [[nodiscard]] const Vk::Texture& GetTexture(usize pathHash) const;
@@ -53,6 +60,8 @@ namespace Vk
 
         std::unordered_map<usize, TextureInfo> textureMap;
         std::unordered_map<u32, Vk::Sampler>   samplerMap;
+    private:
+        Vk::Buffer m_stagingBuffer;
     };
 }
 

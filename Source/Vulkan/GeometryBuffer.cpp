@@ -58,6 +58,29 @@ namespace Vk
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
+
+        #ifdef ENGINE_DEBUG
+        VkDebugUtilsObjectNameInfoEXT nameInfo =
+        {
+            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .pNext        = nullptr,
+            .objectType   = VK_OBJECT_TYPE_BUFFER,
+            .objectHandle = 0,
+            .pObjectName  = nullptr
+        };
+
+        nameInfo.objectHandle = std::bit_cast<u64>(indexBuffer.handle);
+        nameInfo.pObjectName  = "GeometryBuffer/IndexBuffer";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectHandle = std::bit_cast<u64>(vertexBuffer.handle);
+        nameInfo.pObjectName  = "GeometryBuffer/VertexBuffer";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+
+        nameInfo.objectHandle = std::bit_cast<u64>(m_stagingBuffer.handle);
+        nameInfo.pObjectName  = "GeometryBuffer/StagingBuffer";
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+        #endif
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
@@ -69,10 +92,16 @@ namespace Vk
     {
         Models::Info indexInfo = {};
 
-        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
-        {
-            indexInfo = UploadIndices(cmdBuffer, indices);
-        });
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&](const Vk::CommandBuffer& cmdBuffer)
+            {
+                indexInfo = UploadIndices(cmdBuffer, indices);
+            }
+        );
 
         return indexInfo;
     }
@@ -81,10 +110,16 @@ namespace Vk
     {
         Models::Info vertexInfo = {};
 
-        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
-        {
-            vertexInfo = UploadVertices(cmdBuffer, vertices);
-        });
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&](const Vk::CommandBuffer& cmdBuffer)
+            {
+                vertexInfo = UploadVertices(cmdBuffer, vertices);
+            }
+        );
 
         return vertexInfo;
     }

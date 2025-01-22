@@ -35,7 +35,68 @@ namespace Vk
     )
         : Image(VK_NULL_HANDLE, width, height, mipLevels, format, tiling, aspect)
     {
-        CreateImage(allocator, usage);
+        VkImageCreateInfo imageInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = format,
+            .extent                = {width, height, 1},
+            .mipLevels             = mipLevels,
+            .arrayLayers           = 1,
+            .samples               = VK_SAMPLE_COUNT_1_BIT,
+            .tiling                = tiling,
+            .usage                 = usage,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr,
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        VmaAllocationCreateInfo allocInfo =
+        {
+            .flags          = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
+            .usage          = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+            #ifdef ENGINE_DEBUG
+            .requiredFlags  = 0,
+            .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            #else
+            .requiredFlags  = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            .preferredFlags = 0,
+            #endif
+            .memoryTypeBits = 0,
+            .pool           = VK_NULL_HANDLE,
+            .pUserData      = nullptr,
+            .priority       = 0.0f
+        };
+
+        Vk::CheckResult(vmaCreateImage(
+            allocator,
+            &imageInfo,
+            &allocInfo,
+            &handle,
+            &allocation,
+            &allocationInfo),
+            "Failed to create image!"
+        );
+
+        #ifdef ENGINE_DEBUG
+        VkMemoryPropertyFlags flags;
+        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &flags);
+
+        if (!(flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+        {
+            Logger::Warning
+            (
+                "Image not allocated from device local memory! May harm performance. [handle={}] [allocation={}] [flags={}]\n",
+                std::bit_cast<void*>(handle),
+                std::bit_cast<void*>(allocation),
+                string_VkMemoryPropertyFlags(flags)
+            );
+        }
+        #endif
+
         Logger::Debug("Created image! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
@@ -70,64 +131,6 @@ namespace Vk
                aspect == rhs.aspect;
     }
 
-    void Image::CreateImage(VmaAllocator allocator, VkImageUsageFlags usage)
-    {
-        VkImageCreateInfo imageInfo =
-        {
-            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = 0,
-            .imageType             = VK_IMAGE_TYPE_2D,
-            .format                = format,
-            .extent                = {width, height, 1},
-            .mipLevels             = mipLevels,
-            .arrayLayers           = 1,
-            .samples               = VK_SAMPLE_COUNT_1_BIT,
-            .tiling                = tiling,
-            .usage                 = usage,
-            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices   = nullptr,
-            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-        };
-        
-        VmaAllocationCreateInfo allocInfo =
-        {
-            .flags          = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
-            .usage          = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-            .requiredFlags  = 0,
-            .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            .memoryTypeBits = 0,
-            .pool           = VK_NULL_HANDLE,
-            .pUserData      = nullptr,
-            .priority       = 0.0f
-        };
-        
-        Vk::CheckResult(vmaCreateImage(
-            allocator,
-            &imageInfo,
-            &allocInfo,
-            &handle,
-            &allocation,
-            &allocationInfo),
-            "Failed to create image!"
-        );
-
-        VkMemoryPropertyFlags flags;
-        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &flags);
-
-        if (!(flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
-        {
-            Logger::Warning
-            (
-                "Image not allocated from device local memory! May harm performance. [handle={}] [allocation={}] [flags={}]\n",
-                std::bit_cast<void*>(handle),
-                std::bit_cast<void*>(allocation),
-                string_VkMemoryPropertyFlags(flags)
-            );
-        }
-    }
-
     void Image::Barrier
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -137,7 +140,7 @@ namespace Vk
         VkAccessFlags2 dstAccessMask,
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
-        VkImageSubresourceRange subresourceRange
+        const VkImageSubresourceRange& subresourceRange
     )
     {
         VkImageMemoryBarrier2 barrier =

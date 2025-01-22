@@ -46,14 +46,16 @@ namespace Vk
             depthImage,
             VK_IMAGE_VIEW_TYPE_2D,
             depthImage.format,
-            static_cast<VkImageAspectFlagBits>(depthImage.aspect),
-            0,
-            1,
-            0,
-            1
+            {
+                .aspectMask     = depthImage.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = depthImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
         );
 
-        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
+        Vk::ImmediateSubmit(context.device, context.graphicsQueue, context.commandPool, [&](const Vk::CommandBuffer& cmdBuffer)
         {
             depthImage.Barrier
             (

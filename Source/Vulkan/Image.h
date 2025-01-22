@@ -64,7 +64,7 @@ namespace Vk
             VkAccessFlags2 dstAccessMask,
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
-            VkImageSubresourceRange subresourceRange
+            const VkImageSubresourceRange& subresourceRange
         );
 
         void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer);
@@ -85,8 +85,6 @@ namespace Vk
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
-    private:
-        void CreateImage(VmaAllocator allocator, VkImageUsageFlags usage);
     };
 }
 

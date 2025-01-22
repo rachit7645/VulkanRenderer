@@ -21,7 +21,8 @@
 namespace Models
 {
     ModelManager::ModelManager(const Vk::Context& context)
-        : geometryBuffer(context.device, context.allocator)
+        : geometryBuffer(context.device, context.allocator),
+          textureManager(context.device, context.allocator)
     {
     }
 

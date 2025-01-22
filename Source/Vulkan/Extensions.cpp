@@ -74,6 +74,10 @@ namespace Vk
         g_ExtensionState.p_QueueEndDebugUtilsLabelEXT = LoadExtension<PFN_vkQueueEndDebugUtilsLabelEXT>(
             instance, "vkQueueEndDebugUtilsLabelEXT"
         );
+
+        g_ExtensionState.p_SetDebugUtilsObjectNameEXT = LoadExtension<PFN_vkSetDebugUtilsObjectNameEXT>(
+            instance, "vkSetDebugUtilsObjectNameEXT"
+        );
         #endif
     }
 
@@ -166,6 +170,12 @@ extern "C"
     {
         auto fn = Vk::g_ExtensionState.p_QueueEndDebugUtilsLabelEXT;
         fn != nullptr ? fn(queue) : (void) fn;
+    }
+
+    VKAPI_ATTR VkResult VKAPI_CALL vkSetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
+    {
+        auto fn = Vk::g_ExtensionState.p_SetDebugUtilsObjectNameEXT;
+        return fn != nullptr ? fn(device, pNameInfo) : VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
     #endif

@@ -25,7 +25,13 @@
 
 namespace Vk
 {
-    Texture::Texture(const Vk::Context& context, const std::string_view path, Texture::Flags flags)
+    Texture::Texture
+    (
+        const Vk::Context& context,
+        const Vk::Buffer& stagingBuffer,
+        const std::string_view path,
+        Flags flags
+    )
     {
         auto candidates = IsFlagSet(flags, Flags::IsSRGB) ?
                           std::array{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB} :
@@ -51,19 +57,17 @@ namespace Vk
         auto         imageData = STB::Image(path, components);
         VkDeviceSize imageSize = imageData.width * imageData.height * components;
 
-        auto stagingBuffer = Vk::Buffer
-        (
-            context.allocator,
-            imageSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
-        );
+        if (imageSize > stagingBuffer.allocInfo.size)
+        {
+            Logger::Error
+            (
+                "Not enough space in staging buffer! [ImageSize={}] [BufferSize={}]\n",
+                imageSize,
+                stagingBuffer.allocInfo.size
+            );
+        }
 
-        stagingBuffer.Map(context.allocator);
-            std::memcpy(stagingBuffer.allocInfo.pMappedData, imageData.data, imageSize);
-        stagingBuffer.Unmap(context.allocator);
+        std::memcpy(stagingBuffer.allocInfo.pMappedData, imageData.data, imageSize);
 
         auto mipLevels = IsFlagSet(flags, Flags::GenMipmaps) ?
                          static_cast<u32>(std::floor(std::log2(std::max(imageData.width, imageData.height)))) + 1 :
@@ -82,72 +86,33 @@ namespace Vk
         );
 
         // Transfer
-        Vk::ImmediateSubmit(context, [&](const Vk::CommandBuffer& cmdBuffer)
-        {
-            image.Barrier
-            (
-                cmdBuffer,
-                VK_PIPELINE_STAGE_2_NONE,
-                VK_ACCESS_2_NONE,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                {
-                    .aspectMask     = image.aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = image.mipLevels,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            );
-
-            VkBufferImageCopy2 copyRegion =
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&](const Vk::CommandBuffer& cmdBuffer)
             {
-                .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
-                .pNext             = nullptr,
-                .bufferOffset      = 0,
-                .bufferRowLength   = 0,
-                .bufferImageHeight = 0,
-                .imageSubresource  = {
-                    .aspectMask     = image.aspect,
-                    .mipLevel       = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                },
-                .imageOffset       = {0, 0, 0},
-                .imageExtent       = {image.width, image.height, 1}
-            };
+                stagingBuffer.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_HOST_BIT,
+                    VK_ACCESS_2_HOST_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_READ_BIT,
+                    0,
+                    imageSize
+                );
 
-            VkCopyBufferToImageInfo2 copyInfo =
-            {
-                .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
-                .pNext          = nullptr,
-                .srcBuffer      = stagingBuffer.handle,
-                .dstImage       = image.handle,
-                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .regionCount    = 1,
-                .pRegions       = &copyRegion
-            };
-
-            vkCmdCopyBufferToImage2(cmdBuffer.handle, &copyInfo);
-
-            if (IsFlagSet(flags, Flags::GenMipmaps))
-            {
-                image.GenerateMipmaps(cmdBuffer);
-            }
-            else
-            {
-                // Mipmap generation would change layout automatically
                 image.Barrier
                 (
                     cmdBuffer,
+                    VK_PIPELINE_STAGE_2_NONE,
+                    VK_ACCESS_2_NONE,
                     VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                     VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                    VK_ACCESS_2_SHADER_READ_BIT,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     {
                         .aspectMask     = image.aspect,
                         .baseMipLevel   = 0,
@@ -156,8 +121,64 @@ namespace Vk
                         .layerCount     = 1
                     }
                 );
+
+                VkBufferImageCopy2 copyRegion =
+                {
+                    .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                    .pNext             = nullptr,
+                    .bufferOffset      = 0,
+                    .bufferRowLength   = 0,
+                    .bufferImageHeight = 0,
+                    .imageSubresource  = {
+                        .aspectMask     = image.aspect,
+                        .mipLevel       = 0,
+                        .baseArrayLayer = 0,
+                        .layerCount     = 1
+                    },
+                    .imageOffset       = {0, 0, 0},
+                    .imageExtent       = {image.width, image.height, 1}
+                };
+
+                VkCopyBufferToImageInfo2 copyInfo =
+                {
+                    .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
+                    .pNext          = nullptr,
+                    .srcBuffer      = stagingBuffer.handle,
+                    .dstImage       = image.handle,
+                    .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .regionCount    = 1,
+                    .pRegions       = &copyRegion
+                };
+
+                vkCmdCopyBufferToImage2(cmdBuffer.handle, &copyInfo);
+
+                if (IsFlagSet(flags, Flags::GenMipmaps))
+                {
+                    image.GenerateMipmaps(cmdBuffer);
+                }
+                else
+                {
+                    // Mipmap generation would change layout automatically
+                    image.Barrier
+                    (
+                        cmdBuffer,
+                        VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                        VK_ACCESS_2_SHADER_READ_BIT,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        {
+                            .aspectMask     = image.aspect,
+                            .baseMipLevel   = 0,
+                            .levelCount     = image.mipLevels,
+                            .baseArrayLayer = 0,
+                            .layerCount     = 1
+                        }
+                    );
+                }
             }
-        });
+        );
 
         imageView = Vk::ImageView
         (
@@ -165,14 +186,38 @@ namespace Vk
             image,
             VK_IMAGE_VIEW_TYPE_2D,
             image.format,
-            image.aspect,
-            0,
-            image.mipLevels,
-            0,
-            1
+            {
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
         );
 
-        stagingBuffer.Destroy(context.allocator);
+        #ifdef ENGINE_DEBUG
+        auto name = Engine::Files::GetNameWithoutExtension(path);
+
+        VkDebugUtilsObjectNameInfoEXT nameInfo =
+        {
+            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .pNext        = nullptr,
+            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
+            .objectHandle = 0,
+            .pObjectName  = nullptr
+        };
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE;
+        nameInfo.objectHandle = std::bit_cast<u64>(image.handle);
+        nameInfo.pObjectName  = name.c_str();
+        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+
+        auto nameImageView = name + "_View";
+        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE_VIEW;
+        nameInfo.objectHandle = std::bit_cast<u64>(imageView.handle);
+        nameInfo.pObjectName  = nameImageView.c_str();
+        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+        #endif
 
         Logger::Debug("Loaded texture! [Path={}]\n", path);
     }

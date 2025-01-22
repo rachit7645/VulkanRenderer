@@ -157,308 +157,17 @@ namespace Models
 
         if (node.meshIndex.has_value())
         {
-            const auto& mesh = asset.meshes[node.meshIndex.value()];
-
-            for (const auto& primitive : mesh.primitives)
-            {
-                std::vector<Index>  indices  = {};
-                std::vector<Vertex> vertices = {};
-                Material            material = {};
-
-                if (primitive.type != fastgltf::PrimitiveType::Triangles)
-                {
-                    Logger::Warning
-                    (
-                        "Unsupported primitive type! [Type={}] [Node={}]\n",
-                        static_cast<std::underlying_type_t<fastgltf::PrimitiveType>>(primitive.type),
-                        nodeIndex
-                    );
-                }
-
-                // Indices
-                {
-                    if (!primitive.indicesAccessor.has_value())
-                    {
-                        Logger::Error("Primitive does not contain indices accessor! [Node={}]\n", nodeIndex);
-                    }
-
-                    const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
-                    indices.reserve(indicesAccessor.count);
-
-                    if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
-                    {
-                        Logger::Error
-                        (
-                            "Invalid indices accessor type! [AccessorType={}] [Node={}]\n",
-                            static_cast<std::underlying_type_t<fastgltf::AccessorType>>(indicesAccessor.type),
-                            nodeIndex
-                        );
-                    }
-
-                    // Assume indices are u32s
-                    switch (indicesAccessor.componentType)
-                    {
-                    case fastgltf::ComponentType::Byte:
-                    {
-                        fastgltf::iterateAccessor<s8>(asset, indicesAccessor, [&] (s8 index)
-                        {
-                            indices.push_back(static_cast<Index>(index));
-                        });
-                        break;
-                    }
-
-                    case fastgltf::ComponentType::UnsignedByte:
-                    {
-                        fastgltf::iterateAccessor<u8>(asset, indicesAccessor, [&] (u8 index)
-                        {
-                            indices.push_back(static_cast<Index>(index));
-                        });
-                        break;
-                    }
-
-                    case fastgltf::ComponentType::Short:
-                    {
-                        fastgltf::iterateAccessor<s16>(asset, indicesAccessor, [&] (s16 index)
-                        {
-                            indices.push_back(static_cast<Index>(index));
-                        });
-                        break;
-                    }
-
-                    case fastgltf::ComponentType::UnsignedShort:
-                    {
-                        fastgltf::iterateAccessor<u16>(asset, indicesAccessor, [&] (u16 index)
-                        {
-                            indices.push_back(static_cast<Index>(index));
-                        });
-                        break;
-                    }
-
-                    case fastgltf::ComponentType::UnsignedInt:
-                    {
-                        indices.resize(indicesAccessor.count);
-                        fastgltf::copyFromAccessor<u32>(asset, indicesAccessor, indices.data());
-                        break;
-                    }
-
-                    default:
-                        Logger::Error
-                        (
-                            "Invalid index component type! [ComponentType={}] [Node={}]\n",
-                            static_cast<std::underlying_type_t<fastgltf::ComponentType>>(indicesAccessor.componentType),
-                            nodeIndex
-                        );
-                    }
-                }
-
-                // Position
-                {
-                    const auto& positionAccessor = GetAccesor
-                    (
-                        asset,
-                        primitive,
-                        "POSITION",
-                        fastgltf::AccessorType::Vec3
-                    );
-
-                    vertices.reserve(positionAccessor.count);
-
-                    fastgltf::iterateAccessor<glm::vec3>(asset, positionAccessor, [&] (const glm::vec3& position)
-                    {
-                        Vertex vertex = {};
-                        vertex.position = position;
-                        vertices.emplace_back(vertex);
-                    });
-                }
-
-                // Normals
-                {
-                    const auto& normalAccessor = GetAccesor
-                    (
-                        asset,
-                        primitive,
-                        "NORMAL",
-                        fastgltf::AccessorType::Vec3
-                    );
-
-                    fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, normalAccessor, [&] (const glm::vec3& normal, usize index)
-                    {
-                        vertices[index].normal = normal;
-                    });
-                }
-
-                // UVs
-                {
-                    const auto& uvAccessor = GetAccesor
-                    (
-                        asset,
-                        primitive,
-                        "TEXCOORD_0",
-                        fastgltf::AccessorType::Vec2
-                    );
-
-                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uvAccessor, [&] (const glm::vec2& uv, usize index)
-                    {
-                        vertices[index].uv0 = uv;
-                    });
-                }
-
-                // Tangent
-                {
-                    const auto& tangentAccessor = GetAccesor
-                    (
-                        asset,
-                        primitive,
-                        "TANGENT",
-                        fastgltf::AccessorType::Vec4
-                    );
-
-                    fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
-                    {
-                        vertices[index].tangent = tangent;
-                    });
-                }
-
-                if (!primitive.materialIndex.has_value())
-                {
-                    Logger::Error("No material in primitive! [Node={}]\n", nodeIndex);
-                }
-
-                const auto& mat = asset.materials[primitive.materialIndex.value()];
-
-                // Material Factors
-                {
-                    material.albedoFactor    = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
-                    material.roughnessFactor = mat.pbrData.roughnessFactor;
-                    material.metallicFactor  = mat.pbrData.metallicFactor;
-                }
-
-                // Albedo
-                {
-                    const auto& baseColorTexture = mat.pbrData.baseColorTexture;
-
-                    if (baseColorTexture.has_value())
-                    {
-                        // FIXME: Support multiple UV channels
-                        if (baseColorTexture->texCoordIndex != 0)
-                        {
-                            Logger::Warning
-                            (
-                                "Albedo uses more than one UV channel! [texCoordIndex={}] [Node={}] \n",
-                                baseColorTexture->texCoordIndex,
-                                nodeIndex
-                            );
-                        }
-
-                        material.albedo = LoadTexture
-                        (
-                            context,
-                            megaSet,
-                            textureManager,
-                            directory,
-                            asset,
-                            baseColorTexture->textureIndex,
-                            ALBEDO_FLAGS
-                        );
-                    }
-                    else
-                    {
-                        material.albedo = textureManager.AddTexture
-                        (
-                            megaSet,
-                            context,
-                            Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO),
-                            ALBEDO_FLAGS
-                        );
-                    }
-                }
-
-                // Normal
-                {
-                    if (mat.normalTexture.has_value())
-                    {
-                        // FIXME: Support multiple UV channels
-                        if (mat.normalTexture->texCoordIndex != 0)
-                        {
-                            Logger::Warning
-                            (
-                                "Normal uses more than one UV channel! [texCoordIndex={}] [Node={}] \n",
-                                mat.normalTexture->texCoordIndex,
-                                nodeIndex
-                            );
-                        }
-
-                        material.normal = LoadTexture
-                        (
-                            context,
-                            megaSet,
-                            textureManager,
-                            directory,
-                            asset,
-                            mat.normalTexture->textureIndex,
-                            NORMAL_FLAGS
-                        );
-                    }
-                    else
-                    {
-                        material.normal = textureManager.AddTexture
-                        (
-                            megaSet,
-                            context,
-                            Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL),
-                            NORMAL_FLAGS
-                        );
-                    }
-                }
-
-                // AO + Roughness + Metallic
-                {
-                    const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
-
-                    if (metallicRoughnessTexture.has_value())
-                    {
-                        // FIXME: Support multiple UV channels
-                        if (metallicRoughnessTexture->texCoordIndex != 0)
-                        {
-                            Logger::Warning
-                            (
-                                "AoRghMtl uses more than one UV channel! [texCoordIndex={}] [Node={}] \n",
-                                metallicRoughnessTexture->texCoordIndex,
-                                nodeIndex
-                            );
-                        }
-
-                        material.aoRghMtl = LoadTexture
-                        (
-                            context,
-                            megaSet,
-                            textureManager,
-                            directory,
-                            asset,
-                            metallicRoughnessTexture->textureIndex,
-                            AO_RGH_MTL_FLAGS
-                        );
-                    }
-                    else
-                    {
-                        material.aoRghMtl = textureManager.AddTexture
-                        (
-                            megaSet,
-                            context,
-                            Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL),
-                            AO_RGH_MTL_FLAGS
-                        );
-                    }
-                }
-
-                meshes.emplace_back
-                (
-                    geometryBuffer.LoadIndices(context, indices),
-                    geometryBuffer.LoadVertices(context, vertices),
-                    material,
-                    nodeMatrix
-                );
-            }
+            LoadMesh
+            (
+                context,
+                megaSet,
+                geometryBuffer,
+                textureManager,
+                directory,
+                asset,
+                asset.meshes[node.meshIndex.value()],
+                nodeMatrix
+            );
         }
 
         for (const auto child : node.children)
@@ -472,6 +181,315 @@ namespace Models
                 directory,
                 asset,
                 child,
+                nodeMatrix
+            );
+        }
+    }
+
+    void Model::LoadMesh
+    (
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
+        const std::string& directory,
+        const fastgltf::Asset& asset,
+        const fastgltf::Mesh& mesh,
+        const glm::mat4& nodeMatrix
+    )
+    {
+        for (const auto& primitive : mesh.primitives)
+        {
+            std::vector<Index>  indices  = {};
+            std::vector<Vertex> vertices = {};
+            Material            material = {};
+
+            if (primitive.type != fastgltf::PrimitiveType::Triangles)
+            {
+                Logger::Warning
+                (
+                    "Unsupported primitive type! [Type={}]\n",
+                    static_cast<std::underlying_type_t<fastgltf::PrimitiveType>>(primitive.type)
+                );
+            }
+
+            // Indices
+            {
+                if (!primitive.indicesAccessor.has_value())
+                {
+                    Logger::Error("{}\n", "Primitive does not contain indices accessor!");
+                }
+
+                const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
+                indices.reserve(indicesAccessor.count);
+
+                if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
+                {
+                    Logger::Error
+                    (
+                        "Invalid indices accessor type! [AccessorType={}]\n",
+                        static_cast<std::underlying_type_t<fastgltf::AccessorType>>(indicesAccessor.type)
+                    );
+                }
+
+                // Assume indices are u32s
+                switch (indicesAccessor.componentType)
+                {
+                case fastgltf::ComponentType::Byte:
+                {
+                    fastgltf::iterateAccessor<s8>(asset, indicesAccessor, [&] (s8 index)
+                    {
+                        indices.push_back(static_cast<Index>(index));
+                    });
+                    break;
+                }
+
+                case fastgltf::ComponentType::UnsignedByte:
+                {
+                    fastgltf::iterateAccessor<u8>(asset, indicesAccessor, [&] (u8 index)
+                    {
+                        indices.push_back(static_cast<Index>(index));
+                    });
+                    break;
+                }
+
+                case fastgltf::ComponentType::Short:
+                {
+                    fastgltf::iterateAccessor<s16>(asset, indicesAccessor, [&] (s16 index)
+                    {
+                        indices.push_back(static_cast<Index>(index));
+                    });
+                    break;
+                }
+
+                case fastgltf::ComponentType::UnsignedShort:
+                {
+                    fastgltf::iterateAccessor<u16>(asset, indicesAccessor, [&] (u16 index)
+                    {
+                        indices.push_back(static_cast<Index>(index));
+                    });
+                    break;
+                }
+
+                case fastgltf::ComponentType::UnsignedInt:
+                {
+                    indices.resize(indicesAccessor.count);
+                    fastgltf::copyFromAccessor<u32>(asset, indicesAccessor, indices.data());
+                    break;
+                }
+
+                default:
+                    Logger::Error
+                    (
+                        "Invalid index component type! [ComponentType={}]\n",
+                        static_cast<std::underlying_type_t<fastgltf::ComponentType>>(indicesAccessor.componentType)
+                    );
+                }
+            }
+
+            // Position
+            {
+                const auto& positionAccessor = GetAccesor
+                (
+                    asset,
+                    primitive,
+                    "POSITION",
+                    fastgltf::AccessorType::Vec3
+                );
+
+                vertices.reserve(positionAccessor.count);
+
+                fastgltf::iterateAccessor<glm::vec3>(asset, positionAccessor, [&] (const glm::vec3& position)
+                {
+                    Vertex vertex = {};
+                    vertex.position = position;
+                    vertices.emplace_back(vertex);
+                });
+            }
+
+            // Normals
+            {
+                const auto& normalAccessor = GetAccesor
+                (
+                    asset,
+                    primitive,
+                    "NORMAL",
+                    fastgltf::AccessorType::Vec3
+                );
+
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, normalAccessor, [&] (const glm::vec3& normal, usize index)
+                {
+                    vertices[index].normal = normal;
+                });
+            }
+
+            // UVs
+            {
+                const auto& uvAccessor = GetAccesor
+                (
+                    asset,
+                    primitive,
+                    "TEXCOORD_0",
+                    fastgltf::AccessorType::Vec2
+                );
+
+                fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uvAccessor, [&] (const glm::vec2& uv, usize index)
+                {
+                    vertices[index].uv0 = uv;
+                });
+            }
+
+            // Tangent
+            {
+                const auto& tangentAccessor = GetAccesor
+                (
+                    asset,
+                    primitive,
+                    "TANGENT",
+                    fastgltf::AccessorType::Vec4
+                );
+
+                fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
+                {
+                    vertices[index].tangent = tangent;
+                });
+            }
+
+            if (!primitive.materialIndex.has_value())
+            {
+                Logger::Error("{}\n", "No material in primitive!");
+            }
+
+            const auto& mat = asset.materials[primitive.materialIndex.value()];
+
+            // Material Factors
+            {
+                material.albedoFactor    = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
+                material.roughnessFactor = mat.pbrData.roughnessFactor;
+                material.metallicFactor  = mat.pbrData.metallicFactor;
+            }
+
+            // Albedo
+            {
+                const auto& baseColorTexture = mat.pbrData.baseColorTexture;
+
+                if (baseColorTexture.has_value())
+                {
+                    // FIXME: Support multiple UV channels
+                    if (baseColorTexture->texCoordIndex != 0)
+                    {
+                        Logger::Warning
+                        (
+                            "Albedo uses more than one UV channel! [texCoordIndex={}]\n",
+                            baseColorTexture->texCoordIndex
+                        );
+                    }
+
+                    material.albedo = LoadTexture
+                    (
+                        context,
+                        megaSet,
+                        textureManager,
+                        directory,
+                        asset,
+                        baseColorTexture->textureIndex,
+                        ALBEDO_FLAGS
+                    );
+                }
+                else
+                {
+                    material.albedo = textureManager.AddTexture
+                    (
+                        megaSet,
+                        context,
+                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO),
+                        ALBEDO_FLAGS
+                    );
+                }
+            }
+
+            // Normal
+            {
+                if (mat.normalTexture.has_value())
+                {
+                    // FIXME: Support multiple UV channels
+                    if (mat.normalTexture->texCoordIndex != 0)
+                    {
+                        Logger::Warning
+                        (
+                            "Normal uses more than one UV channel! [texCoordIndex={}]\n",
+                            mat.normalTexture->texCoordIndex
+                        );
+                    }
+
+                    material.normal = LoadTexture
+                    (
+                        context,
+                        megaSet,
+                        textureManager,
+                        directory,
+                        asset,
+                        mat.normalTexture->textureIndex,
+                        NORMAL_FLAGS
+                    );
+                }
+                else
+                {
+                    material.normal = textureManager.AddTexture
+                    (
+                        megaSet,
+                        context,
+                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL),
+                        NORMAL_FLAGS
+                    );
+                }
+            }
+
+            // AO + Roughness + Metallic
+            {
+                const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
+
+                if (metallicRoughnessTexture.has_value())
+                {
+                    // FIXME: Support multiple UV channels
+                    if (metallicRoughnessTexture->texCoordIndex != 0)
+                    {
+                        Logger::Warning
+                        (
+                            "AoRghMtl uses more than one UV channel! [texCoordIndex={}]\n",
+                            metallicRoughnessTexture->texCoordIndex
+                        );
+                    }
+
+                    material.aoRghMtl = LoadTexture
+                    (
+                        context,
+                        megaSet,
+                        textureManager,
+                        directory,
+                        asset,
+                        metallicRoughnessTexture->textureIndex,
+                        AO_RGH_MTL_FLAGS
+                    );
+                }
+                else
+                {
+                    material.aoRghMtl = textureManager.AddTexture
+                    (
+                        megaSet,
+                        context,
+                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL),
+                        AO_RGH_MTL_FLAGS
+                    );
+                }
+            }
+
+
+            meshes.emplace_back
+            (
+                geometryBuffer.LoadIndices(context, indices),
+                geometryBuffer.LoadVertices(context, vertices),
+                material,
                 nodeMatrix
             );
         }

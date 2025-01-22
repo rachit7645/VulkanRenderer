@@ -29,6 +29,7 @@ namespace Vk
         PFN_vkCmdEndDebugUtilsLabelEXT      p_CmdEndDebugUtilsLabelEXT      = nullptr;
         PFN_vkQueueBeginDebugUtilsLabelEXT  p_QueueBeginDebugUtilsLabelEXT  = nullptr;
         PFN_vkQueueEndDebugUtilsLabelEXT    p_QueueEndDebugUtilsLabelEXT    = nullptr;
+        PFN_vkSetDebugUtilsObjectNameEXT    p_SetDebugUtilsObjectNameEXT    = nullptr;
     };
 }
 

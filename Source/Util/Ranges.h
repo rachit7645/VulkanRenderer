@@ -25,7 +25,7 @@
 
 namespace Util
 {
-    template <typename T, usize GroupSize> requires (GroupSize > 0)
+    template <typename T, usize GroupSize>
     auto SplitVector(const std::vector<T>& originalVector) -> std::array<std::vector<T>, GroupSize>
     {
         std::array<std::vector<T>, GroupSize> result;
@@ -43,6 +43,16 @@ namespace Util
         }
 
         return result;
+    }
+
+    template <usize N, typename T>
+    auto ToArray(const std::vector<T>& vector) -> std::array<T, N>
+    {
+        std::array<T, N> array = {};
+
+        std::move(vector.begin(), vector.end(), array.begin());
+
+        return array;
     }
 }
 

@@ -186,6 +186,14 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	target_compile_options(VulkanRenderer PRIVATE -g)
 endif()
 
+# Debug Without Validation config
+if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    # Engine Debug Mode
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
+    # Enable debug output
+    target_compile_options(VulkanRenderer PRIVATE -g)
+endif()
+
 # Add shader dependency
 add_dependencies(VulkanRenderer Shaders)
 

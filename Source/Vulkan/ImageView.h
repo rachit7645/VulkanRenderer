@@ -34,11 +34,7 @@ namespace Vk
             const Vk::Image& image,
             VkImageViewType viewType,
             VkFormat format,
-            VkImageAspectFlags aspectMask,
-            u32 baseMipLevel,
-            u32 levelCount,
-            u32 baseArrayLayer,
-            u32 layerCount
+            const VkImageSubresourceRange& subresourceRange
         );
 
         bool operator==(const ImageView& rhs) const;

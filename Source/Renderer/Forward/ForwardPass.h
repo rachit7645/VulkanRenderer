@@ -39,7 +39,7 @@ namespace Renderer::Forward
         );
 
         void Recreate(const Vk::Context& context, VkExtent2D extent);
-        void Destroy(const Vk::Context& context);
+        void Destroy(VkDevice device, VkCommandPool cmdPool);
 
         void Render
         (

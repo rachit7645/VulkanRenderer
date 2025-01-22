@@ -22,6 +22,7 @@
 #include "Util/Maths.h"
 #include "Vulkan/Util.h"
 #include "Externals/ImGui.h"
+#include "Util/Ranges.h"
 
 namespace Renderer::Forward
 {
@@ -45,10 +46,25 @@ namespace Renderer::Forward
         {
             cmdBuffers[i] = Vk::CommandBuffer
             (
-                context,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                "ForwardPass/FIF" + std::to_string(i)
+                context.device,
+                context.commandPool,
+                VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
+
+            #ifdef ENGINE_DEBUG
+            auto name = fmt::format("ForwardPass/FIF{}", i);
+
+            VkDebugUtilsObjectNameInfoEXT nameInfo =
+            {
+                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+                .pNext        = nullptr,
+                .objectType   = VK_OBJECT_TYPE_COMMAND_BUFFER,
+                .objectHandle = std::bit_cast<u64>(cmdBuffers[i].handle),
+                .pObjectName  = name.c_str()
+            };
+
+            vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+            #endif
         }
 
         InitData(context, extent);
@@ -76,6 +92,20 @@ namespace Renderer::Forward
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        #ifdef ENGINE_DEBUG
+        auto name = fmt::format("ForwardPass/FIF{}", FIF);
+
+        const VkDebugUtilsLabelEXT label =
+        {
+            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+            .pNext      = nullptr,
+            .pLabelName = name.c_str(),
+            .color      = {}
+        };
+
+        vkCmdBeginDebugUtilsLabelEXT(currentCmdBuffer.handle, &label);
+        #endif
 
         image.Barrier
         (
@@ -188,13 +218,13 @@ namespace Renderer::Forward
             }
         };
 
-        std::memcpy(pipeline.sceneSSBOs[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(Forward::SceneBuffer));
+        std::memcpy(pipeline.sceneBuffers[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(Forward::SceneBuffer));
         pipeline.meshBuffer.LoadMeshes(FIF, modelManager, renderObjects);
         auto drawCount = pipeline.indirectBuffer.WriteDrawCalls(FIF, modelManager, renderObjects);
 
         pipeline.pushConstant =
         {
-            .scene    = pipeline.sceneSSBOs[FIF].deviceAddress,
+            .scene    = pipeline.sceneBuffers[FIF].deviceAddress,
             .meshes   = pipeline.meshBuffer.buffers[FIF].deviceAddress,
             .vertices = modelManager.geometryBuffer.vertexBuffer.deviceAddress
         };
@@ -249,6 +279,10 @@ namespace Renderer::Forward
             }
         );
 
+        #ifdef ENGINE_DEBUG
+        vkCmdEndDebugUtilsLabelEXT(currentCmdBuffer.handle);
+        #endif
+
         currentCmdBuffer.EndRecording();
     }
 
@@ -279,33 +313,72 @@ namespace Renderer::Forward
             image,
             VK_IMAGE_VIEW_TYPE_2D,
             image.format,
-            VK_IMAGE_ASPECT_COLOR_BIT,
-            0,
-            1,
-            0,
-            1
+            {
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
         );
 
-        Vk::ImmediateSubmit(context, [&] (const Vk::CommandBuffer& cmdBuffer)
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&] (const Vk::CommandBuffer& cmdBuffer)
+            {
+                image.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_NONE,
+                    VK_ACCESS_2_NONE,
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    {
+                        .aspectMask     = image.aspect,
+                        .baseMipLevel   = 0,
+                        .levelCount     = image.mipLevels,
+                        .baseArrayLayer = 0,
+                        .layerCount     = 1
+                    }
+                );
+            }
+        );
+
+        #ifdef ENGINE_DEBUG
+        VkDebugUtilsObjectNameInfoEXT nameInfo =
         {
-            image.Barrier
-            (
-                cmdBuffer,
-                VK_PIPELINE_STAGE_2_NONE,
-                VK_ACCESS_2_NONE,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                {
-                    .aspectMask     = image.aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = image.mipLevels,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            );
-        });
+            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .pNext        = nullptr,
+            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
+            .objectHandle = 0,
+            .pObjectName  = nullptr
+        };
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE;
+        nameInfo.objectHandle = std::bit_cast<u64>(image.handle);
+        nameInfo.pObjectName  = "ForwardPassColorAttachment0";
+        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE;
+        nameInfo.objectHandle = std::bit_cast<u64>(depthBuffer.depthImage.handle);
+        nameInfo.pObjectName  = "ForwardPassDepthAttachment";
+        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE_VIEW;
+        nameInfo.objectHandle = std::bit_cast<u64>(imageView.handle);
+        nameInfo.pObjectName  = "ForwardPassColorAttachment0_View";
+        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+
+        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE_VIEW;
+        nameInfo.objectHandle = std::bit_cast<u64>(depthBuffer.depthImageView.handle);
+        nameInfo.pObjectName  = "ForwardPassDepthAttachment_View";
+        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
+        #endif
 
         m_deletionQueue.PushDeletor([&] ()
         {
@@ -331,7 +404,7 @@ namespace Renderer::Forward
         );
     }
 
-    void ForwardPass::Destroy(const Vk::Context& context)
+    void ForwardPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying forward pass!");
 
@@ -339,9 +412,9 @@ namespace Renderer::Forward
 
         for (auto&& cmdBuffer : cmdBuffers)
         {
-            cmdBuffer.Free(context);
+            cmdBuffer.Free(device, cmdPool);
         }
 
-        pipeline.Destroy(context.device);
+        pipeline.Destroy(device);
     }
 }

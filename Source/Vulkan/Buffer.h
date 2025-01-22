@@ -41,7 +41,7 @@ namespace Vk
         );
 
         void Map(VmaAllocator allocator);
-        void Unmap(VmaAllocator allocator) const;
+        void Unmap(VmaAllocator allocator);
         void GetDeviceAddress(VkDevice device);
 
         void Barrier
@@ -53,7 +53,7 @@ namespace Vk
             VkAccessFlags2 dstAccessMask,
             VkDeviceSize offset,
             VkDeviceSize size
-        );
+        ) const;
 
         void Destroy(VmaAllocator allocator) const;
 

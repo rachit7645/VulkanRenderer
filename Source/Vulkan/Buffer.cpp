@@ -73,7 +73,7 @@ namespace Vk
         vmaMapMemory(allocator, allocation, &allocInfo.pMappedData);
     }
 
-    void Buffer::Unmap(VmaAllocator allocator) const
+    void Buffer::Unmap(VmaAllocator allocator)
     {
         vmaUnmapMemory(allocator, allocation);
     }
@@ -99,7 +99,7 @@ namespace Vk
         VkAccessFlags2 dstAccessMask,
         VkDeviceSize offset,
         VkDeviceSize size
-    )
+    ) const
     {
         const VkBufferMemoryBarrier2 barrier =
         {

@@ -65,6 +65,18 @@ namespace Models
             glm::mat4 nodeMatrix
         );
 
+        void LoadMesh
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            const std::string& directory,
+            const fastgltf::Asset& asset,
+            const fastgltf::Mesh& mesh,
+            const glm::mat4& nodeMatrix
+        );
+
         glm::mat4 GetTranformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
 
         const fastgltf::Accessor& GetAccesor
