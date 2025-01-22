@@ -20,24 +20,158 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
+#include "Util.h"
+#include "CommandBuffer.h"
+#include "Externals/GLM.h"
+#include "Util/Util.h"
+
 namespace Vk
 {
+    template <typename>
+    struct VulkanObjectType;
+
+    template <>
+    struct VulkanObjectType<VkBuffer>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_BUFFER;
+    };
+
+    template <>
+    struct VulkanObjectType<VkInstance>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_INSTANCE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkPhysicalDevice>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_PHYSICAL_DEVICE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkDevice>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_DEVICE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkSurfaceKHR>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_SURFACE_KHR;
+    };
+
+    template <>
+    struct VulkanObjectType<VkQueue>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_QUEUE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkCommandPool>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_COMMAND_POOL;
+    };
+
+    template <>
+    struct VulkanObjectType<VkCommandBuffer>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
+    };
+
+    template <>
+    struct VulkanObjectType<VkImage>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_IMAGE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkImageView>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+    };
+
+    template <>
+    struct VulkanObjectType<VkSampler>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_SAMPLER;
+    };
+
+    template <>
+    struct VulkanObjectType<VkPipeline>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_PIPELINE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkPipelineLayout>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_PIPELINE_LAYOUT;
+    };
+
+    template <>
+    struct VulkanObjectType<VkSemaphore>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_SEMAPHORE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkFence>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_FENCE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkSwapchainKHR>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_SWAPCHAIN_KHR;
+    };
+
+    template <>
+    struct VulkanObjectType<VkDescriptorPool>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+    };
+
+    template <>
+    struct VulkanObjectType<VkDescriptorSetLayout>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT;
+    };
+
+    template <>
+    struct VulkanObjectType<VkDescriptorSet>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_DESCRIPTOR_SET;
+    };
+
+    template <>
+    struct VulkanObjectType<VkShaderModule>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_SHADER_MODULE;
+    };
+
     template<typename T>
-    void SetDebugName(VkDevice device, T object, VkObjectType type, const std::string_view name)
+    void SetDebugName(UNUSED VkDevice device, UNUSED T object, UNUSED const std::string_view name)
     {
         #ifdef ENGINE_DEBUG
-        const VkDebugUtilsObjectNameInfoEXT objectNameInfo =
+        const VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo =
         {
             .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
             .pNext        = nullptr,
-            .objectType   = type,
-            .objectHandle = static_cast<uint64_t>(object),
-            .pObjectName  = name.data()
+            .objectType   = VulkanObjectType<T>::ObjectType,
+            .objectHandle = std::bit_cast<u64>(object),
+            .pObjectName  = name.data(),
         };
 
-        vkSetDebugUtilsObjectNameEXT(device, &objectNameInfo);
+        Vk::CheckResult(vkSetDebugUtilsObjectNameEXT(
+            device,
+            &debugUtilsObjectNameInfo),
+        "Failed to set object name!");
         #endif
     }
+
+    void BeginLabel(const Vk::CommandBuffer& cmdBuffer, const std::string_view name, const glm::vec4& color);
+    void EndLabel(const Vk::CommandBuffer& cmdBuffer);
 }
 
 #endif

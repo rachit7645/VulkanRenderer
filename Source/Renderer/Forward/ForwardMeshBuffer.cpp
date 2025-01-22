@@ -15,8 +15,9 @@
  */
 
 #include "ForwardMeshBuffer.h"
-#include "ForwardMesh.h"
 
+#include "ForwardMesh.h"
+#include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 
 namespace Renderer::Forward
@@ -39,20 +40,7 @@ namespace Renderer::Forward
 
             buffers[i].GetDeviceAddress(device);
 
-            #ifdef ENGINE_DEBUG
-            auto name = fmt::format("MeshBuffer/{}", i);
-
-            VkDebugUtilsObjectNameInfoEXT nameInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext        = nullptr,
-                .objectType   = VK_OBJECT_TYPE_BUFFER,
-                .objectHandle = std::bit_cast<u64>(buffers[i].handle),
-                .pObjectName  = name.c_str()
-            };
-
-            vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-            #endif
+            Vk::SetDebugName(device, buffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
     }
 

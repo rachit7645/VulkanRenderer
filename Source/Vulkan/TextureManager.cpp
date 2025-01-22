@@ -18,6 +18,7 @@
 
 #include "Texture.h"
 #include "Util.h"
+#include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Util.h"
 
@@ -38,18 +39,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_BUFFER,
-            .objectHandle = std::bit_cast<u64>(m_stagingBuffer.handle),
-            .pObjectName  = "TextureManager/StagingBuffer"
-        };
-
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-        #endif
+        Vk::SetDebugName(device, m_stagingBuffer.handle, "TextureManager/StagingBuffer");
     }
 
     usize TextureManager::AddTexture

@@ -17,8 +17,10 @@
 #include <vulkan/vk_enum_string_helper.h>
 
 #include "Util.h"
+#include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/SourceLocation.h"
+#include "Util/Random.h"
 
 namespace Vk
 {
@@ -48,47 +50,15 @@ namespace Vk
         VkFence fence;
         vkCreateFence(device, &fenceCreateInfo, nullptr, &fence);
 
-        #ifdef ENGINE_DEBUG
         auto name = fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location));
 
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-            .objectHandle = 0,
-            .pObjectName  = name.c_str()
-        };
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_COMMAND_BUFFER;
-        nameInfo.objectHandle = std::bit_cast<u64>(cmdBuffer.handle);
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_FENCE;
-        nameInfo.objectHandle = std::bit_cast<u64>(fence);
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-        #endif
+        Vk::SetDebugName(device, cmdBuffer.handle, name);
+        Vk::SetDebugName(device, fence,            name);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        #ifdef ENGINE_DEBUG
-        const VkDebugUtilsLabelEXT label =
-        {
-            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext      = nullptr,
-            .pLabelName = name.c_str(),
-            .color      = {}
-        };
-
-        vkCmdBeginDebugUtilsLabelEXT(cmdBuffer.handle, &label);
-        #endif
-
-        CmdFunction(cmdBuffer);
-
-        #ifdef ENGINE_DEBUG
-        vkCmdEndDebugUtilsLabelEXT(cmdBuffer.handle);
-        #endif
-
+            Vk::BeginLabel(cmdBuffer, name, glm::vec4(glm::vec3(0.0f), 1.0f));
+                CmdFunction(cmdBuffer);
+            Vk::EndLabel(cmdBuffer);
         cmdBuffer.EndRecording();
 
         VkCommandBufferSubmitInfo cmdBufferInfo =

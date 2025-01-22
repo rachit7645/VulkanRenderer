@@ -21,8 +21,8 @@
 #include "Renderer/RenderConstants.h"
 #include "Util/Maths.h"
 #include "Vulkan/Util.h"
-#include "Externals/ImGui.h"
 #include "Util/Ranges.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Forward
 {
@@ -51,20 +51,7 @@ namespace Renderer::Forward
                 VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
 
-            #ifdef ENGINE_DEBUG
-            auto name = fmt::format("ForwardPass/FIF{}", i);
-
-            VkDebugUtilsObjectNameInfoEXT nameInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext        = nullptr,
-                .objectType   = VK_OBJECT_TYPE_COMMAND_BUFFER,
-                .objectHandle = std::bit_cast<u64>(cmdBuffers[i].handle),
-                .pObjectName  = name.c_str()
-            };
-
-            vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-            #endif
+            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ForwardPass/FIF{}", i));
         }
 
         InitData(context, extent);
@@ -93,21 +80,9 @@ namespace Renderer::Forward
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        #ifdef ENGINE_DEBUG
-        auto name = fmt::format("ForwardPass/FIF{}", FIF);
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("ForwardPass/FIF{}", FIF), glm::vec4(0.9098f, 0.1843f, 0.0549f, 1.0f));
 
-        const VkDebugUtilsLabelEXT label =
-        {
-            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext      = nullptr,
-            .pLabelName = name.c_str(),
-            .color      = {}
-        };
-
-        vkCmdBeginDebugUtilsLabelEXT(currentCmdBuffer.handle, &label);
-        #endif
-
-        image.Barrier
+        colorAttachment.Barrier
         (
             currentCmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -117,9 +92,9 @@ namespace Renderer::Forward
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             {
-                .aspectMask     = image.aspect,
+                .aspectMask     = colorAttachment.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = image.mipLevels,
+                .levelCount     = colorAttachment.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
@@ -129,7 +104,7 @@ namespace Renderer::Forward
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = imageView.handle,
+            .imageView          = colorAttachmentView.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -261,7 +236,7 @@ namespace Renderer::Forward
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 
-        image.Barrier
+        colorAttachment.Barrier
         (
             currentCmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -271,17 +246,15 @@ namespace Renderer::Forward
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             {
-                .aspectMask     = image.aspect,
+                .aspectMask     = colorAttachment.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = image.mipLevels,
+                .levelCount     = colorAttachment.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
         );
 
-        #ifdef ENGINE_DEBUG
-        vkCmdEndDebugUtilsLabelEXT(currentCmdBuffer.handle);
-        #endif
+        Vk::EndLabel(currentCmdBuffer);
 
         currentCmdBuffer.EndRecording();
     }
@@ -295,7 +268,7 @@ namespace Renderer::Forward
 
         depthBuffer = Vk::DepthBuffer(context, extent);
 
-        image = Vk::Image
+        colorAttachment = Vk::Image
         (
             context.allocator,
             m_renderSize.x,
@@ -307,16 +280,16 @@ namespace Renderer::Forward
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
         );
 
-        imageView = Vk::ImageView
+        colorAttachmentView = Vk::ImageView
         (
             context.device,
-            image,
+            colorAttachment,
             VK_IMAGE_VIEW_TYPE_2D,
-            image.format,
+            colorAttachment.format,
             {
-                .aspectMask     = image.aspect,
+                .aspectMask     = colorAttachment.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = image.mipLevels,
+                .levelCount     = colorAttachment.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
@@ -329,7 +302,7 @@ namespace Renderer::Forward
             context.commandPool,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                image.Barrier
+                colorAttachment.Barrier
                 (
                     cmdBuffer,
                     VK_PIPELINE_STAGE_2_NONE,
@@ -339,9 +312,9 @@ namespace Renderer::Forward
                     VK_IMAGE_LAYOUT_UNDEFINED,
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     {
-                        .aspectMask     = image.aspect,
+                        .aspectMask     = colorAttachment.aspect,
                         .baseMipLevel   = 0,
-                        .levelCount     = image.mipLevels,
+                        .levelCount     = colorAttachment.mipLevels,
                         .baseArrayLayer = 0,
                         .layerCount     = 1
                     }
@@ -349,41 +322,15 @@ namespace Renderer::Forward
             }
         );
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-            .objectHandle = 0,
-            .pObjectName  = nullptr
-        };
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE;
-        nameInfo.objectHandle = std::bit_cast<u64>(image.handle);
-        nameInfo.pObjectName  = "ForwardPassColorAttachment0";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE;
-        nameInfo.objectHandle = std::bit_cast<u64>(depthBuffer.depthImage.handle);
-        nameInfo.pObjectName  = "ForwardPassDepthAttachment";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE_VIEW;
-        nameInfo.objectHandle = std::bit_cast<u64>(imageView.handle);
-        nameInfo.pObjectName  = "ForwardPassColorAttachment0_View";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE_VIEW;
-        nameInfo.objectHandle = std::bit_cast<u64>(depthBuffer.depthImageView.handle);
-        nameInfo.pObjectName  = "ForwardPassDepthAttachment_View";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-        #endif
+        Vk::SetDebugName(context.device, colorAttachment.handle,                      "ForwardPassColorAttachment0");
+        Vk::SetDebugName(context.device, colorAttachmentView.handle,                  "ForwardPassColorAttachment0_View");
+        Vk::SetDebugName(context.device, depthBuffer.depthImage.handle,     "ForwardPassDepthAttachment");
+        Vk::SetDebugName(context.device, depthBuffer.depthImageView.handle, "ForwardPassDepthAttachment_View");
 
         m_deletionQueue.PushDeletor([&] ()
         {
-            imageView.Destroy(context.device);
-            image.Destroy(context.allocator);
+            colorAttachmentView.Destroy(context.device);
+            colorAttachment.Destroy(context.allocator);
             depthBuffer.Destroy(context.device, context.allocator);
         });
     }

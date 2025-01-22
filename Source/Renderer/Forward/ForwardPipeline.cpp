@@ -16,9 +16,10 @@
 
 #include "ForwardPipeline.h"
 
+#include "ForwardSceneBuffer.h"
 #include "Models/Vertex.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
-#include "ForwardSceneBuffer.h"
+#include "Vulkan/DebugUtils.h"
 #include "Util/Util.h"
 
 namespace Renderer::Forward
@@ -60,32 +61,14 @@ namespace Renderer::Forward
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER_OR_EQUAL, VK_FALSE, {}, {})
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-            .objectHandle = 0,
-            .pObjectName  = nullptr
-        };
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_PIPELINE;
-        nameInfo.objectHandle = std::bit_cast<u64>(handle);
-        nameInfo.pObjectName  = "ForwardPipeline";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_PIPELINE_LAYOUT;
-        nameInfo.objectHandle = std::bit_cast<u64>(layout);
-        nameInfo.pObjectName  = "ForwardPipelineLayout";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-        #endif
+        Vk::SetDebugName(context.device, handle, "ForwardPipeline");
+        Vk::SetDebugName(context.device, layout, "ForwardPipelineLayout");
     }
 
     void ForwardPipeline::CreatePipelineData
@@ -109,20 +92,7 @@ namespace Renderer::Forward
 
             sceneBuffers[i].GetDeviceAddress(context.device);
 
-            #ifdef ENGINE_DEBUG
-            auto name = fmt::format("SceneBuffer/{}", i);
-
-            VkDebugUtilsObjectNameInfoEXT nameInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext        = nullptr,
-                .objectType   = VK_OBJECT_TYPE_BUFFER,
-                .objectHandle = std::bit_cast<u64>(sceneBuffers[i].handle),
-                .pObjectName  = name.c_str()
-            };
-
-            vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-            #endif
+            Vk::SetDebugName(context.device, sceneBuffers[i].handle, fmt::format("SceneBuffer/{}", i));
         }
 
         meshBuffer     = Forward::MeshBuffer(context.device, context.allocator);
@@ -156,18 +126,7 @@ namespace Renderer::Forward
             }
         );
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_SAMPLER,
-            .objectHandle = std::bit_cast<u64>(textureManager.GetSampler(samplerIndex).handle),
-            .pObjectName  = "ForwardPipeline/Sampler"
-        };
-
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-        #endif
+        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "ForwardPipeline/Sampler");
 
         megaSet.Update(context.device);
 

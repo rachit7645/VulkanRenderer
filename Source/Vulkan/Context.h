@@ -80,7 +80,7 @@ namespace Vk
         // Extensions
         Vk::Extensions m_extensions = {};
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         // Vulkan validation layers
         Vk::ValidationLayers m_layers;
         #endif

@@ -18,6 +18,7 @@
 
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
+#include "Vulkan/DebugUtils.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
 
@@ -60,7 +61,7 @@ namespace Renderer
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.imageView);
+        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
         m_frameCounter.Reset();
     }
 
@@ -123,12 +124,12 @@ namespace Renderer
         );
 
         #ifdef ENGINE_DEBUG
-        VkDebugUtilsLabelEXT label =
+        const VkDebugUtilsLabelEXT label =
         {
             .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
             .pNext      = nullptr,
             .pLabelName = "Graphics Queue",
-            .color      = {}
+            .color      = {0.1137f, 0.7176f, 0.7490, 1.0f}
         };
 
         vkQueueBeginDebugUtilsLabelEXT(m_context.graphicsQueue, &label);
@@ -217,7 +218,7 @@ namespace Renderer
         m_swapPass.Recreate(*m_window, m_context, m_megaSet, m_modelManager.textureManager);
         m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
 
-        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.imageView);
+        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
     }
 
     void RenderManager::InitImGui()
@@ -290,20 +291,7 @@ namespace Renderer
                 "Failed to create in flight fences!"
             );
 
-            #ifdef ENGINE_DEBUG
-            auto name = fmt::format("RenderManager/InFlightFence{}", i);
-
-            VkDebugUtilsObjectNameInfoEXT nameInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext        = nullptr,
-                .objectType   = VK_OBJECT_TYPE_FENCE,
-                .objectHandle = std::bit_cast<u64>(inFlightFences[i]),
-                .pObjectName  = name.c_str()
-            };
-
-            vkSetDebugUtilsObjectNameEXT(m_context.device, &nameInfo);
-            #endif
+            Vk::SetDebugName(m_context.device, inFlightFences[i], fmt::format("RenderManager/InFlightFence{}", i));
         }
 
         m_deletionQueue.PushDeletor([&] ()

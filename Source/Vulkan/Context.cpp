@@ -26,6 +26,7 @@
 #include "SwapchainInfo.h"
 #include "Util.h"
 #include "Constants.h"
+#include "DebugUtils.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -440,46 +441,12 @@ namespace Vk
 
     void Context::AddDebugNames()
     {
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-            .objectHandle = 0,
-            .pObjectName  = nullptr
-        };
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_INSTANCE;
-        nameInfo.objectHandle = std::bit_cast<u64>(instance);
-        nameInfo.pObjectName  = "Instance";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_PHYSICAL_DEVICE;
-        nameInfo.objectHandle = std::bit_cast<u64>(physicalDevice);
-        nameInfo.pObjectName  = "PhysicalDevice";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_DEVICE;
-        nameInfo.objectHandle = std::bit_cast<u64>(device);
-        nameInfo.pObjectName  = "Device";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_SURFACE_KHR;
-        nameInfo.objectHandle = std::bit_cast<u64>(surface);
-        nameInfo.pObjectName  = "SDL3Surface";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_QUEUE;
-        nameInfo.objectHandle = std::bit_cast<u64>(graphicsQueue);
-        nameInfo.pObjectName  = "GraphicsQueue";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_COMMAND_POOL;
-        nameInfo.objectHandle = std::bit_cast<u64>(commandPool);
-        nameInfo.pObjectName  = "GlobalCommandPool";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-        #endif
+        Vk::SetDebugName(device, instance,       "Instance");
+        Vk::SetDebugName(device, physicalDevice, "PhysicalDevice");
+        Vk::SetDebugName(device, device,         "Device");
+        Vk::SetDebugName(device, surface,        "SDL3Surface");
+        Vk::SetDebugName(device, graphicsQueue,  "GraphicsQueue");
+        Vk::SetDebugName(device, commandPool,    "GlobalCommandPool");
     }
 
     void Context::Destroy()

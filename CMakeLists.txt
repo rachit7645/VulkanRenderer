@@ -70,6 +70,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/TextureManager.cpp
 	Source/Vulkan/GeometryBuffer.cpp
     Source/Vulkan/MegaSet.cpp
+    Source/Vulkan/DebugUtils.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp

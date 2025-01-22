@@ -16,8 +16,9 @@
 
 #include "MegaSet.h"
 
+#include "DebugUtils.h"
 #include "Util/Log.h"
-#include "Vulkan/Util.h"
+#include "Util.h"
 
 namespace Vk
 {
@@ -129,31 +130,9 @@ namespace Vk
             "Failed to allocate mega set"
         );
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-            .objectHandle = 0,
-            .pObjectName  = nullptr
-        };
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
-        nameInfo.objectHandle = std::bit_cast<u64>(m_descriptorPool);
-        nameInfo.pObjectName  = "MegaSet/DescriptorPool";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT;
-        nameInfo.objectHandle = std::bit_cast<u64>(descriptorSet.layout);
-        nameInfo.pObjectName  = "MegaSet/DescriptorLayout";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_DESCRIPTOR_SET;
-        nameInfo.objectHandle = std::bit_cast<u64>(descriptorSet.handle);
-        nameInfo.pObjectName  = "MegaSet/DescriptorSet";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-        #endif
+        Vk::SetDebugName(device, m_descriptorPool,     "MegaSet/DescriptorPool");
+        Vk::SetDebugName(device, descriptorSet.layout, "MegaSet/DescriptorLayout");
+        Vk::SetDebugName(device, descriptorSet.handle, "MegaSet/DescriptorSet");
 
         Logger::Info("{}\n", "Initialised mega set!");
     }

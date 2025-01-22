@@ -16,6 +16,8 @@
 
 #include "ForwardIndirectBuffer.h"
 
+#include "Vulkan/DebugUtils.h"
+
 namespace Renderer::Forward
 {
     constexpr usize INDIRECT_BUFFER_SIZE = (1 << 16) * sizeof(VkDrawIndexedIndirectCommand);
@@ -34,20 +36,7 @@ namespace Renderer::Forward
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            #ifdef ENGINE_DEBUG
-            auto name = fmt::format("IndirectBuffer/{}", i);
-
-            VkDebugUtilsObjectNameInfoEXT nameInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext        = nullptr,
-                .objectType   = VK_OBJECT_TYPE_BUFFER,
-                .objectHandle = std::bit_cast<u64>(buffers[i].handle),
-                .pObjectName  = name.c_str()
-            };
-
-            vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-            #endif
+            Vk::SetDebugName(device, buffers[i].handle, fmt::format("IndirectBuffer/{}", i));
         }
     }
 

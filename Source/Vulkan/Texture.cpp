@@ -19,6 +19,7 @@
 #include "Texture.h"
 #include "Util.h"
 #include "Buffer.h"
+#include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Enum.h"
 #include "Externals/STBImage.h"
@@ -195,29 +196,10 @@ namespace Vk
             }
         );
 
-        #ifdef ENGINE_DEBUG
         auto name = Engine::Files::GetNameWithoutExtension(path);
 
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-            .objectHandle = 0,
-            .pObjectName  = nullptr
-        };
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE;
-        nameInfo.objectHandle = std::bit_cast<u64>(image.handle);
-        nameInfo.pObjectName  = name.c_str();
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-
-        auto nameImageView = name + "_View";
-        nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE_VIEW;
-        nameInfo.objectHandle = std::bit_cast<u64>(imageView.handle);
-        nameInfo.pObjectName  = nameImageView.c_str();
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-        #endif
+        Vk::SetDebugName(context.device, image.handle,     name);
+        Vk::SetDebugName(context.device, imageView.handle, name + "_View");
 
         Logger::Debug("Loaded texture! [Path={}]\n", path);
     }

@@ -19,6 +19,7 @@
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Swapchain
 {
@@ -41,20 +42,7 @@ namespace Renderer::Swapchain
                 VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
 
-            #ifdef ENGINE_DEBUG
-            auto name = fmt::format("SwapchainPass/FIF{}", i);
-
-            VkDebugUtilsObjectNameInfoEXT nameInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext        = nullptr,
-                .objectType   = VK_OBJECT_TYPE_COMMAND_BUFFER,
-                .objectHandle = std::bit_cast<u64>(cmdBuffers[i].handle),
-                .pObjectName  = name.c_str()
-            };
-
-            vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-            #endif
+            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("SwapchainPass/FIF{}", i));
         }
 
         Logger::Info("{}\n", "Created swapchain pass!");
@@ -85,19 +73,7 @@ namespace Renderer::Swapchain
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        #ifdef ENGINE_DEBUG
-        auto name = fmt::format("SwapchainPass/{}", FIF);
-
-        const VkDebugUtilsLabelEXT label =
-        {
-            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext      = nullptr,
-            .pLabelName = name.c_str(),
-            .color      = {}
-        };
-
-        vkCmdBeginDebugUtilsLabelEXT(currentCmdBuffer.handle, &label);
-        #endif
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("SwapchainPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
         currentImage.Barrier
         (
@@ -234,9 +210,7 @@ namespace Renderer::Swapchain
             }
         );
 
-        #ifdef ENGINE_DEBUG
-        vkCmdEndDebugUtilsLabelEXT(currentCmdBuffer.handle);
-        #endif
+        Vk::EndLabel(currentCmdBuffer);
 
         currentCmdBuffer.EndRecording();
     }

@@ -17,6 +17,7 @@
 #include <Models/Model.h>
 
 #include "Util/Log.h"
+#include "DebugUtils.h"
 
 namespace Vk
 {
@@ -59,28 +60,9 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_BUFFER,
-            .objectHandle = 0,
-            .pObjectName  = nullptr
-        };
-
-        nameInfo.objectHandle = std::bit_cast<u64>(indexBuffer.handle);
-        nameInfo.pObjectName  = "GeometryBuffer/IndexBuffer";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectHandle = std::bit_cast<u64>(vertexBuffer.handle);
-        nameInfo.pObjectName  = "GeometryBuffer/VertexBuffer";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-        nameInfo.objectHandle = std::bit_cast<u64>(m_stagingBuffer.handle);
-        nameInfo.pObjectName  = "GeometryBuffer/StagingBuffer";
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-        #endif
+        Vk::SetDebugName(device, indexBuffer.handle,     "GeometryBuffer/IndexBuffer");
+        Vk::SetDebugName(device, vertexBuffer.handle,    "GeometryBuffer/VertexBuffer");
+        Vk::SetDebugName(device, m_stagingBuffer.handle, "GeometryBuffer/StagingBuffer");
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const

@@ -17,6 +17,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
+#include <ctime>
 #include <random>
 
 namespace Util
@@ -29,7 +30,7 @@ namespace Util
     template<typename T>
     [[nodiscard]] T RandRange(T min, T max)
     {
-        static thread_local std::mt19937_64 generator(777);
+        static thread_local std::mt19937_64 generator(std::time(nullptr));
         std::uniform_real_distribution<T> distributer(min, max);
         return distributer(generator);
     }

@@ -15,6 +15,8 @@
  */
 
 #include "Swapchain.h"
+
+#include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Util.h"
 
@@ -131,18 +133,7 @@ namespace Vk
             "Failed to create swap chain!"
         );
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_SWAPCHAIN_KHR,
-            .objectHandle = std::bit_cast<u64>(handle),
-            .pObjectName  = "Swapchain"
-        };
-
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-        #endif
+        Vk::SetDebugName(context.device, handle, "Swapchain");
 
         vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
 
@@ -208,45 +199,40 @@ namespace Vk
                 }
             );
 
-            #ifdef ENGINE_DEBUG
-            auto imageName        = fmt::format("Swapchain/Image{}", i);
-            nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE;
-            nameInfo.objectHandle = std::bit_cast<u64>(images[i].handle);
-            nameInfo.pObjectName  = imageName.c_str();
-            vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-
-            auto imageViewName    = fmt::format("Swapchain/ImageView{}", i);
-            nameInfo.objectType   = VK_OBJECT_TYPE_IMAGE_VIEW;
-            nameInfo.objectHandle = std::bit_cast<u64>(imageViews[i].handle);
-            nameInfo.pObjectName  = imageViewName.c_str();
-            vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-            #endif
+            Vk::SetDebugName(context.device, images[i].handle,     fmt::format("Swapchain/Image{}", i));
+            Vk::SetDebugName(context.device, imageViews[i].handle, fmt::format("Swapchain/ImageView{}", i));
         }
 
         // Transition for presentation
-        Vk::ImmediateSubmit(context.device, context.graphicsQueue, context.commandPool, [&] (const Vk::CommandBuffer& cmdBuffer)
-        {
-            for (auto&& image : images)
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                image.Barrier
-                (
-                    cmdBuffer,
-                    VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-                    VK_ACCESS_2_NONE,
-                    VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-                    VK_ACCESS_2_NONE,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                    {
-                        .aspectMask     = image.aspect,
-                        .baseMipLevel   = 0,
-                        .levelCount     = image.mipLevels,
-                        .baseArrayLayer = 0,
-                        .layerCount     = 1
-                    }
-                );
+                for (auto&& image : images)
+                {
+                    image.Barrier
+                    (
+                        cmdBuffer,
+                        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+                        VK_ACCESS_2_NONE,
+                        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+                        VK_ACCESS_2_NONE,
+                        VK_IMAGE_LAYOUT_UNDEFINED,
+                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                        {
+                            .aspectMask     = image.aspect,
+                            .baseMipLevel   = 0,
+                            .levelCount     = image.mipLevels,
+                            .baseArrayLayer = 0,
+                            .layerCount     = 1
+                        }
+                    );
+                }
             }
-        });
+        );
     }
 
     void Swapchain::CreateSyncObjects(VkDevice device)
@@ -276,28 +262,8 @@ namespace Vk
                 "Failed to create render semaphore!"
             );
 
-            #ifdef ENGINE_DEBUG
-            VkDebugUtilsObjectNameInfoEXT nameInfo =
-            {
-                .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext        = nullptr,
-                .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-                .objectHandle = 0,
-                .pObjectName  = nullptr
-            };
-
-            auto imageAvailable   = fmt::format("Swapchain/ImageAvailableSemaphore{}", i);
-            nameInfo.objectType   = VK_OBJECT_TYPE_SEMAPHORE;
-            nameInfo.objectHandle = std::bit_cast<u64>(imageAvailableSemaphores[i]);
-            nameInfo.pObjectName  = imageAvailable.c_str();
-            vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-
-            auto renderFinished   = fmt::format("Swapchain/RenderFinishedSemaphore{}", i);
-            nameInfo.objectType   = VK_OBJECT_TYPE_SEMAPHORE;
-            nameInfo.objectHandle = std::bit_cast<u64>(renderFinishedSemaphores[i]);
-            nameInfo.pObjectName  = renderFinished.c_str();
-            vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-            #endif
+            Vk::SetDebugName(device, imageAvailableSemaphores[i], fmt::format("Swapchain/ImageAvailableSemaphore{}", i));
+            Vk::SetDebugName(device, renderFinishedSemaphores[i], fmt::format("Swapchain/RenderFinishedSemaphore{}", i));
         }
 
         Logger::Debug("{}\n", "Created swapchain sync objects!");

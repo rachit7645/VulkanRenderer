@@ -20,6 +20,7 @@
 #include "Util/Log.h"
 #include "Vulkan/DescriptorWriter.h"
 #include "Vulkan/Builders/DescriptorLayoutBuilder.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Swapchain
 {
@@ -66,26 +67,8 @@ namespace Renderer::Swapchain
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_UNKNOWN,
-            .objectHandle = 0,
-            .pObjectName  = nullptr
-        };
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_PIPELINE;
-        nameInfo.objectHandle = std::bit_cast<u64>(handle);
-        nameInfo.pObjectName  = "SwapchainPipeline";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-
-        nameInfo.objectType   = VK_OBJECT_TYPE_PIPELINE_LAYOUT;
-        nameInfo.objectHandle = std::bit_cast<u64>(layout);
-        nameInfo.pObjectName  = "SwapchainPipelineLayout";
-        vkSetDebugUtilsObjectNameEXT(context.device, &nameInfo);
-        #endif
+        Vk::SetDebugName(context.device, handle, "SwapchainPipeline");
+        Vk::SetDebugName(context.device, layout, "SwapchainPipelineLayout");
     }
 
     void SwapchainPipeline::CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager)
@@ -116,18 +99,7 @@ namespace Renderer::Swapchain
             }
         );
 
-        #ifdef ENGINE_DEBUG
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_SAMPLER,
-            .objectHandle = std::bit_cast<u64>(textureManager.GetSampler(samplerIndex).handle),
-            .pObjectName  = "SwapchainPipeline/Sampler"
-        };
-
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-        #endif
+        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "SwapchainPipeline/Sampler");
 
         megaSet.Update(device);
     }

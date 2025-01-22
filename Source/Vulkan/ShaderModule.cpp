@@ -18,6 +18,7 @@
 
 #include "ShaderModule.h"
 
+#include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Util/Util.h"
@@ -51,20 +52,7 @@ namespace Vk
             fmt::format("Failed to create shader module for shader binary {}!", path)
         );
 
-        #ifdef ENGINE_DEBUG
-        auto name = Engine::Files::GetNameWithoutExtension(path);
-
-        VkDebugUtilsObjectNameInfoEXT nameInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .pNext        = nullptr,
-            .objectType   = VK_OBJECT_TYPE_SHADER_MODULE,
-            .objectHandle = std::bit_cast<u64>(handle),
-            .pObjectName  = name.c_str()
-        };
-
-        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
-        #endif
+        Vk::SetDebugName(device, handle, Engine::Files::GetNameWithoutExtension(path));
 
         Logger::Info("Created shader module {} [handle={}]\n", path, std::bit_cast<void*>(handle));
     }

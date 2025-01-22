@@ -23,7 +23,6 @@
 #include <vulkan/vulkan.h>
 
 #include "Util/Util.h"
-#include "Context.h"
 #include "CommandBuffer.h"
 
 // STD140 / STD430 alignment

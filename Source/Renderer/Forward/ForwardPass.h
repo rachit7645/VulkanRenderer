@@ -54,8 +54,8 @@ namespace Renderer::Forward
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
 
-        Vk::Image       image;
-        Vk::ImageView   imageView;
+        Vk::Image       colorAttachment;
+        Vk::ImageView   colorAttachmentView;
         Vk::DepthBuffer depthBuffer;
     private:
         void InitData(const Vk::Context& context, VkExtent2D extent);
