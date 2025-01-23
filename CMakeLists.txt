@@ -24,7 +24,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL3     REQUIRED)
+find_package(SDL3     REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan   REQUIRED)
 find_package(glm      REQUIRED)
 find_package(fastgltf REQUIRED)
@@ -201,6 +201,7 @@ add_dependencies(VulkanRenderer Shaders)
 # Link libraries
 target_link_libraries(VulkanRenderer
 	Vulkan::Vulkan
+    Vulkan::Headers
 	SDL3::SDL3
 	fmt::fmt
 	fastgltf::fastgltf

@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(vma/)
 
 # Required packages
-find_package(SDL3   REQUIRED)
+find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
 # ImGui source files
@@ -66,6 +66,12 @@ target_compile_options(imgui PRIVATE -march=native)
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Enable debug output
 	target_compile_options(imgui PRIVATE -g)
+endif()
+
+# Debug Without Validation config
+if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    # Enable debug output
+    target_compile_options(imgui PRIVATE -g)
 endif()
 
 # Link libraries

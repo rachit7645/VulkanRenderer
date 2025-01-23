@@ -39,6 +39,9 @@ namespace Vk
 
         auto extensionStrings = std::vector<const char*>(instanceExtensions, instanceExtensions + extensionCount);
 
+        extensionStrings.emplace_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
+        extensionStrings.emplace_back(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME);
+
         #ifdef ENGINE_DEBUG
         extensionStrings.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         #endif

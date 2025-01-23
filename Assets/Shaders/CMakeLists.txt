@@ -20,8 +20,8 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(SHADERS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/Bin/Assets/Shaders)
 
 # Get glsl compiler
-find_package(Vulkan REQUIRED COMPONENTS glslang)
-find_program(GLSL_COMPILER NAMES glslang HINTS Vulkan::glslang)
+find_package(Vulkan REQUIRED COMPONENTS glslangValidator)
+find_program(GLSL_COMPILER NAMES glslangValidator HINTS Vulkan::glslangValidator)
 
 # Shader locations
 set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -32,6 +32,11 @@ set(SHADER_FLAGS --target-env vulkan1.3 --enhanced-msgs)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    list(APPEND SHADER_FLAGS -gVS)
+endif()
+
+# Debug Without Validation config
+if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
     list(APPEND SHADER_FLAGS -gVS)
 endif()
 

@@ -41,9 +41,9 @@ namespace Vk
 
     void Swapchain::Present(VkQueue queue, usize FIF)
     {
-        std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
-        std::array swapChains       = {handle};
-        std::array imageIndices     = {imageIndex};
+        const std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
+        const std::array swapChains       = {handle};
+        const std::array imageIndices     = {imageIndex};
 
         VkPresentInfoKHR presentInfo =
         {
@@ -93,32 +93,40 @@ namespace Vk
         m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
         extent          = ChooseSwapExtent(window.handle);
 
-        VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat();
-        VkPresentModeKHR   presentMode   = ChoosePresentationMode();
+        const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
+        const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
 
         // Try to allocate 1 more than the min
         u32 imageCount = std::min
         (
-            m_swapChainInfo.capabilities.minImageCount + 1,
-            m_swapChainInfo.capabilities.maxImageCount
+            m_swapChainInfo.capabilities.surfaceCapabilities.minImageCount + 1,
+            m_swapChainInfo.capabilities.surfaceCapabilities.maxImageCount
         );
+
+        const VkSwapchainPresentModesCreateInfoEXT presentModesCreateInfo =
+        {
+            .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
+            .pNext            = nullptr,
+            .presentModeCount = 1,
+            .pPresentModes    = &presentMode
+        };
 
         VkSwapchainCreateInfoKHR createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext                 = nullptr,
+            .pNext                 = &presentModesCreateInfo,
             .flags                 = 0,
             .surface               = context.surface,
             .minImageCount         = imageCount,
-            .imageFormat           = surfaceFormat.format,
-            .imageColorSpace       = surfaceFormat.colorSpace,
+            .imageFormat           = surfaceFormat.surfaceFormat.format,
+            .imageColorSpace       = surfaceFormat.surfaceFormat.colorSpace,
             .imageExtent           = extent,
             .imageArrayLayers      = 1,
             .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
             .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices   = nullptr,
-            .preTransform          = m_swapChainInfo.capabilities.currentTransform,
+            .preTransform          = m_swapChainInfo.capabilities.surfaceCapabilities.currentTransform,
             .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode           = presentMode,
             .clipped               = VK_TRUE,
@@ -166,7 +174,7 @@ namespace Vk
             "Failed to get swapchain images!"
         );
 
-        imageFormat = surfaceFormat.format;
+        imageFormat = surfaceFormat.surfaceFormat.format;
 
         images.resize(_images.size());
         imageViews.resize(_images.size());
@@ -269,20 +277,20 @@ namespace Vk
         Logger::Debug("{}\n", "Created swapchain sync objects!");
     }
 
-    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat() const
+    VkSurfaceFormat2KHR Swapchain::ChooseSurfaceFormat() const
     {
         const auto& formats = m_swapChainInfo.formats;
 
         for (const auto& availableFormat : formats)
         {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
-                availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
+            if (availableFormat.surfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
+                availableFormat.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
             {
                 Logger::Debug
                 (
                     "Choosing surface format! [Format={}] [ColorSpace={}]\n",
-                    string_VkFormat(availableFormat.format),
-                    string_VkColorSpaceKHR(availableFormat.colorSpace)
+                    string_VkFormat(availableFormat.surfaceFormat.format),
+                    string_VkColorSpaceKHR(availableFormat.surfaceFormat.colorSpace)
                 );
 
                 return availableFormat;
@@ -321,16 +329,16 @@ namespace Vk
         const auto& capabilities = m_swapChainInfo.capabilities;
 
         // Some platforms set swap extents themselves
-        if (capabilities.currentExtent.width != std::numeric_limits<u32>::max())
+        if (capabilities.surfaceCapabilities.currentExtent.width != std::numeric_limits<u32>::max())
         {
             Logger::Debug
             (
                 "Choosing existing swap extent! [width={}] [height={}]\n",
-                capabilities.currentExtent.width,
-                capabilities.currentExtent.height
+                capabilities.surfaceCapabilities.currentExtent.width,
+                capabilities.surfaceCapabilities.currentExtent.height
             );
 
-            return capabilities.currentExtent;
+            return capabilities.surfaceCapabilities.currentExtent;
         }
 
         glm::ivec2 size = {};
@@ -339,8 +347,8 @@ namespace Vk
             Logger::Error("SDL_GetWindowSizeInPixels Failed : {}\n", SDL_GetError());
         }
 
-        const auto minSize = glm::ivec2(capabilities.minImageExtent.width, capabilities.minImageExtent.height);
-        const auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
+        const auto minSize = glm::ivec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
+        const auto maxSize = glm::ivec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
 
         auto actualExtent = glm::clamp(size, minSize, maxSize);
 

@@ -53,6 +53,8 @@ namespace Vk
         std::vector<Vk::ImageView> imageViews  = {};
         u32                        imageIndex  = 0;
 
+        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+
         // Semaphores
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
@@ -62,7 +64,7 @@ namespace Vk
 
         void CreateSyncObjects(VkDevice device);
 
-        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;
+        [[nodiscard]] VkSurfaceFormat2KHR ChooseSurfaceFormat() const;
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
         [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window) const;
 

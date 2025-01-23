@@ -29,9 +29,9 @@ namespace Vk
         SwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
 
         // Surface feature data
-        VkSurfaceCapabilitiesKHR capabilities = {};
+        VkSurfaceCapabilities2KHR capabilities = {};
         // Available formats
-        std::vector<VkSurfaceFormatKHR> formats = {};
+        std::vector<VkSurfaceFormat2KHR> formats = {};
         // Presentation modes
         std::vector<VkPresentModeKHR> presentModes = {};
     };
