@@ -203,7 +203,7 @@ namespace Engine
     {
         SDL_CloseGamepad(m_gamepad);
 
-        m_keys       = nullptr;
+        m_keys    = nullptr;
         m_gamepad = nullptr;
 
         m_mousePosition = {};

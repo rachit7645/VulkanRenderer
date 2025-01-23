@@ -19,15 +19,19 @@ project(Externals)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# VMA
-add_subdirectory(vma/)
-
 # Required packages
 find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
+option(VOLK_PULL_IN_VULKAN OFF)
+option(VOLK_INSTALL        ON)
+
+# Libraries with CMake support
+add_subdirectory(vma/)
+add_subdirectory(volk/)
+
 # ImGui source files
-add_library(imgui SHARED
+add_library(imgui STATIC
 	imgui/imgui.cpp
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
@@ -55,6 +59,11 @@ target_include_directories(imgui PRIVATE ${SDL3_INCLUDE_DIRS})
 target_include_directories(imgui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
 target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
+# Volk setup
+# No vulkan prototypes
+target_compile_definitions(imgui PRIVATE VK_NO_PROTOTYPES)
+target_compile_definitions(imgui PRIVATE IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+target_compile_definitions(imgui PRIVATE IMGUI_IMPL_VULKAN_USE_VOLK)
 # Disable warnings
 target_compile_options(imgui PRIVATE -w)
 # -O3 optimisations
@@ -75,4 +84,4 @@ if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
 endif()
 
 # Link libraries
-target_link_libraries(imgui Vulkan::Vulkan SDL3::SDL3)
+target_link_libraries(imgui Vulkan::Vulkan SDL3::SDL3 volk::volk)

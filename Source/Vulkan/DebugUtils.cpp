@@ -18,7 +18,7 @@
 
 namespace Vk
 {
-    void BeginLabel(const Vk::CommandBuffer& cmdBuffer, const std::string_view name, const glm::vec4& color)
+    void BeginLabel(UNUSED const Vk::CommandBuffer& cmdBuffer, UNUSED const std::string_view name, UNUSED const glm::vec4& color)
     {
         #ifdef ENGINE_DEBUG
         const VkDebugUtilsLabelEXT label =
@@ -33,7 +33,7 @@ namespace Vk
         #endif
     }
 
-    void EndLabel(const Vk::CommandBuffer& cmdBuffer)
+    void EndLabel(UNUSED const Vk::CommandBuffer& cmdBuffer)
     {
         #ifdef ENGINE_DEBUG
         vkCmdEndDebugUtilsLabelEXT(cmdBuffer.handle);

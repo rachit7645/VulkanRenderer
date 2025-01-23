@@ -16,6 +16,8 @@
 
 #include "Swapchain.h"
 
+#include <volk/volk.h>
+
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Util.h"

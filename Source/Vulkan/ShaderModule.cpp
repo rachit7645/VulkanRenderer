@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include <vector>
-
 #include "ShaderModule.h"
+
+#include <vector>
+#include <volk/volk.h>
 
 #include "DebugUtils.h"
 #include "Util/Log.h"

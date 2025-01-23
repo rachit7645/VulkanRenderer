@@ -41,11 +41,6 @@ namespace Engine
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
         }
 
-        if (!SDL_Vulkan_LoadLibrary(nullptr))
-        {
-            Logger::Error("SDL_Vulkan_LoadLibrary Failed: {}\n", SDL_GetError());
-        }
-
         handle = SDL_CreateWindow
         (
             "Rachit's Engine: Vulkan Edition",
@@ -64,11 +59,6 @@ namespace Engine
         if (!SDL_RaiseWindow(handle))
         {
             Logger::Error("SDL_RaiseWindow Failed: {}\n", SDL_GetError());
-        }
-
-        if (!SDL_SetWindowMinimumSize(handle, 1, 1))
-        {
-            Logger::Error("SDL_SetWindowMinimumSize Failed: {}\n", SDL_GetError());
         }
 
         if (!SDL_SetWindowRelativeMouseMode(handle, true))
@@ -159,7 +149,6 @@ namespace Engine
     {
         Inputs::Get().Destroy();
 
-        SDL_Vulkan_UnloadLibrary();
         SDL_DestroyWindow(handle);
         SDL_Quit();
 

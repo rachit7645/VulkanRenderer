@@ -15,6 +15,9 @@
  */
 
 #include "Buffer.h"
+
+#include <volk/volk.h>
+
 #include "Util/Log.h"
 #include "Models/Vertex.h"
 #include "Util.h"

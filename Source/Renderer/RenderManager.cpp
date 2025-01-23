@@ -263,8 +263,6 @@ namespace Renderer
         ImGui_ImplSDL3_InitForVulkan(m_window->handle);
         ImGui_ImplVulkan_Init(&imguiInitInfo);
 
-        ImGui_ImplVulkan_CreateFontsTexture();
-
         m_deletionQueue.PushDeletor([&] ()
         {
             ImGui_ImplVulkan_Shutdown();
@@ -274,7 +272,7 @@ namespace Renderer
 
     void RenderManager::CreateSyncObjects()
     {
-        VkFenceCreateInfo fenceInfo =
+        const VkFenceCreateInfo fenceInfo =
         {
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = nullptr,

@@ -21,7 +21,6 @@
 #include <SDL2/SDL.h>
 
 #include "ValidationLayers.h"
-#include "Extensions.h"
 #include "QueueFamilyIndices.h"
 #include "Util/Util.h"
 #include "Engine/Window.h"
@@ -76,9 +75,6 @@ namespace Vk
         void CreateAllocator();
 
         void AddDebugNames();
-
-        // Extensions
-        Vk::Extensions m_extensions = {};
 
         #ifdef ENGINE_ENABLE_VALIDATION
         // Vulkan validation layers

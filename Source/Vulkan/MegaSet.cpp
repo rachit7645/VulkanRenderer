@@ -16,6 +16,8 @@
 
 #include "MegaSet.h"
 
+#include <volk/volk.h>
+
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util.h"

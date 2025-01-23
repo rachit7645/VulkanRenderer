@@ -19,6 +19,7 @@
 
 #include <string_view>
 #include <vulkan/vulkan.h>
+#include <volk/volk.h>
 
 #include "Util.h"
 #include "CommandBuffer.h"

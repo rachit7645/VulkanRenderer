@@ -17,17 +17,14 @@
 #include "Extensions.h"
 
 #include <SDL3/SDL_vulkan.h>
+#include <volk/volk.h>
 
-#include "ExtensionState.h"
-#include "ExtensionLoader.h"
 #include "Util/Util.h"
+#include "Util/Log.h"
 
 namespace Vk
 {
-    // Internal extension function pointers (Global state, I know)
-    static inline ExtensionState g_ExtensionState = {};
-
-    std::vector<const char*> Extensions::LoadInstanceExtensions()
+    std::vector<const char*> LoadInstanceExtensions(const std::span<const char* const> requiredExtensions)
     {
         u32 extensionCount = 0;
         const auto instanceExtensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
@@ -39,52 +36,12 @@ namespace Vk
 
         auto extensionStrings = std::vector<const char*>(instanceExtensions, instanceExtensions + extensionCount);
 
-        extensionStrings.emplace_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
-        extensionStrings.emplace_back(VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME);
-
-        #ifdef ENGINE_DEBUG
-        extensionStrings.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        #endif
+        extensionStrings.insert(extensionStrings.end(), requiredExtensions.begin(), requiredExtensions.end());
 
         return extensionStrings;
     }
 
-    void Extensions::LoadInstanceFunctions(UNUSED VkInstance instance)
-    {
-        #ifdef ENGINE_ENABLE_VALIDATION
-        g_ExtensionState.p_CreateDebugUtilsMessengerEXT = LoadExtension<PFN_vkCreateDebugUtilsMessengerEXT>(
-            instance, "vkCreateDebugUtilsMessengerEXT"
-        );
-
-        g_ExtensionState.p_DestroyDebugUtilsMessengerEXT = LoadExtension<PFN_vkDestroyDebugUtilsMessengerEXT>(
-            instance, "vkDestroyDebugUtilsMessengerEXT"
-        );
-        #endif
-
-        #ifdef ENGINE_DEBUG
-        g_ExtensionState.p_CmdBeginDebugUtilsLabelEXT = LoadExtension<PFN_vkCmdBeginDebugUtilsLabelEXT>(
-            instance, "vkCmdBeginDebugUtilsLabelEXT"
-        );
-
-        g_ExtensionState.p_CmdEndDebugUtilsLabelEXT = LoadExtension<PFN_vkCmdEndDebugUtilsLabelEXT>(
-            instance, "vkCmdEndDebugUtilsLabelEXT"
-        );
-
-        g_ExtensionState.p_QueueBeginDebugUtilsLabelEXT = LoadExtension<PFN_vkQueueBeginDebugUtilsLabelEXT>(
-            instance, "vkQueueBeginDebugUtilsLabelEXT"
-        );
-
-        g_ExtensionState.p_QueueEndDebugUtilsLabelEXT = LoadExtension<PFN_vkQueueEndDebugUtilsLabelEXT>(
-            instance, "vkQueueEndDebugUtilsLabelEXT"
-        );
-
-        g_ExtensionState.p_SetDebugUtilsObjectNameEXT = LoadExtension<PFN_vkSetDebugUtilsObjectNameEXT>(
-            instance, "vkSetDebugUtilsObjectNameEXT"
-        );
-        #endif
-    }
-
-    bool Extensions::CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions)
+    bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions)
     {
         u32 extensionCount = 0;
         vkEnumerateDeviceExtensionProperties
@@ -113,73 +70,4 @@ namespace Vk
 
         return _requiredExtensions.empty();
     }
-
-    void Extensions::LoadDeviceFunctions(UNUSED VkDevice device)
-    {
-    }
-
-    void Extensions::Destroy()
-    {
-        g_ExtensionState = {};
-    }
-}
-
-extern "C"
-{
-    #ifdef ENGINE_DEBUG
-
-    VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT
-    (
-        VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-        const VkAllocationCallbacks* pAllocator,
-        VkDebugUtilsMessengerEXT* pMessenger
-    )
-    {
-        auto fn = Vk::g_ExtensionState.p_CreateDebugUtilsMessengerEXT;
-        return fn != nullptr ? fn(instance, pCreateInfo, pAllocator, pMessenger) : VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-    
-    VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT
-    (
-        VkInstance instance,
-        VkDebugUtilsMessengerEXT messenger,
-        const VkAllocationCallbacks* pAllocator
-    )
-    {
-        auto fn = Vk::g_ExtensionState.p_DestroyDebugUtilsMessengerEXT;
-        fn != nullptr ? fn(instance, messenger, pAllocator) : (void) fn;
-    }
-
-    VKAPI_ATTR void VKAPI_CALL vkCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo)
-    {
-        auto fn = Vk::g_ExtensionState.p_CmdBeginDebugUtilsLabelEXT;
-        fn != nullptr ? fn(commandBuffer, pLabelInfo) : (void) fn;
-    }
-
-    VKAPI_ATTR void VKAPI_CALL vkCmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer)
-    {
-        auto fn = Vk::g_ExtensionState.p_CmdEndDebugUtilsLabelEXT;
-        fn != nullptr ? fn(commandBuffer) : (void) fn;
-    }
-
-    VKAPI_ATTR void VKAPI_CALL vkQueueBeginDebugUtilsLabelEXT(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo)
-    {
-        auto fn = Vk::g_ExtensionState.p_QueueBeginDebugUtilsLabelEXT;
-        fn != nullptr ? fn(queue, pLabelInfo) : (void) fn;
-    }
-
-    VKAPI_ATTR void VKAPI_CALL vkQueueEndDebugUtilsLabelEXT(VkQueue queue)
-    {
-        auto fn = Vk::g_ExtensionState.p_QueueEndDebugUtilsLabelEXT;
-        fn != nullptr ? fn(queue) : (void) fn;
-    }
-
-    VKAPI_ATTR VkResult VKAPI_CALL vkSetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
-    {
-        auto fn = Vk::g_ExtensionState.p_SetDebugUtilsObjectNameEXT;
-        return fn != nullptr ? fn(device, pNameInfo) : VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-
-    #endif
 }

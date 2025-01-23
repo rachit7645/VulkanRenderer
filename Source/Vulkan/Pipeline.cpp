@@ -15,6 +15,9 @@
  */
 
 #include "Pipeline.h"
+
+#include <volk/volk.h>
+
 #include "CommandBuffer.h"
 #include "Util.h"
 

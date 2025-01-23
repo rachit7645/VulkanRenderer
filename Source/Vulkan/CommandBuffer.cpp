@@ -16,6 +16,8 @@
 
 #include "CommandBuffer.h"
 
+#include <volk/volk.h>
+
 #include "Util.h"
 
 namespace Vk

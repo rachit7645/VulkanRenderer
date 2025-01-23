@@ -15,6 +15,7 @@
  */
 
 #include <vulkan/vk_enum_string_helper.h>
+#include <volk/volk.h>
 
 #include "Util.h"
 #include "DebugUtils.h"

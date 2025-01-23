@@ -16,6 +16,8 @@
 
 #include "DescriptorWriter.h"
 
+#include <volk/volk.h>
+
 namespace Vk
 {
     DescriptorWriter& DescriptorWriter::WriteImage

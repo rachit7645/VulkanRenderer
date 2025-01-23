@@ -73,7 +73,6 @@ add_executable(VulkanRenderer
     Source/Vulkan/DebugUtils.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
-	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/FreeCamera.cpp
@@ -105,6 +104,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<vulkan/vulkan.h>
 	<vulkan/vulkan_core.h>
 	<vulkan/vk_enum_string_helper.h>
+    Externals/volk/volk.h
 	# ImGui Headers
     Externals/imgui/imgui.h
     Externals/imgui/imgui_internal.h
@@ -170,6 +170,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
 
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
+# No vulkan prototypes
+target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
 # -O3 optimisations (Set to -Og when debugging)
 target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
@@ -200,8 +202,8 @@ add_dependencies(VulkanRenderer Shaders)
 
 # Link libraries
 target_link_libraries(VulkanRenderer
-	Vulkan::Vulkan
     Vulkan::Headers
+    volk::volk
 	SDL3::SDL3
 	fmt::fmt
 	fastgltf::fastgltf
@@ -219,7 +221,6 @@ install(
 
 # Copy required DLLs
 install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
-install(FILES $<TARGET_RUNTIME_DLLS:imgui>          DESTINATION ${INSTALL_DIR})
 
 # Copy other directories
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets)

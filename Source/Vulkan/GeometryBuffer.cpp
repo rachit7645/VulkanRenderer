@@ -14,9 +14,10 @@
 
 #include "GeometryBuffer.h"
 
-#include <Models/Model.h>
+#include <volk/volk.h>
 
 #include "Util/Log.h"
+#include "Models/Model.h"
 #include "DebugUtils.h"
 
 namespace Vk

@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #include "Image.h"
+
+#include <vulkan/vk_enum_string_helper.h>
+#include <volk/volk.h>
+
 #include "Util.h"
 #include "Util/Log.h"
 

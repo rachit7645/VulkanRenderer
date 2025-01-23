@@ -43,7 +43,7 @@ namespace Engine
         [[nodiscard]] glm::vec2 GetRStick() const;
 
         [[nodiscard]] SDL_Gamepad* GetGamepad() const;
-        [[nodiscard]] SDL_JoystickID      GetGamepadID() const;
+        [[nodiscard]] SDL_JoystickID GetGamepadID() const;
 
         [[nodiscard]] bool WasMouseMoved() const;
         [[nodiscard]] bool WasMouseScrolled() const;

@@ -19,7 +19,6 @@
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DescriptorWriter.h"
-#include "Vulkan/Builders/DescriptorLayoutBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Swapchain

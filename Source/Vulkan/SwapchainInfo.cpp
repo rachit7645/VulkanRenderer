@@ -16,6 +16,8 @@
 
 #include "SwapchainInfo.h"
 
+#include <volk/volk.h>
+
 #include "Util.h"
 #include "Util/Util.h"
 #include "Util/Log.h"

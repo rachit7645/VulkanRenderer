@@ -15,6 +15,7 @@
  */
 
 #include <vulkan/utility/vk_format_utils.h>
+#include <volk/volk.h>
 
 #include "Texture.h"
 #include "Util.h"

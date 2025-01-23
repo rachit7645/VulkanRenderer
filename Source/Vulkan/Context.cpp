@@ -21,6 +21,7 @@
 #include <array>
 #include <vector>
 #include <vulkan/vk_enum_string_helper.h>
+#include <volk/volk.h>
 
 #include "Extensions.h"
 #include "SwapchainInfo.h"
@@ -36,8 +37,18 @@ namespace Vk
     constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     #endif
 
+    // Required instance extensions
+    constexpr std::array REQUIRED_INSTANCE_EXTENSIONS =
+    {
+        VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
+        VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME
+        #ifdef ENGINE_DEBUG
+        , VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+        #endif
+    };
+
     // Required device extensions
-    constexpr std::array REQUIRED_EXTENSIONS =
+    constexpr std::array REQUIRED_DEVICE_EXTENSIONS =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
@@ -49,6 +60,8 @@ namespace Vk
 
     Context::Context(const std::shared_ptr<Engine::Window>& window)
     {
+        Vk::CheckResult(volkInitialize(), "Failed to initialize volk!");
+
         CreateInstance();
 
         CreateSurface(window->handle);
@@ -77,7 +90,7 @@ namespace Vk
             .apiVersion         = VULKAN_API_VERSION
         };
 
-        auto extensions = m_extensions.LoadInstanceExtensions();
+        auto extensions = Vk::LoadInstanceExtensions(REQUIRED_INSTANCE_EXTENSIONS);
 
         #ifdef ENGINE_ENABLE_VALIDATION
         m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
@@ -113,7 +126,7 @@ namespace Vk
 
         Logger::Info("Successfully initialised Vulkan instance! [handle={}]\n", std::bit_cast<void*>(instance));
 
-        m_extensions.LoadInstanceFunctions(instance);
+        volkLoadInstanceOnly(instance);
 
         #ifdef ENGINE_ENABLE_VALIDATION
         m_layers.SetupMessenger(instance);
@@ -235,7 +248,7 @@ namespace Vk
 
         // Requirements
         const bool isQueueValid  = queue.IsComplete();
-        const bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(phyDevice, REQUIRED_EXTENSIONS);
+        const bool hasExtensions = Vk::CheckDeviceExtensionSupport(phyDevice, REQUIRED_DEVICE_EXTENSIONS);
 
         // Standard features
         const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
@@ -353,8 +366,8 @@ namespace Vk
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
             #endif
-            .enabledExtensionCount   = static_cast<u32>(REQUIRED_EXTENSIONS.size()),
-            .ppEnabledExtensionNames = REQUIRED_EXTENSIONS.data(),
+            .enabledExtensionCount   = static_cast<u32>(REQUIRED_DEVICE_EXTENSIONS.size()),
+            .ppEnabledExtensionNames = REQUIRED_DEVICE_EXTENSIONS.data(),
             .pEnabledFeatures        = nullptr
         };
 
@@ -366,7 +379,7 @@ namespace Vk
             "Failed to create logical device!"
         );
 
-        m_extensions.LoadDeviceFunctions(device);
+        volkLoadDevice(device);
 
         Logger::Info("Created logical device! [handle={}]\n", std::bit_cast<void*>(device));
 
@@ -410,6 +423,37 @@ namespace Vk
 
     void Context::CreateAllocator()
     {
+        const VmaVulkanFunctions vulkanFunctions =
+        {
+            .vkGetInstanceProcAddr                   = vkGetInstanceProcAddr,
+            .vkGetDeviceProcAddr                     = vkGetDeviceProcAddr,
+            .vkGetPhysicalDeviceProperties           = vkGetPhysicalDeviceProperties,
+            .vkGetPhysicalDeviceMemoryProperties     = vkGetPhysicalDeviceMemoryProperties,
+            .vkAllocateMemory                        = vkAllocateMemory,
+            .vkFreeMemory                            = vkFreeMemory,
+            .vkMapMemory                             = vkMapMemory,
+            .vkUnmapMemory                           = vkUnmapMemory,
+            .vkFlushMappedMemoryRanges               = vkFlushMappedMemoryRanges,
+            .vkInvalidateMappedMemoryRanges          = vkInvalidateMappedMemoryRanges,
+            .vkBindBufferMemory                      = vkBindBufferMemory,
+            .vkBindImageMemory                       = vkBindImageMemory,
+            .vkGetBufferMemoryRequirements           = vkGetBufferMemoryRequirements,
+            .vkGetImageMemoryRequirements            = vkGetImageMemoryRequirements,
+            .vkCreateBuffer                          = vkCreateBuffer,
+            .vkDestroyBuffer                         = vkDestroyBuffer,
+            .vkCreateImage                           = vkCreateImage,
+            .vkDestroyImage                          = vkDestroyImage,
+            .vkCmdCopyBuffer                         = vkCmdCopyBuffer,
+            .vkGetBufferMemoryRequirements2KHR       = vkGetBufferMemoryRequirements2,
+            .vkGetImageMemoryRequirements2KHR        = vkGetImageMemoryRequirements2,
+            .vkBindBufferMemory2KHR                  = vkBindBufferMemory2,
+            .vkBindImageMemory2KHR                   = vkBindImageMemory2,
+            .vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2,
+            .vkGetDeviceBufferMemoryRequirements     = vkGetDeviceBufferMemoryRequirements,
+            .vkGetDeviceImageMemoryRequirements      = vkGetDeviceImageMemoryRequirements,
+            .vkGetMemoryWin32HandleKHR               = nullptr
+        };
+
         const VmaAllocatorCreateInfo createInfo =
         {
             .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT   |
@@ -422,7 +466,7 @@ namespace Vk
             .pAllocationCallbacks        = nullptr,
             .pDeviceMemoryCallbacks      = nullptr,
             .pHeapSizeLimit              = nullptr,
-            .pVulkanFunctions            = nullptr,
+            .pVulkanFunctions            = &vulkanFunctions,
             .instance                    = instance,
             .vulkanApiVersion            = VULKAN_API_VERSION
             #if VMA_EXTERNAL_MEMORY
@@ -460,9 +504,9 @@ namespace Vk
         m_layers.Destroy(instance);
         #endif
 
-        m_extensions.Destroy();
-
         vkDestroyInstance(instance, nullptr);
+
+        volkFinalize();
 
         Logger::Info("{}\n", "Destroyed vulkan context!");
     }
