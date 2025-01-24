@@ -53,15 +53,16 @@ namespace Renderer::Forward
         auto colorFormats = std::span(&colorFormat, 1);
 
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
+            .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
             .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetVertexInputState({}, {})
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
             .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
+            .AddBlendAttachment()
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
             .AddDescriptorLayout(megaSet.descriptorSet.layout)

@@ -20,7 +20,6 @@
 #include "SwapchainConstants.h"
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/Swapchain.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/Context.h"

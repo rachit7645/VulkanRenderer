@@ -32,17 +32,16 @@ namespace Vk
 
     ShaderModule::ShaderModule(VkDevice device, const std::string_view path)
     {
-        auto fullPath = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
+        const auto fullPath     = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
+        const auto shaderBinary = Engine::Files::ReadBytes(fullPath);
 
-        auto shaderBinary = Engine::Files::ReadBytes(fullPath);
-
-        VkShaderModuleCreateInfo createInfo =
+        const VkShaderModuleCreateInfo createInfo =
         {
             .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             .pNext    = nullptr,
             .flags    = 0,
             .codeSize = static_cast<u32>(shaderBinary.size()),
-            .pCode    = reinterpret_cast<u32*>(shaderBinary.data())
+            .pCode    = reinterpret_cast<const u32*>(shaderBinary.data())
         };
 
         Vk::CheckResult(vkCreateShaderModule(
@@ -50,12 +49,12 @@ namespace Vk
             &createInfo,
             nullptr,
             &handle),
-            fmt::format("Failed to create shader module for shader binary {}!", path)
+            fmt::format("Failed to create shader module! [Path={}]!", path)
         );
 
         Vk::SetDebugName(device, handle, Engine::Files::GetNameWithoutExtension(path));
 
-        Logger::Info("Created shader module {} [handle={}]\n", path, std::bit_cast<void*>(handle));
+        Logger::Debug("Created shader module {} [handle={}]\n", path, std::bit_cast<void*>(handle));
     }
 
     void ShaderModule::Destroy(VkDevice device) const

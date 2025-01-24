@@ -20,6 +20,7 @@
 #include "SwapchainPipeline.h"
 #include "Vulkan/DepthBuffer.h"
 #include "Vulkan/CommandBuffer.h"
+#include "Vulkan/Swapchain.h"
 
 namespace Renderer::Swapchain
 {

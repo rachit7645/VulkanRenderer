@@ -18,7 +18,6 @@
 
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Util/Log.h"
-#include "Vulkan/DescriptorWriter.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Swapchain
@@ -53,16 +52,17 @@ namespace Renderer::Swapchain
         std::array colorFormats = {colorFormat};
 
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
+            .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
             .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetVertexInputState({}, {})
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
+            .AddBlendAttachment()
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(Swapchain::PushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Swapchain::PushConstant))
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 

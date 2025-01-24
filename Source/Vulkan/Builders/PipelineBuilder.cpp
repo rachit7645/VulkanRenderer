@@ -28,10 +28,10 @@ namespace Vk::Builders
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = static_cast<u32>(descriptorLayouts.size()),
-            .pSetLayouts            = descriptorLayouts.data(),
-            .pushConstantRangeCount = static_cast<u32>(pushConstantRanges.size()),
-            .pPushConstantRanges    = pushConstantRanges.data()
+            .setLayoutCount         = static_cast<u32>(m_descriptorLayouts.size()),
+            .pSetLayouts            = m_descriptorLayouts.data(),
+            .pushConstantRangeCount = static_cast<u32>(m_pushConstantRanges.size()),
+            .pPushConstantRanges    = m_pushConstantRanges.data()
         };
 
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
@@ -43,48 +43,118 @@ namespace Vk::Builders
             "Failed to create pipeline layout!"
         );
 
-        const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
-        {
-            .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            .pNext               = &renderingCreateInfo,
-            .flags               = 0,
-            .stageCount          = static_cast<u32>(shaderStageCreateInfos.size()),
-            .pStages             = shaderStageCreateInfos.data(),
-            .pVertexInputState   = &vertexInputInfo                       ,
-            .pInputAssemblyState = &inputAssemblyInfo,
-            .pTessellationState  = nullptr,
-            .pViewportState      = &viewportInfo,
-            .pRasterizationState = &rasterizationInfo,
-            .pMultisampleState   = &msaaStateInfo,
-            .pDepthStencilState  = &depthStencilInfo,
-            .pColorBlendState    = &colorBlendInfo,
-            .pDynamicState       = &dynamicStateInfo,
-            .layout              = pipelineLayout,
-            .renderPass          = VK_NULL_HANDLE,
-            .subpass             = 0,
-            .basePipelineHandle  = VK_NULL_HANDLE,
-            .basePipelineIndex   = -1
-        };
-
         VkPipeline pipeline = VK_NULL_HANDLE;
-        Vk::CheckResult(vkCreateGraphicsPipelines(
-            m_context->device,
-            nullptr,
-            1,
-            &pipelineCreateInfo,
-            nullptr,
-            &pipeline),
-            "Failed to create pipeline!"
-        );
 
-        Logger::Debug("Created pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
+        switch (m_pipelineType)
+        {
+        case PipelineType::Graphics:
+        {
+            const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+            {
+                .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                .pNext               = &m_renderingCreateInfo,
+                .flags               = 0,
+                .stageCount          = static_cast<u32>(m_shaderStageCreateInfos.size()),
+                .pStages             = m_shaderStageCreateInfos.data(),
+                .pVertexInputState   = &m_vertexInputInfo                       ,
+                .pInputAssemblyState = &m_inputAssemblyInfo,
+                .pTessellationState  = nullptr,
+                .pViewportState      = &m_viewportInfo,
+                .pRasterizationState = &m_rasterizationInfo,
+                .pMultisampleState   = &m_msaaStateInfo,
+                .pDepthStencilState  = &m_depthStencilInfo,
+                .pColorBlendState    = &m_colorBlendInfo,
+                .pDynamicState       = &m_dynamicStateInfo,
+                .layout              = pipelineLayout,
+                .renderPass          = VK_NULL_HANDLE,
+                .subpass             = 0,
+                .basePipelineHandle  = VK_NULL_HANDLE,
+                .basePipelineIndex   = -1
+            };
+
+            Vk::CheckResult(vkCreateGraphicsPipelines(
+                m_context->device,
+                nullptr,
+                1,
+                &pipelineCreateInfo,
+                nullptr,
+                &pipeline),
+                "Failed to create graphics pipeline!"
+            );
+
+            Logger::Debug("Created graphics pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
+        }
+        break;
+
+        case PipelineType::Compute:
+        {
+            VkComputePipelineCreateInfo pipelineCreateInfo =
+            {
+                .sType              = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                .pNext              = nullptr,
+                .flags              = 0,
+                .stage              = m_shaderStageCreateInfos[0],
+                .layout             = pipelineLayout,
+                .basePipelineHandle = VK_NULL_HANDLE,
+                .basePipelineIndex  = -1
+            };
+
+            Vk::CheckResult(vkCreateComputePipelines(
+                m_context->device,
+                nullptr,
+                1,
+                &pipelineCreateInfo,
+                nullptr,
+                &pipeline),
+                "Failed to create compute pipeline!"
+            );
+
+            Logger::Debug("Created compute pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
+        }
+        break;
+
+        default:
+            Logger::Error("{}\n", "Invalid pipeline type!");
+        }
 
         return {pipeline, pipelineLayout};
+    }
+
+    PipelineBuilder& PipelineBuilder::SetPipelineType(PipelineType type)
+    {
+        m_pipelineType = type;
+
+        return *this;
     }
 
     PipelineBuilder::PipelineBuilder(const Vk::Context& context)
         : m_context(&context)
     {
+        // Disable warnings
+        #if defined(__GNUC__) && !defined(__clang__)
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+        #elif defined(__clang__)
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wmissing-field-initializers"
+        #endif
+
+        m_renderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO           };
+        m_dynamicStateInfo    = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO       };
+        m_viewportInfo        = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO      };
+        m_vertexInputInfo     = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO  };
+        m_inputAssemblyInfo   = {.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+        m_rasterizationInfo   = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+        m_msaaStateInfo       = {.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO   };
+        m_depthStencilInfo    = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+        m_colorBlendInfo      = {.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO   };
+
+        // Reset warning stack
+        #if defined(__GNUC__) && !defined(__clang__)
+        #pragma GCC diagnostic pop
+        #elif defined(__clang__)
+        #pragma clang diagnostic pop
+        #endif
     }
 
     PipelineBuilder& PipelineBuilder::SetRenderingInfo
@@ -94,15 +164,15 @@ namespace Vk::Builders
         VkFormat stencilFormat
     )
     {
-        renderingColorFormats = std::vector(colorFormats.begin(), colorFormats.end());
+        m_renderingColorFormats = std::vector(colorFormats.begin(), colorFormats.end());
 
-        renderingCreateInfo =
+        m_renderingCreateInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .pNext                   = nullptr,
             .viewMask                = 0,
-            .colorAttachmentCount    = static_cast<u32>(renderingColorFormats.size()),
-            .pColorAttachmentFormats = renderingColorFormats.data(),
+            .colorAttachmentCount    = static_cast<u32>(m_renderingColorFormats.size()),
+            .pColorAttachmentFormats = m_renderingColorFormats.data(),
             .depthAttachmentFormat   = depthFormat,
             .stencilAttachmentFormat = stencilFormat
         };
@@ -112,7 +182,7 @@ namespace Vk::Builders
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
     {
-        shaderModules.emplace_back(m_context->device, path);
+        m_shaderModules.emplace_back(m_context->device, path);
 
         const VkPipelineShaderStageCreateInfo stageCreateInfo =
         {
@@ -120,38 +190,27 @@ namespace Vk::Builders
             .pNext               = nullptr,
             .flags               = 0,
             .stage               = shaderStage,
-            .module              = shaderModules.back().handle,
+            .module              = m_shaderModules.back().handle,
             .pName               = "main",
             .pSpecializationInfo = nullptr
         };
 
-        shaderStageCreateInfos.emplace_back(stageCreateInfo);
+        m_shaderStageCreateInfos.emplace_back(stageCreateInfo);
 
         return *this;
     }
 
     PipelineBuilder& PipelineBuilder::SetDynamicStates(const std::span<const VkDynamicState> vkDynamicStates)
     {
-        dynamicStates = std::vector(vkDynamicStates.begin(), vkDynamicStates.end());
+        m_dynamicStates = std::vector(vkDynamicStates.begin(), vkDynamicStates.end());
 
-        dynamicStateInfo =
+        m_dynamicStateInfo =
         {
             .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
             .pNext             = nullptr,
             .flags             = 0,
-            .dynamicStateCount = static_cast<u32>(dynamicStates.size()),
-            .pDynamicStates    = dynamicStates.data()
-        };
-
-        viewportInfo =
-        {
-            .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            .pNext         = nullptr,
-            .flags         = 0,
-            .viewportCount = 0,
-            .pViewports    = nullptr,
-            .scissorCount  = 0,
-            .pScissors     = nullptr
+            .dynamicStateCount = static_cast<u32>(m_dynamicStates.size()),
+            .pDynamicStates    = m_dynamicStates.data()
         };
 
         return *this;
@@ -163,18 +222,18 @@ namespace Vk::Builders
         const std::span<const VkVertexInputAttributeDescription> vertexAttribs
     )
     {
-        vertexInputBindings      = std::vector(vertexBindings.begin(), vertexBindings.end());
-        vertexAttribDescriptions = std::vector(vertexAttribs.begin(), vertexAttribs.end());
+        m_vertexInputBindings      = std::vector(vertexBindings.begin(), vertexBindings.end());
+        m_vertexAttribDescriptions = std::vector(vertexAttribs.begin(), vertexAttribs.end());
 
-        vertexInputInfo =
+        m_vertexInputInfo =
         {
             .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .pNext                           = nullptr,
             .flags                           = 0,
-            .vertexBindingDescriptionCount   = static_cast<u32>(vertexInputBindings.size()),
-            .pVertexBindingDescriptions      = vertexInputBindings.data(),
-            .vertexAttributeDescriptionCount = static_cast<u32>(vertexAttribDescriptions.size()),
-            .pVertexAttributeDescriptions    = vertexAttribDescriptions.data()
+            .vertexBindingDescriptionCount   = static_cast<u32>(m_vertexInputBindings.size()),
+            .pVertexBindingDescriptions      = m_vertexInputBindings.data(),
+            .vertexAttributeDescriptionCount = static_cast<u32>(m_vertexAttribDescriptions.size()),
+            .pVertexAttributeDescriptions    = m_vertexAttribDescriptions.data()
         };
 
         return *this;
@@ -182,7 +241,7 @@ namespace Vk::Builders
 
     PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
     {
-        rasterizationInfo =
+        m_rasterizationInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
             .pNext                   = nullptr,
@@ -204,7 +263,7 @@ namespace Vk::Builders
 
     PipelineBuilder& PipelineBuilder::SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart)
     {
-        inputAssemblyInfo =
+        m_inputAssemblyInfo =
         {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
             .pNext                  = nullptr,
@@ -216,17 +275,16 @@ namespace Vk::Builders
         return *this;
     }
 
-    // TODO: Add customisable MSAA
     PipelineBuilder& PipelineBuilder::SetMSAAState()
     {
-        msaaStateInfo =
+        m_msaaStateInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             .pNext                 = nullptr,
             .flags                 = 0,
             .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
-            .sampleShadingEnable   = VK_FALSE, // Disables MSAA
-            .minSampleShading      = 1.0f,
+            .sampleShadingEnable   = VK_FALSE,
+            .minSampleShading      = 0.0f,
             .pSampleMask           = nullptr,
             .alphaToCoverageEnable = VK_FALSE,
             .alphaToOneEnable      = VK_FALSE
@@ -245,7 +303,7 @@ namespace Vk::Builders
         const VkStencilOpState& back
     )
     {
-        depthStencilInfo =
+        m_depthStencilInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
             .pNext                 = nullptr,
@@ -264,8 +322,7 @@ namespace Vk::Builders
         return *this;
     }
 
-    // TODO: Add customisable blending
-    PipelineBuilder& PipelineBuilder::SetBlendState()
+    PipelineBuilder& PipelineBuilder::AddBlendAttachment()
     {
         VkPipelineColorBlendAttachmentState colorBlendAttachment =
         {
@@ -282,17 +339,22 @@ namespace Vk::Builders
                                    VK_COLOR_COMPONENT_A_BIT
         };
 
-        colorBlendStates.emplace_back(colorBlendAttachment);
+        m_colorBlendStates.emplace_back(colorBlendAttachment);
 
-        colorBlendInfo =
+        return *this;
+    }
+
+    PipelineBuilder& PipelineBuilder::SetBlendState()
+    {
+        m_colorBlendInfo =
         {
             .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
             .pNext           = nullptr,
             .flags           = 0,
             .logicOpEnable   = VK_FALSE,
             .logicOp         = VK_LOGIC_OP_COPY,
-            .attachmentCount = static_cast<u32>(colorBlendStates.size()),
-            .pAttachments    = colorBlendStates.data(),
+            .attachmentCount = static_cast<u32>(m_colorBlendStates.size()),
+            .pAttachments    = m_colorBlendStates.data(),
             .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f}
         };
 
@@ -308,21 +370,21 @@ namespace Vk::Builders
             .size       = size
         };
 
-        pushConstantRanges.emplace_back(pushConstant);
+        m_pushConstantRanges.emplace_back(pushConstant);
 
         return *this;
     }
 
     PipelineBuilder& PipelineBuilder::AddDescriptorLayout(VkDescriptorSetLayout layout)
     {
-        descriptorLayouts.emplace_back(layout);
+        m_descriptorLayouts.emplace_back(layout);
 
         return *this;
     }
 
     PipelineBuilder::~PipelineBuilder()
     {
-        for (const auto& shaderModule : shaderModules)
+        for (const auto& shaderModule : m_shaderModules)
         {
             shaderModule.Destroy(m_context->device);
         }
