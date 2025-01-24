@@ -174,6 +174,27 @@ namespace Renderer::Forward
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
+        static DirLight sun =
+        {
+            .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
+            .color     = {1.0f,   0.956f, 0.898f, 1.0f},
+            .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
+        };
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Light"))
+            {
+                ImGui::DragFloat3("Position",  &sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                ImGui::ColorEdit3("Color",     &sun.color[0]);
+                ImGui::DragFloat3("Intensity", &sun.intensity[0], 1.0f, 0.0f, 0.0f, "%.2f");
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         SceneBuffer sceneBuffer =
         {
             .projection = Maths::CreateProjectionReverseZ(
@@ -186,11 +207,7 @@ namespace Renderer::Forward
             .view = camera.GetViewMatrix(),
             .cameraPos = {camera.position, 1.0f},
             .samplerIndex = pipeline.samplerIndex,
-            .dirLight = {
-                .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
-                .color     = {1.0f,   0.956f, 0.898f, 1.0f},
-                .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
-            }
+            .dirLight = sun
         };
 
         std::memcpy(pipeline.sceneBuffers[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(Forward::SceneBuffer));

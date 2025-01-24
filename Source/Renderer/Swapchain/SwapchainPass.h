@@ -28,26 +28,24 @@ namespace Renderer::Swapchain
     public:
         SwapchainPass
         (
-            Engine::Window& window,
             const Vk::Context& context,
+            const Vk::Swapchain& swapchain,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
 
         void Recreate
         (
-            Engine::Window& window,
             const Vk::Context& context,
+            const Vk::Swapchain& swapchain,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
-        void Render(const Vk::MegaSet& megaSet, usize FIF);
-        void Present(VkQueue queue, usize FIF);
+        void Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF);
 
-        Vk::Swapchain                swapchain;
         Swapchain::SwapchainPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};

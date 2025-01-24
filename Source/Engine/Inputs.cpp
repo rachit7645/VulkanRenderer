@@ -27,8 +27,6 @@ namespace Engine
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
-
-        FindGamepad();
     }
 
     Inputs& Inputs::Get()
@@ -96,7 +94,7 @@ namespace Engine
         (
             SDL_GAMEPAD_AXIS_LEFTX,
             SDL_GAMEPAD_AXIS_LEFTY,
-            {0.3f, 0.3f}
+            {0.1f, 0.1f}
         );
     }
 
@@ -106,7 +104,7 @@ namespace Engine
         (
             SDL_GAMEPAD_AXIS_RIGHTX,
             SDL_GAMEPAD_AXIS_RIGHTY,
-            {0.1f, 0.1f}
+            {0.3f, 0.3f}
         );
     }
 
@@ -143,8 +141,8 @@ namespace Engine
             return {0, 0};
         }
 
-        auto x = SDL_GetGamepadAxis(m_gamepad, axisHorizontal);
-        auto y = SDL_GetGamepadAxis(m_gamepad, axisVertical);
+        const auto x = SDL_GetGamepadAxis(m_gamepad, axisHorizontal);
+        const auto y = SDL_GetGamepadAxis(m_gamepad, axisVertical);
 
         constexpr auto AXIS_MAX = static_cast<f32>(SDL_JOYSTICK_AXIS_MAX);
         f32 normalizedX = static_cast<f32>(x) / AXIS_MAX;
@@ -203,7 +201,6 @@ namespace Engine
     {
         SDL_CloseGamepad(m_gamepad);
 
-        m_keys    = nullptr;
         m_gamepad = nullptr;
 
         m_mousePosition = {};

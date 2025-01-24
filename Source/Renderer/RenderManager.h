@@ -36,7 +36,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        explicit RenderManager(const std::shared_ptr<Engine::Window>& window);
+        RenderManager();
         ~RenderManager();
 
         // No copying
@@ -48,21 +48,25 @@ namespace Renderer
         RenderManager& operator=(RenderManager&& other) = default;
 
         void Render();
+        [[nodiscard]] bool HandleEvents();
     private:
+        void WaitForFences();
+        void AcquireSwapchainImage();
         void BeginFrame();
         void Update();
         void EndFrame();
         void SubmitQueue();
-        void Reset();
+        void Resize();
 
         void InitImGui();
         void CreateSyncObjects();
 
         // Object handles
-        std::shared_ptr<Engine::Window> m_window = nullptr;
-        Vk::Context                     m_context;
-        Models::ModelManager            m_modelManager;
-        Vk::MegaSet                     m_megaSet;
+        Engine::Window       m_window;
+        Vk::Context          m_context;
+        Vk::Swapchain        m_swapchain;
+        Models::ModelManager m_modelManager;
+        Vk::MegaSet          m_megaSet;
 
         // Render Passes
         Swapchain::SwapchainPass m_swapPass;
@@ -79,6 +83,8 @@ namespace Renderer
         usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
+
+        bool m_isSwapchainOk = true;
 
         Util::DeletionQueue m_deletionQueue = {};
     };

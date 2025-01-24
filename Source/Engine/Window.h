@@ -20,6 +20,7 @@
 #include <SDL3/SDL.h>
 
 #include "Externals/GLM.h"
+#include "Vulkan/Swapchain.h"
 
 namespace Engine
 {
@@ -36,9 +37,6 @@ namespace Engine
         // Only moving
         Window(Window&& other)            = default;
         Window& operator=(Window&& other) = default;
-
-        [[nodiscard]] bool PollEvents();
-        void WaitForRestoration();
 
         // SDL window handle
         SDL_Window* handle = nullptr;

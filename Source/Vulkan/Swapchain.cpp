@@ -24,24 +24,22 @@
 
 namespace Vk
 {
-    Swapchain::Swapchain(Engine::Window& window, const Vk::Context& context)
+    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
     {
-        CreateSwapChain(window, context);
+        CreateSwapChain(size, context);
         CreateSyncObjects(context.device);
         Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::RecreateSwapChain(Engine::Window& window, const Vk::Context& context)
+    void Swapchain::RecreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
     {
         DestroySwapchain(context.device);
-        window.WaitForRestoration();
-
-        CreateSwapChain(window, context);
+        CreateSwapChain(size, context);
 
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::Present(VkQueue queue, usize FIF)
+    VkResult Swapchain::Present(VkQueue queue, usize FIF)
     {
         const std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
         const std::array swapChains       = {handle};
@@ -59,17 +57,10 @@ namespace Vk
             .pResults           = nullptr
         };
 
-        m_status[1] = vkQueuePresentKHR(queue, &presentInfo);
+        return vkQueuePresentKHR(queue, &presentInfo);
     }
 
-    bool Swapchain::IsSwapchainValid()
-    {
-        bool isValid = m_status[0] == VK_SUCCESS && m_status[1] == VK_SUCCESS;
-        m_status.fill(VK_SUCCESS);
-        return isValid;
-    }
-
-    void Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
+    VkResult Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
     {
         VkAcquireNextImageInfoKHR acquireNextImageInfo =
         {
@@ -82,7 +73,7 @@ namespace Vk
             .deviceMask = 1
         };
 
-        m_status[0] = vkAcquireNextImage2KHR
+        return vkAcquireNextImage2KHR
         (
             device,
             &acquireNextImageInfo,
@@ -90,10 +81,10 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Engine::Window& window, const Vk::Context& context)
+    void Swapchain::CreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
     {
         m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
-        extent          = ChooseSwapExtent(window.handle);
+        extent          = ChooseSwapExtent(size);
 
         const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
         const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
@@ -105,10 +96,19 @@ namespace Vk
             m_swapChainInfo.capabilities.surfaceCapabilities.maxImageCount
         );
 
+        const VkSwapchainPresentScalingCreateInfoEXT presentScalingCreateInfo =
+        {
+            .sType           = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
+            .pNext           = nullptr,
+            .scalingBehavior = VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT,
+            .presentGravityX = VK_PRESENT_GRAVITY_MIN_BIT_EXT,
+            .presentGravityY = VK_PRESENT_GRAVITY_MIN_BIT_EXT
+        };
+
         const VkSwapchainPresentModesCreateInfoEXT presentModesCreateInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
-            .pNext            = nullptr,
+            .pNext            = &presentScalingCreateInfo,
             .presentModeCount = 1,
             .pPresentModes    = &presentMode
         };
@@ -326,7 +326,7 @@ namespace Vk
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D Swapchain::ChooseSwapExtent(SDL_Window* window) const
+    VkExtent2D Swapchain::ChooseSwapExtent(const glm::ivec2& size) const
     {
         const auto& capabilities = m_swapChainInfo.capabilities;
 
@@ -341,12 +341,6 @@ namespace Vk
             );
 
             return capabilities.surfaceCapabilities.currentExtent;
-        }
-
-        glm::ivec2 size = {};
-        if (!SDL_GetWindowSizeInPixels(window, &size.x, &size.y))
-        {
-            Logger::Error("SDL_GetWindowSizeInPixels Failed : {}\n", SDL_GetError());
         }
 
         const auto minSize = glm::ivec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);

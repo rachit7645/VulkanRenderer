@@ -58,13 +58,13 @@ namespace Vk
         #endif
     };
 
-    Context::Context(const std::shared_ptr<Engine::Window>& window)
+    Context::Context(SDL_Window* window)
     {
         Vk::CheckResult(volkInitialize(), "Failed to initialize volk!");
 
         CreateInstance();
 
-        CreateSurface(window->handle);
+        CreateSurface(window);
 
         PickPhysicalDevice();
         CreateLogicalDevice();

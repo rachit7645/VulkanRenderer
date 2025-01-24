@@ -25,13 +25,12 @@ namespace Renderer::Swapchain
 {
     SwapchainPass::SwapchainPass
     (
-        Engine::Window& window,
         const Vk::Context& context,
+        const Vk::Swapchain& swapchain,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : swapchain(window, context),
-          pipeline(context, megaSet, textureManager, swapchain.imageFormat)
+        : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -50,21 +49,19 @@ namespace Renderer::Swapchain
 
     void SwapchainPass::Recreate
     (
-        Engine::Window& window,
         const Vk::Context& context,
+        const Vk::Swapchain& swapchain,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
     {
-        swapchain.RecreateSwapChain(window, context);
-
         pipeline.Destroy(context.device);
         pipeline = Swapchain::SwapchainPipeline(context, megaSet, textureManager, swapchain.imageFormat);
 
         Logger::Info("{}\n", "Recreated swapchain pass!");
     }
 
-    void SwapchainPass::Render(const Vk::MegaSet& megaSet, usize FIF)
+    void SwapchainPass::Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF)
     {
         auto& currentCmdBuffer = cmdBuffers[FIF];
         auto& currentImage     = swapchain.images[swapchain.imageIndex];
@@ -215,11 +212,6 @@ namespace Renderer::Swapchain
         currentCmdBuffer.EndRecording();
     }
 
-    void SwapchainPass::Present(VkQueue queue, usize FIF)
-    {
-        swapchain.Present(queue, FIF);
-    }
-
     void SwapchainPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying swapchain pass!");
@@ -229,7 +221,6 @@ namespace Renderer::Swapchain
             cmdBuffer.Free(device, cmdPool);
         }
 
-        swapchain.Destroy(device);
         pipeline.Destroy(device);
     }
 }

@@ -21,8 +21,6 @@
 namespace Engine
 {
     AppInstance::AppInstance()
-        : m_window(std::make_shared<Window>()),
-          m_renderer(m_window)
     {
         Logger::Info("{}\n", "App instance initialised!");
     }
@@ -33,7 +31,7 @@ namespace Engine
         {
             m_renderer.Render();
 
-            if (m_window->PollEvents())
+            if (m_renderer.HandleEvents())
             {
                 break;
             }

@@ -24,13 +24,13 @@
 
 namespace Renderer
 {
-    RenderManager::RenderManager(const std::shared_ptr<Engine::Window>& window)
-        : m_window(window),
-          m_context(m_window),
+    RenderManager::RenderManager()
+        : m_context(m_window.handle),
+          m_swapchain(m_window.size, m_context),
           m_modelManager(m_context),
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
-          m_swapPass(*window, m_context, m_megaSet, m_modelManager.textureManager),
-          m_forwardPass(m_context, m_megaSet, m_modelManager.textureManager, m_swapPass.swapchain.extent)
+          m_swapPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
+          m_forwardPass(m_context, m_megaSet, m_modelManager.textureManager, m_swapchain.extent)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
@@ -40,6 +40,7 @@ namespace Renderer
             m_swapPass.Destroy(m_context.device, m_context.commandPool);
             m_forwardPass.Destroy(m_context.device, m_context.commandPool);
 
+            m_swapchain.Destroy(m_context.device);
             m_context.Destroy();
         });
 
@@ -67,15 +68,16 @@ namespace Renderer
 
     void RenderManager::Render()
     {
-        if (!m_swapPass.swapchain.IsSwapchainValid())
+        WaitForFences();
+        AcquireSwapchainImage();
+
+        // Swapchain is not ok, wait for resize event
+        if (!m_isSwapchainOk)
         {
-            // Skip drawing this frame
-            Reset();
             return;
         }
 
         BeginFrame();
-
         Update();
 
         m_forwardPass.Render
@@ -87,11 +89,9 @@ namespace Renderer
             m_renderObjects
         );
 
-        m_swapPass.Render(m_megaSet, m_currentFIF);
+        m_swapPass.Render(m_megaSet, m_swapchain, m_currentFIF);
 
         SubmitQueue();
-        m_swapPass.Present(m_context.graphicsQueue, m_currentFIF);
-
         EndFrame();
     }
 
@@ -101,9 +101,48 @@ namespace Renderer
         m_camera.Update(m_frameCounter.frameDelta);
 
         Engine::Inputs::Get().ImGuiDisplay();
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Render Objects"))
+            {
+                static usize renderObjectIndex = 0;
+
+                if (ImGui::BeginCombo("Object", fmt::format("[{}]", renderObjectIndex).c_str(), ImGuiComboFlags_None))
+                {
+                    for (usize i = 0; i < m_renderObjects.size(); ++i)
+                    {
+                        const bool isSelected = (renderObjectIndex == i);
+
+                        if (ImGui::Selectable(fmt::format("[{}]", i).c_str(), isSelected))
+                        {
+                            renderObjectIndex = i;
+                        }
+
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                // Immutable
+                ImGui::Text("ModelID: %llu", m_renderObjects[renderObjectIndex].modelID);
+                // Mutable
+                ImGui::DragFloat3("Position", &m_renderObjects[renderObjectIndex].position[0], 1.0f,               0.0f, 0.0f, "%.2f");
+                ImGui::DragFloat3("Rotation", &m_renderObjects[renderObjectIndex].rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
+                ImGui::DragFloat3("Scale",    &m_renderObjects[renderObjectIndex].scale[0],    1.0f,               0.0f, 0.0f, "%.2f");
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
     }
 
-    void RenderManager::BeginFrame()
+    void RenderManager::WaitForFences()
     {
         m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
 
@@ -122,7 +161,27 @@ namespace Renderer
             &inFlightFences[m_currentFIF]),
             "Unable to reset fence!"
         );
+    }
 
+    void RenderManager::AcquireSwapchainImage()
+    {
+        if (m_isSwapchainOk)
+        {
+            auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
+
+            if (result == VK_ERROR_OUT_OF_DATE_KHR)
+            {
+                m_isSwapchainOk = false;
+            }
+            else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+            {
+                Vk::CheckResult(result, "Failed to acquire swapchain image!");
+            }
+        }
+    }
+
+    void RenderManager::BeginFrame()
+    {
         #ifdef ENGINE_DEBUG
         const VkDebugUtilsLabelEXT label =
         {
@@ -135,8 +194,6 @@ namespace Renderer
         vkQueueBeginDebugUtilsLabelEXT(m_context.graphicsQueue, &label);
         #endif
 
-        m_swapPass.swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
-
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
@@ -144,6 +201,17 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
+        auto result = m_swapchain.Present(m_context.graphicsQueue, m_currentFIF);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            m_isSwapchainOk = false;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            Vk::CheckResult(result, "Failed to present swapchain image to queue!");
+        }
+
         #ifdef ENGINE_DEBUG
         vkQueueEndDebugUtilsLabelEXT(m_context.graphicsQueue);
         #endif
@@ -155,7 +223,7 @@ namespace Renderer
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
-            .semaphore   = m_swapPass.swapchain.imageAvailableSemaphores[m_currentFIF],
+            .semaphore   = m_swapchain.imageAvailableSemaphores[m_currentFIF],
             .value       = 0,
             .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             .deviceIndex = 0
@@ -183,7 +251,7 @@ namespace Renderer
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
-            .semaphore   = m_swapPass.swapchain.renderFinishedSemaphores[m_currentFIF],
+            .semaphore   = m_swapchain.renderFinishedSemaphores[m_currentFIF],
             .value       = 0,
             .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             .deviceIndex = 0
@@ -211,19 +279,93 @@ namespace Renderer
         );
     }
 
-    void RenderManager::Reset()
+    void RenderManager::Resize()
     {
         vkDeviceWaitIdle(m_context.device);
 
-        m_swapPass.Recreate(*m_window, m_context, m_megaSet, m_modelManager.textureManager);
-        m_forwardPass.Recreate(m_context, m_swapPass.swapchain.extent);
+        m_swapchain.RecreateSwapChain(m_window.size, m_context);
+
+        m_swapPass.Recreate(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager);
+        m_forwardPass.Recreate(m_context, m_swapchain.extent);
 
         m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
+
+        m_isSwapchainOk = true;
+
+        Render();
+    }
+
+    bool RenderManager::HandleEvents()
+    {
+        auto& inputs = Engine::Inputs::Get();
+
+        SDL_Event event;
+        while ((m_isSwapchainOk ? SDL_PollEvent(&event) : SDL_WaitEvent(&event)))
+        {
+            ImGui_ImplSDL3_ProcessEvent(&event);
+
+            switch (event.type)
+            {
+            case SDL_EVENT_QUIT:
+                return true;
+
+            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                if (event.window.data1 > 0 && event.window.data2 > 0)
+                {
+                    m_window.size = {event.window.data1, event.window.data2};
+                    Resize();
+                }
+                break;
+
+            case SDL_EVENT_KEY_DOWN:
+                switch (event.key.scancode)
+                {
+            case SDL_SCANCODE_F1:
+                if (!SDL_SetWindowRelativeMouseMode(m_window.handle, !SDL_GetWindowRelativeMouseMode(m_window.handle)))
+                {
+                    Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
+                }
+                break;
+
+            default:
+                break;
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_MOTION:
+                inputs.SetMousePosition(glm::vec2(event.motion.xrel, event.motion.yrel));
+                break;
+
+            case SDL_EVENT_MOUSE_WHEEL:
+                inputs.SetMouseScroll(glm::vec2(event.wheel.x, event.wheel.y));
+                break;
+
+            case SDL_EVENT_GAMEPAD_ADDED:
+                if (inputs.GetGamepad() == nullptr)
+                {
+                    inputs.FindGamepad();
+                }
+                break;
+
+            case SDL_EVENT_GAMEPAD_REMOVED:
+                if (inputs.GetGamepad() == nullptr && event.gdevice.which == inputs.GetGamepadID())
+                {
+                    SDL_CloseGamepad(inputs.GetGamepad());
+                    inputs.FindGamepad();
+                }
+                break;
+
+            default:
+                continue;
+            }
+        }
+
+        return false;
     }
 
     void RenderManager::InitImGui()
     {
-        auto swapchainFormat = m_swapPass.swapchain.imageFormat;
+        auto swapchainFormat = m_swapchain.imageFormat;
 
         ImGui_ImplVulkan_InitInfo imguiInitInfo =
         {
@@ -260,7 +402,7 @@ namespace Renderer
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
 
-        ImGui_ImplSDL3_InitForVulkan(m_window->handle);
+        ImGui_ImplSDL3_InitForVulkan(m_window.handle);
         ImGui_ImplVulkan_Init(&imguiInitInfo);
 
         m_deletionQueue.PushDeletor([&] ()

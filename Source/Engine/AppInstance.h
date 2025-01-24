@@ -17,9 +17,6 @@
 #ifndef APP_INSTANCE_H
 #define APP_INSTANCE_H
 
-#include <memory>
-
-#include "Window.h"
 #include "Renderer/RenderManager.h"
 
 namespace Engine
@@ -40,8 +37,6 @@ namespace Engine
 
         void Run();
     private:
-        // Shared window (FIXME: why??)
-        std::shared_ptr<Engine::Window> m_window = nullptr;
         // Renderer
         Renderer::RenderManager m_renderer;
     };

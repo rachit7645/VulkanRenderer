@@ -18,12 +18,11 @@
 #define VK_CONTEXT_H
 
 #include <vulkan/vulkan.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "ValidationLayers.h"
 #include "QueueFamilyIndices.h"
 #include "Util/Util.h"
-#include "Engine/Window.h"
 #include "Util/DeletionQueue.h"
 #include "Externals/VMA.h"
 
@@ -32,7 +31,7 @@ namespace Vk
     class Context
     {
     public:
-        explicit Context(const std::shared_ptr<Engine::Window>& window);
+        explicit Context(SDL_Window* window);
         void Destroy();
 
         // Vulkan instance
