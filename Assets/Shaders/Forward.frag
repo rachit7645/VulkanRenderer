@@ -62,14 +62,11 @@ void main()
     aoRghMtl.g   *= mesh.roughnessFactor;
     aoRghMtl.b   *= mesh.metallicFactor;
 
-    vec3 F0 = mix(vec3(0.04f), albedo.rgb, aoRghMtl.b);
-
     vec3 Lo = CalculateLight
     (
         GetDirLightInfo(Constants.Scene.light),
         normal,
         fragToCamera,
-        F0,
         albedo.rgb,
         aoRghMtl.g,
         aoRghMtl.b

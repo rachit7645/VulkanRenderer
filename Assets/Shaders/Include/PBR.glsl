@@ -22,17 +22,13 @@
 #include "Lights.glsl"
 
 // Trowbridge-Reitz Normal Distribution Function
-float DistributionGGX(vec3 N, vec3 H, float roughness)
+float DistributionGGX(float NdotH, float a)
 {
-	// Squared Roughness as proposed by Disney (?)
-	float a = roughness * roughness;
-
 	float a2     = a * a;
-	float NdotH  = max(dot(N, H), 0.0f);
 	float NdotH2 = NdotH * NdotH;
 
 	float nom   = a2;
-	float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
+	float denom = NdotH2 * (a2 - 1.0f) + 1.0f;
 	denom       = PI * denom * denom;
 
 	return nom / denom;
@@ -42,7 +38,6 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
 	float r = (roughness + 1.0f);
-	// Squared Roughness as proposed by Disney (?)
 	float k = (r * r) / 8.0f;
 
 	float nom   = NdotV;
@@ -52,13 +47,10 @@ float GeometrySchlickGGX(float NdotV, float roughness)
 }
 
 // Smith's method to combine Geometry functions
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+float GeometrySmith(float NdotV, float NdotL, float roughness)
 {
-	float NdotV = max(dot(N, V), 0.0f);
-	float NdotL = max(dot(N, L), 0.0f);
-
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
 	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
 
 	return ggx1 * ggx2;
 }
@@ -70,26 +62,28 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 	return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 }
 
-// Fresnel equation with injected roughness paramenter for IBL
-vec3 FresnelSchlick(float cosTheta, vec3 F0, float roughness)
+vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 albedo, float roughness, float metallic)
 {
-	// Clamp to avoid artifacts
-	return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
-}
+    vec3 L  = lightInfo.L;
+    vec3 H  = normalize(V + L);
+    vec3 F0 = mix(vec3(0.04f), albedo, metallic);
 
-vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 F0, vec3 albedo, float roughness, float metallic)
-{
-	vec3 L = lightInfo.L;      // Light direction vector
-	vec3 H = normalize(V + L); // Half-way vector
+    float NdotV = max(dot(N, V), 0.0f);
+    float NdotL = max(dot(N, L), 0.0f);
+    float NdotH = max(dot(N, H), 0.0f);
+    float HdotV = max(dot(H, V), 0.0f);
+
+    // Squared Roughness as proposed by Disney
+    float a = roughness * roughness;
 
 	// Cook-Torrance BRDF
-	float NDF = DistributionGGX(N, H, roughness);
-	float G   = GeometrySmith(N, V, L, roughness);
-	vec3  F   = FresnelSchlick(max(dot(H, V), 0.0f), F0);
+	float NDF = DistributionGGX(NdotH, a);
+	float G   = GeometrySmith(NdotV, NdotL, roughness);
+	vec3  F   = FresnelSchlick(HdotV, F0);
 
 	// Specular
 	vec3  numerator   = NDF * G * F;
-	float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f);
+	float denominator = 4.0f * NdotV * NdotL;
 	// To prevent division by zero
 	denominator   = max(denominator, 0.0001f);
 	vec3 specular = numerator / denominator;
@@ -99,7 +93,7 @@ vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 F0, vec3 albedo, f
 	vec3 kD = vec3(1.0f) - kS;
 	kD     *= 1.0f - metallic;
 
-	return (kD * (albedo / PI) + specular) * lightInfo.radiance * max(dot(N, L), 0.0f);
+	return (kD * (albedo / PI) + specular) * lightInfo.radiance * NdotL;
 }
 
 #endif
