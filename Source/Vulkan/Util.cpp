@@ -41,7 +41,7 @@ namespace Vk
             VK_COMMAND_BUFFER_LEVEL_PRIMARY
         );
 
-        VkFenceCreateInfo fenceCreateInfo =
+        const VkFenceCreateInfo fenceCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = nullptr,
@@ -51,7 +51,7 @@ namespace Vk
         VkFence fence;
         vkCreateFence(device, &fenceCreateInfo, nullptr, &fence);
 
-        auto name = fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location));
+        const auto name = fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location));
 
         Vk::SetDebugName(device, cmdBuffer.handle, name);
         Vk::SetDebugName(device, fence,            name);
@@ -70,7 +70,7 @@ namespace Vk
             .deviceMask    = 0
         };
 
-        VkSubmitInfo2 submitInfo =
+        const VkSubmitInfo2 submitInfo =
         {
             .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
             .pNext                    = nullptr,

@@ -39,7 +39,7 @@ layout(location = 0) out vec4 outColor;
 void main()
 {
     vec3 color = texture(sampler2D(textures[Constants.imageIndex], samplers[Constants.samplerIndex]), fragUV).rgb;
-         color = GammaCorrect(ACES(color));
+         color = GammaCorrect(ACESFast(color));
 
     outColor = vec4(color, 1.0f);
 }

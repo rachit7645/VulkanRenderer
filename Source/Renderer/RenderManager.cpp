@@ -58,6 +58,8 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         ));
 
+        m_modelManager.geometryBuffer.Update(m_context);
+
         // ImGui Yoy
         InitImGui();
         CreateSyncObjects();
@@ -182,17 +184,7 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
-        #ifdef ENGINE_DEBUG
-        const VkDebugUtilsLabelEXT label =
-        {
-            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext      = nullptr,
-            .pLabelName = "Graphics Queue",
-            .color      = {0.1137f, 0.7176f, 0.7490, 1.0f}
-        };
-
-        vkQueueBeginDebugUtilsLabelEXT(m_context.graphicsQueue, &label);
-        #endif
+        Vk::BeginLabel(m_context.graphicsQueue, "Graphics Queue", {0.1137f, 0.7176f, 0.7490, 1.0f});
 
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL3_NewFrame();
@@ -212,9 +204,7 @@ namespace Renderer
             Vk::CheckResult(result, "Failed to present swapchain image to queue!");
         }
 
-        #ifdef ENGINE_DEBUG
-        vkQueueEndDebugUtilsLabelEXT(m_context.graphicsQueue);
-        #endif
+        Vk::EndLabel(m_context.graphicsQueue);
     }
 
     void RenderManager::SubmitQueue()

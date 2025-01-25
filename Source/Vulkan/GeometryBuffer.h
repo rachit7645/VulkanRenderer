@@ -34,8 +34,13 @@ namespace Vk
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator) const;
 
-        Models::Info LoadIndices(const Vk::Context& context, const std::span<const Models::Index> indices);
-        Models::Info LoadVertices(const Vk::Context& context, const std::span<const Models::Vertex> vertices);
+        std::pair<Models::Info, Models::Info> SetupLoad
+        (
+            std::vector<Models::Index>&& indices,
+            std::vector<Models::Vertex>&& vertices
+        );
+
+        void Update(const Vk::Context& context);
 
         Vk::Buffer indexBuffer;
         Vk::Buffer vertexBuffer;
@@ -44,12 +49,20 @@ namespace Vk
         u32         indexCount  = 0;
         VkIndexType indexType   = VK_INDEX_TYPE_UINT32;
     private:
-        Models::Info UploadIndices(const Vk::CommandBuffer& cmdBuffer, const std::span<const Models::Index> indices);
-        Models::Info UploadVertices(const Vk::CommandBuffer& cmdBuffer, const std::span<const Models::Vertex> vertices);
+        void UploadToBuffer
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Buffer& source,
+            const Vk::Buffer& destination,
+            VkDeviceSize offsetBytes,
+            VkDeviceSize sizeBytes,
+            const void* data
+        );
 
         void CheckSize(usize sizeBytes, usize offsetBytes, usize bufferSize);
 
-        Vk::Buffer m_stagingBuffer;
+        std::vector<std::pair<Models::Info, std::vector<Models::Index>>>  m_indicesToLoad;
+        std::vector<std::pair<Models::Info, std::vector<Models::Vertex>>> m_verticesToLoad;
     };
 }
 

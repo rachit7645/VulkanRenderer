@@ -484,11 +484,12 @@ namespace Models
                 }
             }
 
+            auto [indexInfo, vertexInfo] = geometryBuffer.SetupLoad(std::move(indices), std::move(vertices));
 
             meshes.emplace_back
             (
-                geometryBuffer.LoadIndices(context, indices),
-                geometryBuffer.LoadVertices(context, vertices),
+                indexInfo,
+                vertexInfo,
                 material,
                 nodeMatrix
             );
