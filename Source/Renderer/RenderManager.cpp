@@ -58,13 +58,14 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         ));
 
-        m_modelManager.geometryBuffer.Update(m_context);
+        m_modelManager.Update(m_context);
+        m_megaSet.Update(m_context.device);
 
         // ImGui Yoy
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
+        m_swapPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
         m_frameCounter.Reset();
     }
 
@@ -278,7 +279,7 @@ namespace Renderer
         m_swapPass.Recreate(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager);
         m_forwardPass.Recreate(m_context, m_swapchain.extent);
 
-        m_swapPass.pipeline.WriteColorAttachmentDescriptor(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
+        m_swapPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
 
         m_isSwapchainOk = true;
 

@@ -37,7 +37,7 @@ namespace Renderer::Swapchain
             VkFormat colorFormat
         );
 
-        void WriteColorAttachmentDescriptor
+        void WriteColorAttachmentIndex
         (
             VkDevice device,
             Vk::MegaSet& megaSet,

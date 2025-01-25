@@ -24,28 +24,36 @@
 
 namespace Vk
 {
-    constexpr u32          MAX_TEXTURE_COUNT   = 1 << 16;
-    constexpr VkDeviceSize STAGING_BUFFER_SIZE = 64 * 1024 * 1024;
+    constexpr u32 MAX_TEXTURE_COUNT = 1 << 16;
 
-    TextureManager::TextureManager(UNUSED VkDevice device, VmaAllocator allocator)
+    TextureManager::TextureManager(VkPhysicalDevice physicalDevice)
     {
-        m_stagingBuffer = Vk::Buffer
+        m_format = Vk::FindSupportedFormat
         (
-            allocator,
-            STAGING_BUFFER_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            physicalDevice,
+            std::array{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT  |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
-        Vk::SetDebugName(device, m_stagingBuffer.handle, "TextureManager/StagingBuffer");
+        m_formatSRGB = Vk::FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT  |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+        );
     }
 
     usize TextureManager::AddTexture
     (
         Vk::MegaSet& megaSet,
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         const std::string_view path,
         Texture::Flags flags
     )
@@ -54,10 +62,21 @@ namespace Vk
 
         if (!textureMap.contains(pathHash))
         {
-            const auto texture = Vk::Texture(context, m_stagingBuffer, path, flags);
-            const auto id      = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Vk::Texture texture = {};
+
+            const auto stagingBuffer = texture.LoadFromFile
+            (
+                device,
+                allocator,
+                Texture::IsFlagSet(flags, Texture::Flags::IsSRGB) ? m_formatSRGB : m_format,
+                path,
+                flags
+            );
+
+            const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             textureMap.emplace(pathHash, TextureInfo(id, texture));
+            m_pendingUploads.emplace_back(texture, stagingBuffer);
         }
         else
         {
@@ -80,6 +99,28 @@ namespace Vk
         samplerMap.emplace(id, sampler);
 
         return id;
+    }
+
+    void TextureManager::Update(const Vk::CommandBuffer& cmdBuffer)
+    {
+        Vk::BeginLabel(cmdBuffer, "Texture Transfer", {0.6117f, 0.8196f, 0.0313f, 1.0f});
+
+        for (auto& [texture, stagingBuffer] : m_pendingUploads)
+        {
+            texture.UploadToGPU(cmdBuffer, stagingBuffer);
+        }
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void TextureManager::Clear(VmaAllocator allocator)
+    {
+        for (auto& buffer : m_pendingUploads | std::views::values)
+        {
+            buffer.Destroy(allocator);
+        }
+
+        m_pendingUploads.clear();
     }
 
     u32 TextureManager::GetTextureID(usize pathHash) const
@@ -120,14 +161,12 @@ namespace Vk
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        m_stagingBuffer.Destroy(allocator);
-
         for (auto& [textureID, texture] : textureMap | std::views::values)
         {
             texture.Destroy(device, allocator);
         }
 
-        for (auto& [id, sampler] : samplerMap)
+        for (const auto& sampler : samplerMap | std::views::values)
         {
             sampler.Destroy(device);
         }

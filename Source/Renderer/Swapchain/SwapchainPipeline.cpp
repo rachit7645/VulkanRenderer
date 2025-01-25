@@ -34,7 +34,7 @@ namespace Renderer::Swapchain
         CreatePipelineData(context.device, megaSet, textureManager);
     }
 
-    void SwapchainPipeline::WriteColorAttachmentDescriptor
+    void SwapchainPipeline::WriteColorAttachmentIndex
     (
         VkDevice device,
         Vk::MegaSet& megaSet,

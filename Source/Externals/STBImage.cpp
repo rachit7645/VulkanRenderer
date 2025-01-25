@@ -23,11 +23,12 @@
 namespace STB
 {
     Image::Image(const std::string_view path, s32 requiredComponents)
+        : channels(requiredComponents)
     {
         s32 _width  = 0;
         s32 _height = 0;
 
-        data = stbi_load(path.data(), &_width, &_height, &channels, requiredComponents);
+        data = stbi_load(path.data(), &_width, &_height, nullptr, requiredComponents);
 
         if (data == nullptr)
         {

@@ -34,25 +34,17 @@ float DistributionGGX(float NdotH, float a)
 	return nom / denom;
 }
 
-// Schlick Geometry Function
-float GeometrySchlickGGX(float NdotV, float roughness)
+// Smith's Self Shadowing
+float GeometrySmith(float NdotL, float NdotV, float a)
 {
-	float r = (roughness + 1.0f);
-	float k = (r * r) / 8.0f;
+    float a2 = a * a;
 
-	float nom   = NdotV;
-	float denom = NdotV * (1.0f - k) + k;
+    float ggxV = NdotL * sqrt(NdotV * NdotV * (1.0 - a2) + a2);
+    float ggxL = NdotV * sqrt(NdotL * NdotL * (1.0 - a2) + a2);
 
-	return nom / denom;
-}
+    float ggx = ggxV + ggxL;
 
-// Smith's method to combine Geometry functions
-float GeometrySmith(float NdotV, float NdotL, float roughness)
-{
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-
-	return ggx1 * ggx2;
+    return 0.5f / ggx;
 }
 
 // Fresnel equation
@@ -78,15 +70,11 @@ vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 albedo, float roug
 
 	// Cook-Torrance BRDF
 	float NDF = DistributionGGX(NdotH, a);
-	float G   = GeometrySmith(NdotV, NdotL, roughness);
+	float G   = GeometrySmith(NdotL, NdotV, a);
 	vec3  F   = FresnelSchlick(HdotV, F0);
 
 	// Specular
-	vec3  numerator   = NDF * G * F;
-	float denominator = 4.0f * NdotV * NdotL;
-	// To prevent division by zero
-	denominator   = max(denominator, 0.0001f);
-	vec3 specular = numerator / denominator;
+	vec3 specular = NDF * G * F;
 
 	// Diffuse energy conservation
 	vec3 kS = F;

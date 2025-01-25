@@ -107,8 +107,6 @@ namespace Models
             assetDirectory,
             asset.get()
         );
-
-        megaSet.Update(context.device);
     }
 
     void Model::ProcessScenes
@@ -401,7 +399,8 @@ namespace Models
                     material.albedo = textureManager.AddTexture
                     (
                         megaSet,
-                        context,
+                        context.device,
+                        context.allocator,
                         Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO),
                         ALBEDO_FLAGS
                     );
@@ -438,7 +437,8 @@ namespace Models
                     material.normal = textureManager.AddTexture
                     (
                         megaSet,
-                        context,
+                        context.device,
+                        context.allocator,
                         Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL),
                         NORMAL_FLAGS
                     );
@@ -477,14 +477,15 @@ namespace Models
                     material.aoRghMtl = textureManager.AddTexture
                     (
                         megaSet,
-                        context,
+                        context.device,
+                        context.allocator,
                         Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL),
                         AO_RGH_MTL_FLAGS
                     );
                 }
             }
 
-            auto [indexInfo, vertexInfo] = geometryBuffer.SetupLoad(std::move(indices), std::move(vertices));
+            auto [indexInfo, vertexInfo] = geometryBuffer.SetupUpload(context.allocator, indices, vertices);
 
             meshes.emplace_back
             (
@@ -578,7 +579,8 @@ namespace Models
         return textureManager.AddTexture
         (
             megaSet,
-            context,
+            context.device,
+            context.allocator,
             (directory + "/") + filePath.uri.c_str(),
             flags
         );

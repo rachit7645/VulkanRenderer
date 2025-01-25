@@ -22,6 +22,7 @@
 #include "Image.h"
 #include "ImageView.h"
 #include "Context.h"
+#include "Externals/STBImage.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -36,22 +37,28 @@ namespace Vk
             GenMipmaps = 1U << 1
         };
 
-        Texture
+        // Loads image from path into buffer
+        // Setups state
+        Vk::Buffer LoadFromFile
         (
-            const Vk::Context& context,
-            const Vk::Buffer& stagingBuffer,
+            VkDevice device,
+            VmaAllocator allocator,
+            VkFormat format,
             const std::string_view path,
             Flags flags = Flags::None
         );
+
+        void UploadToGPU(const Vk::CommandBuffer& cmdBuffer, const Vk::Buffer& stagingBuffer);
 
         void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         bool operator==(const Texture& rhs) const;
 
-        Vk::Image     image;
-        Vk::ImageView imageView;
-    private:
-        bool IsFlagSet(Flags combined, Flags flag) const;
+        static bool IsFlagSet(Flags combined, Flags flag);
+
+        Vk::Image      image;
+        Vk::ImageView  imageView;
+        Texture::Flags flags;
     };
 }
 

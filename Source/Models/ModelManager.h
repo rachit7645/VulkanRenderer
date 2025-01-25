@@ -35,6 +35,8 @@ namespace Models
         [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);
         [[nodiscard]] const Model& GetModel(usize modelID) const;
 
+        void Update(const Vk::Context& context);
+
         std::unordered_map<u32, Models::Model> modelMap;
 
         Vk::GeometryBuffer geometryBuffer;

@@ -25,7 +25,6 @@ namespace Vk
     // TODO: Implement resizing
     constexpr VkDeviceSize INITIAL_VERTEX_SIZE = (1 << 22) * sizeof(Models::Vertex);
     constexpr VkDeviceSize INITIAL_INDEX_SIZE  = (1 << 25) * sizeof(Models::Index);
-    constexpr VkDeviceSize STAGING_BUFFER_SIZE = 32 * 1024 * 1024;
 
     GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
     {
@@ -51,8 +50,8 @@ namespace Vk
 
         vertexBuffer.GetDeviceAddress(device);
 
-        Vk::SetDebugName(device, indexBuffer.handle,     "GeometryBuffer/IndexBuffer");
-        Vk::SetDebugName(device, vertexBuffer.handle,    "GeometryBuffer/VertexBuffer");
+        Vk::SetDebugName(device, indexBuffer.handle,  "GeometryBuffer/IndexBuffer");
+        Vk::SetDebugName(device, vertexBuffer.handle, "GeometryBuffer/VertexBuffer");
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
@@ -60,12 +59,30 @@ namespace Vk
         vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, indexType);
     }
 
-    std::pair<Models::Info, Models::Info> GeometryBuffer::SetupLoad
+    std::pair<Models::Info, Models::Info> GeometryBuffer::SetupUpload
     (
-        std::vector<Models::Index>&& indices,
-        std::vector<Models::Vertex>&& vertices
+        VmaAllocator allocator,
+        const std::vector<Models::Index>& indices,
+        const std::vector<Models::Vertex>& vertices
     )
     {
+        auto SetupStagingBuffer = [allocator] (VkDeviceSize sizeBytes, const void* data) -> Vk::Buffer
+        {
+            auto stagingBuffer = Vk::Buffer
+            (
+                allocator,
+                sizeBytes,
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                VMA_MEMORY_USAGE_AUTO
+            );
+
+            std::memcpy(stagingBuffer.allocInfo.pMappedData, data, sizeBytes);
+
+            return stagingBuffer;
+        };
+
         const Models::Info indexInfo =
         {
             .offset = indexCount,
@@ -78,164 +95,77 @@ namespace Vk
             .count  = static_cast<u32>(vertices.size())
         };
 
-        indexCount  += indexInfo.count;
-        vertexCount += vertexInfo.count;
+        const VkDeviceSize indexSizeBytes  = indexInfo.count  * sizeof(Models::Index);
+        const VkDeviceSize vertexSizeBytes = vertexInfo.count * sizeof(Models::Vertex);
 
-        m_indicesToLoad.push_back(std::make_pair(indexInfo, std::move(indices)));
-        m_verticesToLoad.push_back(std::make_pair(vertexInfo, std::move(vertices)));
+        m_pendingIndexUploads.push_back(std::make_pair(indexInfo, SetupStagingBuffer(indexSizeBytes, indices.data())));
+        m_pendingVertexUploads.push_back(std::make_pair(vertexInfo, SetupStagingBuffer(vertexSizeBytes, vertices.data())));
+
+        indexCount  += indices.size();
+        vertexCount += vertices.size();
 
         return {indexInfo, vertexInfo};
     }
 
-    void GeometryBuffer::Update(const Vk::Context& context)
+    void GeometryBuffer::Update(const Vk::CommandBuffer& cmdBuffer)
     {
-        auto cmdBuffer = Vk::CommandBuffer
-        (
-            context.device,
-            context.commandPool,
-            VK_COMMAND_BUFFER_LEVEL_PRIMARY
-        );
-
-        std::vector<Vk::Buffer> stagingBuffers = {};
-
-        Vk::BeginLabel(context.graphicsQueue, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
         Vk::BeginLabel(cmdBuffer, "Index Transfer", {0.8901f, 0.0549f, 0.3607f, 1.0f});
-        for (usize i = 0; i < m_indicesToLoad.size(); ++i)
+        for (const auto& [indexInfo, indexStagingBuffer] : m_pendingIndexUploads)
         {
-            const auto& [indexInfo, indices] = m_indicesToLoad[i];
-
             const VkDeviceSize offsetBytes = indexInfo.offset * sizeof(Models::Index);
             const VkDeviceSize sizeBytes   = indexInfo.count  * sizeof(Models::Index);
-
-            stagingBuffers.emplace_back
-            (
-                context.allocator,
-                sizeBytes,
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                VMA_MEMORY_USAGE_AUTO
-            );
-
-            const auto& stagingBuffer = stagingBuffers[i];
 
             UploadToBuffer
             (
                 cmdBuffer,
-                stagingBuffer,
+                indexStagingBuffer,
                 indexBuffer,
                 offsetBytes,
                 sizeBytes,
-                indices.data()
+                VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+                VK_ACCESS_2_INDEX_READ_BIT
             );
         }
         Vk::EndLabel(cmdBuffer);
 
         Vk::BeginLabel(cmdBuffer, "Vertex Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
-        for (usize i = 0; i < m_verticesToLoad.size(); ++i)
+        for (const auto& [vertexInfo, vertexStagingBuffer] : m_pendingVertexUploads)
         {
-            const auto& [vertexInfo, vertices] = m_verticesToLoad[i];
-
             const VkDeviceSize offsetBytes = vertexInfo.offset * sizeof(Models::Vertex);
             const VkDeviceSize sizeBytes   = vertexInfo.count  * sizeof(Models::Vertex);
-
-            stagingBuffers.emplace_back
-            (
-                context.allocator,
-                sizeBytes,
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                VMA_MEMORY_USAGE_AUTO
-            );
-
-            const auto& stagingBuffer = stagingBuffers[m_indicesToLoad.size() + i];
 
             UploadToBuffer
             (
                 cmdBuffer,
-                stagingBuffer,
+                vertexStagingBuffer,
                 vertexBuffer,
                 offsetBytes,
                 sizeBytes,
-                vertices.data()
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT
             );
         }
         Vk::EndLabel(cmdBuffer);
 
-        cmdBuffer.EndRecording();
+        Vk::EndLabel(cmdBuffer);
+    }
 
-        VkFence transferFence = VK_NULL_HANDLE;
-
-        // Submit
+    void GeometryBuffer::Clear(VmaAllocator allocator)
+    {
+        for (const auto& buffer : m_pendingIndexUploads | std::views::values)
         {
-            const VkFenceCreateInfo fenceCreateInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0
-            };
-
-            vkCreateFence(context.device, &fenceCreateInfo, nullptr, &transferFence);
-
-            VkCommandBufferSubmitInfo cmdBufferInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = cmdBuffer.handle,
-                .deviceMask    = 0
-            };
-
-            const VkSubmitInfo2 submitInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-                .pNext                    = nullptr,
-                .flags                    = 0,
-                .waitSemaphoreInfoCount   = 0,
-                .pWaitSemaphoreInfos      = nullptr,
-                .commandBufferInfoCount   = 1,
-                .pCommandBufferInfos      = &cmdBufferInfo,
-                .signalSemaphoreInfoCount = 0,
-                .pSignalSemaphoreInfos    = nullptr
-            };
-
-            Vk::CheckResult(vkQueueSubmit2(
-                context.graphicsQueue,
-                1,
-                &submitInfo,
-                transferFence),
-                "Failed to submit tranfer command buffers!"
-            );
-
-            Vk::CheckResult(vkWaitForFences(
-                context.device,
-                1,
-                &transferFence,
-                VK_TRUE,
-                std::numeric_limits<u64>::max()),
-                "Error while waiting for tranfers!"
-            );
+            buffer.Destroy(allocator);
         }
 
-        Vk::EndLabel(context.graphicsQueue);
-
-        // Cleanup
+        for (const auto& buffer : m_pendingVertexUploads | std::views::values)
         {
-            vkDestroyFence(context.device, transferFence, nullptr);
-
-            for (const auto& buffer : stagingBuffers)
-            {
-                buffer.Destroy(context.allocator);
-            }
-
-            cmdBuffer.Free(context.device, context.commandPool);
-
-            m_indicesToLoad.clear();
-            m_verticesToLoad.clear();
+            buffer.Destroy(allocator);
         }
+
+        m_pendingIndexUploads.clear();
+        m_pendingVertexUploads.clear();
     }
 
     void GeometryBuffer::UploadToBuffer
@@ -245,13 +175,19 @@ namespace Vk
         const Vk::Buffer& destination,
         VkDeviceSize offsetBytes,
         VkDeviceSize sizeBytes,
-        const void* data
+        VkPipelineStageFlags2 dstStageMask,
+        VkAccessFlags2 dstAccessMask
     )
     {
-        CheckSize(sizeBytes, 0,           source.allocInfo.size);
-        CheckSize(sizeBytes, offsetBytes, destination.allocInfo.size);
-
-        std::memcpy(source.allocInfo.pMappedData, data, sizeBytes);
+        if ((sizeBytes + offsetBytes) > destination.allocInfo.size)
+        {
+            Logger::Error
+            (
+                "Not enough space in destination buffer! [Required={}] [Available={}]\n",
+                sizeBytes,
+                destination.allocInfo.size - offsetBytes
+            );
+        }
 
         const VkBufferCopy2 copyRegion =
         {
@@ -279,24 +215,11 @@ namespace Vk
             cmdBuffer,
             VK_PIPELINE_STAGE_2_TRANSFER_BIT,
             VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-            VK_ACCESS_2_INDEX_READ_BIT,
+            dstStageMask,
+            dstAccessMask,
             offsetBytes,
             sizeBytes
         );
-    }
-
-    void GeometryBuffer::CheckSize(usize sizeBytes, usize offsetBytes, usize bufferSize)
-    {
-        if ((sizeBytes + offsetBytes) > bufferSize)
-        {
-            Logger::Error
-            (
-                "Not enough space in buffer! [Required={}] [Available={}]\n",
-                sizeBytes,
-                bufferSize - offsetBytes
-            );
-        }
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator) const

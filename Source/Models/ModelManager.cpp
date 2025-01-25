@@ -16,13 +16,14 @@
 
 #include "ModelManager.h"
 
+#include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
 namespace Models
 {
     ModelManager::ModelManager(const Vk::Context& context)
         : geometryBuffer(context.device, context.allocator),
-          textureManager(context.device, context.allocator)
+          textureManager(context.physicalDevice)
     {
     }
 
@@ -48,6 +49,86 @@ namespace Models
         }
 
         return iter->second;
+    }
+
+    void ModelManager::Update(const Vk::Context& context)
+    {
+        auto cmdBuffer = Vk::CommandBuffer
+        (
+            context.device,
+            context.commandPool,
+            VK_COMMAND_BUFFER_LEVEL_PRIMARY
+        );
+
+        Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
+
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            geometryBuffer.Update(cmdBuffer);
+            textureManager.Update(cmdBuffer);
+        cmdBuffer.EndRecording();
+
+        VkFence transferFence = VK_NULL_HANDLE;
+
+        // Submit
+        {
+            const VkFenceCreateInfo fenceCreateInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0
+            };
+
+            vkCreateFence(context.device, &fenceCreateInfo, nullptr, &transferFence);
+
+            VkCommandBufferSubmitInfo cmdBufferInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = cmdBuffer.handle,
+                .deviceMask    = 0
+            };
+
+            const VkSubmitInfo2 submitInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                .pNext                    = nullptr,
+                .flags                    = 0,
+                .waitSemaphoreInfoCount   = 0,
+                .pWaitSemaphoreInfos      = nullptr,
+                .commandBufferInfoCount   = 1,
+                .pCommandBufferInfos      = &cmdBufferInfo,
+                .signalSemaphoreInfoCount = 0,
+                .pSignalSemaphoreInfos    = nullptr
+            };
+
+            Vk::CheckResult(vkQueueSubmit2(
+                context.graphicsQueue,
+                1,
+                &submitInfo,
+                transferFence),
+                "Failed to submit tranfer command buffers!"
+            );
+
+            Vk::CheckResult(vkWaitForFences(
+                context.device,
+                1,
+                &transferFence,
+                VK_TRUE,
+                std::numeric_limits<u64>::max()),
+                "Error while waiting for tranfers!"
+            );
+        }
+
+        Vk::EndLabel(context.graphicsQueue);
+
+        // Clean
+        {
+            geometryBuffer.Clear(context.allocator);
+            textureManager.Clear(context.allocator);
+
+            vkDestroyFence(context.device, transferFence, nullptr);
+            cmdBuffer.Free(context.device, context.commandPool);
+        }
     }
 
     void ModelManager::Destroy(VkDevice device, VmaAllocator allocator)

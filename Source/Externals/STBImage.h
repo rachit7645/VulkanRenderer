@@ -23,7 +23,7 @@ namespace STB
 {
     struct Image
     {
-        explicit Image(const std::string_view path, s32 requiredComponents);
+        Image(const std::string_view path, s32 requiredComponents);
         ~Image();
 
         Image(const Image& other);
