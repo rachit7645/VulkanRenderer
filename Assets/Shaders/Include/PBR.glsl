@@ -39,10 +39,11 @@ float GeometrySmith(float NdotL, float NdotV, float a)
 {
     float a2 = a * a;
 
-    float ggxV = NdotL * sqrt(NdotV * NdotV * (1.0 - a2) + a2);
-    float ggxL = NdotV * sqrt(NdotL * NdotL * (1.0 - a2) + a2);
+    float ggxV = NdotL * sqrt(NdotV * NdotV * (1.0f - a2) + a2);
+    float ggxL = NdotV * sqrt(NdotL * NdotL * (1.0f - a2) + a2);
 
-    float ggx = ggxV + ggxL;
+    // Add epsilon to avoid division by zero
+    float ggx = ggxV + ggxL + 1e-5f;
 
     return 0.5f / ggx;
 }
@@ -50,8 +51,8 @@ float GeometrySmith(float NdotL, float NdotV, float a)
 // Fresnel equation
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
-	// Clamp to avoid artifacts
-	return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+	float factor = 1.0f - cosTheta;
+	return F0 + (1.0f - F0) * factor * factor * factor * factor * factor;
 }
 
 vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 albedo, float roughness, float metallic)

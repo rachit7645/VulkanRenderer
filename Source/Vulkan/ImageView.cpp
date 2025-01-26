@@ -32,7 +32,7 @@ namespace Vk
         const VkImageSubresourceRange& subresourceRange
     )
     {
-        VkImageViewCreateInfo createInfo =
+        const VkImageViewCreateInfo createInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext            = nullptr,

@@ -25,19 +25,29 @@ namespace Vk
 {
     DepthBuffer::DepthBuffer(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent)
     {
-        const auto depthFormat = formatHelper.depthFormat;
-        const bool hasStencil  = vkuFormatHasStencil(depthFormat);
-
         depthImage = Vk::Image
         (
             context.allocator,
-            extent.width,
-            extent.height,
-            1,
-            depthFormat,
-            VK_IMAGE_TILING_OPTIMAL,
-            hasStencil ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+            {
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = formatHelper.depthFormat,
+                .extent                = {extent.width, extent.height, 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 1,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            vkuFormatHasStencil(formatHelper.depthFormat)
+                ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
+                : VK_IMAGE_ASPECT_DEPTH_BIT
         );
 
         depthImageView = Vk::ImageView

@@ -26,20 +26,10 @@ namespace Vk
     class Image
     {
     public:
-        // Default constructor to make c++ happy
+        // Default constructor to make C++ happy
         Image() = default;
 
-        Image
-        (
-            VmaAllocator allocator,
-            u32 width,
-            u32 height,
-            u32 mipLevels,
-            VkFormat format,
-            VkImageTiling tiling,
-            VkImageAspectFlags aspect,
-            VkImageUsageFlags usage
-        );
+        Image(VmaAllocator allocator, const VkImageCreateInfo& createInfo, VkImageAspectFlags aspect);
 
         // Basic constructor for copying
         Image
@@ -49,7 +39,6 @@ namespace Vk
             u32 height,
             u32 mipLevels,
             VkFormat format,
-            VkImageTiling tiling,
             VkImageAspectFlags aspect
         );
 
@@ -83,7 +72,6 @@ namespace Vk
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
-        VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     };
 }

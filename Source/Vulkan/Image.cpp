@@ -24,39 +24,18 @@
 
 namespace Vk
 {
-    Image::Image
-    (
-        VmaAllocator allocator,
-        u32 width,
-        u32 height,
-        u32 mipLevels,
-        VkFormat format,
-        VkImageTiling tiling,
-        VkImageAspectFlags aspect,
-        VkImageUsageFlags usage
-    )
-        : Image(VK_NULL_HANDLE, width, height, mipLevels, format, tiling, aspect)
+    Image::Image(VmaAllocator allocator, const VkImageCreateInfo& createInfo, VkImageAspectFlags aspect)
+        : Image
+          (
+              VK_NULL_HANDLE,
+              createInfo.extent.width,
+              createInfo.extent.height,
+              createInfo.mipLevels,
+              createInfo.format,
+              aspect
+          )
     {
-        VkImageCreateInfo imageInfo =
-        {
-            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = 0,
-            .imageType             = VK_IMAGE_TYPE_2D,
-            .format                = format,
-            .extent                = {width, height, 1},
-            .mipLevels             = mipLevels,
-            .arrayLayers           = 1,
-            .samples               = VK_SAMPLE_COUNT_1_BIT,
-            .tiling                = tiling,
-            .usage                 = usage,
-            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices   = nullptr,
-            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-        };
-
-        VmaAllocationCreateInfo allocInfo =
+        const VmaAllocationCreateInfo allocInfo =
         {
             .flags          = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
             .usage          = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
@@ -75,7 +54,7 @@ namespace Vk
 
         Vk::CheckResult(vmaCreateImage(
             allocator,
-            &imageInfo,
+            &createInfo,
             &allocInfo,
             &handle,
             &allocation,
@@ -109,7 +88,6 @@ namespace Vk
         u32 height,
         u32 mipLevels,
         VkFormat format,
-        VkImageTiling tiling,
         VkImageAspectFlags aspect
     )
         : handle(image),
@@ -117,7 +95,6 @@ namespace Vk
           height(height),
           mipLevels(mipLevels),
           format(format),
-          tiling(tiling),
           aspect(aspect)
     {
     }
@@ -126,10 +103,9 @@ namespace Vk
     {
         return handle == rhs.handle &&
                allocation == rhs.allocation &&
-               width  == rhs.width  &&
+               width  == rhs.width &&
                height == rhs.height &&
                format == rhs.format &&
-               tiling == rhs.tiling &&
                aspect == rhs.aspect;
     }
 

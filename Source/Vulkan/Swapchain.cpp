@@ -190,7 +190,6 @@ namespace Vk
                 extent.height,
                 1,
                 imageFormat,
-                VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
 
