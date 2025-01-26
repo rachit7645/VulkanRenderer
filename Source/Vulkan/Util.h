@@ -19,7 +19,6 @@
 
 #include <functional>
 #include <string_view>
-#include <span>
 #include <vulkan/vulkan.h>
 
 #include "Util/Util.h"
@@ -37,14 +36,6 @@ namespace Vk
         VkCommandPool cmdPool,
         const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
         const std::source_location location = std::source_location::current()
-    );
-
-    VkFormat FindSupportedFormat
-    (
-        VkPhysicalDevice physicalDevice,
-        const std::span<const VkFormat> candidates,
-        VkImageTiling tiling,
-        VkFormatFeatureFlags2 features
     );
 
     void CheckResult(VkResult result, const std::string_view message);

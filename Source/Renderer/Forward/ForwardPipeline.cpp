@@ -30,31 +30,29 @@ namespace Renderer::Forward
     ForwardPipeline::ForwardPipeline
     (
         const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        VkFormat colorFormat,
-        VkFormat depthFormat
+        Vk::TextureManager& textureManager
     )
     {
-        CreatePipeline(context, megaSet, colorFormat, depthFormat);
+        CreatePipeline(context, formatHelper, megaSet);
         CreatePipelineData(context, megaSet, textureManager);
     }
 
     void ForwardPipeline::CreatePipeline
     (
         const Vk::Context& context,
-        const Vk::MegaSet& megaSet,
-        VkFormat colorFormat,
-        VkFormat depthFormat
+        const Vk::FormatHelper& formatHelper,
+        const Vk::MegaSet& megaSet
     )
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        auto colorFormats = std::span(&colorFormat, 1);
+        std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
-            .SetRenderingInfo(colorFormats, depthFormat, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

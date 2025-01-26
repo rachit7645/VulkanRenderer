@@ -33,12 +33,13 @@ namespace Renderer::Forward
         ForwardPass
         (
             const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             VkExtent2D extent
         );
 
-        void Recreate(const Vk::Context& context, VkExtent2D extent);
+        void Recreate(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent);
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
         void Render
@@ -58,8 +59,7 @@ namespace Renderer::Forward
         Vk::ImageView   colorAttachmentView;
         Vk::DepthBuffer depthBuffer;
     private:
-        void InitData(const Vk::Context& context, VkExtent2D extent);
-        VkFormat GetColorFormat(VkPhysicalDevice physicalDevice) const;
+        void InitData(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent);
 
         glm::uvec2          m_renderSize = {0, 0};
         Util::DeletionQueue m_deletionQueue = {};

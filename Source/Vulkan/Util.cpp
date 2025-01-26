@@ -21,7 +21,6 @@
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/SourceLocation.h"
-#include "Util/Random.h"
 
 namespace Vk
 {
@@ -102,45 +101,6 @@ namespace Vk
 
         vkDestroyFence(device, fence, nullptr);
         cmdBuffer.Free(device, cmdPool);
-    }
-
-    VkFormat FindSupportedFormat
-    (
-        VkPhysicalDevice physicalDevice,
-        const std::span<const VkFormat> candidates,
-        VkImageTiling tiling,
-        VkFormatFeatureFlags2 features
-    )
-    {
-        for (auto format : candidates)
-        {
-            VkFormatProperties3 properties3 = {};
-            properties3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
-            properties3.pNext = nullptr;
-
-            VkFormatProperties2 properties2 = {};
-            properties2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-            properties2.pNext = &properties3;
-
-            vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &properties2);
-
-            bool isValidLinear  = (tiling == VK_IMAGE_TILING_LINEAR)  && ((properties3.linearTilingFeatures  & features) == features);
-            bool isValidOptimal = (tiling == VK_IMAGE_TILING_OPTIMAL) && ((properties3.optimalTilingFeatures & features) == features);
-
-            if (isValidLinear || isValidOptimal)
-            {
-                return format;
-            }
-        }
-
-        // No format was suitable
-        Logger::VulkanError
-        (
-            "No valid formats found! [physicalDevice={}] [tiling={}] [features={}]\n",
-            std::bit_cast<void*>(physicalDevice),
-            string_VkImageTiling(tiling),
-            string_VkFormatFeatureFlags(features)
-        );
     }
 
     void CheckResult(VkResult result, const std::string_view message)

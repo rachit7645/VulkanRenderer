@@ -23,16 +23,16 @@
 
 namespace Vk
 {
-    DepthBuffer::DepthBuffer(const Vk::Context& context, VkExtent2D swapchainExtent)
+    DepthBuffer::DepthBuffer(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent)
     {
-        const auto depthFormat = GetDepthFormat(context.physicalDevice);
+        const auto depthFormat = formatHelper.depthFormat;
         const bool hasStencil  = vkuFormatHasStencil(depthFormat);
 
         depthImage = Vk::Image
         (
             context.allocator,
-            swapchainExtent.width,
-            swapchainExtent.height,
+            extent.width,
+            extent.height,
             1,
             depthFormat,
             VK_IMAGE_TILING_OPTIMAL,
@@ -55,43 +55,31 @@ namespace Vk
             }
         );
 
-        Vk::ImmediateSubmit(context.device, context.graphicsQueue, context.commandPool, [&](const Vk::CommandBuffer& cmdBuffer)
-        {
-            depthImage.Barrier
-            (
-                cmdBuffer,
-                VK_PIPELINE_STAGE_2_NONE,
-                VK_ACCESS_2_NONE,
-                VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-                VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                {
-                    .aspectMask     = depthImage.aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = depthImage.mipLevels,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            );
-        });
-    }
-
-    VkFormat DepthBuffer::GetDepthFormat(VkPhysicalDevice physicalDevice)
-    {
-        return Vk::FindSupportedFormat
+        Vk::ImmediateSubmit
         (
-            physicalDevice,
-            std::array<VkFormat, 5>
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&](const Vk::CommandBuffer& cmdBuffer)
             {
-                VK_FORMAT_D32_SFLOAT,
-                VK_FORMAT_D24_UNORM_S8_UINT,
-                VK_FORMAT_D32_SFLOAT_S8_UINT,
-                VK_FORMAT_D16_UNORM,
-                VK_FORMAT_D16_UNORM_S8_UINT,
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT
+                depthImage.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_NONE,
+                    VK_ACCESS_2_NONE,
+                    VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    {
+                        .aspectMask     = depthImage.aspect,
+                        .baseMipLevel   = 0,
+                        .levelCount     = depthImage.mipLevels,
+                        .baseArrayLayer = 0,
+                        .layerCount     = 1
+                    }
+                );
+            }
         );
     }
 

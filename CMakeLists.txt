@@ -71,6 +71,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/GeometryBuffer.cpp
     Source/Vulkan/MegaSet.cpp
     Source/Vulkan/DebugUtils.cpp
+    Source/Vulkan/FormatHelper.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources

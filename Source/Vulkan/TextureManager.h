@@ -21,6 +21,7 @@
 #include "DescriptorWriter.h"
 #include "Sampler.h"
 #include "MegaSet.h"
+#include "FormatHelper.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -34,7 +35,7 @@ namespace Vk
             Vk::Texture texture;
         };
 
-        TextureManager(VkPhysicalDevice physicalDevice);
+        explicit TextureManager(const Vk::FormatHelper& formatHelper);
 
         [[nodiscard]] usize AddTexture
         (

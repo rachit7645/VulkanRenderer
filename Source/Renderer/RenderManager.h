@@ -30,6 +30,7 @@
 #include "Engine/Window.h"
 #include "Models/ModelManager.h"
 #include "Vulkan/MegaSet.h"
+#include "Vulkan/FormatHelper.h"
 
 namespace Renderer
 {
@@ -62,9 +63,12 @@ namespace Renderer
         void CreateSyncObjects();
 
         // Object handles
-        Engine::Window       m_window;
-        Vk::Context          m_context;
-        Vk::Swapchain        m_swapchain;
+        Engine::Window m_window;
+        Vk::Context    m_context;
+        Vk::Swapchain  m_swapchain;
+
+        Vk::FormatHelper m_formatHelper;
+
         Models::ModelManager m_modelManager;
         Vk::MegaSet          m_megaSet;
 

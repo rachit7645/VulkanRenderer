@@ -29,18 +29,12 @@ namespace Renderer::Forward
     ForwardPass::ForwardPass
     (
         const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         VkExtent2D extent
     )
-        : pipeline
-          (
-              context,
-              megaSet,
-              textureManager,
-              GetColorFormat(context.physicalDevice),
-              Vk::DepthBuffer::GetDepthFormat(context.physicalDevice)
-          )
+        : pipeline(context, formatHelper, megaSet, textureManager)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -54,15 +48,17 @@ namespace Renderer::Forward
             Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ForwardPass/FIF{}", i));
         }
 
-        InitData(context, extent);
+        InitData(context, formatHelper, extent);
 
         Logger::Info("{}\n", "Created forward pass!");
     }
 
-    void ForwardPass::Recreate(const Vk::Context& context, VkExtent2D extent)
+    void ForwardPass::Recreate(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent)
     {
         m_deletionQueue.FlushQueue();
-        InitData(context, extent);
+
+        InitData(context, formatHelper, extent);
+
         Logger::Info("{}\n", "Recreated forward pass!");
     }
 
@@ -276,14 +272,11 @@ namespace Renderer::Forward
         currentCmdBuffer.EndRecording();
     }
 
-    void ForwardPass::InitData(const Vk::Context& context, VkExtent2D extent)
+    void ForwardPass::InitData(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent)
     {
         m_renderSize = {extent.width, extent.height};
 
-        auto colorFormat = GetColorFormat(context.physicalDevice);
-        Logger::Debug("Found forward color attachment format! [Format={}] \n", string_VkFormat(colorFormat));
-
-        depthBuffer = Vk::DepthBuffer(context, extent);
+        depthBuffer = Vk::DepthBuffer(context, formatHelper, extent);
 
         colorAttachment = Vk::Image
         (
@@ -291,7 +284,7 @@ namespace Renderer::Forward
             m_renderSize.x,
             m_renderSize.y,
             1,
-            colorFormat,
+            formatHelper.colorAttachmentFormatHDR,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_ASPECT_COLOR_BIT,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -339,8 +332,8 @@ namespace Renderer::Forward
             }
         );
 
-        Vk::SetDebugName(context.device, colorAttachment.handle,                      "ForwardPassColorAttachment0");
-        Vk::SetDebugName(context.device, colorAttachmentView.handle,                  "ForwardPassColorAttachment0_View");
+        Vk::SetDebugName(context.device, colorAttachment.handle,            "ForwardPassColorAttachment0");
+        Vk::SetDebugName(context.device, colorAttachmentView.handle,        "ForwardPassColorAttachment0_View");
         Vk::SetDebugName(context.device, depthBuffer.depthImage.handle,     "ForwardPassDepthAttachment");
         Vk::SetDebugName(context.device, depthBuffer.depthImageView.handle, "ForwardPassDepthAttachment_View");
 
@@ -350,22 +343,6 @@ namespace Renderer::Forward
             colorAttachment.Destroy(context.allocator);
             depthBuffer.Destroy(context.device, context.allocator);
         });
-    }
-
-    VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice) const
-    {
-        return Vk::FindSupportedFormat
-        (
-            physicalDevice,
-            std::array
-            {
-                VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-                VK_FORMAT_R16G16B16A16_SFLOAT,
-                VK_FORMAT_R32G32B32A32_SFLOAT
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
     }
 
     void ForwardPass::Destroy(VkDevice device, VkCommandPool cmdPool)

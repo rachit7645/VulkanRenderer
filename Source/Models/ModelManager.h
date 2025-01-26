@@ -29,7 +29,7 @@ namespace Models
     class ModelManager
     {
     public:
-        explicit ModelManager(const Vk::Context& context);
+        ModelManager(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);

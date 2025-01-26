@@ -27,10 +27,11 @@ namespace Renderer
     RenderManager::RenderManager()
         : m_context(m_window.handle),
           m_swapchain(m_window.size, m_context),
-          m_modelManager(m_context),
+          m_formatHelper(m_context.physicalDevice),
+          m_modelManager(m_context, m_formatHelper),
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
           m_swapPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_forwardPass(m_context, m_megaSet, m_modelManager.textureManager, m_swapchain.extent)
+          m_forwardPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager, m_swapchain.extent)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
@@ -170,7 +171,7 @@ namespace Renderer
     {
         if (m_isSwapchainOk)
         {
-            auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
+            const auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
 
             if (result == VK_ERROR_OUT_OF_DATE_KHR)
             {
@@ -194,7 +195,7 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
-        auto result = m_swapchain.Present(m_context.graphicsQueue, m_currentFIF);
+        const auto result = m_swapchain.Present(m_context.graphicsQueue, m_currentFIF);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -210,7 +211,7 @@ namespace Renderer
 
     void RenderManager::SubmitQueue()
     {
-        VkSemaphoreSubmitInfo waitSemaphoreInfo =
+        const VkSemaphoreSubmitInfo waitSemaphoreInfo =
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
@@ -220,7 +221,7 @@ namespace Renderer
             .deviceIndex = 0
         };
 
-        std::array<VkCommandBufferSubmitInfo, 2> cmdBufferInfos =
+        const std::array<VkCommandBufferSubmitInfo, 2> cmdBufferInfos =
         {
             VkCommandBufferSubmitInfo
             {
@@ -238,7 +239,7 @@ namespace Renderer
             }
         };
 
-        VkSemaphoreSubmitInfo signalSemaphoreInfo =
+        const VkSemaphoreSubmitInfo signalSemaphoreInfo =
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
@@ -248,7 +249,7 @@ namespace Renderer
             .deviceIndex = 0
         };
 
-        VkSubmitInfo2 submitInfo =
+        const VkSubmitInfo2 submitInfo =
         {
             .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
             .pNext                    = nullptr,
@@ -277,7 +278,7 @@ namespace Renderer
         m_swapchain.RecreateSwapChain(m_window.size, m_context);
 
         m_swapPass.Recreate(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager);
-        m_forwardPass.Recreate(m_context, m_swapchain.extent);
+        m_forwardPass.Recreate(m_context, m_formatHelper, m_swapchain.extent);
 
         m_swapPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
 
@@ -356,7 +357,7 @@ namespace Renderer
 
     void RenderManager::InitImGui()
     {
-        auto swapchainFormat = m_swapchain.imageFormat;
+        const auto swapchainFormat = m_swapchain.imageFormat;
 
         ImGui_ImplVulkan_InitInfo imguiInitInfo =
         {

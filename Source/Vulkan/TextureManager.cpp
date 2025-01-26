@@ -26,27 +26,10 @@ namespace Vk
 {
     constexpr u32 MAX_TEXTURE_COUNT = 1 << 16;
 
-    TextureManager::TextureManager(VkPhysicalDevice physicalDevice)
+    TextureManager::TextureManager(const Vk::FormatHelper& formatHelper)
+        : m_format(formatHelper.textureFormat),
+          m_formatSRGB(formatHelper.textureFormatSRGB)
     {
-        m_format = Vk::FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT  |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
-        m_formatSRGB = Vk::FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT  |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
     }
 
     usize TextureManager::AddTexture

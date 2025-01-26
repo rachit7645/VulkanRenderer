@@ -21,9 +21,9 @@
 #include "ForwardMeshBuffer.h"
 #include "ForwardConstants.h"
 #include "Vulkan/Buffer.h"
-#include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
+#include "Vulkan/FormatHelper.h"
 
 namespace Renderer::Forward
 {
@@ -33,10 +33,9 @@ namespace Renderer::Forward
         ForwardPipeline
         (
             const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
-            VkFormat colorFormat,
-            VkFormat depthFormat
+            Vk::TextureManager& textureManager
         );
 
         PushConstant pushConstant = {};
@@ -51,9 +50,8 @@ namespace Renderer::Forward
         void CreatePipeline
         (
             const Vk::Context& context,
-            const Vk::MegaSet& megaSet,
-            VkFormat colorFormat,
-            VkFormat depthFormat
+            const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
         );
 
         void CreatePipelineData(const Vk::Context& context, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
