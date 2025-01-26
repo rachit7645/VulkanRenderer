@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "ForwardMeshBuffer.h"
+#include "MeshBuffer.h"
 
-#include "ForwardMesh.h"
+#include "Mesh.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 
-namespace Renderer::Forward
+namespace Renderer
 {
     constexpr usize MAX_MESH_COUNT = 1 << 16;
 
@@ -31,7 +31,7 @@ namespace Renderer::Forward
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(MAX_MESH_COUNT * sizeof(Forward::Mesh)),
+                static_cast<u32>(MAX_MESH_COUNT * sizeof(Renderer::Mesh)),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -51,7 +51,7 @@ namespace Renderer::Forward
         const std::vector<Renderer::RenderObject>& renderObjects
     )
     {
-        std::vector<Forward::Mesh> meshes = {};
+        std::vector<Renderer::Mesh> meshes = {};
 
         for (const auto& renderObject : renderObjects)
         {
@@ -86,7 +86,7 @@ namespace Renderer::Forward
         (
             buffers[FIF].allocInfo.pMappedData,
             meshes.data(),
-            sizeof(Forward::Mesh) * meshes.size()
+            sizeof(Renderer::Mesh) * meshes.size()
         );
     }
 

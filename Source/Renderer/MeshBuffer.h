@@ -20,15 +20,14 @@
 #include <array>
 #include <vulkan/vulkan.h>
 
-#include "Renderer/RenderObject.h"
+#include "RenderObject.h"
 #include "Util/Util.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
-#include "Vulkan/TextureManager.h"
 #include "Externals/VMA.h"
 #include "Models/ModelManager.h"
 
-namespace Renderer::Forward
+namespace Renderer
 {
     class MeshBuffer
     {

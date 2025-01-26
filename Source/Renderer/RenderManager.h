@@ -17,20 +17,22 @@
 #ifndef RENDER_MANAGER_H
 #define RENDER_MANAGER_H
 
-#include <memory>
 #include <vulkan/vulkan.h>
 
 #include "FreeCamera.h"
 #include "RenderObject.h"
+#include "IndirectBuffer.h"
+#include "MeshBuffer.h"
+#include "SceneBuffer.h"
 #include "Swapchain/SwapchainPass.h"
 #include "Forward/ForwardPass.h"
 #include "Vulkan/Context.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/FormatHelper.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Models/ModelManager.h"
-#include "Vulkan/MegaSet.h"
-#include "Vulkan/FormatHelper.h"
 
 namespace Renderer
 {
@@ -76,6 +78,11 @@ namespace Renderer
         Swapchain::SwapchainPass m_swapPass;
         Forward::ForwardPass     m_forwardPass;
 
+        // Buffers
+        MeshBuffer     m_meshBuffer;
+        IndirectBuffer m_indirectBuffer;
+        SceneBuffer    m_sceneBuffer;
+
         // Scene objects
         std::vector<Renderer::RenderObject> m_renderObjects;
         Renderer::FreeCamera                m_camera;
@@ -89,6 +96,15 @@ namespace Renderer
         Util::FrameCounter m_frameCounter = {};
 
         bool m_isSwapchainOk = true;
+
+        // ImGui
+        usize m_renderObjectIndex = 0;
+        DirLight m_sun =
+        {
+            .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
+            .color     = {1.0f,   0.956f, 0.898f, 1.0f},
+            .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
+        };
 
         Util::DeletionQueue m_deletionQueue = {};
     };

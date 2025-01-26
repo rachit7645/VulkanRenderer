@@ -63,9 +63,9 @@ namespace Engine
         for (s32 i = 0; i < joystickCount; ++i)
         {
             // We need a proper game controller
-            if (SDL_IsGamepad(i))
+            if (SDL_IsGamepad(joysticks[i]))
             {
-                m_gamepad = SDL_OpenGamepad(i);
+                m_gamepad = SDL_OpenGamepad(joysticks[i]);
                 break;
             }
         }
@@ -73,7 +73,7 @@ namespace Engine
 
     bool Inputs::IsKeyPressed(SDL_Scancode key) const
     {
-        return static_cast<bool>(m_keys[key]);
+        return m_keys[key];
     }
 
     const glm::vec2& Inputs::GetMousePosition()

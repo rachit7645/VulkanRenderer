@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_SCENE_BUFFER_H
-#define FORWARD_SCENE_BUFFER_H
-
-#include <vulkan/vulkan.h>
+#ifndef GPU_MESH_H
+#define GPU_MESH_H
 
 #include "Externals/GLM.h"
-#include "Vulkan/Util.h"
-#include "Renderer/DirLight.h"
+#include "Util/Util.h"
 
-namespace Renderer::Forward
+namespace Renderer
 {
-    struct VULKAN_GLSL_DATA SceneBuffer
+    struct Mesh
     {
-        glm::mat4 projection   = {};
-        glm::mat4 view         = {};
-        glm::vec4 cameraPos    = {};
-        u32       samplerIndex = {};
-        DirLight  dirLight     = {};
+        glm::mat4  transform;
+        glm::mat3  normalMatrix;
+        glm::uvec3 textureIDs;
+        glm::vec4  albedoFactor;
+        f32        roughnessFactor;
+        f32        metallicFactor;
     };
 }
 

@@ -17,13 +17,12 @@
 #ifndef FORWARD_PIPELINE_H
 #define FORWARD_PIPELINE_H
 
-#include "ForwardIndirectBuffer.h"
-#include "ForwardMeshBuffer.h"
 #include "ForwardConstants.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/TextureManager.h"
 
 namespace Renderer::Forward
 {
@@ -39,11 +38,6 @@ namespace Renderer::Forward
         );
 
         PushConstant pushConstant = {};
-
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneBuffers = {};
-
-        MeshBuffer     meshBuffer;
-        IndirectBuffer indirectBuffer;
 
         u32 samplerIndex;
     private:

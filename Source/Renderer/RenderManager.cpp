@@ -21,6 +21,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
+#include "Util/Maths.h"
 
 namespace Renderer
 {
@@ -31,15 +32,22 @@ namespace Renderer
           m_modelManager(m_context, m_formatHelper),
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
           m_swapPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_forwardPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager, m_swapchain.extent)
+          m_forwardPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager, m_swapchain.extent),
+          m_meshBuffer(m_context.device, m_context.allocator),
+          m_indirectBuffer(m_context.device, m_context.allocator),
+          m_sceneBuffer(m_context.device, m_context.allocator)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
-            m_modelManager.Destroy(m_context.device, m_context.allocator);
-            m_megaSet.Destroy(m_context.device);
+            m_sceneBuffer.Destroy(m_context.allocator);
+            m_indirectBuffer.Destroy(m_context.allocator);
+            m_meshBuffer.Destroy(m_context.allocator);
 
-            m_swapPass.Destroy(m_context.device, m_context.commandPool);
             m_forwardPass.Destroy(m_context.device, m_context.commandPool);
+            m_swapPass.Destroy(m_context.device, m_context.commandPool);
+
+            m_megaSet.Destroy(m_context.device);
+            m_modelManager.Destroy(m_context.device, m_context.allocator);
 
             m_swapchain.Destroy(m_context.device);
             m_context.Destroy();
@@ -88,9 +96,10 @@ namespace Renderer
         (
             m_currentFIF,
             m_megaSet,
-            m_modelManager,
-            m_camera,
-            m_renderObjects
+            m_modelManager.geometryBuffer,
+            m_sceneBuffer,
+            m_meshBuffer,
+            m_indirectBuffer
         );
 
         m_swapPass.Render(m_megaSet, m_swapchain, m_currentFIF);
@@ -110,17 +119,15 @@ namespace Renderer
         {
             if (ImGui::BeginMenu("Render Objects"))
             {
-                static usize renderObjectIndex = 0;
-
-                if (ImGui::BeginCombo("Object", fmt::format("[{}]", renderObjectIndex).c_str(), ImGuiComboFlags_None))
+                if (ImGui::BeginCombo("Object", fmt::format("[{}]", m_renderObjectIndex).c_str(), ImGuiComboFlags_None))
                 {
                     for (usize i = 0; i < m_renderObjects.size(); ++i)
                     {
-                        const bool isSelected = (renderObjectIndex == i);
+                        const bool isSelected = (m_renderObjectIndex == i);
 
                         if (ImGui::Selectable(fmt::format("[{}]", i).c_str(), isSelected))
                         {
-                            renderObjectIndex = i;
+                            m_renderObjectIndex = i;
                         }
 
                         if (isSelected)
@@ -133,17 +140,44 @@ namespace Renderer
                 }
 
                 // Immutable
-                ImGui::Text("ModelID: %llu", m_renderObjects[renderObjectIndex].modelID);
+                ImGui::Text("ModelID: %llu", m_renderObjects[m_renderObjectIndex].modelID);
                 // Mutable
-                ImGui::DragFloat3("Position", &m_renderObjects[renderObjectIndex].position[0], 1.0f,               0.0f, 0.0f, "%.2f");
-                ImGui::DragFloat3("Rotation", &m_renderObjects[renderObjectIndex].rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
-                ImGui::DragFloat3("Scale",    &m_renderObjects[renderObjectIndex].scale[0],    1.0f,               0.0f, 0.0f, "%.2f");
+                ImGui::DragFloat3("Position", &m_renderObjects[m_renderObjectIndex].position[0], 1.0f,               0.0f, 0.0f, "%.2f");
+                ImGui::DragFloat3("Rotation", &m_renderObjects[m_renderObjectIndex].rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
+                ImGui::DragFloat3("Scale",    &m_renderObjects[m_renderObjectIndex].scale[0],    1.0f,               0.0f, 0.0f, "%.2f");
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Light"))
+            {
+                ImGui::DragFloat3("Position",  &m_sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                ImGui::ColorEdit3("Color",     &m_sun.color[0]);
+                ImGui::DragFloat3("Intensity", &m_sun.intensity[0], 1.0f, 0.0f, 0.0f, "%.2f");
 
                 ImGui::EndMenu();
             }
 
             ImGui::EndMainMenuBar();
         }
+
+        const Scene scene =
+        {
+            .projection = Maths::CreateProjectionReverseZ(
+                m_camera.FOV,
+                static_cast<f32>(m_swapchain.extent.width) /
+                static_cast<f32>(m_swapchain.extent.height),
+                PLANES.x,
+                PLANES.y
+            ),
+            .view      = m_camera.GetViewMatrix(),
+            .cameraPos = {m_camera.position, 1.0f},
+            .dirLight  = m_sun
+        };
+
+        m_sceneBuffer.LoadScene(m_currentFIF, scene);
+        m_meshBuffer.LoadMeshes(m_currentFIF, m_modelManager, m_renderObjects);
+        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_modelManager, m_renderObjects);
     }
 
     void RenderManager::WaitForFences()

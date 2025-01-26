@@ -16,7 +16,7 @@
 
 #include "ForwardPass.h"
 
-#include "ForwardSceneBuffer.h"
+#include "Renderer/SceneBuffer.h"
 #include "Util/Log.h"
 #include "Renderer/RenderConstants.h"
 #include "Util/Maths.h"
@@ -66,9 +66,10 @@ namespace Renderer::Forward
     (
         usize FIF,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
-        const Renderer::Camera& camera,
-        const std::vector<Renderer::RenderObject>& renderObjects
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Renderer::SceneBuffer& sceneBuffer,
+        const Renderer::MeshBuffer& meshBuffer,
+        const Renderer::IndirectBuffer& indirectBuffer
     )
     {
         auto& currentCmdBuffer = cmdBuffers[FIF];
@@ -96,7 +97,7 @@ namespace Renderer::Forward
             }
         );
 
-        VkRenderingAttachmentInfo colorAttachmentInfo =
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
@@ -115,7 +116,7 @@ namespace Renderer::Forward
             }}}
         };
 
-        VkRenderingAttachmentInfo depthAttachmentInfo =
+        const VkRenderingAttachmentInfo depthAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
@@ -129,7 +130,7 @@ namespace Renderer::Forward
             .clearValue         = {.depthStencil = {0.0f, 0x0}}
         };
 
-        VkRenderingInfo renderInfo =
+        const VkRenderingInfo renderInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
             .pNext                = nullptr,
@@ -150,7 +151,7 @@ namespace Renderer::Forward
 
         pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-        VkViewport viewport =
+        const VkViewport viewport =
         {
             .x        = 0.0f,
             .y        = 0.0f,
@@ -162,7 +163,7 @@ namespace Renderer::Forward
 
         vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
 
-        VkRect2D scissor =
+        const VkRect2D scissor =
         {
             .offset = {0, 0},
             .extent = {m_renderSize.x, m_renderSize.y}
@@ -170,51 +171,12 @@ namespace Renderer::Forward
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
-        static DirLight sun =
-        {
-            .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
-            .color     = {1.0f,   0.956f, 0.898f, 1.0f},
-            .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
-        };
-
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Light"))
-            {
-                ImGui::DragFloat3("Position",  &sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
-                ImGui::ColorEdit3("Color",     &sun.color[0]);
-                ImGui::DragFloat3("Intensity", &sun.intensity[0], 1.0f, 0.0f, 0.0f, "%.2f");
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
-
-        SceneBuffer sceneBuffer =
-        {
-            .projection = Maths::CreateProjectionReverseZ(
-                camera.FOV,
-                static_cast<f32>(m_renderSize.x) /
-                static_cast<f32>(m_renderSize.y),
-                PLANES.x,
-                PLANES.y
-            ),
-            .view = camera.GetViewMatrix(),
-            .cameraPos = {camera.position, 1.0f},
-            .samplerIndex = pipeline.samplerIndex,
-            .dirLight = sun
-        };
-
-        std::memcpy(pipeline.sceneBuffers[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(Forward::SceneBuffer));
-        pipeline.meshBuffer.LoadMeshes(FIF, modelManager, renderObjects);
-        auto drawCount = pipeline.indirectBuffer.WriteDrawCalls(FIF, modelManager, renderObjects);
-
         pipeline.pushConstant =
         {
-            .scene    = pipeline.sceneBuffers[FIF].deviceAddress,
-            .meshes   = pipeline.meshBuffer.buffers[FIF].deviceAddress,
-            .vertices = modelManager.geometryBuffer.vertexBuffer.deviceAddress
+            .scene        = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes       = meshBuffer.buffers[FIF].deviceAddress,
+            .vertices     = geometryBuffer.vertexBuffer.deviceAddress,
+            .samplerIndex = pipeline.samplerIndex
         };
 
         pipeline.LoadPushConstants
@@ -236,14 +198,14 @@ namespace Renderer::Forward
             descriptorSets
         );
 
-        modelManager.geometryBuffer.Bind(currentCmdBuffer);
+        geometryBuffer.Bind(currentCmdBuffer);
 
         vkCmdDrawIndexedIndirect
         (
             currentCmdBuffer.handle,
-            pipeline.indirectBuffer.buffers[FIF].handle,
+            indirectBuffer.buffers[FIF].handle,
             0,
-            drawCount,
+            indirectBuffer.writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)
         );
 

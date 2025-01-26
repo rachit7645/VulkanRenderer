@@ -46,7 +46,7 @@ layout(set = 0, binding = 1) uniform texture2D textures[];
 void main()
 {
     Mesh mesh         = Constants.Meshes.meshes[fragDrawID];
-    uint samplerIndex = Constants.Scene.samplerIndex;
+    uint samplerIndex = Constants.SamplerIndex;
 
     vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], samplers[samplerIndex]), fragTexCoords);
     albedo.xyz  = ToLinear(albedo.xyz);

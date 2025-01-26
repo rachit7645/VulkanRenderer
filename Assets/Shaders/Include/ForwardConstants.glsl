@@ -26,6 +26,7 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     SceneBuffer  Scene;
     MeshBuffer   Meshes;
     VertexBuffer Vertices;
+    uint         SamplerIndex;
 } Constants;
 
 #endif

@@ -22,7 +22,6 @@ layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer Sc
     mat4     projection;
     mat4     view;
     vec4     cameraPos;
-    uint     samplerIndex;
     DirLight light;
 };
 

@@ -14,42 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_INSTANCE_H
-#define FORWARD_INSTANCE_H
-
-#include <vulkan/vulkan.h>
+#ifndef SCENE_H
+#define SCENE_H
 
 #include "Externals/GLM.h"
 #include "Vulkan/Util.h"
-#include "Util/Util.h"
+#include "Renderer/DirLight.h"
 
-namespace Renderer::Forward
+namespace Renderer
 {
-    struct Mesh
+    struct VULKAN_GLSL_DATA Scene
     {
-        glm::mat4  transform;
-        glm::mat3  normalMatrix;
-        glm::uvec3 textureIDs;
-        glm::vec4  albedoFactor;
-        f32        roughnessFactor;
-        f32        metallicFactor;
+        glm::mat4 projection = {};
+        glm::mat4 view       = {};
+        glm::vec4 cameraPos  = {};
+        DirLight  dirLight   = {};
     };
-
-    #ifdef ENGINE_DEBUG
-    static_assert
-    (
-        sizeof(Mesh) ==
-        (
-            sizeof(glm::mat4) +
-            sizeof(glm::mat3) +
-            sizeof(glm::uvec3) +
-            sizeof(glm::vec4) +
-            sizeof(f32) +
-            sizeof(f32)
-        ),
-        "Incompatible mesh structure!"
-    );
-    #endif
 }
 
 #endif

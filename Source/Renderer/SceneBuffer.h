@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_INDIRECT_BUFFER_H
-#define FORWARD_INDIRECT_BUFFER_H
+#ifndef SCENE_BUFFER_H
+#define SCENE_BUFFER_H
 
-#include "Renderer/RenderObject.h"
-#include "Util/Util.h"
+#include "Scene.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
-#include "Externals/VMA.h"
-#include "Models/ModelManager.h"
 
-namespace Renderer::Forward
+namespace Renderer
 {
-    class IndirectBuffer
+    class SceneBuffer
     {
     public:
-        IndirectBuffer() = default;
-        IndirectBuffer(VkDevice device, VmaAllocator allocator);
+        SceneBuffer() = default;
+        SceneBuffer(VkDevice device, VmaAllocator allocator);
 
-        u32 WriteDrawCalls
-        (
-            usize FIF,
-            const Models::ModelManager& modelManager,
-            const std::vector<Renderer::RenderObject>& renderObjects
-        );
+        void LoadScene(usize FIF, const Renderer::Scene& scene);
 
         void Destroy(VmaAllocator allocator);
 

@@ -16,7 +16,6 @@
 
 #include "ForwardPipeline.h"
 
-#include "ForwardSceneBuffer.h"
 #include "Models/Vertex.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
@@ -77,27 +76,7 @@ namespace Renderer::Forward
         Vk::TextureManager& textureManager
     )
     {
-        for (usize i = 0; i < sceneBuffers.size(); ++i)
-        {
-            sceneBuffers[i] = Vk::Buffer
-            (
-                context.allocator,
-                sizeof(SceneBuffer),
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-                VMA_MEMORY_USAGE_AUTO
-            );
-
-            sceneBuffers[i].GetDeviceAddress(context.device);
-
-            Vk::SetDebugName(context.device, sceneBuffers[i].handle, fmt::format("SceneBuffer/{}", i));
-        }
-
-        meshBuffer     = Forward::MeshBuffer(context.device, context.allocator);
-        indirectBuffer = Forward::IndirectBuffer(context.device, context.allocator);
-
-        auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
+        const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
         samplerIndex = textureManager.AddSampler
         (
@@ -128,16 +107,5 @@ namespace Renderer::Forward
         Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "ForwardPipeline/Sampler");
 
         megaSet.Update(context.device);
-
-        m_deletionQueue.PushDeletor([&]()
-        {
-            meshBuffer.Destroy(context.allocator);
-            indirectBuffer.Destroy(context.allocator);
-
-            for (auto&& buffer : sceneBuffers)
-            {
-                buffer.Destroy(context.allocator);
-            }
-        });
     }
 }

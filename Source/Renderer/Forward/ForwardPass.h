@@ -19,11 +19,14 @@
 
 #include "ForwardPipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Renderer/Camera.h"
 #include "Vulkan/DepthBuffer.h"
-#include "Models/ModelManager.h"
-#include "Renderer/RenderObject.h"
+#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
+#include "Vulkan/Constants.h"
+#include "Renderer/Camera.h"
+#include "Renderer/IndirectBuffer.h"
+#include "Renderer/MeshBuffer.h"
+#include "Renderer/SceneBuffer.h"
 
 namespace Renderer::Forward
 {
@@ -46,9 +49,10 @@ namespace Renderer::Forward
         (
             usize FIF,
             const Vk::MegaSet& megaSet,
-            const Models::ModelManager& modelManager,
-            const Renderer::Camera& camera,
-            const std::vector<Renderer::RenderObject>& renderObjects
+            const Vk::GeometryBuffer& geometryBuffer,
+            const Renderer::SceneBuffer& sceneBuffer,
+            const Renderer::MeshBuffer& meshBuffer,
+            const Renderer::IndirectBuffer& indirectBuffer
         );
 
         Forward::ForwardPipeline pipeline;

@@ -79,14 +79,15 @@ add_executable(VulkanRenderer
 	Source/Renderer/FreeCamera.cpp
 	Source/Renderer/Camera.cpp
 	Source/Renderer/RenderObject.cpp
+    Source/Renderer/IndirectBuffer.cpp
+    Source/Renderer/MeshBuffer.cpp
+    Source/Renderer/SceneBuffer.cpp
 	# Swapchain Pass Sources
 	Source/Renderer/Swapchain/SwapchainPipeline.cpp
 	Source/Renderer/Swapchain/SwapchainPass.cpp
 	# Forward Pass Sources
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
-	Source/Renderer/Forward/ForwardMeshBuffer.cpp
-    Source/Renderer/Forward/ForwardIndirectBuffer.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

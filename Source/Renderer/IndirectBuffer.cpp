@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "ForwardIndirectBuffer.h"
+#include "IndirectBuffer.h"
 
 #include "Vulkan/DebugUtils.h"
 
-namespace Renderer::Forward
+namespace Renderer
 {
     constexpr usize INDIRECT_BUFFER_SIZE = (1 << 16) * sizeof(VkDrawIndexedIndirectCommand);
 
@@ -40,7 +40,7 @@ namespace Renderer::Forward
         }
     }
 
-    u32 IndirectBuffer::WriteDrawCalls
+    void IndirectBuffer::WriteDrawCalls
     (
         usize FIF,
         const Models::ModelManager& modelManager,
@@ -70,7 +70,7 @@ namespace Renderer::Forward
             sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()
         );
 
-        return static_cast<u32>(drawCalls.size());
+        writtenDrawCount = static_cast<u32>(drawCalls.size());
     }
 
     void IndirectBuffer::Destroy(VmaAllocator allocator)

@@ -28,6 +28,7 @@ namespace Renderer::Forward
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
         VkDeviceAddress vertices;
+        u32             samplerIndex;
     };
 }
 
