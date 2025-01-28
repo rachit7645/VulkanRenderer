@@ -14,31 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PASS_H
-#define FORWARD_PASS_H
+#ifndef DEPTH_PASS_H
+#define DEPTH_PASS_H
 
-#include "ForwardPipeline.h"
-#include "Vulkan/CommandBuffer.h"
+#include "DepthPipeline.h"
 #include "Vulkan/DepthBuffer.h"
-#include "Vulkan/GeometryBuffer.h"
-#include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
-#include "Renderer/Camera.h"
+#include "Vulkan/GeometryBuffer.h"
 #include "Renderer/IndirectBuffer.h"
 #include "Renderer/MeshBuffer.h"
 #include "Renderer/SceneBuffer.h"
 
-namespace Renderer::Forward
+namespace Renderer::Depth
 {
-    class ForwardPass
+    class DepthPass
     {
     public:
-        ForwardPass
+        DepthPass
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
+            const Vk::MegaSet& megaSet,
             VkExtent2D extent
         );
 
@@ -54,24 +50,26 @@ namespace Renderer::Forward
         void Render
         (
             usize FIF,
-            const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
             const Renderer::SceneBuffer& sceneBuffer,
             const Renderer::MeshBuffer& meshBuffer,
-            const Renderer::IndirectBuffer& indirectBuffer,
-            const Vk::DepthBuffer& depthBuffer
+            const Renderer::IndirectBuffer& indirectBuffer
         );
 
-        Forward::ForwardPipeline pipeline;
+        Depth::DepthPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
 
-        Vk::Image     colorAttachment;
-        Vk::ImageView colorAttachmentView;
+        Vk::DepthBuffer depthBuffer;
     private:
-        void InitData(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent);
+        void InitData
+        (
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            VkExtent2D extent
+        );
 
-        glm::uvec2          m_renderSize = {0, 0};
+        glm::uvec2          m_renderSize    = {0, 0};
         Util::DeletionQueue m_deletionQueue = {};
     };
 }

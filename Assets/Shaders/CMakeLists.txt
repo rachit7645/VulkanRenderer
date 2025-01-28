@@ -49,6 +49,8 @@ file(GLOB SHADER_SOURCES
     Swapchain.frag
     Forward.vert
     Forward.frag
+    Depth.vert
+    Depth.frag
 )
 
 # Shader files
@@ -64,6 +66,7 @@ file(GLOB SHADER_HEADERS
     Include/Scene.glsl
     Include/Vertex.glsl
     Include/SwapchainConstants.glsl
+    Include/DepthConstants.glsl
 )
 
 # For each shader to be compiled

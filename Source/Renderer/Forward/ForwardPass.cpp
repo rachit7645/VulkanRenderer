@@ -53,7 +53,12 @@ namespace Renderer::Forward
         Logger::Info("{}\n", "Created forward pass!");
     }
 
-    void ForwardPass::Recreate(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent)
+    void ForwardPass::Recreate
+    (
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        VkExtent2D extent
+    )
     {
         m_deletionQueue.FlushQueue();
 
@@ -69,10 +74,11 @@ namespace Renderer::Forward
         const Vk::GeometryBuffer& geometryBuffer,
         const Renderer::SceneBuffer& sceneBuffer,
         const Renderer::MeshBuffer& meshBuffer,
-        const Renderer::IndirectBuffer& indirectBuffer
+        const Renderer::IndirectBuffer& indirectBuffer,
+        const Vk::DepthBuffer& depthBuffer
     )
     {
-        auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -125,8 +131,8 @@ namespace Renderer::Forward
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_NONE,
             .clearValue         = {.depthStencil = {0.0f, 0x0}}
         };
 
@@ -238,8 +244,6 @@ namespace Renderer::Forward
     {
         m_renderSize = {extent.width, extent.height};
 
-        depthBuffer = Vk::DepthBuffer(context, formatHelper, extent);
-
         colorAttachment = Vk::Image
         (
             context.allocator,
@@ -307,14 +311,11 @@ namespace Renderer::Forward
 
         Vk::SetDebugName(context.device, colorAttachment.handle,            "ForwardPassColorAttachment0");
         Vk::SetDebugName(context.device, colorAttachmentView.handle,        "ForwardPassColorAttachment0_View");
-        Vk::SetDebugName(context.device, depthBuffer.depthImage.handle,     "ForwardPassDepthAttachment");
-        Vk::SetDebugName(context.device, depthBuffer.depthImageView.handle, "ForwardPassDepthAttachment_View");
 
         m_deletionQueue.PushDeletor([&] ()
         {
             colorAttachmentView.Destroy(context.device);
             colorAttachment.Destroy(context.allocator);
-            depthBuffer.Destroy(context.device, context.allocator);
         });
     }
 

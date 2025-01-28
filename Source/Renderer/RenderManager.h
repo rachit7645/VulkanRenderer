@@ -26,6 +26,7 @@
 #include "SceneBuffer.h"
 #include "Swapchain/SwapchainPass.h"
 #include "Forward/ForwardPass.h"
+#include "Depth/DepthPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -77,6 +78,7 @@ namespace Renderer
         // Render Passes
         Swapchain::SwapchainPass m_swapPass;
         Forward::ForwardPass     m_forwardPass;
+        Depth::DepthPass         m_depthPass;
 
         // Buffers
         MeshBuffer     m_meshBuffer;

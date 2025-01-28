@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_GLSL
-#define SCENE_GLSL
+#version 460
 
-#include "Lights.glsl"
+// Extensions
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference     : enable
+#extension GL_EXT_scalar_block_layout  : enable
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
+#include "DepthConstants.glsl"
+
+void main()
 {
-    mat4     projection;
-    mat4     view;
-    vec4     cameraPos;
-    DirLight light;
-};
+    Mesh   mesh   = Constants.Meshes.meshes[gl_DrawID];
+    Vertex vertex = Constants.Vertices.vertices[gl_VertexIndex];
 
-#endif
+    vec4 fragPos = mesh.transform * vec4(vertex.position, 1.0f);
+    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
+}

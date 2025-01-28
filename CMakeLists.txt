@@ -88,6 +88,9 @@ add_executable(VulkanRenderer
 	# Forward Pass Sources
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
+    # Depth Pass Source
+    Source/Renderer/Depth/DepthPipeline.cpp
+    Source/Renderer/Depth/DepthPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

@@ -45,7 +45,7 @@ namespace Vk
         const std::array swapChains       = {handle};
         const std::array imageIndices     = {imageIndex};
 
-        VkPresentInfoKHR presentInfo =
+        const VkPresentInfoKHR presentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext              = nullptr,
@@ -306,7 +306,7 @@ namespace Vk
     {
         const auto& presentModes = m_swapChainInfo.presentModes;
 
-        for (auto presentMode : presentModes)
+        for (const auto presentMode : presentModes)
         {
             // Mailbox my beloved
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)

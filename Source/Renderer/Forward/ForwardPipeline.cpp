@@ -58,7 +58,7 @@ namespace Renderer::Forward
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL, VK_FALSE, {}, {})
             .AddBlendAttachment()
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))

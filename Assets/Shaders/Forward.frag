@@ -52,9 +52,6 @@ void main()
     albedo.xyz  = ToLinear(albedo.xyz);
     albedo     *= mesh.albedoFactor;
 
-    // Transparency check
-    if (albedo.a < 0.5f) discard;
-
     vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], samplers[samplerIndex]), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
 

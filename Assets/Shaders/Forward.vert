@@ -22,7 +22,6 @@
 #extension GL_EXT_scalar_block_layout  : enable
 
 // Includes
-#include "Lights.glsl"
 #include "ForwardConstants.glsl"
 
 // Vertex outputs

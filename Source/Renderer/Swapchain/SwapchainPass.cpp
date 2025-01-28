@@ -63,9 +63,10 @@ namespace Renderer::Swapchain
 
     void SwapchainPass::Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF)
     {
-        auto& currentCmdBuffer = cmdBuffers[FIF];
-        auto& currentImage     = swapchain.images[swapchain.imageIndex];
-        auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
+        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
+
+        auto& currentImage = swapchain.images[swapchain.imageIndex];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -90,7 +91,7 @@ namespace Renderer::Swapchain
             }
         );
 
-        VkRenderingAttachmentInfo colorAttachmentInfo =
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
@@ -109,7 +110,7 @@ namespace Renderer::Swapchain
             }}}
         };
 
-        VkRenderingInfo renderInfo =
+        const VkRenderingInfo renderInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
             .pNext                = nullptr,
@@ -130,7 +131,7 @@ namespace Renderer::Swapchain
 
         pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-        VkViewport viewport =
+        const VkViewport viewport =
         {
             .x        = 0.0f,
             .y        = 0.0f,
@@ -142,7 +143,7 @@ namespace Renderer::Swapchain
 
         vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
 
-        VkRect2D scissor =
+        const VkRect2D scissor =
         {
             .offset = {0, 0},
             .extent = swapchain.extent

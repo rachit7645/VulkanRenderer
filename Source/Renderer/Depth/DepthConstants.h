@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_GLSL
-#define SCENE_GLSL
+#ifndef DEPTH_CONSTANTS_H
+#define DEPTH_CONSTANTS_H
 
-#include "Lights.glsl"
-
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
+namespace Renderer::Depth
 {
-    mat4     projection;
-    mat4     view;
-    vec4     cameraPos;
-    DirLight light;
-};
+    struct __attribute__((packed)) PushConstant
+    {
+        VkDeviceAddress scene;
+        VkDeviceAddress meshes;
+        VkDeviceAddress vertices;
+    };
+}
 
 #endif

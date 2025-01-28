@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_GLSL
-#define SCENE_GLSL
+#ifndef DEPTH_PUSH_CONSTANT
+#define DEPTH_PUSH_CONSTANT
 
-#include "Lights.glsl"
+#include "Mesh.glsl"
+#include "Scene.glsl"
+#include "Vertex.glsl"
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    mat4     projection;
-    mat4     view;
-    vec4     cameraPos;
-    DirLight light;
-};
+    SceneBuffer  Scene;
+    MeshBuffer   Meshes;
+    VertexBuffer Vertices;
+} Constants;
 
 #endif

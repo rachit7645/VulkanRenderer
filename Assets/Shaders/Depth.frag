@@ -14,17 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_GLSL
-#define SCENE_GLSL
+#version 460
 
-#include "Lights.glsl"
-
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
+void main()
 {
-    mat4     projection;
-    mat4     view;
-    vec4     cameraPos;
-    DirLight light;
-};
-
-#endif
+}
