@@ -23,6 +23,23 @@
 #define MAT_NORMAL_ID     mesh.textureIDs.y
 #define MAT_AO_RGH_MTL_ID mesh.textureIDs.z
 
+vec3 Orthogonalize(vec3 T, vec3 N)
+{
+    vec3  TPerpendicular       = T - dot(T, N) * N;
+    float lengthTPerpendicular = length(TPerpendicular);
+
+    if (lengthTPerpendicular < 1e-5)
+    {
+        vec3 reference = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
+        TPerpendicular = normalize(cross(N, reference));
+    } else
+    {
+        TPerpendicular /= lengthTPerpendicular;
+    }
+
+    return TPerpendicular;
+}
+
 vec3 GetNormalFromMap(vec3 normal, mat3 TBN)
 {
     normal = normal * 2.0f - 1.0f;

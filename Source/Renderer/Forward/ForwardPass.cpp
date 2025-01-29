@@ -181,6 +181,7 @@ namespace Renderer::Forward
         {
             .scene        = sceneBuffer.buffers[FIF].deviceAddress,
             .meshes       = meshBuffer.buffers[FIF].deviceAddress,
+            .positions    = geometryBuffer.positionBuffer.deviceAddress,
             .vertices     = geometryBuffer.vertexBuffer.deviceAddress,
             .samplerIndex = pipeline.samplerIndex
         };

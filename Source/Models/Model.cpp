@@ -29,7 +29,7 @@
 namespace Models
 {
     // Model folder path
-    constexpr auto MODEL_ASSETS_DIR   = "GFX/";
+    constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
     // Default texture paths
     constexpr auto DEFAULT_ALBEDO     = "Albedo.png";
@@ -198,9 +198,10 @@ namespace Models
     {
         for (const auto& primitive : mesh.primitives)
         {
-            std::vector<Index>  indices  = {};
-            std::vector<Vertex> vertices = {};
-            Material            material = {};
+            std::vector<Index>     indices   = {};
+            std::vector<glm::vec3> positions = {};
+            std::vector<Vertex>    vertices  = {};
+            Material               material  = {};
 
             if (primitive.type != fastgltf::PrimitiveType::Triangles)
             {
@@ -295,14 +296,9 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                vertices.reserve(positionAccessor.count);
+                positions.resize(positionAccessor.count);
 
-                fastgltf::iterateAccessor<glm::vec3>(asset, positionAccessor, [&] (const glm::vec3& position)
-                {
-                    Vertex vertex = {};
-                    vertex.position = position;
-                    vertices.emplace_back(vertex);
-                });
+                fastgltf::copyFromAccessor<glm::vec3>(asset, positionAccessor, positions.data());
             }
 
             // Normals
@@ -315,9 +311,13 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, normalAccessor, [&] (const glm::vec3& normal, usize index)
+                vertices.reserve(normalAccessor.count);
+
+                fastgltf::iterateAccessor<glm::vec3>(asset, normalAccessor, [&] (const glm::vec3& normal)
                 {
-                    vertices[index].normal = normal;
+                    Vertex vertex = {};
+                    vertex.normal = normal;
+                    vertices.emplace_back(vertex);
                 });
             }
 
@@ -485,11 +485,18 @@ namespace Models
                 }
             }
 
-            auto [indexInfo, vertexInfo] = geometryBuffer.SetupUpload(context.allocator, indices, vertices);
+            auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUpload
+            (
+                context.allocator,
+                indices,
+                positions,
+                vertices
+            );
 
             meshes.emplace_back
             (
                 indexInfo,
+                positionInfo,
                 vertexInfo,
                 material,
                 nodeMatrix

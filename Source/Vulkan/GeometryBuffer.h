@@ -34,10 +34,11 @@ namespace Vk
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator) const;
 
-        std::pair<Models::Info, Models::Info> SetupUpload
+        std::array<Models::Info, 3> SetupUpload
         (
             VmaAllocator allocator,
             const std::vector<Models::Index>& indices,
+            const std::vector<glm::vec3>& positions,
             const std::vector<Models::Vertex>& vertices
         );
 
@@ -45,11 +46,12 @@ namespace Vk
         void Clear(VmaAllocator allocator);
 
         Vk::Buffer indexBuffer;
+        Vk::Buffer positionBuffer;
         Vk::Buffer vertexBuffer;
 
-        u32         vertexCount = 0;
-        u32         indexCount  = 0;
-        VkIndexType indexType   = VK_INDEX_TYPE_UINT32;
+        u32 indexCount    = 0;
+        u32 positionCount = 0;
+        u32 vertexCount   = 0;
     private:
         using Upload = std::pair<Models::Info, Vk::Buffer>;
 
@@ -65,6 +67,7 @@ namespace Vk
         );
 
         std::vector<Upload> m_pendingIndexUploads;
+        std::vector<Upload> m_pendingPositionUploads;
         std::vector<Upload> m_pendingVertexUploads;
     };
 }

@@ -153,9 +153,9 @@ namespace Renderer::Depth
 
         pipeline.pushConstant =
         {
-            .scene    = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes   = meshBuffer.buffers[FIF].deviceAddress,
-            .vertices = geometryBuffer.vertexBuffer.deviceAddress,
+            .scene     = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes    = meshBuffer.buffers[FIF].deviceAddress,
+            .positions = geometryBuffer.positionBuffer.deviceAddress,
         };
 
         pipeline.LoadPushConstants

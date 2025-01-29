@@ -69,6 +69,13 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         ));
 
+        m_renderObjects.emplace_back(RenderObject(
+            m_modelManager.AddModel(m_context, m_megaSet, "Cube/Cube.gltf"),
+            glm::vec3(-50.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(5.0f, 5.0f, 5.0f)
+        ));
+
         m_modelManager.Update(m_context);
         m_megaSet.Update(m_context.device);
 

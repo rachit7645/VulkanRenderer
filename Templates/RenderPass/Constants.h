@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
-// Extensions
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
-#extension GL_EXT_scalar_block_layout  : enable
-
-#include "DepthConstants.glsl"
-
-void main()
+namespace Renderer::RenderPass
 {
-    Mesh mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3 position = Constants.Positions.positions[gl_VertexIndex];
-
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
+    struct __attribute__((packed)) PushConstant
+    {
+    };
 }
+
+#endif

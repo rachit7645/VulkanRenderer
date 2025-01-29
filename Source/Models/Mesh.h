@@ -25,6 +25,7 @@ namespace Models
     struct Mesh
     {
         Info      indexInfo;
+        Info      positionInfo;
         Info      vertexInfo;
         Material  material;
         glm::mat4 transform;

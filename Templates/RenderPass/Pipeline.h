@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef DEPTH_PIPELINE_H
+#define DEPTH_PIPELINE_H
 
-// Extensions
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
+#include "Constants.h"
 
-#include "DepthConstants.glsl"
-
-void main()
+namespace Renderer::RenderPass
 {
-    Mesh mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3 position = Constants.Positions.positions[gl_VertexIndex];
+    class Pipeline : public Vk::Pipeline
+    {
+    public:
+        Pipeline
+        (
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
+        );
 
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
+        RenderPass::PushConstant pushConstant = {};
+    };
 }
+
+#endif

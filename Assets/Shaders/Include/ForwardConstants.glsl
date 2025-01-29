@@ -23,10 +23,11 @@
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer  Scene;
-    MeshBuffer   Meshes;
-    VertexBuffer Vertices;
-    uint         SamplerIndex;
+    SceneBuffer    Scene;
+    MeshBuffer     Meshes;
+    PositionBuffer Positions;
+    VertexBuffer   Vertices;
+    uint           SamplerIndex;
 } Constants;
 
 #endif

@@ -19,7 +19,6 @@
 
 struct Vertex
 {
-    vec3 position;
     vec3 normal;
     vec2 uv0;
     vec3 tangent;
@@ -28,6 +27,11 @@ struct Vertex
 layout(buffer_reference, scalar) readonly buffer VertexBuffer
 {
     Vertex vertices[];
+};
+
+layout(buffer_reference, scalar) readonly buffer PositionBuffer
+{
+    vec3 positions[];
 };
 
 #endif

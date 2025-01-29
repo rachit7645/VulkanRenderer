@@ -23,6 +23,7 @@
 
 // Includes
 #include "ForwardConstants.glsl"
+#include "Material.glsl"
 
 // Vertex outputs
 layout(location = 0) out      vec3 fragPosition;
@@ -33,10 +34,11 @@ layout(location = 4) out      mat3 fragTBNMatrix;
 
 void main()
 {
-    Mesh   mesh   = Constants.Meshes.meshes[gl_DrawID];
-    Vertex vertex = Constants.Vertices.vertices[gl_VertexIndex];
+    Mesh   mesh     = Constants.Meshes.meshes[gl_DrawID];
+    vec3   position = Constants.Positions.positions[gl_VertexIndex];
+    Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 fragPos = mesh.transform * vec4(vertex.position, 1.0f);
+    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
     fragPosition = fragPos.xyz;
     gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
 
@@ -46,7 +48,7 @@ void main()
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);
     vec3 T = normalize(mesh.normalMatrix * vertex.tangent);
-         T = normalize(T - dot(T, N) * N);
+         T = Orthogonalize(T, N);
     vec3 B = cross(N, T);
 
     fragTBNMatrix = mat3(T, B, N);

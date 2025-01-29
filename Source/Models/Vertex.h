@@ -17,18 +17,13 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include <array>
-#include <vulkan/vulkan.h>
-
 #include "Externals/GLM.h"
 #include "Util/Util.h"
-#include "Vulkan/Util.h"
 
 namespace Models
 {
     struct Vertex
     {
-        glm::vec3 position;
         glm::vec3 normal;
         glm::vec2 uv0;
         glm::vec3 tangent;
@@ -39,7 +34,6 @@ namespace Models
     (
         sizeof(Vertex) ==
         (
-            sizeof(glm::vec3) +
             sizeof(glm::vec3) +
             sizeof(glm::vec2) +
             sizeof(glm::vec3)
