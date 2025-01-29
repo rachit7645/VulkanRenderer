@@ -144,7 +144,7 @@ namespace Vk
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& [textureID, texture] : textureMap | std::views::values)
+        for (auto& [_, texture] : textureMap | std::views::values)
         {
             texture.Destroy(device, allocator);
         }

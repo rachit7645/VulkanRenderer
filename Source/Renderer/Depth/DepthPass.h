@@ -58,7 +58,7 @@ namespace Renderer::Depth
 
         Depth::DepthPipeline pipeline;
 
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
+        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
         Vk::DepthBuffer depthBuffer;
     private:
@@ -69,8 +69,8 @@ namespace Renderer::Depth
             VkExtent2D extent
         );
 
-        glm::uvec2          m_renderSize    = {0, 0};
-        Util::DeletionQueue m_deletionQueue = {};
+        VkExtent2D          m_resolution;
+        Util::DeletionQueue m_deletionQueue;
     };
 }
 

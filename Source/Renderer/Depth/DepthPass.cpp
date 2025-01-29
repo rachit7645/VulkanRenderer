@@ -68,7 +68,7 @@ namespace Renderer::Depth
         VkExtent2D extent
     )
     {
-        m_renderSize = {extent.width, extent.height};
+        m_resolution = extent;
         depthBuffer  = Vk::DepthBuffer(context, formatHelper, extent);
 
         Vk::SetDebugName(context.device, depthBuffer.depthImage.handle,     "DepthPassDepthAttachment");
@@ -117,7 +117,7 @@ namespace Renderer::Depth
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = {m_renderSize.x, m_renderSize.y}
+                .extent = m_resolution
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -135,8 +135,8 @@ namespace Renderer::Depth
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(m_renderSize.x),
-            .height   = static_cast<f32>(m_renderSize.y),
+            .width    = static_cast<f32>(m_resolution.width),
+            .height   = static_cast<f32>(m_resolution.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -146,7 +146,7 @@ namespace Renderer::Depth
         const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = {m_renderSize.x, m_renderSize.y}
+            .extent = m_resolution
         };
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);

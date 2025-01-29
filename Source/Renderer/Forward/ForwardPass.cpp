@@ -143,7 +143,7 @@ namespace Renderer::Forward
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = {m_renderSize.x, m_renderSize.y}
+                .extent = m_resolution
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -161,8 +161,8 @@ namespace Renderer::Forward
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(m_renderSize.x),
-            .height   = static_cast<f32>(m_renderSize.y),
+            .width    = static_cast<f32>(m_resolution.width),
+            .height   = static_cast<f32>(m_resolution.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -172,7 +172,7 @@ namespace Renderer::Forward
         const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = {m_renderSize.x, m_renderSize.y}
+            .extent = m_resolution
         };
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
@@ -243,7 +243,7 @@ namespace Renderer::Forward
 
     void ForwardPass::InitData(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent)
     {
-        m_renderSize = {extent.width, extent.height};
+        m_resolution = extent;
 
         colorAttachment = Vk::Image
         (
@@ -254,7 +254,7 @@ namespace Renderer::Forward
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.colorAttachmentFormatHDR,
-                .extent                = {m_renderSize.x, m_renderSize.y, 1},
+                .extent                = {m_resolution.width, m_resolution.height, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,

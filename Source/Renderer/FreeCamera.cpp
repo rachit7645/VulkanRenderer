@@ -58,7 +58,7 @@ namespace Renderer
     {
         const auto& inputs = Engine::Inputs::Get();
 
-        f32 velocity = speed * frameDelta;
+        const f32 velocity = speed * frameDelta;
 
         // Forward
         if (inputs.IsKeyPressed(SDL_SCANCODE_W))
@@ -82,7 +82,7 @@ namespace Renderer
             position += right * velocity;
         }
 
-        auto lStick = inputs.GetLStick();
+        const auto lStick = inputs.GetLStick();
         // Forward/Backward
         position -= lStick.y * front * velocity;
         // Left/Right
@@ -93,7 +93,7 @@ namespace Renderer
     {
         auto& inputs = Engine::Inputs::Get();
 
-        auto speed = sensitivity * frameDelta;
+        const auto speed = sensitivity * frameDelta;
 
         // Avoids freaking out
         if (inputs.WasMouseMoved())
@@ -104,7 +104,7 @@ namespace Renderer
             rotation.x += glm::radians(inputs.GetMousePosition().y * speed);
         }
 
-        auto rStick = inputs.GetRStick();
+        const auto rStick = inputs.GetRStick();
         // Pitch
         rotation.x += rStick.y * speed * 0.04f;
         // Yaw

@@ -31,7 +31,7 @@ namespace Vk
         VkDescriptorType type
     )
     {
-        auto& info = imageInfos.emplace_back(VkDescriptorImageInfo
+        const auto& info = imageInfos.emplace_back(VkDescriptorImageInfo
         {
             .sampler     = sampler,
             .imageView   = image,

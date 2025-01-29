@@ -25,9 +25,9 @@ namespace Vk
     GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
     {
         // TODO: Implement resizing
-        constexpr VkDeviceSize INITIAL_INDEX_SIZE    = (1 << 24) * sizeof(Models::Index);
-        constexpr VkDeviceSize INITIAL_POSITION_SIZE = (1 << 20) * sizeof(glm::vec3);
-        constexpr VkDeviceSize INITIAL_VERTEX_SIZE   = (1 << 20) * sizeof(Models::Vertex);
+        constexpr VkDeviceSize INITIAL_INDEX_SIZE    = (1 << 20) * sizeof(Models::Index);
+        constexpr VkDeviceSize INITIAL_POSITION_SIZE = (1 << 18) * sizeof(glm::vec3);
+        constexpr VkDeviceSize INITIAL_VERTEX_SIZE   = (1 << 18) * sizeof(Models::Vertex);
 
         indexBuffer = Vk::Buffer
         (
@@ -268,6 +268,49 @@ namespace Vk
             offsetBytes,
             sizeBytes
         );
+    }
+
+    void GeometryBuffer::ImGuiDisplay() const
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Geometry Buffer"))
+            {
+                ImGui::Text("Buffer Name     | Count  | Used/Available/Allocated");
+                ImGui::Separator();
+
+                ImGui::Text
+                (
+                    "Index Buffer    | %u | %llu/%llu/%llu",
+                    indexCount,
+                    indexCount * sizeof(Models::Index),
+                    indexBuffer.allocInfo.size - (indexCount * sizeof(Models::Index)),
+                    indexBuffer.allocInfo.size
+                );
+
+                ImGui::Text
+                (
+                    "Position Buffer | %u | %llu/%llu/%llu",
+                    positionCount,
+                    positionCount * sizeof(glm::vec3),
+                    positionBuffer.allocInfo.size - (positionCount * sizeof(glm::vec3)),
+                    positionBuffer.allocInfo.size
+                );
+
+                ImGui::Text
+                (
+                    "Vertex Buffer   | %u | %llu/%llu/%llu",
+                    vertexCount,
+                    vertexCount * sizeof(Models::Vertex),
+                    vertexBuffer.allocInfo.size - (vertexCount * sizeof(Models::Vertex)),
+                    vertexBuffer.allocInfo.size
+                );
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator) const

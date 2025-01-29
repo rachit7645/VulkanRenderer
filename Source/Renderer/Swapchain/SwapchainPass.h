@@ -49,7 +49,7 @@ namespace Renderer::Swapchain
 
         Swapchain::SwapchainPipeline pipeline;
 
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
+        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     };
 }
 

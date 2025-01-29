@@ -100,7 +100,9 @@ namespace Renderer
         bool m_isSwapchainOk = true;
 
         // ImGui
+        usize m_heapIndex         = 0;
         usize m_renderObjectIndex = 0;
+
         DirLight m_sun =
         {
             .position  = {-30.0f, -30.0f, -10.0f, 1.0f},

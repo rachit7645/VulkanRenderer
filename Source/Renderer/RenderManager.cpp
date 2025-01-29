@@ -133,12 +133,72 @@ namespace Renderer
         m_camera.Update(m_frameCounter.frameDelta);
 
         Engine::Inputs::Get().ImGuiDisplay();
+        m_modelManager.geometryBuffer.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {
+            if (ImGui::BeginMenu("Memory"))
+            {
+                std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets = {};
+                vmaGetHeapBudgets(m_context.allocator, budgets.data());
+
+                usize usedBytes       = 0;
+                usize budgetBytes     = 0;
+                usize allocatedBytes  = 0;
+                usize allocationCount = 0;
+                usize blockCount      = 0;
+
+                for (const auto& budget : budgets)
+                {
+                    usedBytes       += budget.usage;
+                    budgetBytes     += budget.budget;
+                    allocatedBytes  += budget.statistics.blockBytes;
+                    allocationCount += budget.statistics.allocationCount;
+                    blockCount      += budget.statistics.blockCount;
+                }
+
+                if (ImGui::BeginCombo("Heap", fmt::format("[{}]", m_heapIndex).c_str()))
+                {
+                    for (usize i = 0; i < budgets.size(); ++i)
+                    {
+                        const bool isSelected = (m_heapIndex == i);
+
+                        if (ImGui::Selectable(fmt::format("[{}]", i).c_str(), isSelected))
+                        {
+                            m_heapIndex = i;
+                        }
+
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                ImGui::Separator();
+                ImGui::Text("Used                   | %llu", budgets[m_heapIndex].usage);
+                ImGui::Text("Allocated              | %llu", budgets[m_heapIndex].statistics.allocationBytes);
+                ImGui::Text("Available              | %llu", budgets[m_heapIndex].budget - budgets[m_heapIndex].usage);
+                ImGui::Text("Budget                 | %llu", budgets[m_heapIndex].budget);
+                ImGui::Text("Allocation Count       | %u",   budgets[m_heapIndex].statistics.allocationCount);
+                ImGui::Text("Block Count            | %u",   budgets[m_heapIndex].statistics.blockCount);
+
+                ImGui::Separator();
+                ImGui::Text("Total Used             | %llu", usedBytes);
+                ImGui::Text("Total Allocated        | %llu", allocatedBytes);
+                ImGui::Text("Total Available        | %llu", budgetBytes - usedBytes);
+                ImGui::Text("Total Budget           | %llu", budgetBytes);
+                ImGui::Text("Total Allocation Count | %llu", allocationCount);
+                ImGui::Text("Total Block Count      | %llu", blockCount);
+
+                ImGui::EndMenu();
+            }
+
             if (ImGui::BeginMenu("Render Objects"))
             {
-                if (ImGui::BeginCombo("Object", fmt::format("[{}]", m_renderObjectIndex).c_str(), ImGuiComboFlags_None))
+                if (ImGui::BeginCombo("Object", fmt::format("[{}]", m_renderObjectIndex).c_str()))
                 {
                     for (usize i = 0; i < m_renderObjects.size(); ++i)
                     {
@@ -158,6 +218,7 @@ namespace Renderer
                     ImGui::EndCombo();
                 }
 
+                ImGui::Separator();
                 // Immutable
                 ImGui::Text("ModelID: %llu", m_renderObjects[m_renderObjectIndex].modelID);
                 // Mutable
@@ -365,8 +426,13 @@ namespace Renderer
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                 if (event.window.data1 > 0 && event.window.data2 > 0)
                 {
-                    m_window.size = {event.window.data1, event.window.data2};
-                    Resize();
+                    const glm::ivec2 newWindowSize = {event.window.data1, event.window.data2};
+
+                    if (m_window.size != newWindowSize)
+                    {
+                        m_window.size = newWindowSize;
+                        Resize();
+                    }
                 }
                 break;
 

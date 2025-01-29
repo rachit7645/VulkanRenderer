@@ -45,6 +45,8 @@ namespace Vk
         void Update(const Vk::CommandBuffer& cmdBuffer);
         void Clear(VmaAllocator allocator);
 
+        void ImGuiDisplay() const;
+
         Vk::Buffer indexBuffer;
         Vk::Buffer positionBuffer;
         Vk::Buffer vertexBuffer;
