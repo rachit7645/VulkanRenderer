@@ -16,16 +16,13 @@
 
 #version 460
 
-// Extensions
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference     : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-// Includes
-#include "ForwardConstants.glsl"
+#include "Constants/Forward.glsl"
 #include "Material.glsl"
 
-// Vertex outputs
 layout(location = 0) out      vec3 fragPosition;
 layout(location = 1) out      vec2 fragTexCoords;
 layout(location = 2) out      vec3 fragToCamera;

@@ -16,33 +16,25 @@
 
 #version 460
 
-// Extensions
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference     : enable
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_nonuniform_qualifier : enable
-#extension GL_EXT_debug_printf         : enable
 
-// Includes
 #include "Material.glsl"
 #include "GammaCorrect.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
-#include "ForwardConstants.glsl"
+#include "Constants/Forward.glsl"
+#include "MegaSet.glsl"
 
-// Fragment inputs
 layout(location = 0) in      vec3 fragPosition;
 layout(location = 1) in      vec2 fragTexCoords;
 layout(location = 2) in      vec3 fragToCamera;
 layout(location = 3) in flat uint fragDrawID;
 layout(location = 4) in      mat3 fragTBNMatrix;
 
-// Fragment outputs
 layout(location = 0) out vec4 outColor;
-
-// Mega set
-layout(set = 0, binding = 0) uniform sampler   samplers[];
-layout(set = 0, binding = 1) uniform texture2D textures[];
 
 void main()
 {

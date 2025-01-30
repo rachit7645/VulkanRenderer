@@ -16,7 +16,7 @@
 
 #include "ValidationLayers.h"
 
-#include "../Util/Log.h"
+#include "Util/Log.h"
 #include "Util.h"
 
 namespace Vk

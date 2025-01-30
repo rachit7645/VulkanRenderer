@@ -14,31 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef FORMAT_HELPER_H
-#define FORMAT_HELPER_H
+#ifndef IMGUI_CONSTANTS_H
+#define IMGUI_CONSTANTS_H
 
-#include <vulkan/vulkan.h>
+#include "Externals/GLM.h"
 
-namespace Vk
+namespace Renderer::DearImGui
 {
-    class FormatHelper
+    struct PushConstant
     {
-    public:
-        explicit FormatHelper(VkPhysicalDevice physicalDevice);
-
-        VkFormat textureFormat;
-        VkFormat textureFormatSRGB;
-        VkFormat colorAttachmentFormatLDR;
-        VkFormat colorAttachmentFormatHDR;
-        VkFormat depthFormat;
-    private:
-        VkFormat FindSupportedFormat
-        (
-            VkPhysicalDevice physicalDevice,
-            const std::span<const VkFormat> candidates,
-            VkImageTiling tiling,
-            VkFormatFeatureFlags2 features
-        );
+        VkDeviceAddress vertices;
+        glm::vec2       scale;
+        glm::vec2       translate;
+        u32             samplerIndex;
+        u32             textureIndex;
     };
 }
 

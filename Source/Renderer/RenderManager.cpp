@@ -31,9 +31,10 @@ namespace Renderer
           m_formatHelper(m_context.physicalDevice),
           m_modelManager(m_context, m_formatHelper),
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
-          m_swapPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
+          m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_forwardPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager, m_swapchain.extent),
           m_depthPass(m_context, m_formatHelper, m_megaSet, m_swapchain.extent),
+          m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
@@ -44,9 +45,10 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
+            m_imGuiPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_depthPass.Destroy(m_context.device, m_context.commandPool);
             m_forwardPass.Destroy(m_context.device, m_context.commandPool);
-            m_swapPass.Destroy(m_context.device, m_context.commandPool);
+            m_postProcessPass.Destroy(m_context.device, m_context.commandPool);
 
             m_megaSet.Destroy(m_context.device);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
@@ -76,14 +78,14 @@ namespace Renderer
             glm::vec3(5.0f, 5.0f, 5.0f)
         ));
 
-        m_modelManager.Update(m_context);
-        m_megaSet.Update(m_context.device);
-
         // ImGui Yoy
         InitImGui();
         CreateSyncObjects();
 
-        m_swapPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
+        m_modelManager.Update(m_context);
+        m_megaSet.Update(m_context.device);
+
+        m_postProcessPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
         m_frameCounter.Reset();
     }
 
@@ -121,7 +123,17 @@ namespace Renderer
             m_depthPass.depthBuffer
         );
 
-        m_swapPass.Render(m_megaSet, m_swapchain, m_currentFIF);
+        m_postProcessPass.Render(m_megaSet, m_swapchain, m_currentFIF);
+
+        m_imGuiPass.Render
+        (
+            m_currentFIF,
+            m_context.device,
+            m_context.allocator,
+            m_swapchain,
+            m_megaSet,
+            m_modelManager.textureManager
+        );
 
         SubmitQueue();
         EndFrame();
@@ -302,7 +314,6 @@ namespace Renderer
     {
         Vk::BeginLabel(m_context.graphicsQueue, "Graphics Queue", {0.1137f, 0.7176f, 0.7490, 1.0f});
 
-        ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
     }
@@ -365,7 +376,14 @@ namespace Renderer
             {
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
-                .commandBuffer = m_swapPass.cmdBuffers[m_currentFIF].handle,
+                .commandBuffer = m_postProcessPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_imGuiPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             }
         };
@@ -398,11 +416,10 @@ namespace Renderer
 
         m_swapchain.RecreateSwapChain(m_window.size, m_context);
 
-        m_swapPass.Recreate(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager);
         m_forwardPass.Recreate(m_context, m_formatHelper, m_swapchain.extent);
         m_depthPass.Recreate(m_context, m_formatHelper, m_swapchain.extent);
 
-        m_swapPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
+        m_postProcessPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
 
         m_isSwapchainOk = true;
 
@@ -484,49 +501,17 @@ namespace Renderer
 
     void RenderManager::InitImGui()
     {
-        const auto swapchainFormat = m_swapchain.imageFormat;
-
-        ImGui_ImplVulkan_InitInfo imguiInitInfo =
-        {
-            .Instance                    = m_context.instance,
-            .PhysicalDevice              = m_context.physicalDevice,
-            .Device                      = m_context.device,
-            .QueueFamily                 = m_context.queueFamilies.graphicsFamily.value_or(0),
-            .Queue                       = m_context.graphicsQueue,
-            .DescriptorPool              = VK_NULL_HANDLE,
-            .RenderPass                  = VK_NULL_HANDLE,
-            .MinImageCount               = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
-            .ImageCount                  = std::max(Vk::FRAMES_IN_FLIGHT, 2ULL),
-            .MSAASamples                 = VK_SAMPLE_COUNT_1_BIT,
-            .PipelineCache               = VK_NULL_HANDLE,
-            .Subpass                     = 0,
-            .DescriptorPoolSize          = (1 << 4) * Vk::FRAMES_IN_FLIGHT,
-            .UseDynamicRendering         = true,
-            .PipelineRenderingCreateInfo = {
-                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .pNext                   = nullptr,
-                .viewMask                = 0,
-                .colorAttachmentCount    = 1,
-                .pColorAttachmentFormats = &swapchainFormat,
-                .depthAttachmentFormat   = VK_FORMAT_UNDEFINED,
-                .stencilAttachmentFormat = VK_FORMAT_UNDEFINED
-            },
-            .Allocator                   = nullptr,
-            .CheckVkResultFn             = &Vk::CheckResult,
-            .MinAllocationSize           = 0
-        };
-
         Logger::Info("Initializing Dear ImGui [version = {}]\n", ImGui::GetVersion());
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
 
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
-        ImGui_ImplVulkan_Init(&imguiInitInfo);
+
+        m_imGuiPass.SetupBackend(m_context, m_megaSet, m_modelManager.textureManager);
 
         m_deletionQueue.PushDeletor([&] ()
         {
-            ImGui_ImplVulkan_Shutdown();
             ImGui_ImplSDL3_Shutdown();
         });
     }

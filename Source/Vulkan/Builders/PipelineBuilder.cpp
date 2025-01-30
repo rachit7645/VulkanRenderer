@@ -322,21 +322,28 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::AddBlendAttachment()
+    PipelineBuilder& PipelineBuilder::AddBlendAttachment
+    (
+        VkBool32 blendEnable,
+        VkBlendFactor srcColorBlendFactor,
+        VkBlendFactor dstColorBlendFactor,
+        VkBlendOp colorBlendOp,
+        VkBlendFactor srcAlphaBlendFactor,
+        VkBlendFactor dstAlphaBlendFactor,
+        VkBlendOp alphaBlendOp,
+        VkColorComponentFlags colorWriteMask
+    )
     {
         VkPipelineColorBlendAttachmentState colorBlendAttachment =
         {
-            .blendEnable         = VK_FALSE,
-            .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-            .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-            .colorBlendOp        = VK_BLEND_OP_ADD,
-            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-            .alphaBlendOp        = VK_BLEND_OP_ADD,
-            .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT |
-                                   VK_COLOR_COMPONENT_G_BIT |
-                                   VK_COLOR_COMPONENT_B_BIT |
-                                   VK_COLOR_COMPONENT_A_BIT
+            .blendEnable         = blendEnable,
+            .srcColorBlendFactor = srcColorBlendFactor,
+            .dstColorBlendFactor = dstColorBlendFactor,
+            .colorBlendOp        = colorBlendOp,
+            .srcAlphaBlendFactor = srcAlphaBlendFactor,
+            .dstAlphaBlendFactor = dstAlphaBlendFactor,
+            .alphaBlendOp        = alphaBlendOp,
+            .colorWriteMask      = colorWriteMask
         };
 
         m_colorBlendStates.emplace_back(colorBlendAttachment);

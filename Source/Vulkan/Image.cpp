@@ -121,7 +121,7 @@ namespace Vk
         const VkImageSubresourceRange& subresourceRange
     )
     {
-        VkImageMemoryBarrier2 barrier =
+        const VkImageMemoryBarrier2 barrier =
         {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext               = nullptr,
@@ -137,7 +137,7 @@ namespace Vk
             .subresourceRange    = subresourceRange
         };
 
-        VkDependencyInfo dependencyInfo =
+        const VkDependencyInfo dependencyInfo =
         {
             .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
             .pNext                    = nullptr,
@@ -155,6 +155,29 @@ namespace Vk
 
     void Image::GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer)
     {
+        if (mipLevels <= 1)
+        {
+            Barrier
+            (
+                cmdBuffer,
+                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_READ_BIT,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                {
+                    .aspectMask     = aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                }
+            );
+
+            return;
+        }
+
         s32 mipWidth  = static_cast<s32>(width);
         s32 mipHeight = static_cast<s32>(height);
 
@@ -219,27 +242,29 @@ namespace Vk
 
             vkCmdBlitImage2(cmdBuffer.handle, &blitInfo);
 
-            Barrier
-            (
-                cmdBuffer,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                VK_ACCESS_2_TRANSFER_READ_BIT,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                {
-                    .aspectMask     = aspect,
-                    .baseMipLevel   = i - 1,
-                    .levelCount     = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            );
-
             if (mipWidth > 1) mipWidth /= 2;
             if (mipHeight > 1) mipHeight /= 2;
         }
+
+        // Level 0 to Level (mipLevels - 1)
+        Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = mipLevels - 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
 
         // Final mip level
         Barrier

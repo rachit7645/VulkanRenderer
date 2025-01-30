@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef SWAP_PIPELINE_H
-#define SWAP_PIPELINE_H
+#ifndef POST_PROCESS_PIPELINE_H
+#define POST_PROCESS_PIPELINE_H
 
-#include "SwapchainConstants.h"
+#include "PostProcessConstants.h"
 #include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/Context.h"
 
-namespace Renderer::Swapchain
+namespace Renderer::PostProcess
 {
-    class SwapchainPipeline : public Vk::Pipeline
+    class PostProcessPipeline : public Vk::Pipeline
     {
     public:
-        SwapchainPipeline
+        PostProcessPipeline
         (
             const Vk::Context& context,
             Vk::MegaSet& megaSet,
@@ -49,7 +49,7 @@ namespace Renderer::Swapchain
         u32 samplerIndex         = 0;
         u32 colorAttachmentIndex = 0;
     private:
-        void CreatePipeline(const Vk::Context& context, Vk::MegaSet& megaSet, VkFormat colorFormat);
+        void CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat);
         void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }

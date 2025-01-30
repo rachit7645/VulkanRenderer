@@ -20,13 +20,18 @@
 #extension GL_EXT_buffer_reference     : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Depth.glsl"
+#include "Constants/ImGui.glsl"
+#include "Converter.glsl"
+
+layout(location = 0) out vec4 fragColor;
+layout(location = 1) out vec2 fragUV;
 
 void main()
 {
-    Mesh mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3 position = Constants.Positions.positions[gl_VertexIndex];
+    Vertex vertex = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
+    fragColor = UnpackRGBA8(vertex.color);
+    fragUV    = vertex.uv;
+
+    gl_Position = vec4(vertex.position * Constants.Scale + Constants.Translate, 0.0f, 1.0f);
 }

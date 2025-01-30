@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef SWAPCHAIN_CONSTANTS_H
-#define SWAPCHAIN_CONSTANTS_H
+#ifndef POST_PROCESS_CONSTANTS_H
+#define POST_PROCESS_CONSTANTS_H
 
 #include "Util/Util.h"
 #include "Vulkan/Util.h"
 
-namespace Renderer::Swapchain
+namespace Renderer::PostProcess
 {
     struct __attribute__((packed)) PushConstant
     {

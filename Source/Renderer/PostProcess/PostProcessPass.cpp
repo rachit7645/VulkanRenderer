@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "SwapchainPass.h"
+#include "PostProcessPass.h"
 
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 
-namespace Renderer::Swapchain
+namespace Renderer::PostProcess
 {
-    SwapchainPass::SwapchainPass
+    PostProcessPass::PostProcessPass
     (
         const Vk::Context& context,
         const Vk::Swapchain& swapchain,
@@ -47,21 +47,7 @@ namespace Renderer::Swapchain
         Logger::Info("{}\n", "Created swapchain pass!");
     }
 
-    void SwapchainPass::Recreate
-    (
-        const Vk::Context& context,
-        const Vk::Swapchain& swapchain,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        pipeline.Destroy(context.device);
-        pipeline = Swapchain::SwapchainPipeline(context, megaSet, textureManager, swapchain.imageFormat);
-
-        Logger::Info("{}\n", "Recreated swapchain pass!");
-    }
-
-    void SwapchainPass::Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF)
+    void PostProcessPass::Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF)
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
@@ -161,7 +147,7 @@ namespace Renderer::Swapchain
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, sizeof(Swapchain::PushConstant),
+            0, sizeof(PostProcess::PushConstant),
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
@@ -185,9 +171,6 @@ namespace Renderer::Swapchain
             0
         );
 
-        ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), currentCmdBuffer.handle);
-
         vkCmdEndRendering(currentCmdBuffer.handle);
 
         currentImage.Barrier
@@ -196,9 +179,9 @@ namespace Renderer::Swapchain
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_NONE,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             {
                 .aspectMask     = currentImage.aspect,
                 .baseMipLevel   = 0,
@@ -213,7 +196,7 @@ namespace Renderer::Swapchain
         currentCmdBuffer.EndRecording();
     }
 
-    void SwapchainPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void PostProcessPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying swapchain pass!");
 

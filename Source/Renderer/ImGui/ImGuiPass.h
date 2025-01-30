@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef SWAP_PASS_H
-#define SWAP_PASS_H
+#ifndef IMGUI_PASS_H
+#define IMGUI_PASS_H
 
-#include "SwapchainPipeline.h"
-#include "Vulkan/DepthBuffer.h"
-#include "Vulkan/CommandBuffer.h"
+#include "ImGuiPipeline.h"
+#include "Vulkan/Constants.h"
 #include "Vulkan/Swapchain.h"
 
-namespace Renderer::Swapchain
+namespace Renderer::DearImGui
 {
-    class SwapchainPass
+    class ImGuiPass
     {
     public:
-        SwapchainPass
+        ImGuiPass
         (
             const Vk::Context& context,
             const Vk::Swapchain& swapchain,
@@ -35,21 +34,33 @@ namespace Renderer::Swapchain
             Vk::TextureManager& textureManager
         );
 
-        void Recreate
+        void SetupBackend
         (
             const Vk::Context& context,
-            const Vk::Swapchain& swapchain,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
 
-        void Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF);
+        void Render
+        (
+            usize FIF,
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::Swapchain& swapchain,
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
+        );
 
-        Swapchain::SwapchainPipeline pipeline;
+        DearImGui::ImGuiPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+    private:
+        usize m_fontID = 0;
+
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_vertexBuffers;
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_indexBuffers;
     };
 }
 

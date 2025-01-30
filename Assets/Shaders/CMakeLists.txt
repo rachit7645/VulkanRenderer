@@ -45,19 +45,20 @@ set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 
 # Shader files
 file(GLOB SHADER_SOURCES
-    Swapchain.vert
-    Swapchain.frag
+    PostProcess.vert
+    PostProcess.frag
     Forward.vert
     Forward.frag
     Depth.vert
     Depth.frag
+    ImGui.vert
+    ImGui.frag
 )
 
 # Shader files
 file(GLOB SHADER_HEADERS
     Include/ACES.glsl
     Include/Constants.glsl
-    Include/ForwardConstants.glsl
     Include/GammaCorrect.glsl
     Include/Lights.glsl
     Include/Material.glsl
@@ -65,8 +66,12 @@ file(GLOB SHADER_HEADERS
     Include/PBR.glsl
     Include/Scene.glsl
     Include/Vertex.glsl
-    Include/SwapchainConstants.glsl
-    Include/DepthConstants.glsl
+    Include/MegaSet.glsl
+    Include/Converter.glsl
+    Include/Constants/Forward.glsl
+    Include/Constants/Swapchain.glsl
+    Include/Constants/Depth.glsl
+    Include/Constants/ImGui.glsl
 )
 
 # For each shader to be compiled

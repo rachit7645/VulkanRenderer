@@ -36,25 +36,55 @@ namespace Vk
         Flags flags
     )
     {
-        this->flags = flags;
-
         const auto         imageData = STB::Image(path, vkuFormatHasAlpha(format) ? STBI_rgb_alpha : STBI_rgb);
         const VkDeviceSize imageSize = imageData.width * imageData.height * imageData.channels;
+
+        const auto stagingBuffer = LoadFromMemory
+        (
+            device,
+            allocator,
+            format,
+            std::span(imageData.data, imageSize),
+            {imageData.width, imageData.height},
+            flags
+        );
+
+        const auto name = Engine::Files::GetNameWithoutExtension(path);
+
+        Vk::SetDebugName(device, image.handle,     name);
+        Vk::SetDebugName(device, imageView.handle, name + "_View");
+
+        Logger::Debug("Loaded texture! [Path={}]\n", path);
+
+        return stagingBuffer;
+    }
+
+    Vk::Buffer Texture::LoadFromMemory
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        VkFormat format,
+        const std::span<const u8> data,
+        const glm::uvec2 size,
+        Flags flags
+    )
+    {
+        this->flags = flags;
 
         const auto stagingBuffer = Vk::Buffer
         (
             allocator,
-            imageSize,
+            data.size_bytes(),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocInfo.pMappedData, imageData.data, imageSize);
+        std::memcpy(stagingBuffer.allocInfo.pMappedData, data.data(), data.size_bytes());
 
         const auto mipLevels = IsFlagSet(flags, Flags::GenMipmaps) ?
-                         static_cast<u32>(std::floor(std::log2(std::max(imageData.width, imageData.height)))) + 1 :
+                         static_cast<u32>(std::floor(std::log2(std::max(size.x, size.y)))) + 1 :
                          1;
 
         image = Vk::Image
@@ -66,7 +96,7 @@ namespace Vk
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = format,
-                .extent                = {imageData.width, imageData.height, 1},
+                .extent                = {size.x, size.y, 1},
                 .mipLevels             = mipLevels,
                 .arrayLayers           = 1,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -94,13 +124,6 @@ namespace Vk
                 .layerCount     = 1
             }
         );
-
-        const auto name = Engine::Files::GetNameWithoutExtension(path);
-
-        Vk::SetDebugName(device, image.handle,     name);
-        Vk::SetDebugName(device, imageView.handle, name + "_View");
-
-        Logger::Debug("Loaded texture! [Path={}]\n", path);
 
         return stagingBuffer;
     }
@@ -138,7 +161,7 @@ namespace Vk
             }
         );
 
-        VkBufferImageCopy2 copyRegion =
+        const VkBufferImageCopy2 copyRegion =
         {
             .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
             .pNext             = nullptr,
@@ -155,7 +178,7 @@ namespace Vk
             .imageExtent       = {image.width, image.height, 1}
         };
 
-        VkCopyBufferToImageInfo2 copyInfo =
+        const VkCopyBufferToImageInfo2 copyInfo =
         {
             .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
             .pNext          = nullptr,

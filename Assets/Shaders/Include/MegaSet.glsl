@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef MEGASET_GLSL
+#define MEGASET_GLSL
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
-#extension GL_EXT_scalar_block_layout  : enable
+// Mega set
+layout(set = 0, binding = 0) uniform sampler   samplers[];
+layout(set = 0, binding = 1) uniform texture2D textures[];
 
-#include "Constants/Depth.glsl"
-
-void main()
-{
-    Mesh mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3 position = Constants.Positions.positions[gl_VertexIndex];
-
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
-}
+#endif

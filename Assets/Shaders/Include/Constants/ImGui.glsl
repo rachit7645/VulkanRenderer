@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef IMGUI_PUSH_CONSTANT
+#define IMGUI_PUSH_CONSTANT
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
-#extension GL_EXT_scalar_block_layout  : enable
-
-#include "Constants/Depth.glsl"
-
-void main()
+struct Vertex
 {
-    Mesh mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3 position = Constants.Positions.positions[gl_VertexIndex];
+    vec2 position;
+    vec2 uv;
+    uint color;
+};
 
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
-}
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
+{
+    Vertex vertices[];
+};
+
+layout(push_constant, scalar) uniform ConstantsBuffer
+{
+    VertexBuffer Vertices;
+    vec2         Scale;
+    vec2         Translate;
+    uint         SamplerIndex;
+    uint         TextureIndex;
+} Constants;
+
+#endif

@@ -46,6 +46,17 @@ namespace Vk
             Texture::Flags flags
         );
 
+        [[nodiscard]] usize AddTexture
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            VmaAllocator allocator,
+            const std::string_view name,
+            const std::span<const u8> data,
+            const glm::uvec2 size,
+            Texture::Flags flags
+        );
+
         [[nodiscard]] u32 AddSampler
         (
             Vk::MegaSet& megaSet,
@@ -53,7 +64,7 @@ namespace Vk
             const VkSamplerCreateInfo& createInfo
         );
 
-        void Update(const Vk::CommandBuffer& commandBuffer);
+        void Update(const Vk::CommandBuffer& cmdBuffer);
         void Clear(VmaAllocator allocator);
 
         [[nodiscard]] u32 GetTextureID(usize pathHash) const;

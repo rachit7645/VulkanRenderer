@@ -84,8 +84,20 @@ namespace Vk::Builders
             const VkStencilOpState& back
         );
 
-        [[nodiscard]] PipelineBuilder& AddBlendAttachment();
+        [[nodiscard]] PipelineBuilder& AddBlendAttachment
+        (
+            VkBool32 blendEnable,
+            VkBlendFactor srcColorBlendFactor,
+            VkBlendFactor dstColorBlendFactor,
+            VkBlendOp colorBlendOp,
+            VkBlendFactor srcAlphaBlendFactor,
+            VkBlendFactor dstAlphaBlendFactor,
+            VkBlendOp alphaBlendOp,
+            VkColorComponentFlags colorWriteMask
+        );
+
         [[nodiscard]] PipelineBuilder& SetBlendState();
+
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         [[nodiscard]] PipelineBuilder& AddDescriptorLayout(VkDescriptorSetLayout layout);
     private:

@@ -21,8 +21,6 @@
 
 #include "Image.h"
 #include "ImageView.h"
-#include "Context.h"
-#include "Externals/STBImage.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -37,14 +35,22 @@ namespace Vk
             GenMipmaps = 1U << 1
         };
 
-        // Loads image from path into buffer
-        // Setups state
         Vk::Buffer LoadFromFile
         (
             VkDevice device,
             VmaAllocator allocator,
             VkFormat format,
             const std::string_view path,
+            Flags flags = Flags::None
+        );
+
+        Vk::Buffer LoadFromMemory
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            VkFormat format,
+            const std::span<const u8> data,
+            const glm::uvec2 size,
             Flags flags = Flags::None
         );
 

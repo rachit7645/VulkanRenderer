@@ -14,58 +14,51 @@
  * limitations under the License.
  */
 
-#include "ForwardPipeline.h"
-
-#include "Models/Vertex.h"
+#include "ImGuiPipeline.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Util/Util.h"
 
-namespace Renderer::Forward
+namespace Renderer::DearImGui
 {
-    // Usings
-    using Models::Vertex;
-
-    ForwardPipeline::ForwardPipeline
+    ImGuiPipeline::ImGuiPipeline
     (
         const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Vk::TextureManager& textureManager,
+        VkFormat colorFormat
     )
     {
-        CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context, megaSet, textureManager);
+        CreatePipeline(context, megaSet, colorFormat);
+        CreatePipelineData(context.device, megaSet, textureManager);
     }
 
-    void ForwardPipeline::CreatePipeline
+    void ImGuiPipeline::CreatePipeline
     (
         const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        VkFormat colorFormat
     )
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+        const std::array COLOR_FORMATS = {colorFormat};
 
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
-            .SetRenderingInfo(colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
-            .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetRenderingInfo(COLOR_FORMATS, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .AttachShader("ImGui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("ImGui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-            .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL, VK_FALSE, {}, {})
             .AddBlendAttachment(
-                VK_FALSE,
-                VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
+                VK_TRUE,
+                VK_BLEND_FACTOR_SRC_ALPHA,
+                VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
                 VK_BLEND_OP_ADD,
                 VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
                 VK_BLEND_OP_ADD,
                 VK_COLOR_COMPONENT_R_BIT |
                 VK_COLOR_COMPONENT_G_BIT |
@@ -73,27 +66,25 @@ namespace Renderer::Forward
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DearImGui::PushConstant))
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ForwardPipeline");
-        Vk::SetDebugName(context.device, layout, "ForwardPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "ImGuiPipeline");
+        Vk::SetDebugName(context.device, layout, "ImGuiPipelineLayout");
     }
 
-    void ForwardPipeline::CreatePipelineData
+    void ImGuiPipeline::CreatePipelineData
     (
-        const Vk::Context& context,
+        VkDevice device,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
     {
-        const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
-
         samplerIndex = textureManager.AddSampler
         (
             megaSet,
-            context.device,
+            device,
             {
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
@@ -101,23 +92,23 @@ namespace Renderer::Forward
                 .magFilter               = VK_FILTER_LINEAR,
                 .minFilter               = VK_FILTER_LINEAR,
                 .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
-                .anisotropyEnable        = VK_TRUE,
-                .maxAnisotropy           = anisotropy,
+                .anisotropyEnable        = VK_FALSE,
+                .maxAnisotropy           = 1.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
-                .minLod                  = 0.0f,
-                .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .minLod                  = -1000.0f,
+                .maxLod                  = 1000.0f,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "ForwardPipeline/Sampler");
+        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "ImGuiPipeline/Sampler");
 
-        megaSet.Update(context.device);
+        megaSet.Update(device);
     }
 }

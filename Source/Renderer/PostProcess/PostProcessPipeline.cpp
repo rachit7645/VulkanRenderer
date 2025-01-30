@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "SwapchainPipeline.h"
+#include "PostProcessPipeline.h"
 
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 
-namespace Renderer::Swapchain
+namespace Renderer::PostProcess
 {
-    SwapchainPipeline::SwapchainPipeline
+    PostProcessPipeline::PostProcessPipeline
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,
@@ -34,7 +34,7 @@ namespace Renderer::Swapchain
         CreatePipelineData(context.device, megaSet, textureManager);
     }
 
-    void SwapchainPipeline::WriteColorAttachmentIndex
+    void PostProcessPipeline::WriteColorAttachmentIndex
     (
         VkDevice device,
         Vk::MegaSet& megaSet,
@@ -45,7 +45,7 @@ namespace Renderer::Swapchain
         megaSet.Update(device);
     }
 
-    void SwapchainPipeline::CreatePipeline(const Vk::Context& context, Vk::MegaSet& megaSet, VkFormat colorFormat)
+    void PostProcessPipeline::CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat)
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
@@ -54,15 +54,27 @@ namespace Renderer::Swapchain
         std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
             .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("Swapchain.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Swapchain.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("PostProcess.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("PostProcess.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .AddBlendAttachment()
+            .AddBlendAttachment(
+                VK_FALSE,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_COLOR_COMPONENT_R_BIT |
+                VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT
+            )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Swapchain::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::PushConstant))
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 
@@ -70,7 +82,7 @@ namespace Renderer::Swapchain
         Vk::SetDebugName(context.device, layout, "SwapchainPipelineLayout");
     }
 
-    void SwapchainPipeline::CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager)
+    void PostProcessPipeline::CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager)
     {
         samplerIndex = textureManager.AddSampler
         (

@@ -82,15 +82,18 @@ add_executable(VulkanRenderer
     Source/Renderer/IndirectBuffer.cpp
     Source/Renderer/MeshBuffer.cpp
     Source/Renderer/SceneBuffer.cpp
-	# Swapchain Pass Sources
-	Source/Renderer/Swapchain/SwapchainPipeline.cpp
-	Source/Renderer/Swapchain/SwapchainPass.cpp
+	# Post Process Pass Sources
+	Source/Renderer/PostProcess/PostProcessPipeline.cpp
+	Source/Renderer/PostProcess/PostProcessPass.cpp
 	# Forward Pass Sources
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
     # Depth Pass Source
     Source/Renderer/Depth/DepthPipeline.cpp
     Source/Renderer/Depth/DepthPass.cpp
+    # ImGui Pass Source
+    Source/Renderer/ImGui/ImGuiPipeline.cpp
+    Source/Renderer/ImGui/ImGuiPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

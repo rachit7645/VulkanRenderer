@@ -38,7 +38,6 @@ add_library(imgui STATIC
 	imgui/imgui_widgets.cpp
 	# imgui/imgui_demo.cpp
 	imgui/backends/imgui_impl_sdl3.cpp
-	imgui/backends/imgui_impl_vulkan.cpp
 	imgui/misc/cpp/imgui_stdlib.cpp
 )
 
@@ -50,7 +49,6 @@ target_precompile_headers(imgui PRIVATE
 	imgui/imstb_rectpack.h
 	imgui/imstb_truetype.h
 	imgui/backends/imgui_impl_sdl3.h
-	imgui/backends/imgui_impl_vulkan.h
 )
 
 # SDL2 Includes
@@ -59,11 +57,6 @@ target_include_directories(imgui PRIVATE ${SDL3_INCLUDE_DIRS})
 target_include_directories(imgui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
 target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
-# Volk setup
-# No vulkan prototypes
-target_compile_definitions(imgui PRIVATE VK_NO_PROTOTYPES)
-target_compile_definitions(imgui PRIVATE IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
-target_compile_definitions(imgui PRIVATE IMGUI_IMPL_VULKAN_USE_VOLK)
 # Disable warnings
 target_compile_options(imgui PRIVATE -w)
 # -O3 optimisations
@@ -84,4 +77,4 @@ if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
 endif()
 
 # Link libraries
-target_link_libraries(imgui Vulkan::Vulkan SDL3::SDL3 volk::volk)
+target_link_libraries(imgui SDL3::SDL3)

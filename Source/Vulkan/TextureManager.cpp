@@ -69,6 +69,42 @@ namespace Vk
         return pathHash;
     }
 
+    usize TextureManager::AddTexture
+    (
+        Vk::MegaSet& megaSet,
+        VkDevice device,
+        VmaAllocator allocator,
+        const std::string_view name,
+        const std::span<const u8> data,
+        const glm::uvec2 size,
+        Texture::Flags flags
+    )
+    {
+        auto nameHash = std::hash<std::string_view>()(name);
+
+        Vk::Texture texture = {};
+
+        const auto stagingBuffer = texture.LoadFromMemory
+        (
+            device,
+            allocator,
+            Texture::IsFlagSet(flags, Texture::Flags::IsSRGB) ? m_formatSRGB : m_format,
+            data,
+            size,
+            flags
+        );
+
+        const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        textureMap.emplace(nameHash, TextureInfo(id, texture));
+        m_pendingUploads.emplace_back(texture, stagingBuffer);
+
+        Vk::SetDebugName(device, texture.image.handle,     name);
+        Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
+
+        return nameHash;
+    }
+
     u32 TextureManager::AddSampler
     (
         Vk::MegaSet& megaSet,

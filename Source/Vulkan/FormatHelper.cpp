@@ -42,6 +42,14 @@ namespace Vk
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
+        colorAttachmentFormatLDR = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R8G8B8A8_UNORM},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+        );
+
         colorAttachmentFormatHDR = FindSupportedFormat
         (
             physicalDevice,
@@ -58,7 +66,7 @@ namespace Vk
         depthFormat = FindSupportedFormat
         (
             physicalDevice,
-            std::array<VkFormat, 5>
+            std::array
             {
                 VK_FORMAT_D32_SFLOAT,
                 VK_FORMAT_D24_UNORM_S8_UINT,
