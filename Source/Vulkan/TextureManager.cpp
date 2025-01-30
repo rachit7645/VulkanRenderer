@@ -178,6 +178,65 @@ namespace Vk
         return iter->second;
     }
 
+    void TextureManager::ImGuiDisplay()
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Texture Manager"))
+            {
+                if (m_selectedTexture == 0)
+                {
+                    m_selectedTexture = textureMap.begin()->first;
+                }
+                
+                if (ImGui::BeginCombo("ID", std::to_string(m_selectedTexture).c_str()))
+                {
+                    for (const auto& pathHash : textureMap | std::views::keys)
+                    {
+                        const bool isSelected = (m_selectedTexture == pathHash);
+
+                        if (ImGui::Selectable(fmt::format("[{}]", pathHash).c_str(), isSelected))
+                        {
+                            m_selectedTexture = pathHash;
+                        }
+
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                const auto& [descriptorID, texture] = textureMap.at(m_selectedTexture);
+                
+                ImGui::Text("Descriptor Index | %u", descriptorID);
+                ImGui::Text("Width            | %u", texture.image.width);
+                ImGui::Text("Height           | %u", texture.image.height);
+                ImGui::Text("Mipmap Levels    | %u", texture.image.mipLevels);
+                ImGui::Text("Format           | %s", string_VkFormat(texture.image.format));
+
+                ImGui::Separator();
+
+                const f32 originalWidth  = static_cast<f32>(texture.image.width);
+                const f32 originalHeight = static_cast<f32>(texture.image.height);
+
+                constexpr f32 MAX_SIZE = 512.0f;
+
+                // Maintain aspect ratio
+                const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
+                const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
+
+                ImGui::Image(m_selectedTexture, imageSize);
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+    }
+
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
         for (auto& [_, texture] : textureMap | std::views::values)

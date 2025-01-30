@@ -78,6 +78,7 @@ namespace Renderer::DearImGui
                 Vk::Texture::Flags::None
             );
 
+            // TODO: Use descriptor indices instead of texture IDs
             io.Fonts->SetTexID(static_cast<ImTextureID>(m_fontID));
         }
     }

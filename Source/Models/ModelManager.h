@@ -37,6 +37,8 @@ namespace Models
 
         void Update(const Vk::Context& context);
 
+        void ImGuiDisplay();
+
         std::unordered_map<u32, Models::Model> modelMap;
 
         Vk::GeometryBuffer geometryBuffer;

@@ -37,7 +37,7 @@ namespace Renderer::PostProcess
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
-        void Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF);
+        void Render(usize FIF, Vk::Swapchain& swapchain, const Vk::MegaSet& megaSet);
 
         PostProcess::PostProcessPipeline pipeline;
 

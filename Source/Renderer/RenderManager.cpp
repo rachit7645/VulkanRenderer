@@ -123,7 +123,7 @@ namespace Renderer
             m_depthPass.depthBuffer
         );
 
-        m_postProcessPass.Render(m_megaSet, m_swapchain, m_currentFIF);
+        m_postProcessPass.Render(m_currentFIF, m_swapchain, m_megaSet);
 
         m_imGuiPass.Render
         (
@@ -145,7 +145,7 @@ namespace Renderer
         m_camera.Update(m_frameCounter.frameDelta);
 
         Engine::Inputs::Get().ImGuiDisplay();
-        m_modelManager.geometryBuffer.ImGuiDisplay();
+        m_modelManager.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {

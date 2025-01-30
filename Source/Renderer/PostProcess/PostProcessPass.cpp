@@ -47,7 +47,7 @@ namespace Renderer::PostProcess
         Logger::Info("{}\n", "Created swapchain pass!");
     }
 
-    void PostProcessPass::Render(const Vk::MegaSet& megaSet, Vk::Swapchain& swapchain, usize FIF)
+    void PostProcessPass::Render(usize FIF, Vk::Swapchain& swapchain, const Vk::MegaSet& megaSet)
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];

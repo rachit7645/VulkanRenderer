@@ -131,6 +131,12 @@ namespace Models
         }
     }
 
+    void ModelManager::ImGuiDisplay()
+    {
+        geometryBuffer.ImGuiDisplay();
+        textureManager.ImGuiDisplay();
+    }
+
     void ModelManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
         geometryBuffer.Destroy(allocator);

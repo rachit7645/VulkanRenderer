@@ -72,6 +72,8 @@ namespace Vk
 
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
+        void ImGuiDisplay();
+
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         std::unordered_map<usize, TextureInfo> textureMap;
@@ -81,6 +83,8 @@ namespace Vk
         VkFormat m_formatSRGB = VK_FORMAT_UNDEFINED;
 
         std::vector<std::pair<Vk::Texture, Vk::Buffer>> m_pendingUploads;
+
+        usize m_selectedTexture = 0;
     };
 }
 
