@@ -131,8 +131,7 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_swapchain,
-            m_megaSet,
-            m_modelManager.textureManager
+            m_megaSet
         );
 
         SubmitQueue();
@@ -169,74 +168,57 @@ namespace Renderer
                     blockCount      += budget.statistics.blockCount;
                 }
 
-                if (ImGui::BeginCombo("Heap", fmt::format("[{}]", m_heapIndex).c_str()))
-                {
-                    for (usize i = 0; i < budgets.size(); ++i)
-                    {
-                        const bool isSelected = (m_heapIndex == i);
-
-                        if (ImGui::Selectable(fmt::format("[{}]", i).c_str(), isSelected))
-                        {
-                            m_heapIndex = i;
-                        }
-
-                        if (isSelected)
-                        {
-                            ImGui::SetItemDefaultFocus();
-                        }
-                    }
-
-                    ImGui::EndCombo();
-                }
-
-                ImGui::Separator();
-                ImGui::Text("Used                   | %llu", budgets[m_heapIndex].usage);
-                ImGui::Text("Allocated              | %llu", budgets[m_heapIndex].statistics.allocationBytes);
-                ImGui::Text("Available              | %llu", budgets[m_heapIndex].budget - budgets[m_heapIndex].usage);
-                ImGui::Text("Budget                 | %llu", budgets[m_heapIndex].budget);
-                ImGui::Text("Allocation Count       | %u",   budgets[m_heapIndex].statistics.allocationCount);
-                ImGui::Text("Block Count            | %u",   budgets[m_heapIndex].statistics.blockCount);
-
-                ImGui::Separator();
                 ImGui::Text("Total Used             | %llu", usedBytes);
                 ImGui::Text("Total Allocated        | %llu", allocatedBytes);
                 ImGui::Text("Total Available        | %llu", budgetBytes - usedBytes);
                 ImGui::Text("Total Budget           | %llu", budgetBytes);
                 ImGui::Text("Total Allocation Count | %llu", allocationCount);
                 ImGui::Text("Total Block Count      | %llu", blockCount);
+                ImGui::Separator();
+
+                for (usize i = 0; i < budgets.size(); ++i)
+                {
+                    if (budgets[i].budget == 0) continue;
+
+                    if (ImGui::TreeNode(fmt::format("Memory Heap #{}", i).c_str()))
+                    {
+                        ImGui::Text("Used             | %llu", budgets[i].usage);
+                        ImGui::Text("Allocated        | %llu", budgets[i].statistics.allocationBytes);
+                        ImGui::Text("Available        | %llu", budgets[i].budget - budgets[i].usage);
+                        ImGui::Text("Budget           | %llu", budgets[i].budget);
+                        ImGui::Text("Allocation Count | %u",   budgets[i].statistics.allocationCount);
+                        ImGui::Text("Block Count      | %u",   budgets[i].statistics.blockCount);
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::Separator();
+                }
 
                 ImGui::EndMenu();
             }
 
             if (ImGui::BeginMenu("Render Objects"))
             {
-                if (ImGui::BeginCombo("Object", fmt::format("[{}]", m_renderObjectIndex).c_str()))
+                for (usize i = 0; i < m_renderObjects.size(); ++i)
                 {
-                    for (usize i = 0; i < m_renderObjects.size(); ++i)
+                    if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                     {
-                        const bool isSelected = (m_renderObjectIndex == i);
+                        auto& renderObject = m_renderObjects[i];
 
-                        if (ImGui::Selectable(fmt::format("[{}]", i).c_str(), isSelected))
-                        {
-                            m_renderObjectIndex = i;
-                        }
+                        ImGui::Text("ModelID: %llu", renderObject.modelID);
 
-                        if (isSelected)
-                        {
-                            ImGui::SetItemDefaultFocus();
-                        }
+                        ImGui::Separator();
+
+                        ImGui::DragFloat3("Position", &renderObject.position[0], 1.0f,               0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Rotation", &renderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,               0.0f, 0.0f, "%.2f");
+
+                        ImGui::TreePop();
                     }
 
-                    ImGui::EndCombo();
+                    ImGui::Separator();
                 }
-
-                ImGui::Separator();
-                // Immutable
-                ImGui::Text("ModelID: %llu", m_renderObjects[m_renderObjectIndex].modelID);
-                // Mutable
-                ImGui::DragFloat3("Position", &m_renderObjects[m_renderObjectIndex].position[0], 1.0f,               0.0f, 0.0f, "%.2f");
-                ImGui::DragFloat3("Rotation", &m_renderObjects[m_renderObjectIndex].rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
-                ImGui::DragFloat3("Scale",    &m_renderObjects[m_renderObjectIndex].scale[0],    1.0f,               0.0f, 0.0f, "%.2f");
 
                 ImGui::EndMenu();
             }
@@ -507,7 +489,6 @@ namespace Renderer
         ImGui::StyleColorsDark();
 
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
-
         m_imGuiPass.SetupBackend(m_context, m_megaSet, m_modelManager.textureManager);
 
         m_deletionQueue.PushDeletor([&] ()

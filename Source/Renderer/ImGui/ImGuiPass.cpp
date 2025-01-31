@@ -67,7 +67,7 @@ namespace Renderer::DearImGui
 
             io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-            m_fontID = textureManager.AddTexture
+            const auto fontID = textureManager.AddTexture
             (
                 megaSet,
                 context.device,
@@ -78,8 +78,7 @@ namespace Renderer::DearImGui
                 Vk::Texture::Flags::None
             );
 
-            // TODO: Use descriptor indices instead of texture IDs
-            io.Fonts->SetTexID(static_cast<ImTextureID>(m_fontID));
+            io.Fonts->SetTexID(static_cast<ImTextureID>(textureManager.GetTextureID(fontID)));
         }
     }
 
@@ -89,8 +88,7 @@ namespace Renderer::DearImGui
         VkDevice device,
         VmaAllocator allocator,
         Vk::Swapchain& swapchain,
-        const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet
     )
     {
         ImGui::Render();
@@ -126,6 +124,8 @@ namespace Renderer::DearImGui
                 );
 
                 currentVertexBuffer.GetDeviceAddress(device);
+
+                Vk::SetDebugName(device, currentVertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
             }
 
             if (currentIndexBuffer.allocInfo.size < indexSize)
@@ -141,6 +141,8 @@ namespace Renderer::DearImGui
                     VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
                     VMA_MEMORY_USAGE_AUTO
                 );
+
+                Vk::SetDebugName(device, currentIndexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
             }
 
             auto vertexDestination = static_cast<ImDrawVert*>(currentVertexBuffer.allocInfo.pMappedData);
@@ -298,7 +300,7 @@ namespace Renderer::DearImGui
 
                 vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
-                pipeline.pushConstant.textureIndex = textureManager.GetTextureID(cmd.GetTexID());
+                pipeline.pushConstant.textureIndex = cmd.GetTexID();
                 pipeline.LoadPushConstants
                 (
                     currentCmdBuffer,

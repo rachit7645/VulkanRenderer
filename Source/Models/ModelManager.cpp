@@ -133,6 +133,68 @@ namespace Models
 
     void ModelManager::ImGuiDisplay()
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Model Manager"))
+            {
+                for (const auto& [pathHash, model] : modelMap)
+                {
+                    if (ImGui::TreeNode(fmt::format("[{}]", pathHash).c_str()))
+                    {
+                        for (usize i = 0; i < model.meshes.size(); ++i)
+                        {
+                            if (ImGui::TreeNode(fmt::format("Mesh #{}", i).c_str()))
+                            {
+                                const auto& mesh = model.meshes[i];
+
+                                ImGui::Separator();
+                                ImGui::Text("Info Name | Offset/Count");
+                                ImGui::Separator();
+
+                                ImGui::Text("Indices   | %u/%u", mesh.indexInfo.offset,    mesh.indexInfo.count);
+                                ImGui::Text("Positions | %u/%u", mesh.positionInfo.offset, mesh.positionInfo.count);
+                                ImGui::Text("Vertices  | %u/%u", mesh.vertexInfo.offset,   mesh.vertexInfo.count);
+
+                                ImGui::Separator();
+                                ImGui::Text("Texture Name                  | ID");
+                                ImGui::Separator();
+
+                                ImGui::Text("Albedo                        | %llu", mesh.material.albedo);
+                                ImGui::Text("Normal Map                    | %llu", mesh.material.normal);
+                                ImGui::Text("AO + Roughness + Metallic Map | %llu", mesh.material.aoRghMtl);
+
+                                ImGui::Separator();
+                                ImGui::Text("Factor Name | Value");
+                                ImGui::Separator();
+
+                                ImGui::Text("Albedo      | [%.3f, %.3f, %.3f, %.3f]",
+                                    mesh.material.albedoFactor.r,
+                                    mesh.material.albedoFactor.g,
+                                    mesh.material.albedoFactor.b,
+                                    mesh.material.albedoFactor.a
+                                );
+
+                                ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
+                                ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
+
+                                ImGui::TreePop();
+                            }
+
+                            ImGui::Separator();
+                        }
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::Separator();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         geometryBuffer.ImGuiDisplay();
         textureManager.ImGuiDisplay();
     }

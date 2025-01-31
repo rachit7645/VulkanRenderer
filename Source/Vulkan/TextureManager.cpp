@@ -58,7 +58,16 @@ namespace Vk
 
             const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            textureMap.emplace(pathHash, TextureInfo(id, texture));
+            textureMap.emplace
+            (
+                pathHash,
+                TextureInfo(
+                    id,
+                    Engine::Files::GetNameWithoutExtension(path),
+                    texture
+                )
+            );
+
             m_pendingUploads.emplace_back(texture, stagingBuffer);
         }
         else
@@ -96,7 +105,16 @@ namespace Vk
 
         const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        textureMap.emplace(nameHash, TextureInfo(id, texture));
+        textureMap.emplace
+        (
+            nameHash,
+            TextureInfo(
+                id,
+                name.data(),
+                texture
+            )
+        );
+
         m_pendingUploads.emplace_back(texture, stagingBuffer);
 
         Vk::SetDebugName(device, texture.image.handle,     name);
@@ -151,7 +169,7 @@ namespace Vk
             Logger::Error("Invalid texture path hash! [Hash={}]\n", pathHash);
         }
 
-        return iter->second.textureID;
+        return iter->second.descriptorID;
     }
 
     const Texture& TextureManager::GetTexture(usize pathHash) const
@@ -184,51 +202,34 @@ namespace Vk
         {
             if (ImGui::BeginMenu("Texture Manager"))
             {
-                if (m_selectedTexture == 0)
+                for (const auto& [pathHash, textureInfo] : textureMap)
                 {
-                    m_selectedTexture = textureMap.begin()->first;
-                }
-                
-                if (ImGui::BeginCombo("ID", std::to_string(m_selectedTexture).c_str()))
-                {
-                    for (const auto& pathHash : textureMap | std::views::keys)
+                    if (ImGui::TreeNode(std::bit_cast<void*>(pathHash), textureInfo.name.c_str()))
                     {
-                        const bool isSelected = (m_selectedTexture == pathHash);
+                        ImGui::Text("Descriptor Index | %u", textureInfo.descriptorID);
+                        ImGui::Text("Width            | %u", textureInfo.texture.image.width);
+                        ImGui::Text("Height           | %u", textureInfo.texture.image.height);
+                        ImGui::Text("Mipmap Levels    | %u", textureInfo.texture.image.mipLevels);
+                        ImGui::Text("Format           | %s", string_VkFormat(textureInfo.texture.image.format));
 
-                        if (ImGui::Selectable(fmt::format("[{}]", pathHash).c_str(), isSelected))
-                        {
-                            m_selectedTexture = pathHash;
-                        }
+                        ImGui::Separator();
 
-                        if (isSelected)
-                        {
-                            ImGui::SetItemDefaultFocus();
-                        }
+                        const f32 originalWidth  = static_cast<f32>(textureInfo.texture.image.width);
+                        const f32 originalHeight = static_cast<f32>(textureInfo.texture.image.height);
+
+                        constexpr f32 MAX_SIZE = 512.0f;
+
+                        // Maintain aspect ratio
+                        const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
+                        const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
+
+                        ImGui::Image(textureInfo.descriptorID, imageSize);
+
+                        ImGui::TreePop();
                     }
 
-                    ImGui::EndCombo();
+                    ImGui::Separator();
                 }
-
-                const auto& [descriptorID, texture] = textureMap.at(m_selectedTexture);
-                
-                ImGui::Text("Descriptor Index | %u", descriptorID);
-                ImGui::Text("Width            | %u", texture.image.width);
-                ImGui::Text("Height           | %u", texture.image.height);
-                ImGui::Text("Mipmap Levels    | %u", texture.image.mipLevels);
-                ImGui::Text("Format           | %s", string_VkFormat(texture.image.format));
-
-                ImGui::Separator();
-
-                const f32 originalWidth  = static_cast<f32>(texture.image.width);
-                const f32 originalHeight = static_cast<f32>(texture.image.height);
-
-                constexpr f32 MAX_SIZE = 512.0f;
-
-                // Maintain aspect ratio
-                const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
-                const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
-
-                ImGui::Image(m_selectedTexture, imageSize);
 
                 ImGui::EndMenu();
             }
@@ -239,7 +240,7 @@ namespace Vk
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& [_, texture] : textureMap | std::views::values)
+        for (auto& [id, name, texture] : textureMap | std::views::values)
         {
             texture.Destroy(device, allocator);
         }

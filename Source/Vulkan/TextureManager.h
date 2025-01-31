@@ -31,7 +31,8 @@ namespace Vk
     public:
         struct TextureInfo
         {
-            u32         textureID = 0;
+            u32         descriptorID;
+            std::string name;
             Vk::Texture texture;
         };
 
@@ -83,8 +84,6 @@ namespace Vk
         VkFormat m_formatSRGB = VK_FORMAT_UNDEFINED;
 
         std::vector<std::pair<Vk::Texture, Vk::Buffer>> m_pendingUploads;
-
-        usize m_selectedTexture = 0;
     };
 }
 

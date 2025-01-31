@@ -49,16 +49,13 @@ namespace Renderer::DearImGui
             VkDevice device,
             VmaAllocator allocator,
             Vk::Swapchain& swapchain,
-            const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet
         );
 
         DearImGui::ImGuiPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
-        usize m_fontID = 0;
-
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_vertexBuffers;
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_indexBuffers;
     };
