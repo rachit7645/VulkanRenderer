@@ -58,24 +58,17 @@ namespace Renderer
         });
 
         m_renderObjects.emplace_back(RenderObject(
-            m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/Sponza.gltf"),
+            m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/SponzaC.gltf"),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
         ));
 
         m_renderObjects.emplace_back(RenderObject(
-            m_modelManager.AddModel(m_context, m_megaSet, "Cottage/Cottage.gltf"),
+            m_modelManager.AddModel(m_context, m_megaSet, "Cottage/CottageC.gltf"),
             glm::vec3(50.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
-        ));
-
-        m_renderObjects.emplace_back(RenderObject(
-            m_modelManager.AddModel(m_context, m_megaSet, "Cube/Cube.gltf"),
-            glm::vec3(-50.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(5.0f, 5.0f, 5.0f)
         ));
 
         // ImGui Yoy
@@ -491,9 +484,12 @@ namespace Renderer
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
         m_imGuiPass.SetupBackend(m_context, m_megaSet, m_modelManager.textureManager);
 
+        ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+
         m_deletionQueue.PushDeletor([&] ()
         {
             ImGui_ImplSDL3_Shutdown();
+            ImGui::DestroyContext();
         });
     }
 

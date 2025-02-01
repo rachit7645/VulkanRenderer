@@ -32,14 +32,9 @@ namespace Models
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
     // Default texture paths
-    constexpr auto DEFAULT_ALBEDO     = "Albedo.png";
-    constexpr auto DEFAULT_NORMAL     = "Normal.png";
-    constexpr auto DEFAULT_AO_RGH_MTL = "Metal-Roughness.png";
-
-    // Texture flags
-    constexpr auto ALBEDO_FLAGS     = Vk::Texture::Flags::IsSRGB | Vk::Texture::Flags::GenMipmaps;
-    constexpr auto NORMAL_FLAGS     = Vk::Texture::Flags::GenMipmaps;
-    constexpr auto AO_RGH_MTL_FLAGS = Vk::Texture::Flags::GenMipmaps;
+    constexpr auto DEFAULT_ALBEDO     = "Albedo.ktx2";
+    constexpr auto DEFAULT_NORMAL     = "Normal.ktx2";
+    constexpr auto DEFAULT_AO_RGH_MTL = "Metal-Roughness.ktx2";
 
     Model::Model
     (
@@ -55,7 +50,7 @@ namespace Models
         const std::string assetPath      = Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Engine::Files::GetDirectory(assetPath);
 
-        fastgltf::Parser parser;
+        fastgltf::Parser parser(fastgltf::Extensions::KHR_texture_basisu);
 
         auto data = fastgltf::GltfDataBuffer::FromPath(assetPath);
         if (auto error = data.error(); error != fastgltf::Error::None)
@@ -340,7 +335,7 @@ namespace Models
             // Tangent
             {
                 const auto& tangentAccessor = GetAccesor
-                (
+               (
                     asset,
                     primitive,
                     "TANGENT",
@@ -390,8 +385,7 @@ namespace Models
                         textureManager,
                         directory,
                         asset,
-                        baseColorTexture->textureIndex,
-                        ALBEDO_FLAGS
+                        baseColorTexture->textureIndex
                     );
                 }
                 else
@@ -401,8 +395,7 @@ namespace Models
                         megaSet,
                         context.device,
                         context.allocator,
-                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO),
-                        ALBEDO_FLAGS
+                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO)
                     );
                 }
             }
@@ -428,8 +421,7 @@ namespace Models
                         textureManager,
                         directory,
                         asset,
-                        mat.normalTexture->textureIndex,
-                        NORMAL_FLAGS
+                        mat.normalTexture->textureIndex
                     );
                 }
                 else
@@ -439,8 +431,7 @@ namespace Models
                         megaSet,
                         context.device,
                         context.allocator,
-                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL),
-                        NORMAL_FLAGS
+                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
                     );
                 }
             }
@@ -468,8 +459,7 @@ namespace Models
                         textureManager,
                         directory,
                         asset,
-                        metallicRoughnessTexture->textureIndex,
-                        AO_RGH_MTL_FLAGS
+                        metallicRoughnessTexture->textureIndex
                     );
                 }
                 else
@@ -479,8 +469,7 @@ namespace Models
                         megaSet,
                         context.device,
                         context.allocator,
-                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL),
-                        AO_RGH_MTL_FLAGS
+                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL)
                     );
                 }
             }
@@ -559,18 +548,17 @@ namespace Models
         Vk::TextureManager& textureManager,
         const std::string& directory,
         const fastgltf::Asset& asset,
-        usize textureIndex,
-        Vk::Texture::Flags flags
+        usize textureIndex
     )
     {
         const auto& texture = asset.textures[textureIndex];
 
-        if (!texture.imageIndex.has_value())
+        if (!texture.basisuImageIndex.has_value())
         {
             Logger::Error("Image index not found! [textureIndex={}]\n", textureIndex);
         }
 
-        const auto& image    = asset.images[texture.imageIndex.value()];
+        const auto& image    = asset.images[texture.basisuImageIndex.value()];
         const auto& filePath = std::get<fastgltf::sources::URI>(image.data); // TODO: Replace with visitor
 
         if (filePath.fileByteOffset != 0)
@@ -588,8 +576,7 @@ namespace Models
             megaSet,
             context.device,
             context.allocator,
-            (directory + "/") + filePath.uri.c_str(),
-            flags
+            (directory + "/") + filePath.uri.c_str()
         );
     }
 }

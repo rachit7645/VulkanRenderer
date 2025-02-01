@@ -74,8 +74,7 @@ namespace Renderer::DearImGui
                 context.allocator,
                 "DearImGuiFont",
                 {pixels, width * (height * 4ull)},
-                {width, height},
-                Vk::Texture::Flags::None
+                {width, height}
             );
 
             io.Fonts->SetTexID(static_cast<ImTextureID>(textureManager.GetTextureID(fontID)));
@@ -369,11 +368,5 @@ namespace Renderer::DearImGui
         {
             buffer.Destroy(allocator);
         }
-
-        auto& io = ImGui::GetIO();
-
-        io.BackendRendererName     = nullptr;
-        io.BackendRendererUserData = nullptr;
-        io.BackendFlags           &= ~ImGuiBackendFlags_RendererHasVtxOffset;
     }
 }

@@ -43,8 +43,7 @@ namespace Vk
             Vk::MegaSet& megaSet,
             VkDevice device,
             VmaAllocator allocator,
-            const std::string_view path,
-            Texture::Flags flags
+            const std::string_view path
         );
 
         [[nodiscard]] usize AddTexture
@@ -54,8 +53,7 @@ namespace Vk
             VmaAllocator allocator,
             const std::string_view name,
             const std::span<const u8> data,
-            const glm::uvec2 size,
-            Texture::Flags flags
+            const glm::uvec2 size
         );
 
         [[nodiscard]] u32 AddSampler
@@ -83,7 +81,7 @@ namespace Vk
         VkFormat m_format     = VK_FORMAT_UNDEFINED;
         VkFormat m_formatSRGB = VK_FORMAT_UNDEFINED;
 
-        std::vector<std::pair<Vk::Texture, Vk::Buffer>> m_pendingUploads;
+        std::vector<std::pair<Vk::Texture, Texture::Upload>> m_pendingUploads;
     };
 }
 

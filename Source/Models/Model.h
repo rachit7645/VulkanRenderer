@@ -94,8 +94,7 @@ namespace Models
             Vk::TextureManager& textureManager,
             const std::string& directory,
             const fastgltf::Asset& asset,
-            usize textureIndex,
-            Vk::Texture::Flags flags
+            usize textureIndex
         );
     };
 }

@@ -11,7 +11,7 @@
 
 # Includes
 !/Externals/CMakeLists.txt
-!/Assets/GFX/Albedo.png
-!/Assets/GFX/Emmisive.png
-!/Assets/GFX/Normal.png
-!/Assets/GFX/Metal-Roughness.png
+!/Assets/GFX/Albedo.ktx2
+!/Assets/GFX/Emmisive.ktx2
+!/Assets/GFX/Normal.ktx2
+!/Assets/GFX/Metal-Roughness.ktx2

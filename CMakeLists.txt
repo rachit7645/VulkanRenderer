@@ -30,6 +30,7 @@ find_package(glm      REQUIRED)
 find_package(fastgltf REQUIRED)
 find_package(simdjson REQUIRED)
 find_package(fmt      REQUIRED)
+find_package(KTX     REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -99,7 +100,6 @@ add_executable(VulkanRenderer
 	Source/Models/ModelManager.cpp
 	# External sources
 	Source/Externals/GLM.cpp
-	Source/Externals/STBImage.cpp
 	Source/Externals/VMA.cpp
 )
 
@@ -118,8 +118,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/imgui/imgui_internal.h
     Externals/imgui/backends/imgui_impl_sdl2.h
     Externals/imgui/backends/imgui_impl_vulkan.h
-    # STB Headers
-    <stb/stb_image.h>
+    # KTX Headers
+    <ktx.h>
     # FMT Headers
     <fmt/core.h>
     <fmt/format.h>
@@ -216,6 +216,7 @@ target_link_libraries(VulkanRenderer
 	fmt::fmt
 	fastgltf::fastgltf
 	GPUOpen::VulkanMemoryAllocator
+    KTX::ktx
 	imgui
 )
 

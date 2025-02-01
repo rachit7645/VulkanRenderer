@@ -37,8 +37,7 @@ namespace Vk
         Vk::MegaSet& megaSet,
         VkDevice device,
         VmaAllocator allocator,
-        const std::string_view path,
-        Texture::Flags flags
+        const std::string_view path
     )
     {
         usize pathHash = std::hash<std::string_view>()(path);
@@ -51,9 +50,7 @@ namespace Vk
             (
                 device,
                 allocator,
-                Texture::IsFlagSet(flags, Texture::Flags::IsSRGB) ? m_formatSRGB : m_format,
-                path,
-                flags
+                path
             );
 
             const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -85,22 +82,20 @@ namespace Vk
         VmaAllocator allocator,
         const std::string_view name,
         const std::span<const u8> data,
-        const glm::uvec2 size,
-        Texture::Flags flags
+        const glm::uvec2 size
     )
     {
         auto nameHash = std::hash<std::string_view>()(name);
 
         Vk::Texture texture = {};
 
-        const auto stagingBuffer = texture.LoadFromMemory
+        const auto upload = texture.LoadFromMemory
         (
             device,
             allocator,
-            Texture::IsFlagSet(flags, Texture::Flags::IsSRGB) ? m_formatSRGB : m_format,
+            m_format,
             data,
-            size,
-            flags
+            size
         );
 
         const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -115,7 +110,7 @@ namespace Vk
             )
         );
 
-        m_pendingUploads.emplace_back(texture, stagingBuffer);
+        m_pendingUploads.emplace_back(texture, upload);
 
         Vk::SetDebugName(device, texture.image.handle,     name);
         Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
@@ -142,9 +137,9 @@ namespace Vk
     {
         Vk::BeginLabel(cmdBuffer, "Texture Transfer", {0.6117f, 0.8196f, 0.0313f, 1.0f});
 
-        for (auto& [texture, stagingBuffer] : m_pendingUploads)
+        for (auto& [texture, upload] : m_pendingUploads)
         {
-            texture.UploadToGPU(cmdBuffer, stagingBuffer);
+            texture.UploadToGPU(cmdBuffer, upload);
         }
 
         Vk::EndLabel(cmdBuffer);
@@ -152,7 +147,7 @@ namespace Vk
 
     void TextureManager::Clear(VmaAllocator allocator)
     {
-        for (auto& buffer : m_pendingUploads | std::views::values)
+        for (auto& [buffer, _] : m_pendingUploads | std::views::values)
         {
             buffer.Destroy(allocator);
         }

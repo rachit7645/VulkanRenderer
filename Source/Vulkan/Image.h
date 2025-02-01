@@ -68,7 +68,7 @@ namespace Vk
         // Image dimensions
         u32 width     = 0;
         u32 height    = 0;
-        u32 mipLevels = 0;
+        u32 mipLevels = 1;
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
