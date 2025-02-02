@@ -16,68 +16,98 @@
 
 #include "ForwardPass.h"
 
-#include "ForwardSceneBuffer.h"
+#include "Renderer/SceneBuffer.h"
 #include "Util/Log.h"
 #include "Renderer/RenderConstants.h"
 #include "Util/Maths.h"
 #include "Vulkan/Util.h"
-#include "Externals/ImGui.h"
+#include "Util/Ranges.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Forward
 {
     ForwardPass::ForwardPass
     (
-        Vk::Context& context,
-        const Vk::TextureManager& textureManager,
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
         VkExtent2D extent
     )
-        : pipeline(context, textureManager, GetColorFormat(context.physicalDevice), Vk::DepthBuffer::GetDepthFormat(context.physicalDevice))
+        : pipeline(context, formatHelper, megaSet, textureManager)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
             cmdBuffers[i] = Vk::CommandBuffer
             (
-                context,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                "ForwardPass/FIF" + std::to_string(i)
+                context.device,
+                context.commandPool,
+                VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
+
+            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ForwardPass/FIF{}", i));
         }
 
-        InitData(context, extent);
+        InitData(context, formatHelper, extent);
 
         Logger::Info("{}\n", "Created forward pass!");
     }
 
-    void ForwardPass::Recreate(const Vk::Context& context, VkExtent2D extent)
+    void ForwardPass::Recreate
+    (
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        VkExtent2D extent
+    )
     {
         m_deletionQueue.FlushQueue();
-        InitData(context, extent);
+
+        InitData(context, formatHelper, extent);
+
         Logger::Info("{}\n", "Recreated forward pass!");
     }
 
     void ForwardPass::Render
     (
         usize FIF,
-        Vk::DescriptorCache& descriptorCache,
-        const Vk::TextureManager& textureManager,
-        const Models::ModelManager& modelManager,
-        const Renderer::Camera& camera,
-        const std::vector<Renderer::RenderObject>& renderObjects
+        const Vk::MegaSet& megaSet,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Renderer::SceneBuffer& sceneBuffer,
+        const Renderer::MeshBuffer& meshBuffer,
+        const Renderer::IndirectBuffer& indirectBuffer,
+        const Vk::DepthBuffer& depthBuffer
     )
     {
-        auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        // Transition for rendering
-        image.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("ForwardPass/FIF{}", FIF), glm::vec4(0.9098f, 0.1843f, 0.0549f, 1.0f));
 
-        VkRenderingAttachmentInfo colorAttachmentInfo =
+        colorAttachment.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = colorAttachment.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = colorAttachment.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = imageView.handle,
+            .imageView          = colorAttachmentView.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -92,7 +122,7 @@ namespace Renderer::Forward
             }}}
         };
 
-        VkRenderingAttachmentInfo depthAttachmentInfo =
+        const VkRenderingAttachmentInfo depthAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
@@ -101,19 +131,19 @@ namespace Renderer::Forward
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_NONE,
             .clearValue         = {.depthStencil = {0.0f, 0x0}}
         };
 
-        VkRenderingInfo renderInfo =
+        const VkRenderingInfo renderInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = {m_renderSize.x, m_renderSize.y}
+                .extent = m_resolution
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -127,177 +157,170 @@ namespace Renderer::Forward
 
         pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-        VkViewport viewport =
+        const VkViewport viewport =
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(m_renderSize.x),
-            .height   = static_cast<f32>(m_renderSize.y),
+            .width    = static_cast<f32>(m_resolution.width),
+            .height   = static_cast<f32>(m_resolution.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
 
         vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
 
-        VkRect2D scissor =
+        const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = {m_renderSize.x, m_renderSize.y}
+            .extent = m_resolution
         };
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
-        SceneBuffer sceneBuffer =
-        {
-            .projection = Maths::CreateProjectionReverseZ(
-                camera.FOV,
-                static_cast<f32>(m_renderSize.x) /
-                static_cast<f32>(m_renderSize.y),
-                PLANES.x,
-                PLANES.y
-            ),
-            .view = camera.GetViewMatrix(),
-            .cameraPos = {camera.position, 1.0f},
-            .dirLight = {
-                .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
-                .color     = {1.0f,   0.956f, 0.898f, 1.0f},
-                .intensity = {3.5f,   3.5f,   3.5f,   1.0f}
-            }
-        };
-
-        std::memcpy(pipeline.sceneSSBOs[FIF].allocInfo.pMappedData, &sceneBuffer, sizeof(sceneBuffer));
-
-        pipeline.instanceBuffer.LoadInstances(FIF, textureManager, modelManager, renderObjects);
-
         pipeline.pushConstant =
         {
-            .scene    = pipeline.sceneSSBOs[FIF].deviceAddress,
-            .instance = pipeline.instanceBuffer.buffers[FIF].deviceAddress,
-            .drawID   = std::numeric_limits<u32>::max()
+            .scene        = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes       = meshBuffer.buffers[FIF].deviceAddress,
+            .positions    = geometryBuffer.positionBuffer.deviceAddress,
+            .vertices     = geometryBuffer.vertexBuffer.deviceAddress,
+            .samplerIndex = pipeline.samplerIndex
         };
 
         pipeline.LoadPushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, offsetof(Forward::PushConstant, drawID),
+            0, sizeof(Forward::PushConstant),
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
-        // Scene specific descriptor sets
-        std::array sceneDescriptorSets =
-        {
-            pipeline.GetStaticSet(descriptorCache).handle,
-            textureManager.textureSet.handle
-        };
+        // Mega set
+        std::array descriptorSets = {megaSet.descriptorSet.handle};
 
         pipeline.BindDescriptors
         (
             currentCmdBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             0,
-            sceneDescriptorSets
+            descriptorSets
         );
 
-        for (const auto& renderObject : renderObjects)
-        {
-            const auto& meshes = modelManager.GetModel(renderObject.modelID).meshes;
+        geometryBuffer.Bind(currentCmdBuffer);
 
-            for (usize i = 0; i < meshes.size(); ++i)
-            {
-                pipeline.pushConstant.drawID = i;
-                pipeline.LoadPushConstants
-                (
-                    currentCmdBuffer,
-                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    offsetof(Forward::PushConstant, drawID), sizeof(Forward::PushConstant::drawID),
-                    reinterpret_cast<void*>(&pipeline.pushConstant.drawID)
-                );
-
-                meshes[i].vertexBuffer.Bind(currentCmdBuffer);
-
-                vkCmdDrawIndexed
-                (
-                    currentCmdBuffer.handle,
-                    meshes[i].vertexBuffer.indexCount,
-                    1,
-                    0,
-                    0,
-                    0
-                );
-            }
-        }
+        vkCmdDrawIndexedIndirect
+        (
+            currentCmdBuffer.handle,
+            indirectBuffer.buffers[FIF].handle,
+            0,
+            indirectBuffer.writtenDrawCount,
+            sizeof(VkDrawIndexedIndirectCommand)
+        );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 
-        // Transition to shader readable layout
-        image.TransitionLayout(currentCmdBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        colorAttachment.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = colorAttachment.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = colorAttachment.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        Vk::EndLabel(currentCmdBuffer);
 
         currentCmdBuffer.EndRecording();
     }
 
-    void ForwardPass::InitData(const Vk::Context& context, VkExtent2D extent)
+    void ForwardPass::InitData(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent)
     {
-        m_renderSize = {extent.width, extent.height};
+        m_resolution = extent;
 
-        auto colorFormat = GetColorFormat(context.physicalDevice);
-
-        depthBuffer = Vk::DepthBuffer(context, extent);
-
-        image = Vk::Image
+        colorAttachment = Vk::Image
         (
             context.allocator,
-            m_renderSize.x,
-            m_renderSize.y,
-            1,
-            colorFormat,
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_ASPECT_COLOR_BIT,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            {
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = formatHelper.colorAttachmentFormatHDR,
+                .extent                = {m_resolution.width, m_resolution.height, 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 1,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        imageView = Vk::ImageView
+        colorAttachmentView = Vk::ImageView
         (
             context.device,
-            image,
+            colorAttachment,
             VK_IMAGE_VIEW_TYPE_2D,
-            image.format,
-            VK_IMAGE_ASPECT_COLOR_BIT,
-            0,
-            1,
-            0,
-            1
+            colorAttachment.format,
+            {
+                .aspectMask     = colorAttachment.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = colorAttachment.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
         );
+
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&] (const Vk::CommandBuffer& cmdBuffer)
+            {
+                colorAttachment.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_NONE,
+                    VK_ACCESS_2_NONE,
+                    VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    {
+                        .aspectMask     = colorAttachment.aspect,
+                        .baseMipLevel   = 0,
+                        .levelCount     = colorAttachment.mipLevels,
+                        .baseArrayLayer = 0,
+                        .layerCount     = 1
+                    }
+                );
+            }
+        );
+
+        Vk::SetDebugName(context.device, colorAttachment.handle,            "ForwardPassColorAttachment0");
+        Vk::SetDebugName(context.device, colorAttachmentView.handle,        "ForwardPassColorAttachment0_View");
 
         m_deletionQueue.PushDeletor([&] ()
         {
-            imageView.Destroy(context.device);
-            image.Destroy(context.allocator);
-            depthBuffer.Destroy(context.device, context.allocator);
+            colorAttachmentView.Destroy(context.device);
+            colorAttachment.Destroy(context.allocator);
         });
     }
 
-    VkFormat ForwardPass::GetColorFormat(VkPhysicalDevice physicalDevice) const
-    {
-        return Vk::FindSupportedFormat
-        (
-            physicalDevice,
-            std::array<VkFormat, 6>
-            {
-                VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-                VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-                VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-                VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-                VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-                VK_FORMAT_R16G16B16A16_SFLOAT
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-    }
-
-    void ForwardPass::Destroy(const Vk::Context& context)
+    void ForwardPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying forward pass!");
 
@@ -305,9 +328,9 @@ namespace Renderer::Forward
 
         for (auto&& cmdBuffer : cmdBuffers)
         {
-            cmdBuffer.Free(context);
+            cmdBuffer.Free(device, cmdPool);
         }
 
-        pipeline.Destroy(context.device);
+        pipeline.Destroy(device);
     }
 }

@@ -32,7 +32,14 @@ namespace Vk::Builders
     public:
         using Products = std::pair<VkPipeline, VkPipelineLayout>;
 
-        explicit PipelineBuilder(Vk::Context& context);
+        enum class PipelineType : u8
+        {
+            None,
+            Graphics,
+            Compute
+        };
+
+        explicit PipelineBuilder(const Vk::Context& context);
         ~PipelineBuilder();
 
         // No copying
@@ -44,6 +51,8 @@ namespace Vk::Builders
         PipelineBuilder& operator=(PipelineBuilder&&) = default;
 
         Products Build();
+
+        [[nodiscard]] PipelineBuilder& SetPipelineType(PipelineType type);
 
         [[nodiscard]] PipelineBuilder& SetRenderingInfo
         (
@@ -75,51 +84,54 @@ namespace Vk::Builders
             const VkStencilOpState& back
         );
 
+        [[nodiscard]] PipelineBuilder& AddBlendAttachment
+        (
+            VkBool32 blendEnable,
+            VkBlendFactor srcColorBlendFactor,
+            VkBlendFactor dstColorBlendFactor,
+            VkBlendOp colorBlendOp,
+            VkBlendFactor srcAlphaBlendFactor,
+            VkBlendFactor dstAlphaBlendFactor,
+            VkBlendOp alphaBlendOp,
+            VkColorComponentFlags colorWriteMask
+        );
+
         [[nodiscard]] PipelineBuilder& SetBlendState();
+
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         [[nodiscard]] PipelineBuilder& AddDescriptorLayout(VkDescriptorSetLayout layout);
-
-        // Dynamic rendering info
-        VkPipelineRenderingCreateInfo renderingCreateInfo   = {};
-        std::vector<VkFormat>         renderingColorFormats;
-
-        // Shaders
-        std::vector<Vk::ShaderModule>                shaderModules;
-        std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
-
-        // Dynamic states
-        std::vector<VkDynamicState>      dynamicStates;
-        VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
-
-        // Viewport state (WHY DO I STILL NEED THIS LMAO)
-        VkPipelineViewportStateCreateInfo viewportInfo = {};
-
-        // Vertex info
-        VkPipelineVertexInputStateCreateInfo           vertexInputInfo = {};
-        std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
-        std::vector<VkVertexInputAttributeDescription> vertexAttribDescriptions;
-
-        // Input assembly state
-        VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
-        // Rasterizer state info
-        VkPipelineRasterizationStateCreateInfo rasterizationInfo = {};
-        // MSAA state
-        VkPipelineMultisampleStateCreateInfo msaaStateInfo = {};
-
-        // Depth/Stencil State
-        VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {};
-
-        // Blend info
-        std::vector<VkPipelineColorBlendAttachmentState> colorBlendStates;
-        VkPipelineColorBlendStateCreateInfo              colorBlendInfo   = {};
-
-        // Push constant data
-        std::vector<VkPushConstantRange> pushConstantRanges;
-        // Descriptor states
-        std::vector<VkDescriptorSetLayout> descriptorLayouts;
     private:
+        PipelineType m_pipelineType = PipelineType::None;
+
+        VkPipelineRenderingCreateInfo m_renderingCreateInfo;
+        std::vector<VkFormat>         m_renderingColorFormats;
+
+        std::vector<Vk::ShaderModule>                m_shaderModules;
+        std::vector<VkPipelineShaderStageCreateInfo> m_shaderStageCreateInfos;
+
+        std::vector<VkDynamicState>      m_dynamicStates;
+        VkPipelineDynamicStateCreateInfo m_dynamicStateInfo;
+
+        VkPipelineViewportStateCreateInfo m_viewportInfo;
+
+        VkPipelineVertexInputStateCreateInfo           m_vertexInputInfo;
+        std::vector<VkVertexInputBindingDescription>   m_vertexInputBindings;
+        std::vector<VkVertexInputAttributeDescription> m_vertexAttribDescriptions;
+
+        VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo;
+        VkPipelineRasterizationStateCreateInfo m_rasterizationInfo;
+        VkPipelineMultisampleStateCreateInfo   m_msaaStateInfo;
+
+        VkPipelineDepthStencilStateCreateInfo m_depthStencilInfo;
+
+        std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendStates;
+        VkPipelineColorBlendStateCreateInfo              m_colorBlendInfo;
+
+        std::vector<VkPushConstantRange>   m_pushConstantRanges;
+        std::vector<VkDescriptorSetLayout> m_descriptorLayouts;
+
         // We only need this pointer here temporarily
-        Vk::Context* m_context = nullptr;
+        const Vk::Context* m_context = nullptr;
     };
 }
 

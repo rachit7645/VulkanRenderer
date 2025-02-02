@@ -16,45 +16,53 @@
 
 #version 460
 
-// Extensions
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference     : enable
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
-// Includes
 #include "Material.glsl"
-#include "Texture.glsl"
+#include "GammaCorrect.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
-#include "Instance.glsl"
-#include "Scene.glsl"
-#include "ForwardPushConstant.glsl"
+#include "Constants/Forward.glsl"
+#include "MegaSet.glsl"
 
-// Fragment inputs
-layout(location = 0) in vec3 fragPosition;
-layout(location = 1) in vec2 fragTexCoords;
-layout(location = 2) in vec3 fragToCamera;
-layout(location = 3) in mat3 fragTBNMatrix;
+layout(location = 0) in      vec3 fragPosition;
+layout(location = 1) in      vec2 fragTexCoords;
+layout(location = 2) in      vec3 fragToCamera;
+layout(location = 3) in flat uint fragDrawID;
+layout(location = 4) in      mat3 fragTBNMatrix;
 
-// Fragment outputs
 layout(location = 0) out vec4 outColor;
-
-layout(set = 0, binding = 0) uniform sampler texSampler;
-layout(set = 1, binding = 0) uniform texture2D textures[];
 
 void main()
 {
-    uvec4 textureIDs = Constants.Instances.instances[Constants.DrawID].textureIDs;
+    Mesh mesh         = Constants.Meshes.meshes[fragDrawID];
+    uint samplerIndex = Constants.SamplerIndex;
 
-    // This is assumed to be an SRGB texture
-    vec3 albedo   = SampleLinear(textures[textureIDs.x], texSampler, fragTexCoords);
-    vec3 normal   = GetNormalFromMap(Sample(textures[textureIDs.y], texSampler, fragTexCoords), fragTBNMatrix);
-    vec3 aoRghMtl = Sample(textures[textureIDs.z], texSampler, fragTexCoords);
+    vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], samplers[samplerIndex]), fragTexCoords);
+    albedo.xyz  = ToLinear(albedo.xyz);
+    albedo     *= mesh.albedoFactor;
 
-    vec3 F0 = mix(vec3(0.04f), albedo, aoRghMtl.b);
-    vec3 Lo = CalculateLight(GetDirLightInfo(Constants.Scene.light), normal, fragToCamera, F0, albedo, aoRghMtl.g, aoRghMtl.b);
-         Lo += albedo * vec3(0.03f);
+    vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], samplers[samplerIndex]), fragTexCoords).rgb;
+    normal      = GetNormalFromMap(normal, fragTBNMatrix);
+
+    vec3 aoRghMtl = texture(sampler2D(textures[MAT_AO_RGH_MTL_ID], samplers[samplerIndex]), fragTexCoords).rgb;
+    aoRghMtl.g   *= mesh.roughnessFactor;
+    aoRghMtl.b   *= mesh.metallicFactor;
+
+    vec3 Lo = CalculateLight
+    (
+        GetDirLightInfo(Constants.Scene.light),
+        normal,
+        fragToCamera,
+        albedo.rgb,
+        aoRghMtl.g,
+        aoRghMtl.b
+    );
+
+    Lo += albedo.rgb * vec3(0.25f);
 
     outColor = vec4(Lo, 1.0f);
 }

@@ -10,8 +10,8 @@
 /Assets/GFX/*
 
 # Includes
-!/Bin/vk_layer_settings.txt
 !/Externals/CMakeLists.txt
-!/Assets/GFX/def.png
-!/Assets/GFX/defEmm.png
-!/Assets/GFX/defNrm.png
+!/Assets/GFX/Albedo.ktx2
+!/Assets/GFX/Emmisive.ktx2
+!/Assets/GFX/Normal.ktx2
+!/Assets/GFX/Metal-Roughness.ktx2

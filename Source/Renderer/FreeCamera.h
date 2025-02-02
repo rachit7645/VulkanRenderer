@@ -38,7 +38,7 @@ namespace Renderer
         void Zoom(f32 frameDelta);
 
         // Settings
-        f32 speed       = 0.00025f;
+        f32 speed       = 0.000015f;
         f32 sensitivity = 0.0001f;
         f32 zoom        = 0.000045f;
     };

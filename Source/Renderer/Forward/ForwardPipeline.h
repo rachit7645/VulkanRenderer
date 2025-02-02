@@ -17,11 +17,10 @@
 #ifndef FORWARD_PIPELINE_H
 #define FORWARD_PIPELINE_H
 
-#include "ForwardInstanceBuffer.h"
-#include "ForwardPushConstant.h"
-#include "Vulkan/Buffer.h"
-#include "Vulkan/Sampler.h"
+#include "ForwardConstants.h"
 #include "Vulkan/Pipeline.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/FormatHelper.h"
 #include "Vulkan/TextureManager.h"
 
 namespace Renderer::Forward
@@ -31,32 +30,24 @@ namespace Renderer::Forward
     public:
         ForwardPipeline
         (
-            Vk::Context& context,
-            const Vk::TextureManager& textureManager,
-            VkFormat colorFormat,
-            VkFormat depthFormat
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
         );
-
-        Vk::DescriptorSet GetStaticSet(Vk::DescriptorCache& descriptorCache) const;
 
         PushConstant pushConstant = {};
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneSSBOs = {};
-
-        InstanceBuffer instanceBuffer;
-
-        Vk::Sampler textureSampler;
+        u32 samplerIndex;
     private:
         void CreatePipeline
         (
-            Vk::Context& context,
-            const Vk::TextureManager& textureManager,
-            VkFormat colorFormat,
-            VkFormat depthFormat
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
         );
 
-        void CreatePipelineData(const Vk::Context& context);
-        void WriteStaticDescriptor(VkDevice device, Vk::DescriptorCache& cache) const;
+        void CreatePipelineData(const Vk::Context& context, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

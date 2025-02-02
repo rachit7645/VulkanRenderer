@@ -15,6 +15,9 @@
  */
 
 #include "ImageView.h"
+
+#include <volk/volk.h>
+
 #include "Util/Log.h"
 #include "Util.h"
 
@@ -26,14 +29,10 @@ namespace Vk
         const Vk::Image& image,
         VkImageViewType viewType,
         VkFormat format,
-        VkImageAspectFlags aspectMask,
-        u32 baseMipLevel,
-        u32 levelCount,
-        u32 baseArrayLayer,
-        u32 layerCount
+        const VkImageSubresourceRange& subresourceRange
     )
     {
-        VkImageViewCreateInfo createInfo =
+        const VkImageViewCreateInfo createInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext            = nullptr,
@@ -47,13 +46,7 @@ namespace Vk
                 .b = VK_COMPONENT_SWIZZLE_IDENTITY,
                 .a = VK_COMPONENT_SWIZZLE_IDENTITY,
             },
-            .subresourceRange = {
-                .aspectMask     = aspectMask,
-                .baseMipLevel   = baseMipLevel,
-                .levelCount     = levelCount,
-                .baseArrayLayer = baseArrayLayer,
-                .layerCount     = layerCount
-            }
+            .subresourceRange = subresourceRange
         };
 
         Vk::CheckResult(vkCreateImageView(

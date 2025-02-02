@@ -17,23 +17,18 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include "Info.h"
 #include "Material.h"
-#include "Vulkan/VertexBuffer.h"
 
 namespace Models
 {
     struct Mesh
     {
-        Mesh
-        (
-            const Vk::VertexBuffer& vertexBuffer,
-            const Models::Material& material
-        );
-
-        void Destroy(VmaAllocator allocator) const;
-
-        Vk::VertexBuffer vertexBuffer;
-        Material         material;
+        Info      indexInfo;
+        Info      positionInfo;
+        Info      vertexInfo;
+        Material  material;
+        glm::mat4 transform;
     };
 }
 

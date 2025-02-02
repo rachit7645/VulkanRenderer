@@ -17,33 +17,30 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include <array>
-#include <vulkan/vulkan.h>
-
 #include "Externals/GLM.h"
 #include "Util/Util.h"
-#include "Vulkan/Util.h"
 
 namespace Models
 {
     struct Vertex
     {
-        static constexpr usize VERTEX_NUM_BINDINGS = 1;
-        static constexpr usize VERTEX_NUM_ATTRIBS  = 4;
-
-        using VertexBindings = std::array<VkVertexInputBindingDescription,   VERTEX_NUM_BINDINGS>;
-        using VertexAttribs  = std::array<VkVertexInputAttributeDescription, VERTEX_NUM_ATTRIBS>;
-
-        Vertex(const glm::vec3& position, const glm::vec2& texCoords, const glm::vec3& normal, const glm::vec3& tangent);
-
-        glm::vec3 position  = {};
-        glm::vec2 texCoords = {};
-        glm::vec3 normal    = {};
-        glm::vec3 tangent   = {};
-
-        static VertexBindings GetBindingDescription();
-        static VertexAttribs GetVertexAttribDescription();
+        glm::vec3 normal;
+        glm::vec2 uv0;
+        glm::vec3 tangent;
     };
+
+    #ifdef ENGINE_DEBUG
+    static_assert
+    (
+        sizeof(Vertex) ==
+        (
+            sizeof(glm::vec3) +
+            sizeof(glm::vec2) +
+            sizeof(glm::vec3)
+        ),
+        "Incompatible vertex structure!"
+    );
+    #endif
 
     using Index = u32;
 }

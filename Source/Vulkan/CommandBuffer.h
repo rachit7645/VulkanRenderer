@@ -27,29 +27,29 @@ namespace Vk
     class CommandBuffer
     {
     public:
-        CommandBuffer(const Vk::Context& context, VkCommandBufferLevel level, const std::string_view name);
-        void Free(const Vk::Context& context);
+        CommandBuffer() = default;
+        CommandBuffer(VkDevice device, VkCommandPool cmdPool, VkCommandBufferLevel level);
+        CommandBuffer(VkCommandBuffer handle, VkCommandBufferLevel level);
 
-        CommandBuffer()  = default;
-        ~CommandBuffer() = default;
-
-        // No copying
-        CommandBuffer(const CommandBuffer&) = delete;
-        CommandBuffer& operator=(const CommandBuffer&) = delete;
-
-        // Only moving
-        CommandBuffer(CommandBuffer&& other) noexcept = default;
-        CommandBuffer& operator=(CommandBuffer&& other) noexcept = default;
+        void Free(VkDevice device, VkCommandPool cmdPool);
 
         void BeginRecording(VkCommandBufferUsageFlags usageFlags) const;
         void EndRecording() const;
 
         void Reset(VkCommandBufferResetFlags resetFlags) const;
 
+        static std::vector<CommandBuffer> Allocate
+        (
+            u32 count,
+            VkDevice device,
+            VkCommandPool cmdPool,
+            VkCommandBufferLevel level
+        );
+
+        static void Free(VkDevice device, VkCommandPool cmdPool, const std::span<const CommandBuffer> cmdBuffers);
+
         VkCommandBuffer      handle = VK_NULL_HANDLE;
         VkCommandBufferLevel level  = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    private:
-        std::string m_name = {};
     };
 }
 

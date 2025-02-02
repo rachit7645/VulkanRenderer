@@ -21,40 +21,63 @@
 #include <array>
 #include <vector>
 #include <vulkan/vk_enum_string_helper.h>
+#include <volk/volk.h>
 
 #include "Extensions.h"
 #include "SwapchainInfo.h"
 #include "Util.h"
 #include "Constants.h"
+#include "DebugUtils.h"
 #include "Util/Log.h"
 
 namespace Vk
 {
     // Required validation layers
-    #ifdef ENGINE_DEBUG
+    #ifdef ENGINE_ENABLE_VALIDATION
     constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     #endif
 
-    // Required device extensions
-    constexpr std::array REQUIRED_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME};
-
-    Context::Context(const std::shared_ptr<Engine::Window>& window)
+    // Required instance extensions
+    constexpr std::array REQUIRED_INSTANCE_EXTENSIONS =
     {
-        CreateInstance(window->handle);
+        VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
+        VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME
+        #ifdef ENGINE_DEBUG
+        , VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+        #endif
+    };
 
-        CreateSurface(window->handle);
+    // Required device extensions
+    constexpr std::array REQUIRED_DEVICE_EXTENSIONS =
+    {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+        VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME
+        #ifdef ENGINE_DEBUG
+        , VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
+        #endif
+    };
+
+    Context::Context(SDL_Window* window)
+    {
+        Vk::CheckResult(volkInitialize(), "Failed to initialize volk!");
+
+        CreateInstance();
+
+        CreateSurface(window);
 
         PickPhysicalDevice();
         CreateLogicalDevice();
 
         CreateCommandPool();
-        CreateDescriptorCache();
         CreateAllocator();
+
+        AddDebugNames();
 
         Logger::Info("{}\n", "Initialised vulkan context!");
     }
 
-    void Context::CreateInstance(SDL_Window* window)
+    void Context::CreateInstance()
     {
         constexpr VkApplicationInfo appInfo =
         {
@@ -67,23 +90,23 @@ namespace Vk
             .apiVersion         = VULKAN_API_VERSION
         };
 
-        auto extensions = m_extensions.LoadInstanceExtensions(window);
+        auto extensions = Vk::LoadInstanceExtensions(REQUIRED_INSTANCE_EXTENSIONS);
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
         #endif
 
         const VkInstanceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            #ifdef ENGINE_DEBUG
+            #ifdef ENGINE_ENABLE_VALIDATION
             .pNext                   = &m_layers.messengerInfo,
             #else
             .pNext                   = nullptr,
             #endif
             .flags                   = 0,
             .pApplicationInfo        = &appInfo,
-            #ifdef ENGINE_DEBUG
+            #ifdef ENGINE_ENABLE_VALIDATION
             .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
             .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
             #else
@@ -103,16 +126,16 @@ namespace Vk
 
         Logger::Info("Successfully initialised Vulkan instance! [handle={}]\n", std::bit_cast<void*>(instance));
 
-        m_extensions.LoadInstanceFunctions(instance);
+        volkLoadInstanceOnly(instance);
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         m_layers.SetupMessenger(instance);
         #endif
     }
 
     void Context::CreateSurface(SDL_Window* window)
     {
-        if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE)
+        if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface))
         {
             Logger::Error
             (
@@ -225,7 +248,7 @@ namespace Vk
 
         // Requirements
         const bool isQueueValid  = queue.IsComplete();
-        const bool hasExtensions = m_extensions.CheckDeviceExtensionSupport(phyDevice, REQUIRED_EXTENSIONS);
+        const bool hasExtensions = Vk::CheckDeviceExtensionSupport(phyDevice, REQUIRED_DEVICE_EXTENSIONS);
 
         // Standard features
         const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
@@ -250,7 +273,6 @@ namespace Vk
         const bool hasDescriptorIndexing          = vk12Features->descriptorIndexing;
         const bool hasNonUniformIndexing          = vk12Features->shaderSampledImageArrayNonUniformIndexing;
         const bool hasRuntimeDescriptorArray      = vk12Features->runtimeDescriptorArray;
-        const bool hasVariableDescriptorCount     = vk12Features->descriptorBindingVariableDescriptorCount;
         const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
         const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
 
@@ -263,8 +285,8 @@ namespace Vk
         const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect;
         const bool extensions = isSwapChainAdequate;
         const bool vk11       = hasShaderDrawParameters;
-        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing      && hasNonUniformIndexing        &&
-                                hasRuntimeDescriptorArray && hasVariableDescriptorCount && hasPartiallyBoundDescriptors &&
+        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
+                                hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                                 hasSampledImageUpdateAfterBind;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
@@ -312,6 +334,7 @@ namespace Vk
         vk12Features.descriptorBindingVariableDescriptorCount     = VK_TRUE;
         vk12Features.descriptorBindingPartiallyBound              = VK_TRUE;
         vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+        vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
 
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
@@ -336,15 +359,15 @@ namespace Vk
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
-        #ifdef ENGINE_DEBUG
+            #ifdef ENGINE_ENABLE_VALIDATION
             .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
             .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
-        #else
+            #else
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
-        #endif
-            .enabledExtensionCount   = static_cast<u32>(REQUIRED_EXTENSIONS.size()),
-            .ppEnabledExtensionNames = REQUIRED_EXTENSIONS.data(),
+            #endif
+            .enabledExtensionCount   = static_cast<u32>(REQUIRED_DEVICE_EXTENSIONS.size()),
+            .ppEnabledExtensionNames = REQUIRED_DEVICE_EXTENSIONS.data(),
             .pEnabledFeatures        = nullptr
         };
 
@@ -356,7 +379,7 @@ namespace Vk
             "Failed to create logical device!"
         );
 
-        m_extensions.LoadDeviceFunctions(device);
+        volkLoadDevice(device);
 
         Logger::Info("Created logical device! [handle={}]\n", std::bit_cast<void*>(device));
 
@@ -398,28 +421,52 @@ namespace Vk
         });
     }
 
-    void Context::CreateDescriptorCache()
-    {
-        descriptorCache = Vk::DescriptorCache(device);
-
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            descriptorCache.Destroy(device);
-        });
-    }
-
     void Context::CreateAllocator()
     {
+        const VmaVulkanFunctions vulkanFunctions =
+        {
+            .vkGetInstanceProcAddr                   = vkGetInstanceProcAddr,
+            .vkGetDeviceProcAddr                     = vkGetDeviceProcAddr,
+            .vkGetPhysicalDeviceProperties           = vkGetPhysicalDeviceProperties,
+            .vkGetPhysicalDeviceMemoryProperties     = vkGetPhysicalDeviceMemoryProperties,
+            .vkAllocateMemory                        = vkAllocateMemory,
+            .vkFreeMemory                            = vkFreeMemory,
+            .vkMapMemory                             = vkMapMemory,
+            .vkUnmapMemory                           = vkUnmapMemory,
+            .vkFlushMappedMemoryRanges               = vkFlushMappedMemoryRanges,
+            .vkInvalidateMappedMemoryRanges          = vkInvalidateMappedMemoryRanges,
+            .vkBindBufferMemory                      = vkBindBufferMemory,
+            .vkBindImageMemory                       = vkBindImageMemory,
+            .vkGetBufferMemoryRequirements           = vkGetBufferMemoryRequirements,
+            .vkGetImageMemoryRequirements            = vkGetImageMemoryRequirements,
+            .vkCreateBuffer                          = vkCreateBuffer,
+            .vkDestroyBuffer                         = vkDestroyBuffer,
+            .vkCreateImage                           = vkCreateImage,
+            .vkDestroyImage                          = vkDestroyImage,
+            .vkCmdCopyBuffer                         = vkCmdCopyBuffer,
+            .vkGetBufferMemoryRequirements2KHR       = vkGetBufferMemoryRequirements2,
+            .vkGetImageMemoryRequirements2KHR        = vkGetImageMemoryRequirements2,
+            .vkBindBufferMemory2KHR                  = vkBindBufferMemory2,
+            .vkBindImageMemory2KHR                   = vkBindImageMemory2,
+            .vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2,
+            .vkGetDeviceBufferMemoryRequirements     = vkGetDeviceBufferMemoryRequirements,
+            .vkGetDeviceImageMemoryRequirements      = vkGetDeviceImageMemoryRequirements,
+            .vkGetMemoryWin32HandleKHR               = nullptr
+        };
+
         const VmaAllocatorCreateInfo createInfo =
         {
-            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT   |
+                                           VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT |
+                                           VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT       |
+                                           VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT,
             .physicalDevice              = physicalDevice,
             .device                      = device,
             .preferredLargeHeapBlockSize = 0,
             .pAllocationCallbacks        = nullptr,
             .pDeviceMemoryCallbacks      = nullptr,
             .pHeapSizeLimit              = nullptr,
-            .pVulkanFunctions            = nullptr,
+            .pVulkanFunctions            = &vulkanFunctions,
             .instance                    = instance,
             .vulkanApiVersion            = VULKAN_API_VERSION
             #if VMA_EXTERNAL_MEMORY
@@ -437,19 +484,29 @@ namespace Vk
         });
     }
 
+    void Context::AddDebugNames()
+    {
+        Vk::SetDebugName(device, instance,       "Instance");
+        Vk::SetDebugName(device, physicalDevice, "PhysicalDevice");
+        Vk::SetDebugName(device, device,         "Device");
+        Vk::SetDebugName(device, surface,        "SDL3Surface");
+        Vk::SetDebugName(device, graphicsQueue,  "GraphicsQueue");
+        Vk::SetDebugName(device, commandPool,    "GlobalCommandPool");
+    }
+
     void Context::Destroy()
     {
         m_deletionQueue.FlushQueue();
 
         vkDestroyDevice(device, nullptr);
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         m_layers.Destroy(instance);
         #endif
 
-        m_extensions.Destroy();
-
         vkDestroyInstance(instance, nullptr);
+
+        volkFinalize();
 
         Logger::Info("{}\n", "Destroyed vulkan context!");
     }

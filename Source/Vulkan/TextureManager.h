@@ -19,6 +19,9 @@
 
 #include "Texture.h"
 #include "DescriptorWriter.h"
+#include "Sampler.h"
+#include "MegaSet.h"
+#include "FormatHelper.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -28,31 +31,57 @@ namespace Vk
     public:
         struct TextureInfo
         {
-            u32         textureID = 0;
+            u32         descriptorID;
+            std::string name;
             Vk::Texture texture;
         };
 
-        TextureManager(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits);
+        explicit TextureManager(const Vk::FormatHelper& formatHelper);
 
-        [[nodiscard]] usize AddTexture(const Vk::Context& context, const std::string_view path, Texture::Flags flags);
-        [[nodiscard]] usize AddTexture(const Vk::Texture& texture);
-        void Update(VkDevice device);
+        [[nodiscard]] usize AddTexture
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            VmaAllocator allocator,
+            const std::string_view path
+        );
 
-        [[nodiscard]] u32 GetID(usize pathHash) const;
-        [[nodiscard]] const Texture& GetTexture(usize pathHash) const;
+        [[nodiscard]] usize AddTexture
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            VmaAllocator allocator,
+            const std::string_view name,
+            const std::span<const u8> data,
+            const glm::uvec2 size
+        );
+
+        [[nodiscard]] u32 AddSampler
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            const VkSamplerCreateInfo& createInfo
+        );
+
+        void Update(const Vk::CommandBuffer& cmdBuffer);
+        void Clear(VmaAllocator allocator);
+
+        [[nodiscard]] u32 GetTextureID(usize pathHash) const;
+        [[nodiscard]] const Vk::Texture& GetTexture(usize pathHash) const;
+
+        [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
+
+        void ImGuiDisplay();
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        Vk::DescriptorSet                    textureSet;
         std::unordered_map<usize, TextureInfo> textureMap;
+        std::unordered_map<u32, Vk::Sampler>   samplerMap;
     private:
-        void CreatePool(VkDevice device);
-        void CreateLayout(VkDevice device, const VkPhysicalDeviceLimits& physicalDeviceLimits);
-        void CreateSet(VkDevice device, const VkPhysicalDeviceLimits& physicalDeviceLimits);
+        VkFormat m_format     = VK_FORMAT_UNDEFINED;
+        VkFormat m_formatSRGB = VK_FORMAT_UNDEFINED;
 
-        VkDescriptorPool     m_texturePool = VK_NULL_HANDLE;
-        u32                  m_lastID      = 0;
-        Vk::DescriptorWriter m_writer      = {};
+        std::vector<std::pair<Vk::Texture, Texture::Upload>> m_pendingUploads;
     };
 }
 

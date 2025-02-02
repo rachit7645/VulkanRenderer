@@ -27,20 +27,19 @@
 #include "Image.h"
 #include "ImageView.h"
 #include "Context.h"
-#include "Engine/Window.h"
+#include "Constants.h"
 
 namespace Vk
 {
     class Swapchain
     {
     public:
-        Swapchain(Engine::Window& window, const Vk::Context& context);
-        void RecreateSwapChain(Engine::Window& window, const Vk::Context& context);
+        Swapchain(const glm::ivec2& size, const Vk::Context& context);
+        void RecreateSwapChain(const glm::ivec2& size, const Vk::Context& context);
         void Destroy(VkDevice device);
 
-        void Present(VkQueue queue, usize FIF);
-        bool IsSwapchainValid();
-        void AcquireSwapChainImage(VkDevice device, usize FIF);
+        VkResult Present(VkQueue queue, usize FIF);
+        VkResult AcquireSwapChainImage(VkDevice device, usize FIF);
 
         // Swap chain data
         VkSwapchainKHR handle = VK_NULL_HANDLE;
@@ -56,15 +55,14 @@ namespace Vk
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
     private:
-        void CreateSwapChain(const Engine::Window& window, const Vk::Context& context);
+        void CreateSwapChain(const glm::ivec2& size, const Vk::Context& context);
         void DestroySwapchain(VkDevice device);
 
-        void CreateImageViews(VkDevice device);
         void CreateSyncObjects(VkDevice device);
 
-        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;
+        [[nodiscard]] VkSurfaceFormat2KHR ChooseSurfaceFormat() const;
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
-        [[nodiscard]] VkExtent2D ChooseSwapExtent(SDL_Window* window) const;
+        [[nodiscard]] VkExtent2D ChooseSwapExtent(const glm::ivec2& size) const;
 
         // Swapchain info
         Vk::SwapchainInfo       m_swapChainInfo = {};

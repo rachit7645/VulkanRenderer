@@ -28,10 +28,15 @@ set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPIRV_BINARY_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 # Shader flags
-set(SHADER_FLAGS --target-env vulkan1.3)
+set(SHADER_FLAGS --target-env vulkan1.3 --enhanced-msgs)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    list(APPEND SHADER_FLAGS -gVS)
+endif()
+
+# Debug Without Validation config
+if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
     list(APPEND SHADER_FLAGS -gVS)
 endif()
 
@@ -40,10 +45,33 @@ set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 
 # Shader files
 file(GLOB SHADER_SOURCES
-    Swapchain.vert
-    Swapchain.frag
+    PostProcess.vert
+    PostProcess.frag
     Forward.vert
     Forward.frag
+    Depth.vert
+    Depth.frag
+    ImGui.vert
+    ImGui.frag
+)
+
+# Shader files
+file(GLOB SHADER_HEADERS
+    Include/ACES.glsl
+    Include/Constants.glsl
+    Include/GammaCorrect.glsl
+    Include/Lights.glsl
+    Include/Material.glsl
+    Include/Mesh.glsl
+    Include/PBR.glsl
+    Include/Scene.glsl
+    Include/Vertex.glsl
+    Include/MegaSet.glsl
+    Include/Converter.glsl
+    Include/Constants/Forward.glsl
+    Include/Constants/Swapchain.glsl
+    Include/Constants/Depth.glsl
+    Include/Constants/ImGui.glsl
 )
 
 # For each shader to be compiled
@@ -57,7 +85,7 @@ foreach(Shader ${SHADER_SOURCES})
         OUTPUT ${SPIRV}
         COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_BINARY_DIR}"
         COMMAND ${GLSL_COMPILER} ${Shader} ${SHADER_FLAGS} ${SHADER_INCLUDES} -o ${SPIRV}
-        DEPENDS ${Shader}
+        DEPENDS ${Shader} ${SHADER_HEADERS}
         COMMENT "Building GLSL shader ${Shader}"
     )
     # Add compiled shader to list

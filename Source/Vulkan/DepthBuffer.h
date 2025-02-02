@@ -23,6 +23,7 @@
 #include "Image.h"
 #include "ImageView.h"
 #include "Context.h"
+#include "FormatHelper.h"
 
 namespace Vk
 {
@@ -31,10 +32,8 @@ namespace Vk
     public:
         DepthBuffer() = default;
 
-        DepthBuffer(const Vk::Context& context, VkExtent2D swapchainExtent);
+        DepthBuffer(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent);
         void Destroy(VkDevice device, VmaAllocator allocator) const;
-
-        static VkFormat GetDepthFormat(VkPhysicalDevice physicalDevice);
 
         Vk::Image     depthImage     = {};
         Vk::ImageView depthImageView = {};

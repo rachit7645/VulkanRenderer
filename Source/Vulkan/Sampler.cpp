@@ -15,47 +15,16 @@
  */
 
 #include "Sampler.h"
+
+#include <volk/volk.h>
+
 #include "Util/Log.h"
 #include "Util.h"
 
 namespace Vk
 {
-    Sampler::Sampler
-    (
-        VkDevice device,
-        std::array<VkFilter, 2> filters,
-        VkSamplerMipmapMode mipmapMode,
-        std::array<VkSamplerAddressMode, 3> addressModes,
-        f32 mipLodBias,
-        std::pair<VkBool32, f32> anisotropy,
-        std::pair<VkBool32, VkCompareOp> compare,
-        std::array<f32, 2> lod,
-        VkBorderColor borderColor,
-        VkBool32 unnormalizedCoordinates
-    )
+    Sampler::Sampler(VkDevice device, const VkSamplerCreateInfo& createInfo)
     {
-        VkSamplerCreateInfo createInfo =
-        {
-            .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-            .pNext                   = nullptr,
-            .flags                   = 0,
-            .magFilter               = filters[1],
-            .minFilter               = filters[0],
-            .mipmapMode              = mipmapMode,
-            .addressModeU            = addressModes[0],
-            .addressModeV            = addressModes[1],
-            .addressModeW            = addressModes[2],
-            .mipLodBias              = mipLodBias,
-            .anisotropyEnable        = anisotropy.first,
-            .maxAnisotropy           = anisotropy.second,
-            .compareEnable           = compare.first,
-            .compareOp               = compare.second,
-            .minLod                  = lod[0],
-            .maxLod                  = lod[1],
-            .borderColor             = borderColor,
-            .unnormalizedCoordinates = unnormalizedCoordinates
-        };
-
         Vk::CheckResult(vkCreateSampler(
             device,
             &createInfo,

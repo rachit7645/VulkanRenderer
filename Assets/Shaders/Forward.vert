@@ -16,41 +16,36 @@
 
 #version 460
 
-// Extensions
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference     : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-// Includes
-#include "Lights.glsl"
-#include "ForwardPushConstant.glsl"
+#include "Constants/Forward.glsl"
+#include "Material.glsl"
 
-// Vertex inputs
-layout(location = 0) in vec3 position;
-layout(location = 1) in vec2 texCoords;
-layout(location = 2) in vec3 normal;
-layout(location = 3) in vec3 tangent;
-
-// Vertex outputs
-layout(location = 0) out vec3 fragPosition;
-layout(location = 1) out vec2 fragTexCoords;
-layout(location = 2) out vec3 fragToCamera;
-layout(location = 3) out mat3 fragTBNMatrix;
+layout(location = 0) out      vec3 fragPosition;
+layout(location = 1) out      vec2 fragTexCoords;
+layout(location = 2) out      vec3 fragToCamera;
+layout(location = 3) out flat uint fragDrawID;
+layout(location = 4) out      mat3 fragTBNMatrix;
 
 void main()
 {
-    Instance instance = Constants.Instances.instances[Constants.DrawID];
+    Mesh   mesh     = Constants.Meshes.meshes[gl_DrawID];
+    vec3   position = Constants.Positions.positions[gl_VertexIndex];
+    Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 fragPos = instance.transform * vec4(position, 1.0f);
+    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
     fragPosition = fragPos.xyz;
     gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
 
-    fragTexCoords = texCoords;
+    fragTexCoords = vertex.uv0;
     fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);
+    fragDrawID    = gl_DrawID;
 
-    vec3 N = normalize(mat3(instance.normalMatrix) * normal);
-    vec3 T = normalize(mat3(instance.normalMatrix) * tangent);
-         T = normalize(T - dot(T, N) * N);
+    vec3 N = normalize(mesh.normalMatrix * vertex.normal);
+    vec3 T = normalize(mesh.normalMatrix * vertex.tangent);
+         T = Orthogonalize(T, N);
     vec3 B = cross(N, T);
 
     fragTBNMatrix = mat3(T, B, N);

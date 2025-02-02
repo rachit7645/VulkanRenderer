@@ -16,37 +16,44 @@
 
 #include "CommandBuffer.h"
 
+#include <volk/volk.h>
+
 #include "Util.h"
 
 namespace Vk
 {
-    CommandBuffer::CommandBuffer(const Vk::Context& context, VkCommandBufferLevel level, const std::string_view name)
-        : level(level),
-          m_name(name)
+    CommandBuffer::CommandBuffer(VkDevice device, VkCommandPool cmdPool, VkCommandBufferLevel level)
+        : level(level)
     {
         const VkCommandBufferAllocateInfo allocInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext              = nullptr,
-            .commandPool        = context.commandPool,
+            .commandPool        = cmdPool,
             .level              = level,
             .commandBufferCount = 1
         };
 
         Vk::CheckResult(vkAllocateCommandBuffers(
-            context.device,
+            device,
             &allocInfo,
             &handle),
             "Failed to allocate command buffers!"
         );
     }
 
-    void CommandBuffer::Free(const Vk::Context& context)
+    CommandBuffer::CommandBuffer(VkCommandBuffer handle, VkCommandBufferLevel level)
+        : handle(handle),
+          level(level)
+    {
+    }
+
+    void CommandBuffer::Free(VkDevice device, VkCommandPool cmdPool)
     {
         vkFreeCommandBuffers
         (
-            context.device,
-            context.commandPool,
+            device,
+            cmdPool,
             1,
             &handle
         );
@@ -63,30 +70,82 @@ namespace Vk
         };
 
         Vk::CheckResult(vkBeginCommandBuffer(handle, &beginInfo), "Failed to begin recording command buffer!");
-
-        #ifdef ENGINE_DEBUG
-        const VkDebugUtilsLabelEXT label =
-        {
-            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext      = nullptr,
-            .pLabelName = m_name.c_str(),
-            .color      = {}
-        };
-
-        vkCmdBeginDebugUtilsLabelEXT(handle, &label);
-        #endif
     }
 
     void CommandBuffer::EndRecording() const
     {
-        #ifdef ENGINE_DEBUG
-        vkCmdEndDebugUtilsLabelEXT(handle);
-        #endif
         Vk::CheckResult(vkEndCommandBuffer(handle), "Failed to end command buffer recording!");
     }
 
     void CommandBuffer::Reset(VkCommandBufferResetFlags resetFlags) const
     {
         Vk::CheckResult(vkResetCommandBuffer(handle, resetFlags), "Failed to reset command buffer!");
+    }
+
+    std::vector<CommandBuffer> CommandBuffer::Allocate
+    (
+        u32 count,
+        VkDevice device,
+        VkCommandPool cmdPool,
+        VkCommandBufferLevel level
+    )
+    {
+        std::vector<VkCommandBuffer> _cmdBuffers = {};
+        _cmdBuffers.resize(count, VK_NULL_HANDLE);
+
+        const VkCommandBufferAllocateInfo allocInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .commandPool        = cmdPool,
+            .level              = level,
+            .commandBufferCount = count
+        };
+
+        Vk::CheckResult(vkAllocateCommandBuffers(
+            device,
+            &allocInfo,
+            _cmdBuffers.data()),
+            "Failed to allocate command buffers!"
+        );
+
+        std::vector<Vk::CommandBuffer> cmdBuffers = {};
+        cmdBuffers.reserve(count);
+
+        std::ranges::transform
+        (
+            _cmdBuffers,
+            std::back_inserter(cmdBuffers),
+            [level] (VkCommandBuffer cmdBuffer)
+            {
+                return Vk::CommandBuffer(cmdBuffer, level);
+            }
+        );
+
+        return cmdBuffers;
+    }
+
+    void CommandBuffer::Free(VkDevice device, VkCommandPool cmdPool, const std::span<const CommandBuffer> cmdBuffers)
+    {
+        std::vector<VkCommandBuffer> _cmdBuffers = {};
+        _cmdBuffers.reserve(cmdBuffers.size());
+
+        std::ranges::transform
+        (
+            cmdBuffers,
+            std::back_inserter(_cmdBuffers),
+            [] (const Vk::CommandBuffer& cmdBuffer)
+            {
+                return cmdBuffer.handle;
+            }
+        );
+
+        vkFreeCommandBuffers
+        (
+            device,
+            cmdPool,
+            _cmdBuffers.size(),
+            _cmdBuffers.data()
+        );
     }
 }

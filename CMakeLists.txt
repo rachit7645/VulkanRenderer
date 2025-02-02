@@ -17,18 +17,20 @@ project(VulkanRenderer)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin/)
+set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL2   REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(glm    REQUIRED)
-find_package(assimp REQUIRED)
-find_package(fmt    REQUIRED)
+find_package(SDL3     REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
+find_package(Vulkan   REQUIRED)
+find_package(glm      REQUIRED)
+find_package(fastgltf REQUIRED)
+find_package(simdjson REQUIRED)
+find_package(fmt      REQUIRED)
+find_package(KTX     REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -55,7 +57,6 @@ add_executable(VulkanRenderer
 	Source/Vulkan/QueueFamilyIndices.cpp
 	Source/Vulkan/SwapchainInfo.cpp
 	Source/Vulkan/ShaderModule.cpp
-	Source/Vulkan/VertexBuffer.cpp
 	Source/Vulkan/Buffer.cpp
 	Source/Vulkan/Image.cpp
 	Source/Vulkan/Texture.cpp
@@ -66,57 +67,59 @@ add_executable(VulkanRenderer
 	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/CommandBuffer.cpp
-	Source/Vulkan/DescriptorAllocator.cpp
 	Source/Vulkan/DescriptorWriter.cpp
-	Source/Vulkan/DescriptorCache.cpp
 	Source/Vulkan/TextureManager.cpp
+	Source/Vulkan/GeometryBuffer.cpp
+    Source/Vulkan/MegaSet.cpp
+    Source/Vulkan/DebugUtils.cpp
+    Source/Vulkan/FormatHelper.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
-	Source/Vulkan/Builders/DescriptorLayoutBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
 	Source/Renderer/FreeCamera.cpp
 	Source/Renderer/Camera.cpp
 	Source/Renderer/RenderObject.cpp
-	# Swapchain Pass Sources
-	Source/Renderer/Swapchain/SwapchainPipeline.cpp
-	Source/Renderer/Swapchain/SwapchainPass.cpp
+    Source/Renderer/IndirectBuffer.cpp
+    Source/Renderer/MeshBuffer.cpp
+    Source/Renderer/SceneBuffer.cpp
+	# Post Process Pass Sources
+	Source/Renderer/PostProcess/PostProcessPipeline.cpp
+	Source/Renderer/PostProcess/PostProcessPass.cpp
 	# Forward Pass Sources
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
-	Source/Renderer/Forward/ForwardInstanceBuffer.cpp
+    # Depth Pass Source
+    Source/Renderer/Depth/DepthPipeline.cpp
+    Source/Renderer/Depth/DepthPass.cpp
+    # ImGui Pass Source
+    Source/Renderer/ImGui/ImGuiPipeline.cpp
+    Source/Renderer/ImGui/ImGuiPass.cpp
 	# Model sources
-	Source/Models/Vertex.cpp
 	Source/Models/Model.cpp
-	Source/Models/Mesh.cpp
 	Source/Models/ModelManager.cpp
 	# External sources
 	Source/Externals/GLM.cpp
-	Source/Externals/STBImage.cpp
 	Source/Externals/VMA.cpp
 )
 
 # Precompiled Headers
 target_precompile_headers(VulkanRenderer PRIVATE
 	# SDL headers
-	<SDL2/SDL.h>
-	<SDL2/SDL_vulkan.h>
+	<SDL3/SDL.h>
+	<SDL3/SDL_vulkan.h>
 	# Vulkan headers
 	<vulkan/vulkan.h>
 	<vulkan/vulkan_core.h>
 	<vulkan/vk_enum_string_helper.h>
+    Externals/volk/volk.h
 	# ImGui Headers
     Externals/imgui/imgui.h
     Externals/imgui/imgui_internal.h
     Externals/imgui/backends/imgui_impl_sdl2.h
     Externals/imgui/backends/imgui_impl_vulkan.h
-    # STB Headers
-    <stb/stb_image.h>
-	# Assimp Headers
-    <assimp/Importer.hpp>
-    <assimp/scene.h>
-    <assimp/postprocess.h>
-    <assimp/types.h>
+    # KTX Headers
+    <ktx.h>
     # FMT Headers
     <fmt/core.h>
     <fmt/format.h>
@@ -135,6 +138,12 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <glm/gtc/matrix_transform.hpp>
     # VMA Headers
 	Externals/vma/include/vk_mem_alloc.h
+    # fastgltf Headers
+    <fastgltf/core.hpp>
+    <fastgltf/types.hpp>
+    <fastgltf/tools.hpp>
+    <fastgltf/glm_element_traits.hpp>
+    <fastgltf/math.hpp>
     # C++ STL Headers
 	<map>
     <unordered_map>
@@ -169,6 +178,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
 
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
+# No vulkan prototypes
+target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
 # -O3 optimisations (Set to -Og when debugging)
 target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
@@ -180,8 +191,18 @@ target_compile_options(VulkanRenderer PRIVATE -march=native)
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Engine Debug Mode
 	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
+    # Enable validation layers
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_ENABLE_VALIDATION)
 	# Enable debug output
 	target_compile_options(VulkanRenderer PRIVATE -g)
+endif()
+
+# Debug Without Validation config
+if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    # Engine Debug Mode
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
+    # Enable debug output
+    target_compile_options(VulkanRenderer PRIVATE -g)
 endif()
 
 # Add shader dependency
@@ -189,12 +210,13 @@ add_dependencies(VulkanRenderer Shaders)
 
 # Link libraries
 target_link_libraries(VulkanRenderer
-	Vulkan::Vulkan
-	SDL2::SDL2main
-	SDL2::SDL2
+    Vulkan::Headers
+    volk::volk
+	SDL3::SDL3
 	fmt::fmt
-	assimp::assimp
+	fastgltf::fastgltf
 	GPUOpen::VulkanMemoryAllocator
+    KTX::ktx
 	imgui
 )
 
@@ -208,7 +230,6 @@ install(
 
 # Copy required DLLs
 install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
-install(FILES $<TARGET_RUNTIME_DLLS:imgui>          DESTINATION ${INSTALL_DIR})
 
 # Copy other directories
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets/)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets)

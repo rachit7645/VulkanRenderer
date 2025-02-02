@@ -14,139 +14,56 @@
  * limitations under the License.
  */
 
-#include <SDL_vulkan.h>
 #include "Window.h"
 
 #include <thread>
+#include <SDL3/SDL_vulkan.h>
 
-#include "Util/Log.h"
-#include "Util/Files.h"
+#include "Externals/ImGui.h"
+
 #include "Inputs.h"
+#include "Util/Log.h"
 
 namespace Engine
 {
     Window::Window()
     {
-        SDL_version version = {};
-        SDL_GetVersion(&version);
-
         Logger::Info
         (
             "Initializing SDL2 version: {}.{}.{}\n",
-            static_cast<usize>(version.major),
-            static_cast<usize>(version.minor),
-            static_cast<usize>(version.patch)
+            SDL_MAJOR_VERSION,
+            SDL_MINOR_VERSION,
+            SDL_MICRO_VERSION
         );
 
-        constexpr u32 SDL_INIT_FLAGS = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER;
-        if (SDL_Init(SDL_INIT_FLAGS) != 0)
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         {
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
         }
 
-        if (SDL_Vulkan_LoadLibrary(nullptr) != 0)
-        {
-            Logger::Error("SDL_Vulkan_LoadLibrary Failed: {}\n", SDL_GetError());
-        }
-
-        constexpr u32 SDL_WINDOW_FLAGS = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
         handle = SDL_CreateWindow
         (
             "Rachit's Engine: Vulkan Edition",
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
             size.x,
             size.y,
-            SDL_WINDOW_FLAGS
+            SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_VULKAN
         );
 
         if (handle == nullptr)
         {
-            Logger::Error("SDL_CreateWindow Failed\n{}\n", SDL_GetError());
+            Logger::Error("SDL_CreateWindow Failed: {}\n", SDL_GetError());
         }
 
         Logger::Info("Succesfully created window handle! [handle={}]\n", std::bit_cast<void*>(handle));
 
-        SDL_RaiseWindow(handle);
-        SDL_SetWindowMinimumSize(handle, 1, 1);
-
-        SDL_ShowCursor(SDL_FALSE);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-    }
-
-    bool Window::PollEvents()
-    {
-        auto& inputs = Inputs::Get();
-
-        while (SDL_PollEvent(&m_event))
+        if (!SDL_RaiseWindow(handle))
         {
-            ImGui_ImplSDL2_ProcessEvent(&m_event);
-
-            switch (m_event.type)
-            {
-            case SDL_QUIT:
-                return true;
-
-            case SDL_KEYDOWN:
-                switch (m_event.key.keysym.scancode)
-                {
-                case SDL_SCANCODE_F1:
-                    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(!m_isInputCaptured));
-                    m_isInputCaptured = !m_isInputCaptured;
-                    break;
-
-                default:
-                    break;
-                }
-                break;
-
-            case SDL_MOUSEMOTION:
-                inputs.SetMousePosition(glm::ivec2(m_event.motion.xrel, m_event.motion.yrel));
-                break;
-
-            case SDL_MOUSEWHEEL:
-                inputs.SetMouseScroll(glm::ivec2(m_event.wheel.x, m_event.wheel.y));
-                break;
-
-            case SDL_CONTROLLERDEVICEADDED:
-                if (inputs.GetController() == nullptr)
-                {
-                    inputs.FindController();
-                }
-                break;
-
-            case SDL_CONTROLLERDEVICEREMOVED:
-                if (inputs.GetController() == nullptr && m_event.cdevice.which == inputs.GetControllerID())
-                {
-                    SDL_GameControllerClose(inputs.GetController());
-                    inputs.FindController();
-                }
-                break;
-
-            default:
-                continue;
-            }
+            Logger::Error("SDL_RaiseWindow Failed: {}\n", SDL_GetError());
         }
 
-        return false;
-    }
-
-    // FIXME: This is quite hacky
-    void Window::WaitForRestoration()
-    {
-        while (true)
+        if (!SDL_SetWindowRelativeMouseMode(handle, true))
         {
-            if (PollEvents())
-            {
-                std::exit(-1);
-            }
-
-            if (!(SDL_GetWindowFlags(handle) & SDL_WINDOW_MINIMIZED))
-            {
-                break;
-            }
-
-            std::this_thread::sleep_for(std::chrono::microseconds(10000));
+            Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
         }
     }
 
@@ -154,7 +71,6 @@ namespace Engine
     {
         Inputs::Get().Destroy();
 
-        SDL_Vulkan_UnloadLibrary();
         SDL_DestroyWindow(handle);
         SDL_Quit();
 

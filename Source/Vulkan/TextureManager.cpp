@@ -18,6 +18,7 @@
 
 #include "Texture.h"
 #include "Util.h"
+#include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Util.h"
 
@@ -25,35 +26,46 @@ namespace Vk
 {
     constexpr u32 MAX_TEXTURE_COUNT = 1 << 16;
 
-    TextureManager::TextureManager(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)
+    TextureManager::TextureManager(const Vk::FormatHelper& formatHelper)
+        : m_format(formatHelper.textureFormat),
+          m_formatSRGB(formatHelper.textureFormatSRGB)
     {
-        CreatePool(device);
-        CreateLayout(device, deviceLimits);
-        CreateSet(device, deviceLimits);
-
-        Logger::Info("{}\n", "Initialised texture manager!");
     }
 
-    usize TextureManager::AddTexture(const Vk::Context& context, const std::string_view path, Texture::Flags flags)
+    usize TextureManager::AddTexture
+    (
+        Vk::MegaSet& megaSet,
+        VkDevice device,
+        VmaAllocator allocator,
+        const std::string_view path
+    )
     {
         usize pathHash = std::hash<std::string_view>()(path);
 
         if (!textureMap.contains(pathHash))
         {
-            const u32  id      = m_lastID++;
-            const auto texture = Vk::Texture(context, path, flags);
-            textureMap.emplace(pathHash, TextureInfo(id, texture));
+            Vk::Texture texture = {};
 
-            m_writer.WriteImage
+            const auto stagingBuffer = texture.LoadFromFile
             (
-                textureSet.handle,
-                0,
-                id,
-                VK_NULL_HANDLE,
-                texture.imageView.handle,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+                device,
+                allocator,
+                path
             );
+
+            const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+            textureMap.emplace
+            (
+                pathHash,
+                TextureInfo(
+                    id,
+                    Engine::Files::GetNameWithoutExtension(path),
+                    texture
+                )
+            );
+
+            m_pendingUploads.emplace_back(texture, stagingBuffer);
         }
         else
         {
@@ -63,43 +75,96 @@ namespace Vk
         return pathHash;
     }
 
-    usize TextureManager::AddTexture(const Vk::Texture& texture)
+    usize TextureManager::AddTexture
+    (
+        Vk::MegaSet& megaSet,
+        VkDevice device,
+        VmaAllocator allocator,
+        const std::string_view name,
+        const std::span<const u8> data,
+        const glm::uvec2 size
+    )
     {
-        const u32 id = m_lastID++;
+        auto nameHash = std::hash<std::string_view>()(name);
 
-        usize pathHash = std::hash<std::string>()("DummyTexturePath" + std::to_string(id));
-        textureMap.emplace(pathHash, TextureInfo(id, texture));
+        Vk::Texture texture = {};
 
-        m_writer.WriteImage
+        const auto upload = texture.LoadFromMemory
         (
-            textureSet.handle,
-            0,
-            id,
-            VK_NULL_HANDLE,
-            texture.imageView.handle,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+            device,
+            allocator,
+            m_format,
+            data,
+            size
         );
 
-        return pathHash;
+        const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        textureMap.emplace
+        (
+            nameHash,
+            TextureInfo(
+                id,
+                name.data(),
+                texture
+            )
+        );
+
+        m_pendingUploads.emplace_back(texture, upload);
+
+        Vk::SetDebugName(device, texture.image.handle,     name);
+        Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
+
+        return nameHash;
     }
 
-    void TextureManager::Update(VkDevice device)
+    u32 TextureManager::AddSampler
+    (
+        Vk::MegaSet& megaSet,
+        VkDevice device,
+        const VkSamplerCreateInfo& createInfo
+    )
     {
-        m_writer.Update(device);
-        m_writer.Clear();
+        const auto sampler = Vk::Sampler(device, createInfo);
+        const auto id      = megaSet.WriteSampler(sampler);
+
+        samplerMap.emplace(id, sampler);
+
+        return id;
     }
 
-    u32 TextureManager::GetID(usize pathHash) const
+    void TextureManager::Update(const Vk::CommandBuffer& cmdBuffer)
+    {
+        Vk::BeginLabel(cmdBuffer, "Texture Transfer", {0.6117f, 0.8196f, 0.0313f, 1.0f});
+
+        for (auto& [texture, upload] : m_pendingUploads)
+        {
+            texture.UploadToGPU(cmdBuffer, upload);
+        }
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void TextureManager::Clear(VmaAllocator allocator)
+    {
+        for (auto& [buffer, _] : m_pendingUploads | std::views::values)
+        {
+            buffer.Destroy(allocator);
+        }
+
+        m_pendingUploads.clear();
+    }
+
+    u32 TextureManager::GetTextureID(usize pathHash) const
     {
         const auto iter = textureMap.find(pathHash);
 
         if (iter == textureMap.end())
         {
-            Logger::Error("Invalid path hash! [Hash={}]\n", pathHash);
+            Logger::Error("Invalid texture path hash! [Hash={}]\n", pathHash);
         }
 
-        return iter->second.textureID;
+        return iter->second.descriptorID;
     }
 
     const Texture& TextureManager::GetTexture(usize pathHash) const
@@ -108,114 +173,76 @@ namespace Vk
 
         if (iter == textureMap.end())
         {
-            Logger::Error("Invalid path hash! [Hash={}]\n", pathHash);
+            Logger::Error("Invalid texture path hash! [Hash={}]\n", pathHash);
         }
 
         return iter->second.texture;
     }
 
-    void TextureManager::CreatePool(VkDevice device)
+    const Vk::Sampler& TextureManager::GetSampler(u32 id) const
     {
-        constexpr VkDescriptorPoolSize samplerPoolSize =
-        {
-            .type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-            .descriptorCount = 1
-        };
+        const auto iter = samplerMap.find(id);
 
-        const VkDescriptorPoolCreateInfo poolCreateInfo =
+        if (iter == samplerMap.end())
         {
-            .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .pNext         = nullptr,
-            .flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
-            .maxSets       = static_cast<u32>(samplerPoolSize.descriptorCount),
-            .poolSizeCount = 1,
-            .pPoolSizes    = &samplerPoolSize
-        };
+            Logger::Error("Invalid sampler ID! [ID={}]\n", id);
+        }
 
-        Vk::CheckResult(vkCreateDescriptorPool(
-            device,
-            &poolCreateInfo,
-            nullptr,
-            &m_texturePool),
-            "Failed to create texture descriptor pool!"
-        );
+        return iter->second;
     }
 
-    void TextureManager::CreateLayout(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)
+    void TextureManager::ImGuiDisplay()
     {
-        VkDescriptorBindingFlags flags = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT |
-                                         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT           |
-                                         VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-
-        const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlags =
+        if (ImGui::BeginMainMenuBar())
         {
-            .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
-            .pNext         = nullptr,
-            .bindingCount  = 1,
-            .pBindingFlags = &flags
-        };
+            if (ImGui::BeginMenu("Texture Manager"))
+            {
+                for (const auto& [pathHash, textureInfo] : textureMap)
+                {
+                    if (ImGui::TreeNode(std::bit_cast<void*>(pathHash), textureInfo.name.c_str()))
+                    {
+                        ImGui::Text("Descriptor Index | %u", textureInfo.descriptorID);
+                        ImGui::Text("Width            | %u", textureInfo.texture.image.width);
+                        ImGui::Text("Height           | %u", textureInfo.texture.image.height);
+                        ImGui::Text("Mipmap Levels    | %u", textureInfo.texture.image.mipLevels);
+                        ImGui::Text("Format           | %s", string_VkFormat(textureInfo.texture.image.format));
 
-        auto maxTextureCount = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_TEXTURE_COUNT);
+                        ImGui::Separator();
 
-        const VkDescriptorSetLayoutBinding textureArrayBinding =
-        {
-            .binding            = 0,
-            .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-            .descriptorCount    = maxTextureCount,
-            .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr
-        };
+                        const f32 originalWidth  = static_cast<f32>(textureInfo.texture.image.width);
+                        const f32 originalHeight = static_cast<f32>(textureInfo.texture.image.height);
 
-        const VkDescriptorSetLayoutCreateInfo createInfo =
-        {
-            .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .pNext        = &bindingFlags,
-            .flags        = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
-            .bindingCount = 1,
-            .pBindings    = &textureArrayBinding
-        };
+                        constexpr f32 MAX_SIZE = 512.0f;
 
-        Vk::CheckResult(vkCreateDescriptorSetLayout(
-            device,
-            &createInfo,
-            nullptr,
-            &textureSet.layout),
-            "Failed to create texture descriptor set layout!"
-        );
-    }
+                        // Maintain aspect ratio
+                        const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
+                        const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
 
-    void TextureManager::CreateSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)
-    {
-        auto maxTextureCount = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_TEXTURE_COUNT);
+                        ImGui::Image(textureInfo.descriptorID, imageSize);
 
-        VkDescriptorSetVariableDescriptorCountAllocateInfo setCounts =
-        {
-            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .descriptorSetCount = 1,
-            .pDescriptorCounts  = &maxTextureCount
-        };
+                        ImGui::TreePop();
+                    }
 
-        VkDescriptorSetAllocateInfo allocInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .pNext              = &setCounts,
-            .descriptorPool     = m_texturePool,
-            .descriptorSetCount = 1,
-            .pSetLayouts        = &textureSet.layout
-        };
+                    ImGui::Separator();
+                }
 
-        Vk::CheckResult(vkAllocateDescriptorSets(device, &allocInfo, &textureSet.handle), "Failed to allocate texture descriptor set!");
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
     }
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        vkDestroyDescriptorPool(device, m_texturePool, nullptr);
-        vkDestroyDescriptorSetLayout(device, textureSet.layout, nullptr);
-
-        for (auto& [textureID, texture] : textureMap | std::views::values)
+        for (auto& [id, name, texture] : textureMap | std::views::values)
         {
             texture.Destroy(device, allocator);
+        }
+
+        for (const auto& sampler : samplerMap | std::views::values)
+        {
+            sampler.Destroy(device);
         }
 
         Logger::Info("{}\n", "Destroyed texture manager!");

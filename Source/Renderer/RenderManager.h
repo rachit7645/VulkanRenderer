@@ -17,20 +17,23 @@
 #ifndef RENDER_MANAGER_H
 #define RENDER_MANAGER_H
 
-#include <memory>
 #include <vulkan/vulkan.h>
 
 #include "FreeCamera.h"
 #include "RenderObject.h"
-#include "Swapchain/SwapchainPass.h"
+#include "IndirectBuffer.h"
+#include "MeshBuffer.h"
+#include "SceneBuffer.h"
+#include "PostProcess/PostProcessPass.h"
 #include "Forward/ForwardPass.h"
+#include "Depth/DepthPass.h"
+#include "ImGui/ImGuiPass.h"
 #include "Vulkan/Context.h"
-#include "Vulkan/VertexBuffer.h"
-#include "Vulkan/TextureManager.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/FormatHelper.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
-#include "Models/Model.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer
@@ -38,7 +41,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        explicit RenderManager(const std::shared_ptr<Engine::Window>& window);
+        RenderManager();
         ~RenderManager();
 
         // No copying
@@ -50,25 +53,39 @@ namespace Renderer
         RenderManager& operator=(RenderManager&& other) = default;
 
         void Render();
+        [[nodiscard]] bool HandleEvents();
     private:
+        void WaitForFences();
+        void AcquireSwapchainImage();
         void BeginFrame();
         void Update();
         void EndFrame();
         void SubmitQueue();
-        void Reset();
+        void Resize();
 
         void InitImGui();
         void CreateSyncObjects();
 
         // Object handles
-        std::shared_ptr<Engine::Window> m_window = nullptr;
-        Vk::Context                     m_context;
-        Vk::TextureManager              m_textureManager;
-        Models::ModelManager            m_modelManager;
+        Engine::Window m_window;
+        Vk::Context    m_context;
+        Vk::Swapchain  m_swapchain;
+
+        Vk::FormatHelper m_formatHelper;
+
+        Models::ModelManager m_modelManager;
+        Vk::MegaSet          m_megaSet;
 
         // Render Passes
-        Swapchain::SwapchainPass m_swapPass;
-        Forward::ForwardPass     m_forwardPass;
+        PostProcess::PostProcessPass m_postProcessPass;
+        Forward::ForwardPass         m_forwardPass;
+        Depth::DepthPass             m_depthPass;
+        DearImGui::ImGuiPass         m_imGuiPass;
+
+        // Buffers
+        MeshBuffer     m_meshBuffer;
+        IndirectBuffer m_indirectBuffer;
+        SceneBuffer    m_sceneBuffer;
 
         // Scene objects
         std::vector<Renderer::RenderObject> m_renderObjects;
@@ -81,6 +98,17 @@ namespace Renderer
         usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
+
+        bool m_isSwapchainOk = true;
+
+        DirLight m_sun =
+        {
+            .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
+            .color     = {1.0f,   0.956f, 0.898f, 1.0f},
+            .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
+        };
+
+        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

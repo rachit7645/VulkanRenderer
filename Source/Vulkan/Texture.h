@@ -18,10 +18,10 @@
 #define TEXTURE_H
 
 #include <vulkan/vulkan.h>
+#include <ktx.h>
 
 #include "Image.h"
 #include "ImageView.h"
-#include "Context.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -29,22 +29,32 @@ namespace Vk
     class Texture
     {
     public:
-        enum class Flags : u8
-        {
-            None       = 0,
-            IsSRGB     = 1U << 0,
-            GenMipmaps = 1U << 1
-        };
+        using Upload = std::pair<Vk::Buffer, std::vector<VkBufferImageCopy2>>;
 
-        Texture(const Vk::Context& context, const std::string_view path, Flags flags = Flags::None);
+        Upload LoadFromFile
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            const std::string_view path
+        );
+
+        Upload LoadFromMemory
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            VkFormat format,
+            const std::span<const u8> data,
+            const glm::uvec2 size
+        );
+
+        void UploadToGPU(const Vk::CommandBuffer& cmdBuffer, const Upload& upload);
+
         void Destroy(VkDevice device, VmaAllocator allocator) const;
 
         bool operator==(const Texture& rhs) const;
 
         Vk::Image     image;
         Vk::ImageView imageView;
-    private:
-        bool IsFlagSet(Flags combined, Flags flag) const;
     };
 }
 

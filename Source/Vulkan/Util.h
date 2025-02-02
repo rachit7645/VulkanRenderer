@@ -19,33 +19,23 @@
 
 #include <functional>
 #include <string_view>
-#include <span>
 #include <vulkan/vulkan.h>
 
 #include "Util/Util.h"
-#include "Context.h"
 #include "CommandBuffer.h"
 
 // STD140 / STD430 alignment
 #define VULKAN_GLSL_DATA alignas(16)
-// Scalr layout
-#define VULKAN_SCALAR_DATA __attribute__((packed))
 
 namespace Vk
 {
     void ImmediateSubmit
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VkQueue queue,
+        VkCommandPool cmdPool,
         const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
         const std::source_location location = std::source_location::current()
-    );
-
-    VkFormat FindSupportedFormat
-    (
-        VkPhysicalDevice physicalDevice,
-        const std::span<const VkFormat> candidates,
-        VkImageTiling tiling,
-        VkFormatFeatureFlags2 features
     );
 
     void CheckResult(VkResult result, const std::string_view message);

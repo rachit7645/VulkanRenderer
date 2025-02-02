@@ -21,6 +21,7 @@
 
 #include "Model.h"
 #include "Vulkan/TextureManager.h"
+#include "Vulkan/GeometryBuffer.h"
 #include "Util/Util.h"
 
 namespace Models
@@ -28,12 +29,20 @@ namespace Models
     class ModelManager
     {
     public:
-        void Destroy(VmaAllocator allocator);
+        ModelManager(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
-        usize AddModel(const Vk::Context& context, Vk::TextureManager& textureManager, const std::string_view path);
-        const Model& GetModel(usize modelID) const;
+        [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);
+        [[nodiscard]] const Model& GetModel(usize modelID) const;
+
+        void Update(const Vk::Context& context);
+
+        void ImGuiDisplay();
 
         std::unordered_map<u32, Models::Model> modelMap;
+
+        Vk::GeometryBuffer geometryBuffer;
+        Vk::TextureManager textureManager;
     };
 }
 

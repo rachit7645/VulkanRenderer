@@ -26,21 +26,10 @@ namespace Vk
     class Image
     {
     public:
-        // Default constructor to make c++ happy
+        // Default constructor to make C++ happy
         Image() = default;
 
-        Image
-        (
-            VmaAllocator allocator,
-            u32 width,
-            u32 height,
-            u32 mipLevels,
-            VkFormat format,
-            VkImageTiling tiling,
-            VkImageAspectFlags aspect,
-            VkImageUsageFlags usage,
-            VkMemoryPropertyFlags properties
-        );
+        Image(VmaAllocator allocator, const VkImageCreateInfo& createInfo, VkImageAspectFlags aspect);
 
         // Basic constructor for copying
         Image
@@ -50,38 +39,40 @@ namespace Vk
             u32 height,
             u32 mipLevels,
             VkFormat format,
-            VkImageTiling tiling,
             VkImageAspectFlags aspect
         );
 
         bool operator==(const Image& rhs) const;
 
-        void TransitionLayout(const Vk::CommandBuffer& cmdBuffer, VkImageLayout newLayout);
+        void Barrier
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkPipelineStageFlags2 srcStageMask,
+            VkAccessFlags2 srcAccessMask,
+            VkPipelineStageFlags2 dstStageMask,
+            VkAccessFlags2 dstAccessMask,
+            VkImageLayout oldLayout,
+            VkImageLayout newLayout,
+            const VkImageSubresourceRange& subresourceRange
+        );
+
         void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer);
 
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
-        VkImage       handle     = VK_NULL_HANDLE;
-        VmaAllocation allocation = {};
+        VkImage           handle         = VK_NULL_HANDLE;
+        VmaAllocation     allocation     = {};
+        VmaAllocationInfo allocationInfo = {};
 
         // Image dimensions
         u32 width     = 0;
         u32 height    = 0;
-        u32 mipLevels = 0;
+        u32 mipLevels = 1;
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
-        VkImageTiling      tiling = VK_IMAGE_TILING_OPTIMAL;
-        VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-        VkImageLayout      layout = VK_IMAGE_LAYOUT_UNDEFINED;
-    private:
-        void CreateImage
-        (
-            VmaAllocator allocator,
-            VkImageUsageFlags usage,
-            VkMemoryPropertyFlags properties
-        );
+        VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     };
 }
 

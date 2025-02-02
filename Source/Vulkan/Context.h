@@ -18,14 +18,11 @@
 #define VK_CONTEXT_H
 
 #include <vulkan/vulkan.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "ValidationLayers.h"
-#include "Extensions.h"
 #include "QueueFamilyIndices.h"
-#include "DescriptorCache.h"
 #include "Util/Util.h"
-#include "Engine/Window.h"
 #include "Util/DeletionQueue.h"
 #include "Externals/VMA.h"
 
@@ -34,7 +31,7 @@ namespace Vk
     class Context
     {
     public:
-        explicit Context(const std::shared_ptr<Engine::Window>& window);
+        explicit Context(SDL_Window* window);
         void Destroy();
 
         // Vulkan instance
@@ -59,10 +56,8 @@ namespace Vk
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
-        // Descriptor cache
-        Vk::DescriptorCache descriptorCache;
     private:
-        void CreateInstance(SDL_Window* window);
+        void CreateInstance();
         void CreateSurface(SDL_Window* window);
 
         void PickPhysicalDevice();
@@ -76,13 +71,11 @@ namespace Vk
         );
 
         void CreateCommandPool();
-        void CreateDescriptorCache();
         void CreateAllocator();
 
-        // Extensions
-        Vk::Extensions m_extensions = {};
+        void AddDebugNames();
 
-        #ifdef ENGINE_DEBUG
+        #ifdef ENGINE_ENABLE_VALIDATION
         // Vulkan validation layers
         Vk::ValidationLayers m_layers;
         #endif

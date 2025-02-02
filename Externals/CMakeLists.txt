@@ -19,22 +19,25 @@ project(Externals)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# VMA
-add_subdirectory(vma/)
-
 # Required packages
-find_package(SDL2   REQUIRED)
+find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
+option(VOLK_PULL_IN_VULKAN OFF)
+option(VOLK_INSTALL        ON)
+
+# Libraries with CMake support
+add_subdirectory(vma/)
+add_subdirectory(volk/)
+
 # ImGui source files
-add_library(imgui SHARED
+add_library(imgui STATIC
 	imgui/imgui.cpp
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
 	imgui/imgui_widgets.cpp
 	# imgui/imgui_demo.cpp
-	imgui/backends/imgui_impl_sdl2.cpp
-	imgui/backends/imgui_impl_vulkan.cpp
+	imgui/backends/imgui_impl_sdl3.cpp
 	imgui/misc/cpp/imgui_stdlib.cpp
 )
 
@@ -45,12 +48,11 @@ target_precompile_headers(imgui PRIVATE
 	imgui/imgui.h
 	imgui/imstb_rectpack.h
 	imgui/imstb_truetype.h
-	imgui/backends/imgui_impl_sdl2.h
-	imgui/backends/imgui_impl_vulkan.h
+	imgui/backends/imgui_impl_sdl3.h
 )
 
 # SDL2 Includes
-target_include_directories(imgui PRIVATE ${SDL2_INCLUDE_DIRS})
+target_include_directories(imgui PRIVATE ${SDL3_INCLUDE_DIRS})
 # ImGUI Includes
 target_include_directories(imgui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
@@ -68,5 +70,11 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	target_compile_options(imgui PRIVATE -g)
 endif()
 
+# Debug Without Validation config
+if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    # Enable debug output
+    target_compile_options(imgui PRIVATE -g)
+endif()
+
 # Link libraries
-target_link_libraries(imgui Vulkan::Vulkan SDL2::SDL2)
+target_link_libraries(imgui SDL3::SDL3)

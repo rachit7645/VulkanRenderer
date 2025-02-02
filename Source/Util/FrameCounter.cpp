@@ -39,8 +39,8 @@ namespace Util
     {
         m_endTime = Clock::now();
 
-        auto duration      = m_endTime - m_frameStartTime;
-        auto cycleDuration = m_endTime - m_startTime;
+        const auto duration      = m_endTime - m_frameStartTime;
+        const auto cycleDuration = m_endTime - m_startTime;
 
         // This is in us (I think)
         frameDelta       = static_cast<f32>(static_cast<f64>(duration.count()) / 1000.0);
@@ -64,9 +64,10 @@ namespace Util
             if (ImGui::BeginMenu("Profiler"))
             {
                 // Frame stats
-                ImGui::Text("FPS: %.2f", FPS);
-                ImGui::Text("Frame Time: %.2f ms", avgFrameTime);
-                ImGui::Text("Frame Delta: %.2f", frameDelta);
+                ImGui::Text("FPS         | %.2f",    FPS);
+                ImGui::Text("Frame Time  | %.2f ms", avgFrameTime);
+                ImGui::Text("Frame Delta | %.2f us", frameDelta);
+
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();

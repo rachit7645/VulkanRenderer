@@ -22,7 +22,7 @@
 
 namespace Vk
 {
-#ifdef ENGINE_DEBUG
+#ifdef ENGINE_ENABLE_VALIDATION
     class ValidationLayers
     {
     public:

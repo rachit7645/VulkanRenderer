@@ -23,7 +23,7 @@
 namespace Renderer
 {
     FreeCamera::FreeCamera()
-        : FreeCamera(glm::vec3(30.0f, 30.0f, 4.0f), glm::vec3(0.0f, std::numbers::pi, 0.0f), Renderer::DEFAULT_FOV)
+        : FreeCamera(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, std::numbers::pi, 0.0f), Renderer::DEFAULT_FOV)
     {
     }
 
@@ -58,7 +58,7 @@ namespace Renderer
     {
         const auto& inputs = Engine::Inputs::Get();
 
-        f32 velocity = speed * frameDelta;
+        const f32 velocity = speed * frameDelta;
 
         // Forward
         if (inputs.IsKeyPressed(SDL_SCANCODE_W))
@@ -82,7 +82,7 @@ namespace Renderer
             position += right * velocity;
         }
 
-        auto lStick = inputs.GetLStick();
+        const auto lStick = inputs.GetLStick();
         // Forward/Backward
         position -= lStick.y * front * velocity;
         // Left/Right
@@ -93,18 +93,18 @@ namespace Renderer
     {
         auto& inputs = Engine::Inputs::Get();
 
-        auto speed = sensitivity * frameDelta;
+        const auto speed = sensitivity * frameDelta;
 
         // Avoids freaking out
         if (inputs.WasMouseMoved())
         {
             // Yaw
-            rotation.y += glm::radians(static_cast<f32>(inputs.GetMousePosition().x) * speed);
+            rotation.y += glm::radians(inputs.GetMousePosition().x * speed);
             // Pitch
-            rotation.x += glm::radians(static_cast<f32>(inputs.GetMousePosition().y) * speed);
+            rotation.x += glm::radians(inputs.GetMousePosition().y * speed);
         }
 
-        auto rStick = inputs.GetRStick();
+        const auto rStick = inputs.GetRStick();
         // Pitch
         rotation.x += rStick.y * speed * 0.04f;
         // Yaw
@@ -121,7 +121,7 @@ namespace Renderer
         // Stops things from going haywire
         if (inputs.WasMouseScrolled())
         {
-            FOV -= static_cast<f32>(inputs.GetMouseScroll().y) * zoom * frameDelta;
+            FOV -= inputs.GetMouseScroll().y * zoom * frameDelta;
             FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }

@@ -41,4 +41,13 @@ using f64 = double;
 using ssize = ssize_t;
 using usize = std::size_t;
 
+namespace Util
+{
+    [[noreturn]] inline void Crash()
+    {
+        volatile char* crash = nullptr;
+        *crash = 69;
+    }
+}
+
 #endif

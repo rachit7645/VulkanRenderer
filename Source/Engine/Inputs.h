@@ -17,7 +17,7 @@
 #ifndef INPUTS_H
 #define INPUTS_H
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "Externals/GLM.h"
 #include "Util/Util.h"
@@ -29,21 +29,21 @@ namespace Engine
     public:
         static Inputs& Get();
 
-        void SetMousePosition(const glm::ivec2& position);
-        void SetMouseScroll(const glm::ivec2& scroll);
+        void SetMousePosition(const glm::vec2& position);
+        void SetMouseScroll(const glm::vec2& scroll);
 
-        void FindController();
+        void FindGamepad();
 
         [[nodiscard]] bool IsKeyPressed(SDL_Scancode key) const;
 
-        [[nodiscard]] const glm::ivec2& GetMousePosition();
-        [[nodiscard]] const glm::ivec2& GetMouseScroll();
+        [[nodiscard]] const glm::vec2& GetMousePosition();
+        [[nodiscard]] const glm::vec2& GetMouseScroll();
 
         [[nodiscard]] glm::vec2 GetLStick() const;
         [[nodiscard]] glm::vec2 GetRStick() const;
 
-        [[nodiscard]] SDL_GameController* GetController() const;
-        [[nodiscard]] SDL_JoystickID      GetControllerID() const;
+        [[nodiscard]] SDL_Gamepad* GetGamepad() const;
+        [[nodiscard]] SDL_JoystickID GetGamepadID() const;
 
         [[nodiscard]] bool WasMouseMoved() const;
         [[nodiscard]] bool WasMouseScrolled() const;
@@ -56,19 +56,19 @@ namespace Engine
         // Dead zone must be between 0.0f and 1.0f
         [[nodiscard]] glm::vec2 GetNormalisedAxisDirection
         (
-            SDL_GameControllerAxis axisHorizontal,
-            SDL_GameControllerAxis axisVertical,
+            SDL_GamepadAxis axisHorizontal,
+            SDL_GamepadAxis axisVertical,
             const glm::vec2& deadZone
         ) const;
 
         // Keys from SDL
-        const u8* m_keys = nullptr;
+        const bool* m_keys = nullptr;
         // Game controller from SDL
-        SDL_GameController* m_controller = nullptr;
+        SDL_Gamepad* m_gamepad = nullptr;
 
         // Mouse data
-        glm::ivec2 m_mousePosition = {};
-        glm::ivec2 m_mouseScroll   = {};
+        glm::vec2 m_mousePosition = {};
+        glm::vec2 m_mouseScroll   = {};
 
         // Flags
         bool m_wasMouseMoved = false;

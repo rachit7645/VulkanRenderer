@@ -20,11 +20,12 @@
 #include <vector>
 #include <string_view>
 
-#include <assimp/scene.h>
+#include <fastgltf/types.hpp>
 
 #include "Mesh.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
+#include "Vulkan/GeometryBuffer.h"
 
 namespace Models
 {
@@ -34,37 +35,66 @@ namespace Models
         Model
         (
             const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             const std::string_view path
         );
 
         std::vector<Models::Mesh> meshes;
     private:
+        void ProcessScenes
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            const std::string& directory,
+            const fastgltf::Asset& asset
+        );
+
         void ProcessNode
         (
-            const aiNode* node,
-            const aiScene* scene,
-            const std::string& directory,
             const Vk::Context& context,
-            Vk::TextureManager& textureManager
+            Vk::MegaSet& megaSet,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            const std::string& directory,
+            const fastgltf::Asset& asset,
+            usize nodeIndex,
+            glm::mat4 nodeMatrix
         );
 
-        [[nodiscard]] Models::Mesh ProcessMesh
+        void LoadMesh
         (
-            const aiMesh* mesh,
-            const aiScene* scene,
-            const std::string& directory,
             const Vk::Context& context,
-            Vk::TextureManager& textureManager
+            Vk::MegaSet& megaSet,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            const std::string& directory,
+            const fastgltf::Asset& asset,
+            const fastgltf::Mesh& mesh,
+            const glm::mat4& nodeMatrix
         );
 
-        [[nodiscard]] Material ProcessMaterial
+        glm::mat4 GetTranformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
+
+        const fastgltf::Accessor& GetAccesor
         (
-            const aiMesh* mesh,
-            const aiScene* scene,
-            const std::string& directory,
+            const fastgltf::Asset& asset,
+            const fastgltf::Primitive& primitive,
+            const std::string_view attribute,
+            fastgltf::AccessorType type
+        );
+
+        usize LoadTexture
+        (
             const Vk::Context& context,
-            Vk::TextureManager& textureManager
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            const std::string& directory,
+            const fastgltf::Asset& asset,
+            usize textureIndex
         );
     };
 }

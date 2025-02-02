@@ -44,6 +44,10 @@ namespace Engine::Files
     /// @brief Get file name from path (constexpr version)
     /// @param path Path of file
     /// @returns std::string_view of file name from original path
+    [[nodiscard]] std::string GetNameWithoutExtension(const std::string_view fileName);
+    /// @brief Get file name from path (constexpr version)
+    /// @param path Path of file
+    /// @returns std::string_view of file name from original path
     [[nodiscard]] constexpr std::string_view GetName(const std::string_view fileName)
     {
         usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);

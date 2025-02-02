@@ -15,37 +15,37 @@
  */
 
 #include "Swapchain.h"
+
+#include <volk/volk.h>
+
+#include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Util.h"
 
 namespace Vk
 {
-    Swapchain::Swapchain(Engine::Window& window, const Vk::Context& context)
+    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
     {
-        CreateSwapChain(window, context);
-        CreateImageViews(context.device);
+        CreateSwapChain(size, context);
         CreateSyncObjects(context.device);
         Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::RecreateSwapChain(Engine::Window& window, const Vk::Context& context)
+    void Swapchain::RecreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
     {
         DestroySwapchain(context.device);
-        window.WaitForRestoration();
-
-        CreateSwapChain(window, context);
-        CreateImageViews(context.device);
+        CreateSwapChain(size, context);
 
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::Present(VkQueue queue, usize FIF)
+    VkResult Swapchain::Present(VkQueue queue, usize FIF)
     {
-        std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
-        std::array swapChains       = {handle};
-        std::array imageIndices     = {imageIndex};
+        const std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
+        const std::array swapChains       = {handle};
+        const std::array imageIndices     = {imageIndex};
 
-        VkPresentInfoKHR presentInfo =
+        const VkPresentInfoKHR presentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext              = nullptr,
@@ -57,17 +57,10 @@ namespace Vk
             .pResults           = nullptr
         };
 
-        m_status[1] = vkQueuePresentKHR(queue, &presentInfo);
+        return vkQueuePresentKHR(queue, &presentInfo);
     }
 
-    bool Swapchain::IsSwapchainValid()
-    {
-        bool isValid = m_status[0] == VK_SUCCESS && m_status[1] == VK_SUCCESS;
-        m_status.fill(VK_SUCCESS);
-        return isValid;
-    }
-
-    void Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
+    VkResult Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
     {
         VkAcquireNextImageInfoKHR acquireNextImageInfo =
         {
@@ -80,7 +73,7 @@ namespace Vk
             .deviceMask = 1
         };
 
-        m_status[0] = vkAcquireNextImage2KHR
+        return vkAcquireNextImage2KHR
         (
             device,
             &acquireNextImageInfo,
@@ -88,37 +81,54 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Engine::Window& window, const Vk::Context& context)
+    void Swapchain::CreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
     {
         m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
-        extent          = ChooseSwapExtent(window.handle);
+        extent          = ChooseSwapExtent(size);
 
-        VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat();
-        VkPresentModeKHR   presentMode   = ChoosePresentationMode();
+        const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
+        const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
 
         // Try to allocate 1 more than the min
         u32 imageCount = std::min
         (
-            m_swapChainInfo.capabilities.minImageCount + 1,
-            m_swapChainInfo.capabilities.maxImageCount
+            m_swapChainInfo.capabilities.surfaceCapabilities.minImageCount + 1,
+            m_swapChainInfo.capabilities.surfaceCapabilities.maxImageCount
         );
+
+        const VkSwapchainPresentScalingCreateInfoEXT presentScalingCreateInfo =
+        {
+            .sType           = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
+            .pNext           = nullptr,
+            .scalingBehavior = VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT,
+            .presentGravityX = VK_PRESENT_GRAVITY_MIN_BIT_EXT,
+            .presentGravityY = VK_PRESENT_GRAVITY_MIN_BIT_EXT
+        };
+
+        const VkSwapchainPresentModesCreateInfoEXT presentModesCreateInfo =
+        {
+            .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
+            .pNext            = &presentScalingCreateInfo,
+            .presentModeCount = 1,
+            .pPresentModes    = &presentMode
+        };
 
         VkSwapchainCreateInfoKHR createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext                 = nullptr,
+            .pNext                 = &presentModesCreateInfo,
             .flags                 = 0,
             .surface               = context.surface,
             .minImageCount         = imageCount,
-            .imageFormat           = surfaceFormat.format,
-            .imageColorSpace       = surfaceFormat.colorSpace,
+            .imageFormat           = surfaceFormat.surfaceFormat.format,
+            .imageColorSpace       = surfaceFormat.surfaceFormat.colorSpace,
             .imageExtent           = extent,
             .imageArrayLayers      = 1,
             .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
             .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices   = nullptr,
-            .preTransform          = m_swapChainInfo.capabilities.currentTransform,
+            .preTransform          = m_swapChainInfo.capabilities.surfaceCapabilities.currentTransform,
             .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode           = presentMode,
             .clipped               = VK_TRUE,
@@ -132,6 +142,8 @@ namespace Vk
             &handle),
             "Failed to create swap chain!"
         );
+
+        Vk::SetDebugName(context.device, handle, "Swapchain");
 
         vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
 
@@ -164,30 +176,72 @@ namespace Vk
             "Failed to get swapchain images!"
         );
 
-        imageFormat = surfaceFormat.format;
+        imageFormat = surfaceFormat.surfaceFormat.format;
 
-        for (auto image : _images)
+        images.resize(_images.size());
+        imageViews.resize(_images.size());
+
+        for (usize i = 0; i < _images.size(); ++i)
         {
-            images.emplace_back
+            images[i] = Vk::Image
             (
-                image,
+                _images[i],
                 extent.width,
                 extent.height,
                 1,
                 imageFormat,
-                VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
+
+            imageViews[i] = Vk::ImageView
+            (
+                context.device,
+                images[i],
+                VK_IMAGE_VIEW_TYPE_2D,
+                imageFormat,
+                {
+                    .aspectMask     = images[i].aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = images[i].mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                }
+            );
+
+            Vk::SetDebugName(context.device, images[i].handle,     fmt::format("Swapchain/Image{}", i));
+            Vk::SetDebugName(context.device, imageViews[i].handle, fmt::format("Swapchain/ImageView{}", i));
         }
 
         // Transition for presentation
-        Vk::ImmediateSubmit(context, [this] (const Vk::CommandBuffer& cmdBuffer)
-        {
-            for (auto&& image : images)
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            context.commandPool,
+            [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                image.TransitionLayout(cmdBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+                for (auto&& image : images)
+                {
+                    image.Barrier
+                    (
+                        cmdBuffer,
+                        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+                        VK_ACCESS_2_NONE,
+                        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+                        VK_ACCESS_2_NONE,
+                        VK_IMAGE_LAYOUT_UNDEFINED,
+                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                        {
+                            .aspectMask     = image.aspect,
+                            .baseMipLevel   = 0,
+                            .levelCount     = image.mipLevels,
+                            .baseArrayLayer = 0,
+                            .layerCount     = 1
+                        }
+                    );
+                }
             }
-        });
+        );
     }
 
     void Swapchain::CreateSyncObjects(VkDevice device)
@@ -216,39 +270,30 @@ namespace Vk
                 &renderFinishedSemaphores[i]),
                 "Failed to create render semaphore!"
             );
+
+            Vk::SetDebugName(device, imageAvailableSemaphores[i], fmt::format("Swapchain/ImageAvailableSemaphore{}", i));
+            Vk::SetDebugName(device, renderFinishedSemaphores[i], fmt::format("Swapchain/RenderFinishedSemaphore{}", i));
         }
 
         Logger::Debug("{}\n", "Created swapchain sync objects!");
     }
 
-    void Swapchain::CreateImageViews(VkDevice device)
-    {
-        for (const auto& image : images)
-        {
-            imageViews.emplace_back
-            (
-                device,
-                image,
-                VK_IMAGE_VIEW_TYPE_2D,
-                imageFormat,
-                VK_IMAGE_ASPECT_COLOR_BIT,
-                0,
-                1,
-                0,
-                1
-            );
-        }
-    }
-
-    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat() const
+    VkSurfaceFormat2KHR Swapchain::ChooseSurfaceFormat() const
     {
         const auto& formats = m_swapChainInfo.formats;
 
         for (const auto& availableFormat : formats)
         {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
-                availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
+            if (availableFormat.surfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
+                availableFormat.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
             {
+                Logger::Debug
+                (
+                    "Choosing surface format! [Format={}] [ColorSpace={}]\n",
+                    string_VkFormat(availableFormat.surfaceFormat.format),
+                    string_VkColorSpaceKHR(availableFormat.surfaceFormat.colorSpace)
+                );
+
                 return availableFormat;
             }
         }
@@ -261,11 +306,17 @@ namespace Vk
     {
         const auto& presentModes = m_swapChainInfo.presentModes;
 
-        for (auto presentMode : presentModes)
+        for (const auto presentMode : presentModes)
         {
             // Mailbox my beloved
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
+                Logger::Debug
+                (
+                    "Choosing presentation mode! [PresentMode={}]\n",
+                    string_VkPresentModeKHR(presentMode)
+                );
+
                 return presentMode;
             }
         }
@@ -274,23 +325,29 @@ namespace Vk
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D Swapchain::ChooseSwapExtent(SDL_Window* window) const
+    VkExtent2D Swapchain::ChooseSwapExtent(const glm::ivec2& size) const
     {
         const auto& capabilities = m_swapChainInfo.capabilities;
 
         // Some platforms set swap extents themselves
-        if (capabilities.currentExtent.width != std::numeric_limits<u32>::max())
+        if (capabilities.surfaceCapabilities.currentExtent.width != std::numeric_limits<u32>::max())
         {
-            return capabilities.currentExtent;
+            Logger::Debug
+            (
+                "Choosing existing swap extent! [width={}] [height={}]\n",
+                capabilities.surfaceCapabilities.currentExtent.width,
+                capabilities.surfaceCapabilities.currentExtent.height
+            );
+
+            return capabilities.surfaceCapabilities.currentExtent;
         }
 
-        glm::ivec2 size = {};
-        SDL_Vulkan_GetDrawableSize(window, &size.x, &size.y);
-
-        auto minSize = glm::ivec2(capabilities.minImageExtent.width, capabilities.minImageExtent.height);
-        auto maxSize = glm::ivec2(capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
+        const auto minSize = glm::ivec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
+        const auto maxSize = glm::ivec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
 
         auto actualExtent = glm::clamp(size, minSize, maxSize);
+
+        Logger::Debug("Choosing swap extent! [X={}] [Y={}]\n", actualExtent.x, actualExtent.y);
 
         return
         {

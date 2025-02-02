@@ -15,6 +15,9 @@
  */
 
 #include "Buffer.h"
+
+#include <volk/volk.h>
+
 #include "Util/Log.h"
 #include "Models/Vertex.h"
 #include "Util.h"
@@ -73,7 +76,7 @@ namespace Vk
         vmaMapMemory(allocator, allocation, &allocInfo.pMappedData);
     }
 
-    void Buffer::Unmap(VmaAllocator allocator) const
+    void Buffer::Unmap(VmaAllocator allocator)
     {
         vmaUnmapMemory(allocator, allocation);
     }
@@ -88,6 +91,48 @@ namespace Vk
         };
 
         deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
+    }
+
+    void Buffer::Barrier
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VkPipelineStageFlags2 srcStageMask,
+        VkAccessFlags2 srcAccessMask,
+        VkPipelineStageFlags2 dstStageMask,
+        VkAccessFlags2 dstAccessMask,
+        VkDeviceSize offset,
+        VkDeviceSize size
+    ) const
+    {
+        const VkBufferMemoryBarrier2 barrier =
+        {
+            .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = srcStageMask,
+            .srcAccessMask       = srcAccessMask,
+            .dstStageMask        = dstStageMask,
+            .dstAccessMask       = dstAccessMask,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer              = handle,
+            .offset              = offset,
+            .size                = size
+        };
+
+        const VkDependencyInfo dependencyInfo =
+        {
+            .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pNext                    = nullptr,
+            .dependencyFlags          = 0,
+            .memoryBarrierCount       = 0,
+            .pMemoryBarriers          = nullptr,
+            .bufferMemoryBarrierCount = 1,
+            .pBufferMemoryBarriers    = &barrier,
+            .imageMemoryBarrierCount  = 0,
+            .pImageMemoryBarriers     = nullptr
+        };
+
+        vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
     }
 
     void Buffer::Destroy(VmaAllocator allocator) const

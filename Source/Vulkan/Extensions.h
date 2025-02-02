@@ -22,17 +22,8 @@
 
 namespace Vk
 {
-    class Extensions
-    {
-    public:
-        void Destroy();
-
-        [[nodiscard]] std::vector<const char*> LoadInstanceExtensions(SDL_Window* window);
-        void LoadInstanceFunctions(VkInstance instance);
-
-        [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions);
-        void LoadDeviceFunctions(VkDevice device);
-    };
+    [[nodiscard]] std::vector<const char*> LoadInstanceExtensions(const std::span<const char* const> requiredExtensions);
+    [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions);;
 }
 
 #endif

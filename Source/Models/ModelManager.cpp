@@ -16,17 +16,24 @@
 
 #include "ModelManager.h"
 
+#include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
 namespace Models
 {
-    usize ModelManager::AddModel(const Vk::Context& context, Vk::TextureManager& textureManager, const std::string_view path)
+    ModelManager::ModelManager(const Vk::Context& context, const Vk::FormatHelper& formatHelper)
+        : geometryBuffer(context.device, context.allocator),
+          textureManager(formatHelper)
+    {
+    }
+
+    usize ModelManager::AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path)
     {
         usize pathHash = std::hash<std::string_view>()(path);
 
         if (!modelMap.contains(pathHash))
         {
-            modelMap.emplace(pathHash, Model(context, textureManager, path));
+            modelMap.emplace(pathHash, Model(context, megaSet, geometryBuffer, textureManager, path));
         }
 
         return pathHash;
@@ -44,14 +51,157 @@ namespace Models
         return iter->second;
     }
 
-    void ModelManager::Destroy(VmaAllocator allocator)
+    void ModelManager::Update(const Vk::Context& context)
     {
-        for (auto& model : modelMap | std::views::values)
+        auto cmdBuffer = Vk::CommandBuffer
+        (
+            context.device,
+            context.commandPool,
+            VK_COMMAND_BUFFER_LEVEL_PRIMARY
+        );
+
+        Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
+
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            geometryBuffer.Update(cmdBuffer);
+            textureManager.Update(cmdBuffer);
+        cmdBuffer.EndRecording();
+
+        VkFence transferFence = VK_NULL_HANDLE;
+
+        // Submit
         {
-            for (auto& mesh : model.meshes)
+            const VkFenceCreateInfo fenceCreateInfo =
             {
-                mesh.Destroy(allocator);
-            }
+                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0
+            };
+
+            vkCreateFence(context.device, &fenceCreateInfo, nullptr, &transferFence);
+
+            VkCommandBufferSubmitInfo cmdBufferInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = cmdBuffer.handle,
+                .deviceMask    = 0
+            };
+
+            const VkSubmitInfo2 submitInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                .pNext                    = nullptr,
+                .flags                    = 0,
+                .waitSemaphoreInfoCount   = 0,
+                .pWaitSemaphoreInfos      = nullptr,
+                .commandBufferInfoCount   = 1,
+                .pCommandBufferInfos      = &cmdBufferInfo,
+                .signalSemaphoreInfoCount = 0,
+                .pSignalSemaphoreInfos    = nullptr
+            };
+
+            Vk::CheckResult(vkQueueSubmit2(
+                context.graphicsQueue,
+                1,
+                &submitInfo,
+                transferFence),
+                "Failed to submit tranfer command buffers!"
+            );
+
+            Vk::CheckResult(vkWaitForFences(
+                context.device,
+                1,
+                &transferFence,
+                VK_TRUE,
+                std::numeric_limits<u64>::max()),
+                "Error while waiting for tranfers!"
+            );
         }
+
+        Vk::EndLabel(context.graphicsQueue);
+
+        // Clean
+        {
+            geometryBuffer.Clear(context.allocator);
+            textureManager.Clear(context.allocator);
+
+            vkDestroyFence(context.device, transferFence, nullptr);
+            cmdBuffer.Free(context.device, context.commandPool);
+        }
+    }
+
+    void ModelManager::ImGuiDisplay()
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Model Manager"))
+            {
+                for (const auto& [pathHash, model] : modelMap)
+                {
+                    if (ImGui::TreeNode(fmt::format("[{}]", pathHash).c_str()))
+                    {
+                        for (usize i = 0; i < model.meshes.size(); ++i)
+                        {
+                            if (ImGui::TreeNode(fmt::format("Mesh #{}", i).c_str()))
+                            {
+                                const auto& mesh = model.meshes[i];
+
+                                ImGui::Separator();
+                                ImGui::Text("Info Name | Offset/Count");
+                                ImGui::Separator();
+
+                                ImGui::Text("Indices   | %u/%u", mesh.indexInfo.offset,    mesh.indexInfo.count);
+                                ImGui::Text("Positions | %u/%u", mesh.positionInfo.offset, mesh.positionInfo.count);
+                                ImGui::Text("Vertices  | %u/%u", mesh.vertexInfo.offset,   mesh.vertexInfo.count);
+
+                                ImGui::Separator();
+                                ImGui::Text("Texture Name                  | ID");
+                                ImGui::Separator();
+
+                                ImGui::Text("Albedo                        | %llu", mesh.material.albedo);
+                                ImGui::Text("Normal Map                    | %llu", mesh.material.normal);
+                                ImGui::Text("AO + Roughness + Metallic Map | %llu", mesh.material.aoRghMtl);
+
+                                ImGui::Separator();
+                                ImGui::Text("Factor Name | Value");
+                                ImGui::Separator();
+
+                                ImGui::Text("Albedo      | [%.3f, %.3f, %.3f, %.3f]",
+                                    mesh.material.albedoFactor.r,
+                                    mesh.material.albedoFactor.g,
+                                    mesh.material.albedoFactor.b,
+                                    mesh.material.albedoFactor.a
+                                );
+
+                                ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
+                                ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
+
+                                ImGui::TreePop();
+                            }
+
+                            ImGui::Separator();
+                        }
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::Separator();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
+        geometryBuffer.ImGuiDisplay();
+        textureManager.ImGuiDisplay();
+    }
+
+    void ModelManager::Destroy(VkDevice device, VmaAllocator allocator)
+    {
+        geometryBuffer.Destroy(allocator);
+        textureManager.Destroy(device, allocator);
     }
 }

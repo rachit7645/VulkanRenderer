@@ -19,10 +19,14 @@
 
 #include "ForwardPipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Renderer/Camera.h"
 #include "Vulkan/DepthBuffer.h"
-#include "Models/ModelManager.h"
-#include "Renderer/RenderObject.h"
+#include "Vulkan/GeometryBuffer.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/Constants.h"
+#include "Renderer/Camera.h"
+#include "Renderer/IndirectBuffer.h"
+#include "Renderer/MeshBuffer.h"
+#include "Renderer/SceneBuffer.h"
 
 namespace Renderer::Forward
 {
@@ -31,37 +35,44 @@ namespace Renderer::Forward
     public:
         ForwardPass
         (
-            Vk::Context& context,
-            const Vk::TextureManager& textureManager,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
             VkExtent2D extent
         );
 
-        void Recreate(const Vk::Context& context, VkExtent2D extent);
-        void Destroy(const Vk::Context& context);
+        void Recreate
+        (
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            VkExtent2D extent
+        );
+
+        void Destroy(VkDevice device, VkCommandPool cmdPool);
 
         void Render
         (
             usize FIF,
-            Vk::DescriptorCache& descriptorCache,
-            const Vk::TextureManager& textureManager,
-            const Models::ModelManager& modelManager,
-            const Renderer::Camera& camera,
-            const std::vector<Renderer::RenderObject>& renderObjects
+            const Vk::MegaSet& megaSet,
+            const Vk::GeometryBuffer& geometryBuffer,
+            const Renderer::SceneBuffer& sceneBuffer,
+            const Renderer::MeshBuffer& meshBuffer,
+            const Renderer::IndirectBuffer& indirectBuffer,
+            const Vk::DepthBuffer& depthBuffer
         );
 
         Forward::ForwardPipeline pipeline;
 
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers = {};
+        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
-        Vk::Image       image;
-        Vk::ImageView   imageView;
-        Vk::DepthBuffer depthBuffer;
+        Vk::Image     colorAttachment;
+        Vk::ImageView colorAttachmentView;
     private:
-        void InitData(const Vk::Context& context, VkExtent2D extent);
-        VkFormat GetColorFormat(VkPhysicalDevice physicalDevice) const;
+        void InitData(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent);
 
-        glm::uvec2          m_renderSize = {0, 0};
-        Util::DeletionQueue m_deletionQueue = {};
+        VkExtent2D          m_resolution;
+        Util::DeletionQueue m_deletionQueue;
     };
 }
 

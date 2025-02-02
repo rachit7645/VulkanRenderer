@@ -29,20 +29,7 @@ namespace Vk
     public:
         Sampler() = default;
 
-        Sampler
-        (
-            VkDevice device,
-            std::array<VkFilter, 2> filters,
-            VkSamplerMipmapMode mipmapMode,
-            std::array<VkSamplerAddressMode, 3> addressModes,
-            f32 mipLodBias,
-            std::pair<VkBool32, f32> anisotropy,
-            std::pair<VkBool32, VkCompareOp> compare,
-            std::array<f32, 2> lod,
-            VkBorderColor borderColor,
-            VkBool32 unnormalizedCoordinates
-        );
-
+        Sampler(VkDevice device, const VkSamplerCreateInfo& createInfo);
         void Destroy(VkDevice device) const;
 
         // Vulkan handle
