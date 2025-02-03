@@ -28,9 +28,15 @@ namespace Vk
 
         VkFormat textureFormat;
         VkFormat textureFormatSRGB;
+
+        VkFormat textureFormatBC7;
+        VkFormat textureFormatBC7SRGB;
+
         VkFormat colorAttachmentFormatLDR;
         VkFormat colorAttachmentFormatHDR;
+
         VkFormat depthFormat;
+        VkFormat depthStencilFormat;
     private:
         VkFormat FindSupportedFormat
         (

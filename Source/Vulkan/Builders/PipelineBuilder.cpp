@@ -47,7 +47,7 @@ namespace Vk::Builders
 
         switch (m_pipelineType)
         {
-        case PipelineType::Graphics:
+        case VK_PIPELINE_BIND_POINT_GRAPHICS:
         {
             const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
             {
@@ -86,9 +86,9 @@ namespace Vk::Builders
         }
         break;
 
-        case PipelineType::Compute:
+        case VK_PIPELINE_BIND_POINT_COMPUTE:
         {
-            VkComputePipelineCreateInfo pipelineCreateInfo =
+            const VkComputePipelineCreateInfo pipelineCreateInfo =
             {
                 .sType              = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
                 .pNext              = nullptr,
@@ -117,12 +117,12 @@ namespace Vk::Builders
             Logger::Error("{}\n", "Invalid pipeline type!");
         }
 
-        return {pipeline, pipelineLayout};
+        return {pipeline, pipelineLayout, m_pipelineType};
     }
 
-    PipelineBuilder& PipelineBuilder::SetPipelineType(PipelineType type)
+    PipelineBuilder& PipelineBuilder::SetPipelineType(VkPipelineBindPoint bindPoint)
     {
-        m_pipelineType = type;
+        m_pipelineType = bindPoint;
 
         return *this;
     }

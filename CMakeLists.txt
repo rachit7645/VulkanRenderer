@@ -73,6 +73,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/MegaSet.cpp
     Source/Vulkan/DebugUtils.cpp
     Source/Vulkan/FormatHelper.cpp
+    Source/Vulkan/FramebufferManager.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources
@@ -89,10 +90,10 @@ add_executable(VulkanRenderer
 	# Forward Pass Sources
 	Source/Renderer/Forward/ForwardPipeline.cpp
 	Source/Renderer/Forward/ForwardPass.cpp
-    # Depth Pass Source
+    # Depth Pass Sources
     Source/Renderer/Depth/DepthPipeline.cpp
     Source/Renderer/Depth/DepthPass.cpp
-    # ImGui Pass Source
+    # ImGui Pass Sources
     Source/Renderer/ImGui/ImGuiPipeline.cpp
     Source/Renderer/ImGui/ImGuiPass.cpp
 	# Model sources
@@ -168,6 +169,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<iostream>
 	<numbers>
 	<deque>
+    <variant>
     # C STL Headers
     <cstdint>
     <cstddef>

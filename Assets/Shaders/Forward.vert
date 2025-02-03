@@ -45,7 +45,7 @@ void main()
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);
     vec3 T = normalize(mesh.normalMatrix * vertex.tangent);
-         T = Orthogonalize(T, N);
+         T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 
     fragTBNMatrix = mat3(T, B, N);

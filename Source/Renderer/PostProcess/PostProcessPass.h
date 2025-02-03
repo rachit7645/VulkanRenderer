@@ -21,6 +21,7 @@
 #include "Vulkan/DepthBuffer.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/Swapchain.h"
+#include "Vulkan/FramebufferManager.h"
 
 namespace Renderer::PostProcess
 {
@@ -37,7 +38,13 @@ namespace Renderer::PostProcess
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
-        void Render(usize FIF, Vk::Swapchain& swapchain, const Vk::MegaSet& megaSet);
+        void Render
+        (
+            usize FIF,
+            Vk::Swapchain& swapchain,
+            const Vk::MegaSet& megaSet,
+            const Vk::FramebufferManager& framebufferManager
+        );
 
         PostProcess::PostProcessPipeline pipeline;
 

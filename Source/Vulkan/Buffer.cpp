@@ -137,6 +137,11 @@ namespace Vk
 
     void Buffer::Destroy(VmaAllocator allocator) const
     {
+        if (handle == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         Logger::Debug
         (
             "Destroying buffer [buffer={}] [allocation={}]\n",

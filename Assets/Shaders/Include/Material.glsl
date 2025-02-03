@@ -23,6 +23,7 @@
 #define MAT_NORMAL_ID     mesh.textureIDs.y
 #define MAT_AO_RGH_MTL_ID mesh.textureIDs.z
 
+// Safe version, use if geometry with bad geometry
 vec3 Orthogonalize(vec3 T, vec3 N)
 {
     vec3  TPerpendicular       = T - dot(T, N) * N;

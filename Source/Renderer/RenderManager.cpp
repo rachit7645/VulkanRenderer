@@ -29,11 +29,11 @@ namespace Renderer
         : m_context(m_window.handle),
           m_swapchain(m_window.size, m_context),
           m_formatHelper(m_context.physicalDevice),
-          m_modelManager(m_context, m_formatHelper),
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
+          m_modelManager(m_context, m_formatHelper),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_forwardPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager, m_swapchain.extent),
-          m_depthPass(m_context, m_formatHelper, m_megaSet, m_swapchain.extent),
+          m_forwardPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager, m_swapchain.extent),
+          m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager, m_swapchain.extent),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -51,6 +51,7 @@ namespace Renderer
             m_postProcessPass.Destroy(m_context.device, m_context.commandPool);
 
             m_megaSet.Destroy(m_context.device);
+            m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
 
             m_swapchain.Destroy(m_context.device);
@@ -71,14 +72,22 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         ));
 
+        /*m_renderObjects.emplace_back(RenderObject(
+            m_modelManager.AddModel(m_context, m_megaSet, "Bistro/BistroC.gltf"),
+            glm::vec3(-150.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f)
+        ));*/
+
         // ImGui Yoy
         InitImGui();
         CreateSyncObjects();
 
+        m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
         m_modelManager.Update(m_context);
+
         m_megaSet.Update(m_context.device);
 
-        m_postProcessPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
         m_frameCounter.Reset();
     }
 
@@ -99,6 +108,7 @@ namespace Renderer
         m_depthPass.Render
         (
             m_currentFIF,
+            m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
@@ -108,15 +118,21 @@ namespace Renderer
         m_forwardPass.Render
         (
             m_currentFIF,
+            m_framebufferManager,
             m_megaSet,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
-            m_indirectBuffer,
-            m_depthPass.depthBuffer
+            m_indirectBuffer
         );
 
-        m_postProcessPass.Render(m_currentFIF, m_swapchain, m_megaSet);
+        m_postProcessPass.Render
+        (
+            m_currentFIF,
+            m_swapchain,
+            m_megaSet,
+            m_framebufferManager
+        );
 
         m_imGuiPass.Render
         (
@@ -138,6 +154,8 @@ namespace Renderer
 
         Engine::Inputs::Get().ImGuiDisplay();
         m_modelManager.ImGuiDisplay();
+
+        m_framebufferManager.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {
@@ -391,10 +409,10 @@ namespace Renderer
 
         m_swapchain.RecreateSwapChain(m_window.size, m_context);
 
-        m_forwardPass.Recreate(m_context, m_formatHelper, m_swapchain.extent);
-        m_depthPass.Recreate(m_context, m_formatHelper, m_swapchain.extent);
+        m_forwardPass.Recreate(m_swapchain.extent);
+        m_depthPass.Recreate(m_swapchain.extent);
 
-        m_postProcessPass.pipeline.WriteColorAttachmentIndex(m_context.device, m_megaSet, m_forwardPass.colorAttachmentView);
+        m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
 
         m_isSwapchainOk = true;
 
@@ -488,6 +506,8 @@ namespace Renderer
 
         m_deletionQueue.PushDeletor([&] ()
         {
+            ImGui::GetIO().BackendRendererUserData = nullptr;
+
             ImGui_ImplSDL3_Shutdown();
             ImGui::DestroyContext();
         });

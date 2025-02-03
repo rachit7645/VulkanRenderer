@@ -17,6 +17,7 @@
 #ifndef RENDER_MANAGER_H
 #define RENDER_MANAGER_H
 
+#include <Vulkan/FramebufferManager.h>
 #include <vulkan/vulkan.h>
 
 #include "FreeCamera.h"
@@ -49,8 +50,8 @@ namespace Renderer
         RenderManager& operator=(const RenderManager&) = delete;
 
         // Only moving
-        RenderManager(RenderManager&& other)            = default;
-        RenderManager& operator=(RenderManager&& other) = default;
+        RenderManager(RenderManager&& other)             noexcept = default;
+        RenderManager& operator=(RenderManager&& other)  noexcept = default;
 
         void Render();
         [[nodiscard]] bool HandleEvents();
@@ -73,8 +74,9 @@ namespace Renderer
 
         Vk::FormatHelper m_formatHelper;
 
-        Models::ModelManager m_modelManager;
-        Vk::MegaSet          m_megaSet;
+        Vk::MegaSet            m_megaSet;
+        Vk::FramebufferManager m_framebufferManager;
+        Models::ModelManager   m_modelManager;
 
         // Render Passes
         PostProcess::PostProcessPass m_postProcessPass;

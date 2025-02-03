@@ -55,7 +55,7 @@ namespace Renderer::DearImGui
         auto& io = ImGui::GetIO();
 
         io.BackendRendererUserData = this;
-        io.BackendRendererName     = "Rachit_DearImGui_Backend";
+        io.BackendRendererName     = "Rachit_DearImGui_Backend_Vulkan";
         io.BackendFlags           |= ImGuiBackendFlags_RendererHasVtxOffset;
 
         // Load font
@@ -220,7 +220,7 @@ namespace Renderer::DearImGui
 
         vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        pipeline.Bind(currentCmdBuffer);
 
         if (drawData->TotalVtxCount > 0)
         {

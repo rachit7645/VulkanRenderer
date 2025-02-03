@@ -29,8 +29,8 @@ namespace Renderer::Depth
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
-            .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
+        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo({}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Depth.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Depth.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)

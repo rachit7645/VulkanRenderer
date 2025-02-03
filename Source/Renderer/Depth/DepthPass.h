@@ -21,6 +21,7 @@
 #include "Vulkan/DepthBuffer.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
+#include "Vulkan/FramebufferManager.h"
 #include "Renderer/IndirectBuffer.h"
 #include "Renderer/MeshBuffer.h"
 #include "Renderer/SceneBuffer.h"
@@ -35,21 +36,18 @@ namespace Renderer::Depth
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
+            Vk::FramebufferManager& framebufferManager,
             VkExtent2D extent
         );
 
-        void Recreate
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            VkExtent2D extent
-        );
+        void Recreate(VkExtent2D extent);
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
         void Render
         (
             usize FIF,
+            const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Renderer::SceneBuffer& sceneBuffer,
             const Renderer::MeshBuffer& meshBuffer,
@@ -59,16 +57,7 @@ namespace Renderer::Depth
         Depth::DepthPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
-
-        Vk::DepthBuffer depthBuffer;
     private:
-        void InitData
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            VkExtent2D extent
-        );
-
         VkExtent2D          m_resolution;
         Util::DeletionQueue m_deletionQueue;
     };

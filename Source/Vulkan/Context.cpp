@@ -254,6 +254,7 @@ namespace Vk
         const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
         const bool hasWireframe         = featureSet.features.fillModeNonSolid;
         const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
+        const bool hasBC                = featureSet.features.textureCompressionBC;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = false;
@@ -282,7 +283,7 @@ namespace Vk
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
         const bool required   = isQueueValid && hasExtensions;
-        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect;
+        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC;
         const bool extensions = isSwapChainAdequate;
         const bool vk11       = hasShaderDrawParameters;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
@@ -346,11 +347,12 @@ namespace Vk
 
         // Add required features here
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
-        deviceFeatures.sType                      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext                      = &vk13Features;
-        deviceFeatures.features.samplerAnisotropy = VK_TRUE;
-        deviceFeatures.features.fillModeNonSolid  = VK_TRUE;
-        deviceFeatures.features.multiDrawIndirect = VK_TRUE;
+        deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext                         = &vk13Features;
+        deviceFeatures.features.samplerAnisotropy    = VK_TRUE;
+        deviceFeatures.features.fillModeNonSolid     = VK_TRUE;
+        deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
+        deviceFeatures.features.textureCompressionBC = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

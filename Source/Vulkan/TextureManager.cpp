@@ -206,6 +206,7 @@ namespace Vk
                         ImGui::Text("Height           | %u", textureInfo.texture.image.height);
                         ImGui::Text("Mipmap Levels    | %u", textureInfo.texture.image.mipLevels);
                         ImGui::Text("Format           | %s", string_VkFormat(textureInfo.texture.image.format));
+                        ImGui::Text("Usage            | %s", string_VkImageUsageFlags(textureInfo.texture.image.usage).c_str());
 
                         ImGui::Separator();
 

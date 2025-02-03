@@ -47,7 +47,13 @@ namespace Renderer::PostProcess
         Logger::Info("{}\n", "Created swapchain pass!");
     }
 
-    void PostProcessPass::Render(usize FIF, Vk::Swapchain& swapchain, const Vk::MegaSet& megaSet)
+    void PostProcessPass::Render
+    (
+        usize FIF,
+        Vk::Swapchain& swapchain,
+        const Vk::MegaSet& megaSet,
+        const Vk::FramebufferManager& framebufferManager
+    )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
@@ -115,7 +121,7 @@ namespace Renderer::PostProcess
 
         vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        pipeline.Bind(currentCmdBuffer);
 
         const VkViewport viewport =
         {
@@ -140,7 +146,7 @@ namespace Renderer::PostProcess
         pipeline.pushConstant =
         {
             .samplerIndex = pipeline.samplerIndex,
-            .imageIndex   = pipeline.colorAttachmentIndex
+            .imageIndex   = framebufferManager.GetFramebuffer("ForwardColorAttachment").descriptorIndex
         };
 
         pipeline.LoadPushConstants

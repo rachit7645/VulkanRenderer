@@ -34,25 +34,14 @@ namespace Renderer::PostProcess
         CreatePipelineData(context.device, megaSet, textureManager);
     }
 
-    void PostProcessPipeline::WriteColorAttachmentIndex
-    (
-        VkDevice device,
-        Vk::MegaSet& megaSet,
-        const Vk::ImageView& imageView
-    )
-    {
-        colorAttachmentIndex = megaSet.WriteImage(imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        megaSet.Update(device);
-    }
-
     void PostProcessPipeline::CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat)
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         std::array colorFormats = {colorFormat};
 
-        std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
-            .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
+        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("PostProcess.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("PostProcess.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)

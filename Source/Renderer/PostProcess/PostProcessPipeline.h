@@ -37,17 +37,9 @@ namespace Renderer::PostProcess
             VkFormat colorFormat
         );
 
-        void WriteColorAttachmentIndex
-        (
-            VkDevice device,
-            Vk::MegaSet& megaSet,
-            const Vk::ImageView& imageView
-        );
-
         PushConstant pushConstant = {};
 
-        u32 samplerIndex         = 0;
-        u32 colorAttachmentIndex = 0;
+        u32 samplerIndex = 0;
     private:
         void CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat);
         void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);

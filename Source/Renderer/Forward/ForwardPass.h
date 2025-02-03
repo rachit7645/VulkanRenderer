@@ -23,6 +23,7 @@
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
+#include "Vulkan/FramebufferManager.h"
 #include "Renderer/Camera.h"
 #include "Renderer/IndirectBuffer.h"
 #include "Renderer/MeshBuffer.h"
@@ -37,40 +38,31 @@ namespace Renderer::Forward
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            Vk::FramebufferManager& framebufferManager,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             VkExtent2D extent
         );
 
-        void Recreate
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            VkExtent2D extent
-        );
+        void Recreate(VkExtent2D extent);
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
         void Render
         (
             usize FIF,
+            const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
             const Renderer::SceneBuffer& sceneBuffer,
             const Renderer::MeshBuffer& meshBuffer,
-            const Renderer::IndirectBuffer& indirectBuffer,
-            const Vk::DepthBuffer& depthBuffer
+            const Renderer::IndirectBuffer& indirectBuffer
         );
 
         Forward::ForwardPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
-
-        Vk::Image     colorAttachment;
-        Vk::ImageView colorAttachmentView;
     private:
-        void InitData(const Vk::Context& context, const Vk::FormatHelper& formatHelper, VkExtent2D extent);
-
         VkExtent2D          m_resolution;
         Util::DeletionQueue m_deletionQueue;
     };

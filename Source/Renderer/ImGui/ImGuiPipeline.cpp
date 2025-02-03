@@ -43,8 +43,8 @@ namespace Renderer::DearImGui
 
         const std::array COLOR_FORMATS = {colorFormat};
 
-        std::tie(handle, layout) = Vk::Builders::PipelineBuilder(context)
-            .SetPipelineType(Vk::Builders::PipelineBuilder::PipelineType::Graphics)
+        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(COLOR_FORMATS, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("ImGui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("ImGui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)

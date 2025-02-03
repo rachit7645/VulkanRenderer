@@ -32,6 +32,7 @@ namespace Vk
               createInfo.extent.height,
               createInfo.mipLevels,
               createInfo.format,
+              createInfo.usage,
               aspect
           )
     {
@@ -88,6 +89,7 @@ namespace Vk
         u32 height,
         u32 mipLevels,
         VkFormat format,
+        VkImageUsageFlags usage,
         VkImageAspectFlags aspect
     )
         : handle(image),
@@ -95,6 +97,7 @@ namespace Vk
           height(height),
           mipLevels(mipLevels),
           format(format),
+          usage(usage),
           aspect(aspect)
     {
     }
@@ -119,7 +122,7 @@ namespace Vk
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
         const VkImageSubresourceRange& subresourceRange
-    )
+    ) const
     {
         const VkImageMemoryBarrier2 barrier =
         {
@@ -288,6 +291,11 @@ namespace Vk
 
     void Image::Destroy(VmaAllocator allocator) const
     {
+        if (handle == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         Logger::Debug
         (
             "Destroying image! [handle={}] [allocation={}]\n",

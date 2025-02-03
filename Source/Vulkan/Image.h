@@ -39,6 +39,7 @@ namespace Vk
             u32 height,
             u32 mipLevels,
             VkFormat format,
+            VkImageUsageFlags usage,
             VkImageAspectFlags aspect
         );
 
@@ -54,7 +55,7 @@ namespace Vk
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
             const VkImageSubresourceRange& subresourceRange
-        );
+        ) const;
 
         void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer);
 
@@ -62,7 +63,7 @@ namespace Vk
 
         // Vulkan handles
         VkImage           handle         = VK_NULL_HANDLE;
-        VmaAllocation     allocation     = {};
+        VmaAllocation     allocation     = VK_NULL_HANDLE;
         VmaAllocationInfo allocationInfo = {};
 
         // Image dimensions
@@ -72,6 +73,7 @@ namespace Vk
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
+        VkImageUsageFlags  usage  = 0;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     };
 }

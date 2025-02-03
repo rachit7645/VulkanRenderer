@@ -19,12 +19,14 @@
 
 vec4 UnpackRGBA8(uint data)
 {
+    const float ONE_BY_255 = 1.0f / 255.0f;
+
     return vec4
     (
-        float((data >> 0)  & 0xFF) / 255.0f,
-        float((data >> 8)  & 0xFF) / 255.0f,
-        float((data >> 16) & 0xFF) / 255.0f,
-        float((data >> 24) & 0xFF) / 255.0f
+        float((data >> 0)  & 0xFF) * ONE_BY_255,
+        float((data >> 8)  & 0xFF) * ONE_BY_255,
+        float((data >> 16) & 0xFF) * ONE_BY_255,
+        float((data >> 24) & 0xFF) * ONE_BY_255
     );
 }
 

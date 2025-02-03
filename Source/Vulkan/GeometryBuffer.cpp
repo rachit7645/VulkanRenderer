@@ -25,9 +25,9 @@ namespace Vk
     GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
     {
         // TODO: Implement resizing
-        constexpr VkDeviceSize INITIAL_INDEX_SIZE    = (1 << 20) * sizeof(Models::Index);
-        constexpr VkDeviceSize INITIAL_POSITION_SIZE = (1 << 18) * sizeof(glm::vec3);
-        constexpr VkDeviceSize INITIAL_VERTEX_SIZE   = (1 << 18) * sizeof(Models::Vertex);
+        constexpr VkDeviceSize INITIAL_INDEX_SIZE    = (1 << 24) * sizeof(Models::Index);
+        constexpr VkDeviceSize INITIAL_POSITION_SIZE = (1 << 22) * sizeof(glm::vec3);
+        constexpr VkDeviceSize INITIAL_VERTEX_SIZE   = (1 << 22) * sizeof(Models::Vertex);
 
         indexBuffer = Vk::Buffer
         (

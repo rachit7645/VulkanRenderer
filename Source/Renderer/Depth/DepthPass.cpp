@@ -26,9 +26,11 @@ namespace Renderer::Depth
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::MegaSet& megaSet,
+        Vk::FramebufferManager& framebufferManager,
         VkExtent2D extent
     )
-        : pipeline(context, formatHelper, megaSet)
+        : pipeline(context, formatHelper, megaSet),
+          m_resolution(extent)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -42,47 +44,25 @@ namespace Renderer::Depth
             Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("DepthPass/FIF{}", i));
         }
 
-        InitData(context, formatHelper, extent);
+        m_resolution = extent;
+        framebufferManager.AddFramebuffer(Vk::FramebufferManager::FramebufferType::Depth, "DepthAttachment");
 
         Logger::Info("{}\n", "Created depth pass!");
     }
 
-    void DepthPass::Recreate
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        VkExtent2D extent
-    )
+    void DepthPass::Recreate(VkExtent2D extent)
     {
         m_deletionQueue.FlushQueue();
 
-        InitData(context, formatHelper, extent);
+        m_resolution = extent;
 
         Logger::Info("{}\n", "Recreated depth pass!");
-    }
-
-    void DepthPass::InitData
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        VkExtent2D extent
-    )
-    {
-        m_resolution = extent;
-        depthBuffer  = Vk::DepthBuffer(context, formatHelper, extent);
-
-        Vk::SetDebugName(context.device, depthBuffer.depthImage.handle,     "DepthPassDepthAttachment");
-        Vk::SetDebugName(context.device, depthBuffer.depthImageView.handle, "DepthPassDepthAttachment_View");
-
-        m_deletionQueue.PushDeletor([&] ()
-        {
-            depthBuffer.Destroy(context.device, context.allocator);
-        });
     }
 
     void DepthPass::Render
     (
         usize FIF,
+        const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Renderer::SceneBuffer& sceneBuffer,
         const Renderer::MeshBuffer& meshBuffer,
@@ -96,11 +76,13 @@ namespace Renderer::Depth
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
+        const auto& depthAttachment = framebufferManager.GetFramebuffer("DepthAttachment");
+
         const VkRenderingAttachmentInfo depthAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = depthBuffer.depthImageView.handle,
+            .imageView          = depthAttachment.imageView.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -129,7 +111,7 @@ namespace Renderer::Depth
 
         vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+        pipeline.Bind(currentCmdBuffer);
 
         const VkViewport viewport =
         {
