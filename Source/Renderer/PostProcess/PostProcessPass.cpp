@@ -57,8 +57,7 @@ namespace Renderer::PostProcess
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
-
-        auto& currentImage = swapchain.images[swapchain.imageIndex];
+        const auto& currentImage     = swapchain.images[swapchain.imageIndex];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);

@@ -32,11 +32,9 @@ namespace Renderer::Forward
         const Vk::FormatHelper& formatHelper,
         Vk::FramebufferManager& framebufferManager,
         Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        VkExtent2D extent
+        Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager),
-          m_resolution(extent)
+        : pipeline(context, formatHelper, megaSet, textureManager)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -53,15 +51,6 @@ namespace Renderer::Forward
         framebufferManager.AddFramebuffer(Vk::FramebufferManager::FramebufferType::ColorHDR, "ForwardColorAttachment");
 
         Logger::Info("{}\n", "Created forward pass!");
-    }
-
-    void ForwardPass::Recreate(VkExtent2D extent)
-    {
-        m_deletionQueue.FlushQueue();
-
-        m_resolution = extent;
-
-        Logger::Info("{}\n", "Recreated forward pass!");
     }
 
     void ForwardPass::Render
@@ -143,7 +132,7 @@ namespace Renderer::Forward
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = m_resolution
+                .extent = {colorAttachment.image.width, colorAttachment.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -161,8 +150,8 @@ namespace Renderer::Forward
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(m_resolution.width),
-            .height   = static_cast<f32>(m_resolution.height),
+            .width    = static_cast<f32>(colorAttachment.image.width),
+            .height   = static_cast<f32>(colorAttachment.image.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -172,7 +161,7 @@ namespace Renderer::Forward
         const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = m_resolution
+            .extent = {colorAttachment.image.width, colorAttachment.image.height}
         };
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
@@ -244,8 +233,6 @@ namespace Renderer::Forward
     void ForwardPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying forward pass!");
-
-        m_deletionQueue.FlushQueue();
 
         for (auto&& cmdBuffer : cmdBuffers)
         {

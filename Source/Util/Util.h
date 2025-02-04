@@ -33,7 +33,8 @@ using u16 = std::uint16_t;
 using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
-// Floating point types
+// Floating point types (TODO: <stdfloat>)
+using f16 = u16;
 using f32 = float;
 using f64 = double;
 

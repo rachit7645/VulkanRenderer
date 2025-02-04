@@ -189,6 +189,7 @@ namespace Vk
                 extent.width,
                 extent.height,
                 1,
+                1,
                 imageFormat,
                 createInfo.imageUsage,
                 VK_IMAGE_ASPECT_COLOR_BIT

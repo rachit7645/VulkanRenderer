@@ -18,7 +18,6 @@
 #define POST_PROCESS_PASS_H
 
 #include "PostProcessPipeline.h"
-#include "Vulkan/DepthBuffer.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/Swapchain.h"
 #include "Vulkan/FramebufferManager.h"

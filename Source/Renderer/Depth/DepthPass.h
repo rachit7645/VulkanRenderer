@@ -18,7 +18,6 @@
 #define DEPTH_PASS_H
 
 #include "DepthPipeline.h"
-#include "Vulkan/DepthBuffer.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
@@ -36,11 +35,8 @@ namespace Renderer::Depth
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
-            Vk::FramebufferManager& framebufferManager,
-            VkExtent2D extent
+            Vk::FramebufferManager& framebufferManager
         );
-
-        void Recreate(VkExtent2D extent);
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
@@ -57,9 +53,6 @@ namespace Renderer::Depth
         Depth::DepthPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
-    private:
-        VkExtent2D          m_resolution;
-        Util::DeletionQueue m_deletionQueue;
     };
 }
 

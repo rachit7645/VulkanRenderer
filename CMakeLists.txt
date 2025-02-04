@@ -50,6 +50,7 @@ add_executable(VulkanRenderer
 	Source/Util/DeletionQueue.cpp
 	Source/Util/FrameCounter.cpp
 	Source/Util/Maths.cpp
+    Source/Util/SIMD.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
@@ -64,7 +65,6 @@ add_executable(VulkanRenderer
 	Source/Vulkan/ImageView.cpp
 	Source/Vulkan/Swapchain.cpp
 	Source/Vulkan/Sampler.cpp
-	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/CommandBuffer.cpp
 	Source/Vulkan/DescriptorWriter.cpp
@@ -187,7 +187,7 @@ target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)
-target_compile_options(VulkanRenderer PRIVATE -march=native)
+target_compile_options(VulkanRenderer PRIVATE -march=native -msse2 -mavx -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)

@@ -38,20 +38,26 @@ namespace Vk
 
         struct Framebuffer
         {
-            FramebufferType type            = FramebufferType::None;
-            u32             descriptorIndex = 0;
-            Vk::Image       image           = {};
-            Vk::ImageView   imageView       = {};
+            FramebufferType           type            = FramebufferType::None;
+            std::optional<VkExtent2D> resolution      = std::nullopt;
+            u32                       descriptorIndex = 0;
+            Vk::Image                 image           = {};
+            Vk::ImageView             imageView       = {};
         };
 
-        void AddFramebuffer(FramebufferType type, const std::string_view name);
+        void AddFramebuffer
+        (
+            FramebufferType type,
+            const std::string_view name,
+            std::optional<VkExtent2D> resolution = std::nullopt
+        );
 
         void Update
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
-            VkExtent2D resolution
+            VkExtent2D swapchainExtent
         );
 
         [[nodiscard]] const Framebuffer& GetFramebuffer(const std::string_view name) const;

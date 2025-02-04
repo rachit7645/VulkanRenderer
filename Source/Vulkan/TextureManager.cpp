@@ -28,7 +28,7 @@ namespace Vk
 
     TextureManager::TextureManager(const Vk::FormatHelper& formatHelper)
         : m_format(formatHelper.textureFormat),
-          m_formatSRGB(formatHelper.textureFormatSRGB)
+          m_formatHDR(formatHelper.textureFormatHDR)
     {
     }
 
@@ -44,14 +44,28 @@ namespace Vk
 
         if (!textureMap.contains(pathHash))
         {
-            Vk::Texture texture = {};
+            Vk::Texture     texture = {};
+            Texture::Upload upload  = {};
 
-            const auto stagingBuffer = texture.LoadFromFile
-            (
-                device,
-                allocator,
-                path
-            );
+            if (Engine::Files::GetExtension(path) == ".hdr")
+            {
+                upload = texture.LoadFromFileHDR
+                (
+                    device,
+                    allocator,
+                    m_formatHDR,
+                    path
+                );
+            }
+            else
+            {
+                upload = texture.LoadFromFile
+                (
+                    device,
+                    allocator,
+                    path
+                );
+            }
 
             const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -65,7 +79,7 @@ namespace Vk
                 )
             );
 
-            m_pendingUploads.emplace_back(texture, stagingBuffer);
+            m_pendingUploads.emplace_back(texture, upload);
         }
         else
         {
@@ -204,6 +218,7 @@ namespace Vk
                         ImGui::Text("Descriptor Index | %u", textureInfo.descriptorID);
                         ImGui::Text("Width            | %u", textureInfo.texture.image.width);
                         ImGui::Text("Height           | %u", textureInfo.texture.image.height);
+                        ImGui::Text("Depth            | %u", textureInfo.texture.image.depth);
                         ImGui::Text("Mipmap Levels    | %u", textureInfo.texture.image.mipLevels);
                         ImGui::Text("Format           | %s", string_VkFormat(textureInfo.texture.image.format));
                         ImGui::Text("Usage            | %s", string_VkImageUsageFlags(textureInfo.texture.image.usage).c_str());

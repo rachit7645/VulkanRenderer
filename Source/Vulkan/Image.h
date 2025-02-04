@@ -37,6 +37,7 @@ namespace Vk
             VkImage image,
             u32 width,
             u32 height,
+            u32 depth,
             u32 mipLevels,
             VkFormat format,
             VkImageUsageFlags usage,
@@ -69,6 +70,7 @@ namespace Vk
         // Image dimensions
         u32 width     = 0;
         u32 height    = 0;
+        u32 depth     = 0;
         u32 mipLevels = 1;
 
         // Image properties

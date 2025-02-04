@@ -22,14 +22,19 @@
 
 namespace Vk
 {
-    void FramebufferManager::AddFramebuffer(FramebufferType type, const std::string_view name)
+    void FramebufferManager::AddFramebuffer
+    (
+        FramebufferType type,
+        const std::string_view name,
+        std::optional<VkExtent2D> resolution
+    )
     {
         if (m_framebuffers.contains(name.data()))
         {
             return;
         }
 
-        m_framebuffers.emplace(name, Framebuffer{type, 0, {}, {}});
+        m_framebuffers.emplace(name, Framebuffer{type, resolution, 0, {}, {}});
     }
 
     void FramebufferManager::Update
@@ -37,7 +42,7 @@ namespace Vk
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
-        VkExtent2D resolution
+        VkExtent2D swapchainExtent
     )
     {
         if (m_framebuffers.empty())
@@ -50,6 +55,21 @@ namespace Vk
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
+            VkExtent2D resolution = swapchainExtent;
+
+            if (framebuffer.resolution.has_value())
+            {
+                if (framebuffer.resolution->width == 0 || framebuffer.resolution->height == 0)
+                {
+                    continue;
+                }
+
+                resolution = framebuffer.resolution.value();
+
+                // Framebuffer will not be regenerated
+                framebuffer.resolution = {0, 0};
+            }
+
             framebuffer.image.Destroy(context.allocator);
             framebuffer.imageView.Destroy(context.device);
 

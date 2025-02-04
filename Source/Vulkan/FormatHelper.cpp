@@ -52,6 +52,16 @@ namespace Vk
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
+        textureFormatHDR = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R16G16B16A16_SFLOAT},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+        );
+
         textureFormatBC7SRGB = FindSupportedFormat
         (
             physicalDevice,

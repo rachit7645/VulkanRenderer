@@ -32,8 +32,8 @@ namespace Renderer
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
           m_modelManager(m_context, m_formatHelper),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_forwardPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager, m_swapchain.extent),
-          m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager, m_swapchain.extent),
+          m_forwardPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -409,10 +409,8 @@ namespace Renderer
 
         m_swapchain.RecreateSwapChain(m_window.size, m_context);
 
-        m_forwardPass.Recreate(m_swapchain.extent);
-        m_depthPass.Recreate(m_swapchain.extent);
-
         m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
+        m_megaSet.Update(m_context.device);
 
         m_isSwapchainOk = true;
 

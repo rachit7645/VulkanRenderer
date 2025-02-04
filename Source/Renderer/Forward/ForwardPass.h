@@ -19,7 +19,6 @@
 
 #include "ForwardPipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/DepthBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
@@ -40,11 +39,8 @@ namespace Renderer::Forward
             const Vk::FormatHelper& formatHelper,
             Vk::FramebufferManager& framebufferManager,
             Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
-            VkExtent2D extent
+            Vk::TextureManager& textureManager
         );
-
-        void Recreate(VkExtent2D extent);
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
@@ -62,9 +58,6 @@ namespace Renderer::Forward
         Forward::ForwardPipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
-    private:
-        VkExtent2D          m_resolution;
-        Util::DeletionQueue m_deletionQueue;
     };
 }
 

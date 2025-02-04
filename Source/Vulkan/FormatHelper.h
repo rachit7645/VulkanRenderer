@@ -32,6 +32,8 @@ namespace Vk
         VkFormat textureFormatBC7;
         VkFormat textureFormatBC7SRGB;
 
+        VkFormat textureFormatHDR;
+
         VkFormat colorAttachmentFormatLDR;
         VkFormat colorAttachmentFormatHDR;
 

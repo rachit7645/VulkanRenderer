@@ -26,11 +26,9 @@ namespace Renderer::Depth
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::MegaSet& megaSet,
-        Vk::FramebufferManager& framebufferManager,
-        VkExtent2D extent
+        Vk::FramebufferManager& framebufferManager
     )
-        : pipeline(context, formatHelper, megaSet),
-          m_resolution(extent)
+        : pipeline(context, formatHelper, megaSet)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -44,19 +42,9 @@ namespace Renderer::Depth
             Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("DepthPass/FIF{}", i));
         }
 
-        m_resolution = extent;
         framebufferManager.AddFramebuffer(Vk::FramebufferManager::FramebufferType::Depth, "DepthAttachment");
 
         Logger::Info("{}\n", "Created depth pass!");
-    }
-
-    void DepthPass::Recreate(VkExtent2D extent)
-    {
-        m_deletionQueue.FlushQueue();
-
-        m_resolution = extent;
-
-        Logger::Info("{}\n", "Recreated depth pass!");
     }
 
     void DepthPass::Render
@@ -99,7 +87,7 @@ namespace Renderer::Depth
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = m_resolution
+                .extent = {depthAttachment.image.width, depthAttachment.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -117,8 +105,8 @@ namespace Renderer::Depth
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(m_resolution.width),
-            .height   = static_cast<f32>(m_resolution.height),
+            .width    = static_cast<f32>(depthAttachment.image.width),
+            .height   = static_cast<f32>(depthAttachment.image.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -128,7 +116,7 @@ namespace Renderer::Depth
         const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = m_resolution
+            .extent = {depthAttachment.image.width, depthAttachment.image.height}
         };
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
@@ -169,8 +157,6 @@ namespace Renderer::Depth
     void DepthPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying depth pass!");
-
-        m_deletionQueue.FlushQueue();
 
         Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
