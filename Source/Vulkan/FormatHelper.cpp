@@ -121,6 +121,19 @@ namespace Vk
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT
         );
+
+        brdfLutFormat = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array
+            {
+                VK_FORMAT_R16G16_SFLOAT,
+                VK_FORMAT_R32G32_SFLOAT,
+                VK_FORMAT_B10G11R11_UFLOAT_PACK32
+            },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+        );
     }
 
     VkFormat FormatHelper::FindSupportedFormat

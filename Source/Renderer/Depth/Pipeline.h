@@ -14,35 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef POST_PROCESS_PIPELINE_H
-#define POST_PROCESS_PIPELINE_H
+#ifndef DEPTH_PIPELINE_H
+#define DEPTH_PIPELINE_H
 
-#include "PostProcessConstants.h"
-#include "Vulkan/Sampler.h"
+#include "Constants.h"
 #include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/TextureManager.h"
-#include "Vulkan/Context.h"
 
-namespace Renderer::PostProcess
+namespace Renderer::Depth
 {
-    class PostProcessPipeline : public Vk::Pipeline
+    class Pipeline : public Vk::Pipeline
     {
     public:
-        PostProcessPipeline
+        Pipeline
         (
             const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
-            VkFormat colorFormat
+            const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
         );
 
-        PushConstant pushConstant = {};
-
-        u32 samplerIndex = 0;
-    private:
-        void CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat);
-        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
+        Depth::PushConstant pushConstant = {};
     };
 }
 

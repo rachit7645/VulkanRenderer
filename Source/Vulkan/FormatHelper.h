@@ -39,6 +39,8 @@ namespace Vk
 
         VkFormat depthFormat;
         VkFormat depthStencilFormat;
+
+        VkFormat brdfLutFormat;
     private:
         VkFormat FindSupportedFormat
         (

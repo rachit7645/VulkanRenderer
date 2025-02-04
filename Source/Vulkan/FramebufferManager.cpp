@@ -65,9 +65,11 @@ namespace Vk
                 }
 
                 resolution = framebuffer.resolution.value();
+            }
 
-                // Framebuffer will not be regenerated
-                framebuffer.resolution = {0, 0};
+            if (framebuffer.image.width == resolution.width || framebuffer.image.height == resolution.height)
+            {
+                continue;
             }
 
             framebuffer.image.Destroy(context.allocator);
@@ -146,6 +148,17 @@ namespace Vk
                 dstAccess = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 break;
+
+            case FramebufferType::BRDF:
+                createInfo.format = formatHelper.brdfLutFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+
+                dstStage  = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+                dstAccess = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+                newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                break;
             }
 
             framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
@@ -186,7 +199,7 @@ namespace Vk
                 }
             });
 
-            if (framebuffer.type == FramebufferType::ColorLDR || framebuffer.type == FramebufferType::ColorHDR)
+            if (IsViewable(framebuffer.type))
             {
                 framebuffer.descriptorIndex = megaSet.WriteImage(framebuffer.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
@@ -240,7 +253,7 @@ namespace Vk
             {
                 for (const auto& [name, framebuffer] : m_framebuffers)
                 {
-                    if (framebuffer.type != FramebufferType::ColorLDR && framebuffer.type != FramebufferType::ColorHDR)
+                    if (!IsViewable(framebuffer.type))
                     {
                         continue;
                     }
@@ -276,6 +289,20 @@ namespace Vk
             }
 
             ImGui::EndMainMenuBar();
+        }
+    }
+
+    bool FramebufferManager::IsViewable(FramebufferType type)
+    {
+        switch (type)
+        {
+        case FramebufferType::ColorLDR:
+        case FramebufferType::ColorHDR:
+        case FramebufferType::BRDF:
+            return true;
+
+        default:
+            return false;
         }
     }
 

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "ImGuiPass.h"
+#include "RenderPass.h"
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
 namespace Renderer::DearImGui
 {
-    ImGuiPass::ImGuiPass
+    RenderPass::RenderPass
     (
         const Vk::Context& context,
         const Vk::Swapchain& swapchain,
@@ -45,7 +45,7 @@ namespace Renderer::DearImGui
         Logger::Info("{}\n", "Created depth pass!");
     }
 
-    void ImGuiPass::SetupBackend
+    void RenderPass::SetupBackend
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,
@@ -81,7 +81,7 @@ namespace Renderer::DearImGui
         }
     }
 
-    void ImGuiPass::Render
+    void RenderPass::Render
     (
         usize FIF,
         VkDevice device,
@@ -351,7 +351,7 @@ namespace Renderer::DearImGui
         currentCmdBuffer.EndRecording();
     }
 
-    void ImGuiPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying ImGui pass!");
 

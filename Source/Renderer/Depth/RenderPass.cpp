@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "DepthPass.h"
+#include "RenderPass.h"
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
 namespace Renderer::Depth
 {
-    DepthPass::DepthPass
+    RenderPass::RenderPass
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
@@ -47,7 +47,7 @@ namespace Renderer::Depth
         Logger::Info("{}\n", "Created depth pass!");
     }
 
-    void DepthPass::Render
+    void RenderPass::Render
     (
         usize FIF,
         const Vk::FramebufferManager& framebufferManager,
@@ -154,7 +154,7 @@ namespace Renderer::Depth
         currentCmdBuffer.EndRecording();
     }
 
-    void DepthPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying depth pass!");
 

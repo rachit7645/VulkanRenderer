@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "PostProcessPipeline.h"
+#include "Pipeline.h"
 
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Util/Log.h"
@@ -22,7 +22,7 @@
 
 namespace Renderer::PostProcess
 {
-    PostProcessPipeline::PostProcessPipeline
+    Pipeline::Pipeline
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,
@@ -34,7 +34,7 @@ namespace Renderer::PostProcess
         CreatePipelineData(context.device, megaSet, textureManager);
     }
 
-    void PostProcessPipeline::CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat)
+    void Pipeline::CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat)
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
@@ -71,7 +71,7 @@ namespace Renderer::PostProcess
         Vk::SetDebugName(context.device, layout, "SwapchainPipelineLayout");
     }
 
-    void PostProcessPipeline::CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager)
+    void Pipeline::CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager)
     {
         samplerIndex = textureManager.AddSampler
         (

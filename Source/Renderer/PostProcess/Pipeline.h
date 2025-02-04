@@ -14,40 +14,35 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PIPELINE_H
-#define FORWARD_PIPELINE_H
+#ifndef POST_PROCESS_PIPELINE_H
+#define POST_PROCESS_PIPELINE_H
 
-#include "ForwardConstants.h"
+#include "Constants.h"
+#include "Vulkan/Sampler.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/FormatHelper.h"
 #include "Vulkan/TextureManager.h"
+#include "Vulkan/Context.h"
 
-namespace Renderer::Forward
+namespace Renderer::PostProcess
 {
-    class ForwardPipeline : public Vk::Pipeline
+    class Pipeline : public Vk::Pipeline
     {
     public:
-        ForwardPipeline
+        Pipeline
         (
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::TextureManager& textureManager,
+            VkFormat colorFormat
         );
 
         PushConstant pushConstant = {};
 
-        u32 samplerIndex;
+        u32 samplerIndex = 0;
     private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData(const Vk::Context& context, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
+        void CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat);
+        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

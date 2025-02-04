@@ -14,27 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef DEPTH_PIPELINE_H
-#define DEPTH_PIPELINE_H
+#ifndef IBL_MAPS_H
+#define IBL_MAPS_H
 
-#include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
-#include "Vulkan/MegaSet.h"
-#include "DepthConstants.h"
+#include "Vulkan/FramebufferManager.h"
+#include "BRDF/Pipeline.h"
 
-namespace Renderer::Depth
+namespace Renderer
 {
-    class DepthPipeline : public Vk::Pipeline
+    class IBLMaps
     {
     public:
-        DepthPipeline
+        explicit IBLMaps(Vk::FramebufferManager& framebufferManager);
+
+        void Generate
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
+            const Vk::FramebufferManager& framebufferManager
         );
-
-        Depth::PushConstant pushConstant = {};
+    private:
+        void CreateBRDFLUT
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const BRDF::Pipeline& pipeline,
+            const Vk::FramebufferManager& framebufferManager
+        );
     };
 }
 

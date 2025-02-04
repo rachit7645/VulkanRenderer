@@ -14,30 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PASS_H
-#define FORWARD_PASS_H
+#ifndef POST_PROCESS_PASS_H
+#define POST_PROCESS_PASS_H
 
-#include "ForwardPipeline.h"
+#include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/GeometryBuffer.h"
-#include "Vulkan/MegaSet.h"
-#include "Vulkan/Constants.h"
+#include "Vulkan/Swapchain.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Camera.h"
-#include "Renderer/IndirectBuffer.h"
-#include "Renderer/MeshBuffer.h"
-#include "Renderer/SceneBuffer.h"
 
-namespace Renderer::Forward
+namespace Renderer::PostProcess
 {
-    class ForwardPass
+    class RenderPass
     {
     public:
-        ForwardPass
+        RenderPass
         (
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
+            const Vk::Swapchain& swapchain,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
@@ -47,15 +40,12 @@ namespace Renderer::Forward
         void Render
         (
             usize FIF,
-            const Vk::FramebufferManager& framebufferManager,
+            Vk::Swapchain& swapchain,
             const Vk::MegaSet& megaSet,
-            const Vk::GeometryBuffer& geometryBuffer,
-            const Renderer::SceneBuffer& sceneBuffer,
-            const Renderer::MeshBuffer& meshBuffer,
-            const Renderer::IndirectBuffer& indirectBuffer
+            const Vk::FramebufferManager& framebufferManager
         );
 
-        Forward::ForwardPipeline pipeline;
+        PostProcess::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     };

@@ -33,7 +33,8 @@ namespace Vk
             ColorLDR,
             ColorHDR,
             Depth,
-            DepthStencil
+            DepthStencil,
+            BRDF
         };
 
         struct Framebuffer
@@ -63,9 +64,10 @@ namespace Vk
         [[nodiscard]] const Framebuffer& GetFramebuffer(const std::string_view name) const;
 
         void ImGuiDisplay();
-
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
+        bool IsViewable(FramebufferType type);
+
         std::unordered_map<std::string, Framebuffer> m_framebuffers;
     };
 }

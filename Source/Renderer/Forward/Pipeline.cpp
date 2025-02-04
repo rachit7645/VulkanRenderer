@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ForwardPipeline.h"
+#include "Pipeline.h"
 
 #include "Models/Vertex.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
@@ -26,7 +26,7 @@ namespace Renderer::Forward
     // Usings
     using Models::Vertex;
 
-    ForwardPipeline::ForwardPipeline
+    Pipeline::Pipeline
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
@@ -38,7 +38,7 @@ namespace Renderer::Forward
         CreatePipelineData(context, megaSet, textureManager);
     }
 
-    void ForwardPipeline::CreatePipeline
+    void Pipeline::CreatePipeline
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
@@ -81,7 +81,7 @@ namespace Renderer::Forward
         Vk::SetDebugName(context.device, layout, "ForwardPipelineLayout");
     }
 
-    void ForwardPipeline::CreatePipelineData
+    void Pipeline::CreatePipelineData
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,

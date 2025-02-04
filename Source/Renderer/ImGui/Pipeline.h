@@ -17,17 +17,17 @@
 #ifndef IMGUI_PIPELINE_H
 #define IMGUI_PIPELINE_H
 
+#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
-#include "ImGuiConstants.h"
 
 namespace Renderer::DearImGui
 {
-    class ImGuiPipeline : public Vk::Pipeline
+    class Pipeline : public Vk::Pipeline
     {
     public:
-        ImGuiPipeline
+        Pipeline
         (
             const Vk::Context& context,
             Vk::MegaSet& megaSet,

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "ImGuiPipeline.h"
+#include "Pipeline.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::DearImGui
 {
-    ImGuiPipeline::ImGuiPipeline
+    Pipeline::Pipeline
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,
@@ -32,7 +32,7 @@ namespace Renderer::DearImGui
         CreatePipelineData(context.device, megaSet, textureManager);
     }
 
-    void ImGuiPipeline::CreatePipeline
+    void Pipeline::CreatePipeline
     (
         const Vk::Context& context,
         const Vk::MegaSet& megaSet,
@@ -74,7 +74,7 @@ namespace Renderer::DearImGui
         Vk::SetDebugName(context.device, layout, "ImGuiPipelineLayout");
     }
 
-    void ImGuiPipeline::CreatePipelineData
+    void Pipeline::CreatePipelineData
     (
         VkDevice device,
         Vk::MegaSet& megaSet,

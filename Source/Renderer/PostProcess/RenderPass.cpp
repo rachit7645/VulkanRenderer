@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-#include "ForwardPass.h"
+#include "RenderPass.h"
 
-#include "Renderer/SceneBuffer.h"
 #include "Util/Log.h"
-#include "Renderer/RenderConstants.h"
-#include "Util/Maths.h"
-#include "Vulkan/Util.h"
 #include "Util/Ranges.h"
+#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 
-namespace Renderer::Forward
+namespace Renderer::PostProcess
 {
-    ForwardPass::ForwardPass
+    RenderPass::RenderPass
     (
         const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
+        const Vk::Swapchain& swapchain,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -45,48 +41,42 @@ namespace Renderer::Forward
                 VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
 
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ForwardPass/FIF{}", i));
+            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("SwapchainPass/FIF{}", i));
         }
 
-        framebufferManager.AddFramebuffer(Vk::FramebufferManager::FramebufferType::ColorHDR, "ForwardColorAttachment");
-
-        Logger::Info("{}\n", "Created forward pass!");
+        Logger::Info("{}\n", "Created swapchain pass!");
     }
 
-    void ForwardPass::Render
+    void RenderPass::Render
     (
         usize FIF,
-        const Vk::FramebufferManager& framebufferManager,
+        Vk::Swapchain& swapchain,
         const Vk::MegaSet& megaSet,
-        const Vk::GeometryBuffer& geometryBuffer,
-        const Renderer::SceneBuffer& sceneBuffer,
-        const Renderer::MeshBuffer& meshBuffer,
-        const Renderer::IndirectBuffer& indirectBuffer
+        const Vk::FramebufferManager& framebufferManager
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
+        const auto& currentImage     = swapchain.images[swapchain.imageIndex];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("ForwardPass/FIF{}", FIF), glm::vec4(0.9098f, 0.1843f, 0.0549f, 1.0f));
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("SwapchainPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
-        const auto& colorAttachment = framebufferManager.GetFramebuffer("ForwardColorAttachment");
-        const auto& depthAttachment = framebufferManager.GetFramebuffer("DepthAttachment");
-
-        colorAttachment.image.Barrier
+        currentImage.Barrier
         (
             currentCmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+            VK_ACCESS_2_NONE,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             {
-                .aspectMask     = colorAttachment.image.aspect,
+                .aspectMask     = currentImage.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = colorAttachment.image.mipLevels,
+                .levelCount     = currentImage.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
@@ -96,12 +86,12 @@ namespace Renderer::Forward
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = colorAttachment.imageView.handle,
+            .imageView          = currentImageView.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue         = {{{
                 Renderer::CLEAR_COLOR.r,
@@ -111,20 +101,6 @@ namespace Renderer::Forward
             }}}
         };
 
-        const VkRenderingAttachmentInfo depthAttachmentInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = depthAttachment.imageView.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_NONE,
-            .clearValue         = {.depthStencil = {0.0f, 0x0}}
-        };
-
         const VkRenderingInfo renderInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -132,13 +108,13 @@ namespace Renderer::Forward
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = {colorAttachment.image.width, colorAttachment.image.height}
+                .extent = swapchain.extent
             },
             .layerCount           = 1,
             .viewMask             = 0,
             .colorAttachmentCount = 1,
             .pColorAttachments    = &colorAttachmentInfo,
-            .pDepthAttachment     = &depthAttachmentInfo,
+            .pDepthAttachment     = nullptr,
             .pStencilAttachment   = nullptr
         };
 
@@ -150,8 +126,8 @@ namespace Renderer::Forward
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(colorAttachment.image.width),
-            .height   = static_cast<f32>(colorAttachment.image.height),
+            .width    = static_cast<f32>(swapchain.extent.width),
+            .height   = static_cast<f32>(swapchain.extent.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -161,25 +137,22 @@ namespace Renderer::Forward
         const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = {colorAttachment.image.width, colorAttachment.image.height}
+            .extent = swapchain.extent
         };
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
         pipeline.pushConstant =
         {
-            .scene        = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes       = meshBuffer.buffers[FIF].deviceAddress,
-            .positions    = geometryBuffer.positionBuffer.deviceAddress,
-            .vertices     = geometryBuffer.vertexBuffer.deviceAddress,
-            .samplerIndex = pipeline.samplerIndex
+            .samplerIndex = pipeline.samplerIndex,
+            .imageIndex   = framebufferManager.GetFramebuffer("ForwardColorAttachment").descriptorIndex
         };
 
         pipeline.LoadPushConstants
         (
             currentCmdBuffer,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, sizeof(Forward::PushConstant),
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0, sizeof(PostProcess::PushConstant),
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
@@ -194,32 +167,30 @@ namespace Renderer::Forward
             descriptorSets
         );
 
-        geometryBuffer.Bind(currentCmdBuffer);
-
-        vkCmdDrawIndexedIndirect
+        vkCmdDraw
         (
             currentCmdBuffer.handle,
-            indirectBuffer.buffers[FIF].handle,
+            3,
+            1,
             0,
-            indirectBuffer.writtenDrawCount,
-            sizeof(VkDrawIndexedIndirectCommand)
+            0
         );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 
-        colorAttachment.image.Barrier
+        currentImage.Barrier
         (
             currentCmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             {
-                .aspectMask     = colorAttachment.image.aspect,
+                .aspectMask     = currentImage.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = colorAttachment.image.mipLevels,
+                .levelCount     = currentImage.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
@@ -230,9 +201,9 @@ namespace Renderer::Forward
         currentCmdBuffer.EndRecording();
     }
 
-    void ForwardPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
-        Logger::Debug("{}\n", "Destroying forward pass!");
+        Logger::Debug("{}\n", "Destroying swapchain pass!");
 
         for (auto&& cmdBuffer : cmdBuffers)
         {

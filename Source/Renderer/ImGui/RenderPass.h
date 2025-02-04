@@ -17,16 +17,16 @@
 #ifndef IMGUI_PASS_H
 #define IMGUI_PASS_H
 
-#include "ImGuiPipeline.h"
+#include "Pipeline.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/Swapchain.h"
 
 namespace Renderer::DearImGui
 {
-    class ImGuiPass
+    class RenderPass
     {
     public:
-        ImGuiPass
+        RenderPass
         (
             const Vk::Context& context,
             const Vk::Swapchain& swapchain,
@@ -52,7 +52,7 @@ namespace Renderer::DearImGui
             const Vk::MegaSet& megaSet
         );
 
-        DearImGui::ImGuiPipeline pipeline;
+        DearImGui::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:

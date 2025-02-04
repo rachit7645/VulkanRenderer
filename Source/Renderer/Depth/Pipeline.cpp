@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "DepthPipeline.h"
+#include "Pipeline.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Depth
 {
-    DepthPipeline::DepthPipeline
+    Pipeline::Pipeline
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,

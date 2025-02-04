@@ -18,6 +18,7 @@
 #define IMGUI_CONSTANTS_H
 
 #include "Externals/GLM.h"
+#include "Util/Util.h"
 
 namespace Renderer::DearImGui
 {

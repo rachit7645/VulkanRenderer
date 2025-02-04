@@ -14,40 +14,40 @@
  * limitations under the License.
  */
 
-#ifndef POST_PROCESS_PASS_H
-#define POST_PROCESS_PASS_H
+#ifndef FORWARD_PIPELINE_H
+#define FORWARD_PIPELINE_H
 
-#include "PostProcessPipeline.h"
-#include "Vulkan/CommandBuffer.h"
-#include "Vulkan/Swapchain.h"
-#include "Vulkan/FramebufferManager.h"
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/TextureManager.h"
 
-namespace Renderer::PostProcess
+namespace Renderer::Forward
 {
-    class PostProcessPass
+    class Pipeline : public Vk::Pipeline
     {
     public:
-        PostProcessPass
+        Pipeline
         (
             const Vk::Context& context,
-            const Vk::Swapchain& swapchain,
+            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        PushConstant pushConstant = {};
 
-        void Render
+        u32 samplerIndex;
+    private:
+        void CreatePipeline
         (
-            usize FIF,
-            Vk::Swapchain& swapchain,
-            const Vk::MegaSet& megaSet,
-            const Vk::FramebufferManager& framebufferManager
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
         );
 
-        PostProcess::PostProcessPipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+        void CreatePipelineData(const Vk::Context& context, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

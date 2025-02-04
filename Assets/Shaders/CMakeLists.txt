@@ -53,6 +53,8 @@ file(GLOB SHADER_SOURCES
     Depth.frag
     ImGui.vert
     ImGui.frag
+    BRDF.frag
+    BRDF.vert
 )
 
 # Shader files

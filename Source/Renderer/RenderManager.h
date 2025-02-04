@@ -17,7 +17,6 @@
 #ifndef RENDER_MANAGER_H
 #define RENDER_MANAGER_H
 
-#include <Vulkan/FramebufferManager.h>
 #include <vulkan/vulkan.h>
 
 #include "FreeCamera.h"
@@ -25,13 +24,15 @@
 #include "IndirectBuffer.h"
 #include "MeshBuffer.h"
 #include "SceneBuffer.h"
-#include "PostProcess/PostProcessPass.h"
-#include "Forward/ForwardPass.h"
-#include "Depth/DepthPass.h"
-#include "ImGui/ImGuiPass.h"
+#include "IBLMaps.h"
+#include "PostProcess/RenderPass.h"
+#include "Forward/RenderPass.h"
+#include "Depth/RenderPass.h"
+#include "ImGui/RenderPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/FramebufferManager.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -78,11 +79,13 @@ namespace Renderer
         Vk::FramebufferManager m_framebufferManager;
         Models::ModelManager   m_modelManager;
 
+        Renderer::IBLMaps m_iblMaps;
+
         // Render Passes
-        PostProcess::PostProcessPass m_postProcessPass;
-        Forward::ForwardPass         m_forwardPass;
-        Depth::DepthPass             m_depthPass;
-        DearImGui::ImGuiPass         m_imGuiPass;
+        PostProcess::RenderPass      m_postProcessPass;
+        Forward::RenderPass   m_forwardPass;
+        Depth::RenderPass     m_depthPass;
+        DearImGui::RenderPass m_imGuiPass;
 
         // Buffers
         MeshBuffer     m_meshBuffer;

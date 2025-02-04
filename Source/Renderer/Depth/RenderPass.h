@@ -17,7 +17,7 @@
 #ifndef DEPTH_PASS_H
 #define DEPTH_PASS_H
 
-#include "DepthPipeline.h"
+#include "Pipeline.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
@@ -27,10 +27,10 @@
 
 namespace Renderer::Depth
 {
-    class DepthPass
+    class RenderPass
     {
     public:
-        DepthPass
+        RenderPass
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
@@ -50,7 +50,7 @@ namespace Renderer::Depth
             const Renderer::IndirectBuffer& indirectBuffer
         );
 
-        Depth::DepthPipeline pipeline;
+        Depth::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     };
