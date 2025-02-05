@@ -39,6 +39,7 @@ namespace Vk
             u32 height,
             u32 depth,
             u32 mipLevels,
+            u32 arrayLayers,
             VkFormat format,
             VkImageUsageFlags usage,
             VkImageAspectFlags aspect
@@ -68,10 +69,11 @@ namespace Vk
         VmaAllocationInfo allocationInfo = {};
 
         // Image dimensions
-        u32 width     = 0;
-        u32 height    = 0;
-        u32 depth     = 0;
-        u32 mipLevels = 1;
+        u32 width       = 0;
+        u32 height      = 0;
+        u32 depth       = 0;
+        u32 mipLevels   = 1;
+        u32 arrayLayers = 1;
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;

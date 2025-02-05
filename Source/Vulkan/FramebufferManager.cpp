@@ -59,11 +59,6 @@ namespace Vk
 
             if (framebuffer.resolution.has_value())
             {
-                if (framebuffer.resolution->width == 0 || framebuffer.resolution->height == 0)
-                {
-                    continue;
-                }
-
                 resolution = framebuffer.resolution.value();
             }
 
@@ -148,17 +143,6 @@ namespace Vk
                 dstAccess = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 break;
-
-            case FramebufferType::BRDF:
-                createInfo.format = formatHelper.brdfLutFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-
-                dstStage  = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-                dstAccess = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-                newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                break;
             }
 
             framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
@@ -231,6 +215,8 @@ namespace Vk
                 vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
             }
         );
+
+        megaSet.Update(context.device);
     }
 
     const FramebufferManager::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name) const
@@ -298,7 +284,6 @@ namespace Vk
         {
         case FramebufferType::ColorLDR:
         case FramebufferType::ColorHDR:
-        case FramebufferType::BRDF:
             return true;
 
         default:

@@ -1,16 +1,18 @@
-// Copyright (c) 2023 - 2025 Rachit
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "GeometryBuffer.h"
 
@@ -59,12 +61,26 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
+        cubeBuffer = Vk::Buffer
+        (
+            allocator,
+            36 * sizeof(glm::vec3),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            0,
+            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+        );
+
         positionBuffer.GetDeviceAddress(device);
         vertexBuffer.GetDeviceAddress(device);
+        cubeBuffer.GetDeviceAddress(device);
 
         Vk::SetDebugName(device, indexBuffer.handle,    "GeometryBuffer/IndexBuffer");
         Vk::SetDebugName(device, positionBuffer.handle, "GeometryBuffer/PositionBuffer");
         Vk::SetDebugName(device, vertexBuffer.handle,   "GeometryBuffer/VertexBuffer");
+        Vk::SetDebugName(device, cubeBuffer.handle,     "GeometryBuffer/CubeBuffer");
+
+        SetupCubeUpload(allocator);
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
@@ -119,9 +135,9 @@ namespace Vk
         const VkDeviceSize positionSizeBytes = positionInfo.count * sizeof(glm::vec3);
         const VkDeviceSize vertexSizeBytes   = vertexInfo.count   * sizeof(Models::Vertex);
 
-        m_pendingIndexUploads.push_back(std::make_pair(indexInfo, SetupStagingBuffer(indexSizeBytes, indices.data())));
-        m_pendingPositionUploads.push_back(std::make_pair(positionInfo, SetupStagingBuffer(positionSizeBytes, positions.data())));
-        m_pendingVertexUploads.push_back(std::make_pair(vertexInfo, SetupStagingBuffer(vertexSizeBytes, vertices.data())));
+        m_pendingIndexUploads.emplace_back(indexInfo, SetupStagingBuffer(indexSizeBytes, indices.data()));
+        m_pendingPositionUploads.emplace_back(positionInfo, SetupStagingBuffer(positionSizeBytes, positions.data()));
+        m_pendingVertexUploads.emplace_back(vertexInfo, SetupStagingBuffer(vertexSizeBytes, vertices.data()));
 
         indexCount    += indices.size();
         positionCount += positions.size();
@@ -191,6 +207,26 @@ namespace Vk
         }
         Vk::EndLabel(cmdBuffer);
 
+        if (m_cubeStagingBuffer.has_value())
+        {
+            Vk::BeginLabel(cmdBuffer, "Cube Transfer", {0.5117f, 0.0749f, 0.3901f, 1.0f});
+
+            const VkDeviceSize sizeBytes = 36 * sizeof(glm::vec3);
+
+            UploadToBuffer
+            (
+                cmdBuffer,
+                m_cubeStagingBuffer.value(),
+                cubeBuffer,
+                0,
+                sizeBytes,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                VK_ACCESS_2_SHADER_STORAGE_READ_BIT
+            );
+
+            Vk::EndLabel(cmdBuffer);
+        }
+
         Vk::EndLabel(cmdBuffer);
     }
 
@@ -211,9 +247,79 @@ namespace Vk
             buffer.Destroy(allocator);
         }
 
+        if (m_cubeStagingBuffer.has_value())
+        {
+            m_cubeStagingBuffer->Destroy(allocator);
+            m_cubeStagingBuffer = std::nullopt;
+        }
+
         m_pendingIndexUploads.clear();
         m_pendingPositionUploads.clear();
         m_pendingVertexUploads.clear();
+    }
+
+    void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
+    {
+        constexpr f32 SKYBOX_SIZE = 500.0f;
+
+        constexpr std::array SKYBOX_VERTICES =
+        {
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE
+        };
+
+        constexpr usize VERTICES_SIZE = SKYBOX_VERTICES.size() * sizeof(f32);
+
+        m_cubeStagingBuffer = Vk::Buffer
+        (
+            allocator,
+            VERTICES_SIZE,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        std::memcpy(m_cubeStagingBuffer->allocInfo.pMappedData, SKYBOX_VERTICES.data(), VERTICES_SIZE);
     }
 
     void GeometryBuffer::UploadToBuffer
@@ -318,5 +424,6 @@ namespace Vk
         indexBuffer.Destroy(allocator);
         positionBuffer.Destroy(allocator);
         vertexBuffer.Destroy(allocator);
+        cubeBuffer.Destroy(allocator);
     }
 }

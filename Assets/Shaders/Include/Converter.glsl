@@ -30,4 +30,15 @@ vec4 UnpackRGBA8(uint data)
     );
 }
 
+vec2 GetSphericalMapUV(vec3 v)
+{
+    const vec2 INVERSE_ATAN = vec2(0.1591f, 0.3183f);
+
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv     *= INVERSE_ATAN;
+    uv     += 0.5f;
+
+    return uv;
+}
+
 #endif

@@ -31,7 +31,7 @@ namespace Renderer
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
           m_modelManager(m_context, m_formatHelper),
-          m_iblMaps(m_framebufferManager),
+          m_iblMaps(m_context, m_megaSet, m_modelManager.textureManager),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_forwardPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
@@ -87,9 +87,14 @@ namespace Renderer
         m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
         m_modelManager.Update(m_context);
 
-        m_megaSet.Update(m_context.device);
-
-        m_iblMaps.Generate(m_context, m_formatHelper, m_framebufferManager);
+        m_iblMaps.Generate
+        (
+            m_context,
+            m_formatHelper,
+            m_modelManager.geometryBuffer,
+            m_megaSet,
+            m_modelManager.textureManager
+        );
 
         m_frameCounter.Reset();
     }

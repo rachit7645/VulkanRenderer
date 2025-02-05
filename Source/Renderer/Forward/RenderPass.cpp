@@ -183,16 +183,8 @@ namespace Renderer::Forward
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
-        // Mega set
         std::array descriptorSets = {megaSet.descriptorSet.handle};
-
-        pipeline.BindDescriptors
-        (
-            currentCmdBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            0,
-            descriptorSets
-        );
+        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
         geometryBuffer.Bind(currentCmdBuffer);
 

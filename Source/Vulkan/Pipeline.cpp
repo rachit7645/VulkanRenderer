@@ -43,7 +43,6 @@ namespace Vk
     void Pipeline::BindDescriptors
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkPipelineBindPoint bindPoint,
         u32 firstSet,
         const std::span<const VkDescriptorSet> descriptors
     ) const

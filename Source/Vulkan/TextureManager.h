@@ -56,6 +56,14 @@ namespace Vk
             const glm::uvec2 size
         );
 
+        [[nodiscard]] usize AddTexture
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            const std::string_view name,
+            const Vk::Texture& texture
+        );
+
         [[nodiscard]] u32 AddSampler
         (
             Vk::MegaSet& megaSet,

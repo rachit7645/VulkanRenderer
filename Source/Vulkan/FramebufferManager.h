@@ -33,8 +33,7 @@ namespace Vk
             ColorLDR,
             ColorHDR,
             Depth,
-            DepthStencil,
-            BRDF
+            DepthStencil
         };
 
         struct Framebuffer

@@ -14,61 +14,46 @@
  * limitations under the License.
  */
 
-#ifndef IBL_MAPS_H
-#define IBL_MAPS_H
+#ifndef CONVERTER_PIPELINE_H
+#define CONVERTER_PIPELINE_H
 
-#include "Vulkan/GeometryBuffer.h"
-#include "Vulkan/TextureManager.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/Context.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
+#include "Vulkan/TextureManager.h"
+#include "Constants.h"
 
-namespace Renderer
+namespace Renderer::Converter
 {
-    class IBLMaps
+    class Pipeline : public Vk::Pipeline
     {
     public:
-        IBLMaps
-        (
-            const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
-        void Generate
+        Pipeline
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
 
-        usize hdrMapID  = 0;
-        usize brdfLutID = 0;
-        usize skyboxID  = 0;
+        Converter::PushConstant pushConstant = {};
+
+        u32 samplerIndex = 0;
     private:
-        void CreateBRDFLUT
+        void CreatePipeline
         (
-            const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
+        );
+
+        void CreatePipelineData
+        (
+            VkDevice device,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
-
-        void CreateCubeMap
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
-        std::array<glm::mat4, 6> GetViewMatrices();
-
-        Util::DeletionQueue m_deletionQueue;
     };
 }
 

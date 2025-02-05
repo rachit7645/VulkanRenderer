@@ -97,8 +97,10 @@ add_executable(VulkanRenderer
     # ImGui Pass Sources
     Source/Renderer/ImGui/Pipeline.cpp
     Source/Renderer/ImGui/RenderPass.cpp
-    # ImGui Pass Sources
+    # BRDF LUT Generation Sources
     Source/Renderer/BRDF/Pipeline.cpp
+    # Equirectangular to Cubemap
+    Source/Renderer/Converter/Pipeline.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

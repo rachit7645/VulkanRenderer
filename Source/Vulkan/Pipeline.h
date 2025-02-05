@@ -34,20 +34,11 @@ namespace Vk
         Pipeline() = default;
         virtual ~Pipeline() = default;
 
-        // No copying
-        Pipeline(const Pipeline&) = delete;
-        Pipeline& operator=(const Pipeline&) = delete;
-
-        // Only moving
-        Pipeline(Pipeline&& other) noexcept = default;
-        Pipeline& operator=(Pipeline&& other) noexcept = default;
-
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
 
         void BindDescriptors
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkPipelineBindPoint bindPoint,
             u32 firstSet,
             const std::span<const VkDescriptorSet> descriptors
         ) const;

@@ -259,16 +259,8 @@ namespace Renderer::DearImGui
             &pipeline.pushConstant
         );
 
-        // Mega set
         std::array descriptorSets = {megaSet.descriptorSet.handle};
-
-        pipeline.BindDescriptors
-        (
-            currentCmdBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            0,
-            descriptorSets
-        );
+        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
         s32 globalVertexOffset = 0;
         s32 globalIndexOffset  = 0;

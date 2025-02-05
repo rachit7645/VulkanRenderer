@@ -132,6 +132,34 @@ namespace Vk
         return nameHash;
     }
 
+    usize TextureManager::AddTexture
+    (
+        Vk::MegaSet& megaSet,
+        VkDevice device,
+        const std::string_view name,
+        const Vk::Texture& texture
+    )
+    {
+        const auto nameHash = std::hash<std::string_view>{}(name);
+
+        const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        textureMap.emplace
+        (
+            nameHash,
+            TextureInfo(
+                id,
+                name.data(),
+                texture
+            )
+        );
+
+        Vk::SetDebugName(device, texture.image.handle,     name);
+        Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
+
+        return nameHash;
+    }
+
     u32 TextureManager::AddSampler
     (
         Vk::MegaSet& megaSet,
@@ -220,6 +248,7 @@ namespace Vk
                         ImGui::Text("Height           | %u", textureInfo.texture.image.height);
                         ImGui::Text("Depth            | %u", textureInfo.texture.image.depth);
                         ImGui::Text("Mipmap Levels    | %u", textureInfo.texture.image.mipLevels);
+                        ImGui::Text("Array Layers     | %u", textureInfo.texture.image.arrayLayers);
                         ImGui::Text("Format           | %s", string_VkFormat(textureInfo.texture.image.format));
                         ImGui::Text("Usage            | %s", string_VkImageUsageFlags(textureInfo.texture.image.usage).c_str());
 

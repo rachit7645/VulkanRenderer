@@ -55,6 +55,8 @@ file(GLOB SHADER_SOURCES
     ImGui.frag
     BRDF.frag
     BRDF.vert
+    Converter.vert
+    Converter.frag
 )
 
 # Shader files

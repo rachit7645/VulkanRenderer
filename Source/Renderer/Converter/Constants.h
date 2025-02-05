@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef CONVERTER_PUSH_CONSTANT
-#define CONVERTER_PUSH_CONSTANT
+#ifndef CONVERTER_CONSTANTS_H
+#define CONVERTER_CONSTANTS_H
 
-layout(buffer_reference, scalar) readonly buffer VertexBuffer
-{
-    vec3 positions[];
-};
+#include <vulkan/vulkan.h>
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+namespace Renderer::Converter
 {
-    VertexBuffer Vertices;
-    mat4         Projection;
-    mat4         View;
-    uint         SamplerIndex;
-    uint         TextureIndex;
-} Constants;
+    struct PushConstant
+    {
+        VkDeviceAddress positions;
+        glm::mat4       projection;
+        glm::mat4       view;
+        u32             samplerIndex;
+        u32             textureIndex;
+    };
+}
 
 #endif
