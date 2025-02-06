@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef CONVOLUTION_CONSTANTS_H
+#define CONVOLUTION_CONSTANTS_H
 
-layout(location = 0) out vec2 fragUV;
+#include <vulkan/vulkan.h>
 
-void main()
+#include "Externals/GLM.h"
+#include "Util/Util.h"
+
+namespace Renderer::Convolution
 {
-    // https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
-    fragUV      = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
-    gl_Position = vec4(fragUV * 2.0f - 1.0f, 0.0f, 1.0f);
-
-    // Flip by Y because its inverted in Vulkan
-    fragUV.y = 1.0f - fragUV.y;
+    struct PushConstant
+    {
+        VkDeviceAddress positions;
+        glm::mat4       projection;
+        glm::mat4       view;
+        u32             samplerIndex;
+        u32             envMapIndex;
+    };
 }
+
+#endif

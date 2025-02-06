@@ -27,7 +27,9 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     MeshBuffer     Meshes;
     PositionBuffer Positions;
     VertexBuffer   Vertices;
-    uint           SamplerIndex;
+    uint           TextureSamplerIndex;
+    uint           IBLSamplerIndex;
+    uint           IrradianceIndex;
 } Constants;
 
 #endif

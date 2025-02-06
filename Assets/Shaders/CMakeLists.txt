@@ -59,6 +59,8 @@ file(GLOB SHADER_SOURCES
     Converter.frag
     Skybox.frag
     Skybox.vert
+    Convolution.frag
+    Convolution.vert
 )
 
 # Shader files

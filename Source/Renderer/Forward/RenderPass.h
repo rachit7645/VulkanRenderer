@@ -17,6 +17,8 @@
 #ifndef FORWARD_PASS_H
 #define FORWARD_PASS_H
 
+#include <Renderer/IBLMaps.h>
+
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
@@ -52,7 +54,9 @@ namespace Renderer::Forward
             const Vk::GeometryBuffer& geometryBuffer,
             const Renderer::SceneBuffer& sceneBuffer,
             const Renderer::MeshBuffer& meshBuffer,
-            const Renderer::IndirectBuffer& indirectBuffer
+            const Renderer::IndirectBuffer& indirectBuffer,
+            const Renderer::IBLMaps& iblMaps,
+            const Vk::TextureManager& textureManager
         );
 
         Forward::Pipeline pipeline;

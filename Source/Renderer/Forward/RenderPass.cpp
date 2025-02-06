@@ -61,7 +61,9 @@ namespace Renderer::Forward
         const Vk::GeometryBuffer& geometryBuffer,
         const Renderer::SceneBuffer& sceneBuffer,
         const Renderer::MeshBuffer& meshBuffer,
-        const Renderer::IndirectBuffer& indirectBuffer
+        const Renderer::IndirectBuffer& indirectBuffer,
+        const Renderer::IBLMaps& iblMaps,
+        const Vk::TextureManager& textureManager
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
@@ -168,11 +170,13 @@ namespace Renderer::Forward
 
         pipeline.pushConstant =
         {
-            .scene        = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes       = meshBuffer.buffers[FIF].deviceAddress,
-            .positions    = geometryBuffer.positionBuffer.deviceAddress,
-            .vertices     = geometryBuffer.vertexBuffer.deviceAddress,
-            .samplerIndex = pipeline.samplerIndex
+            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes              = meshBuffer.buffers[FIF].deviceAddress,
+            .positions           = geometryBuffer.positionBuffer.deviceAddress,
+            .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
+            .textureSamplerIndex = pipeline.textureSamplerIndex,
+            .iblSamplerIndex     = pipeline.iblSamplerIndex,
+            .irradianceIndex     = textureManager.GetCubemapID(iblMaps.irradianceID)
         };
 
         pipeline.LoadPushConstants

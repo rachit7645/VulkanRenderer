@@ -75,15 +75,28 @@ float GeometrySmith(float NdotL, float NdotV, float a)
 // Fresnel equation
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
-	float factor = 1.0f - cosTheta;
-	return F0 + (1.0f - F0) * factor * factor * factor * factor * factor;
+    return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 }
 
-vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 albedo, float roughness, float metallic)
+// Fresnel equation with injected roughness parameter
+vec3 FresnelSchlick_IBL(float cosTheta, vec3 F0, float roughness)
 {
-    vec3 L  = lightInfo.L;
-    vec3 H  = normalize(V + L);
-    vec3 F0 = mix(vec3(0.04f), albedo, metallic);
+    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+}
+
+vec3 CalculateLight
+(
+    LightInfo lightInfo,
+    vec3 N,
+    vec3 V,
+    vec3 F0,
+    vec3 albedo,
+    float roughness,
+    float metallic
+)
+{
+    vec3 L = lightInfo.L;
+    vec3 H = normalize(V + L);
 
     float NdotV = max(dot(N, V), 0.0f);
     float NdotL = max(dot(N, L), 0.0f);
@@ -107,6 +120,26 @@ vec3 CalculateLight(LightInfo lightInfo, vec3 N, vec3 V, vec3 albedo, float roug
 	kD     *= 1.0f - metallic;
 
 	return (kD * (albedo / PI) + specular) * lightInfo.radiance * NdotL;
+}
+
+vec3 CalculateAmbient
+(
+    vec3 N,
+    vec3 V,
+    vec3 F0,
+    vec3 albedo,
+    float roughness,
+    float metallic,
+    vec3 irradiance
+)
+{
+    // Energy conservation
+    vec3 kS = FresnelSchlick_IBL(max(dot(N, V), 0.0f), F0, roughness);
+    vec3 kD = 1.0 - kS;
+
+    vec3 diffuse = irradiance * albedo;
+
+    return kD * diffuse;
 }
 
 #endif

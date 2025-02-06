@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PIPELINE_H
-#define FORWARD_PIPELINE_H
+#ifndef CONVOLUTION_PIPELINE_H
+#define CONVOLUTION_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/MegaSet.h"
+#include "Vulkan/Context.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
+#include "Constants.h"
 
-namespace Renderer::Forward
+namespace Renderer::Convolution
 {
     class Pipeline : public Vk::Pipeline
     {
@@ -36,10 +37,9 @@ namespace Renderer::Forward
             Vk::TextureManager& textureManager
         );
 
-        PushConstant pushConstant = {};
+        Convolution::PushConstant pushConstant = {};
 
-        u32 textureSamplerIndex;
-        u32 iblSamplerIndex;
+        u32 samplerIndex = 0;
     private:
         void CreatePipeline
         (
@@ -48,7 +48,12 @@ namespace Renderer::Forward
             const Vk::MegaSet& megaSet
         );
 
-        void CreatePipelineData(const Vk::Context& context, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
+        void CreatePipelineData
+        (
+            VkDevice device,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
     };
 }
 

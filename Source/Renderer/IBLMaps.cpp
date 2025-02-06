@@ -18,6 +18,7 @@
 
 #include <stb/stb_image.h>
 
+#include "Convolution/Pipeline.h"
 #include "Util/Log.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
@@ -28,8 +29,9 @@ namespace Renderer
 {
     constexpr auto HDR_MAP = "industrial_sunset_puresky_4k.hdr";
 
-    constexpr VkExtent2D BRDF_LUT_SIZE = {1024, 1024};
-    constexpr VkExtent2D SKYBOX_SIZE   = {2048, 2048};
+    constexpr VkExtent2D BRDF_LUT_SIZE   = {1024, 1024};
+    constexpr VkExtent2D SKYBOX_SIZE     = {2048, 2048};
+    constexpr VkExtent2D IRRADIANCE_SIZE = {128,  128};
 
     IBLMaps::IBLMaps
     (
@@ -84,6 +86,16 @@ namespace Renderer
         );
 
         CreateCubeMap
+        (
+            cmdBuffer,
+            context,
+            formatHelper,
+            geometryBuffer,
+            megaSet,
+            textureManager
+        );
+
+        CreateIrradianceMap
         (
             cmdBuffer,
             context,
@@ -548,6 +560,211 @@ namespace Renderer
         m_deletionQueue.PushDeletor([context, skyboxViews, pipeline] () mutable
         {
             for (auto& view : skyboxViews)
+            {
+                view.Destroy(context.device);
+            }
+
+            pipeline.Destroy(context.device);
+        });
+    }
+
+    void IBLMaps::CreateIrradianceMap
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        const Vk::GeometryBuffer& geometryBuffer,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
+    )
+    {
+        auto pipeline = Convolution::Pipeline(context, formatHelper, megaSet, textureManager);
+        megaSet.Update(context.device);
+
+        Vk::BeginLabel(cmdBuffer, "Irradiance Map Generation", {0.2988f, 0.2294f, 0.6607f, 1.0f});
+
+        auto irradiance = Vk::Image
+        (
+            context.allocator,
+            {
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = formatHelper.textureFormatHDR,
+                .extent                = {IRRADIANCE_SIZE.width, IRRADIANCE_SIZE.height, 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 6,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        irradiance.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_NONE,
+            VK_ACCESS_2_NONE,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                irradiance.aspect,
+                0,
+                1,
+                0,
+                irradiance.arrayLayers
+            }
+        );
+
+        std::array<Vk::ImageView, 6> irradianceViews = {};
+
+        const auto views = GetViewMatrices();
+
+        for (usize i = 0; i < irradianceViews.size(); ++i)
+        {
+            Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", i), {0.9882f, 0.7294f, 0.0117f, 1.0f});
+
+            irradianceViews[i] = Vk::ImageView
+            (
+                context.device,
+                irradiance,
+                VK_IMAGE_VIEW_TYPE_2D,
+                irradiance.format,
+                {
+                    .aspectMask     = irradiance.aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = static_cast<u32>(i),
+                    .layerCount     = 1
+                }
+            );
+
+            const VkRenderingAttachmentInfo colorAttachmentInfo =
+            {
+                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .pNext              = nullptr,
+                .imageView          = irradianceViews[i].handle,
+                .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .resolveMode        = VK_RESOLVE_MODE_NONE,
+                .resolveImageView   = VK_NULL_HANDLE,
+                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                .clearValue         = {{{
+                    Renderer::CLEAR_COLOR.r,
+                    Renderer::CLEAR_COLOR.g,
+                    Renderer::CLEAR_COLOR.b,
+                    Renderer::CLEAR_COLOR.a
+                }}}
+            };
+
+            const VkRenderingInfo renderInfo =
+            {
+                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                .pNext                = nullptr,
+                .flags                = 0,
+                .renderArea           = {
+                    .offset = {0, 0},
+                    .extent = {irradiance.width, irradiance.height}
+                },
+                .layerCount           = 1,
+                .viewMask             = 0,
+                .colorAttachmentCount = 1,
+                .pColorAttachments    = &colorAttachmentInfo,
+                .pDepthAttachment     = nullptr,
+                .pStencilAttachment   = nullptr
+            };
+
+            vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+            pipeline.Bind(cmdBuffer);
+
+            const VkViewport viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(irradiance.width),
+                .height   = static_cast<f32>(irradiance.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
+
+            vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+            const VkRect2D scissor =
+            {
+                .offset = {0, 0},
+                .extent = {irradiance.width, irradiance.height}
+            };
+
+            vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+            pipeline.pushConstant =
+            {
+                .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+                .projection   = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f),
+                .view         = views[i],
+                .samplerIndex = pipeline.samplerIndex,
+                .envMapIndex  = textureManager.GetCubemapID(skyboxID)
+            };
+
+            pipeline.LoadPushConstants
+            (
+                cmdBuffer,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(Convolution::PushConstant),
+                &pipeline.pushConstant
+            );
+
+            std::array descriptorSets = {megaSet.descriptorSet.handle};
+            pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+            vkCmdDraw
+            (
+                cmdBuffer.handle,
+                36,
+                1,
+                0,
+                0
+            );
+
+            vkCmdEndRendering(cmdBuffer.handle);
+
+            Vk::EndLabel(cmdBuffer);
+        }
+
+        Vk::EndLabel(cmdBuffer);
+
+        const auto irradianceView = Vk::ImageView
+        (
+            context.device,
+            irradiance,
+            VK_IMAGE_VIEW_TYPE_CUBE,
+            irradiance.format,
+            {
+                .aspectMask     = irradiance.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = irradiance.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = irradiance.arrayLayers
+            }
+        );
+
+        irradianceID = textureManager.AddCubemap(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
+        megaSet.Update(context.device);
+
+        m_deletionQueue.PushDeletor([context, irradianceViews, pipeline] () mutable
+        {
+            for (auto& view : irradianceViews)
             {
                 view.Destroy(context.device);
             }

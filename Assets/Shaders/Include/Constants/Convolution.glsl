@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef CONVOLUTION_PUSH_CONSTANT
+#define CONVOLUTION_PUSH_CONSTANT
 
-layout(location = 0) out vec2 fragUV;
-
-void main()
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
 {
-    // https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
-    fragUV      = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
-    gl_Position = vec4(fragUV * 2.0f - 1.0f, 0.0f, 1.0f);
+    vec3 positions[];
+};
 
-    // Flip by Y because its inverted in Vulkan
-    fragUV.y = 1.0f - fragUV.y;
-}
+layout(push_constant, scalar) uniform ConstantsBuffer
+{
+    VertexBuffer Vertices;
+    mat4         Projection;
+    mat4         View;
+    uint         SamplerIndex;
+    uint         EnvMapIndex;
+} Constants;
+
+#endif

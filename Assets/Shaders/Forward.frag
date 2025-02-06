@@ -38,31 +38,44 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    Mesh mesh         = Constants.Meshes.meshes[fragDrawID];
-    uint samplerIndex = Constants.SamplerIndex;
+    Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
-    vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], samplers[samplerIndex]), fragTexCoords);
-    albedo.xyz  = ToLinear(albedo.xyz);
+    vec4 albedo = texture(sampler2D(textures[MAT_ALBEDO_ID], samplers[Constants.TextureSamplerIndex]), fragTexCoords);
+    albedo.rgb  = ToLinear(albedo.rgb);
     albedo     *= mesh.albedoFactor;
 
-    vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], samplers[samplerIndex]), fragTexCoords).rgb;
+    vec3 normal = texture(sampler2D(textures[MAT_NORMAL_ID], samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
 
-    vec3 aoRghMtl = texture(sampler2D(textures[MAT_AO_RGH_MTL_ID], samplers[samplerIndex]), fragTexCoords).rgb;
+    vec3 aoRghMtl = texture(sampler2D(textures[MAT_AO_RGH_MTL_ID], samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
     aoRghMtl.g   *= mesh.roughnessFactor;
     aoRghMtl.b   *= mesh.metallicFactor;
+
+    vec3 F0 = mix(vec3(0.04f), albedo.rgb, aoRghMtl.b);
 
     vec3 Lo = CalculateLight
     (
         GetDirLightInfo(Constants.Scene.light),
         normal,
         fragToCamera,
+        F0,
         albedo.rgb,
         aoRghMtl.g,
         aoRghMtl.b
     );
 
-    Lo += albedo.rgb * vec3(0.25f);
+    vec3 irradiance = texture(samplerCube(cubemaps[Constants.IrradianceIndex], samplers[Constants.IBLSamplerIndex]), normal).rgb;
+
+    Lo += CalculateAmbient
+    (
+        normal,
+        fragToCamera,
+        F0,
+        albedo.rgb,
+        aoRghMtl.g,
+        aoRghMtl.b,
+        irradiance
+    );
 
     outColor = vec4(Lo, 1.0f);
 }

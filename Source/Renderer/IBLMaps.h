@@ -43,9 +43,10 @@ namespace Renderer
             Vk::TextureManager& textureManager
         );
 
-        usize hdrMapID  = 0;
-        usize brdfLutID = 0;
-        usize skyboxID  = 0;
+        usize hdrMapID     = 0;
+        usize brdfLutID    = 0;
+        usize skyboxID     = 0;
+        usize irradianceID = 0;
     private:
         void CreateBRDFLUT
         (
@@ -57,6 +58,16 @@ namespace Renderer
         );
 
         void CreateCubeMap
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
+        void CreateIrradianceMap
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,

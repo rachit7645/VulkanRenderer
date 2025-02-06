@@ -133,7 +133,9 @@ namespace Renderer
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
-            m_indirectBuffer
+            m_indirectBuffer,
+            m_iblMaps,
+            m_modelManager.textureManager
         );
 
         m_skyboxPass.Render
