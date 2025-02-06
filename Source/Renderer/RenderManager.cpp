@@ -36,6 +36,7 @@ namespace Renderer
           m_forwardPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
+          m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
@@ -46,6 +47,7 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
+            m_skyboxPass.Destroy(m_context.device, m_context.commandPool);
             m_imGuiPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_depthPass.Destroy(m_context.device, m_context.commandPool);
             m_forwardPass.Destroy(m_context.device, m_context.commandPool);
@@ -132,6 +134,17 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer
+        );
+
+        m_skyboxPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
+            m_modelManager.geometryBuffer,
+            m_sceneBuffer,
+            m_iblMaps,
+            m_modelManager.textureManager,
+            m_megaSet
         );
 
         m_postProcessPass.Render
@@ -371,6 +384,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_forwardPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_skyboxPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

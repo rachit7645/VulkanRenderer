@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef SIMD_H
-#define SIMD_H
+#ifndef SKYBOX_PUSH_CONSTANT
+#define SKYBOX_PUSH_CONSTANT
 
-#include "Util.h"
+#include "Scene.glsl"
 
-namespace Util
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
 {
-    // Requires count % 4 == 0
-    // source and destination pointers must not be the same
-    // Requires AVX2
-    void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count);
-}
+    vec3 positions[];
+};
+
+layout(push_constant, scalar) uniform ConstantsBuffer
+{
+    VertexBuffer Vertices;
+    SceneBuffer  Scene;
+    uint         SamplerIndex;
+    uint         CubemapIndex;
+} Constants;
 
 #endif

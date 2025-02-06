@@ -160,6 +160,34 @@ namespace Vk
         return nameHash;
     }
 
+    usize TextureManager::AddCubemap
+    (
+        Vk::MegaSet& megaSet,
+        VkDevice device,
+        const std::string_view name,
+        const Vk::Texture& texture
+    )
+    {
+        const auto nameHash = std::hash<std::string_view>{}(name);
+
+        const auto id = megaSet.WriteCubemap(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        cubemapMap.emplace
+        (
+            nameHash,
+            TextureInfo(
+                id,
+                name.data(),
+                texture
+            )
+        );
+
+        Vk::SetDebugName(device, texture.image.handle,     name);
+        Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
+
+        return nameHash;
+    }
+
     u32 TextureManager::AddSampler
     (
         Vk::MegaSet& megaSet,
@@ -216,6 +244,30 @@ namespace Vk
         if (iter == textureMap.end())
         {
             Logger::Error("Invalid texture path hash! [Hash={}]\n", pathHash);
+        }
+
+        return iter->second.texture;
+    }
+
+    u32 TextureManager::GetCubemapID(usize pathHash) const
+    {
+        const auto iter = cubemapMap.find(pathHash);
+
+        if (iter == cubemapMap.end())
+        {
+            Logger::Error("Invalid cubemap path hash! [Hash={}]\n", pathHash);
+        }
+
+        return iter->second.descriptorID;
+    }
+
+    const Texture& TextureManager::GetCubemap(usize pathHash) const
+    {
+        const auto iter = cubemapMap.find(pathHash);
+
+        if (iter == cubemapMap.end())
+        {
+            Logger::Error("Invalid cubemap path hash! [Hash={}]\n", pathHash);
         }
 
         return iter->second.texture;
@@ -281,6 +333,11 @@ namespace Vk
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
         for (auto& [id, name, texture] : textureMap | std::views::values)
+        {
+            texture.Destroy(device, allocator);
+        }
+
+        for (auto& [id, name, texture] : cubemapMap | std::views::values)
         {
             texture.Destroy(device, allocator);
         }

@@ -20,7 +20,7 @@
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 
-namespace Renderer::Converter
+namespace Renderer::Skybox
 {
     Pipeline::Pipeline
     (
@@ -31,7 +31,7 @@ namespace Renderer::Converter
     )
     {
         CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context.device, megaSet, textureManager);
+        CreatePipelineData(context, megaSet, textureManager);
     }
 
     void Pipeline::CreatePipeline
@@ -43,17 +43,18 @@ namespace Renderer::Converter
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.textureFormatHDR};
+        std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("Converter.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Converter.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetRenderingInfo(colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .AttachShader("Skybox.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Skybox.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-            .SetRasterizerState(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,
@@ -68,25 +69,27 @@ namespace Renderer::Converter
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Converter::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Skybox::PushConstant))
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ConverterPipeline");
-        Vk::SetDebugName(context.device, layout, "ConverterPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "SkyboxPipeline");
+        Vk::SetDebugName(context.device, layout, "SkyboxPipelineLayout");
     }
 
     void Pipeline::CreatePipelineData
     (
-        VkDevice device,
+        const Vk::Context& context,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
     {
+        const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
+
         samplerIndex = textureManager.AddSampler
         (
             megaSet,
-            device,
+            context.device,
             {
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
@@ -98,8 +101,8 @@ namespace Renderer::Converter
                 .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
-                .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .anisotropyEnable        = VK_TRUE,
+                .maxAnisotropy           = anisotropy,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
@@ -109,8 +112,8 @@ namespace Renderer::Converter
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "ConverterPipeline/Sampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "SkyboxPipeline/Sampler");
 
-        megaSet.Update(device);
+        megaSet.Update(context.device);
     }
 }

@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef SIMD_H
-#define SIMD_H
+#ifndef SKYBOX_CONSTANTS_H
+#define SKYBOX_CONSTANTS_H
 
-#include "Util.h"
+#include <vulkan/vulkan.h>
 
-namespace Util
+#include "Util/Util.h"
+
+namespace Renderer::Skybox
 {
-    // Requires count % 4 == 0
-    // source and destination pointers must not be the same
-    // Requires AVX2
-    void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count);
+    struct __attribute__((packed)) PushConstant
+    {
+        VkDeviceAddress positions;
+        VkDeviceAddress scene;
+        u32             samplerIndex;
+        u32             cubemapIndex;
+    };
 }
 
 #endif

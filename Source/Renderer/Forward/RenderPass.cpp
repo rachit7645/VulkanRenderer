@@ -101,7 +101,7 @@ namespace Renderer::Forward
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue         = {{{
                 Renderer::CLEAR_COLOR.r,
@@ -198,24 +198,6 @@ namespace Renderer::Forward
         );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
-
-        colorAttachment.image.Barrier
-        (
-            currentCmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = colorAttachment.image.aspect,
-                .baseMipLevel   = 0,
-                .levelCount     = colorAttachment.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            }
-        );
 
         Vk::EndLabel(currentCmdBuffer);
 

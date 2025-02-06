@@ -19,6 +19,4 @@ void main()
     vec2 uv     = GetSphericalMapUV(normal);
 
     outColor = texture(sampler2D(textures[Constants.TextureIndex], samplers[Constants.SamplerIndex]), uv).rgb;
-
-    // outColor = vec3(0.6f, 0.9f, 0.420f);
 }

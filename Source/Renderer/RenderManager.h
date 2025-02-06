@@ -29,6 +29,7 @@
 #include "Forward/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
+#include "Skybox/RenderPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -82,10 +83,11 @@ namespace Renderer
         Renderer::IBLMaps m_iblMaps;
 
         // Render Passes
-        PostProcess::RenderPass      m_postProcessPass;
-        Forward::RenderPass   m_forwardPass;
-        Depth::RenderPass     m_depthPass;
-        DearImGui::RenderPass m_imGuiPass;
+        PostProcess::RenderPass m_postProcessPass;
+        Forward::RenderPass     m_forwardPass;
+        Depth::RenderPass       m_depthPass;
+        DearImGui::RenderPass   m_imGuiPass;
+        Skybox::RenderPass      m_skyboxPass;
 
         // Buffers
         MeshBuffer     m_meshBuffer;

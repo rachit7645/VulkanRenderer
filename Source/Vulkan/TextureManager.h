@@ -64,6 +64,14 @@ namespace Vk
             const Vk::Texture& texture
         );
 
+        [[nodiscard]] usize AddCubemap
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            const std::string_view name,
+            const Vk::Texture& texture
+        );
+
         [[nodiscard]] u32 AddSampler
         (
             Vk::MegaSet& megaSet,
@@ -77,6 +85,9 @@ namespace Vk
         [[nodiscard]] u32 GetTextureID(usize pathHash) const;
         [[nodiscard]] const Vk::Texture& GetTexture(usize pathHash) const;
 
+        [[nodiscard]] u32 GetCubemapID(usize pathHash) const;
+        [[nodiscard]] const Vk::Texture& GetCubemap(usize pathHash) const;
+
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
         void ImGuiDisplay();
@@ -84,6 +95,7 @@ namespace Vk
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         std::unordered_map<usize, TextureInfo> textureMap;
+        std::unordered_map<usize, TextureInfo> cubemapMap;
         std::unordered_map<u32, Vk::Sampler>   samplerMap;
     private:
         VkFormat m_format    = VK_FORMAT_UNDEFINED;

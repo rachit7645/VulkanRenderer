@@ -42,7 +42,7 @@ namespace Renderer::DearImGui
             Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ImGuiPass/FIF{}", i));
         }
 
-        Logger::Info("{}\n", "Created depth pass!");
+        Logger::Info("{}\n", "Created imgui pass!");
     }
 
     void RenderPass::SetupBackend

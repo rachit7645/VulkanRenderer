@@ -31,8 +31,9 @@ namespace Vk
     public:
         enum DescriptorBinding : u32
         {
-            SAMPLER_BINDING        = 0,
-            SAMPLED_IMAGES_BINDING = 1,
+            SAMPLER_BINDING          = 0,
+            SAMPLED_IMAGES_BINDING   = 1,
+            SAMPLED_CUBEMAPS_BINDING = 2,
             BINDINGS_COUNT
         };
 
@@ -40,6 +41,7 @@ namespace Vk
 
         [[nodiscard]] u32 WriteSampler(const Vk::Sampler& sampler);
         [[nodiscard]] u32 WriteImage(const Vk::ImageView& imageView, VkImageLayout layout);
+        [[nodiscard]] u32 WriteCubemap(const Vk::ImageView& imageView, VkImageLayout layout);
 
         void Update(VkDevice device);
 
@@ -52,6 +54,7 @@ namespace Vk
 
         u32 m_samplerID = 0;
         u32 m_imageID   = 0;
+        u32 m_cubemapID = 0;
     };
 }
 

@@ -223,26 +223,48 @@ namespace Vk
             context.commandPool,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
+                std::vector<VkImageMemoryBarrier2> barriers = {};
+                barriers.reserve(images.size());
+
                 for (auto&& image : images)
                 {
-                    image.Barrier
-                    (
-                        cmdBuffer,
-                        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-                        VK_ACCESS_2_NONE,
-                        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-                        VK_ACCESS_2_NONE,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                        {
+                    barriers.push_back(VkImageMemoryBarrier2
+                    {
+                        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                        .pNext               = nullptr,
+                        .srcStageMask        = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+                        .srcAccessMask       = VK_ACCESS_2_NONE,
+                        .dstStageMask        = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+                        .dstAccessMask       = VK_ACCESS_2_NONE,
+                        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+                        .newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image               = image.handle,
+                        .subresourceRange    = {
                             .aspectMask     = image.aspect,
                             .baseMipLevel   = 0,
                             .levelCount     = image.mipLevels,
                             .baseArrayLayer = 0,
                             .layerCount     = 1
                         }
-                    );
+                    });
                 }
+
+                const VkDependencyInfo dependencyInfo =
+                {
+                    .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                    .pNext                    = nullptr,
+                    .dependencyFlags          = 0,
+                    .memoryBarrierCount       = 0,
+                    .pMemoryBarriers          = nullptr,
+                    .bufferMemoryBarrierCount = 0,
+                    .pBufferMemoryBarriers    = nullptr,
+                    .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
+                    .pImageMemoryBarriers     = barriers.data()
+                };
+
+                vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
             }
         );
     }

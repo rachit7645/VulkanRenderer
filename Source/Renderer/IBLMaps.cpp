@@ -542,7 +542,7 @@ namespace Renderer
             }
         );
 
-        skyboxID = textureManager.AddTexture(megaSet, context.device, "Skybox", {skybox, skyboxView});
+        skyboxID = textureManager.AddCubemap(megaSet, context.device, "Skybox", {skybox, skyboxView});
         megaSet.Update(context.device);
 
         m_deletionQueue.PushDeletor([context, skyboxViews, pipeline] () mutable

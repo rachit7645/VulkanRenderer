@@ -57,6 +57,8 @@ file(GLOB SHADER_SOURCES
     BRDF.vert
     Converter.vert
     Converter.frag
+    Skybox.frag
+    Skybox.vert
 )
 
 # Shader files

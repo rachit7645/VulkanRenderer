@@ -101,6 +101,9 @@ add_executable(VulkanRenderer
     Source/Renderer/BRDF/Pipeline.cpp
     # Equirectangular to Cubemap
     Source/Renderer/Converter/Pipeline.cpp
+    # Skybox Pass Sources
+    Source/Renderer/Skybox/Pipeline.cpp
+    Source/Renderer/Skybox/RenderPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp
