@@ -64,7 +64,10 @@ void main()
         aoRghMtl.b
     );
 
+    vec3 R          = reflect(-fragToCamera, normal);
     vec3 irradiance = texture(samplerCube(cubemaps[Constants.IrradianceIndex], samplers[Constants.IBLSamplerIndex]), normal).rgb;
+    vec3 preFilter  = textureLod(samplerCube(cubemaps[Constants.PreFilterIndex], samplers[Constants.IBLSamplerIndex]), R, aoRghMtl.g * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf       = texture(sampler2D(textures[Constants.BRDFLUTIndex], samplers[Constants.IBLSamplerIndex]), vec2(max(dot(normal, fragToCamera), 0.0f), aoRghMtl.g)).rg;
 
     Lo += CalculateAmbient
     (
@@ -74,7 +77,9 @@ void main()
         albedo.rgb,
         aoRghMtl.g,
         aoRghMtl.b,
-        irradiance
+        irradiance,
+        preFilter,
+        brdf
     );
 
     outColor = vec4(Lo, 1.0f);

@@ -106,6 +106,8 @@ add_executable(VulkanRenderer
     Source/Renderer/Skybox/RenderPass.cpp
     # Convolution Pass Sources
     Source/Renderer/Convolution/Pipeline.cpp
+    # Prefilter Pass Sources
+    Source/Renderer/PreFilter/Pipeline.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

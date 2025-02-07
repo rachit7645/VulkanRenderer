@@ -61,26 +61,36 @@ namespace Renderer
             m_context.Destroy();
         });
 
-        m_renderObjects.emplace_back(RenderObject(
+        m_renderObjects.emplace_back
+        (
             m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/SponzaC.gltf"),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
-        ));
+        );
 
-        m_renderObjects.emplace_back(RenderObject(
+        m_renderObjects.emplace_back
+        (
             m_modelManager.AddModel(m_context, m_megaSet, "Cottage/CottageC.gltf"),
             glm::vec3(50.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
-        ));
+        );
 
-        /*m_renderObjects.emplace_back(RenderObject(
+        m_renderObjects.emplace_back
+        (
+            m_modelManager.AddModel(m_context, m_megaSet, "EnvTest/glTF-IBL/EnvironmentTestC.gltf"),
+            glm::vec3(-50.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f)
+        );
+
+        /*m_renderObjects.emplace_back(
             m_modelManager.AddModel(m_context, m_megaSet, "Bistro/BistroC.gltf"),
             glm::vec3(-150.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
-        ));*/
+        );*/
 
         // ImGui Yoy
         InitImGui();

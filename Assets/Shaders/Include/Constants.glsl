@@ -26,6 +26,9 @@ const float PI = 3.14159265359;
 const float GAMMA_FACTOR     = 2.2f;
 const float INV_GAMMA_FACTOR = 1.0f / GAMMA_FACTOR;
 
-const uint BRDF_LUT_SAMPLE_COUNT = 2048u;
+// IBL Constants
+const uint  BRDF_LUT_SAMPLE_COUNT = 2048u;
+const uint  PREFILER_SAMPLE_COUNT = 2048u;
+const float MAX_REFLECTION_LOD    = 4.0f;
 
 #endif

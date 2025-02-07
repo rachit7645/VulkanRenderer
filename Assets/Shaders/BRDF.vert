@@ -23,7 +23,4 @@ void main()
     // https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
     fragUV      = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
     gl_Position = vec4(fragUV * 2.0f - 1.0f, 0.0f, 1.0f);
-
-    // Flip by Y because its inverted in Vulkan
-    fragUV.y = 1.0f - fragUV.y;
 }

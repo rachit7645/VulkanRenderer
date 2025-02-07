@@ -130,16 +130,22 @@ vec3 CalculateAmbient
     vec3 albedo,
     float roughness,
     float metallic,
-    vec3 irradiance
+    vec3 irradiance,
+    vec3 preFilter,
+    vec2 brdf
 )
 {
+    vec3 F  = FresnelSchlick_IBL(max(dot(N, V), 0.0f), F0, roughness);
+
     // Energy conservation
-    vec3 kS = FresnelSchlick_IBL(max(dot(N, V), 0.0f), F0, roughness);
-    vec3 kD = 1.0 - kS;
+    vec3 kS = F;
+    vec3 kD = 1.0f - kS;
+    kD     *= 1.0f - metallic;
 
-    vec3 diffuse = irradiance * albedo;
+    vec3 diffuse  = irradiance * albedo;
+    vec3 specular = preFilter * (F * brdf.x + brdf.y);
 
-    return kD * diffuse;
+    return kD * diffuse + specular;
 }
 
 #endif

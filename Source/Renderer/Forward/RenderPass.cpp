@@ -176,7 +176,9 @@ namespace Renderer::Forward
             .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
             .textureSamplerIndex = pipeline.textureSamplerIndex,
             .iblSamplerIndex     = pipeline.iblSamplerIndex,
-            .irradianceIndex     = textureManager.GetCubemapID(iblMaps.irradianceID)
+            .irradianceIndex     = textureManager.GetCubemapID(iblMaps.irradianceID),
+            .preFilterIndex      = textureManager.GetCubemapID(iblMaps.preFilterID),
+            .brdfLutIndex        = textureManager.GetTextureID(iblMaps.brdfLutID)
         };
 
         pipeline.LoadPushConstants

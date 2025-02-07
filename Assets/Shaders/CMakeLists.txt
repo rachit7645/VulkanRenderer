@@ -61,6 +61,8 @@ file(GLOB SHADER_SOURCES
     Skybox.vert
     Convolution.frag
     Convolution.vert
+    PreFilter.vert
+    PreFilter.frag
 )
 
 # Shader files

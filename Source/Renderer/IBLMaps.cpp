@@ -24,14 +24,19 @@
 #include "Vulkan/DebugUtils.h"
 #include "BRDF/Pipeline.h"
 #include "Converter/Pipeline.h"
+#include "PreFilter/Pipeline.h"
 
 namespace Renderer
 {
     constexpr auto HDR_MAP = "industrial_sunset_puresky_4k.hdr";
 
-    constexpr VkExtent2D BRDF_LUT_SIZE   = {1024, 1024};
     constexpr VkExtent2D SKYBOX_SIZE     = {2048, 2048};
     constexpr VkExtent2D IRRADIANCE_SIZE = {128,  128};
+    constexpr VkExtent2D PRE_FILTER_SIZE = {1024, 1024};
+    constexpr VkExtent2D BRDF_LUT_SIZE   = {1024, 1024};
+
+    // TODO: Make this a non-const property
+    constexpr usize PREFILTER_MIPMAP_LEVELS = 5;
 
     IBLMaps::IBLMaps
     (
@@ -76,15 +81,6 @@ namespace Renderer
         cmdBuffer.Reset(0);
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        CreateBRDFLUT
-        (
-            cmdBuffer,
-            context,
-            formatHelper,
-            megaSet,
-            textureManager
-        );
-
         CreateCubeMap
         (
             cmdBuffer,
@@ -101,6 +97,25 @@ namespace Renderer
             context,
             formatHelper,
             geometryBuffer,
+            megaSet,
+            textureManager
+        );
+
+        CreatePreFilterMap
+        (
+            cmdBuffer,
+            context,
+            formatHelper,
+            geometryBuffer,
+            megaSet,
+            textureManager
+        );
+
+        CreateBRDFLUT
+        (
+            cmdBuffer,
+            context,
+            formatHelper,
             megaSet,
             textureManager
         );
@@ -169,174 +184,8 @@ namespace Renderer
 
             cmdBuffer.Free(context.device, context.commandPool);
         }
-    }
 
-    void IBLMaps::CreateBRDFLUT
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        auto pipeline = BRDF::Pipeline(context, formatHelper);
-
-        Vk::BeginLabel(cmdBuffer, "BRDF LUT Generation", {0.9215f, 0.0274f, 0.8588f, 1.0f});
-
-        const auto brdfLut = Vk::Image
-        (
-            context.allocator,
-            {
-                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext                 = nullptr,
-                .flags                 = 0,
-                .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.brdfLutFormat,
-                .extent                = {BRDF_LUT_SIZE.width, BRDF_LUT_SIZE.height, 1},
-                .mipLevels             = 1,
-                .arrayLayers           = 1,
-                .samples               = VK_SAMPLE_COUNT_1_BIT,
-                .tiling                = VK_IMAGE_TILING_OPTIMAL,
-                .usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices   = nullptr,
-                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-            },
-            VK_IMAGE_ASPECT_COLOR_BIT
-        );
-
-        const auto brdfLutView = Vk::ImageView
-        (
-            context.device,
-            brdfLut,
-            VK_IMAGE_VIEW_TYPE_2D,
-            brdfLut.format,
-            {
-                brdfLut.aspect,
-                0,
-                brdfLut.mipLevels,
-                0,
-                1
-            }
-        );
-
-        brdfLut.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_NONE,
-            VK_ACCESS_2_NONE,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                brdfLut.aspect,
-                0,
-                brdfLut.mipLevels,
-                0,
-                1
-            }
-        );
-
-        const VkRenderingAttachmentInfo colorAttachmentInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = brdfLutView.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
-        };
-
-        const VkRenderingInfo renderInfo =
-        {
-            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .pNext                = nullptr,
-            .flags                = 0,
-            .renderArea           = {
-                .offset = {0, 0},
-                .extent = {brdfLut.width, brdfLut.height}
-            },
-            .layerCount           = 1,
-            .viewMask             = 0,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &colorAttachmentInfo,
-            .pDepthAttachment     = nullptr,
-            .pStencilAttachment   = nullptr
-        };
-
-        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
-
-        pipeline.Bind(cmdBuffer);
-
-        const VkViewport viewport =
-        {
-            .x        = 0.0f,
-            .y        = 0.0f,
-            .width    = static_cast<f32>(brdfLut.width),
-            .height   = static_cast<f32>(brdfLut.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
-
-        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-        const VkRect2D scissor =
-        {
-            .offset = {0, 0},
-            .extent = {brdfLut.width, brdfLut.height}
-        };
-
-        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
-
-        vkCmdDraw
-        (
-            cmdBuffer.handle,
-            3,
-            1,
-            0,
-            0
-        );
-
-        vkCmdEndRendering(cmdBuffer.handle);
-
-        brdfLut.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = brdfLut.aspect,
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            }
-        );
-
-        brdfLutID = textureManager.AddTexture(megaSet, context.device, "BRDF_LUT", {brdfLut, brdfLutView});
-
-        Vk::EndLabel(cmdBuffer);
-
-        m_deletionQueue.PushDeletor([context, pipeline] () mutable
-        {
-            pipeline.Destroy(context.device);
-        });
+        megaSet.Update(context.device);
     }
 
     void IBLMaps::CreateCubeMap
@@ -753,14 +602,13 @@ namespace Renderer
             {
                 .aspectMask     = irradiance.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = irradiance.mipLevels,
+                .levelCount     = 1,
                 .baseArrayLayer = 0,
                 .layerCount     = irradiance.arrayLayers
             }
         );
 
         irradianceID = textureManager.AddCubemap(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
-        megaSet.Update(context.device);
 
         m_deletionQueue.PushDeletor([context, irradianceViews, pipeline] () mutable
         {
@@ -769,6 +617,394 @@ namespace Renderer
                 view.Destroy(context.device);
             }
 
+            pipeline.Destroy(context.device);
+        });
+    }
+
+    void IBLMaps::CreatePreFilterMap
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        const Vk::GeometryBuffer& geometryBuffer,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
+    )
+    {
+        auto pipeline = PreFilter::Pipeline(context, formatHelper, megaSet, textureManager);
+        megaSet.Update(context.device);
+
+        Vk::BeginLabel(cmdBuffer, "PreFilter Map Generation", {0.2928f, 0.4794f, 0.6607f, 1.0f});
+
+        auto preFilter = Vk::Image
+        (
+            context.allocator,
+            {
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = formatHelper.textureFormatHDR,
+                .extent                = {PRE_FILTER_SIZE.width, PRE_FILTER_SIZE.height, 1},
+                .mipLevels             = PREFILTER_MIPMAP_LEVELS,
+                .arrayLayers           = 6,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        preFilter.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_NONE,
+            VK_ACCESS_2_NONE,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                preFilter.aspect,
+                0,
+                preFilter.mipLevels,
+                0,
+                preFilter.arrayLayers
+            }
+        );
+
+        std::array<std::array<Vk::ImageView, 6>, PREFILTER_MIPMAP_LEVELS> preFilterViews = {};
+
+        const auto views = GetViewMatrices();
+
+        for (usize mip = 0; mip < preFilterViews.size(); ++mip)
+        {
+            Vk::BeginLabel(cmdBuffer, fmt::format("Mip #{}", mip), {0.5882f, 0.9294f, 0.2117f, 1.0f});
+
+            auto mipWidth  = static_cast<u32>(preFilter.width  * std::pow(0.5f, mip));
+            auto mipHeight = static_cast<u32>(preFilter.height * std::pow(0.5f, mip));
+
+            auto roughness = static_cast<f32>(mip) / static_cast<f32>(preFilter.mipLevels - 1);
+
+            for (usize face = 0; face < preFilter.arrayLayers; ++face)
+            {
+                Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", face), {0.9882f, 0.7294f, 0.0117f, 1.0f});
+
+                preFilterViews[mip][face] = Vk::ImageView
+                (
+                    context.device,
+                    preFilter,
+                    VK_IMAGE_VIEW_TYPE_2D,
+                    preFilter.format,
+                    {
+                        .aspectMask     = preFilter.aspect,
+                        .baseMipLevel   = static_cast<u32>(mip),
+                        .levelCount     = 1,
+                        .baseArrayLayer = static_cast<u32>(face),
+                        .layerCount     = 1
+                    }
+                );
+
+                const VkRenderingAttachmentInfo colorAttachmentInfo =
+                {
+                    .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                    .pNext              = nullptr,
+                    .imageView          = preFilterViews[mip][face].handle,
+                    .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .resolveMode        = VK_RESOLVE_MODE_NONE,
+                    .resolveImageView   = VK_NULL_HANDLE,
+                    .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                    .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                    .clearValue         = {{{
+                        Renderer::CLEAR_COLOR.r,
+                        Renderer::CLEAR_COLOR.g,
+                        Renderer::CLEAR_COLOR.b,
+                        Renderer::CLEAR_COLOR.a
+                    }}}
+                };
+
+                const VkRenderingInfo renderInfo =
+                {
+                    .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                    .pNext                = nullptr,
+                    .flags                = 0,
+                    .renderArea           = {
+                        .offset = {0, 0},
+                        .extent = {mipWidth, mipHeight}
+                    },
+                    .layerCount           = 1,
+                    .viewMask             = 0,
+                    .colorAttachmentCount = 1,
+                    .pColorAttachments    = &colorAttachmentInfo,
+                    .pDepthAttachment     = nullptr,
+                    .pStencilAttachment   = nullptr
+                };
+
+                vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+                pipeline.Bind(cmdBuffer);
+
+                const VkViewport viewport =
+                {
+                    .x        = 0.0f,
+                    .y        = 0.0f,
+                    .width    = static_cast<f32>(mipWidth),
+                    .height   = static_cast<f32>(mipHeight),
+                    .minDepth = 0.0f,
+                    .maxDepth = 1.0f
+                };
+
+                vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+                const VkRect2D scissor =
+                {
+                    .offset = {0, 0},
+                    .extent = {mipWidth, mipHeight}
+                };
+
+                vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+                pipeline.pushConstant =
+                {
+                    .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+                    .projection   = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f),
+                    .view         = views[face],
+                    .samplerIndex = pipeline.samplerIndex,
+                    .envMapIndex  = textureManager.GetCubemapID(skyboxID),
+                    .roughness    = roughness
+                };
+
+                pipeline.LoadPushConstants
+                (
+                    cmdBuffer,
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                    0,
+                    sizeof(Convolution::PushConstant),
+                    &pipeline.pushConstant
+                );
+
+                std::array descriptorSets = {megaSet.descriptorSet.handle};
+                pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+                vkCmdDraw
+                (
+                    cmdBuffer.handle,
+                    36,
+                    1,
+                    0,
+                    0
+                );
+
+                vkCmdEndRendering(cmdBuffer.handle);
+
+                Vk::EndLabel(cmdBuffer);
+            }
+
+            Vk::EndLabel(cmdBuffer);
+        }
+
+        Vk::EndLabel(cmdBuffer);
+
+        const auto preFilterView = Vk::ImageView
+        (
+            context.device,
+            preFilter,
+            VK_IMAGE_VIEW_TYPE_CUBE,
+            preFilter.format,
+            {
+                .aspectMask     = preFilter.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = preFilter.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = preFilter.arrayLayers
+            }
+        );
+
+        preFilterID = textureManager.AddCubemap(megaSet, context.device, "PreFilter", {preFilter, preFilterView});
+
+        m_deletionQueue.PushDeletor([context, preFilterViews, pipeline] () mutable
+        {
+            for (auto& mip : preFilterViews)
+            {
+                for (auto& view : mip)
+                {
+                    view.Destroy(context.device);
+                }
+            }
+
+            pipeline.Destroy(context.device);
+        });
+    }
+
+    void IBLMaps::CreateBRDFLUT
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
+    )
+    {
+        auto pipeline = BRDF::Pipeline(context, formatHelper);
+
+        Vk::BeginLabel(cmdBuffer, "BRDF LUT Generation", {0.9215f, 0.0274f, 0.8588f, 1.0f});
+
+        const auto brdfLut = Vk::Image
+        (
+            context.allocator,
+            {
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = formatHelper.brdfLutFormat,
+                .extent                = {BRDF_LUT_SIZE.width, BRDF_LUT_SIZE.height, 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 1,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        const auto brdfLutView = Vk::ImageView
+        (
+            context.device,
+            brdfLut,
+            VK_IMAGE_VIEW_TYPE_2D,
+            brdfLut.format,
+            {
+                brdfLut.aspect,
+                0,
+                brdfLut.mipLevels,
+                0,
+                1
+            }
+        );
+
+        brdfLut.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_NONE,
+            VK_ACCESS_2_NONE,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                brdfLut.aspect,
+                0,
+                brdfLut.mipLevels,
+                0,
+                1
+            }
+        );
+
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = brdfLutView.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{
+                Renderer::CLEAR_COLOR.r,
+                Renderer::CLEAR_COLOR.g,
+                Renderer::CLEAR_COLOR.b,
+                Renderer::CLEAR_COLOR.a
+            }}}
+        };
+
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {0, 0},
+                .extent = {brdfLut.width, brdfLut.height}
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
+
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+        pipeline.Bind(cmdBuffer);
+
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(brdfLut.width),
+            .height   = static_cast<f32>(brdfLut.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {0, 0},
+            .extent = {brdfLut.width, brdfLut.height}
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+        vkCmdDraw
+        (
+            cmdBuffer.handle,
+            3,
+            1,
+            0,
+            0
+        );
+
+        vkCmdEndRendering(cmdBuffer.handle);
+
+        brdfLut.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = brdfLut.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        brdfLutID = textureManager.AddTexture(megaSet, context.device, "BRDF_LUT", {brdfLut, brdfLutView});
+
+        Vk::EndLabel(cmdBuffer);
+
+        m_deletionQueue.PushDeletor([context, pipeline] () mutable
+        {
             pipeline.Destroy(context.device);
         });
     }

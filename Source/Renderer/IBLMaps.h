@@ -47,16 +47,8 @@ namespace Renderer
         usize brdfLutID    = 0;
         usize skyboxID     = 0;
         usize irradianceID = 0;
+        usize preFilterID  = 0;
     private:
-        void CreateBRDFLUT
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
         void CreateCubeMap
         (
             const Vk::CommandBuffer& cmdBuffer,
@@ -73,6 +65,25 @@ namespace Renderer
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::GeometryBuffer& geometryBuffer,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
+        void CreatePreFilterMap
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
+        void CreateBRDFLUT
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );

@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PUSH_CONSTANT
-#define FORWARD_PUSH_CONSTANT
+#ifndef PREFILER_PUSH_CONSTANT
+#define PREFILER_PUSH_CONSTANT
 
-#include "Mesh.glsl"
-#include "Scene.glsl"
-#include "Vertex.glsl"
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
+{
+    vec3 positions[];
+};
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer    Scene;
-    MeshBuffer     Meshes;
-    PositionBuffer Positions;
-    VertexBuffer   Vertices;
-    uint           TextureSamplerIndex;
-    uint           IBLSamplerIndex;
-    uint           IrradianceIndex;
-    uint           PreFilterIndex;
-    uint           BRDFLUTIndex;
+    VertexBuffer Vertices;
+    mat4         Projection;
+    mat4         View;
+    uint         SamplerIndex;
+    uint         EnvMapIndex;
+    float        Roughness;
 } Constants;
 
 #endif

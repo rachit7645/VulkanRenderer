@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PUSH_CONSTANT
-#define FORWARD_PUSH_CONSTANT
+#ifndef PREFILTER_CONSTANTS_H
+#define PREFILTER_CONSTANTS_H
 
-#include "Mesh.glsl"
-#include "Scene.glsl"
-#include "Vertex.glsl"
+#include <vulkan/vulkan.h>
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+#include "Externals/GLM.h"
+#include "Util/Util.h"
+
+namespace Renderer::PreFilter
 {
-    SceneBuffer    Scene;
-    MeshBuffer     Meshes;
-    PositionBuffer Positions;
-    VertexBuffer   Vertices;
-    uint           TextureSamplerIndex;
-    uint           IBLSamplerIndex;
-    uint           IrradianceIndex;
-    uint           PreFilterIndex;
-    uint           BRDFLUTIndex;
-} Constants;
+    struct PushConstant
+    {
+        VkDeviceAddress positions;
+        glm::mat4       projection;
+        glm::mat4       view;
+        u32             samplerIndex;
+        u32             envMapIndex;
+        f32             roughness;
+    };
+}
 
 #endif
