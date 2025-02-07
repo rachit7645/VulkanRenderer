@@ -45,6 +45,7 @@ namespace Renderer
         Vk::TextureManager& textureManager
     )
     {
+        // HDRi Environment Maps are always flipped for some reason idk why
         stbi_set_flip_vertically_on_load(true);
 
         hdrMapID = textureManager.AddTexture
@@ -74,6 +75,8 @@ namespace Renderer
             VK_COMMAND_BUFFER_LEVEL_PRIMARY
         );
 
+        const auto matrixBuffer = SetupMatrixBuffer(context);
+
         megaSet.Update(context.device);
 
         Vk::BeginLabel(context.graphicsQueue, "IBLMaps::Generate", {0.9215f, 0.8470f, 0.0274f, 1.0f});
@@ -87,6 +90,7 @@ namespace Renderer
             context,
             formatHelper,
             geometryBuffer,
+            matrixBuffer,
             megaSet,
             textureManager
         );
@@ -97,6 +101,7 @@ namespace Renderer
             context,
             formatHelper,
             geometryBuffer,
+            matrixBuffer,
             megaSet,
             textureManager
         );
@@ -107,6 +112,7 @@ namespace Renderer
             context,
             formatHelper,
             geometryBuffer,
+            matrixBuffer,
             megaSet,
             textureManager
         );
@@ -188,22 +194,60 @@ namespace Renderer
         megaSet.Update(context.device);
     }
 
+    Vk::Buffer IBLMaps::SetupMatrixBuffer(const Vk::Context& context)
+    {
+        const auto projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+
+        const std::array matrices =
+        {
+            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+        };
+
+        auto matrixBuffer = Vk::Buffer
+        (
+            context.allocator,
+            matrices.size() * sizeof(glm::mat4),
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        std::memcpy(matrixBuffer.allocInfo.pMappedData, matrices.data(), matrices.size() * sizeof(glm::mat4));
+
+        matrixBuffer.GetDeviceAddress(context.device);
+
+        Vk::SetDebugName(context.device, matrixBuffer.handle, "IBLMaps/MatrixBuffer");
+
+        m_deletionQueue.PushDeletor([context, matrixBuffer]
+        {
+            matrixBuffer.Destroy(context.allocator);
+        });
+
+        return matrixBuffer;
+    }
+
     void IBLMaps::CreateCubeMap
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::Buffer& matrixBuffer,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
     {
         auto pipeline = Converter::Pipeline(context, formatHelper, megaSet, textureManager);
-        megaSet.Update(context.device);
 
         Vk::BeginLabel(cmdBuffer, "Equirectangular To Cubemap Conversion", {0.2588f, 0.5294f, 0.9607f, 1.0f});
 
-        auto skybox = Vk::Image
+        const auto skybox = Vk::Image
         (
             context.allocator,
             {
@@ -211,7 +255,7 @@ namespace Renderer
                 .pNext                 = nullptr,
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.textureFormatHDR,
+                .format                = formatHelper.colorAttachmentFormatHDR,
                 .extent                = {SKYBOX_SIZE.width, SKYBOX_SIZE.height, 1},
                 .mipLevels             = static_cast<u32>(std::floor(std::log2(std::max(SKYBOX_SIZE.width, SKYBOX_SIZE.height)))) + 1,
                 .arrayLayers           = 6,
@@ -244,123 +288,111 @@ namespace Renderer
             }
         );
 
-        std::array<Vk::ImageView, 6> skyboxViews = {};
+        const auto renderView = Vk::ImageView
+        (
+            context.device,
+            skybox,
+            VK_IMAGE_VIEW_TYPE_CUBE,
+            skybox.format,
+            {
+                .aspectMask     = skybox.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = skybox.arrayLayers
+            }
+        );
 
-        const auto views = GetViewMatrices();
-
-        for (usize i = 0; i < skyboxViews.size(); ++i)
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
-            Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", i), {0.9882f, 0.7294f, 0.0117f, 1.0f});
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = renderView.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{
+                Renderer::CLEAR_COLOR.r,
+                Renderer::CLEAR_COLOR.g,
+                Renderer::CLEAR_COLOR.b,
+                Renderer::CLEAR_COLOR.a
+            }}}
+        };
 
-            skyboxViews[i] = Vk::ImageView
-            (
-                context.device,
-                skybox,
-                VK_IMAGE_VIEW_TYPE_2D,
-                skybox.format,
-                {
-                    .aspectMask     = skybox.aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = static_cast<u32>(i),
-                    .layerCount     = 1
-                }
-            );
-
-            const VkRenderingAttachmentInfo colorAttachmentInfo =
-            {
-                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .pNext              = nullptr,
-                .imageView          = skyboxViews[i].handle,
-                .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .resolveMode        = VK_RESOLVE_MODE_NONE,
-                .resolveImageView   = VK_NULL_HANDLE,
-                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue         = {{{
-                    Renderer::CLEAR_COLOR.r,
-                    Renderer::CLEAR_COLOR.g,
-                    Renderer::CLEAR_COLOR.b,
-                    Renderer::CLEAR_COLOR.a
-                }}}
-            };
-
-            const VkRenderingInfo renderInfo =
-            {
-                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-                .pNext                = nullptr,
-                .flags                = 0,
-                .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {skybox.width, skybox.height}
-                },
-                .layerCount           = 1,
-                .viewMask             = 0,
-                .colorAttachmentCount = 1,
-                .pColorAttachments    = &colorAttachmentInfo,
-                .pDepthAttachment     = nullptr,
-                .pStencilAttachment   = nullptr
-            };
-
-            vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
-
-            pipeline.Bind(cmdBuffer);
-
-            const VkViewport viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(skybox.width),
-                .height   = static_cast<f32>(skybox.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
-
-            vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-            const VkRect2D scissor =
-            {
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
                 .offset = {0, 0},
                 .extent = {skybox.width, skybox.height}
-            };
+            },
+            .layerCount           = 1,
+            .viewMask             = 0b00111111,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
 
-            vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            pipeline.pushConstant =
-            {
-                .positions    = geometryBuffer.cubeBuffer.deviceAddress,
-                .projection   = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f),
-                .view         = views[i],
-                .samplerIndex = pipeline.samplerIndex,
-                .textureIndex = textureManager.GetTextureID(hdrMapID)
-            };
+        pipeline.Bind(cmdBuffer);
 
-            pipeline.LoadPushConstants
-            (
-                cmdBuffer,
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(Converter::PushConstant),
-                &pipeline.pushConstant
-            );
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(skybox.width),
+            .height   = static_cast<f32>(skybox.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
 
-            std::array descriptorSets = {megaSet.descriptorSet.handle};
-            pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
-            vkCmdDraw
-            (
-                cmdBuffer.handle,
-                36,
-                1,
-                0,
-                0
-            );
+        const VkRect2D scissor =
+        {
+            .offset = {0, 0},
+            .extent = {skybox.width, skybox.height}
+        };
 
-            vkCmdEndRendering(cmdBuffer.handle);
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            Vk::EndLabel(cmdBuffer);
-        }
+        pipeline.pushConstant =
+        {
+            .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+            .matrices     = matrixBuffer.deviceAddress,
+            .samplerIndex = pipeline.samplerIndex,
+            .textureIndex = textureManager.GetTextureID(hdrMapID)
+        };
+
+        pipeline.LoadPushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(Converter::PushConstant),
+            &pipeline.pushConstant
+        );
+
+        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+        vkCmdDraw
+        (
+            cmdBuffer.handle,
+            36,
+            1,
+            0,
+            0
+        );
+
+        vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::BeginLabel(cmdBuffer, "Mipmap Generation", {0.4588f, 0.1294f, 0.9207f, 1.0f});
 
@@ -406,13 +438,9 @@ namespace Renderer
         skyboxID = textureManager.AddCubemap(megaSet, context.device, "Skybox", {skybox, skyboxView});
         megaSet.Update(context.device);
 
-        m_deletionQueue.PushDeletor([context, skyboxViews, pipeline] () mutable
+        m_deletionQueue.PushDeletor([context, renderView, pipeline] () mutable
         {
-            for (auto& view : skyboxViews)
-            {
-                view.Destroy(context.device);
-            }
-
+            renderView.Destroy(context.device);
             pipeline.Destroy(context.device);
         });
     }
@@ -423,16 +451,16 @@ namespace Renderer
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::Buffer& matrixBuffer,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
     {
         auto pipeline = Convolution::Pipeline(context, formatHelper, megaSet, textureManager);
-        megaSet.Update(context.device);
 
         Vk::BeginLabel(cmdBuffer, "Irradiance Map Generation", {0.2988f, 0.2294f, 0.6607f, 1.0f});
 
-        auto irradiance = Vk::Image
+        const auto irradiance = Vk::Image
         (
             context.allocator,
             {
@@ -440,7 +468,7 @@ namespace Renderer
                 .pNext                 = nullptr,
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.textureFormatHDR,
+                .format                = formatHelper.colorAttachmentFormatHDR,
                 .extent                = {IRRADIANCE_SIZE.width, IRRADIANCE_SIZE.height, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 6,
@@ -473,126 +501,6 @@ namespace Renderer
             }
         );
 
-        std::array<Vk::ImageView, 6> irradianceViews = {};
-
-        const auto views = GetViewMatrices();
-
-        for (usize i = 0; i < irradianceViews.size(); ++i)
-        {
-            Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", i), {0.9882f, 0.7294f, 0.0117f, 1.0f});
-
-            irradianceViews[i] = Vk::ImageView
-            (
-                context.device,
-                irradiance,
-                VK_IMAGE_VIEW_TYPE_2D,
-                irradiance.format,
-                {
-                    .aspectMask     = irradiance.aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = static_cast<u32>(i),
-                    .layerCount     = 1
-                }
-            );
-
-            const VkRenderingAttachmentInfo colorAttachmentInfo =
-            {
-                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .pNext              = nullptr,
-                .imageView          = irradianceViews[i].handle,
-                .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .resolveMode        = VK_RESOLVE_MODE_NONE,
-                .resolveImageView   = VK_NULL_HANDLE,
-                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue         = {{{
-                    Renderer::CLEAR_COLOR.r,
-                    Renderer::CLEAR_COLOR.g,
-                    Renderer::CLEAR_COLOR.b,
-                    Renderer::CLEAR_COLOR.a
-                }}}
-            };
-
-            const VkRenderingInfo renderInfo =
-            {
-                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-                .pNext                = nullptr,
-                .flags                = 0,
-                .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {irradiance.width, irradiance.height}
-                },
-                .layerCount           = 1,
-                .viewMask             = 0,
-                .colorAttachmentCount = 1,
-                .pColorAttachments    = &colorAttachmentInfo,
-                .pDepthAttachment     = nullptr,
-                .pStencilAttachment   = nullptr
-            };
-
-            vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
-
-            pipeline.Bind(cmdBuffer);
-
-            const VkViewport viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(irradiance.width),
-                .height   = static_cast<f32>(irradiance.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
-
-            vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-            const VkRect2D scissor =
-            {
-                .offset = {0, 0},
-                .extent = {irradiance.width, irradiance.height}
-            };
-
-            vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
-
-            pipeline.pushConstant =
-            {
-                .positions    = geometryBuffer.cubeBuffer.deviceAddress,
-                .projection   = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f),
-                .view         = views[i],
-                .samplerIndex = pipeline.samplerIndex,
-                .envMapIndex  = textureManager.GetCubemapID(skyboxID)
-            };
-
-            pipeline.LoadPushConstants
-            (
-                cmdBuffer,
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(Convolution::PushConstant),
-                &pipeline.pushConstant
-            );
-
-            std::array descriptorSets = {megaSet.descriptorSet.handle};
-            pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
-
-            vkCmdDraw
-            (
-                cmdBuffer.handle,
-                36,
-                1,
-                0,
-                0
-            );
-
-            vkCmdEndRendering(cmdBuffer.handle);
-
-            Vk::EndLabel(cmdBuffer);
-        }
-
-        Vk::EndLabel(cmdBuffer);
-
         const auto irradianceView = Vk::ImageView
         (
             context.device,
@@ -608,15 +516,103 @@ namespace Renderer
             }
         );
 
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = irradianceView.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{
+                Renderer::CLEAR_COLOR.r,
+                Renderer::CLEAR_COLOR.g,
+                Renderer::CLEAR_COLOR.b,
+                Renderer::CLEAR_COLOR.a
+            }}}
+        };
+
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {0, 0},
+                .extent = {irradiance.width, irradiance.height}
+            },
+            .layerCount           = 1,
+            .viewMask             = 0b00111111,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
+
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+        pipeline.Bind(cmdBuffer);
+
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(irradiance.width),
+            .height   = static_cast<f32>(irradiance.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {0, 0},
+            .extent = {irradiance.width, irradiance.height}
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+        pipeline.pushConstant =
+        {
+            .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+            .matrices     = matrixBuffer.deviceAddress,
+            .samplerIndex = pipeline.samplerIndex,
+            .envMapIndex  = textureManager.GetCubemapID(skyboxID)
+        };
+
+        pipeline.LoadPushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(Convolution::PushConstant),
+            &pipeline.pushConstant
+        );
+
+        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+        vkCmdDraw
+        (
+            cmdBuffer.handle,
+            36,
+            1,
+            0,
+            0
+        );
+
+        vkCmdEndRendering(cmdBuffer.handle);
+
+        Vk::EndLabel(cmdBuffer);
+
         irradianceID = textureManager.AddCubemap(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
 
-        m_deletionQueue.PushDeletor([context, irradianceViews, pipeline] () mutable
+        m_deletionQueue.PushDeletor([context, pipeline] () mutable
         {
-            for (auto& view : irradianceViews)
-            {
-                view.Destroy(context.device);
-            }
-
             pipeline.Destroy(context.device);
         });
     }
@@ -627,16 +623,16 @@ namespace Renderer
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::Buffer& matrixBuffer,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
     {
         auto pipeline = PreFilter::Pipeline(context, formatHelper, megaSet, textureManager);
-        megaSet.Update(context.device);
 
         Vk::BeginLabel(cmdBuffer, "PreFilter Map Generation", {0.2928f, 0.4794f, 0.6607f, 1.0f});
 
-        auto preFilter = Vk::Image
+        const auto preFilter = Vk::Image
         (
             context.allocator,
             {
@@ -644,7 +640,7 @@ namespace Renderer
                 .pNext                 = nullptr,
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.textureFormatHDR,
+                .format                = formatHelper.colorAttachmentFormatHDR,
                 .extent                = {PRE_FILTER_SIZE.width, PRE_FILTER_SIZE.height, 1},
                 .mipLevels             = PREFILTER_MIPMAP_LEVELS,
                 .arrayLayers           = 6,
@@ -677,133 +673,123 @@ namespace Renderer
             }
         );
 
-        std::array<std::array<Vk::ImageView, 6>, PREFILTER_MIPMAP_LEVELS> preFilterViews = {};
-
-        const auto views = GetViewMatrices();
+        std::array<Vk::ImageView, PREFILTER_MIPMAP_LEVELS> preFilterViews = {};
 
         for (usize mip = 0; mip < preFilterViews.size(); ++mip)
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Mip #{}", mip), {0.5882f, 0.9294f, 0.2117f, 1.0f});
 
-            auto mipWidth  = static_cast<u32>(preFilter.width  * std::pow(0.5f, mip));
-            auto mipHeight = static_cast<u32>(preFilter.height * std::pow(0.5f, mip));
+            const auto mipWidth  = static_cast<u32>(preFilter.width  * std::pow(0.5f, mip));
+            const auto mipHeight = static_cast<u32>(preFilter.height * std::pow(0.5f, mip));
 
-            auto roughness = static_cast<f32>(mip) / static_cast<f32>(preFilter.mipLevels - 1);
+            const auto roughness = static_cast<f32>(mip) / static_cast<f32>(preFilter.mipLevels - 1);
 
-            for (usize face = 0; face < preFilter.arrayLayers; ++face)
+            preFilterViews[mip] = Vk::ImageView
+            (
+                context.device,
+                preFilter,
+                VK_IMAGE_VIEW_TYPE_CUBE,
+                preFilter.format,
+                {
+                    .aspectMask     = preFilter.aspect,
+                    .baseMipLevel   = static_cast<u32>(mip),
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = preFilter.arrayLayers
+                }
+            );
+
+            const VkRenderingAttachmentInfo colorAttachmentInfo =
             {
-                Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", face), {0.9882f, 0.7294f, 0.0117f, 1.0f});
+                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .pNext              = nullptr,
+                .imageView          = preFilterViews[mip].handle,
+                .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .resolveMode        = VK_RESOLVE_MODE_NONE,
+                .resolveImageView   = VK_NULL_HANDLE,
+                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                .clearValue         = {{{
+                    Renderer::CLEAR_COLOR.r,
+                    Renderer::CLEAR_COLOR.g,
+                    Renderer::CLEAR_COLOR.b,
+                    Renderer::CLEAR_COLOR.a
+                }}}
+            };
 
-                preFilterViews[mip][face] = Vk::ImageView
-                (
-                    context.device,
-                    preFilter,
-                    VK_IMAGE_VIEW_TYPE_2D,
-                    preFilter.format,
-                    {
-                        .aspectMask     = preFilter.aspect,
-                        .baseMipLevel   = static_cast<u32>(mip),
-                        .levelCount     = 1,
-                        .baseArrayLayer = static_cast<u32>(face),
-                        .layerCount     = 1
-                    }
-                );
-
-                const VkRenderingAttachmentInfo colorAttachmentInfo =
-                {
-                    .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                    .pNext              = nullptr,
-                    .imageView          = preFilterViews[mip][face].handle,
-                    .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                    .resolveMode        = VK_RESOLVE_MODE_NONE,
-                    .resolveImageView   = VK_NULL_HANDLE,
-                    .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                    .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                    .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                    .clearValue         = {{{
-                        Renderer::CLEAR_COLOR.r,
-                        Renderer::CLEAR_COLOR.g,
-                        Renderer::CLEAR_COLOR.b,
-                        Renderer::CLEAR_COLOR.a
-                    }}}
-                };
-
-                const VkRenderingInfo renderInfo =
-                {
-                    .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-                    .pNext                = nullptr,
-                    .flags                = 0,
-                    .renderArea           = {
-                        .offset = {0, 0},
-                        .extent = {mipWidth, mipHeight}
-                    },
-                    .layerCount           = 1,
-                    .viewMask             = 0,
-                    .colorAttachmentCount = 1,
-                    .pColorAttachments    = &colorAttachmentInfo,
-                    .pDepthAttachment     = nullptr,
-                    .pStencilAttachment   = nullptr
-                };
-
-                vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
-
-                pipeline.Bind(cmdBuffer);
-
-                const VkViewport viewport =
-                {
-                    .x        = 0.0f,
-                    .y        = 0.0f,
-                    .width    = static_cast<f32>(mipWidth),
-                    .height   = static_cast<f32>(mipHeight),
-                    .minDepth = 0.0f,
-                    .maxDepth = 1.0f
-                };
-
-                vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-                const VkRect2D scissor =
-                {
+            const VkRenderingInfo renderInfo =
+            {
+                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                .pNext                = nullptr,
+                .flags                = 0,
+                .renderArea           = {
                     .offset = {0, 0},
                     .extent = {mipWidth, mipHeight}
-                };
+                },
+                .layerCount           = 1,
+                .viewMask             = 0b00111111,
+                .colorAttachmentCount = 1,
+                .pColorAttachments    = &colorAttachmentInfo,
+                .pDepthAttachment     = nullptr,
+                .pStencilAttachment   = nullptr
+            };
 
-                vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+            vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-                pipeline.pushConstant =
-                {
-                    .positions    = geometryBuffer.cubeBuffer.deviceAddress,
-                    .projection   = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f),
-                    .view         = views[face],
-                    .samplerIndex = pipeline.samplerIndex,
-                    .envMapIndex  = textureManager.GetCubemapID(skyboxID),
-                    .roughness    = roughness
-                };
+            pipeline.Bind(cmdBuffer);
 
-                pipeline.LoadPushConstants
-                (
-                    cmdBuffer,
-                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    0,
-                    sizeof(Convolution::PushConstant),
-                    &pipeline.pushConstant
-                );
+            const VkViewport viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(mipWidth),
+                .height   = static_cast<f32>(mipHeight),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
 
-                std::array descriptorSets = {megaSet.descriptorSet.handle};
-                pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
-                vkCmdDraw
-                (
-                    cmdBuffer.handle,
-                    36,
-                    1,
-                    0,
-                    0
-                );
+            const VkRect2D scissor =
+            {
+                .offset = {0, 0},
+                .extent = {mipWidth, mipHeight}
+            };
 
-                vkCmdEndRendering(cmdBuffer.handle);
+            vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-                Vk::EndLabel(cmdBuffer);
-            }
+            pipeline.pushConstant =
+            {
+                .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+                .matrices     = matrixBuffer.deviceAddress,
+                .samplerIndex = pipeline.samplerIndex,
+                .envMapIndex  = textureManager.GetCubemapID(skyboxID),
+                .roughness    = roughness
+            };
+
+            pipeline.LoadPushConstants
+            (
+                cmdBuffer,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(PreFilter::PushConstant),
+                &pipeline.pushConstant
+            );
+
+            const std::array descriptorSets = {megaSet.descriptorSet.handle};
+            pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+            vkCmdDraw
+            (
+                cmdBuffer.handle,
+                36,
+                1,
+                0,
+                0
+            );
+
+            vkCmdEndRendering(cmdBuffer.handle);
 
             Vk::EndLabel(cmdBuffer);
         }
@@ -829,12 +815,9 @@ namespace Renderer
 
         m_deletionQueue.PushDeletor([context, preFilterViews, pipeline] () mutable
         {
-            for (auto& mip : preFilterViews)
+            for (auto& view : preFilterViews)
             {
-                for (auto& view : mip)
-                {
-                    view.Destroy(context.device);
-                }
+                view.Destroy(context.device);
             }
 
             pipeline.Destroy(context.device);
@@ -1007,18 +990,5 @@ namespace Renderer
         {
             pipeline.Destroy(context.device);
         });
-    }
-
-    std::array<glm::mat4, 6> IBLMaps::GetViewMatrices()
-    {
-        return
-        {
-            glm::lookAt(glm::vec3(0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-            glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-            glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-        };
     }
 }

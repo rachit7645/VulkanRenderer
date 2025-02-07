@@ -159,6 +159,7 @@ namespace Vk::Builders
 
     PipelineBuilder& PipelineBuilder::SetRenderingInfo
     (
+        u32 viewMask,
         const std::span<const VkFormat> colorFormats,
         VkFormat depthFormat,
         VkFormat stencilFormat
@@ -170,7 +171,7 @@ namespace Vk::Builders
         {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .pNext                   = nullptr,
-            .viewMask                = 0,
+            .viewMask                = viewMask,
             .colorAttachmentCount    = static_cast<u32>(m_renderingColorFormats.size()),
             .pColorAttachmentFormats = m_renderingColorFormats.data(),
             .depthAttachmentFormat   = depthFormat,

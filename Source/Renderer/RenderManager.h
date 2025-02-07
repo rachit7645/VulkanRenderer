@@ -112,7 +112,7 @@ namespace Renderer
         {
             .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
             .color     = {1.0f,   0.956f, 0.898f, 1.0f},
-            .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
+            .intensity = {2.5f,   2.5f,   2.5f,   1.0f}
         };
 
         Util::DeletionQueue m_deletionQueue = {};

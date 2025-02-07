@@ -267,6 +267,7 @@ namespace Vk
 
         // Vulkan 1.1 features
         const bool hasShaderDrawParameters = vk11Features->shaderDrawParameters;
+        const bool hasMultiView            = vk11Features->multiview;
 
         // Vulkan 1.2 features
         const bool hasBDA                         = vk12Features->bufferDeviceAddress;
@@ -285,7 +286,7 @@ namespace Vk
         const bool required   = isQueueValid && hasExtensions;
         const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC;
         const bool extensions = isSwapChainAdequate;
-        const bool vk11       = hasShaderDrawParameters;
+        const bool vk11       = hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
                                 hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                                 hasSampledImageUpdateAfterBind;
@@ -322,6 +323,7 @@ namespace Vk
         vk11Features.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
         vk11Features.pNext                = nullptr;
         vk11Features.shaderDrawParameters = VK_TRUE;
+        vk11Features.multiview            = VK_TRUE;
 
         // Add required Vulkan 1.2 features here
         VkPhysicalDeviceVulkan12Features vk12Features = {};

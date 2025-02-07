@@ -45,7 +45,7 @@ namespace Renderer::DearImGui
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(COLOR_FORMATS, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, COLOR_FORMATS, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("ImGui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("ImGui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

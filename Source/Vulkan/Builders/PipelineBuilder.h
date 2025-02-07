@@ -49,6 +49,7 @@ namespace Vk::Builders
 
         [[nodiscard]] PipelineBuilder& SetRenderingInfo
         (
+            u32 viewMask,
             const std::span<const VkFormat> colorFormats,
             VkFormat depthFormat,
             VkFormat stencilFormat

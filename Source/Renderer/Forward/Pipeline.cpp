@@ -51,7 +51,7 @@ namespace Renderer::Forward
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Forward.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

@@ -43,11 +43,11 @@ namespace Renderer::Converter
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.textureFormatHDR};
+        std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("Converter.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Converter.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

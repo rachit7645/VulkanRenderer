@@ -59,7 +59,7 @@ namespace Vk
             const VkImageSubresourceRange& subresourceRange
         ) const;
 
-        void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer);
+        void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer) const;
 
         void Destroy(VmaAllocator allocator) const;
 

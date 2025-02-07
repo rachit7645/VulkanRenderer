@@ -87,7 +87,7 @@ namespace Renderer
 
         /*m_renderObjects.emplace_back(
             m_modelManager.AddModel(m_context, m_megaSet, "Bistro/BistroC.gltf"),
-            glm::vec3(-150.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, -150.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
         );*/

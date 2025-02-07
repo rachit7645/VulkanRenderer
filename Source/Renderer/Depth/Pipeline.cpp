@@ -31,7 +31,7 @@ namespace Renderer::Depth
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo({}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Depth.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Depth.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

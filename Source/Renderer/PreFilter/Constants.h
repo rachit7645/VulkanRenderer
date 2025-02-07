@@ -27,8 +27,7 @@ namespace Renderer::PreFilter
     struct PushConstant
     {
         VkDeviceAddress positions;
-        glm::mat4       projection;
-        glm::mat4       view;
+        VkDeviceAddress matrices;
         u32             samplerIndex;
         u32             envMapIndex;
         f32             roughness;

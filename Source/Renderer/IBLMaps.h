@@ -49,12 +49,15 @@ namespace Renderer
         usize irradianceID = 0;
         usize preFilterID  = 0;
     private:
+        Vk::Buffer SetupMatrixBuffer(const Vk::Context& context);
+
         void CreateCubeMap
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::Buffer& matrixBuffer,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
@@ -65,6 +68,7 @@ namespace Renderer
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::Buffer& matrixBuffer,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
@@ -75,6 +79,7 @@ namespace Renderer
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::Buffer& matrixBuffer,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
@@ -87,8 +92,6 @@ namespace Renderer
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
-
-        std::array<glm::mat4, 6> GetViewMatrices();
 
         Util::DeletionQueue m_deletionQueue;
     };

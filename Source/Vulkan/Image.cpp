@@ -162,7 +162,7 @@ namespace Vk
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
     }
 
-    void Image::GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer)
+    void Image::GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer) const
     {
         if (mipLevels <= 1)
         {

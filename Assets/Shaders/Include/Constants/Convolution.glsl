@@ -22,11 +22,15 @@ layout(buffer_reference, scalar) readonly buffer VertexBuffer
     vec3 positions[];
 };
 
+layout(buffer_reference, scalar) readonly buffer MatrixBuffer
+{
+    mat4 matrices[];
+};
+
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
     VertexBuffer Vertices;
-    mat4         Projection;
-    mat4         View;
+    MatrixBuffer Matrices;
     uint         SamplerIndex;
     uint         EnvMapIndex;
 } Constants;

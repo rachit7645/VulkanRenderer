@@ -82,6 +82,9 @@ file(GLOB SHADER_HEADERS
     Include/Constants/Swapchain.glsl
     Include/Constants/Depth.glsl
     Include/Constants/ImGui.glsl
+    Include/Constants/Converter.glsl
+    Include/Constants/Convolution.glsl
+    Include/Constants/PreFilter.glsl
 )
 
 # For each shader to be compiled

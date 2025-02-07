@@ -24,14 +24,12 @@ void main()
     vec3  irradiance = vec3(0.0f);
     float nrSamples  = 0.0f;
 
-    const float SAMPLE_DELTA = 0.025f;
-
-    for(float phi = 0.0; phi < 2.0f * PI; phi += SAMPLE_DELTA)
+    for(float phi = 0.0; phi < 2.0f * PI; phi += CONVOLUTION_SAMPLE_DELTA)
     {
         float sinPhi = sin(phi);
         float cosPhi = cos(phi);
 
-        for(float theta = 0.0f; theta < 0.5f * PI; theta += SAMPLE_DELTA)
+        for(float theta = 0.0f; theta < 0.5f * PI; theta += CONVOLUTION_SAMPLE_DELTA)
         {
             float sinTheta = sin(theta);
             float cosTheta = cos(theta);
