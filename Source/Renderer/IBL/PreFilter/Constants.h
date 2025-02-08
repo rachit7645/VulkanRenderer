@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef PREFILTER_CONSTANTS_H
+#define PREFILTER_CONSTANTS_H
 
-#include "Objects/DirLight.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
+#include <vulkan/vulkan.h>
 
-namespace Renderer
+#include "Util/Util.h"
+
+namespace Renderer::IBL::PreFilter
 {
-    struct VULKAN_GLSL_DATA Scene
+    struct PushConstant
     {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
+        VkDeviceAddress positions;
+        VkDeviceAddress matrices;
+        u32             samplerIndex;
+        u32             envMapIndex;
+        f32             roughness;
     };
 }
 

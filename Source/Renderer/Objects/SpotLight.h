@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef SPOT_LIGHT_H
+#define SPOT_LIGHT_H
 
-#include "Objects/DirLight.h"
 #include "Externals/GLM.h"
 #include "Vulkan/Util.h"
 
-namespace Renderer
+namespace Renderer::Objects
 {
-    struct VULKAN_GLSL_DATA Scene
+    struct VULKAN_GLSL_DATA SpotLight
     {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
+        glm::vec4 position    = {0.0f, 0.0f, 0.0f, 1.0f};
+        glm::vec4 color       = {0.0f, 0.0f, 0.0f, 1.0f};
+        glm::vec4 intensity   = {0.0f, 0.0f, 0.0f, 1.0f};
+        glm::vec4 attenuation = {0.0f, 0.0f, 0.0f, 1.0f};
+        glm::vec4 direction   = {0.0f, 0.0f, 0.0f, 1.0f};
+        glm::vec4 cutOff      = {0.0f, 0.0f, 1.0f, 1.0f};
     };
 }
 

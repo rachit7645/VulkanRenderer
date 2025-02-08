@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef UPSAMPLE_PUSH_CONSTANT
+#define UPSAMPLE_PUSH_CONSTANT
 
-#include "Objects/DirLight.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
-
-namespace Renderer
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    struct VULKAN_GLSL_DATA Scene
-    {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
-    };
-}
+    uint  SamplerIndex;
+    uint  ImageIndex;
+    float FilterRadius;
+} Constants;
 
 #endif

@@ -27,7 +27,7 @@ namespace Vk
         const std::string_view name,
         FramebufferType type,
         ImageType imageType,
-        const FramebufferSize& size
+        const ResizeCallback& resizeCallback
     )
     {
         if (m_framebuffers.contains(name.data()))
@@ -37,9 +37,10 @@ namespace Vk
 
         m_framebuffers.emplace(name, Framebuffer{
             .type      = type,
-            .size      = size,
+            .size      = {},
             .imageType = imageType,
-            .image     = {}
+            .image     = {},
+            .OnResize  = resizeCallback
         });
     }
 
@@ -73,39 +74,25 @@ namespace Vk
             return;
         }
 
-        std::vector<VkImageMemoryBarrier2> barriers = {};
-        barriers.reserve(m_framebuffers.size());
+        std::vector<VkImageMemoryBarrier2> barriers;
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
-            FramebufferSize size = framebuffer.size;
-
-            if (size.width == 0 || size.height == 0)
-            {
-                size =
-                {
-                    .width       = swapchainExtent.width,
-                    .height      = swapchainExtent.height,
-                    .mipLevels   = 1,
-                    .arrayLayers = 1
-                };
-            }
-
-            if (framebuffer.image.width == size.width || framebuffer.image.height == size.height)
-            {
-                continue;
-            }
-
             framebuffer.image.Destroy(context.allocator);
+
+            if (framebuffer.OnResize)
+            {
+                framebuffer.OnResize(swapchainExtent, *this);
+            }
 
             VkImageCreateInfo createInfo = {};
             {
                 createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
                 createInfo.pNext                 = nullptr;
                 createInfo.imageType             = VK_IMAGE_TYPE_2D;
-                createInfo.extent                = {size.width, size.height, 1};
-                createInfo.arrayLayers           = size.arrayLayers;
-                createInfo.mipLevels             = size.mipLevels;
+                createInfo.extent                = {framebuffer.size.width, framebuffer.size.height, 1};
+                createInfo.arrayLayers           = framebuffer.size.arrayLayers;
+                createInfo.mipLevels             = framebuffer.size.mipLevels;
                 createInfo.samples               = VK_SAMPLE_COUNT_1_BIT;
                 createInfo.tiling                = VK_IMAGE_TILING_OPTIMAL;
                 createInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
@@ -174,7 +161,7 @@ namespace Vk
                 break;
 
             case ImageType::Array2D:
-                createInfo.flags = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+                createInfo.flags = 0;
                 break;
 
             case ImageType::Cube:
@@ -284,34 +271,37 @@ namespace Vk
             Vk::SetDebugName(context.device, framebufferView.view.handle, name);
         }
 
-        Vk::ImmediateSubmit
-        (
-            context.device,
-            context.graphicsQueue,
-            context.commandPool,
-            [&] (const Vk::CommandBuffer cmdBuffer)
-            {
-                const VkDependencyInfo dependencyInfo =
+        if (!barriers.empty())
+        {
+            Vk::ImmediateSubmit
+            (
+                context.device,
+                context.graphicsQueue,
+                context.commandPool,
+                [&] (const Vk::CommandBuffer cmdBuffer)
                 {
-                    .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                    .pNext                    = nullptr,
-                    .dependencyFlags          = 0,
-                    .memoryBarrierCount       = 0,
-                    .pMemoryBarriers          = nullptr,
-                    .bufferMemoryBarrierCount = 0,
-                    .pBufferMemoryBarriers    = nullptr,
-                    .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
-                    .pImageMemoryBarriers     = barriers.data()
-                };
+                    const VkDependencyInfo dependencyInfo =
+                    {
+                        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                        .pNext                    = nullptr,
+                        .dependencyFlags          = 0,
+                        .memoryBarrierCount       = 0,
+                        .pMemoryBarriers          = nullptr,
+                        .bufferMemoryBarrierCount = 0,
+                        .pBufferMemoryBarriers    = nullptr,
+                        .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
+                        .pImageMemoryBarriers     = barriers.data()
+                    };
 
-                vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
-            }
-        );
+                    vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+                }
+            );
+        }
 
         megaSet.Update(context.device);
     }
 
-    const Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name) const
+    Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name)
     {
         const auto iter = m_framebuffers.find(name.data());
 
@@ -323,7 +313,19 @@ namespace Vk
         return iter->second;
     }
 
-    const Vk::FramebufferView& FramebufferManager::GetFramebufferView(const std::string_view name) const
+    const Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name) const
+    {
+        const auto iter = m_framebuffers.find(name.data());
+
+        if (iter == m_framebuffers.cend())
+        {
+            Logger::Error("Could not find framebuffer! [Name={}]\n", name);
+        }
+
+        return iter->second;
+    }
+
+    Vk::FramebufferView& FramebufferManager::GetFramebufferView(const std::string_view name)
     {
         const auto iter = m_framebufferViews.find(name.data());
 
@@ -333,6 +335,37 @@ namespace Vk
         }
 
         return iter->second;
+    }
+
+    const Vk::FramebufferView& FramebufferManager::GetFramebufferView(const std::string_view name) const
+    {
+        const auto iter = m_framebufferViews.find(name.data());
+
+        if (iter == m_framebufferViews.cend())
+        {
+            Logger::Error("Could not find framebuffer view! [Name={}]\n", name);
+        }
+
+        return iter->second;
+    }
+
+    void FramebufferManager::DeleteFramebufferViews(const std::string_view framebufferName, VkDevice device)
+    {
+        if (!m_framebuffers.contains(framebufferName.data()))
+        {
+            Logger::Error("Framebuffer not found! [Name={}]\n", framebufferName);
+        }
+
+        std::erase_if(m_framebufferViews, [&] (const auto& pair) -> bool
+        {
+            if (pair.second.framebuffer == framebufferName)
+            {
+                pair.second.view.Destroy(device);
+                return true;
+            }
+
+            return false;
+        });
     }
 
     void FramebufferManager::ImGuiDisplay()
@@ -345,7 +378,7 @@ namespace Vk
                 {
                     const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
 
-                    if (!IsViewable(framebuffer))
+                    if (!IsViewable(framebuffer.type, framebufferView.type))
                     {
                         continue;
                     }
@@ -353,10 +386,10 @@ namespace Vk
                     if (ImGui::TreeNode(name.c_str()))
                     {
                         ImGui::Text("Descriptor Index | %u", framebufferView.descriptorIndex);
-                        ImGui::Text("Width            | %u", framebuffer.image.width);
-                        ImGui::Text("Height           | %u", framebuffer.image.height);
-                        ImGui::Text("Mipmaps Levels   | %u", framebuffer.size.mipLevels);
-                        ImGui::Text("Array Layers     | %u", framebuffer.size.arrayLayers);
+                        ImGui::Text("Width            | %u", std::max(static_cast<u32>(framebuffer.size.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
+                        ImGui::Text("Height           | %u", std::max(static_cast<u32>(framebuffer.size.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
+                        ImGui::Text("Mipmaps Level    | %u", framebufferView.size.baseMipLevel);
+                        ImGui::Text("Array Layer      | %u", framebufferView.size.baseArrayLayer);
                         ImGui::Text("Format           | %s", string_VkFormat(framebuffer.image.format));
                         ImGui::Text("Usage            | %s", string_VkImageUsageFlags(framebuffer.image.usage).c_str());
 
@@ -386,12 +419,12 @@ namespace Vk
         }
     }
 
-    bool FramebufferManager::IsViewable(const Framebuffer& framebuffer)
+    bool FramebufferManager::IsViewable(FramebufferType type, ImageType imageType)
     {
         bool isViewableType  = false;
         bool isViewableImage = false;
 
-        switch (framebuffer.type)
+        switch (type)
         {
         case FramebufferType::ColorLDR:
         case FramebufferType::ColorHDR:
@@ -404,7 +437,7 @@ namespace Vk
             break;
         }
 
-        switch (framebuffer.imageType)
+        switch (imageType)
         {
         case ImageType::Single2D:
             isViewableImage = true;

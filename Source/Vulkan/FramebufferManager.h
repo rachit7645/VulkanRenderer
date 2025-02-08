@@ -24,6 +24,10 @@
 
 namespace Vk
 {
+    class FramebufferManager;
+
+    using ResizeCallback = std::function<void(const VkExtent2D&, FramebufferManager&)>;
+
     enum class FramebufferType : u8
     {
         ColorLDR,
@@ -71,6 +75,7 @@ namespace Vk
         FramebufferSize size      = {};
         ImageType       imageType = ImageType::Single2D;
         Vk::Image       image     = {};
+        ResizeCallback  OnResize  = nullptr;
     };
 
     class FramebufferManager
@@ -81,7 +86,7 @@ namespace Vk
             const std::string_view name,
             FramebufferType type,
             ImageType imageType,
-            const FramebufferSize& size = FramebufferSize{}
+            const ResizeCallback& resizeCallback = nullptr
         );
 
         void AddFramebufferView
@@ -100,16 +105,20 @@ namespace Vk
             VkExtent2D swapchainExtent
         );
 
+        [[nodiscard]] Framebuffer& GetFramebuffer(const std::string_view name);
         [[nodiscard]] const Framebuffer& GetFramebuffer(const std::string_view name) const;
+        [[nodiscard]] FramebufferView& GetFramebufferView(const std::string_view name);
         [[nodiscard]] const FramebufferView& GetFramebufferView(const std::string_view name) const;
+
+        void DeleteFramebufferViews(const std::string_view framebufferName, VkDevice device);
 
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        bool IsViewable(const Framebuffer& framebuffer);
+        bool IsViewable(FramebufferType type, ImageType imageType);
 
-        std::unordered_map<std::string, Framebuffer>     m_framebuffers;
-        std::unordered_map<std::string, FramebufferView> m_framebufferViews;
+        std::unordered_map<std::string, Framebuffer> m_framebuffers;
+        std::map<std::string, FramebufferView>       m_framebufferViews;
     };
 }
 

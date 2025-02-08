@@ -22,7 +22,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "Material.glsl"
-#include "GammaCorrect.glsl"
+#include "Color.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
 #include "Constants/Forward.glsl"

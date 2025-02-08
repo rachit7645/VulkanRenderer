@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef SKYBOX_PASS_H
-#define SKYBOX_PASS_H
+#ifndef CONVOLUTION_PIPELINE_H
+#define CONVOLUTION_PIPELINE_H
 
-#include "Pipeline.h"
-#include "Vulkan/Constants.h"
-#include "Vulkan/GeometryBuffer.h"
-#include "Vulkan/FramebufferManager.h"
-#include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/IBL/IBLMaps.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/Context.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/TextureManager.h"
+#include "Constants.h"
 
-namespace Renderer::Skybox
+namespace Renderer::IBL::Convolution
 {
-    class RenderPass
+    class Pipeline : public Vk::Pipeline
     {
     public:
-        RenderPass
+        Pipeline
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
@@ -37,22 +37,23 @@ namespace Renderer::Skybox
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        Convolution::PushConstant pushConstant = {};
 
-        void Render
+        u32 samplerIndex = 0;
+    private:
+        void CreatePipeline
         (
-            usize FIF,
-            const Vk::FramebufferManager& framebufferManager,
-            const Vk::GeometryBuffer& geometryBuffer,
-            const Buffers::SceneBuffer& sceneBuffer,
-            const IBL::IBLMaps& iblMaps,
-            const Vk::TextureManager& textureManager,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet
         );
 
-        Skybox::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+        void CreatePipelineData
+        (
+            VkDevice device,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
     };
 }
 

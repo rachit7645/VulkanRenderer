@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef BRDF_PIPELINE_H
+#define BRDF_PIPELINE_H
 
-#include "Objects/DirLight.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/Context.h"
+#include "Vulkan/FormatHelper.h"
 
-namespace Renderer
+namespace Renderer::IBL::BRDF
 {
-    struct VULKAN_GLSL_DATA Scene
+    class Pipeline : public Vk::Pipeline
     {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
+    public:
+        Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
     };
 }
 

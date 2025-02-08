@@ -22,7 +22,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "Constants/ImGui.glsl"
-#include "GammaCorrect.glsl"
+#include "Color.glsl"
 #include "MegaSet.glsl"
 
 layout(location = 0) in vec4 fragColor;

@@ -51,8 +51,8 @@ namespace Renderer::Skybox
         usize FIF,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
-        const Renderer::SceneBuffer& sceneBuffer,
-        const Renderer::IBLMaps& iblMaps,
+        const Buffers::SceneBuffer& sceneBuffer,
+        const IBL::IBLMaps& iblMaps,
         const Vk::TextureManager& textureManager,
         const Vk::MegaSet& megaSet
     )

@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef CONVERTER_CONSTANTS_H
+#define CONVERTER_CONSTANTS_H
 
-#include "Objects/DirLight.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
+#include <vulkan/vulkan.h>
 
-namespace Renderer
+#include "Util/Util.h"
+
+namespace Renderer::IBL::Converter
 {
-    struct VULKAN_GLSL_DATA Scene
+    struct PushConstant
     {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
+        VkDeviceAddress positions;
+        VkDeviceAddress matrices;
+        u32             samplerIndex;
+        u32             textureIndex;
     };
 }
 

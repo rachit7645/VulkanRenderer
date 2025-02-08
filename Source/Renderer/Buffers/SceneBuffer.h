@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef SCENE_BUFFER_H
+#define SCENE_BUFFER_H
 
-#include "Objects/DirLight.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
+#include "Renderer/Scene.h"
+#include "Vulkan/Buffer.h"
+#include "Vulkan/Constants.h"
 
-namespace Renderer
+namespace Renderer::Buffers
 {
-    struct VULKAN_GLSL_DATA Scene
+    class SceneBuffer
     {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
+    public:
+        SceneBuffer() = default;
+        SceneBuffer(VkDevice device, VmaAllocator allocator);
+
+        void LoadScene(usize FIF, const Renderer::Scene& scene);
+
+        void Destroy(VmaAllocator allocator);
+
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
     };
 }
 

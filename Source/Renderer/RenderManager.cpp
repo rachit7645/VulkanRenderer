@@ -37,6 +37,7 @@ namespace Renderer
           m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
+          m_bloomPass(m_context, m_framebufferManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
@@ -47,6 +48,7 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
+            m_bloomPass.Destroy(m_context.device, m_context.commandPool);
             m_skyboxPass.Destroy(m_context.device, m_context.commandPool);
             m_imGuiPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_depthPass.Destroy(m_context.device, m_context.commandPool);

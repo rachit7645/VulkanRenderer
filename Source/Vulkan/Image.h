@@ -93,9 +93,17 @@ struct std::hash<Vk::Image>
         const std::size_t hash3 = std::hash<u32          >{}(image.width);
         const std::size_t hash4 = std::hash<u32          >{}(image.height);
         const std::size_t hash5 = std::hash<VkFormat     >{}(image.format);
+        const std::size_t hash6 = std::hash<u32          >{}(image.mipLevels);
+        const std::size_t hash7 = std::hash<u32          >{}(image.arrayLayers);
 
-        // Mix hashes with bit rotation for better distribution
-        return hash1 ^ std::rotl(hash2, 1) ^ std::rotl(hash3, 2) ^ std::rotl(hash4, 3) ^ std::rotl(hash5, 4);
+        // Mix hashes using std::rotl for better distribution
+        return hash1 ^
+               std::rotl(hash2, 1) ^
+               std::rotl(hash3, 2) ^
+               std::rotl(hash4, 3) ^
+               std::rotl(hash5, 4) ^
+               std::rotl(hash6, 5) ^
+               std::rotl(hash7, 6);
     }
 };
 

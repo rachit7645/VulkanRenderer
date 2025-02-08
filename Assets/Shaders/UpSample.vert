@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#version 460
 
-#include "Objects/DirLight.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
+layout(location = 0) out vec2 fragUV;
 
-namespace Renderer
+void main()
 {
-    struct VULKAN_GLSL_DATA Scene
-    {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
-    };
+    // https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
+    fragUV      = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
+    gl_Position = vec4(fragUV * 2.0f - 1.0f, 0.0f, 1.0f);
 }
-
-#endif

@@ -63,13 +63,17 @@ file(GLOB SHADER_SOURCES
     Convolution.vert
     PreFilter.vert
     PreFilter.frag
+    DownSample.vert
+    DownSample.frag
+    UpSample.frag
+    UpSample.vert
 )
 
 # Shader files
 file(GLOB SHADER_HEADERS
     Include/ACES.glsl
     Include/Constants.glsl
-    Include/GammaCorrect.glsl
+    Include/Color.glsl
     Include/Lights.glsl
     Include/Material.glsl
     Include/Mesh.glsl
@@ -78,13 +82,17 @@ file(GLOB SHADER_HEADERS
     Include/Vertex.glsl
     Include/MegaSet.glsl
     Include/Converter.glsl
+    Include/Sampling.glsl
     Include/Constants/Forward.glsl
-    Include/Constants/Swapchain.glsl
+    Include/Constants/PostProcess.glsl
     Include/Constants/Depth.glsl
     Include/Constants/ImGui.glsl
     Include/Constants/Converter.glsl
     Include/Constants/Convolution.glsl
     Include/Constants/PreFilter.glsl
+    Include/Constants/DownSample.glsl
+    Include/Constants/Skybox.glsl
+    Include/Constants/UpSample.glsl
 )
 
 # For each shader to be compiled

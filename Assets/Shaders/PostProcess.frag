@@ -20,8 +20,8 @@
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#include "Constants/Swapchain.glsl"
-#include "GammaCorrect.glsl"
+#include "Constants/PostProcess.glsl"
+#include "Color.glsl"
 #include "ACES.glsl"
 #include "MegaSet.glsl"
 
@@ -31,7 +31,7 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    vec3 color = texture(sampler2D(textures[Constants.imageIndex], samplers[Constants.samplerIndex]), fragUV).rgb;
+    vec3 color = texture(sampler2D(textures[Constants.ImageIndex], samplers[Constants.SamplerIndex]), fragUV).rgb;
          color = GammaCorrect(ACESFast(color));
 
     outColor = vec4(color, 1.0f);

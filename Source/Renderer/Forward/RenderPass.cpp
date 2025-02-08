@@ -16,12 +16,11 @@
 
 #include "RenderPass.h"
 
-#include "Renderer/SceneBuffer.h"
 #include "Util/Log.h"
-#include "Renderer/RenderConstants.h"
 #include "Util/Maths.h"
-#include "Vulkan/Util.h"
 #include "Util/Ranges.h"
+#include "Renderer/RenderConstants.h"
+#include "Renderer/Buffers/SceneBuffer.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Forward
@@ -52,7 +51,17 @@ namespace Renderer::Forward
         (
             "SceneColor",
             Vk::FramebufferType::ColorHDR,
-            Vk::ImageType::Single2D
+            Vk::ImageType::Single2D,
+            [] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager)
+            {
+                framebufferManager.GetFramebuffer("SceneColor").size =
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            }
         );
 
         framebufferManager.AddFramebufferView
@@ -71,10 +80,10 @@ namespace Renderer::Forward
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
-        const Renderer::SceneBuffer& sceneBuffer,
-        const Renderer::MeshBuffer& meshBuffer,
-        const Renderer::IndirectBuffer& indirectBuffer,
-        const Renderer::IBLMaps& iblMaps,
+        const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::MeshBuffer& meshBuffer,
+        const Buffers::IndirectBuffer& indirectBuffer,
+        const IBL::IBLMaps& iblMaps,
         const Vk::TextureManager& textureManager
     )
     {

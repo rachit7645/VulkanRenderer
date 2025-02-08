@@ -46,7 +46,7 @@ namespace Util
 {
     [[noreturn]] inline void Crash()
     {
-        volatile char* crash = nullptr;
+        volatile u8* crash = nullptr;
         *crash = 69;
     }
 }

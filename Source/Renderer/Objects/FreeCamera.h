@@ -14,21 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef FREE_CAMERA_H
+#define FREE_CAMERA_H
 
-#include "Objects/DirLight.h"
+#include "Camera.h"
 #include "Externals/GLM.h"
-#include "Vulkan/Util.h"
 
-namespace Renderer
+namespace Renderer::Objects
 {
-    struct VULKAN_GLSL_DATA Scene
+    class FreeCamera : public Camera
     {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
+    public:
+        FreeCamera();
+        FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
+
+        void Update(f32 frameDelta) override;
+    protected:
+        void ImGuiDisplay() override;
+    private:
+        void CheckInputs(f32 frameDelta);
+        void Move(f32 frameDelta);
+        void Rotate(f32 frameDelta);
+        void Zoom(f32 frameDelta);
+
+        // Settings
+        f32 speed       = 0.000015f;
+        f32 sensitivity = 0.0001f;
+        f32 zoom        = 0.000045f;
     };
 }
 

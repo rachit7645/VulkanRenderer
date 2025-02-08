@@ -19,17 +19,18 @@
 
 #include <vulkan/vulkan.h>
 
-#include "FreeCamera.h"
 #include "RenderObject.h"
-#include "IndirectBuffer.h"
-#include "MeshBuffer.h"
-#include "SceneBuffer.h"
-#include "IBLMaps.h"
+#include "Objects/FreeCamera.h"
+#include "Buffers/IndirectBuffer.h"
+#include "Buffers/MeshBuffer.h"
+#include "Buffers/SceneBuffer.h"
+#include "IBL/IBLMaps.h"
 #include "PostProcess/RenderPass.h"
 #include "Forward/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
 #include "Skybox/RenderPass.h"
+#include "Bloom/RenderPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -80,7 +81,7 @@ namespace Renderer
         Vk::FramebufferManager m_framebufferManager;
         Models::ModelManager   m_modelManager;
 
-        Renderer::IBLMaps m_iblMaps;
+        IBL::IBLMaps m_iblMaps;
 
         // Render Passes
         PostProcess::RenderPass m_postProcessPass;
@@ -88,15 +89,16 @@ namespace Renderer
         Depth::RenderPass       m_depthPass;
         DearImGui::RenderPass   m_imGuiPass;
         Skybox::RenderPass      m_skyboxPass;
+        Bloom::RenderPass       m_bloomPass;
 
         // Buffers
-        MeshBuffer     m_meshBuffer;
-        IndirectBuffer m_indirectBuffer;
-        SceneBuffer    m_sceneBuffer;
+        Buffers::MeshBuffer     m_meshBuffer;
+        Buffers::IndirectBuffer m_indirectBuffer;
+        Buffers::SceneBuffer    m_sceneBuffer;
 
         // Scene objects
         std::vector<Renderer::RenderObject> m_renderObjects;
-        Renderer::FreeCamera                m_camera;
+        Objects::FreeCamera                 m_camera;
 
         // Sync objects
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
@@ -108,7 +110,7 @@ namespace Renderer
 
         bool m_isSwapchainOk = true;
 
-        DirLight m_sun =
+        Objects::DirLight m_sun =
         {
             .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
             .color     = {1.0f,   0.956f, 0.898f, 1.0f},

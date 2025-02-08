@@ -14,22 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef COLOR_GLSL
+#define COLOR_GLSL
 
-#include "Objects/DirLight.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Util.h"
+#include "Constants.glsl"
 
-namespace Renderer
+vec3 GammaCorrect(vec3 color)
 {
-    struct VULKAN_GLSL_DATA Scene
-    {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
-    };
+    return pow(color, vec3(GAMMA_FACTOR));
+}
+
+vec3 ToLinear(vec3 color)
+{
+    return pow(color, vec3(INV_GAMMA_FACTOR));
+}
+
+float ToLuminance(vec3 color)
+{
+    return dot(color, vec3(0.2126f, 0.7152f, 0.0722f));
+}
+
+float KarisAverage(vec3 color)
+{
+    float luma = ToLuminance(ToLinear(color)) * 0.25f;
+
+    return 1.0f / (1.0f + luma);
 }
 
 #endif

@@ -14,43 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef DEPTH_PASS_H
-#define DEPTH_PASS_H
+#ifndef BLOOM_PASS_H
+#define BLOOM_PASS_H
 
-#include "Pipeline.h"
 #include "Vulkan/Constants.h"
-#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Buffers/IndirectBuffer.h"
-#include "Renderer/Buffers/MeshBuffer.h"
-#include "Renderer/Buffers/SceneBuffer.h"
 
-namespace Renderer::Depth
+namespace Renderer::Bloom
 {
     class RenderPass
     {
     public:
-        RenderPass
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet,
-            Vk::FramebufferManager& framebufferManager
-        );
+        RenderPass(const Vk::Context& context, Vk::FramebufferManager& framebufferManager);
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
-
-        void Render
-        (
-            usize FIF,
-            const Vk::FramebufferManager& framebufferManager,
-            const Vk::GeometryBuffer& geometryBuffer,
-            const Buffers::SceneBuffer& sceneBuffer,
-            const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
-        );
-
-        Depth::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     };

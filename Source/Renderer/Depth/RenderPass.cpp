@@ -46,7 +46,17 @@ namespace Renderer::Depth
         (
             "SceneDepth",
             Vk::FramebufferType::Depth,
-            Vk::ImageType::Single2D
+            Vk::ImageType::Single2D,
+            [] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager)
+            {
+                framebufferManager.GetFramebuffer("SceneDepth").size =
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            }
         );
 
         framebufferManager.AddFramebufferView
@@ -64,9 +74,9 @@ namespace Renderer::Depth
         usize FIF,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
-        const Renderer::SceneBuffer& sceneBuffer,
-        const Renderer::MeshBuffer& meshBuffer,
-        const Renderer::IndirectBuffer& indirectBuffer
+        const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::MeshBuffer& meshBuffer,
+        const Buffers::IndirectBuffer& indirectBuffer
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];

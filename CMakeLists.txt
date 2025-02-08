@@ -78,13 +78,13 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
-	Source/Renderer/FreeCamera.cpp
-	Source/Renderer/Camera.cpp
-	Source/Renderer/RenderObject.cpp
-    Source/Renderer/IndirectBuffer.cpp
-    Source/Renderer/MeshBuffer.cpp
-    Source/Renderer/SceneBuffer.cpp
-    Source/Renderer/IBLMaps.cpp
+    # Object sources
+    Source/Renderer/Objects/FreeCamera.cpp
+    Source/Renderer/Objects/Camera.cpp
+    # Renderer Buffer sources
+    Source/Renderer/Buffers/IndirectBuffer.cpp
+    Source/Renderer/Buffers/MeshBuffer.cpp
+    Source/Renderer/Buffers/SceneBuffer.cpp
 	# Post Process Pass Sources
 	Source/Renderer/PostProcess/Pipeline.cpp
 	Source/Renderer/PostProcess/RenderPass.cpp
@@ -97,17 +97,17 @@ add_executable(VulkanRenderer
     # ImGui Pass Sources
     Source/Renderer/ImGui/Pipeline.cpp
     Source/Renderer/ImGui/RenderPass.cpp
-    # BRDF LUT Generation Sources
-    Source/Renderer/BRDF/Pipeline.cpp
-    # Equirectangular to Cubemap
-    Source/Renderer/Converter/Pipeline.cpp
     # Skybox Pass Sources
     Source/Renderer/Skybox/Pipeline.cpp
     Source/Renderer/Skybox/RenderPass.cpp
-    # Convolution Pass Sources
-    Source/Renderer/Convolution/Pipeline.cpp
-    # Prefilter Pass Sources
-    Source/Renderer/PreFilter/Pipeline.cpp
+    # IBL Sources
+    Source/Renderer/IBL/IBLMaps.cpp
+    Source/Renderer/IBL/BRDF/Pipeline.cpp
+    Source/Renderer/IBL/Converter/Pipeline.cpp
+    Source/Renderer/IBL/Convolution/Pipeline.cpp
+    Source/Renderer/IBL/PreFilter/Pipeline.cpp
+    # Bloom Pass sources
+    Source/Renderer/Bloom/RenderPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

@@ -17,18 +17,16 @@
 #ifndef FORWARD_PASS_H
 #define FORWARD_PASS_H
 
-#include <Renderer/IBLMaps.h>
-
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Camera.h"
-#include "Renderer/IndirectBuffer.h"
-#include "Renderer/MeshBuffer.h"
-#include "Renderer/SceneBuffer.h"
+#include "Renderer/Buffers/IndirectBuffer.h"
+#include "Renderer/Buffers/MeshBuffer.h"
+#include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/IBL/IBLMaps.h"
 
 namespace Renderer::Forward
 {
@@ -52,10 +50,10 @@ namespace Renderer::Forward
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
-            const Renderer::SceneBuffer& sceneBuffer,
-            const Renderer::MeshBuffer& meshBuffer,
-            const Renderer::IndirectBuffer& indirectBuffer,
-            const Renderer::IBLMaps& iblMaps,
+            const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::MeshBuffer& meshBuffer,
+            const Buffers::IndirectBuffer& indirectBuffer,
+            const IBL::IBLMaps& iblMaps,
             const Vk::TextureManager& textureManager
         );
 
