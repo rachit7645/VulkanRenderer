@@ -218,7 +218,7 @@ namespace Vk
 
             if (framebufferView.view.handle != VK_NULL_HANDLE)
             {
-                if (framebufferView.view.image == framebuffer.image.handle)
+                if (framebufferView.view.imageHash == std::hash<Vk::Image>{}(framebuffer.image))
                 {
                     continue;
                 }

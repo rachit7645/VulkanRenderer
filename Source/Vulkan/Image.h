@@ -88,8 +88,14 @@ struct std::hash<Vk::Image>
 {
     std::size_t operator()(const Vk::Image& image) const noexcept
     {
-        // This is basic but it should work
-        return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
+        const std::size_t hash1 = std::hash<VkImage      >{}(image.handle);
+        const std::size_t hash2 = std::hash<VmaAllocation>{}(image.allocation);
+        const std::size_t hash3 = std::hash<u32          >{}(image.width);
+        const std::size_t hash4 = std::hash<u32          >{}(image.height);
+        const std::size_t hash5 = std::hash<VkFormat     >{}(image.format);
+
+        // Mix hashes with bit rotation for better distribution
+        return hash1 ^ std::rotl(hash2, 1) ^ std::rotl(hash3, 2) ^ std::rotl(hash4, 3) ^ std::rotl(hash5, 4);
     }
 };
 

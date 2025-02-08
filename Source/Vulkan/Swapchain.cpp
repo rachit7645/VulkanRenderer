@@ -16,6 +16,7 @@
 
 #include "Swapchain.h"
 
+#include <thread>
 #include <volk/volk.h>
 
 #include "Vulkan/DebugUtils.h"
@@ -26,15 +27,30 @@ namespace Vk
 {
     Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
     {
-        CreateSwapChain(size, context);
+        IsSurfaceValid(size, context);
+        CreateSwapChain(context);
         CreateSyncObjects(context.device);
+
         Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::RecreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
+    bool Swapchain::IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context)
+    {
+        m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
+        extent          = ChooseSwapExtent(size);
+
+        if (extent.width == 0 || extent.height == 0)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    void Swapchain::RecreateSwapChain(const Vk::Context& context)
     {
         DestroySwapchain(context.device);
-        CreateSwapChain(size, context);
+        CreateSwapChain(context);
 
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
@@ -81,11 +97,8 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
+    void Swapchain::CreateSwapChain(const Vk::Context& context)
     {
-        m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
-        extent          = ChooseSwapExtent(size);
-
         const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
         const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
 

@@ -31,7 +31,7 @@ namespace Vk
         VkFormat format,
         const VkImageSubresourceRange& subresourceRange
     )
-        : image(image.handle)
+        : imageHash(std::hash<Vk::Image>{}(image))
     {
         const VkImageViewCreateInfo createInfo =
         {
@@ -61,7 +61,7 @@ namespace Vk
 
     bool ImageView::operator==(const ImageView& rhs) const
     {
-        return handle == rhs.handle && image == rhs.image;
+        return handle == rhs.handle && imageHash == rhs.imageHash;
     }
 
     void ImageView::Destroy(VkDevice device) const

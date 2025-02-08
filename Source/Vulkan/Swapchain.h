@@ -35,7 +35,8 @@ namespace Vk
     {
     public:
         Swapchain(const glm::ivec2& size, const Vk::Context& context);
-        void RecreateSwapChain(const glm::ivec2& size, const Vk::Context& context);
+        bool IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context);
+        void RecreateSwapChain(const Vk::Context& context);
         void Destroy(VkDevice device);
 
         VkResult Present(VkQueue queue, usize FIF);
@@ -55,7 +56,7 @@ namespace Vk
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
     private:
-        void CreateSwapChain(const glm::ivec2& size, const Vk::Context& context);
+        void CreateSwapChain(const Vk::Context& context);
         void DestroySwapchain(VkDevice device);
 
         void CreateSyncObjects(VkDevice device);

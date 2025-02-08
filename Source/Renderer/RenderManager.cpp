@@ -445,9 +445,15 @@ namespace Renderer
 
     void RenderManager::Resize()
     {
-        vkDeviceWaitIdle(m_context.device);
+        Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
 
-        m_swapchain.RecreateSwapChain(m_window.size, m_context);
+        if (!m_swapchain.IsSurfaceValid(m_window.size, m_context))
+        {
+            m_isSwapchainOk = false;
+            return;
+        }
+
+        m_swapchain.RecreateSwapChain(m_context);
 
         m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
         m_megaSet.Update(m_context.device);
@@ -586,7 +592,7 @@ namespace Renderer
 
     RenderManager::~RenderManager()
     {
-        vkDeviceWaitIdle(m_context.device);
+        Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
 
         m_deletionQueue.FlushQueue();
     }
