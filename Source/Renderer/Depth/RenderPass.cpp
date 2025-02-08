@@ -42,7 +42,19 @@ namespace Renderer::Depth
             Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("DepthPass/FIF{}", i));
         }
 
-        framebufferManager.AddFramebuffer(Vk::FramebufferManager::FramebufferType::Depth, "DepthAttachment");
+        framebufferManager.AddFramebuffer
+        (
+            "SceneDepth",
+            Vk::FramebufferType::Depth,
+            Vk::ImageType::Single2D
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "SceneDepth",
+            "SceneDepthView",
+            Vk::ImageType::Single2D
+        );
 
         Logger::Info("{}\n", "Created depth pass!");
     }
@@ -64,13 +76,14 @@ namespace Renderer::Depth
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        const auto& depthAttachment = framebufferManager.GetFramebuffer("DepthAttachment");
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+        const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
 
         const VkRenderingAttachmentInfo depthAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = depthAttachment.imageView.handle,
+            .imageView          = depthAttachmentView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,

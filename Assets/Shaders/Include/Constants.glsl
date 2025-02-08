@@ -30,6 +30,6 @@ const float INV_GAMMA_FACTOR = 1.0f / GAMMA_FACTOR;
 const float CONVOLUTION_SAMPLE_DELTA = 0.025f;
 const uint  PREFILER_SAMPLE_COUNT    = 1024u;
 const uint  BRDF_LUT_SAMPLE_COUNT    = 1024u;
-const float MAX_REFLECTION_LOD       = 4.0f;
+const float MAX_REFLECTION_LOD       = 5.0f;
 
 #endif

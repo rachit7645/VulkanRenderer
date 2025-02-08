@@ -145,7 +145,7 @@ namespace Renderer::PostProcess
         pipeline.pushConstant =
         {
             .samplerIndex = pipeline.samplerIndex,
-            .imageIndex   = framebufferManager.GetFramebuffer("ForwardColorAttachment").descriptorIndex
+            .imageIndex   = framebufferManager.GetFramebufferView("SceneColorView").descriptorIndex
         };
 
         pipeline.LoadPushConstants

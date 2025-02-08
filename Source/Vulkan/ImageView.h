@@ -42,6 +42,7 @@ namespace Vk
 
         // Vulkan handle
         VkImageView handle = VK_NULL_HANDLE;
+        VkImage     image  = VK_NULL_HANDLE;
     };
 }
 

@@ -52,8 +52,8 @@ namespace Renderer
         RenderManager& operator=(const RenderManager&) = delete;
 
         // Only moving
-        RenderManager(RenderManager&& other)             noexcept = default;
-        RenderManager& operator=(RenderManager&& other)  noexcept = default;
+        RenderManager(RenderManager&& other)            noexcept = default;
+        RenderManager& operator=(RenderManager&& other) noexcept = default;
 
         void Render();
         [[nodiscard]] bool HandleEvents();

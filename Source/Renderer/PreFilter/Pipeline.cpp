@@ -72,8 +72,8 @@ namespace Renderer::PreFilter
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ConvolutionPipeline");
-        Vk::SetDebugName(context.device, layout, "ConvolutionPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "PreFilterPipeline");
+        Vk::SetDebugName(context.device, layout, "PreFilterPipelineLayout");
     }
 
     void Pipeline::CreatePipelineData
@@ -109,7 +109,7 @@ namespace Renderer::PreFilter
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "ConvolutionPipeline/Sampler");
+        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "PreFilterPipeline/Sampler");
 
         megaSet.Update(device);
     }

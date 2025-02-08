@@ -64,14 +64,16 @@ namespace Renderer::Skybox
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), glm::vec4(0.2796f, 0.8588f, 0.3548f, 1.0f));
 
-        const auto& colorAttachment = framebufferManager.GetFramebuffer("ForwardColorAttachment");
-        const auto& depthAttachment = framebufferManager.GetFramebuffer("DepthAttachment");
+        const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+
+        const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
 
         const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = colorAttachment.imageView.handle,
+            .imageView          = colorAttachmentView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -90,7 +92,7 @@ namespace Renderer::Skybox
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = depthAttachment.imageView.handle,
+            .imageView          = depthAttachmentView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,

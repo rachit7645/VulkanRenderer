@@ -24,15 +24,19 @@
 
 namespace Vk
 {
-    constexpr u32 MAX_SAMPLERS         = 1 << 8;
-    constexpr u32 MAX_SAMPLED_IMAGES   = 1 << 16;
-    constexpr u32 MAX_SAMPLED_CUBEMAPS = 1 << 8;
+    constexpr u32 MAX_SAMPLERS               = 1 << 8;
+    constexpr u32 MAX_SAMPLED_IMAGES         = 1 << 14;
+    constexpr u32 MAX_SAMPLED_CUBEMAPS       = 1 << 8;
+    constexpr u32 MAX_SAMPLED_IMAGE_ARRAYS   = 1 << 8;
+    constexpr u32 MAX_SAMPLED_CUBEMAP_ARRAYS = 1 << 8;
 
     MegaSet::MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)
     {
-        const auto maxSamplers        = std::min(deviceLimits.maxDescriptorSetSamplers,      MAX_SAMPLERS);
-        const auto maxSampledImages   = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_IMAGES);
-        const auto maxSampledCubemaps = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_CUBEMAPS);
+        const auto maxSamplers             = std::min(deviceLimits.maxDescriptorSetSamplers,      MAX_SAMPLERS);
+        const auto maxSampledImages        = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_IMAGES);
+        const auto maxSampledCubemaps      = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_CUBEMAPS);
+        const auto maxSampledImageArrays   = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_CUBEMAPS);
+        const auto maxSampledCubemapArrays = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_CUBEMAPS);
 
         const std::array poolSizes =
         {
@@ -50,6 +54,16 @@ namespace Vk
             {
                 .type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                 .descriptorCount = maxSampledCubemaps
+            },
+            VkDescriptorPoolSize
+            {
+                .type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                .descriptorCount = maxSampledImageArrays
+            },
+            VkDescriptorPoolSize
+            {
+                .type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                .descriptorCount = maxSampledCubemapArrays
             }
         };
 
@@ -79,6 +93,10 @@ namespace Vk
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
             // Sampled cubemaps
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+            // Sampled image arrays
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+            // Sampled cubemap arrays
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
         };
 
         const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo =
@@ -112,6 +130,22 @@ namespace Vk
                 .binding            = DescriptorBinding::SAMPLED_CUBEMAPS_BINDING,
                 .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                 .descriptorCount    = maxSampledCubemaps,
+                .stageFlags         = VK_SHADER_STAGE_ALL,
+                .pImmutableSamplers = nullptr
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding            = DescriptorBinding::SAMPLED_IMAGE_ARRAYS_BINDING,
+                .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                .descriptorCount    = maxSampledImageArrays,
+                .stageFlags         = VK_SHADER_STAGE_ALL,
+                .pImmutableSamplers = nullptr
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding            = DescriptorBinding::SAMPLED_CUBEMAP_ARRAYS_BINDING,
+                .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                .descriptorCount    = maxSampledCubemapArrays,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
                 .pImmutableSamplers = nullptr
             }
@@ -200,6 +234,42 @@ namespace Vk
         (
             descriptorSet.handle,
             DescriptorBinding::SAMPLED_CUBEMAPS_BINDING,
+            id,
+            VK_NULL_HANDLE,
+            imageView.handle,
+            layout,
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+        );
+
+        return id;
+    }
+
+    u32 MegaSet::WriteImageArray(const Vk::ImageView& imageView, VkImageLayout layout)
+    {
+        const auto id = m_imageArrayID++;
+
+        m_writer.WriteImage
+        (
+            descriptorSet.handle,
+            DescriptorBinding::SAMPLED_IMAGE_ARRAYS_BINDING,
+            id,
+            VK_NULL_HANDLE,
+            imageView.handle,
+            layout,
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+        );
+
+        return id;
+    }
+
+    u32 MegaSet::WriteCubemapArray(const Vk::ImageView& imageView, VkImageLayout layout)
+    {
+        const auto id = m_cubemapArrayID++;
+
+        m_writer.WriteImage
+        (
+            descriptorSet.handle,
+            DescriptorBinding::SAMPLED_CUBEMAP_ARRAYS_BINDING,
             id,
             VK_NULL_HANDLE,
             imageView.handle,

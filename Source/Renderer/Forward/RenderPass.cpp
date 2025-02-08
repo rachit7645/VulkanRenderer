@@ -48,7 +48,19 @@ namespace Renderer::Forward
             Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ForwardPass/FIF{}", i));
         }
 
-        framebufferManager.AddFramebuffer(Vk::FramebufferManager::FramebufferType::ColorHDR, "ForwardColorAttachment");
+        framebufferManager.AddFramebuffer
+        (
+            "SceneColor",
+            Vk::FramebufferType::ColorHDR,
+            Vk::ImageType::Single2D
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "SceneColor",
+            "SceneColorView",
+            Vk::ImageType::Single2D
+        );
 
         Logger::Info("{}\n", "Created forward pass!");
     }
@@ -73,8 +85,10 @@ namespace Renderer::Forward
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("ForwardPass/FIF{}", FIF), glm::vec4(0.9098f, 0.1843f, 0.0549f, 1.0f));
 
-        const auto& colorAttachment = framebufferManager.GetFramebuffer("ForwardColorAttachment");
-        const auto& depthAttachment = framebufferManager.GetFramebuffer("DepthAttachment");
+        const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+
+        const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
 
         colorAttachment.image.Barrier
         (
@@ -90,7 +104,7 @@ namespace Renderer::Forward
                 .baseMipLevel   = 0,
                 .levelCount     = colorAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = colorAttachment.image.arrayLayers
             }
         );
 
@@ -98,7 +112,7 @@ namespace Renderer::Forward
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = colorAttachment.imageView.handle,
+            .imageView          = colorAttachmentView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -117,7 +131,7 @@ namespace Renderer::Forward
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = depthAttachment.imageView.handle,
+            .imageView          = depthAttachmentView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
