@@ -62,7 +62,7 @@ namespace Renderer::Skybox
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), glm::vec4(0.2796f, 0.8588f, 0.3548f, 1.0f));
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");

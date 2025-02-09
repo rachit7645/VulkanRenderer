@@ -108,6 +108,8 @@ add_executable(VulkanRenderer
     Source/Renderer/IBL/PreFilter/Pipeline.cpp
     # Bloom Pass sources
     Source/Renderer/Bloom/RenderPass.cpp
+    Source/Renderer/Bloom/DownSample/Pipeline.cpp
+    Source/Renderer/Bloom/UpSample/Pipeline.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

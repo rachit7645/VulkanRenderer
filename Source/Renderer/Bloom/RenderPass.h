@@ -19,17 +19,52 @@
 
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
+#include "DownSample/Pipeline.h"
+#include "UpSample/Pipeline.h"
 
 namespace Renderer::Bloom
 {
     class RenderPass
     {
     public:
-        RenderPass(const Vk::Context& context, Vk::FramebufferManager& framebufferManager);
+        RenderPass
+        (
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            Vk::FramebufferManager& framebufferManager,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
+        void Render
+        (
+            usize FIF,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet
+        );
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
+        DownSample::Pipeline downsamplePipeline;
+        UpSample::Pipeline   upsamplePipeline;
+
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+    private:
+        void RenderDownSamples
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet
+        );
+
+        void RenderUpSamples
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet
+        );
+
+        f32 m_filterRadius = 0.005f;
     };
 }
 

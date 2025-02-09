@@ -37,7 +37,7 @@ namespace Renderer
           m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
-          m_bloomPass(m_context, m_framebufferManager),
+          m_bloomPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
@@ -158,6 +158,13 @@ namespace Renderer
             m_sceneBuffer,
             m_iblMaps,
             m_modelManager.textureManager,
+            m_megaSet
+        );
+
+        m_bloomPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
             m_megaSet
         );
 
@@ -370,7 +377,7 @@ namespace Renderer
             .pNext       = nullptr,
             .semaphore   = m_swapchain.renderFinishedSemaphores[m_currentFIF],
             .value       = 0,
-            .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .stageMask   = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
             .deviceIndex = 0
         };
 
@@ -380,7 +387,7 @@ namespace Renderer
             .pNext       = nullptr,
             .semaphore   = m_swapchain.imageAvailableSemaphores[m_currentFIF],
             .value       = 0,
-            .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .stageMask   = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
             .deviceIndex = 0
         };
 
@@ -405,6 +412,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_skyboxPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_bloomPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

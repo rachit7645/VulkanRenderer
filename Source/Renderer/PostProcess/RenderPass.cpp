@@ -144,8 +144,10 @@ namespace Renderer::PostProcess
 
         pipeline.pushConstant =
         {
-            .samplerIndex = pipeline.samplerIndex,
-            .imageIndex   = framebufferManager.GetFramebufferView("SceneColorView").descriptorIndex
+            .samplerIndex  = pipeline.samplerIndex,
+            .imageIndex    = framebufferManager.GetFramebufferView("SceneColorView").descriptorIndex,
+            .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").descriptorIndex,
+            .bloomStrength = m_bloomStrength
         };
 
         pipeline.LoadPushConstants
@@ -170,6 +172,17 @@ namespace Renderer::PostProcess
         );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Bloom"))
+            {
+                ImGui::DragFloat("Strength", &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
+
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
 
         Vk::EndLabel(currentCmdBuffer);
 

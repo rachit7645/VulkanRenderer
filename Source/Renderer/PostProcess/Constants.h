@@ -26,6 +26,8 @@ namespace Renderer::PostProcess
     {
         u32 samplerIndex;
         u32 imageIndex;
+        u32 bloomIndex;
+        f32 bloomStrength;
     };
 }
 

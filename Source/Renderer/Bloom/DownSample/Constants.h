@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef SWAPCHAIN_PUSH_CONSTANT
-#define SWAPCHAIN_PUSH_CONSTANT
+#ifndef DOWNSAMPLE_CONSTANTS_H
+#define DOWNSAMPLE_CONSTANTS_H
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+#include <vulkan/vulkan.h>
+
+#include "Util/Util.h"
+
+namespace Renderer::Bloom::DownSample
 {
-    uint  SamplerIndex;
-    uint  ImageIndex;
-    uint  BloomIndex;
-    float BloomStrength;
-} Constants;
+    struct __attribute__((packed)) PushConstant
+    {
+        u32 samplerIndex;
+        u32 imageIndex;
+        u32 isFirstSample;
+    };
+}
 
 #endif

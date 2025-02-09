@@ -31,7 +31,10 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    vec3 color = texture(sampler2D(textures[Constants.ImageIndex], samplers[Constants.SamplerIndex]), fragUV).rgb;
+    vec3 hdrColor   = texture(sampler2D(textures[Constants.ImageIndex], samplers[Constants.SamplerIndex]), fragUV).rgb;
+    vec3 bloomColor = texture(sampler2D(textures[Constants.BloomIndex], samplers[Constants.SamplerIndex]), fragUV).rgb;
+
+    vec3 color = mix(hdrColor, bloomColor, Constants.BloomStrength);
          color = GammaCorrect(ACESFast(color));
 
     outColor = vec4(color, 1.0f);

@@ -69,31 +69,14 @@ file(GLOB SHADER_SOURCES
     UpSample.vert
 )
 
-# Shader files
-file(GLOB SHADER_HEADERS
-    Include/ACES.glsl
-    Include/Constants.glsl
-    Include/Color.glsl
-    Include/Lights.glsl
-    Include/Material.glsl
-    Include/Mesh.glsl
-    Include/PBR.glsl
-    Include/Scene.glsl
-    Include/Vertex.glsl
-    Include/MegaSet.glsl
-    Include/Converter.glsl
-    Include/Sampling.glsl
-    Include/Constants/Forward.glsl
-    Include/Constants/PostProcess.glsl
-    Include/Constants/Depth.glsl
-    Include/Constants/ImGui.glsl
-    Include/Constants/Converter.glsl
-    Include/Constants/Convolution.glsl
-    Include/Constants/PreFilter.glsl
-    Include/Constants/DownSample.glsl
-    Include/Constants/Skybox.glsl
-    Include/Constants/UpSample.glsl
+# Shader headers
+file(GLOB_RECURSE SHADER_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/Include/*.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/Include/Constants/*.glsl
 )
+
+# Ensure CMake reconfigures when new includes are added
+set_property(GLOBAL PROPERTY CMAKE_CONFIGURE_DEPENDS ${SHADER_HEADERS})
 
 # For each shader to be compiled
 foreach(Shader ${SHADER_SOURCES})
