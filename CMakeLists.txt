@@ -30,7 +30,7 @@ find_package(glm      REQUIRED)
 find_package(fastgltf REQUIRED)
 find_package(simdjson REQUIRED)
 find_package(fmt      REQUIRED)
-find_package(KTX     REQUIRED)
+find_package(KTX      REQUIRED)
 
 # Add sub-projects
 add_subdirectory(Externals/)

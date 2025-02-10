@@ -17,6 +17,8 @@
 #ifndef VK_CONSTANTS_H
 #define VK_CONSTANTS_H
 
+#include <vulkan/vulkan.h>
+
 #include "Util/Util.h"
 
 namespace Vk
