@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef SHADOW_PIPELINE_H
+#define SHADOW_PIPELINE_H
 
-#include "Externals/GLM.h"
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
 
-namespace Renderer::Objects
+namespace Renderer::Shadow
 {
-    struct PointLight
+    class Pipeline : public Vk::Pipeline
     {
-        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+    public:
+        Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
+
+        Shadow::PushConstant pushConstant = {};
     };
 }
 

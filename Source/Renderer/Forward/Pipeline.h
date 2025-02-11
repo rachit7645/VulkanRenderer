@@ -40,6 +40,7 @@ namespace Renderer::Forward
 
         u32 textureSamplerIndex;
         u32 iblSamplerIndex;
+        u32 shadowSamplerIndex;
     private:
         void CreatePipeline
         (

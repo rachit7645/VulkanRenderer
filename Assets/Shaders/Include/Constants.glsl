@@ -32,4 +32,10 @@ const uint  PREFILER_SAMPLE_COUNT    = 1024u;
 const uint  BRDF_LUT_SAMPLE_COUNT    = 1024u;
 const float MAX_REFLECTION_LOD       = 5.0f;
 
+// Shadow Constants
+const float SHADOW_MIN_BIAS      = 0.005f;
+const float SHADOW_MAX_BIAS      = 0.05f;
+const float SHADOW_BIAS_MODIFIER = 0.35f;
+const int   SHADOW_PCF_RANGE     = 1; // p = 2 * r + 1 for a p * p PCF filter
+
 #endif

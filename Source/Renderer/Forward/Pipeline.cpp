@@ -56,7 +56,7 @@ namespace Renderer::Forward
             .AttachShader("Forward.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-            .SetRasterizerState(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
             .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL, VK_FALSE, {}, {})
             .AddBlendAttachment(
@@ -142,8 +142,35 @@ namespace Renderer::Forward
             }
         );
 
+        shadowSamplerIndex = textureManager.AddSampler
+        (
+            megaSet,
+            context.device,
+            {
+                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                .pNext                   = nullptr,
+                .flags                   = 0,
+                .magFilter               = VK_FILTER_LINEAR,
+                .minFilter               = VK_FILTER_LINEAR,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                .mipLodBias              = 0.0f,
+                .anisotropyEnable        = VK_FALSE,
+                .maxAnisotropy           = 1.0f,
+                .compareEnable           = VK_TRUE,
+                .compareOp               = VK_COMPARE_OP_LESS,
+                .minLod                  = 0.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                .unnormalizedCoordinates = VK_FALSE
+            }
+        );
+
         Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "ForwardPipeline/TextureSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(iblSamplerIndex).handle, "ForwardPipeline/IBLSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(iblSamplerIndex).handle,     "ForwardPipeline/IBLSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(shadowSamplerIndex).handle,  "ForwardPipeline/ShadowSampler");
 
         megaSet.Update(context.device);
     }

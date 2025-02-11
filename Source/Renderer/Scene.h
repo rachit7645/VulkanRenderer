@@ -23,11 +23,11 @@
 
 namespace Renderer
 {
-    struct VULKAN_GLSL_DATA Scene
+    struct Scene
     {
         glm::mat4         projection = {};
         glm::mat4         view       = {};
-        glm::vec4         cameraPos  = {};
+        glm::vec3         cameraPos  = {};
         Objects::DirLight dirLight   = {};
     };
 }

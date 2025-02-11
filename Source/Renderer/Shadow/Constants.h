@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef SHADOW_CONSTANTS_H
+#define SHADOW_CONSTANTS_H
 
-#include "Externals/GLM.h"
+#include <vulkan/vulkan.h>
 
-namespace Renderer::Objects
+namespace Renderer::Shadow
 {
-    struct PointLight
+    struct __attribute__((packed)) PushConstant
     {
-        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+        VkDeviceAddress meshes;
+        VkDeviceAddress positions;
+        VkDeviceAddress cascades;
     };
 }
 

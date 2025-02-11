@@ -29,11 +29,16 @@ namespace Renderer::Forward
         VkDeviceAddress meshes;
         VkDeviceAddress positions;
         VkDeviceAddress vertices;
-        u32             textureSamplerIndex;
-        u32             iblSamplerIndex;
-        u32             irradianceIndex;
-        u32             preFilterIndex;
-        u32             brdfLutIndex;
+        VkDeviceAddress cascades;
+
+        u32 textureSamplerIndex;
+        u32 iblSamplerIndex;
+        u32 shadowSamplerIndex;
+
+        u32 irradianceIndex;
+        u32 preFilterIndex;
+        u32 brdfLutIndex;
+        u32 shadowMapIndex;
     };
 }
 

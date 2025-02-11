@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef FORWARD_PASS_H
-#define FORWARD_PASS_H
+#ifndef SHADOW_PASS_H
+#define SHADOW_PASS_H
 
 #include "Pipeline.h"
-#include "Vulkan/CommandBuffer.h"
-#include "Vulkan/GeometryBuffer.h"
-#include "Vulkan/MegaSet.h"
+#include "CascadeBuffer.h"
 #include "Vulkan/Constants.h"
+#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
-#include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/IBL/IBLMaps.h"
-#include "Renderer/Shadow/CascadeBuffer.h"
+#include "Renderer/Objects/Camera.h"
+#include "Renderer/Objects/DirLight.h"
 
-namespace Renderer::Forward
+namespace Renderer::Shadow
 {
     class RenderPass
     {
@@ -38,30 +36,37 @@ namespace Renderer::Forward
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::FramebufferManager& framebufferManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
 
         void Render
         (
             usize FIF,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
-            const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const IBL::IBLMaps& iblMaps,
-            const Vk::TextureManager& textureManager,
-            const Renderer::Shadow::CascadeBuffer& cascadeBuffer
+            const Objects::Camera& camera,
+            const Objects::DirLight& light
         );
 
-        Forward::Pipeline pipeline;
+        Shadow::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+
+        Shadow::CascadeBuffer cascadeBuffer;
+    private:
+        std::array<Shadow::Cascade, CASCADE_COUNT> CalculateCascades
+        (
+            f32 aspectRatio,
+            const Objects::Camera& camera,
+            const Objects::DirLight& light
+        );
+
+        f32 m_cascadeSplitLambda = 0.95f;
+        f32 m_cascadeOffset      = 1.3f;
     };
 }
 

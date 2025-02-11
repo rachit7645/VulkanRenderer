@@ -67,6 +67,8 @@ file(GLOB SHADER_SOURCES
     DownSample.frag
     UpSample.frag
     UpSample.vert
+    Shadow.frag
+    Shadow.vert
 )
 
 # Shader headers

@@ -90,6 +90,8 @@ namespace Renderer::DearImGui
         const Vk::MegaSet& megaSet
     )
     {
+        m_deletionQueues[FIF].FlushQueue();
+
         ImGui::Render();
         const auto drawData = ImGui::GetDrawData();
 
@@ -108,9 +110,14 @@ namespace Renderer::DearImGui
             const VkDeviceSize vertexSize = drawData->TotalVtxCount * sizeof(ImDrawVert);
             const VkDeviceSize indexSize  = drawData->TotalIdxCount * sizeof(ImDrawIdx);
 
-            if (currentVertexBuffer.allocInfo.size < vertexSize)
+            if (currentVertexBuffer.requestedSize < vertexSize)
             {
-                currentVertexBuffer.Destroy(allocator);
+                Vk::SetDebugName(device, currentVertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
+
+                m_deletionQueues[FIF].PushDeletor([allocator, currentVertexBuffer] ()
+                {
+                    currentVertexBuffer.Destroy(allocator);
+                });
 
                 currentVertexBuffer = Vk::Buffer
                 (
@@ -127,9 +134,14 @@ namespace Renderer::DearImGui
                 Vk::SetDebugName(device, currentVertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
             }
 
-            if (currentIndexBuffer.allocInfo.size < indexSize)
+            if (currentIndexBuffer.requestedSize < indexSize)
             {
-                currentIndexBuffer.Destroy(allocator);
+                Vk::SetDebugName(device, currentIndexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
+
+                m_deletionQueues[FIF].PushDeletor([allocator, currentIndexBuffer] ()
+                {
+                    currentIndexBuffer.Destroy(allocator);
+                });
 
                 currentIndexBuffer = Vk::Buffer
                 (
@@ -307,7 +319,7 @@ namespace Renderer::DearImGui
                     cmd.ElemCount,
                     1,
                     cmd.IdxOffset + globalIndexOffset,
-                    cmd.VtxOffset + globalVertexOffset,
+                    static_cast<s32>(cmd.VtxOffset) + globalVertexOffset,
                     0
                 );
             }
@@ -325,7 +337,7 @@ namespace Renderer::DearImGui
             currentCmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
             VK_ACCESS_2_NONE,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,

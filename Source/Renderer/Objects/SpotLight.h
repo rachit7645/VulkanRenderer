@@ -18,18 +18,17 @@
 #define SPOT_LIGHT_H
 
 #include "Externals/GLM.h"
-#include "Vulkan/Util.h"
 
 namespace Renderer::Objects
 {
-    struct VULKAN_GLSL_DATA SpotLight
+    struct SpotLight
     {
-        glm::vec4 position    = {0.0f, 0.0f, 0.0f, 1.0f};
-        glm::vec4 color       = {0.0f, 0.0f, 0.0f, 1.0f};
-        glm::vec4 intensity   = {0.0f, 0.0f, 0.0f, 1.0f};
-        glm::vec4 attenuation = {0.0f, 0.0f, 0.0f, 1.0f};
-        glm::vec4 direction   = {0.0f, 0.0f, 0.0f, 1.0f};
-        glm::vec4 cutOff      = {0.0f, 0.0f, 1.0f, 1.0f};
+        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
+        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+        glm::vec3 direction   = {0.0f, 0.0f, 0.0f};
+        glm::vec2 cutOff      = {0.0f, 0.0f};
     };
 }
 

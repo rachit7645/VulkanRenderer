@@ -58,6 +58,8 @@ namespace Renderer::DearImGui
     private:
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_vertexBuffers;
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_indexBuffers;
+
+        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues;
     };
 }
 

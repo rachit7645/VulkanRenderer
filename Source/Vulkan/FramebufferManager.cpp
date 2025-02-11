@@ -27,7 +27,7 @@ namespace Vk
         const std::string_view name,
         FramebufferType type,
         ImageType imageType,
-        const ResizeCallback& resizeCallback
+        const FramebufferSizeData& sizeData
     )
     {
         if (m_framebuffers.contains(name.data()))
@@ -37,10 +37,9 @@ namespace Vk
 
         m_framebuffers.emplace(name, Framebuffer{
             .type      = type,
-            .size      = {},
+            .sizeData  = sizeData,
             .imageType = imageType,
-            .image     = {},
-            .OnResize  = resizeCallback
+            .image     = {}
         });
     }
 
@@ -80,19 +79,16 @@ namespace Vk
         {
             framebuffer.image.Destroy(context.allocator);
 
-            if (framebuffer.OnResize)
-            {
-                framebuffer.OnResize(swapchainExtent, *this);
-            }
+            const auto size = GetFramebufferSize(swapchainExtent, framebuffer.sizeData);
 
             VkImageCreateInfo createInfo = {};
             {
                 createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
                 createInfo.pNext                 = nullptr;
                 createInfo.imageType             = VK_IMAGE_TYPE_2D;
-                createInfo.extent                = {framebuffer.size.width, framebuffer.size.height, 1};
-                createInfo.arrayLayers           = framebuffer.size.arrayLayers;
-                createInfo.mipLevels             = framebuffer.size.mipLevels;
+                createInfo.extent                = {size.width, size.height, 1};
+                createInfo.arrayLayers           = size.arrayLayers;
+                createInfo.mipLevels             = size.mipLevels;
                 createInfo.samples               = VK_SAMPLE_COUNT_1_BIT;
                 createInfo.tiling                = VK_IMAGE_TILING_OPTIMAL;
                 createInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
@@ -103,10 +99,6 @@ namespace Vk
 
             VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
 
-            VkPipelineStageFlags2 dstStage  = VK_PIPELINE_STAGE_2_NONE;
-            VkAccessFlags2        dstAccess = VK_ACCESS_2_NONE;
-            VkImageLayout         newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
             switch (framebuffer.type)
             {
             case FramebufferType::ColorLDR:
@@ -114,10 +106,6 @@ namespace Vk
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-
-                dstStage  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-                dstAccess = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-                newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 break;
 
             case FramebufferType::ColorHDR:
@@ -125,32 +113,20 @@ namespace Vk
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-
-                dstStage  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-                dstAccess = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-                newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 break;
 
             case FramebufferType::Depth:
                 createInfo.format = formatHelper.depthFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
                 aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-                dstStage  = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-                dstAccess = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 break;
 
             case FramebufferType::DepthStencil:
                 createInfo.format = formatHelper.depthStencilFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
                 aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-
-                dstStage  = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-                dstAccess = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
                 break;
             }
 
@@ -180,10 +156,10 @@ namespace Vk
                 .pNext               = nullptr,
                 .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
                 .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = dstStage,
-                .dstAccessMask       = dstAccess,
+                .dstStageMask        = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask       = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout           = newLayout,
+                .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image               = framebuffer.image.handle,
@@ -202,14 +178,6 @@ namespace Vk
         for (auto& [name, framebufferView] : m_framebufferViews)
         {
             const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
-
-            if (framebufferView.view.handle != VK_NULL_HANDLE)
-            {
-                if (framebufferView.view.imageHash == std::hash<Vk::Image>{}(framebuffer.image))
-                {
-                    continue;
-                }
-            }
 
             framebufferView.view.Destroy(context.device);
 
@@ -246,27 +214,7 @@ namespace Vk
                 }
             );
 
-            if (framebuffer.type == FramebufferType::ColorLDR || framebuffer.type == FramebufferType::ColorHDR)
-            {
-                switch (framebufferView.type)
-                {
-                case ImageType::Single2D:
-                    framebufferView.descriptorIndex = megaSet.WriteImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    break;
-
-                case ImageType::Array2D:
-                    framebufferView.descriptorIndex = megaSet.WriteImageArray(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    break;
-
-                case ImageType::Cube:
-                    framebufferView.descriptorIndex = megaSet.WriteCubemap(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    break;
-
-                case ImageType::ArrayCube:
-                    framebufferView.descriptorIndex = megaSet.WriteCubemapArray(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    break;
-                }
-            }
+            framebufferView.descriptorIndex = megaSet.WriteImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             Vk::SetDebugName(context.device, framebufferView.view.handle, name);
         }
@@ -378,20 +326,20 @@ namespace Vk
                 {
                     const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
 
-                    if (!IsViewable(framebuffer.type, framebufferView.type))
+                    if (!IsViewable(framebufferView.type))
                     {
                         continue;
                     }
 
                     if (ImGui::TreeNode(name.c_str()))
                     {
-                        ImGui::Text("Descriptor Index | %u", framebufferView.descriptorIndex);
-                        ImGui::Text("Width            | %u", std::max(static_cast<u32>(framebuffer.size.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
-                        ImGui::Text("Height           | %u", std::max(static_cast<u32>(framebuffer.size.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
-                        ImGui::Text("Mipmaps Level    | %u", framebufferView.size.baseMipLevel);
-                        ImGui::Text("Array Layer      | %u", framebufferView.size.baseArrayLayer);
-                        ImGui::Text("Format           | %s", string_VkFormat(framebuffer.image.format));
-                        ImGui::Text("Usage            | %s", string_VkImageUsageFlags(framebuffer.image.usage).c_str());
+                        ImGui::Text("Descriptor Index | %u",        framebufferView.descriptorIndex);
+                        ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
+                        ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
+                        ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.levelCount);
+                        ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.layerCount);
+                        ImGui::Text("Format           | %s",        string_VkFormat(framebuffer.image.format));
+                        ImGui::Text("Usage            | %s",        string_VkImageUsageFlags(framebuffer.image.usage).c_str());
 
                         ImGui::Separator();
 
@@ -419,38 +367,31 @@ namespace Vk
         }
     }
 
-    bool FramebufferManager::IsViewable(FramebufferType type, ImageType imageType)
+    bool FramebufferManager::IsViewable(ImageType imageType)
     {
-        bool isViewableType  = false;
-        bool isViewableImage = false;
-
-        switch (type)
-        {
-        case FramebufferType::ColorLDR:
-        case FramebufferType::ColorHDR:
-            isViewableType = true;
-            break;
-
-        case FramebufferType::Depth:
-        case FramebufferType::DepthStencil:
-            isViewableType = false;
-            break;
-        }
-
         switch (imageType)
         {
         case ImageType::Single2D:
-            isViewableImage = true;
-            break;
+            return true;
 
-        case ImageType::Array2D:
-        case ImageType::Cube:
-        case ImageType::ArrayCube:
-            isViewableImage = false;
-            break;
+        default:
+            return false;
+        }
+    }
+
+    FramebufferSize FramebufferManager::GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData)
+    {
+        if (std::holds_alternative<FramebufferSize>(sizeData))
+        {
+            return std::get<FramebufferSize>(sizeData);
         }
 
-        return isViewableType && isViewableImage;
+        if (std::holds_alternative<FramebufferResizeCallback>(sizeData))
+        {
+            return std::get<FramebufferResizeCallback>(sizeData)(extent, *this);
+        }
+
+        return {};
     }
 
     void FramebufferManager::Destroy(VkDevice device, VmaAllocator allocator)

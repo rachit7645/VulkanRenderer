@@ -24,10 +24,11 @@
 #include "Material.glsl"
 
 layout(location = 0) out      vec3 fragPosition;
-layout(location = 1) out      vec2 fragTexCoords;
-layout(location = 2) out      vec3 fragToCamera;
-layout(location = 3) out flat uint fragDrawID;
-layout(location = 4) out      mat3 fragTBNMatrix;
+layout(location = 1) out      vec3 fragViewPosition;
+layout(location = 2) out      vec2 fragTexCoords;
+layout(location = 3) out      vec3 fragToCamera;
+layout(location = 4) out flat uint fragDrawID;
+layout(location = 5) out      mat3 fragTBNMatrix;
 
 void main()
 {
@@ -35,9 +36,11 @@ void main()
     vec3   position = Constants.Positions.positions[gl_VertexIndex];
     Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    fragPosition = fragPos.xyz;
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
+    vec4 fragPos     = mesh.transform * vec4(position, 1.0f);
+    fragPosition     = fragPos.xyz;
+    vec4 fragViewPos = Constants.Scene.view * fragPos;
+    fragViewPosition = fragViewPos.xyz;
+    gl_Position      = Constants.Scene.projection * fragViewPos;
 
     fragTexCoords = vertex.uv0;
     fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);

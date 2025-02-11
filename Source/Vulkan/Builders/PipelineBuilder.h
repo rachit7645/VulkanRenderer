@@ -65,7 +65,15 @@ namespace Vk::Builders
         );
 
         [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
-        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode);
+
+        [[nodiscard]] PipelineBuilder& SetRasterizerState
+        (
+            VkBool32 depthClampEnable,
+            VkCullModeFlags cullMode,
+            VkFrontFace frontFace,
+            VkPolygonMode polygonMode
+        );
+
         [[nodiscard]] PipelineBuilder& SetMSAAState();
 
         [[nodiscard]] PipelineBuilder& SetDepthStencilState

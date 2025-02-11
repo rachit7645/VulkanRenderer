@@ -63,6 +63,16 @@ namespace Vk
 
         void SetupCubeUpload(VmaAllocator allocator);
 
+        void FlushUploads
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Buffer& destination,
+            const std::vector<Upload>& uploads,
+            usize elementSize,
+            VkPipelineStageFlags2 dstStageMask,
+            VkAccessFlags2 dstAccessMask
+        );
+
         void UploadToBuffer
         (
             const Vk::CommandBuffer& cmdBuffer,

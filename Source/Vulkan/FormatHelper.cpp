@@ -107,7 +107,7 @@ namespace Vk
                 VK_FORMAT_D16_UNORM_S8_UINT,
             },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT
+            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
         depthStencilFormat = FindSupportedFormat
@@ -120,7 +120,7 @@ namespace Vk
                 VK_FORMAT_D16_UNORM_S8_UINT,
             },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT
+            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
         brdfLutFormat = FindSupportedFormat

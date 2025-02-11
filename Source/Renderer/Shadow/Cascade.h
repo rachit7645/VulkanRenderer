@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef SHADOW_CASCADE_H
+#define SHADOW_CASCADE_H
 
 #include "Externals/GLM.h"
+#include "Util/Util.h"
 
-namespace Renderer::Objects
+namespace Renderer::Shadow
 {
-    struct PointLight
+    constexpr usize CASCADE_COUNT = 5;
+
+    struct Cascade
     {
-        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+        f32       distance = 0.0f;
+        glm::mat4 matrix   = glm::identity<glm::mat4>();
     };
 }
 

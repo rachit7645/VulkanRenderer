@@ -151,67 +151,50 @@ namespace Vk
         Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
         Vk::BeginLabel(cmdBuffer, "Index Transfer", {0.8901f, 0.0549f, 0.3607f, 1.0f});
-        for (const auto& [indexInfo, indexStagingBuffer] : m_pendingIndexUploads)
-        {
-            const VkDeviceSize offsetBytes = indexInfo.offset * sizeof(Models::Index);
-            const VkDeviceSize sizeBytes   = indexInfo.count  * sizeof(Models::Index);
 
-            UploadToBuffer
-            (
-                cmdBuffer,
-                indexStagingBuffer,
-                indexBuffer,
-                offsetBytes,
-                sizeBytes,
-                VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-                VK_ACCESS_2_INDEX_READ_BIT
-            );
-        }
+        FlushUploads
+        (
+            cmdBuffer,
+            indexBuffer,
+            m_pendingIndexUploads,
+            sizeof(Models::Index),
+            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+            VK_ACCESS_2_INDEX_READ_BIT
+        );
+
         Vk::EndLabel(cmdBuffer);
 
         Vk::BeginLabel(cmdBuffer, "Position Transfer", {0.4039f, 0.0509f, 0.5215f, 1.0f});
-        for (const auto& [positionInfo, positionStagingBuffer] : m_pendingPositionUploads)
-        {
-            const VkDeviceSize offsetBytes = positionInfo.offset * sizeof(glm::vec3);
-            const VkDeviceSize sizeBytes   = positionInfo.count  * sizeof(glm::vec3);
 
-            UploadToBuffer
-            (
-                cmdBuffer,
-                positionStagingBuffer,
-                positionBuffer,
-                offsetBytes,
-                sizeBytes,
-                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-                VK_ACCESS_2_SHADER_STORAGE_READ_BIT
-            );
-        }
+        FlushUploads
+        (
+            cmdBuffer,
+            positionBuffer,
+            m_pendingPositionUploads,
+            sizeof(glm::vec3),
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT
+        );
+
         Vk::EndLabel(cmdBuffer);
 
         Vk::BeginLabel(cmdBuffer, "Vertex Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
-        for (const auto& [vertexInfo, vertexStagingBuffer] : m_pendingVertexUploads)
-        {
-            const VkDeviceSize offsetBytes = vertexInfo.offset * sizeof(Models::Vertex);
-            const VkDeviceSize sizeBytes   = vertexInfo.count  * sizeof(Models::Vertex);
 
-            UploadToBuffer
-            (
-                cmdBuffer,
-                vertexStagingBuffer,
-                vertexBuffer,
-                offsetBytes,
-                sizeBytes,
-                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-                VK_ACCESS_2_SHADER_STORAGE_READ_BIT
-            );
-        }
+        FlushUploads
+        (
+            cmdBuffer,
+            vertexBuffer,
+            m_pendingVertexUploads,
+            sizeof(Models::Vertex),
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT
+        );
+
         Vk::EndLabel(cmdBuffer);
 
         if (m_cubeStagingBuffer.has_value())
         {
             Vk::BeginLabel(cmdBuffer, "Cube Transfer", {0.5117f, 0.0749f, 0.3901f, 1.0f});
-
-            const VkDeviceSize sizeBytes = 36 * sizeof(glm::vec3);
 
             UploadToBuffer
             (
@@ -219,7 +202,7 @@ namespace Vk
                 m_cubeStagingBuffer.value(),
                 cubeBuffer,
                 0,
-                sizeBytes,
+                36 * sizeof(glm::vec3),
                 VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 VK_ACCESS_2_SHADER_STORAGE_READ_BIT
             );
@@ -320,6 +303,31 @@ namespace Vk
         );
 
         std::memcpy(m_cubeStagingBuffer->allocInfo.pMappedData, SKYBOX_VERTICES.data(), VERTICES_SIZE);
+    }
+
+    void GeometryBuffer::FlushUploads
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Buffer& destination,
+        const std::vector<Upload>& uploads,
+        usize elementSize,
+        VkPipelineStageFlags2 dstStageMask,
+        VkAccessFlags2 dstAccessMask
+    )
+    {
+        for (const auto& [info, stagingBuffer] : uploads)
+        {
+            UploadToBuffer
+            (
+                cmdBuffer,
+                stagingBuffer,
+                destination,
+                info.offset * elementSize,
+                info.count * elementSize,
+                dstStageMask,
+                dstAccessMask
+            );
+        }
     }
 
     void GeometryBuffer::UploadToBuffer

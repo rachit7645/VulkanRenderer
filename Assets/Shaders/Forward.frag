@@ -21,18 +21,20 @@
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
+#include "Constants/Forward.glsl"
 #include "Material.glsl"
 #include "Color.glsl"
 #include "Lights.glsl"
 #include "PBR.glsl"
-#include "Constants/Forward.glsl"
 #include "MegaSet.glsl"
+#include "CSM.glsl"
 
 layout(location = 0) in      vec3 fragPosition;
-layout(location = 1) in      vec2 fragTexCoords;
-layout(location = 2) in      vec3 fragToCamera;
-layout(location = 3) in flat uint fragDrawID;
-layout(location = 4) in      mat3 fragTBNMatrix;
+layout(location = 1) in      vec3 fragViewPosition;
+layout(location = 2) in      vec2 fragTexCoords;
+layout(location = 3) in      vec3 fragToCamera;
+layout(location = 4) in flat uint fragDrawID;
+layout(location = 5) in      mat3 fragTBNMatrix;
 
 layout(location = 0) out vec4 outColor;
 
@@ -53,16 +55,29 @@ void main()
 
     vec3 F0 = mix(vec3(0.04f), albedo.rgb, aoRghMtl.b);
 
+    LightInfo lightInfo = GetLightInfo(Constants.Scene.light);
+
+    float shadow = CalculateShadow
+    (
+        fragPosition,
+        fragViewPosition,
+        normal,
+        lightInfo.L,
+        textureArrays[Constants.ShadowMapIndex],
+        samplers[Constants.ShadowSamplerIndex],
+        Constants.Cascades
+    );
+
     vec3 Lo = CalculateLight
     (
-        GetDirLightInfo(Constants.Scene.light),
+        lightInfo,
         normal,
         fragToCamera,
         F0,
         albedo.rgb,
         aoRghMtl.g,
         aoRghMtl.b
-    );
+    ) * shadow;
 
     vec3 R          = reflect(-fragToCamera, normal);
     vec3 irradiance = texture(samplerCube(cubemaps[Constants.IrradianceIndex], samplers[Constants.IBLSamplerIndex]), normal).rgb;

@@ -23,8 +23,8 @@ namespace Models
 {
     struct Info
     {
-        u32 offset;
-        u32 count;
+        u32 offset = 0;
+        u32 count  = 0;
     };
 }
 

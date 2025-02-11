@@ -68,6 +68,7 @@ namespace Renderer::Skybox
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
+        const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
 
         const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
@@ -148,7 +149,7 @@ namespace Renderer::Skybox
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .scene        = sceneBuffer.buffers[FIF].deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .cubemapIndex = textureManager.GetCubemapID(iblMaps.skyboxID)
+            .cubemapIndex = textureManager.GetTextureID(iblMaps.skyboxID)
         };
 
         pipeline.LoadPushConstants
@@ -187,7 +188,25 @@ namespace Renderer::Skybox
                 .baseMipLevel   = 0,
                 .levelCount     = colorAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = colorAttachment.image.arrayLayers
+            }
+        );
+
+        depthAttachment.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = depthAttachment.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = depthAttachment.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = depthAttachment.image.arrayLayers
             }
         );
 

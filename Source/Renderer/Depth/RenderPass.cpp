@@ -25,10 +25,9 @@ namespace Renderer::Depth
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet,
         Vk::FramebufferManager& framebufferManager
     )
-        : pipeline(context, formatHelper, megaSet)
+        : pipeline(context, formatHelper)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -47,9 +46,9 @@ namespace Renderer::Depth
             "SceneDepth",
             Vk::FramebufferType::Depth,
             Vk::ImageType::Single2D,
-            [] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager)
+            [] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
-                framebufferManager.GetFramebuffer("SceneDepth").size =
+                return
                 {
                     .width       = extent.width,
                     .height      = extent.height,
@@ -88,6 +87,24 @@ namespace Renderer::Depth
 
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
         const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
+
+        depthAttachment.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = depthAttachment.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = depthAttachment.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = depthAttachment.image.arrayLayers
+            }
+        );
 
         const VkRenderingAttachmentInfo depthAttachmentInfo =
         {

@@ -30,10 +30,10 @@ namespace Renderer::IBL
 {
     constexpr auto HDR_MAP = "industrial_sunset_puresky_4k.hdr";
 
-    constexpr VkExtent2D SKYBOX_SIZE     = {2048, 2048};
-    constexpr VkExtent2D IRRADIANCE_SIZE = {128,  128};
-    constexpr VkExtent2D PRE_FILTER_SIZE = {1024, 1024};
-    constexpr VkExtent2D BRDF_LUT_SIZE   = {1024, 1024};
+    constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
+    constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
+    constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
+    constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
     // TODO: Make this a non-const property
     constexpr usize PREFILTER_MIPMAP_LEVELS = 5;
@@ -256,8 +256,8 @@ namespace Renderer::IBL
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.colorAttachmentFormatHDR,
-                .extent                = {SKYBOX_SIZE.width, SKYBOX_SIZE.height, 1},
-                .mipLevels             = static_cast<u32>(std::floor(std::log2(std::max(SKYBOX_SIZE.width, SKYBOX_SIZE.height)))) + 1,
+                .extent                = {SKYBOX_SIZE.x, SKYBOX_SIZE.y, 1},
+                .mipLevels             = static_cast<u32>(std::floor(std::log2(std::max(SKYBOX_SIZE.x, SKYBOX_SIZE.y)))) + 1,
                 .arrayLayers           = 6,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
                 .tiling                = VK_IMAGE_TILING_OPTIMAL,
@@ -435,7 +435,7 @@ namespace Renderer::IBL
             }
         );
 
-        skyboxID = textureManager.AddCubemap(megaSet, context.device, "Skybox", {skybox, skyboxView});
+        skyboxID = textureManager.AddTexture(megaSet, context.device, "Skybox", {skybox, skyboxView});
         megaSet.Update(context.device);
 
         m_deletionQueue.PushDeletor([context, renderView, pipeline] () mutable
@@ -469,7 +469,7 @@ namespace Renderer::IBL
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.colorAttachmentFormatHDR,
-                .extent                = {IRRADIANCE_SIZE.width, IRRADIANCE_SIZE.height, 1},
+                .extent                = {IRRADIANCE_SIZE.x, IRRADIANCE_SIZE.y, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 6,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -581,7 +581,7 @@ namespace Renderer::IBL
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .envMapIndex  = textureManager.GetCubemapID(skyboxID)
+            .envMapIndex  = textureManager.GetTextureID(skyboxID)
         };
 
         pipeline.LoadPushConstants
@@ -627,7 +627,7 @@ namespace Renderer::IBL
 
         Vk::EndLabel(cmdBuffer);
 
-        irradianceID = textureManager.AddCubemap(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
+        irradianceID = textureManager.AddTexture(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
 
         m_deletionQueue.PushDeletor([context, pipeline] () mutable
         {
@@ -659,7 +659,7 @@ namespace Renderer::IBL
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.colorAttachmentFormatHDR,
-                .extent                = {PRE_FILTER_SIZE.width, PRE_FILTER_SIZE.height, 1},
+                .extent                = {PRE_FILTER_SIZE.x, PRE_FILTER_SIZE.y, 1},
                 .mipLevels             = PREFILTER_MIPMAP_LEVELS,
                 .arrayLayers           = 6,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -782,7 +782,7 @@ namespace Renderer::IBL
                 .positions    = geometryBuffer.cubeBuffer.deviceAddress,
                 .matrices     = matrixBuffer.deviceAddress,
                 .samplerIndex = pipeline.samplerIndex,
-                .envMapIndex  = textureManager.GetCubemapID(skyboxID),
+                .envMapIndex  = textureManager.GetTextureID(skyboxID),
                 .roughness    = roughness
             };
 
@@ -847,7 +847,7 @@ namespace Renderer::IBL
             }
         );
 
-        preFilterID = textureManager.AddCubemap(megaSet, context.device, "PreFilter", {preFilter, preFilterView});
+        preFilterID = textureManager.AddTexture(megaSet, context.device, "PreFilter", {preFilter, preFilterView});
 
         m_deletionQueue.PushDeletor([context, preFilterViews, pipeline] () mutable
         {
@@ -882,7 +882,7 @@ namespace Renderer::IBL
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.brdfLutFormat,
-                .extent                = {BRDF_LUT_SIZE.width, BRDF_LUT_SIZE.height, 1},
+                .extent                = {BRDF_LUT_SIZE.x, BRDF_LUT_SIZE.y, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,

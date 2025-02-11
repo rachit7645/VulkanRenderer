@@ -34,7 +34,6 @@ namespace Renderer::Depth
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet,
             Vk::FramebufferManager& framebufferManager
         );
 

@@ -14,20 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef MATH_GLSL
+#define MATH_GLSL
 
-#include "Externals/GLM.h"
-
-namespace Renderer::Objects
+float TanArcCos(float x)
 {
-    struct PointLight
-    {
-        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
-    };
+    // tan(acos(x)) = sqrt(1 - x^2) / x
+    return sqrt(1.0f - (x * x)) / x;
 }
 
 #endif

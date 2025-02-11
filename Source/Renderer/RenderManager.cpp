@@ -34,10 +34,11 @@ namespace Renderer
           m_iblMaps(m_context, m_megaSet, m_modelManager.textureManager),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_forwardPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_depthPass(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
+          m_depthPass(m_context, m_formatHelper, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
           m_bloomPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_shadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
@@ -48,6 +49,7 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
+            m_shadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_bloomPass.Destroy(m_context.device, m_context.commandPool);
             m_skyboxPass.Destroy(m_context.device, m_context.commandPool);
             m_imGuiPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
@@ -137,6 +139,17 @@ namespace Renderer
             m_indirectBuffer
         );
 
+        m_shadowPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
+            m_modelManager.geometryBuffer,
+            m_meshBuffer,
+            m_indirectBuffer,
+            m_camera,
+            m_sun
+        );
+
         m_forwardPass.Render
         (
             m_currentFIF,
@@ -147,7 +160,8 @@ namespace Renderer
             m_meshBuffer,
             m_indirectBuffer,
             m_iblMaps,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            m_shadowPass.cascadeBuffer
         );
 
         m_skyboxPass.Render
@@ -195,8 +209,8 @@ namespace Renderer
         m_camera.Update(m_frameCounter.frameDelta);
 
         Engine::Inputs::Get().ImGuiDisplay();
-        m_modelManager.ImGuiDisplay();
 
+        m_modelManager.ImGuiDisplay();
         m_framebufferManager.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
@@ -298,7 +312,7 @@ namespace Renderer
                 PLANES.y
             ),
             .view      = m_camera.GetViewMatrix(),
-            .cameraPos = {m_camera.position, 1.0f},
+            .cameraPos = m_camera.position,
             .dirLight  = m_sun
         };
 
@@ -377,7 +391,7 @@ namespace Renderer
             .pNext       = nullptr,
             .semaphore   = m_swapchain.renderFinishedSemaphores[m_currentFIF],
             .value       = 0,
-            .stageMask   = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
             .deviceIndex = 0
         };
 
@@ -398,6 +412,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_depthPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_shadowPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

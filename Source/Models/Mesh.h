@@ -24,11 +24,11 @@ namespace Models
 {
     struct Mesh
     {
-        Info      indexInfo;
-        Info      positionInfo;
-        Info      vertexInfo;
-        Material  material;
-        glm::mat4 transform;
+        Info      indexInfo    = {};
+        Info      positionInfo = {};
+        Info      vertexInfo   = {};
+        Material  material     = {};
+        glm::mat4 transform    = glm::identity<glm::mat4>();
     };
 }
 

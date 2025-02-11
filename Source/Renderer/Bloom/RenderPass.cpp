@@ -50,11 +50,11 @@ namespace Renderer::Bloom
             "Bloom",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Array2D,
-            [device = context.device] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager)
+            [device = context.device] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
-                auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
+                framebufferManager.DeleteFramebufferViews("Bloom", device);
 
-                bloomBuffer.size =
+                const auto size = Vk::FramebufferSize
                 {
                     .width       = extent.width,
                     .height      = extent.height,
@@ -62,9 +62,7 @@ namespace Renderer::Bloom
                     .arrayLayers = 1
                 };
 
-                framebufferManager.DeleteFramebufferViews("Bloom", device);
-
-                for (u32 mipLevel = 0; mipLevel < bloomBuffer.size.mipLevels; ++mipLevel)
+                for (u32 mipLevel = 0; mipLevel < size.mipLevels; ++mipLevel)
                 {
                     framebufferManager.AddFramebufferView
                     (
@@ -79,6 +77,8 @@ namespace Renderer::Bloom
                         }
                     );
                 }
+
+                return size;
             }
         );
 

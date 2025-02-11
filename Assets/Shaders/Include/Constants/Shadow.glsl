@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef SHADOW_PUSH_CONSTANT
+#define SHADOW_PUSH_CONSTANT
 
-#include "Externals/GLM.h"
+#include "Mesh.glsl"
+#include "Vertex.glsl"
+#include "Cascade.glsl"
 
-namespace Renderer::Objects
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    struct PointLight
-    {
-        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
-    };
-}
+    MeshBuffer     Meshes;
+    PositionBuffer Positions;
+    CascadeBuffer  Cascades;
+} Constants;
 
 #endif

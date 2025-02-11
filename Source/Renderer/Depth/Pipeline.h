@@ -20,19 +20,13 @@
 #include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
-#include "Vulkan/MegaSet.h"
 
 namespace Renderer::Depth
 {
     class Pipeline : public Vk::Pipeline
     {
     public:
-        Pipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
+        Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
 
         Depth::PushConstant pushConstant = {};
     };

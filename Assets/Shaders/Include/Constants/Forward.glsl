@@ -20,6 +20,7 @@
 #include "Mesh.glsl"
 #include "Scene.glsl"
 #include "Vertex.glsl"
+#include "Cascade.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
@@ -27,11 +28,16 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     MeshBuffer     Meshes;
     PositionBuffer Positions;
     VertexBuffer   Vertices;
-    uint           TextureSamplerIndex;
-    uint           IBLSamplerIndex;
-    uint           IrradianceIndex;
-    uint           PreFilterIndex;
-    uint           BRDFLUTIndex;
+    CascadeBuffer  Cascades;
+
+    uint TextureSamplerIndex;
+    uint IBLSamplerIndex;
+    uint ShadowSamplerIndex;
+
+    uint IrradianceIndex;
+    uint PreFilterIndex;
+    uint BRDFLUTIndex;
+    uint ShadowMapIndex;
 } Constants;
 
 #endif

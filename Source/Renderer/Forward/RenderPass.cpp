@@ -52,9 +52,9 @@ namespace Renderer::Forward
             "SceneColor",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Single2D,
-            [] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager)
+            [] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
-                framebufferManager.GetFramebuffer("SceneColor").size =
+                return
                 {
                     .width       = extent.width,
                     .height      = extent.height,
@@ -84,7 +84,8 @@ namespace Renderer::Forward
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
         const IBL::IBLMaps& iblMaps,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Renderer::Shadow::CascadeBuffer& cascadeBuffer
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
@@ -197,11 +198,14 @@ namespace Renderer::Forward
             .meshes              = meshBuffer.buffers[FIF].deviceAddress,
             .positions           = geometryBuffer.positionBuffer.deviceAddress,
             .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
+            .cascades            = cascadeBuffer.buffers[FIF].deviceAddress,
             .textureSamplerIndex = pipeline.textureSamplerIndex,
             .iblSamplerIndex     = pipeline.iblSamplerIndex,
-            .irradianceIndex     = textureManager.GetCubemapID(iblMaps.irradianceID),
-            .preFilterIndex      = textureManager.GetCubemapID(iblMaps.preFilterID),
-            .brdfLutIndex        = textureManager.GetTextureID(iblMaps.brdfLutID)
+            .shadowSamplerIndex  = pipeline.shadowSamplerIndex,
+            .irradianceIndex     = textureManager.GetTextureID(iblMaps.irradianceID),
+            .preFilterIndex      = textureManager.GetTextureID(iblMaps.preFilterID),
+            .brdfLutIndex        = textureManager.GetTextureID(iblMaps.brdfLutID),
+            .shadowMapIndex      = framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex,
         };
 
         pipeline.LoadPushConstants

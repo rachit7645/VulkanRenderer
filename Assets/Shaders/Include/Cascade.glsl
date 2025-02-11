@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef CASCADE_GLSL
+#define CASCADE_GLSL
 
-#include "Externals/GLM.h"
-
-namespace Renderer::Objects
+struct Cascade
 {
-    struct PointLight
-    {
-        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
-    };
-}
+    float cascadeDistance;
+    mat4  matrix;
+};
+
+layout(buffer_reference, scalar) readonly buffer CascadeBuffer
+{
+    Cascade cascades[];
+};
 
 #endif

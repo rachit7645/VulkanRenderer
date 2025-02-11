@@ -14,19 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef CASCADE_BUFFER_H
+#define CASCADE_BUFFER_H
 
-#include "Externals/GLM.h"
+#include "Cascade.h"
+#include "Vulkan/Buffer.h"
+#include "Vulkan/Constants.h"
 
-namespace Renderer::Objects
+namespace Renderer::Shadow
 {
-    struct PointLight
+    class CascadeBuffer
     {
-        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+    public:
+        CascadeBuffer() = default;
+        CascadeBuffer(VkDevice device, VmaAllocator allocator);
+
+        void LoadCascades(usize FIF, const std::span<const Shadow::Cascade> cascades);
+
+        void Destroy(VmaAllocator allocator);
+
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
     };
 }
 

@@ -31,6 +31,7 @@
 #include "ImGui/RenderPass.h"
 #include "Skybox/RenderPass.h"
 #include "Bloom/RenderPass.h"
+#include "Shadow/RenderPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -90,6 +91,7 @@ namespace Renderer
         DearImGui::RenderPass   m_imGuiPass;
         Skybox::RenderPass      m_skyboxPass;
         Bloom::RenderPass       m_bloomPass;
+        Shadow::RenderPass      m_shadowPass;
 
         // Buffers
         Buffers::MeshBuffer     m_meshBuffer;
@@ -112,9 +114,9 @@ namespace Renderer
 
         Objects::DirLight m_sun =
         {
-            .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
-            .color     = {1.0f,   0.956f, 0.898f, 1.0f},
-            .intensity = {2.5f,   2.5f,   2.5f,   1.0f}
+            .position  = {-30.0f, -30.0f, -10.0f},
+            .color     = {1.0f,   0.956f, 0.898f},
+            .intensity = {2.5f,   2.5f,   2.5f}
         };
 
         Util::DeletionQueue m_deletionQueue = {};

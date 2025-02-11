@@ -33,6 +33,7 @@ namespace Vk
         VmaAllocationCreateFlags allocationFlags,
         VmaMemoryUsage memoryUsage
     )
+        : requestedSize(size)
     {
         const VkBufferCreateInfo createInfo =
         {

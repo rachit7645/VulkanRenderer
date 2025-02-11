@@ -240,14 +240,20 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
+    PipelineBuilder& PipelineBuilder::SetRasterizerState
+    (
+        VkBool32 depthClampEnable,
+        VkCullModeFlags cullMode,
+        VkFrontFace frontFace,
+        VkPolygonMode polygonMode
+    )
     {
         m_rasterizationInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .depthClampEnable        = VK_FALSE,
+            .depthClampEnable        = depthClampEnable,
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode             = polygonMode,
             .cullMode                = cullMode,

@@ -26,8 +26,6 @@ namespace Vk
 {
     class FramebufferManager;
 
-    using ResizeCallback = std::function<void(const VkExtent2D&, FramebufferManager&)>;
-
     enum class FramebufferType : u8
     {
         ColorLDR,
@@ -69,13 +67,15 @@ namespace Vk
         Vk::ImageView       view            = {};
     };
 
+    using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&, FramebufferManager&)>;
+    using FramebufferSizeData       = std::variant<std::monostate, FramebufferSize, FramebufferResizeCallback>;
+
     struct Framebuffer
     {
-        FramebufferType type      = FramebufferType::ColorLDR;
-        FramebufferSize size      = {};
-        ImageType       imageType = ImageType::Single2D;
-        Vk::Image       image     = {};
-        ResizeCallback  OnResize  = nullptr;
+        FramebufferType     type      = FramebufferType::ColorLDR;
+        FramebufferSizeData sizeData  = {};
+        ImageType           imageType = ImageType::Single2D;
+        Vk::Image           image     = {};
     };
 
     class FramebufferManager
@@ -86,7 +86,7 @@ namespace Vk
             const std::string_view name,
             FramebufferType type,
             ImageType imageType,
-            const ResizeCallback& resizeCallback = nullptr
+            const FramebufferSizeData& sizeData
         );
 
         void AddFramebufferView
@@ -115,7 +115,9 @@ namespace Vk
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        bool IsViewable(FramebufferType type, ImageType imageType);
+        bool IsViewable(ImageType imageType);
+
+        FramebufferSize GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData);
 
         std::unordered_map<std::string, Framebuffer> m_framebuffers;
         std::map<std::string, FramebufferView>       m_framebufferViews;

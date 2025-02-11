@@ -256,6 +256,7 @@ namespace Vk
         const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
         const bool hasBC                = featureSet.features.textureCompressionBC;
         const bool hasImageCubeArray    = featureSet.features.imageCubeArray;
+        const bool hasDepthClamp        = featureSet.features.depthClamp;
 
         // Need extensions to calculate these
         bool isSwapChainAdequate = false;
@@ -285,7 +286,7 @@ namespace Vk
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
         const bool required   = isQueueValid && hasExtensions;
-        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray;
+        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray && hasDepthClamp;
         const bool extensions = isSwapChainAdequate;
         const bool vk11       = hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
@@ -357,6 +358,7 @@ namespace Vk
         deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
         deviceFeatures.features.textureCompressionBC = VK_TRUE;
         deviceFeatures.features.imageCubeArray       = VK_TRUE;
+        deviceFeatures.features.depthClamp           = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

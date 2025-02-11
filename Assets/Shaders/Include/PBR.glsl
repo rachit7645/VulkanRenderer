@@ -135,7 +135,7 @@ vec3 CalculateAmbient
     vec2 brdf
 )
 {
-    vec3 F  = FresnelSchlick_IBL(max(dot(N, V), 0.0f), F0, roughness);
+    vec3 F = FresnelSchlick_IBL(max(dot(N, V), 0.0f), F0, roughness);
 
     // Energy conservation
     vec3 kS = F;
