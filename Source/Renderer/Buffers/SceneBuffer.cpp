@@ -40,7 +40,7 @@ namespace Renderer::Buffers
         }
     }
 
-    void SceneBuffer::LoadScene(usize FIF, const Renderer::Scene& scene)
+    void SceneBuffer::WriteScene(usize FIF, const Renderer::Scene& scene)
     {
         std::memcpy
         (

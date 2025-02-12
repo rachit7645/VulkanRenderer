@@ -20,7 +20,7 @@
 #include "Mesh.glsl"
 #include "Scene.glsl"
 #include "Vertex.glsl"
-#include "Cascade.glsl"
+#include "CSM.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {

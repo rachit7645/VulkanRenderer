@@ -25,7 +25,7 @@
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Objects/Camera.h"
-#include "Renderer/Objects/DirLight.h"
+#include "Renderer/Objects/Lights.h"
 
 namespace Renderer::Shadow
 {

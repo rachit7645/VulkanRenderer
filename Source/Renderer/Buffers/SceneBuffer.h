@@ -26,10 +26,9 @@ namespace Renderer::Buffers
     class SceneBuffer
     {
     public:
-        SceneBuffer() = default;
         SceneBuffer(VkDevice device, VmaAllocator allocator);
 
-        void LoadScene(usize FIF, const Renderer::Scene& scene);
+        void WriteScene(usize FIF, const Renderer::Scene& scene);
 
         void Destroy(VmaAllocator allocator);
 

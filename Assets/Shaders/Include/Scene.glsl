@@ -21,10 +21,12 @@
 
 layout(buffer_reference, scalar) readonly buffer SceneBuffer
 {
-    mat4     projection;
-    mat4     view;
-    vec3     cameraPos;
-    DirLight light;
+    mat4             projection;
+    mat4             view;
+    vec3             cameraPos;
+    DirLightBuffer   dirLights;
+    PointLightBuffer pointLights;
+    SpotLightBuffer  spotLights;
 };
 
 #endif

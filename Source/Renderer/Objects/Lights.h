@@ -14,19 +14,36 @@
  * limitations under the License.
  */
 
-#ifndef POINT_LIGHT_H
-#define POINT_LIGHT_H
+#ifndef DIRECTIONAL_LIGHT_H
+#define DIRECTIONAL_LIGHT_H
 
 #include "Externals/GLM.h"
 
 namespace Renderer::Objects
 {
+    struct DirLight
+    {
+        glm::vec3 position  = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color     = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity = {0.0f, 0.0f, 0.0f};
+    };
+
     struct PointLight
     {
         glm::vec3 position    = {0.0f, 0.0f, 0.0f};
         glm::vec3 color       = {0.0f, 0.0f, 0.0f};
         glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
         glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+    };
+
+    struct SpotLight
+    {
+        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
+        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+        glm::vec3 direction   = {0.0f, 0.0f, 0.0f};
+        glm::vec2 cutOff      = {0.0f, 0.0f};
     };
 }
 

@@ -19,7 +19,17 @@
 
 #include "Math.glsl"
 #include "Constants.glsl"
-#include "Cascade.glsl"
+
+struct Cascade
+{
+    float cascadeDistance;
+    mat4  matrix;
+};
+
+layout(buffer_reference, scalar) readonly buffer CascadeBuffer
+{
+    Cascade cascades[];
+};
 
 int GetCurrentLayer(int cascadeCount, vec3 viewPosition, CascadeBuffer cascadeBuffer)
 {

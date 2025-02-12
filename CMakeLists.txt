@@ -85,6 +85,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Buffers/IndirectBuffer.cpp
     Source/Renderer/Buffers/MeshBuffer.cpp
     Source/Renderer/Buffers/SceneBuffer.cpp
+    Source/Renderer/Buffers/LightsBuffer.cpp
 	# Post Process Pass Sources
 	Source/Renderer/PostProcess/Pipeline.cpp
 	Source/Renderer/PostProcess/RenderPass.cpp

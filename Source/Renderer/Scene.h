@@ -17,7 +17,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "Objects/DirLight.h"
+#include "Objects/Lights.h"
 #include "Externals/GLM.h"
 #include "Vulkan/Util.h"
 
@@ -25,10 +25,12 @@ namespace Renderer
 {
     struct Scene
     {
-        glm::mat4         projection = {};
-        glm::mat4         view       = {};
-        glm::vec3         cameraPos  = {};
-        Objects::DirLight dirLight   = {};
+        glm::mat4       projection  = {};
+        glm::mat4       view        = {};
+        glm::vec3       cameraPos   = {};
+        VkDeviceAddress dirLights   = 0;
+        VkDeviceAddress pointLights = 0;
+        VkDeviceAddress spotLights  = 0;
     };
 }
 

@@ -55,29 +55,82 @@ void main()
 
     vec3 F0 = mix(vec3(0.04f), albedo.rgb, aoRghMtl.b);
 
-    LightInfo lightInfo = GetLightInfo(Constants.Scene.light);
+    vec3 Lo = vec3(0.0f);
 
-    float shadow = CalculateShadow
-    (
-        fragPosition,
-        fragViewPosition,
-        normal,
-        lightInfo.L,
-        textureArrays[Constants.ShadowMapIndex],
-        samplers[Constants.ShadowSamplerIndex],
-        Constants.Cascades
-    );
+    if (Constants.Scene.dirLights.count > 0)
+    {
+        LightInfo sunLightInfo = GetLightInfo(Constants.Scene.dirLights.lights[0]);
 
-    vec3 Lo = CalculateLight
-    (
-        lightInfo,
-        normal,
-        fragToCamera,
-        F0,
-        albedo.rgb,
-        aoRghMtl.g,
-        aoRghMtl.b
-    ) * shadow;
+        float shadow = CalculateShadow
+        (
+            fragPosition,
+            fragViewPosition,
+            normal,
+            sunLightInfo.L,
+            textureArrays[Constants.ShadowMapIndex],
+            samplers[Constants.ShadowSamplerIndex],
+            Constants.Cascades
+        );
+
+        Lo += CalculateLight
+        (
+            sunLightInfo,
+            normal,
+            fragToCamera,
+            F0,
+            albedo.rgb,
+            aoRghMtl.g,
+            aoRghMtl.b
+        ) * shadow;
+    }
+
+    for (uint i = 1; i < Constants.Scene.dirLights.count; ++i)
+    {
+        LightInfo lightInfo = GetLightInfo(Constants.Scene.dirLights.lights[i]);
+
+        Lo += CalculateLight
+        (
+            lightInfo,
+            normal,
+            fragToCamera,
+            F0,
+            albedo.rgb,
+            aoRghMtl.g,
+            aoRghMtl.b
+        );
+    }
+
+    for (uint i = 0; i < Constants.Scene.pointLights.count; ++i)
+    {
+        LightInfo lightInfo = GetLightInfo(Constants.Scene.pointLights.lights[i], fragPosition);
+
+        Lo += CalculateLight
+        (
+            lightInfo,
+            normal,
+            fragToCamera,
+            F0,
+            albedo.rgb,
+            aoRghMtl.g,
+            aoRghMtl.b
+        );
+    }
+
+    for (uint i = 0; i < Constants.Scene.spotLights.count; ++i)
+    {
+        LightInfo lightInfo = GetLightInfo(Constants.Scene.spotLights.lights[i], fragPosition);
+
+        Lo += CalculateLight
+        (
+            lightInfo,
+            normal,
+            fragToCamera,
+            F0,
+            albedo.rgb,
+            aoRghMtl.g,
+            aoRghMtl.b
+        );
+    }
 
     vec3 R          = reflect(-fragToCamera, normal);
     vec3 irradiance = texture(samplerCube(cubemaps[Constants.IrradianceIndex], samplers[Constants.IBLSamplerIndex]), normal).rgb;

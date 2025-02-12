@@ -29,7 +29,6 @@ namespace Renderer::Buffers
     class IndirectBuffer
     {
     public:
-        IndirectBuffer() = default;
         IndirectBuffer(VkDevice device, VmaAllocator allocator);
 
         void WriteDrawCalls

@@ -46,6 +46,24 @@ struct SpotLight
     vec2 cutOff;
 };
 
+layout(buffer_reference, scalar) readonly buffer DirLightBuffer
+{
+    uint     count;
+    DirLight lights[];
+};
+
+layout(buffer_reference, scalar) readonly buffer PointLightBuffer
+{
+    uint       count;
+    PointLight lights[];
+};
+
+layout(buffer_reference, scalar) readonly buffer SpotLightBuffer
+{
+    uint      count;
+    SpotLight lights[];
+};
+
 struct LightInfo
 {
     vec3 L;

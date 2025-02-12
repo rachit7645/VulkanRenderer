@@ -41,10 +41,12 @@ namespace Renderer
           m_shadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
-          m_sceneBuffer(m_context.device, m_context.allocator)
+          m_sceneBuffer(m_context.device, m_context.allocator),
+          m_lightsBuffer(m_context.device, m_context.allocator)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
+            m_lightsBuffer.Destroy(m_context.allocator);
             m_sceneBuffer.Destroy(m_context.allocator);
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
@@ -277,9 +279,9 @@ namespace Renderer
 
                         ImGui::Separator();
 
-                        ImGui::DragFloat3("Position", &renderObject.position[0], 1.0f,               0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Position", &renderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
                         ImGui::DragFloat3("Rotation", &renderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
-                        ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,               0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,                      0.0f, 0.0f, "%.2f");
 
                         ImGui::TreePop();
                     }
@@ -292,15 +294,80 @@ namespace Renderer
 
             if (ImGui::BeginMenu("Light"))
             {
-                ImGui::DragFloat3("Position",  &m_sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
-                ImGui::ColorEdit3("Color",     &m_sun.color[0]);
-                ImGui::DragFloat3("Intensity", &m_sun.intensity[0], 1.0f, 0.0f, 0.0f, "%.2f");
+                if (ImGui::BeginMenu("Directional"))
+                {
+                    if (ImGui::TreeNode("Sun"))
+                    {
+                        ImGui::DragFloat3("Position",  &m_sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                        ImGui::ColorEdit3("Color",     &m_sun.color[0]);
+                        ImGui::DragFloat3("Intensity", &m_sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::BeginMenu("Point"))
+                {
+                    for (usize i = 0; i < m_pointLights.size(); ++i)
+                    {
+                        if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
+                        {
+                            auto& light = m_pointLights[i];
+
+                            ImGui::DragFloat3("Position",    &light.position[0],    1.0f, 0.0f, 0.0f, "%.2f");
+                            ImGui::ColorEdit3("Color",       &light.color[0]);
+                            ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f, 0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f, 0.0f, 0.0f, "%.4f");
+
+                            ImGui::TreePop();
+                        }
+
+                        ImGui::Separator();
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::BeginMenu("Spot"))
+                {
+                    for (usize i = 0; i < m_spotLights.size(); ++i)
+                    {
+                        if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
+                        {
+                            auto& light = m_spotLights[i];
+
+                            ImGui::DragFloat3("Position",    &light.position[0],    1.0f,   0.0f, 0.0f, "%.2f");
+                            ImGui::ColorEdit3("Color",       &light.color[0]);
+                            ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f,   0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f,   0.0f, 1.0f, "%.4f");
+                            ImGui::DragFloat3("Direction",   &light.direction[0],   0.05f, -1.0f, 1.0f, "%.2f");
+
+                            ImGui::DragFloat2("Cut Off", &light.cutOff[0], glm::radians(1.0f), 0.0f, std::numbers::pi, "%.2f");
+
+                            ImGui::TreePop();
+                        }
+
+                        ImGui::Separator();
+                    }
+
+                    ImGui::EndMenu();
+                }
 
                 ImGui::EndMenu();
             }
 
             ImGui::EndMainMenuBar();
         }
+
+        m_lightsBuffer.WriteDirLights(m_currentFIF, {&m_sun, 1});
+        m_lightsBuffer.WritePointLights(m_currentFIF, m_pointLights);
+        m_lightsBuffer.WriteSpotLights(m_currentFIF, m_spotLights);
 
         const Scene scene =
         {
@@ -311,12 +378,14 @@ namespace Renderer
                 PLANES.x,
                 PLANES.y
             ),
-            .view      = m_camera.GetViewMatrix(),
-            .cameraPos = m_camera.position,
-            .dirLight  = m_sun
+            .view        = m_camera.GetViewMatrix(),
+            .cameraPos   = m_camera.position,
+            .dirLights   = m_lightsBuffer.dirLightBuffers[m_currentFIF].deviceAddress,
+            .pointLights = m_lightsBuffer.pointLightBuffers[m_currentFIF].deviceAddress,
+            .spotLights  = m_lightsBuffer.spotLightBuffers[m_currentFIF].deviceAddress
         };
 
-        m_sceneBuffer.LoadScene(m_currentFIF, scene);
+        m_sceneBuffer.WriteScene(m_currentFIF, scene);
         m_meshBuffer.LoadMeshes(m_currentFIF, m_modelManager, m_renderObjects);
         m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_modelManager, m_renderObjects);
     }
@@ -558,7 +627,7 @@ namespace Renderer
                 break;
 
             case SDL_EVENT_GAMEPAD_REMOVED:
-                if (inputs.GetGamepad() == nullptr && event.gdevice.which == inputs.GetGamepadID())
+                if (inputs.GetGamepad() != nullptr && event.gdevice.which == inputs.GetGamepadID())
                 {
                     SDL_CloseGamepad(inputs.GetGamepad());
                     inputs.FindGamepad();
@@ -618,9 +687,9 @@ namespace Renderer
 
         m_deletionQueue.PushDeletor([&] ()
         {
-            for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+            for (const auto fence : inFlightFences)
             {
-                vkDestroyFence(m_context.device, inFlightFences[i], nullptr);
+                vkDestroyFence(m_context.device, fence, nullptr);
             }
         });
 

@@ -32,7 +32,6 @@ namespace Renderer::Buffers
     class MeshBuffer
     {
     public:
-        MeshBuffer() = default;
         MeshBuffer(VkDevice device, VmaAllocator allocator);
 
         void LoadMeshes
