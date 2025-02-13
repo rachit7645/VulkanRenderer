@@ -17,7 +17,7 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
+#extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
@@ -27,7 +27,6 @@
 #include "Lights.glsl"
 #include "PBR.glsl"
 #include "MegaSet.glsl"
-#include "CSM.glsl"
 
 layout(location = 0) in      vec3 fragPosition;
 layout(location = 1) in      vec3 fragViewPosition;
@@ -57,36 +56,21 @@ void main()
 
     vec3 Lo = vec3(0.0f);
 
-    if (Constants.Scene.dirLights.count > 0)
+    for (uint i = 0; i < Constants.Scene.dirLights.count; ++i)
     {
-        LightInfo sunLightInfo = GetLightInfo(Constants.Scene.dirLights.lights[0]);
+        LightInfo lightInfo = GetLightInfo(Constants.Scene.dirLights.lights[i]);
 
         float shadow = CalculateShadow
         (
+            i,
             fragPosition,
             fragViewPosition,
             normal,
-            sunLightInfo.L,
-            textureArrays[Constants.ShadowMapIndex],
+            lightInfo.L,
+            textureArrays[Constants.Scene.dirLights.lights[i].shadowMapIndex],
             samplers[Constants.ShadowSamplerIndex],
             Constants.Cascades
         );
-
-        Lo += CalculateLight
-        (
-            sunLightInfo,
-            normal,
-            fragToCamera,
-            F0,
-            albedo.rgb,
-            aoRghMtl.g,
-            aoRghMtl.b
-        ) * shadow;
-    }
-
-    for (uint i = 1; i < Constants.Scene.dirLights.count; ++i)
-    {
-        LightInfo lightInfo = GetLightInfo(Constants.Scene.dirLights.lights[i]);
 
         Lo += CalculateLight
         (
@@ -97,7 +81,7 @@ void main()
             albedo.rgb,
             aoRghMtl.g,
             aoRghMtl.b
-        );
+        ) * shadow;
     }
 
     for (uint i = 0; i < Constants.Scene.pointLights.count; ++i)

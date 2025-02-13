@@ -26,7 +26,6 @@ namespace Renderer::Shadow
     class CascadeBuffer
     {
     public:
-        CascadeBuffer() = default;
         CascadeBuffer(VkDevice device, VmaAllocator allocator);
 
         void LoadCascades(usize FIF, const std::span<const Shadow::Cascade> cascades);

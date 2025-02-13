@@ -19,6 +19,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Util/Util.h"
+
 namespace Renderer::Shadow
 {
     struct __attribute__((packed)) PushConstant
@@ -26,6 +28,7 @@ namespace Renderer::Shadow
         VkDeviceAddress meshes;
         VkDeviceAddress positions;
         VkDeviceAddress cascades;
+        u32             offset;
     };
 }
 

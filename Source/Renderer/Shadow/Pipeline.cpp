@@ -15,6 +15,7 @@
  */
 
 #include "Pipeline.h"
+#include "Cascade.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
@@ -26,7 +27,7 @@ namespace Renderer::Shadow
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0b0011111, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(Shadow::CASCADES_VIEW_MASK, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Shadow.vert.spv", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Shadow.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

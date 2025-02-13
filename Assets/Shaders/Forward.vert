@@ -17,7 +17,7 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
+#extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
 #include "Constants/Forward.glsl"
@@ -47,7 +47,7 @@ void main()
     fragDrawID    = gl_DrawID;
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);
-    vec3 T = normalize(mesh.normalMatrix * vertex.tangent);
+    vec3 T = normalize(mesh.transform    * vec4(vertex.tangent, 1.0f)).xyz;
          T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 

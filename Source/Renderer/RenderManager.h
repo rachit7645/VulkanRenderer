@@ -114,53 +114,9 @@ namespace Renderer
 
         bool m_isSwapchainOk = true;
 
-        Objects::DirLight m_sun =
-        {
-            .position  = {-30.0f, -30.0f, -10.0f},
-            .color     = {1.0f,   0.956f, 0.898f},
-            .intensity = {2.5f,   2.5f,   2.5f}
-        };
-
-
-        std::array<Objects::PointLight, 2> m_pointLights =
-        {
-            Objects::PointLight
-            {
-                .position    = {4.0f, 20.0f,  -3.0f},
-                .color       = {0.0f, 0.945f,  0.945f},
-                .intensity   = {1.0f, 7.0f,    5.0f},
-                .attenuation = {1.0f, 0.022f,  0.0019f}
-            },
-            Objects::PointLight
-            {
-                .position    = {27.0f, 15.0f, -3.0f},
-                .color       = {0.0f,  0.031f, 1.0f},
-                .intensity   = {1.0f,  6.0f,   10.0f},
-                .attenuation = {1.0f,  0.027f, 0.0028f}
-            }
-        };
-
-        std::array<Objects::SpotLight, 2> m_spotLights =
-        {
-            Objects::SpotLight
-            {
-                .position    = {22.0f, 10.0f,  6.0f},
-                .color       = {1.0f,  0.0f,   0.0f},
-                .intensity   = {10.0f, 1.0f,   1.0f},
-                .attenuation = {1.0f,  0.007f, 0.0002f},
-                .direction   = {-1.0f, 0.0f,  -0.3f},
-                .cutOff      = {10.0f, 30.0f}
-            },
-            Objects::SpotLight
-            {
-                .position    = {62.0f,  2.0f,  -2.0f},
-                .color       = {0.941f, 0.0f,   1.0f},
-                .intensity   = {10.0f,  10.0f,  10.0f},
-                .attenuation = {1.0f,   0.022f, 0.0019f},
-                .direction   = {-1.0f,  0.3f,  -0.1f},
-                .cutOff      = {10.0f,  50.0f}
-            }
-        };
+        Objects::DirLight                  m_sun;
+        std::array<Objects::PointLight, 2> m_pointLights;
+        std::array<Objects::SpotLight,  2> m_spotLights;
 
         Util::DeletionQueue m_deletionQueue = {};
     };

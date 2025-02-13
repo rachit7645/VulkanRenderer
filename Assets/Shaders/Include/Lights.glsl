@@ -26,6 +26,7 @@ struct DirLight
     vec3 position;
     vec3 color;
     vec3 intensity;
+    uint shadowMapIndex;
 };
 
 struct PointLight

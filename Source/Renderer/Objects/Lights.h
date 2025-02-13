@@ -18,14 +18,16 @@
 #define DIRECTIONAL_LIGHT_H
 
 #include "Externals/GLM.h"
+#include "Util/Util.h"
 
 namespace Renderer::Objects
 {
     struct DirLight
     {
-        glm::vec3 position  = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color     = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity = {0.0f, 0.0f, 0.0f};
+        glm::vec3 position       = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color          = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity      = {0.0f, 0.0f, 0.0f};
+        u32       shadowMapIndex = 0;
     };
 
     struct PointLight

@@ -154,7 +154,7 @@ namespace Renderer::Shadow
                 .extent = {depthAttachment.image.width, depthAttachment.image.height}
             },
             .layerCount           = 1,
-            .viewMask             = 0b0011111,
+            .viewMask             = Shadow::CASCADES_VIEW_MASK,
             .colorAttachmentCount = 0,
             .pColorAttachments    = nullptr,
             .pDepthAttachment     = &depthAttachmentInfo,
@@ -189,7 +189,8 @@ namespace Renderer::Shadow
         {
             .meshes    = meshBuffer.buffers[FIF].deviceAddress,
             .positions = geometryBuffer.positionBuffer.deviceAddress,
-            .cascades  = cascadeBuffer.buffers[FIF].deviceAddress
+            .cascades  = cascadeBuffer.buffers[FIF].deviceAddress,
+            .offset    = 0 * Shadow::CASCADE_COUNT
         };
 
         pipeline.LoadPushConstants

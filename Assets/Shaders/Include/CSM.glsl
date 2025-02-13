@@ -31,21 +31,7 @@ layout(buffer_reference, scalar) readonly buffer CascadeBuffer
     Cascade cascades[];
 };
 
-int GetCurrentLayer(int cascadeCount, vec3 viewPosition, CascadeBuffer cascadeBuffer)
-{
-    for (int i = 0; i < cascadeCount - 1; ++i)
-    {
-        if (viewPosition.z > cascadeBuffer.cascades[i].cascadeDistance)
-        {
-            return i;
-        }
-    }
-
-    // Last one contains the entire scene
-    return cascadeCount - 1;
-}
-
-float CalculateBias(int layer, vec3 lightDir, vec3 normal, CascadeBuffer cascadeBuffer)
+float CalculateBias(uint layer, vec3 lightDir, vec3 normal, CascadeBuffer cascadeBuffer)
 {
     // Slope-scaled bias
     float cosTheta = clamp(dot(normal, lightDir), 0.0f, 1.0f);
@@ -56,8 +42,104 @@ float CalculateBias(int layer, vec3 lightDir, vec3 normal, CascadeBuffer cascade
     return bias;
 }
 
+float SampleShadow
+(
+    uint layer,
+    vec2 texelSize,
+    vec3 fragPosition,
+    vec3 viewPosition,
+    vec3 normal,
+    vec3 lightDir,
+    texture2DArray shadowMap,
+    sampler shadowSampler,
+    CascadeBuffer cascadeBuffer
+)
+{
+    vec4 lightSpacePos = cascadeBuffer.cascades[layer].matrix * vec4(fragPosition, 1.0f);
+
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    projCoords      = projCoords * 0.5f + 0.5f;
+
+    float currentDepth = projCoords.z;
+
+    float shadow = 1.0f;
+
+    if (currentDepth < -1.0f || currentDepth > 1.0f)
+    {
+        return shadow;
+    }
+
+    float bias = CalculateBias(layer, lightDir, normal, cascadeBuffer);
+
+    shadow           = 0.0f;
+
+    #if CSM_ENABLE_PCF == 1
+
+    uint sampleCount = 0;
+
+    for (int x = -SHADOW_PCF_RANGE; x <= SHADOW_PCF_RANGE; x++)
+    {
+        for (int y = -SHADOW_PCF_RANGE; y <= SHADOW_PCF_RANGE; y++)
+        {
+            vec2 offset = vec2(x, y) * texelSize;
+            shadow += texture(sampler2DArrayShadow(shadowMap, shadowSampler), vec4(projCoords.xy + offset, layer, currentDepth - bias));
+            ++sampleCount;
+        }
+    }
+
+    shadow /= sampleCount;
+
+    #else
+
+    shadow = texture(sampler2DArrayShadow(shadowMap, shadowSampler), vec4(projCoords.xy, layer, currentDepth - bias));
+
+    #endif
+
+    return shadow;
+}
+
+#if CSM_ENABLE_SMOOTH_TRANSITION == 1
+
+float GetShadowBlendFactor(float viewDepth, float cascadeFar)
+{
+    return clamp(smoothstep(cascadeFar - SHADOW_BLEND_RANGE, cascadeFar, viewDepth), 0.0f, 1.0f);
+}
+
+void GetCurrentLayers
+(
+    uint lightIndex,
+    int cascadeCount,
+    vec3 viewPosition,
+    CascadeBuffer cascadeBuffer,
+    out uint layerA,
+    out uint layerB,
+    out float blendFactor
+)
+{
+    for (int i = 0; i < cascadeCount - 1; ++i)
+    {
+        float nearDist = cascadeBuffer.cascades[lightIndex * cascadeCount + i    ].cascadeDistance;
+        float farDist  = cascadeBuffer.cascades[lightIndex * cascadeCount + i + 1].cascadeDistance;
+
+        if (viewPosition.z > farDist)
+        {
+            layerA      = i;
+            layerB      = i + 1;
+            blendFactor = GetShadowBlendFactor(viewPosition.z, farDist);
+
+            return;
+        }
+    }
+
+    // Last cascade contains the whole scene
+    layerA      = cascadeCount - 1;
+    layerB      = cascadeCount - 1;
+    blendFactor = 0.0f;
+}
+
 float CalculateShadow
 (
+    uint lightIndex,
     vec3 fragPosition,
     vec3 viewPosition,
     vec3 normal,
@@ -69,39 +151,98 @@ float CalculateShadow
 {
     ivec3 shadowMapSize = textureSize(sampler2DArrayShadow(shadowMap, shadowSampler), 0);
 
-    int layer = GetCurrentLayer(shadowMapSize.z, viewPosition, cascadeBuffer);
+    uint  layerA;
+    uint  layerB;
+    float blendFactor;
 
-    vec4 lightSpacePos = cascadeBuffer.cascades[layer].matrix * vec4(fragPosition, 1.0f);
+    GetCurrentLayers
+    (
+        lightIndex,
+        shadowMapSize.z,
+        viewPosition,
+        cascadeBuffer,
+        layerA,
+        layerB,
+        blendFactor
+    );
 
-    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-    projCoords      = projCoords * 0.5f + 0.5f;
+    vec2 texelSize = 1.0f / vec2(shadowMapSize.xy);
 
-    float currentDepth = projCoords.z;
+    float shadowA = SampleShadow
+    (
+        layerA,
+        texelSize,
+        fragPosition,
+        viewPosition,
+        normal,
+        lightDir,
+        shadowMap,
+        shadowSampler,
+        cascadeBuffer
+    );
 
-    float shadow = 1.0f;
+    float shadowB = SampleShadow
+    (
+        layerB,
+        texelSize,
+        fragPosition,
+        viewPosition,
+        normal,
+        lightDir,
+        shadowMap,
+        shadowSampler,
+        cascadeBuffer
+    );
 
-    if (currentDepth > -1.0f && currentDepth < 1.0f)
+    return mix(shadowA, shadowB, blendFactor);
+}
+
+#else
+
+uint GetCurrentLayer(uint lightIndex, int cascadeCount, vec3 viewPosition, CascadeBuffer cascadeBuffer)
+{
+    for (int i = 0; i < cascadeCount; ++i)
     {
-        float bias      = CalculateBias(layer, lightDir, normal, cascadeBuffer);
-        vec2  texelSize = 1.0f / vec2(shadowMapSize.xy);
-
-        shadow           = 0.0f;
-        uint sampleCount = 0;
-
-        for (int x = -SHADOW_PCF_RANGE; x <= SHADOW_PCF_RANGE; x++)
+        if (viewPosition.z > cascadeBuffer.cascades[lightIndex * cascadeCount + i].cascadeDistance)
         {
-            for (int y = -SHADOW_PCF_RANGE; y <= SHADOW_PCF_RANGE; y++)
-            {
-                vec2 offset = vec2(x, y) * texelSize;
-                shadow += texture(sampler2DArrayShadow(shadowMap, shadowSampler), vec4(projCoords.xy + offset, layer, currentDepth - bias));
-                ++sampleCount;
-            }
+            return i;
         }
-
-        shadow /= sampleCount;
     }
 
-    return shadow;
+    // Last one contains the entire scene
+    return lightIndex * cascadeCount + cascadeCount - 1;
 }
+
+float CalculateShadow
+(
+    uint lightIndex,
+    vec3 fragPosition,
+    vec3 viewPosition,
+    vec3 normal,
+    vec3 lightDir,
+    texture2DArray shadowMap,
+    sampler shadowSampler,
+    CascadeBuffer cascadeBuffer
+)
+{
+    ivec3 shadowMapSize = textureSize(sampler2DArrayShadow(shadowMap, shadowSampler), 0);
+    vec2  texelSize     = 1.0f / vec2(shadowMapSize.xy);
+    uint  layer         = GetCurrentLayer(lightIndex, shadowMapSize.z, viewPosition, cascadeBuffer);
+
+    return SampleShadow
+    (
+        layer,
+        texelSize,
+        fragPosition,
+        viewPosition,
+        normal,
+        lightDir,
+        shadowMap,
+        shadowSampler,
+        cascadeBuffer
+    );
+}
+
+#endif
 
 #endif

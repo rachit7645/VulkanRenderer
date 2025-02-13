@@ -92,6 +92,13 @@ namespace Vk
         };
 
         deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
+
+        Logger::Debug
+        (
+            "Acquired device address! [Buffer={}] [Device Address={}]\n",
+            std::bit_cast<void*>(handle),
+            std::bit_cast<void*>(deviceAddress)
+        );
     }
 
     void Buffer::Barrier
