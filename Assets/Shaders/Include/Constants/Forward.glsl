@@ -40,6 +40,8 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint IrradianceIndex;
     uint PreFilterIndex;
     uint BRDFLUTIndex;
+    uint ShadowMapIndex;
+    uint PointShadowMapIndex;
 } Constants;
 
 #endif

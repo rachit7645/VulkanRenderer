@@ -68,7 +68,7 @@ void main()
             fragViewPosition,
             normal,
             lightInfo.L,
-            textureArrays[light.shadowMapIndex],
+            textureArrays[Constants.ShadowMapIndex],
             samplers[Constants.ShadowSamplerIndex],
             Constants.Cascades
         );
@@ -96,7 +96,7 @@ void main()
             fragPosition,
             light.position,
             Constants.Scene.cameraPos,
-            cubemapArrays[light.shadowMapIndex],
+            cubemapArrays[Constants.PointShadowMapIndex],
             samplers[Constants.PointShadowSamplerIndex],
             Constants.PointShadows.pointShadowData[i]
         );

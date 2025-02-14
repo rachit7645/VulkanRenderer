@@ -43,6 +43,8 @@ namespace Renderer::Forward
         u32 irradianceIndex;
         u32 preFilterIndex;
         u32 brdfLutIndex;
+        u32 shadowMapIndex;
+        u32 pointShadowMapIndex;
     };
 }
 

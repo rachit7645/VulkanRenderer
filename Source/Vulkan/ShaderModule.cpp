@@ -32,7 +32,7 @@ namespace Vk
 
     ShaderModule::ShaderModule(VkDevice device, const std::string_view path)
     {
-        const auto fullPath     = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
+        const auto fullPath     = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path) + ".spv";
         const auto shaderBinary = Engine::Files::ReadBytes(fullPath);
 
         const VkShaderModuleCreateInfo createInfo =

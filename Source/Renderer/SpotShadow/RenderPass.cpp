@@ -16,13 +16,16 @@
 
 #include "RenderPass.h"
 
+#include <Util/Maths.h>
+
+#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
-namespace Renderer::PointShadow
+namespace Renderer::SpotShadow
 {
-    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {1024, 1024};
-    constexpr glm::vec2  POINT_SHADOW_PLANES     = {1.0f, 25.0f};
+    constexpr glm::uvec2 SHADOW_DIMENSIONS = {2048, 2048};
+    constexpr glm::vec2  SHADOW_PLANES     = {0.1f, 100.0f};
 
     RenderPass::RenderPass
     (
@@ -31,7 +34,7 @@ namespace Renderer::PointShadow
         Vk::FramebufferManager& framebufferManager
     )
         : pipeline(context, formatHelper),
-          pointShadowBuffer(context.device, context.allocator)
+          spotShadowBuffer(context.device, context.allocator)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -42,52 +45,62 @@ namespace Renderer::PointShadow
                 VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
 
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("DepthPass/FIF{}", i));
+            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("SpotShadowPass/FIF{}", i));
         }
 
         framebufferManager.AddFramebuffer
         (
-            "PointShadowMap",
+            "SpotShadowMap",
             Vk::FramebufferType::Depth,
-            Vk::ImageType::ArrayCube,
+            Vk::ImageType::Single2D,
             Vk::FramebufferSize{
-                .width       = POINT_SHADOW_DIMENSIONS.x,
-                .height      = POINT_SHADOW_DIMENSIONS.y,
+                .width       = SHADOW_DIMENSIONS.x,
+                .height      = SHADOW_DIMENSIONS.y,
                 .mipLevels   = 1,
-                .arrayLayers = 6 * Objects::MAX_POINT_LIGHT_COUNT
+                .arrayLayers = Objects::MAX_SPOT_LIGHT_COUNT
             }
         );
 
         framebufferManager.AddFramebufferView
         (
-            "PointShadowMap",
-            "PointShadowMapView",
-            Vk::ImageType::ArrayCube,
+            "SpotShadowMap",
+            "SpotShadowMapView",
+            Vk::ImageType::Array2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = static_cast<u32>(6 * Objects::MAX_POINT_LIGHT_COUNT),
+                .layerCount     = Objects::MAX_SPOT_LIGHT_COUNT,
             }
         );
 
-        for (usize i = 0; i < Objects::MAX_POINT_LIGHT_COUNT; ++i)
+        for (usize i = 0; i < Objects::MAX_SPOT_LIGHT_COUNT; ++i)
         {
             framebufferManager.AddFramebufferView
             (
-                "PointShadowMap",
-                fmt::format("PointShadowMapView/{}", i),
-                Vk::ImageType::Cube,
+                "SpotShadowMap",
+                fmt::format("SpotShadowMapView/{}", i),
+                Vk::ImageType::Single2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = 0,
                     .levelCount     = 1,
-                    .baseArrayLayer = static_cast<u32>(6 * i),
-                    .layerCount     = 6,
+                    .baseArrayLayer = static_cast<u32>(i),
+                    .layerCount     = 1,
                 }
             );
         }
 
-        Logger::Info("{}\n", "Created point shadow pass!");
+        Logger::Info("{}\n", "Created spot shadow pass!");
+    }
+
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
+    {
+        Logger::Debug("{}\n", "Destroying spot shadow pass!");
+
+        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
+
+        spotShadowBuffer.Destroy(allocator);
+        pipeline.Destroy(device);
     }
 
     void RenderPass::Render
@@ -95,10 +108,9 @@ namespace Renderer::PointShadow
         usize FIF,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
-        const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const std::span<Objects::PointLight> lights
+        const std::span<Objects::SpotLight>& lights
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
@@ -106,37 +118,34 @@ namespace Renderer::PointShadow
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("PointShadowPass/FIF{}", FIF), glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("SpotShadowPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
 
-        std::vector<PointShadow::PointShadowData> pointShadowData;
-        pointShadowData.reserve(lights.size());
+        std::vector<glm::mat4> matrices = {};
+        matrices.reserve(lights.size());
+
+        const glm::mat4 projection = glm::perspective
+        (
+            glm::radians(90.0f),
+            1.0f,
+            SHADOW_PLANES.x,
+            SHADOW_PLANES.y
+        );
 
         for (const auto& light : lights)
         {
-            glm::mat4 projection = glm::perspective
+            const glm::mat4 view = glm::lookAt
             (
-                glm::radians(90.0f),
-                static_cast<f32>(POINT_SHADOW_DIMENSIONS.x) / static_cast<f32>(POINT_SHADOW_DIMENSIONS.y),
-                POINT_SHADOW_PLANES.x,
-                POINT_SHADOW_PLANES.y
+                light.position,
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                glm::vec3(0.0f, 1.0f, 0.0f)
             );
 
-            pointShadowData.emplace_back(PointShadow::PointShadowData{
-                .matrices     = {
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-                },
-                .shadowPlanes = POINT_SHADOW_PLANES
-            });
+            matrices.emplace_back(projection * view);
         }
 
-        pointShadowBuffer.LoadPointShadowData(FIF, pointShadowData);
+        spotShadowBuffer.LoadMatrices(FIF, matrices);
 
-        const auto& depthAttachment = framebufferManager.GetFramebuffer("PointShadowMap");
+        const auto& depthAttachment = framebufferManager.GetFramebuffer("SpotShadowMap");
 
         depthAttachment.image.Barrier
         (
@@ -158,7 +167,7 @@ namespace Renderer::PointShadow
 
         for (usize i = 0; i < lights.size(); ++i)
         {
-            const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/{}", i));
+            const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SpotShadowMapView/{}", i));
 
             const VkRenderingAttachmentInfo depthAttachmentInfo =
             {
@@ -184,7 +193,7 @@ namespace Renderer::PointShadow
                     .extent = {depthAttachment.image.width, depthAttachment.image.height}
                 },
                 .layerCount           = 1,
-                .viewMask             = 0b111111,
+                .viewMask             = 0,
                 .colorAttachmentCount = 0,
                 .pColorAttachments    = nullptr,
                 .pDepthAttachment     = &depthAttachmentInfo,
@@ -217,18 +226,17 @@ namespace Renderer::PointShadow
 
             pipeline.pushConstant =
             {
-                .scene        = sceneBuffer.buffers[FIF].deviceAddress,
                 .meshes       = meshBuffer.buffers[FIF].deviceAddress,
                 .positions    = geometryBuffer.positionBuffer.deviceAddress,
-                .pointShadows = pointShadowBuffer.buffers[FIF].deviceAddress,
-                .lightIndex   = static_cast<u32>(i)
+                .spotShadows  = spotShadowBuffer.buffers[FIF].deviceAddress,
+                .currentIndex = static_cast<u32>(i)
             };
 
             pipeline.LoadPushConstants
             (
                currentCmdBuffer,
-               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               0, sizeof(PointShadow::PushConstant),
+               VK_SHADER_STAGE_VERTEX_BIT,
+               0, sizeof(SpotShadow::PushConstant),
                reinterpret_cast<void*>(&pipeline.pushConstant)
             );
 
@@ -267,16 +275,5 @@ namespace Renderer::PointShadow
         Vk::EndLabel(currentCmdBuffer);
 
         currentCmdBuffer.EndRecording();
-    }
-
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
-    {
-        Logger::Debug("{}\n", "Destroying point shadow pass!");
-
-        pointShadowBuffer.Destroy(allocator);
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
-
-        pipeline.Destroy(device);
     }
 }

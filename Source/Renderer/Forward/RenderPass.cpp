@@ -207,7 +207,9 @@ namespace Renderer::Forward
             .pointShadowSamplerIndex = pipeline.pointShadowSamplerIndex,
             .irradianceIndex         = textureManager.GetTextureID(iblMaps.irradianceID),
             .preFilterIndex          = textureManager.GetTextureID(iblMaps.preFilterID),
-            .brdfLutIndex            = textureManager.GetTextureID(iblMaps.brdfLutID)
+            .brdfLutIndex            = textureManager.GetTextureID(iblMaps.brdfLutID),
+            .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex,
+            .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").descriptorIndex
         };
 
         pipeline.LoadPushConstants

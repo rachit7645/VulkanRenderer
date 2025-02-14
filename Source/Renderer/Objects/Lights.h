@@ -28,10 +28,9 @@ namespace Renderer::Objects
 
     struct DirLight
     {
-        glm::vec3 position       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color          = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity      = {0.0f, 0.0f, 0.0f};
-        u32       shadowMapIndex = 0;
+        glm::vec3 position  = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color     = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity = {0.0f, 0.0f, 0.0f};
     };
 
     struct PointLight
@@ -40,7 +39,6 @@ namespace Renderer::Objects
         glm::vec3 color          = {0.0f, 0.0f, 0.0f};
         glm::vec3 intensity      = {0.0f, 0.0f, 0.0f};
         glm::vec3 attenuation    = {0.0f, 0.0f, 0.0f};
-        u32       shadowMapIndex = 0;
     };
 
     struct SpotLight

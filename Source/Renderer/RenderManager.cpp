@@ -40,6 +40,7 @@ namespace Renderer
           m_bloomPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_pointShadowPass(m_context, m_formatHelper, m_framebufferManager),
+          m_spotShadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator),
@@ -52,6 +53,7 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
+            m_spotShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_pointShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_shadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_bloomPass.Destroy(m_context.device, m_context.commandPool);
@@ -210,6 +212,16 @@ namespace Renderer
             m_meshBuffer,
             m_indirectBuffer,
             m_pointLights
+        );
+
+        m_spotShadowPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
+            m_modelManager.geometryBuffer,
+            m_meshBuffer,
+            m_indirectBuffer,
+            m_spotLights
         );
 
         m_forwardPass.Render
@@ -425,17 +437,6 @@ namespace Renderer
             ImGui::EndMainMenuBar();
         }
 
-        m_sun.shadowMapIndex = m_framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex;
-
-        for (usize i = 0; i < m_pointLights.size(); ++i)
-        {
-            m_pointLights[i].shadowMapIndex = m_framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/{}", i)).descriptorIndex;
-        }
-
-        m_lightsBuffer.WriteDirLights(m_currentFIF, {&m_sun, 1});
-        m_lightsBuffer.WritePointLights(m_currentFIF, m_pointLights);
-        m_lightsBuffer.WriteSpotLights(m_currentFIF, m_spotLights);
-
         const Scene scene =
         {
             .projection = Maths::CreateProjectionReverseZ(
@@ -452,6 +453,9 @@ namespace Renderer
             .spotLights  = m_lightsBuffer.spotLightBuffers[m_currentFIF].deviceAddress
         };
 
+        m_lightsBuffer.WriteDirLights(m_currentFIF, {&m_sun, 1});
+        m_lightsBuffer.WritePointLights(m_currentFIF, m_pointLights);
+        m_lightsBuffer.WriteSpotLights(m_currentFIF, m_spotLights);
         m_sceneBuffer.WriteScene(m_currentFIF, scene);
         m_meshBuffer.LoadMeshes(m_currentFIF, m_modelManager, m_renderObjects);
         m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_modelManager, m_renderObjects);
@@ -562,6 +566,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_pointShadowPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_spotShadowPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo
