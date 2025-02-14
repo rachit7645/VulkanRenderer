@@ -20,10 +20,6 @@
 
 namespace Renderer::Buffers
 {
-    constexpr auto MAX_DIR_LIGHT_COUNT   = 1u;
-    constexpr auto MAX_POINT_LIGHT_COUNT = 16u;
-    constexpr auto MAX_SPOT_LIGHT_COUNT  = 16u;
-
     LightsBuffer::LightsBuffer(VkDevice device, VmaAllocator allocator)
     {
         for (usize i = 0; i < dirLightBuffers.size(); ++i)
@@ -31,7 +27,7 @@ namespace Renderer::Buffers
             dirLightBuffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(u32) + MAX_DIR_LIGHT_COUNT * sizeof(Objects::DirLight)),
+                static_cast<u32>(sizeof(u32) + Objects::MAX_DIR_LIGHT_COUNT * sizeof(Objects::DirLight)),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -51,7 +47,7 @@ namespace Renderer::Buffers
             pointLightBuffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(u32) + MAX_POINT_LIGHT_COUNT * sizeof(Objects::PointLight)),
+                static_cast<u32>(sizeof(u32) + Objects::MAX_POINT_LIGHT_COUNT * sizeof(Objects::PointLight)),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -71,7 +67,7 @@ namespace Renderer::Buffers
             spotLightBuffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(u32) + MAX_SPOT_LIGHT_COUNT * sizeof(Objects::SpotLight)),
+                static_cast<u32>(sizeof(u32) + Objects::MAX_SPOT_LIGHT_COUNT * sizeof(Objects::SpotLight)),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,

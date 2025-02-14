@@ -22,6 +22,10 @@
 
 namespace Renderer::Objects
 {
+    constexpr auto MAX_DIR_LIGHT_COUNT   = 1u;
+    constexpr auto MAX_POINT_LIGHT_COUNT = 16u;
+    constexpr auto MAX_SPOT_LIGHT_COUNT  = 16u;
+
     struct DirLight
     {
         glm::vec3 position       = {0.0f, 0.0f, 0.0f};

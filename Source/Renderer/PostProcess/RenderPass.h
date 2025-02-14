@@ -49,7 +49,7 @@ namespace Renderer::PostProcess
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
-        f32 m_bloomStrength = 0.021f;
+        f32 m_bloomStrength = 0.031f;
     };
 }
 

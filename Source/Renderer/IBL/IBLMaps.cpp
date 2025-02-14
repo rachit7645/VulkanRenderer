@@ -28,7 +28,7 @@
 
 namespace Renderer::IBL
 {
-    constexpr auto HDR_MAP = "industrial_sunset_puresky_4k.hdr";
+    constexpr auto HDR_MAP = "NightSky.hdr";
 
     constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
     constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
@@ -380,6 +380,7 @@ namespace Renderer::IBL
             &pipeline.pushConstant
         );
 
+        // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet.handle};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
@@ -593,6 +594,7 @@ namespace Renderer::IBL
             &pipeline.pushConstant
         );
 
+        // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet.handle};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
@@ -795,6 +797,7 @@ namespace Renderer::IBL
                 &pipeline.pushConstant
             );
 
+            // Mega set
             const std::array descriptorSets = {megaSet.descriptorSet.handle};
             pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
