@@ -85,7 +85,8 @@ namespace Renderer::Forward
         const Buffers::IndirectBuffer& indirectBuffer,
         const IBL::IBLMaps& iblMaps,
         const Vk::TextureManager& textureManager,
-        const Renderer::Shadow::CascadeBuffer& cascadeBuffer
+        const Shadow::CascadeBuffer& cascadeBuffer,
+        const PointShadow::PointShadowBuffer& pointShadowBuffer
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
@@ -194,17 +195,19 @@ namespace Renderer::Forward
 
         pipeline.pushConstant =
         {
-            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes              = meshBuffer.buffers[FIF].deviceAddress,
-            .positions           = geometryBuffer.positionBuffer.deviceAddress,
-            .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
-            .cascades            = cascadeBuffer.buffers[FIF].deviceAddress,
-            .textureSamplerIndex = pipeline.textureSamplerIndex,
-            .iblSamplerIndex     = pipeline.iblSamplerIndex,
-            .shadowSamplerIndex  = pipeline.shadowSamplerIndex,
-            .irradianceIndex     = textureManager.GetTextureID(iblMaps.irradianceID),
-            .preFilterIndex      = textureManager.GetTextureID(iblMaps.preFilterID),
-            .brdfLutIndex        = textureManager.GetTextureID(iblMaps.brdfLutID)
+            .scene                   = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes                  = meshBuffer.buffers[FIF].deviceAddress,
+            .positions               = geometryBuffer.positionBuffer.deviceAddress,
+            .vertices                = geometryBuffer.vertexBuffer.deviceAddress,
+            .cascades                = cascadeBuffer.buffers[FIF].deviceAddress,
+            .pointShadows            = pointShadowBuffer.buffers[FIF].deviceAddress,
+            .textureSamplerIndex     = pipeline.textureSamplerIndex,
+            .iblSamplerIndex         = pipeline.iblSamplerIndex,
+            .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
+            .pointShadowSamplerIndex = pipeline.pointShadowSamplerIndex,
+            .irradianceIndex         = textureManager.GetTextureID(iblMaps.irradianceID),
+            .preFilterIndex          = textureManager.GetTextureID(iblMaps.preFilterID),
+            .brdfLutIndex            = textureManager.GetTextureID(iblMaps.brdfLutID)
         };
 
         pipeline.LoadPushConstants

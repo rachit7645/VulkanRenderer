@@ -43,4 +43,8 @@ const float SHADOW_BIAS_MODIFIER = 0.35f;
 const int   SHADOW_PCF_RANGE     = 1; // p = 2 * r + 1 for a p * p PCF filter
 const float SHADOW_BLEND_RANGE   = 25.0f;
 
+// Point Shadow Constants
+const int   POINT_SHADOW_NUM_SAMPLES = 20;
+const float POINT_SHADOW_BIAS        = 0.15f;
+
 #endif

@@ -21,18 +21,21 @@
 #include "Scene.glsl"
 #include "Vertex.glsl"
 #include "CSM.glsl"
+#include "PointShadowMap.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer    Scene;
-    MeshBuffer     Meshes;
-    PositionBuffer Positions;
-    VertexBuffer   Vertices;
-    CascadeBuffer  Cascades;
+    SceneBuffer       Scene;
+    MeshBuffer        Meshes;
+    PositionBuffer    Positions;
+    VertexBuffer      Vertices;
+    CascadeBuffer     Cascades;
+    PointShadowBuffer PointShadows;
 
     uint TextureSamplerIndex;
     uint IBLSamplerIndex;
     uint ShadowSamplerIndex;
+    uint PointShadowSamplerIndex;
 
     uint IrradianceIndex;
     uint PreFilterIndex;

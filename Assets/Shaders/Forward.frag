@@ -58,7 +58,8 @@ void main()
 
     for (uint i = 0; i < Constants.Scene.dirLights.count; ++i)
     {
-        LightInfo lightInfo = GetLightInfo(Constants.Scene.dirLights.lights[i]);
+        DirLight  light     = Constants.Scene.dirLights.lights[i];
+        LightInfo lightInfo = GetLightInfo(light);
 
         float shadow = CalculateShadow
         (
@@ -67,7 +68,7 @@ void main()
             fragViewPosition,
             normal,
             lightInfo.L,
-            textureArrays[Constants.Scene.dirLights.lights[i].shadowMapIndex],
+            textureArrays[light.shadowMapIndex],
             samplers[Constants.ShadowSamplerIndex],
             Constants.Cascades
         );
@@ -86,7 +87,19 @@ void main()
 
     for (uint i = 0; i < Constants.Scene.pointLights.count; ++i)
     {
-        LightInfo lightInfo = GetLightInfo(Constants.Scene.pointLights.lights[i], fragPosition);
+        PointLight light     = Constants.Scene.pointLights.lights[i];
+        LightInfo  lightInfo = GetLightInfo(light, fragPosition);
+
+        float shadow = CalculatePointShadow
+        (
+            i,
+            fragPosition,
+            light.position,
+            Constants.Scene.cameraPos,
+            cubemapArrays[light.shadowMapIndex],
+            samplers[Constants.PointShadowSamplerIndex],
+            Constants.PointShadows.pointShadowData[i]
+        );
 
         Lo += CalculateLight
         (
@@ -97,7 +110,7 @@ void main()
             albedo.rgb,
             aoRghMtl.g,
             aoRghMtl.b
-        );
+        ) * (1.0f - shadow);
     }
 
     for (uint i = 0; i < Constants.Scene.spotLights.count; ++i)

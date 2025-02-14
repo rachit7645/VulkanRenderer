@@ -71,23 +71,23 @@ namespace Renderer
 
         m_sun =
         {
-            .position       = {-30.0f, -30.0f, -10.0f},
-            .color          = {1.0f,   0.956f, 0.898f},
-            .intensity      = {2.5f,   2.5f,   2.5f}
+            .position  = {-30.0f, -30.0f,  -10.0f},
+            .color     = {0.4784f, 0.7372f, 0.7450f},
+            .intensity = {3.0f,    3.0f,    3.0f}
         };
 
         m_pointLights =
         {
             Objects::PointLight
             {
-                .position    = {4.0f, 20.0f,  -3.0f},
+                .position    = {0.0f, 20.0f,  -3.0f},
                 .color       = {0.0f, 0.945f,  0.945f},
                 .intensity   = {1.0f, 7.0f,    5.0f},
                 .attenuation = {1.0f, 0.022f,  0.0019f}
             },
             Objects::PointLight
             {
-                .position    = {27.0f, 15.0f, -3.0f},
+                .position    = {10.0f, 15.0f, -3.0f},
                 .color       = {0.0f,  0.031f, 1.0f},
                 .intensity   = {1.0f,  6.0f,   10.0f},
                 .attenuation = {1.0f,  0.027f, 0.0028f}
@@ -98,21 +98,21 @@ namespace Renderer
         {
             Objects::SpotLight
             {
-                .position    = {22.0f, 10.0f,  6.0f},
+                .position    = {1.0f, 10.0f,  6.0f},
                 .color       = {1.0f,  0.0f,   0.0f},
                 .intensity   = {10.0f, 1.0f,   1.0f},
                 .attenuation = {1.0f,  0.007f, 0.0002f},
                 .direction   = {-1.0f, 0.0f,  -0.3f},
-                .cutOff      = {10.0f, 30.0f}
+                .cutOff      = {glm::radians(10.0f), glm::radians(30.0f)}
             },
             Objects::SpotLight
             {
-                .position    = {62.0f,  2.0f,  -2.0f},
+                .position    = {-6.0f,  2.0f,  -2.0f},
                 .color       = {0.941f, 0.0f,   1.0f},
                 .intensity   = {10.0f,  10.0f,  10.0f},
                 .attenuation = {1.0f,   0.022f, 0.0019f},
                 .direction   = {-1.0f,  0.3f,  -0.1f},
-                .cutOff      = {10.0f,  50.0f}
+                .cutOff      = {glm::radians(10.0f), glm::radians(50.0f)}
             }
         };
 
@@ -223,7 +223,8 @@ namespace Renderer
             m_indirectBuffer,
             m_iblMaps,
             m_modelManager.textureManager,
-            m_shadowPass.cascadeBuffer
+            m_shadowPass.cascadeBuffer,
+            m_pointShadowPass.pointShadowBuffer
         );
 
         m_skyboxPass.Render
@@ -425,6 +426,11 @@ namespace Renderer
         }
 
         m_sun.shadowMapIndex = m_framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex;
+
+        for (usize i = 0; i < m_pointLights.size(); ++i)
+        {
+            m_pointLights[i].shadowMapIndex = m_framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/{}", i)).descriptorIndex;
+        }
 
         m_lightsBuffer.WriteDirLights(m_currentFIF, {&m_sun, 1});
         m_lightsBuffer.WritePointLights(m_currentFIF, m_pointLights);

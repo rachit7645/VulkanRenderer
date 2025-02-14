@@ -35,6 +35,7 @@ struct PointLight
     vec3 color;
     vec3 intensity;
     vec3 attenuation;
+    uint shadowMapIndex;
 };
 
 struct SpotLight
