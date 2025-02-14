@@ -22,6 +22,7 @@
 #include "Vertex.glsl"
 #include "CSM.glsl"
 #include "PointShadowMap.glsl"
+#include "SpotShadowMap.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
@@ -31,6 +32,7 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     VertexBuffer      Vertices;
     CascadeBuffer     Cascades;
     PointShadowBuffer PointShadows;
+    SpotShadowBuffer  SpotShadows;
 
     uint TextureSamplerIndex;
     uint IBLSamplerIndex;
@@ -42,6 +44,7 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint BRDFLUTIndex;
     uint ShadowMapIndex;
     uint PointShadowMapIndex;
+    uint SpotShadowMapIndex;
 } Constants;
 
 #endif

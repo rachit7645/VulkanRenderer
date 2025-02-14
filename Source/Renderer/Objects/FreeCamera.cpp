@@ -34,7 +34,10 @@ namespace Renderer::Objects
 
     void FreeCamera::Update(f32 frameDelta)
     {
-        CheckInputs(frameDelta);
+        if (isEnabled == true)
+        {
+            CheckInputs(frameDelta);
+        }
 
         front.x = std::cos(rotation.y) * std::cos(rotation.x);
         front.y = std::sin(rotation.x);

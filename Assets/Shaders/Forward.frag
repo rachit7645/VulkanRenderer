@@ -24,7 +24,6 @@
 #include "Constants/Forward.glsl"
 #include "Material.glsl"
 #include "Color.glsl"
-#include "Lights.glsl"
 #include "PBR.glsl"
 #include "MegaSet.glsl"
 
@@ -68,9 +67,9 @@ void main()
             fragViewPosition,
             normal,
             lightInfo.L,
+            Constants.Cascades,
             textureArrays[Constants.ShadowMapIndex],
-            samplers[Constants.ShadowSamplerIndex],
-            Constants.Cascades
+            samplers[Constants.ShadowSamplerIndex]
         );
 
         Lo += CalculateLight
@@ -96,9 +95,9 @@ void main()
             fragPosition,
             light.position,
             Constants.Scene.cameraPos,
+            Constants.PointShadows.pointShadowData[i],
             cubemapArrays[Constants.PointShadowMapIndex],
-            samplers[Constants.PointShadowSamplerIndex],
-            Constants.PointShadows.pointShadowData[i]
+            samplers[Constants.PointShadowSamplerIndex]
         );
 
         Lo += CalculateLight
@@ -115,7 +114,19 @@ void main()
 
     for (uint i = 0; i < Constants.Scene.spotLights.count; ++i)
     {
-        LightInfo lightInfo = GetLightInfo(Constants.Scene.spotLights.lights[i], fragPosition);
+        SpotLight light     = Constants.Scene.spotLights.lights[i];
+        LightInfo lightInfo = GetLightInfo(light, fragPosition);
+
+        float shadow = CalculateSpotShadow
+        (
+            i,
+            fragPosition,
+            normal,
+            light.position,
+            Constants.SpotShadows.matrices[i],
+            textureArrays[Constants.SpotShadowMapIndex],
+            samplers[Constants.ShadowSamplerIndex]
+        );
 
         Lo += CalculateLight
         (
@@ -126,7 +137,7 @@ void main()
             albedo.rgb,
             aoRghMtl.g,
             aoRghMtl.b
-        );
+        ) * (1.0f - shadow);
     }
 
     vec3 R          = reflect(-fragToCamera, normal);

@@ -47,4 +47,8 @@ const float SHADOW_BLEND_RANGE   = 25.0f;
 const int   POINT_SHADOW_NUM_SAMPLES = 20;
 const float POINT_SHADOW_BIAS        = 0.15f;
 
+// Spot shadow constants
+const float MIN_SPOT_SHADOW_BIAS = 0.000005f;
+const float MAX_SPOT_SHADOW_BIAS = 0.00025f;
+
 #endif

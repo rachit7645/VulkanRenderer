@@ -70,8 +70,7 @@ float SampleShadow
     }
 
     float bias = CalculateBias(layer, lightDir, normal, cascadeBuffer);
-
-    shadow           = 0.0f;
+    shadow     = 0.0f;
 
     #if CSM_ENABLE_PCF == 1
 
@@ -144,9 +143,9 @@ float CalculateShadow
     vec3 viewPosition,
     vec3 normal,
     vec3 lightDir,
+    CascadeBuffer cascadeBuffer,
     texture2DArray shadowMap,
-    sampler shadowSampler,
-    CascadeBuffer cascadeBuffer
+    sampler shadowSampler
 )
 {
     ivec3 shadowMapSize = textureSize(sampler2DArrayShadow(shadowMap, shadowSampler), 0);
@@ -220,9 +219,9 @@ float CalculateShadow
     vec3 viewPosition,
     vec3 normal,
     vec3 lightDir,
+    CascadeBuffer cascadeBuffer,
     texture2DArray shadowMap,
-    sampler shadowSampler,
-    CascadeBuffer cascadeBuffer
+    sampler shadowSampler
 )
 {
     ivec3 shadowMapSize = textureSize(sampler2DArrayShadow(shadowMap, shadowSampler), 0);

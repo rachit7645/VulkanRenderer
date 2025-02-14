@@ -39,17 +39,17 @@ namespace Renderer::Objects
 
         [[nodiscard]] glm::mat4 GetViewMatrix() const;
 
-        // Camera position
         glm::vec3 position = {0.0f, 0.0f, 0.0f};
         // Pitch, Yaw, Roll (Radians)
         glm::vec3 rotation = {0.0f, 0.0f, 0.0f};
         // Must be in radians
         f32 FOV = Renderer::DEFAULT_FOV;
 
-        // Lookat vectors
         glm::vec3 front = {0.0f, 0.0f, -1.0f};
         glm::vec3 up    = {0.0f, 1.0f,  0.0f};
         glm::vec3 right = glm::normalize(glm::cross(front, up));
+
+        bool isEnabled = true;
     protected:
         virtual void ImGuiDisplay();
     };

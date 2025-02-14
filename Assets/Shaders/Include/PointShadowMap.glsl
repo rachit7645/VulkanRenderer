@@ -34,9 +34,9 @@ float CalculatePointShadow
     vec3 fragPosition,
     vec3 lightPosition,
     vec3 cameraPosition,
+    PointShadowData pointShadowData,
     textureCubeArray pointShadowMap,
-    sampler pointShadowSampler,
-    PointShadowData pointShadowData
+    sampler pointShadowSampler
 )
 {
     const vec3 GRID_SAMPLING_DISK[POINT_SHADOW_NUM_SAMPLES] = vec3[]

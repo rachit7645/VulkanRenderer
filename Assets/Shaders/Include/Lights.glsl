@@ -83,8 +83,9 @@ float CalculateAttenuation(vec3 position, vec3 ATT, vec3 fragPos)
 float CalculateSpotIntensity(vec3 L, vec3 direction, vec2 cutOff)
 {
     float theta     = dot(L, normalize(-direction));
-    float epsilon   = cutOff.x - cutOff.y;
-    float intensity = smoothstep(0.0f, 1.0f, (theta - cutOff.y) / epsilon);
+    vec2  cutOffCos = cos(cutOff);
+    float epsilon   = cutOffCos.x - cutOffCos.y;
+    float intensity = smoothstep(0.0f, 1.0f, (theta - cutOffCos.y) / epsilon);
 
     return intensity;
 }

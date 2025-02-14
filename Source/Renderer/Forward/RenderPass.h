@@ -29,6 +29,7 @@
 #include "Renderer/IBL/IBLMaps.h"
 #include "Renderer/Shadow/CascadeBuffer.h"
 #include "Renderer/PointShadow/PointShadowBuffer.h"
+#include "Renderer/SpotShadow/SpotShadowBuffer.h"
 
 namespace Renderer::Forward
 {
@@ -58,7 +59,8 @@ namespace Renderer::Forward
             const IBL::IBLMaps& iblMaps,
             const Vk::TextureManager& textureManager,
             const Shadow::CascadeBuffer& cascadeBuffer,
-            const PointShadow::PointShadowBuffer& pointShadowBuffer
+            const PointShadow::PointShadowBuffer& pointShadowBuffer,
+            const SpotShadow::SpotShadowBuffer& spotShadowBuffer
         );
 
         Forward::Pipeline pipeline;

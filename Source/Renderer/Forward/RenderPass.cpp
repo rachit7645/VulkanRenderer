@@ -86,7 +86,8 @@ namespace Renderer::Forward
         const IBL::IBLMaps& iblMaps,
         const Vk::TextureManager& textureManager,
         const Shadow::CascadeBuffer& cascadeBuffer,
-        const PointShadow::PointShadowBuffer& pointShadowBuffer
+        const PointShadow::PointShadowBuffer& pointShadowBuffer,
+        const SpotShadow::SpotShadowBuffer& spotShadowBuffer
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
@@ -201,6 +202,7 @@ namespace Renderer::Forward
             .vertices                = geometryBuffer.vertexBuffer.deviceAddress,
             .cascades                = cascadeBuffer.buffers[FIF].deviceAddress,
             .pointShadows            = pointShadowBuffer.buffers[FIF].deviceAddress,
+            .spotShadows             = spotShadowBuffer.buffers[FIF].deviceAddress,
             .textureSamplerIndex     = pipeline.textureSamplerIndex,
             .iblSamplerIndex         = pipeline.iblSamplerIndex,
             .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
@@ -209,7 +211,8 @@ namespace Renderer::Forward
             .preFilterIndex          = textureManager.GetTextureID(iblMaps.preFilterID),
             .brdfLutIndex            = textureManager.GetTextureID(iblMaps.brdfLutID),
             .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex,
-            .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").descriptorIndex
+            .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").descriptorIndex,
+            .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").descriptorIndex,
         };
 
         pipeline.LoadPushConstants

@@ -32,6 +32,7 @@ namespace Renderer::Forward
         VkDeviceAddress vertices;
         VkDeviceAddress cascades;
         VkDeviceAddress pointShadows;
+        VkDeviceAddress spotShadows;
 
         // Samplers
         u32 textureSamplerIndex;
@@ -45,6 +46,7 @@ namespace Renderer::Forward
         u32 brdfLutIndex;
         u32 shadowMapIndex;
         u32 pointShadowMapIndex;
+        u32 spotShadowMapIndex;
     };
 }
 

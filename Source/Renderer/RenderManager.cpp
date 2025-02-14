@@ -100,16 +100,16 @@ namespace Renderer
         {
             Objects::SpotLight
             {
-                .position    = {1.0f, 10.0f,  6.0f},
+                .position    = {25.0f, 4.0f,  6.0f},
                 .color       = {1.0f,  0.0f,   0.0f},
-                .intensity   = {10.0f, 1.0f,   1.0f},
+                .intensity   = {15.0f, 1.0f,   1.0f},
                 .attenuation = {1.0f,  0.007f, 0.0002f},
                 .direction   = {-1.0f, 0.0f,  -0.3f},
                 .cutOff      = {glm::radians(10.0f), glm::radians(30.0f)}
             },
             Objects::SpotLight
             {
-                .position    = {-6.0f,  2.0f,  -2.0f},
+                .position    = {7.0f,  2.0f,  -2.0f},
                 .color       = {0.941f, 0.0f,   1.0f},
                 .intensity   = {10.0f,  10.0f,  10.0f},
                 .attenuation = {1.0f,   0.022f, 0.0019f},
@@ -236,7 +236,8 @@ namespace Renderer
             m_iblMaps,
             m_modelManager.textureManager,
             m_shadowPass.cascadeBuffer,
-            m_pointShadowPass.pointShadowBuffer
+            m_pointShadowPass.pointShadowBuffer,
+            m_spotShadowPass.spotShadowBuffer
         );
 
         m_skyboxPass.Render
@@ -689,6 +690,10 @@ namespace Renderer
                 {
                     Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
                 }
+                break;
+
+            case SDL_SCANCODE_F2:
+                m_camera.isEnabled = !m_camera.isEnabled;
                 break;
 
             default:
