@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef POINT_SHADOW_DATA_GLSL
+#define POINT_SHADOW_DATA_GLSL
 
-void main()
+struct PointShadowData
 {
-}
+    mat4 matrices[6];
+    vec2 shadowPlanes;
+};
+
+layout(buffer_reference, scalar) readonly buffer PointShadowBuffer
+{
+    PointShadowData pointShadowData[];
+};
+
+#endif

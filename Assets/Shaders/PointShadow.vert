@@ -21,15 +21,20 @@
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_multiview            : enable
 
-#include "Constants/Converter.glsl"
+#include "Constants/PointShadow.glsl"
 
-layout(location = 0) out vec3 worldPos;
+layout(location = 0) out      vec3 fragPosition;
+layout(location = 1) out flat int  fragViewIndex;
 
 void main()
 {
-    worldPos    = Constants.Vertices.positions[gl_VertexIndex];
-    gl_Position = Constants.Matrices.matrices[gl_ViewIndex] * vec4(worldPos, 1.0f);
+    Mesh            mesh       = Constants.Meshes.meshes[gl_DrawID];
+    vec3            position   = Constants.Positions.positions[gl_VertexIndex];
+    PointShadowData shadowData = Constants.PointShadows.pointShadowData[Constants.LightIndex];
 
-    // Trick to guarantee early depth test
-    gl_Position = gl_Position.xyww;
+    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
+    fragPosition = fragPos.xyz;
+    gl_Position  = shadowData.matrices[gl_ViewIndex] * fragPos;
+
+    fragViewIndex = gl_ViewIndex;
 }

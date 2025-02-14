@@ -46,9 +46,8 @@ namespace Renderer::DearImGui
         void Render
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::Swapchain& swapchain,
+            const Vk::Context& context,
+            const Vk::Swapchain& swapchain,
             const Vk::MegaSet& megaSet
         );
 
@@ -56,6 +55,26 @@ namespace Renderer::DearImGui
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
+        void RenderGui
+        (
+            usize FIF,
+            const ImDrawData* drawData,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
+            const Vk::Swapchain& swapchain,
+            const Vk::MegaSet& megaSet
+        );
+
+        void UploadToBuffers
+        (
+            usize FIF,
+            const ImDrawData* drawData,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
+            Vk::Buffer& vertexBuffer,
+            Vk::Buffer& indexBuffer
+        );
+
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_vertexBuffers;
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_indexBuffers;
 

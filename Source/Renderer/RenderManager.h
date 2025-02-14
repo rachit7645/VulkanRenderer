@@ -33,6 +33,7 @@
 #include "Skybox/RenderPass.h"
 #include "Bloom/RenderPass.h"
 #include "Shadow/RenderPass.h"
+#include "PointShadow/RenderPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -93,6 +94,7 @@ namespace Renderer
         Skybox::RenderPass      m_skyboxPass;
         Bloom::RenderPass       m_bloomPass;
         Shadow::RenderPass      m_shadowPass;
+        PointShadow::RenderPass m_pointShadowPass;
 
         // Buffers
         Buffers::MeshBuffer     m_meshBuffer;

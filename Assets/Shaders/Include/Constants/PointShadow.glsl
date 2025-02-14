@@ -14,8 +14,21 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef POINT_SHADOW_PUSH_CONSTANT
+#define POINT_SHADOW_PUSH_CONSTANT
 
-void main()
+#include "Mesh.glsl"
+#include "Scene.glsl"
+#include "Vertex.glsl"
+#include "PointShadowData.glsl"
+
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-}
+    SceneBuffer       Scene;
+    MeshBuffer        Meshes;
+    PositionBuffer    Positions;
+    PointShadowBuffer PointShadows;
+    uint              LightIndex;
+} Constants;
+
+#endif

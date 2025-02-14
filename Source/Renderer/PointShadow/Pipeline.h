@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef POINT_SHADOW_PIPELINE_H
+#define POINT_SHADOW_PIPELINE_H
 
-void main()
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
+
+namespace Renderer::PointShadow
 {
+    class Pipeline : public Vk::Pipeline
+    {
+    public:
+        Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
+
+        PointShadow::PushConstant pushConstant = {};
+    };
 }
+
+#endif

@@ -14,8 +14,19 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef POINT_SHADOW_DATA_H
+#define POINT_SHADOW_DATA_H
 
-void main()
+#include "Externals/GLM.h"
+#include "Util/Util.h"
+
+namespace Renderer::PointShadow
 {
+    struct PointShadowData
+    {
+        glm::mat4 matrices[6];
+        glm::vec2 shadowPlanes;
+    };
 }
+
+#endif

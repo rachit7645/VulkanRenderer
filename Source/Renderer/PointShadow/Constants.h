@@ -14,8 +14,23 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef POINT_SHADOW_CONSTANTS_H
+#define POINT_SHADOW_CONSTANTS_H
 
-void main()
+#include <vulkan/vulkan.h>
+
+#include "Util/Util.h"
+
+namespace Renderer::PointShadow
 {
+    struct __attribute__((packed)) PushConstant
+    {
+        VkDeviceAddress scene;
+        VkDeviceAddress meshes;
+        VkDeviceAddress positions;
+        VkDeviceAddress pointShadows;
+        u32             lightIndex;
+    };
 }
+
+#endif

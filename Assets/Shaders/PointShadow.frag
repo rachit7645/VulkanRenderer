@@ -19,17 +19,21 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_multiview            : enable
 
-#include "Constants/Converter.glsl"
+layout(location = 0) in      vec3 fragPosition;
+layout(location = 1) in flat int  fragViewIndex;
 
-layout(location = 0) out vec3 worldPos;
+#include "Constants/PointShadow.glsl"
 
 void main()
 {
-    worldPos    = Constants.Vertices.positions[gl_VertexIndex];
-    gl_Position = Constants.Matrices.matrices[gl_ViewIndex] * vec4(worldPos, 1.0f);
+    PointLight      light           = Constants.Scene.pointLights.lights[Constants.LightIndex];
+    PointShadowData pointShadowData = Constants.PointShadows.pointShadowData[Constants.LightIndex];
 
-    // Trick to guarantee early depth test
-    gl_Position = gl_Position.xyww;
+    float lightDistance = length(fragPosition - light.position);
+
+    // Map to [0, 1]
+    lightDistance = lightDistance / pointShadowData.shadowPlanes.y;
+
+    gl_FragDepth = lightDistance;
 }

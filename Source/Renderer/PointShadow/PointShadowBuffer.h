@@ -14,8 +14,26 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef POINT_SHADOW_BUFFER_H
+#define POINT_SHADOW_BUFFER_H
 
-void main()
+#include "PointShadow.h"
+#include "Vulkan/Buffer.h"
+#include "Vulkan/Constants.h"
+
+namespace Renderer::PointShadow
 {
+    class PointShadowBuffer
+    {
+    public:
+        PointShadowBuffer(VkDevice device, VmaAllocator allocator);
+
+        void LoadPointShadowData(usize FIF, const std::span<const PointShadow::PointShadowData> pointShadows);
+
+        void Destroy(VmaAllocator allocator);
+
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
+    };
 }
+
+#endif
