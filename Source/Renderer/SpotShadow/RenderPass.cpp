@@ -24,7 +24,7 @@
 
 namespace Renderer::SpotShadow
 {
-    constexpr glm::uvec2 SHADOW_DIMENSIONS = {2048, 2048};
+    constexpr glm::uvec2 SHADOW_DIMENSIONS = {1024, 1024};
     constexpr glm::vec2  SHADOW_PLANES     = {0.1f, 100.0f};
 
     RenderPass::RenderPass
@@ -167,6 +167,8 @@ namespace Renderer::SpotShadow
 
         for (usize i = 0; i < lights.size(); ++i)
         {
+            Vk::BeginLabel(currentCmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.5146f, 0.7488f, 0.9388f, 1.0f));
+
             const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SpotShadowMapView/{}", i));
 
             const VkRenderingAttachmentInfo depthAttachmentInfo =
@@ -252,6 +254,8 @@ namespace Renderer::SpotShadow
             );
 
             vkCmdEndRendering(currentCmdBuffer.handle);
+
+            Vk::EndLabel(currentCmdBuffer);
         }
 
         depthAttachment.image.Barrier

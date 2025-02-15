@@ -68,7 +68,13 @@ namespace Renderer::Forward
         (
             "SceneColor",
             "SceneColorView",
-            Vk::ImageType::Single2D
+            Vk::ImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
         );
 
         Logger::Info("{}\n", "Created forward pass!");
@@ -206,7 +212,6 @@ namespace Renderer::Forward
             .textureSamplerIndex     = pipeline.textureSamplerIndex,
             .iblSamplerIndex         = pipeline.iblSamplerIndex,
             .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
-            .pointShadowSamplerIndex = pipeline.pointShadowSamplerIndex,
             .irradianceIndex         = textureManager.GetTextureID(iblMaps.irradianceID),
             .preFilterIndex          = textureManager.GetTextureID(iblMaps.preFilterID),
             .brdfLutIndex            = textureManager.GetTextureID(iblMaps.brdfLutID),

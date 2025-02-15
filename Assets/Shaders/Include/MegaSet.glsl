@@ -18,10 +18,10 @@
 #define MEGASET_GLSL
 
 // Mega set
-layout(set = 0, binding = 0) uniform sampler          samplers[];
-layout(set = 0, binding = 1) uniform texture2D        textures[];
-layout(set = 0, binding = 1) uniform textureCube      cubemaps[];
-layout(set = 0, binding = 1) uniform texture2DArray   textureArrays[];
-layout(set = 0, binding = 1) uniform textureCubeArray cubemapArrays[];
+layout(set = 0, binding = 0) uniform sampler          Samplers[];
+layout(set = 0, binding = 1) uniform texture2D        Textures[];
+layout(set = 0, binding = 1) uniform textureCube      Cubemaps[];
+layout(set = 0, binding = 1) uniform texture2DArray   TextureArrays[];
+layout(set = 0, binding = 1) uniform textureCubeArray CubemapArrays[];
 
 #endif

@@ -126,6 +126,22 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         );
 
+        /*m_renderObjects.emplace_back
+        (
+            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Main/SponzaMainC.gltf"),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f)
+        );
+
+        m_renderObjects.emplace_back
+        (
+            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Curtains/SponzaCurtainsC.gltf"),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f)
+        );*/
+
         m_renderObjects.emplace_back
         (
             m_modelManager.AddModel(m_context, m_megaSet, "Cottage/CottageC.gltf"),

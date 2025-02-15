@@ -29,7 +29,7 @@ layout (location = 0) out vec3 upsample;
 
 void main()
 {
-    #define SRC_TEXTURE sampler2D(textures[Constants.ImageIndex], samplers[Constants.SamplerIndex])
+    #define SRC_TEXTURE sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex])
     
     // Radius is in texture coordinate space so that it varies per mip level
     float x = Constants.FilterRadius;

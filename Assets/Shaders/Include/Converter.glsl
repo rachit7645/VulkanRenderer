@@ -23,10 +23,10 @@ vec4 UnpackRGBA8(uint data)
 
     return vec4
     (
-        float((data >> 0)  & 0xFF) * ONE_BY_255,
-        float((data >> 8)  & 0xFF) * ONE_BY_255,
-        float((data >> 16) & 0xFF) * ONE_BY_255,
-        float((data >> 24) & 0xFF) * ONE_BY_255
+        float(bitfieldExtract(data, 0,  8)) * ONE_BY_255,
+        float(bitfieldExtract(data, 8,  8)) * ONE_BY_255,
+        float(bitfieldExtract(data, 16, 8)) * ONE_BY_255,
+        float(bitfieldExtract(data, 24, 8)) * ONE_BY_255
     );
 }
 

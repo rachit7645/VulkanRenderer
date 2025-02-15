@@ -31,7 +31,7 @@ layout(location = 0) out vec3 downsample;
 
 void main()
 {
-    #define SRC_TEXTURE sampler2D(textures[Constants.ImageIndex], samplers[Constants.SamplerIndex])
+    #define SRC_TEXTURE sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex])
 
     vec2 srcTexelSize = 1.0f / vec2(textureSize(SRC_TEXTURE, 0));
     

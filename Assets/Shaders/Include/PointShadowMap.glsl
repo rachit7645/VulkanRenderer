@@ -57,15 +57,7 @@ float CalculatePointShadow
 
     for(int i = 0; i < POINT_SHADOW_NUM_SAMPLES; ++i)
     {
-        float closestDepth = texture(samplerCubeArray(pointShadowMap, pointShadowSampler), vec4(fragToLight + GRID_SAMPLING_DISK[i] * diskRadius, lightIndex)).r;
-
-        // [0, 1] -> [0, FarPlane]
-        closestDepth *= pointShadowData.shadowPlanes.y;
-
-        if ((currentDepth - POINT_SHADOW_BIAS) > closestDepth)
-        {
-            shadow += 1.0f;
-        }
+        shadow += texture(samplerCubeArrayShadow(pointShadowMap, pointShadowSampler), vec4(fragToLight + GRID_SAMPLING_DISK[i] * diskRadius, lightIndex), (currentDepth - POINT_SHADOW_BIAS) / pointShadowData.shadowPlanes.y);
     }
 
     shadow /= float(POINT_SHADOW_NUM_SAMPLES);

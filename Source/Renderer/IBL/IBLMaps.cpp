@@ -28,7 +28,7 @@
 
 namespace Renderer::IBL
 {
-    constexpr auto HDR_MAP = "NightSky.hdr";
+    constexpr auto HDR_MAP = "industrial_sunset_puresky_4k.hdr";
 
     constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
     constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};

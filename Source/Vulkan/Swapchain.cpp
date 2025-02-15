@@ -280,7 +280,7 @@ namespace Vk
                 vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
             }
         );
-    }
+    }   
 
     void Swapchain::CreateSyncObjects(VkDevice device)
     {

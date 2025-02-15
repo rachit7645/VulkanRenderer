@@ -21,8 +21,8 @@
 
 namespace Renderer::PointShadow
 {
-    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {1024, 1024};
-    constexpr glm::vec2  POINT_SHADOW_PLANES     = {1.0f, 25.0f};
+    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS =  {512,  512};
+    constexpr glm::vec2  POINT_SHADOW_PLANES     =  {1.0f, 25.0f};
 
     RenderPass::RenderPass
     (
@@ -158,6 +158,8 @@ namespace Renderer::PointShadow
 
         for (usize i = 0; i < lights.size(); ++i)
         {
+            Vk::BeginLabel(currentCmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
+
             const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/{}", i));
 
             const VkRenderingAttachmentInfo depthAttachmentInfo =
@@ -244,6 +246,8 @@ namespace Renderer::PointShadow
             );
 
             vkCmdEndRendering(currentCmdBuffer.handle);
+
+            Vk::EndLabel(currentCmdBuffer);
         }
 
         depthAttachment.image.Barrier

@@ -52,15 +52,12 @@ namespace Vk
             void* pValues
         ) const;
 
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         // Handles
         VkPipeline          handle    = VK_NULL_HANDLE;
         VkPipelineLayout    layout    = VK_NULL_HANDLE;
         VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-
-        // Deletion queue
-        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

@@ -24,7 +24,7 @@
 
 namespace Renderer::Shadow
 {
-    constexpr glm::uvec2 SHADOW_DIMENSIONS = {2048, 2048};
+    constexpr glm::uvec2 SHADOW_DIMENSIONS = {1024, 1024};
 
     RenderPass::RenderPass
     (

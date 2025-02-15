@@ -80,10 +80,8 @@ namespace Vk
         );
     }
 
-    void Pipeline::Destroy(VkDevice device)
+    void Pipeline::Destroy(VkDevice device) const
     {
-        m_deletionQueue.FlushQueue();
-
         vkDestroyPipeline(device, handle, nullptr);
         vkDestroyPipelineLayout(device, layout, nullptr);
     }

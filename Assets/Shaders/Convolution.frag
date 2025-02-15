@@ -52,7 +52,7 @@ void main()
 
             vec3 tangentSample = vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
             vec3 sampleVec     = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
-            irradiance        += texture(samplerCube(cubemaps[Constants.EnvMapIndex], samplers[Constants.SamplerIndex]), sampleVec).rgb * cosTheta * sinTheta;
+            irradiance        += texture(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), sampleVec).rgb * cosTheta * sinTheta;
             nrSamples         += 1;
         }
     }

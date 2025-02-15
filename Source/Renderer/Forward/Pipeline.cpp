@@ -168,36 +168,9 @@ namespace Renderer::Forward
             }
         );
 
-        pointShadowSamplerIndex = textureManager.AddSampler
-        (
-            megaSet,
-            context.device,
-            {
-                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                .pNext                   = nullptr,
-                .flags                   = 0,
-                .magFilter               = VK_FILTER_LINEAR,
-                .minFilter               = VK_FILTER_LINEAR,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .mipLodBias              = 0.0f,
-                .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
-                .compareEnable           = VK_FALSE,
-                .compareOp               = VK_COMPARE_OP_ALWAYS,
-                .minLod                  = 0.0f,
-                .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-                .unnormalizedCoordinates = VK_FALSE
-            }
-        );
-
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle,     "ForwardPipeline/TextureSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(iblSamplerIndex).handle,         "ForwardPipeline/IBLSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(shadowSamplerIndex).handle,      "ForwardPipeline/ShadowSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointShadowSamplerIndex).handle, "ForwardPipeline/PointShadowSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "ForwardPipeline/TextureSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(iblSamplerIndex).handle,     "ForwardPipeline/IBLSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(shadowSamplerIndex).handle,  "ForwardPipeline/ShadowSampler");
 
         megaSet.Update(context.device);
     }

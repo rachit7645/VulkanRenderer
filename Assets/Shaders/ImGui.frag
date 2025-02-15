@@ -32,6 +32,6 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = fragColor * texture(sampler2D(textures[Constants.TextureIndex], samplers[Constants.SamplerIndex]), fragUV.st);
+    outColor = fragColor * texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), fragUV.st);
     outColor = vec4(GammaCorrect(outColor.rgb), outColor.a);
 }

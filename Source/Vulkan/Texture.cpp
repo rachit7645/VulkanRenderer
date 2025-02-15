@@ -172,7 +172,7 @@ namespace Vk
 
         if (data == nullptr)
         {
-            Logger::Error("Unable to load texture! [Path={}]\n", path);
+            Logger::Error("Unable to load texture! [Error={}] [Path={}]\n", stbi_failure_reason(), path);
         }
 
         const usize        elemCount = width * height * STBI_rgb_alpha;

@@ -73,13 +73,31 @@ namespace Vk
             return;
         }
 
+        std::unordered_set<std::string>    updatedFramebuffers;
         std::vector<VkImageMemoryBarrier2> barriers;
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
-            framebuffer.image.Destroy(context.allocator);
+            const bool isFixedSize = std::holds_alternative<Vk::FramebufferSize>(framebuffer.sizeData);
+
+            if
+            (
+                framebuffer.image.handle != VK_NULL_HANDLE &&
+                isFixedSize &&
+                m_fixedFramebuffers.contains(name)
+            )
+            {
+                continue;
+            }
 
             const auto size = GetFramebufferSize(swapchainExtent, framebuffer.sizeData);
+
+            if (size.Matches(framebuffer.image))
+            {
+                continue;
+            }
+
+            framebuffer.image.Destroy(context.allocator);
 
             VkImageCreateInfo createInfo = {};
             {
@@ -173,10 +191,22 @@ namespace Vk
             });
 
             Vk::SetDebugName(context.device, framebuffer.image.handle, name);
+
+            if (isFixedSize)
+            {
+                m_fixedFramebuffers.insert(name);
+            }
+
+            updatedFramebuffers.insert(name);
         }
 
         for (auto& [name, framebufferView] : m_framebufferViews)
         {
+            if (framebufferView.view.handle != VK_NULL_HANDLE && !updatedFramebuffers.contains(framebufferView.framebuffer))
+            {
+                continue;
+            }
+
             const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
 
             framebufferView.view.Destroy(context.device);
@@ -336,8 +366,8 @@ namespace Vk
                         ImGui::Text("Descriptor Index | %u",        framebufferView.descriptorIndex);
                         ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
                         ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
-                        ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.levelCount);
-                        ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.layerCount);
+                        ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
+                        ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.baseArrayLayer + framebufferView.size.layerCount);
                         ImGui::Text("Format           | %s",        string_VkFormat(framebuffer.image.format));
                         ImGui::Text("Usage            | %s",        string_VkImageUsageFlags(framebuffer.image.usage).c_str());
 
@@ -391,7 +421,7 @@ namespace Vk
             return std::get<FramebufferResizeCallback>(sizeData)(extent, *this);
         }
 
-        return {};
+        Logger::Error("{}\n", "Invalid framebuffer size!");
     }
 
     void FramebufferManager::Destroy(VkDevice device, VmaAllocator allocator)

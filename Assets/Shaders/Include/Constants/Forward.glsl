@@ -37,7 +37,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint TextureSamplerIndex;
     uint IBLSamplerIndex;
     uint ShadowSamplerIndex;
-    uint PointShadowSamplerIndex;
 
     uint IrradianceIndex;
     uint PreFilterIndex;

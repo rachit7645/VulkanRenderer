@@ -62,7 +62,13 @@ namespace Renderer::Depth
         (
             "SceneDepth",
             "SceneDepthView",
-            Vk::ImageType::Single2D
+            Vk::ImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
         );
 
         Logger::Info("{}\n", "Created depth pass!");

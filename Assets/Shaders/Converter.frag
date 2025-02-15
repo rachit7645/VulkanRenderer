@@ -34,5 +34,5 @@ void main()
     vec3 normal = normalize(worldPos);
     vec2 uv     = GetSphericalMapUV(normal);
 
-    outColor = texture(sampler2D(textures[Constants.TextureIndex], samplers[Constants.SamplerIndex]), uv).rgb;
+    outColor = texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
 }

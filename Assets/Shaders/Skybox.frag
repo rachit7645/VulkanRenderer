@@ -30,5 +30,5 @@ layout (location = 0) out vec3 outColor;
 
 void main()
 {
-    outColor = texture(samplerCube(cubemaps[Constants.CubemapIndex], samplers[Constants.SamplerIndex]), txCoords).rgb;
+    outColor = texture(samplerCube(Cubemaps[Constants.CubemapIndex], Samplers[Constants.SamplerIndex]), txCoords).rgb;
 }

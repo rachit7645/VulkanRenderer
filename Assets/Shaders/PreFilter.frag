@@ -44,7 +44,7 @@ void main()
     vec3 tangent   = normalize(cross(up, N));
     vec3 bitangent = cross(N, tangent);
 
-    vec2 resolution = textureSize(samplerCube(cubemaps[Constants.EnvMapIndex], samplers[Constants.SamplerIndex]), 0);
+    vec2 resolution = textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0);
 
     vec3  prefilteredColor = vec3(0.0f);
     float totalWeight      = 0.0f;
@@ -72,7 +72,7 @@ void main()
             float saTexel  = 4.0f * PI / (6.0f * resolution.x * resolution.y);
             float mipLevel = Constants.Roughness == 0.0f ? 0.0f : 0.5f * log2(saSample / saTexel);
 
-            prefilteredColor += textureLod(samplerCube(cubemaps[Constants.EnvMapIndex], samplers[Constants.SamplerIndex]), L, mipLevel).rgb * NdotL;
+            prefilteredColor += textureLod(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), L, mipLevel).rgb * NdotL;
             totalWeight      += NdotL;
         }
     }

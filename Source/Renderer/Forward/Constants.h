@@ -38,7 +38,6 @@ namespace Renderer::Forward
         u32 textureSamplerIndex;
         u32 iblSamplerIndex;
         u32 shadowSamplerIndex;
-        u32 pointShadowSamplerIndex;
 
         // Textures
         u32 irradianceIndex;
