@@ -24,43 +24,10 @@
 
 namespace Vk
 {
+    constexpr f64 BUFFER_GROWTH_FACTOR = 1.5;
+
     GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
     {
-        // TODO: Implement resizing
-        constexpr VkDeviceSize INITIAL_INDEX_SIZE    = (1 << 24) * sizeof(Models::Index);
-        constexpr VkDeviceSize INITIAL_POSITION_SIZE = (1 << 22) * sizeof(glm::vec3);
-        constexpr VkDeviceSize INITIAL_VERTEX_SIZE   = (1 << 22) * sizeof(Models::Vertex);
-
-        indexBuffer = Vk::Buffer
-        (
-            allocator,
-            INITIAL_INDEX_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            0,
-            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-        );
-
-        positionBuffer = Vk::Buffer
-        (
-            allocator,
-            INITIAL_POSITION_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            0,
-            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-        );
-
-        vertexBuffer = Vk::Buffer
-        (
-            allocator,
-            INITIAL_VERTEX_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            0,
-            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-        );
-
         cubeBuffer = Vk::Buffer
         (
             allocator,
@@ -71,14 +38,9 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        positionBuffer.GetDeviceAddress(device);
-        vertexBuffer.GetDeviceAddress(device);
         cubeBuffer.GetDeviceAddress(device);
 
-        Vk::SetDebugName(device, indexBuffer.handle,    "GeometryBuffer/IndexBuffer");
-        Vk::SetDebugName(device, positionBuffer.handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, vertexBuffer.handle,   "GeometryBuffer/VertexBuffer");
-        Vk::SetDebugName(device, cubeBuffer.handle,     "GeometryBuffer/CubeBuffer");
+        Vk::SetDebugName(device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
 
         SetupCubeUpload(allocator);
     }
@@ -88,67 +50,51 @@ namespace Vk
         vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
     }
 
-    std::array<Models::Info, 3> GeometryBuffer::SetupUpload
+    std::array<Models::Info, 3> GeometryBuffer::SetupUploads
     (
         VmaAllocator allocator,
-        const std::vector<Models::Index>& indices,
-        const std::vector<glm::vec3>& positions,
-        const std::vector<Models::Vertex>& vertices
+        const std::span<const Models::Index> indices,
+        const std::span<const glm::vec3> positions,
+        const std::span<const Models::Vertex> vertices
     )
     {
-        auto SetupStagingBuffer = [allocator] (VkDeviceSize sizeBytes, const void* data) -> Vk::Buffer
-        {
-            const auto stagingBuffer = Vk::Buffer
-            (
-                allocator,
-                sizeBytes,
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                VMA_MEMORY_USAGE_AUTO
-            );
+        const auto indexInfo = SetupUpload
+        (
+            allocator,
+            indices,
+            indexCount,
+            m_pendingIndexUploads
+        );
 
-            std::memcpy(stagingBuffer.allocInfo.pMappedData, data, sizeBytes);
+        const auto positionInfo = SetupUpload
+        (
+            allocator,
+            positions,
+            positionCount,
+            m_pendingPositionUploads
+        );
 
-            return stagingBuffer;
-        };
-
-        const Models::Info indexInfo =
-        {
-            .offset = indexCount,
-            .count  = static_cast<u32>(indices.size())
-        };
-
-        const Models::Info positionInfo =
-        {
-            .offset = positionCount,
-            .count  = static_cast<u32>(positions.size())
-        };
-
-        const Models::Info vertexInfo =
-        {
-            .offset = vertexCount,
-            .count  = static_cast<u32>(vertices.size())
-        };
-
-        const VkDeviceSize indexSizeBytes    = indexInfo.count    * sizeof(Models::Index);
-        const VkDeviceSize positionSizeBytes = positionInfo.count * sizeof(glm::vec3);
-        const VkDeviceSize vertexSizeBytes   = vertexInfo.count   * sizeof(Models::Vertex);
-
-        m_pendingIndexUploads.emplace_back(indexInfo, SetupStagingBuffer(indexSizeBytes, indices.data()));
-        m_pendingPositionUploads.emplace_back(positionInfo, SetupStagingBuffer(positionSizeBytes, positions.data()));
-        m_pendingVertexUploads.emplace_back(vertexInfo, SetupStagingBuffer(vertexSizeBytes, vertices.data()));
-
-        indexCount    += indices.size();
-        positionCount += positions.size();
-        vertexCount   += vertices.size();
+        const auto vertexInfo = SetupUpload
+        (
+            allocator,
+            vertices,
+            vertexCount,
+            m_pendingVertexUploads
+        );
 
         return {indexInfo, positionInfo, vertexInfo};
     }
 
-    void GeometryBuffer::Update(const Vk::CommandBuffer& cmdBuffer)
+    void GeometryBuffer::Update
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator
+    )
     {
         Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
+
+        ResizeBuffers(cmdBuffer, device, allocator);
 
         Vk::BeginLabel(cmdBuffer, "Index Transfer", {0.8901f, 0.0549f, 0.3607f, 1.0f});
 
@@ -215,6 +161,8 @@ namespace Vk
 
     void GeometryBuffer::Clear(VmaAllocator allocator)
     {
+        m_deletionQueue.FlushQueue();
+
         for (const auto& buffer : m_pendingIndexUploads | std::views::values)
         {
             buffer.Destroy(allocator);
@@ -305,6 +253,160 @@ namespace Vk
         std::memcpy(m_cubeStagingBuffer->allocInfo.pMappedData, SKYBOX_VERTICES.data(), VERTICES_SIZE);
     }
 
+    template<typename T>
+    Models::Info GeometryBuffer::SetupUpload
+    (
+        VmaAllocator allocator,
+        const std::span<const T> data,
+        u32& offset,
+        std::vector<Upload>& uploads
+    )
+    {
+        const auto stagingBuffer = Vk::Buffer
+        (
+            allocator,
+            data.size_bytes(),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        std::memcpy(stagingBuffer.allocInfo.pMappedData, data.data(), data.size_bytes());
+
+        const Models::Info info =
+        {
+            .offset = offset,
+            .count  = static_cast<u32>(data.size())
+        };
+
+        uploads.emplace_back(info, stagingBuffer);
+
+        offset += data.size();
+
+        return info;
+    }
+
+    void GeometryBuffer::ResizeBuffer
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VmaAllocator allocator,
+        u32 count,
+        const std::span<const Upload> uploads,
+        usize elementSize,
+        VkBufferUsageFlags usage,
+        Vk::Buffer& buffer
+    )
+    {
+        if (count * elementSize > buffer.requestedSize)
+        {
+            u32 pendingCount = 0;
+
+            for (const auto [_, count] : uploads | std::views::keys)
+            {
+                pendingCount += count;
+            }
+
+            const Vk::Buffer oldBuffer = buffer;
+            const usize      newSize   = static_cast<usize>(static_cast<f64>(count) * BUFFER_GROWTH_FACTOR) * elementSize;
+
+            buffer = Vk::Buffer
+            (
+                allocator,
+                newSize,
+                usage,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                0,
+                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+            );
+
+            if (oldBuffer.handle != VK_NULL_HANDLE && (count - pendingCount) > 0)
+            {
+                const VkBufferCopy2 copyRegion =
+                {
+                    .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                    .pNext     = nullptr,
+                    .srcOffset = 0,
+                    .dstOffset = 0,
+                    .size      = (count - pendingCount) * elementSize
+                };
+
+                const VkCopyBufferInfo2 copyInfo =
+                {
+                    .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                    .pNext       = nullptr,
+                    .srcBuffer   = oldBuffer.handle,
+                    .dstBuffer   = buffer.handle,
+                    .regionCount = 1,
+                    .pRegions    = &copyRegion,
+                };
+
+                vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+            }
+
+            m_deletionQueue.PushDeletor([oldBuffer, allocator] ()
+            {
+                oldBuffer.Destroy(allocator);
+            });
+        }
+    }
+
+    void GeometryBuffer::ResizeBuffers
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator
+    )
+    {
+        ResizeBuffer
+        (
+            cmdBuffer,
+            allocator,
+            indexCount,
+            m_pendingIndexUploads,
+            sizeof(Models::Index),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            indexBuffer
+        );
+
+        ResizeBuffer
+        (
+            cmdBuffer,
+            allocator,
+            positionCount,
+            m_pendingPositionUploads,
+            sizeof(glm::vec3),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            positionBuffer
+        );
+
+        ResizeBuffer
+        (
+            cmdBuffer,
+            allocator,
+            vertexCount,
+            m_pendingVertexUploads,
+            sizeof(Models::Vertex),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            vertexBuffer
+        );
+
+        positionBuffer.GetDeviceAddress(device);
+        vertexBuffer.GetDeviceAddress(device);
+
+        Vk::SetDebugName(device, indexBuffer.handle,    "GeometryBuffer/IndexBuffer");
+        Vk::SetDebugName(device, positionBuffer.handle, "GeometryBuffer/PositionBuffer");
+        Vk::SetDebugName(device, vertexBuffer.handle,   "GeometryBuffer/VertexBuffer");
+    }
+
     void GeometryBuffer::FlushUploads
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -341,13 +443,13 @@ namespace Vk
         VkAccessFlags2 dstAccessMask
     )
     {
-        if ((sizeBytes + offsetBytes) > destination.allocInfo.size)
+        if ((sizeBytes + offsetBytes) > destination.requestedSize)
         {
             Logger::Error
             (
                 "Not enough space in destination buffer! [Required={}] [Available={}]\n",
                 sizeBytes,
-                destination.allocInfo.size - offsetBytes
+                destination.requestedSize - offsetBytes
             );
         }
 

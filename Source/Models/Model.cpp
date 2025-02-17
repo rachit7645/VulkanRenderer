@@ -474,7 +474,7 @@ namespace Models
                 }
             }
 
-            auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUpload
+            auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUploads
             (
                 context.allocator,
                 indices,

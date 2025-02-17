@@ -27,8 +27,7 @@ namespace Vk
     constexpr u32 MAX_TEXTURE_COUNT = 1 << 16;
 
     TextureManager::TextureManager(const Vk::FormatHelper& formatHelper)
-        : m_format(formatHelper.textureFormat),
-          m_formatHDR(formatHelper.textureFormatHDR)
+        : m_formatHelper(formatHelper)
     {
     }
 
@@ -53,7 +52,7 @@ namespace Vk
                 (
                     device,
                     allocator,
-                    m_formatHDR,
+                    m_formatHelper.textureFormatHDR,
                     path
                 );
             }
@@ -107,7 +106,7 @@ namespace Vk
         (
             device,
             allocator,
-            m_format,
+            m_formatHelper.textureFormat,
             data,
             size
         );

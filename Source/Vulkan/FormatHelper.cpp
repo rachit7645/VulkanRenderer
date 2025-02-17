@@ -78,7 +78,9 @@ namespace Vk
             physicalDevice,
             std::array{VK_FORMAT_R8G8B8A8_UNORM},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
         colorAttachmentFormatHDR = FindSupportedFormat
@@ -91,7 +93,9 @@ namespace Vk
                 VK_FORMAT_R32G32B32A32_SFLOAT
             },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
         depthFormat = FindSupportedFormat
@@ -107,7 +111,8 @@ namespace Vk
                 VK_FORMAT_D16_UNORM_S8_UINT,
             },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
         depthStencilFormat = FindSupportedFormat
@@ -120,7 +125,8 @@ namespace Vk
                 VK_FORMAT_D16_UNORM_S8_UINT,
             },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
         brdfLutFormat = FindSupportedFormat
@@ -133,7 +139,9 @@ namespace Vk
                 VK_FORMAT_B10G11R11_UFLOAT_PACK32
             },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
     }
 

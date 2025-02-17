@@ -86,8 +86,7 @@ namespace Vk
         std::unordered_map<usize, TextureInfo> textureMap;
         std::unordered_map<u32, Vk::Sampler>   samplerMap;
     private:
-        VkFormat m_format    = VK_FORMAT_UNDEFINED;
-        VkFormat m_formatHDR = VK_FORMAT_UNDEFINED;
+        Vk::FormatHelper m_formatHelper;
 
         std::vector<std::pair<Vk::Texture, Texture::Upload>> m_pendingUploads;
     };

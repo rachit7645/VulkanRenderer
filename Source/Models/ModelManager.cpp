@@ -63,7 +63,7 @@ namespace Models
         Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            geometryBuffer.Update(cmdBuffer);
+            geometryBuffer.Update(cmdBuffer, context.device, context.allocator);
             textureManager.Update(cmdBuffer);
         cmdBuffer.EndRecording();
 
@@ -106,7 +106,7 @@ namespace Models
                 1,
                 &submitInfo,
                 transferFence),
-                "Failed to submit tranfer command buffers!"
+                "Failed to submit transfer command buffers!"
             );
 
             Vk::CheckResult(vkWaitForFences(
@@ -115,7 +115,7 @@ namespace Models
                 &transferFence,
                 VK_TRUE,
                 std::numeric_limits<u64>::max()),
-                "Error while waiting for tranfers!"
+                "Error while waiting for transfer!"
             );
         }
 

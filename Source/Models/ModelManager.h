@@ -39,7 +39,7 @@ namespace Models
 
         void ImGuiDisplay();
 
-        std::unordered_map<u32, Models::Model> modelMap;
+        std::unordered_map<usize, Models::Model> modelMap;
 
         Vk::GeometryBuffer geometryBuffer;
         Vk::TextureManager textureManager;

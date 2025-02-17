@@ -36,15 +36,21 @@ namespace Vk
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator) const;
 
-        std::array<Models::Info, 3> SetupUpload
+        std::array<Models::Info, 3> SetupUploads
         (
             VmaAllocator allocator,
-            const std::vector<Models::Index>& indices,
-            const std::vector<glm::vec3>& positions,
-            const std::vector<Models::Vertex>& vertices
+            const std::span<const Models::Index> indices,
+            const std::span<const glm::vec3> positions,
+            const std::span<const Models::Vertex> vertices
         );
 
-        void Update(const Vk::CommandBuffer& cmdBuffer);
+        void Update
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator
+        );
+
         void Clear(VmaAllocator allocator);
 
         void ImGuiDisplay() const;
@@ -62,6 +68,33 @@ namespace Vk
         using Upload = std::pair<Models::Info, Vk::Buffer>;
 
         void SetupCubeUpload(VmaAllocator allocator);
+
+        template<typename T>
+        Models::Info SetupUpload
+        (
+            VmaAllocator allocator,
+            const std::span<const T> data,
+            u32& offset,
+            std::vector<Upload>& uploads
+        );
+
+        void ResizeBuffer
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VmaAllocator allocator,
+            u32 count,
+            const std::span<const Upload> uploads,
+            usize elementSize,
+            VkBufferUsageFlags usage,
+            Vk::Buffer& buffer
+        );
+
+        void ResizeBuffers
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator
+        );
 
         void FlushUploads
         (
@@ -89,6 +122,8 @@ namespace Vk
         std::vector<Upload> m_pendingVertexUploads;
 
         std::optional<Vk::Buffer> m_cubeStagingBuffer;
+
+        Util::DeletionQueue m_deletionQueue;
     };
 }
 
