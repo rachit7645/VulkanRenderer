@@ -177,9 +177,9 @@ namespace Vk
     }
 
     void BeginLabel(const Vk::CommandBuffer& cmdBuffer, const std::string_view name, const glm::vec4& color);
-    void BeginLabel(VkQueue queue, const std::string_view name, const glm::vec4& color);
-
     void EndLabel(const Vk::CommandBuffer& cmdBuffer);
+
+    void BeginLabel(VkQueue queue, const std::string_view name, const glm::vec4& color);
     void EndLabel(VkQueue queue);
 }
 

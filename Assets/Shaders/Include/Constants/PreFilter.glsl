@@ -34,6 +34,7 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint         SamplerIndex;
     uint         EnvMapIndex;
     float        Roughness;
+    uint         SampleCount;
 } Constants;
 
 #endif

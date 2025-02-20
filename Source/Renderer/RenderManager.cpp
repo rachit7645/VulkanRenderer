@@ -198,19 +198,10 @@ namespace Renderer
         BeginFrame();
         Update();
 
-        m_depthPass.Render
-        (
-            m_currentFIF,
-            m_framebufferManager,
-            m_modelManager.geometryBuffer,
-            m_sceneBuffer,
-            m_meshBuffer,
-            m_indirectBuffer
-        );
-
         m_shadowPass.Render
         (
             m_currentFIF,
+            m_context.allocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_meshBuffer,
@@ -222,6 +213,7 @@ namespace Renderer
         m_pointShadowPass.Render
         (
             m_currentFIF,
+            m_context.allocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -233,11 +225,22 @@ namespace Renderer
         m_spotShadowPass.Render
         (
             m_currentFIF,
+            m_context.allocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_meshBuffer,
             m_indirectBuffer,
             m_spotLights
+        );
+
+        m_depthPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
+            m_modelManager.geometryBuffer,
+            m_sceneBuffer,
+            m_meshBuffer,
+            m_indirectBuffer
         );
 
         m_forwardPass.Render
@@ -470,12 +473,12 @@ namespace Renderer
             .spotLights  = m_lightsBuffer.spotLightBuffers[m_currentFIF].deviceAddress
         };
 
-        m_lightsBuffer.WriteDirLights(m_currentFIF, {&m_sun, 1});
-        m_lightsBuffer.WritePointLights(m_currentFIF, m_pointLights);
-        m_lightsBuffer.WriteSpotLights(m_currentFIF, m_spotLights);
-        m_sceneBuffer.WriteScene(m_currentFIF, scene);
-        m_meshBuffer.LoadMeshes(m_currentFIF, m_modelManager, m_renderObjects);
-        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_modelManager, m_renderObjects);
+        m_lightsBuffer.WriteDirLights(m_currentFIF, m_context.allocator, {&m_sun, 1});
+        m_lightsBuffer.WritePointLights(m_currentFIF, m_context.allocator, m_pointLights);
+        m_lightsBuffer.WriteSpotLights(m_currentFIF, m_context.allocator, m_spotLights);
+        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, scene);
+        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);
+        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);
     }
 
     void RenderManager::WaitForFences()
@@ -757,8 +760,6 @@ namespace Renderer
 
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
         m_imGuiPass.SetupBackend(m_context, m_megaSet, m_modelManager.textureManager);
-
-        ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
         m_deletionQueue.PushDeletor([&] ()
         {

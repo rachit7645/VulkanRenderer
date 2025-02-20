@@ -106,6 +106,7 @@ namespace Renderer::SpotShadow
     void RenderPass::Render
     (
         usize FIF,
+        VmaAllocator allocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::MeshBuffer& meshBuffer,
@@ -143,7 +144,7 @@ namespace Renderer::SpotShadow
             matrices.emplace_back(projection * view);
         }
 
-        spotShadowBuffer.LoadMatrices(FIF, matrices);
+        spotShadowBuffer.LoadMatrices(FIF, allocator, matrices);
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("SpotShadowMap");
 

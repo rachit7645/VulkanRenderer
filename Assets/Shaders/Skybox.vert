@@ -29,6 +29,8 @@ void main()
     // Disable translation
     mat4 rotView = mat4(mat3(Constants.Scene.view));
 
-    txCoords    = Constants.Vertices.positions[gl_VertexIndex];
-    gl_Position = Constants.Scene.projection * rotView * vec4(txCoords, 1.0f);
+    vec3 position = Constants.Vertices.positions[gl_VertexIndex];
+
+    txCoords    = normalize(position);
+    gl_Position = Constants.Scene.projection * rotView * vec4(position, 1.0f);
 }

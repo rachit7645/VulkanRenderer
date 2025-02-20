@@ -16,6 +16,7 @@
 
 #include "IndirectBuffer.h"
 
+#include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Buffers
@@ -43,8 +44,9 @@ namespace Renderer::Buffers
     void IndirectBuffer::WriteDrawCalls
     (
         usize FIF,
+        VmaAllocator allocator,
         const Models::ModelManager& modelManager,
-        const std::vector<Renderer::RenderObject>& renderObjects
+        const std::span<const Renderer::RenderObject> renderObjects
     )
     {
         std::vector<VkDrawIndexedIndirectCommand> drawCalls = {};
@@ -65,10 +67,21 @@ namespace Renderer::Buffers
 
         std::memcpy
         (
-            buffers[FIF].allocInfo.pMappedData,
+            buffers[FIF].allocationInfo.pMappedData,
             drawCalls.data(),
             sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()
         );
+
+        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        {
+            Vk::CheckResult(vmaFlushAllocation(
+                allocator,
+                buffers[FIF].allocation,
+                0,
+                sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()),
+                "Failed to flush allocation!"
+            );
+        }
 
         writtenDrawCount = static_cast<u32>(drawCalls.size());
     }

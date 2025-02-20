@@ -42,7 +42,7 @@ namespace Vk
         emptyQueue.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
         emptyQueue.pNext = nullptr;
 
-        auto queueFamilies = std::vector<VkQueueFamilyProperties2>(queueFamilyCount, emptyQueue);
+        auto queueFamilies = std::vector(queueFamilyCount, emptyQueue);
         vkGetPhysicalDeviceQueueFamilyProperties2
         (
             device,
@@ -56,20 +56,25 @@ namespace Vk
             Vk::CheckResult(vkGetPhysicalDeviceSurfaceSupportKHR(
                 device,
                 i,
-                 surface,
+                surface,
                 &presentSupport),
                 "Failed to check for surface support!"
             );
 
-            if (presentSupport == VK_TRUE && queueFamilies[i].queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            const auto& properties = queueFamilies[i].queueFamilyProperties;
+
+            if
+            (
+                presentSupport == VK_TRUE &&
+                properties.queueFlags & VK_QUEUE_GRAPHICS_BIT &&
+                properties.queueFlags & VK_QUEUE_TRANSFER_BIT
+            )
             {
-                // Found graphics family!
                 graphicsFamily = i;
             }
 
             if (IsComplete())
             {
-                // Found all the queue families we need
                 break;
             }
         }

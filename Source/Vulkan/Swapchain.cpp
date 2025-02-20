@@ -78,7 +78,7 @@ namespace Vk
 
     VkResult Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
     {
-        VkAcquireNextImageInfoKHR acquireNextImageInfo =
+        const VkAcquireNextImageInfoKHR acquireNextImageInfo =
         {
             .sType      = VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
             .pNext      = nullptr,
@@ -126,7 +126,7 @@ namespace Vk
             .pPresentModes    = &presentMode
         };
 
-        VkSwapchainCreateInfoKHR createInfo =
+        const VkSwapchainCreateInfoKHR createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext                 = &presentModesCreateInfo,
@@ -284,7 +284,7 @@ namespace Vk
 
     void Swapchain::CreateSyncObjects(VkDevice device)
     {
-        VkSemaphoreCreateInfo semaphoreInfo =
+        const VkSemaphoreCreateInfo semaphoreInfo =
         {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             .pNext = nullptr,

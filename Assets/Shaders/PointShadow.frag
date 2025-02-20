@@ -20,20 +20,18 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-layout(location = 0) in      vec3 fragPosition;
-layout(location = 1) in flat int  fragViewIndex;
+layout(location = 0) in      vec3  fragPosition;
+layout(location = 1) in flat vec3  fragLightPosition;
+layout(location = 2) in flat float fragShadowFarPlane;
 
 #include "Constants/PointShadow.glsl"
 
 void main()
 {
-    PointLight      light           = Constants.Scene.pointLights.lights[Constants.LightIndex];
-    PointShadowData pointShadowData = Constants.PointShadows.pointShadowData[Constants.LightIndex];
+    float lightDistance = length(fragPosition - fragLightPosition);
 
-    float lightDistance = length(fragPosition - light.position);
-
-    // Map to [0, 1]
-    lightDistance = lightDistance / pointShadowData.shadowPlanes.y;
+    // Map to [0, 1] to store into depth buffer
+    lightDistance = lightDistance / fragShadowFarPlane;
 
     gl_FragDepth = lightDistance;
 }

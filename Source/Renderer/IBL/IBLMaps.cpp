@@ -35,8 +35,8 @@ namespace Renderer::IBL
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
     constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
-    // TODO: Make this a non-const property
-    constexpr usize PREFILTER_MIPMAP_LEVELS = 5;
+    constexpr usize PREFILTER_MIPMAP_LEVELS = 5;    // TODO: Make this a non-const property
+    constexpr usize PREFILTER_SAMPLE_COUNT  = 512;
 
     IBLMaps::IBLMaps
     (
@@ -218,11 +218,29 @@ namespace Renderer::IBL
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(matrixBuffer.allocInfo.pMappedData, matrices.data(), matrices.size() * sizeof(glm::mat4));
+        std::memcpy(matrixBuffer.allocationInfo.pMappedData, matrices.data(), matrices.size() * sizeof(glm::mat4));
 
         matrixBuffer.GetDeviceAddress(context.device);
 
         Vk::SetDebugName(context.device, matrixBuffer.handle, "IBLMaps/MatrixBuffer");
+
+        std::memcpy
+        (
+            matrixBuffer.allocationInfo.pMappedData,
+            matrices.data(),
+            matrices.size() * sizeof(glm::mat4)
+        );
+
+        if (!(matrixBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        {
+            Vk::CheckResult(vmaFlushAllocation(
+                context.allocator,
+                matrixBuffer.allocation,
+                0,
+                matrices.size() * sizeof(glm::mat4)),
+                "Failed to flush allocation!"
+            );
+        }
 
         m_deletionQueue.PushDeletor([context, matrixBuffer]
         {
@@ -703,6 +721,7 @@ namespace Renderer::IBL
             const auto mipHeight = static_cast<u32>(preFilter.height * std::pow(0.5f, mip));
 
             const auto roughness = static_cast<f32>(mip) / static_cast<f32>(preFilter.mipLevels - 1);
+            const auto sampleCount    = static_cast<u32>(std::floor(std::pow(2, (roughness * std::log2(PREFILTER_SAMPLE_COUNT)))));
 
             preFilterViews[mip] = Vk::ImageView
             (
@@ -785,7 +804,8 @@ namespace Renderer::IBL
                 .matrices     = matrixBuffer.deviceAddress,
                 .samplerIndex = pipeline.samplerIndex,
                 .envMapIndex  = textureManager.GetTextureID(skyboxID),
-                .roughness    = roughness
+                .roughness    = roughness,
+                .sampleCount  = sampleCount
             };
 
             pipeline.LoadPushConstants

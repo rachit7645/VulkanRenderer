@@ -28,7 +28,12 @@ namespace Renderer::PointShadow
     public:
         PointShadowBuffer(VkDevice device, VmaAllocator allocator);
 
-        void LoadPointShadowData(usize FIF, const std::span<const PointShadow::PointShadowData> pointShadows);
+        void LoadPointShadowData
+        (
+            usize FIF,
+            VmaAllocator allocator,
+            const std::span<const PointShadow::PointShadowData> pointShadows
+        );
 
         void Destroy(VmaAllocator allocator);
 

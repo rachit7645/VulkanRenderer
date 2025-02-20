@@ -28,7 +28,12 @@ namespace Renderer::Shadow
     public:
         CascadeBuffer(VkDevice device, VmaAllocator allocator);
 
-        void LoadCascades(usize FIF, const std::span<const Shadow::Cascade> cascades);
+        void LoadCascades
+        (
+            usize FIF,
+            VmaAllocator allocator,
+            const std::span<const Shadow::Cascade> cascades
+        );
 
         void Destroy(VmaAllocator allocator);
 

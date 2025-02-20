@@ -93,6 +93,7 @@ namespace Renderer::PointShadow
     void RenderPass::Render
     (
         usize FIF,
+        VmaAllocator allocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -134,7 +135,7 @@ namespace Renderer::PointShadow
             });
         }
 
-        pointShadowBuffer.LoadPointShadowData(FIF, pointShadowData);
+        pointShadowBuffer.LoadPointShadowData(FIF, allocator, pointShadowData);
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("PointShadowMap");
 

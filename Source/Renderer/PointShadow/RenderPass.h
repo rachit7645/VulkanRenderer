@@ -42,6 +42,7 @@ namespace Renderer::PointShadow
         void Render
         (
             usize FIF,
+            VmaAllocator allocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,

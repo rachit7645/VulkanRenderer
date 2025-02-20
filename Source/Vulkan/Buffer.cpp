@@ -66,16 +66,18 @@ namespace Vk
             &allocCreateInfo,
             &handle,
             &allocation,
-            &allocInfo),
+            &allocationInfo),
             "Failed to create vertex buffer!"
         );
+
+        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
 
         Logger::Debug("Created buffer! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Buffer::Map(VmaAllocator allocator)
     {
-        vmaMapMemory(allocator, allocation, &allocInfo.pMappedData);
+        vmaMapMemory(allocator, allocation, &allocationInfo.pMappedData);
     }
 
     void Buffer::Unmap(VmaAllocator allocator)

@@ -17,6 +17,7 @@
 #include "SceneBuffer.h"
 
 #include "Vulkan/DebugUtils.h"
+#include "Util/Log.h"
 
 namespace Renderer::Buffers
 {
@@ -27,7 +28,7 @@ namespace Renderer::Buffers
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(Renderer::Scene)),
+                sizeof(Renderer::Scene),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -40,14 +41,25 @@ namespace Renderer::Buffers
         }
     }
 
-    void SceneBuffer::WriteScene(usize FIF, const Renderer::Scene& scene)
+    void SceneBuffer::WriteScene(usize FIF, VmaAllocator allocator, const Renderer::Scene& scene)
     {
         std::memcpy
         (
-            buffers[FIF].allocInfo.pMappedData,
+            buffers[FIF].allocationInfo.pMappedData,
             &scene,
             sizeof(Renderer::Scene)
         );
+
+        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        {
+            Vk::CheckResult(vmaFlushAllocation(
+                allocator,
+                buffers[FIF].allocation,
+                0,
+                sizeof(Renderer::Scene)),
+                "Failed to flush allocation!"
+            );
+        }
     }
 
     void SceneBuffer::Destroy(VmaAllocator allocator)

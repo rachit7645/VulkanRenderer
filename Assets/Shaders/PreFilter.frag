@@ -49,9 +49,9 @@ void main()
     vec3  prefilteredColor = vec3(0.0f);
     float totalWeight      = 0.0f;
 
-    for(uint i = 0u; i < PREFILER_SAMPLE_COUNT; ++i)
+    for(uint i = 0u; i < Constants.SampleCount; ++i)
     {
-        vec2 Xi = Hammersley(i, PREFILER_SAMPLE_COUNT);
+        vec2 Xi = Hammersley(i, Constants.SampleCount);
         vec3 H  = ImportanceSampleGGX(Xi, N, tangent, bitangent, Constants.Roughness);
         vec3 L  = normalize(2.0f * dot(V, H) * H - V);
 
@@ -68,7 +68,7 @@ void main()
             float pdf = D * NdotH / (4.0f * HdotV) + 0.0001f;
 
             // Fix for extremely bright spots
-            float saSample = 1.0f / (float(PREFILER_SAMPLE_COUNT) * pdf + 0.0001f);
+            float saSample = 1.0f / (float(Constants.SampleCount) * pdf + 0.0001f);
             float saTexel  = 4.0f * PI / (6.0f * resolution.x * resolution.y);
             float mipLevel = Constants.Roughness == 0.0f ? 0.0f : 0.5f * log2(saSample / saTexel);
 

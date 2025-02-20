@@ -17,6 +17,7 @@
 #include "LightsBuffer.h"
 
 #include "Vulkan/DebugUtils.h"
+#include "Util/Log.h"
 
 namespace Renderer::Buffers
 {
@@ -27,7 +28,7 @@ namespace Renderer::Buffers
             dirLightBuffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(u32) + Objects::MAX_DIR_LIGHT_COUNT * sizeof(Objects::DirLight)),
+                sizeof(u32) + Objects::MAX_DIR_LIGHT_COUNT * sizeof(Objects::DirLight),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -35,7 +36,18 @@ namespace Renderer::Buffers
             );
 
             const u32 count = 0;
-            std::memcpy(dirLightBuffers[i].allocInfo.pMappedData, &count, sizeof(u32));
+            std::memcpy(dirLightBuffers[i].allocationInfo.pMappedData, &count, sizeof(u32));
+
+            if (!(dirLightBuffers[i].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                Vk::CheckResult(vmaFlushAllocation(
+                    allocator,
+                    dirLightBuffers[i].allocation,
+                    0,
+                    sizeof(u32)),
+                    "Failed to flush allocation!"
+                );
+            }
 
             dirLightBuffers[i].GetDeviceAddress(device);
 
@@ -47,7 +59,7 @@ namespace Renderer::Buffers
             pointLightBuffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(u32) + Objects::MAX_POINT_LIGHT_COUNT * sizeof(Objects::PointLight)),
+                sizeof(u32) + Objects::MAX_POINT_LIGHT_COUNT * sizeof(Objects::PointLight),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -55,7 +67,18 @@ namespace Renderer::Buffers
             );
 
             const u32 count = 0;
-            std::memcpy(pointLightBuffers[i].allocInfo.pMappedData, &count, sizeof(u32));
+            std::memcpy(pointLightBuffers[i].allocationInfo.pMappedData, &count, sizeof(u32));
+
+            if (!(pointLightBuffers[i].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                Vk::CheckResult(vmaFlushAllocation(
+                    allocator,
+                    pointLightBuffers[i].allocation,
+                    0,
+                    sizeof(u32)),
+                    "Failed to flush allocation!"
+                );
+            }
 
             pointLightBuffers[i].GetDeviceAddress(device);
 
@@ -67,7 +90,7 @@ namespace Renderer::Buffers
             spotLightBuffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(u32) + Objects::MAX_SPOT_LIGHT_COUNT * sizeof(Objects::SpotLight)),
+                sizeof(u32) + Objects::MAX_SPOT_LIGHT_COUNT * sizeof(Objects::SpotLight),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -75,7 +98,18 @@ namespace Renderer::Buffers
             );
 
             const u32 count = 0;
-            std::memcpy(spotLightBuffers[i].allocInfo.pMappedData, &count, sizeof(u32));
+            std::memcpy(spotLightBuffers[i].allocationInfo.pMappedData, &count, sizeof(u32));
+
+            if (!(spotLightBuffers[i].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                Vk::CheckResult(vmaFlushAllocation(
+                    allocator,
+                    spotLightBuffers[i].allocation,
+                    0,
+                    sizeof(u32)),
+                    "Failed to flush allocation!"
+                );
+            }
 
             spotLightBuffers[i].GetDeviceAddress(device);
 
@@ -83,40 +117,71 @@ namespace Renderer::Buffers
         }
     }
 
-    void LightsBuffer::WriteDirLights(usize FIF, const std::span<const Objects::DirLight> lights)
+    void LightsBuffer::WriteDirLights
+    (
+        usize FIF,
+        VmaAllocator allocator,
+        const std::span<const Objects::DirLight> lights
+    )
     {
-        WriteLights(lights, dirLightBuffers[FIF]);
+        WriteLights(allocator, lights, dirLightBuffers[FIF]);
     }
 
-    void LightsBuffer::WritePointLights(usize FIF, const std::span<const Objects::PointLight> lights)
+    void LightsBuffer::WritePointLights
+    (
+        usize FIF,
+        VmaAllocator allocator,
+        const std::span<const Objects::PointLight> lights
+    )
     {
-        WriteLights(lights, pointLightBuffers[FIF]);
+        WriteLights(allocator, lights, pointLightBuffers[FIF]);
     }
 
-    void LightsBuffer::WriteSpotLights(usize FIF, const std::span<const Objects::SpotLight> lights)
+    void LightsBuffer::WriteSpotLights
+    (
+        usize FIF,
+        VmaAllocator allocator,
+        const std::span<const Objects::SpotLight> lights
+    )
     {
-        WriteLights(lights, spotLightBuffers[FIF]);
+        WriteLights(allocator, lights, spotLightBuffers[FIF]);
     }
 
     template <typename LightType>
-    void LightsBuffer::WriteLights(std::span<const LightType> lights, const Vk::Buffer& buffer)
+    void LightsBuffer::WriteLights
+    (
+        VmaAllocator allocator,
+        std::span<const LightType> lights,
+        const Vk::Buffer& buffer
+    )
     {
         const usize size  = std::min(buffer.requestedSize - sizeof(u32), lights.size_bytes());
-        const usize count = size / sizeof(LightType);
+        const u32   count = size / sizeof(LightType);
 
         std::memcpy
         (
-            buffer.allocInfo.pMappedData,
+            buffer.allocationInfo.pMappedData,
             &count,
             sizeof(u32)
         );
 
         std::memcpy
         (
-            static_cast<u8*>(buffer.allocInfo.pMappedData) + sizeof(u32),
+            static_cast<u8*>(buffer.allocationInfo.pMappedData) + sizeof(u32),
             lights.data(),
             size
         );
+
+        if (!(buffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        {
+            Vk::CheckResult(vmaFlushAllocation(
+                allocator,
+                buffer.allocation,
+                0,
+                sizeof(u32) + size),
+                "Failed to flush allocation!"
+            );
+        }
     }
 
     void LightsBuffer::Destroy(VmaAllocator allocator)

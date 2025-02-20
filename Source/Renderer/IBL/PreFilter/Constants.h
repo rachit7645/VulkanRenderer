@@ -30,6 +30,7 @@ namespace Renderer::IBL::PreFilter
         u32             samplerIndex;
         u32             envMapIndex;
         f32             roughness;
+        u32             sampleCount;
     };
 }
 

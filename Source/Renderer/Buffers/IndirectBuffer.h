@@ -34,8 +34,9 @@ namespace Renderer::Buffers
         void WriteDrawCalls
         (
             usize FIF,
+            VmaAllocator allocator,
             const Models::ModelManager& modelManager,
-            const std::vector<Renderer::RenderObject>& renderObjects
+            const std::span<const Renderer::RenderObject> renderObjects
         );
 
         void Destroy(VmaAllocator allocator);

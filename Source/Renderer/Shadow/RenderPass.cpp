@@ -89,6 +89,7 @@ namespace Renderer::Shadow
     void RenderPass::Render
     (
         usize FIF,
+        VmaAllocator allocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::MeshBuffer& meshBuffer,
@@ -110,7 +111,7 @@ namespace Renderer::Shadow
         const auto& sceneColor = framebufferManager.GetFramebuffer("SceneColor");
         const auto aspectRatio = static_cast<f32>(sceneColor.image.width) / static_cast<f32>(sceneColor.image.height);
 
-        cascadeBuffer.LoadCascades(FIF, CalculateCascades(aspectRatio, camera, light));
+        cascadeBuffer.LoadCascades(FIF, allocator, CalculateCascades(aspectRatio, camera, light));
 
         depthAttachment.image.Barrier
         (

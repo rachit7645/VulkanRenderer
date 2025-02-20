@@ -72,7 +72,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocInfo.pMappedData, pTexture->pData, pTexture->dataSize);
+        std::memcpy(stagingBuffer.allocationInfo.pMappedData, pTexture->pData, pTexture->dataSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
         copyRegions.reserve(pTexture->numLevels);
@@ -188,7 +188,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        Util::ConvertF32ToF16(data, std::bit_cast<f16*>(stagingBuffer.allocInfo.pMappedData), elemCount);
+        Util::ConvertF32ToF16(data, std::bit_cast<f16*>(stagingBuffer.allocationInfo.pMappedData), elemCount);
 
         stbi_image_free(std::bit_cast<void*>(data));
 
@@ -277,7 +277,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocInfo.pMappedData, data.data(), data.size_bytes());
+        std::memcpy(stagingBuffer.allocationInfo.pMappedData, data.data(), data.size_bytes());
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 

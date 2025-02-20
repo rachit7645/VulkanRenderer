@@ -17,6 +17,7 @@
 #include "SpotShadowBuffer.h"
 
 #include "Vulkan/DebugUtils.h"
+#include "Util/Log.h"
 #include "Renderer/Objects/Lights.h"
 
 namespace Renderer::SpotShadow
@@ -28,7 +29,7 @@ namespace Renderer::SpotShadow
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                static_cast<u32>(sizeof(glm::mat4) * Objects::MAX_SPOT_LIGHT_COUNT),
+                sizeof(glm::mat4) * Objects::MAX_SPOT_LIGHT_COUNT,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -41,14 +42,30 @@ namespace Renderer::SpotShadow
         }
     }
 
-    void SpotShadowBuffer::LoadMatrices(usize FIF, const std::span<const glm::mat4> matrices)
+    void SpotShadowBuffer::LoadMatrices
+    (
+        usize FIF,
+        VmaAllocator allocator,
+        const std::span<const glm::mat4> matrices
+    )
     {
         std::memcpy
         (
-            buffers[FIF].allocInfo.pMappedData,
+            buffers[FIF].allocationInfo.pMappedData,
             matrices.data(),
             matrices.size_bytes()
         );
+
+        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        {
+            Vk::CheckResult(vmaFlushAllocation(
+                allocator,
+                buffers[FIF].allocation,
+                0,
+                matrices.size_bytes()),
+                "Failed to flush allocation!"
+            );
+        }
     }
 
     void SpotShadowBuffer::Destroy(VmaAllocator allocator)

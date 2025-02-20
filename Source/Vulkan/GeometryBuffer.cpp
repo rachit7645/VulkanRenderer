@@ -250,7 +250,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(m_cubeStagingBuffer->allocInfo.pMappedData, SKYBOX_VERTICES.data(), VERTICES_SIZE);
+        std::memcpy(m_cubeStagingBuffer->allocationInfo.pMappedData, SKYBOX_VERTICES.data(), VERTICES_SIZE);
     }
 
     template<typename T>
@@ -272,7 +272,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocInfo.pMappedData, data.data(), data.size_bytes());
+        std::memcpy(stagingBuffer.allocationInfo.pMappedData, data.data(), data.size_bytes());
 
         const Models::Info info =
         {
@@ -500,8 +500,8 @@ namespace Vk
                     "Index Buffer    | %u | %llu/%llu/%llu",
                     indexCount,
                     indexCount * sizeof(Models::Index),
-                    indexBuffer.allocInfo.size - (indexCount * sizeof(Models::Index)),
-                    indexBuffer.allocInfo.size
+                    indexBuffer.allocationInfo.size - (indexCount * sizeof(Models::Index)),
+                    indexBuffer.allocationInfo.size
                 );
 
                 ImGui::Text
@@ -509,8 +509,8 @@ namespace Vk
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionCount,
                     positionCount * sizeof(glm::vec3),
-                    positionBuffer.allocInfo.size - (positionCount * sizeof(glm::vec3)),
-                    positionBuffer.allocInfo.size
+                    positionBuffer.allocationInfo.size - (positionCount * sizeof(glm::vec3)),
+                    positionBuffer.allocationInfo.size
                 );
 
                 ImGui::Text
@@ -518,8 +518,8 @@ namespace Vk
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexCount,
                     vertexCount * sizeof(Models::Vertex),
-                    vertexBuffer.allocInfo.size - (vertexCount * sizeof(Models::Vertex)),
-                    vertexBuffer.allocInfo.size
+                    vertexBuffer.allocationInfo.size - (vertexCount * sizeof(Models::Vertex)),
+                    vertexBuffer.allocationInfo.size
                 );
 
                 ImGui::EndMenu();

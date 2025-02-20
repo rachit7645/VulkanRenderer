@@ -57,6 +57,7 @@ namespace Renderer::DearImGui
         io.BackendRendererUserData = this;
         io.BackendRendererName     = "Rachit_DearImGui_Backend_Vulkan";
         io.BackendFlags           |= ImGuiBackendFlags_RendererHasVtxOffset;
+        io.ConfigFlags            |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
         // Load font
         {
@@ -359,8 +360,8 @@ namespace Renderer::DearImGui
             Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
         }
 
-        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.allocInfo.pMappedData);
-        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.allocInfo.pMappedData);
+        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.allocationInfo.pMappedData);
+        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.allocationInfo.pMappedData);
 
         for (const auto drawList : drawData->CmdLists)
         {
@@ -392,6 +393,28 @@ namespace Renderer::DearImGui
             0,
             indexSize
         );
+
+        if (!(vertexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        {
+            Vk::CheckResult(vmaFlushAllocation(
+                context.allocator,
+                vertexBuffer.allocation,
+                0,
+                vertexSize),
+                "Failed to flush allocation!"
+            );
+        }
+
+        if (!(indexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        {
+            Vk::CheckResult(vmaFlushAllocation(
+                context.allocator,
+                indexBuffer.allocation,
+                0,
+                indexSize),
+                "Failed to flush allocation!"
+            );
+        }
     }
 
     void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)

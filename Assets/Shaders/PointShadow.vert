@@ -23,18 +23,21 @@
 
 #include "Constants/PointShadow.glsl"
 
-layout(location = 0) out      vec3 fragPosition;
-layout(location = 1) out flat int  fragViewIndex;
+layout(location = 0) out      vec3  fragPosition;
+layout(location = 1) out flat vec3  fragLightPosition;
+layout(location = 2) out flat float fragShadowFarPlane;
 
 void main()
 {
     Mesh            mesh       = Constants.Meshes.meshes[gl_DrawID];
     vec3            position   = Constants.Positions.positions[gl_VertexIndex];
+    PointLight      light      = Constants.Scene.pointLights.lights[Constants.LightIndex];
     PointShadowData shadowData = Constants.PointShadows.pointShadowData[Constants.LightIndex];
 
     vec4 fragPos = mesh.transform * vec4(position, 1.0f);
     fragPosition = fragPos.xyz;
     gl_Position  = shadowData.matrices[gl_ViewIndex] * fragPos;
 
-    fragViewIndex = gl_ViewIndex;
+    fragLightPosition  = light.position;
+    fragShadowFarPlane = shadowData.shadowPlanes.y;
 }

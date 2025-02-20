@@ -63,8 +63,9 @@ namespace Vk
         VkDeviceAddress deviceAddress = 0;
 
         // Buffer allocation info
-        VkDeviceSize      requestedSize = 0;
-        VmaAllocationInfo allocInfo     = {};
+        VkDeviceSize          requestedSize  = 0;
+        VmaAllocationInfo     allocationInfo = {};
+        VkMemoryPropertyFlags memoryProperties = {};
     };
 }
 

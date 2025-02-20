@@ -201,9 +201,9 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetDynamicStates(const std::span<const VkDynamicState> vkDynamicStates)
+    PipelineBuilder& PipelineBuilder::SetDynamicStates(const std::span<const VkDynamicState> dynamicStates)
     {
-        m_dynamicStates = std::vector(vkDynamicStates.begin(), vkDynamicStates.end());
+        m_dynamicStates = std::vector(dynamicStates.begin(), dynamicStates.end());
 
         m_dynamicStateInfo =
         {

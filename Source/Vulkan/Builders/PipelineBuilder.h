@@ -56,7 +56,7 @@ namespace Vk::Builders
         );
 
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
-        [[nodiscard]] PipelineBuilder& SetDynamicStates(const std::span<const VkDynamicState> vkDynamicStates);
+        [[nodiscard]] PipelineBuilder& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
 
         [[nodiscard]] PipelineBuilder& SetVertexInputState
         (

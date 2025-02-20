@@ -44,6 +44,7 @@ namespace Renderer::Shadow
         void Render
         (
             usize FIF,
+            VmaAllocator allocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::MeshBuffer& meshBuffer,

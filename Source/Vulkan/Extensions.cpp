@@ -34,7 +34,7 @@ namespace Vk
             Logger::VulkanError("Failed to load extensions!: {}\n", SDL_GetError());
         }
 
-        auto extensionStrings = std::vector<const char*>(instanceExtensions, instanceExtensions + extensionCount);
+        auto extensionStrings = std::vector(instanceExtensions, instanceExtensions + extensionCount);
 
         extensionStrings.insert(extensionStrings.end(), requiredExtensions.begin(), requiredExtensions.end());
 

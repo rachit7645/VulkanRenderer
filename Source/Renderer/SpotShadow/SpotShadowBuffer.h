@@ -28,7 +28,12 @@ namespace Renderer::SpotShadow
     public:
         SpotShadowBuffer(VkDevice device, VmaAllocator allocator);
 
-        void LoadMatrices(usize FIF, const std::span<const glm::mat4> matrices);
+        void LoadMatrices
+        (
+            usize FIF,
+            VmaAllocator allocator,
+            const std::span<const glm::mat4> matrices
+        );
 
         void Destroy(VmaAllocator allocator);
 

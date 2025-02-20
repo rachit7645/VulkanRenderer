@@ -37,6 +37,7 @@ namespace Renderer::Buffers
         void LoadMeshes
         (
             usize FIF,
+            VmaAllocator allocator,
             const Models::ModelManager& modelManager,
             const std::vector<Renderer::RenderObject>& renderObjects
         );
