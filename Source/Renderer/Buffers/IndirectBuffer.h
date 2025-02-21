@@ -43,7 +43,8 @@ namespace Renderer::Buffers
 
         u32 writtenDrawCount = 0;
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> drawCallBuffers;
+        Vk::Buffer                                   culledDrawCallBuffer;
     };
 }
 

@@ -53,7 +53,6 @@ namespace Renderer::Skybox
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const IBL::IBLMaps& iblMaps,
-        const Vk::TextureManager& textureManager,
         const Vk::MegaSet& megaSet
     )
     {
@@ -149,7 +148,7 @@ namespace Renderer::Skybox
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .scene        = sceneBuffer.buffers[FIF].deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .cubemapIndex = textureManager.GetTextureID(iblMaps.skyboxID)
+            .cubemapIndex = iblMaps.skyboxID
         };
 
         pipeline.LoadPushConstants

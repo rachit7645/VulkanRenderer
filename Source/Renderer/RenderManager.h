@@ -35,6 +35,7 @@
 #include "Shadow/RenderPass.h"
 #include "PointShadow/RenderPass.h"
 #include "SpotShadow/RenderPass.h"
+#include "Culling/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -97,6 +98,7 @@ namespace Renderer
         Shadow::RenderPass      m_shadowPass;
         PointShadow::RenderPass m_pointShadowPass;
         SpotShadow::RenderPass  m_spotShadowPass;
+        Culling::Dispatch       m_cullingDispatch;
 
         // Buffers
         Buffers::MeshBuffer     m_meshBuffer;

@@ -29,6 +29,8 @@
 
 namespace Renderer::Buffers
 {
+    constexpr usize MAX_MESH_COUNT = 1 << 16;
+
     class MeshBuffer
     {
     public:
@@ -44,7 +46,9 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> meshBuffers;
+
+        Vk::Buffer visibleMeshBuffer;
     };
 }
 

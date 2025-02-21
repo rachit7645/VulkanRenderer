@@ -229,7 +229,7 @@ namespace Renderer::SpotShadow
 
             pipeline.pushConstant =
             {
-                .meshes       = meshBuffer.buffers[FIF].deviceAddress,
+                .meshes       = meshBuffer.meshBuffers[FIF].deviceAddress,
                 .positions    = geometryBuffer.positionBuffer.deviceAddress,
                 .spotShadows  = spotShadowBuffer.buffers[FIF].deviceAddress,
                 .currentIndex = static_cast<u32>(i)
@@ -245,10 +245,12 @@ namespace Renderer::SpotShadow
 
             geometryBuffer.Bind(currentCmdBuffer);
 
-            vkCmdDrawIndexedIndirect
+            vkCmdDrawIndexedIndirectCount
             (
                 currentCmdBuffer.handle,
-                indirectBuffer.buffers[FIF].handle,
+                indirectBuffer.drawCallBuffers[FIF].handle,
+                sizeof(u32),
+                indirectBuffer.drawCallBuffers[FIF].handle,
                 0,
                 indirectBuffer.writtenDrawCount,
                 sizeof(VkDrawIndexedIndirectCommand)

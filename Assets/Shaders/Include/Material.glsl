@@ -19,9 +19,15 @@
 #ifndef MATERIAL_GLSL
 #define MATERIAL_GLSL
 
-#define MAT_ALBEDO_ID     mesh.textureIDs.x
-#define MAT_NORMAL_ID     mesh.textureIDs.y
-#define MAT_AO_RGH_MTL_ID mesh.textureIDs.z
+struct Material
+{
+    uint  albedo;
+    uint  normal;
+    uint  aoRghMtl;
+    vec4  albedoFactor;
+    float roughnessFactor;
+    float metallicFactor;
+};
 
 // Safe version, use if geometry with bad geometry
 vec3 Orthogonalize(vec3 T, vec3 N)

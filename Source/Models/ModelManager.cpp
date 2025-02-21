@@ -159,9 +159,9 @@ namespace Models
                                 ImGui::Text("Texture Name                  | ID");
                                 ImGui::Separator();
 
-                                ImGui::Text("Albedo                        | %llu", mesh.material.albedo);
-                                ImGui::Text("Normal Map                    | %llu", mesh.material.normal);
-                                ImGui::Text("AO + Roughness + Metallic Map | %llu", mesh.material.aoRghMtl);
+                                ImGui::Text("Albedo                        | %u", mesh.material.albedo);
+                                ImGui::Text("Normal Map                    | %u", mesh.material.normal);
+                                ImGui::Text("AO + Roughness + Metallic Map | %u", mesh.material.aoRghMtl);
 
                                 ImGui::Separator();
                                 ImGui::Text("Factor Name | Value");

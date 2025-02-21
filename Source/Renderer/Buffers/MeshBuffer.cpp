@@ -23,13 +23,11 @@
 
 namespace Renderer::Buffers
 {
-    constexpr usize MAX_MESH_COUNT = 1 << 16;
-
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < buffers.size(); ++i)
+        for (usize i = 0; i < meshBuffers.size(); ++i)
         {
-            buffers[i] = Vk::Buffer
+            meshBuffers[i] = Vk::Buffer
             (
                 allocator,
                 MAX_MESH_COUNT * sizeof(Renderer::Mesh),
@@ -39,10 +37,24 @@ namespace Renderer::Buffers
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            buffers[i].GetDeviceAddress(device);
+            meshBuffers[i].GetDeviceAddress(device);
 
-            Vk::SetDebugName(device, buffers[i].handle, fmt::format("MeshBuffer/{}", i));
+            Vk::SetDebugName(device, meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
+
+        visibleMeshBuffer = Vk::Buffer
+        (
+            allocator,
+            MAX_MESH_COUNT * sizeof(u32),
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            0,
+            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+        );
+
+        visibleMeshBuffer.GetDeviceAddress(device);
+
+        Vk::SetDebugName(device, visibleMeshBuffer.handle, "VisibleMeshBuffer");
     }
 
     void MeshBuffer::LoadMeshes
@@ -72,30 +84,24 @@ namespace Renderer::Buffers
                 meshes.emplace_back(
                     transform,
                     normalMatrix,
-                    glm::uvec3(
-                        modelManager.textureManager.GetTextureID(mesh.material.albedo),
-                        modelManager.textureManager.GetTextureID(mesh.material.normal),
-                        modelManager.textureManager.GetTextureID(mesh.material.aoRghMtl)
-                    ),
-                    mesh.material.albedoFactor,
-                    mesh.material.roughnessFactor,
-                    mesh.material.metallicFactor
+                    mesh.material,
+                    mesh.aabb.Transform(transform)
                 );
             }
         }
 
         std::memcpy
         (
-            buffers[FIF].allocationInfo.pMappedData,
+            meshBuffers[FIF].allocationInfo.pMappedData,
             meshes.data(),
             sizeof(Renderer::Mesh) * meshes.size()
         );
 
-        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if (!(meshBuffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
                 allocator,
-                buffers[FIF].allocation,
+                meshBuffers[FIF].allocation,
                 0,
                 sizeof(Renderer::Mesh) * meshes.size()),
                 "Failed to flush allocation!"
@@ -105,9 +111,11 @@ namespace Renderer::Buffers
 
     void MeshBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : buffers)
+        for (auto& buffer : meshBuffers)
         {
             buffer.Destroy(allocator);
         }
+
+        visibleMeshBuffer.Destroy(allocator);
     }
 }

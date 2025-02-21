@@ -188,7 +188,7 @@ namespace Renderer::Shadow
 
         pipeline.pushConstant =
         {
-            .meshes    = meshBuffer.buffers[FIF].deviceAddress,
+            .meshes    = meshBuffer.meshBuffers[FIF].deviceAddress,
             .positions = geometryBuffer.positionBuffer.deviceAddress,
             .cascades  = cascadeBuffer.buffers[FIF].deviceAddress,
             .offset    = 0 * Shadow::CASCADE_COUNT
@@ -204,10 +204,12 @@ namespace Renderer::Shadow
 
         geometryBuffer.Bind(currentCmdBuffer);
 
-        vkCmdDrawIndexedIndirect
+        vkCmdDrawIndexedIndirectCount
         (
             currentCmdBuffer.handle,
-            indirectBuffer.buffers[FIF].handle,
+            indirectBuffer.drawCallBuffers[FIF].handle,
+            sizeof(u32),
+            indirectBuffer.drawCallBuffers[FIF].handle,
             0,
             indirectBuffer.writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)

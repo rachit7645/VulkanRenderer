@@ -221,7 +221,7 @@ namespace Renderer::PointShadow
             pipeline.pushConstant =
             {
                 .scene        = sceneBuffer.buffers[FIF].deviceAddress,
-                .meshes       = meshBuffer.buffers[FIF].deviceAddress,
+                .meshes       = meshBuffer.meshBuffers[FIF].deviceAddress,
                 .positions    = geometryBuffer.positionBuffer.deviceAddress,
                 .pointShadows = pointShadowBuffer.buffers[FIF].deviceAddress,
                 .lightIndex   = static_cast<u32>(i)
@@ -237,10 +237,12 @@ namespace Renderer::PointShadow
 
             geometryBuffer.Bind(currentCmdBuffer);
 
-            vkCmdDrawIndexedIndirect
+            vkCmdDrawIndexedIndirectCount
             (
                 currentCmdBuffer.handle,
-                indirectBuffer.buffers[FIF].handle,
+                indirectBuffer.drawCallBuffers[FIF].handle,
+                sizeof(u32),
+                indirectBuffer.drawCallBuffers[FIF].handle,
                 0,
                 indirectBuffer.writtenDrawCount,
                 sizeof(VkDrawIndexedIndirectCommand)

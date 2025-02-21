@@ -31,14 +31,14 @@ namespace Vk
     public:
         struct TextureInfo
         {
-            u32         descriptorID;
+            usize       pathHash;
             std::string name;
             Vk::Texture texture;
         };
 
         explicit TextureManager(const Vk::FormatHelper& formatHelper);
 
-        [[nodiscard]] usize AddTexture
+        [[nodiscard]] u32 AddTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
@@ -46,7 +46,7 @@ namespace Vk
             const std::string_view path
         );
 
-        [[nodiscard]] usize AddTexture
+        [[nodiscard]] u32 AddTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
@@ -56,7 +56,7 @@ namespace Vk
             const glm::uvec2 size
         );
 
-        [[nodiscard]] usize AddTexture
+        [[nodiscard]] u32 AddTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
@@ -74,8 +74,7 @@ namespace Vk
         void Update(const Vk::CommandBuffer& cmdBuffer);
         void Clear(VmaAllocator allocator);
 
-        [[nodiscard]] u32 GetTextureID(usize pathHash) const;
-        [[nodiscard]] const Vk::Texture& GetTexture(usize pathHash) const;
+        [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
 
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
@@ -83,7 +82,7 @@ namespace Vk
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        std::unordered_map<usize, TextureInfo> textureMap;
+        std::unordered_map<u32, TextureInfo> textureMap;
         std::unordered_map<u32, Vk::Sampler>   samplerMap;
     private:
         Vk::FormatHelper m_formatHelper;

@@ -51,6 +51,7 @@ add_executable(VulkanRenderer
 	Source/Util/FrameCounter.cpp
 	Source/Util/Maths.cpp
     Source/Util/SIMD.cpp
+    Source/Util/AABB.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
@@ -123,6 +124,9 @@ add_executable(VulkanRenderer
     Source/Renderer/SpotShadow/Pipeline.cpp
     Source/Renderer/SpotShadow/RenderPass.cpp
     Source/Renderer/SpotShadow/SpotShadowBuffer.cpp
+    # Culling Dispatch Sources
+    Source/Renderer/Culling/Pipeline.cpp
+    Source/Renderer/Culling/Dispatch.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

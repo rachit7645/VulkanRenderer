@@ -24,6 +24,7 @@
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Culling/Dispatch.h"
 
 namespace Renderer::Depth
 {
@@ -46,7 +47,8 @@ namespace Renderer::Depth
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
+            const Buffers::IndirectBuffer& indirectBuffer,
+            Culling::Dispatch& cullingDispatch
         );
 
         Depth::Pipeline pipeline;

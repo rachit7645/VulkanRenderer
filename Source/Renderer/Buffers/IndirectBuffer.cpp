@@ -16,29 +16,44 @@
 
 #include "IndirectBuffer.h"
 
+#include "MeshBuffer.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Buffers
 {
-    constexpr usize INDIRECT_BUFFER_SIZE = (1 << 16) * sizeof(VkDrawIndexedIndirectCommand);
-
     IndirectBuffer::IndirectBuffer(UNUSED VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < buffers.size(); ++i)
+        for (usize i = 0; i < drawCallBuffers.size(); ++i)
         {
-            buffers[i] = Vk::Buffer
+            drawCallBuffers[i] = Vk::Buffer
             (
                 allocator,
-                INDIRECT_BUFFER_SIZE,
-                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+                sizeof(u32) + MAX_MESH_COUNT * sizeof(VkDrawIndexedIndirectCommand),
+                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Vk::SetDebugName(device, buffers[i].handle, fmt::format("IndirectBuffer/{}", i));
+            drawCallBuffers[i].GetDeviceAddress(device);
+
+            Vk::SetDebugName(device, drawCallBuffers[i].handle, fmt::format("IndirectBuffer/{}", i));
         }
+
+        culledDrawCallBuffer = Vk::Buffer
+        (
+            allocator,
+            sizeof(u32) + MAX_MESH_COUNT * sizeof(VkDrawIndexedIndirectCommand),
+            VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            0,
+            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+        );
+
+        culledDrawCallBuffer.GetDeviceAddress(device);
+
+        Vk::SetDebugName(device, culledDrawCallBuffer.handle, "IndirectBuffer/CulledDrawCallBuffer");
     }
 
     void IndirectBuffer::WriteDrawCalls
@@ -65,32 +80,40 @@ namespace Renderer::Buffers
             }
         }
 
+        writtenDrawCount = drawCalls.size();
         std::memcpy
         (
-            buffers[FIF].allocationInfo.pMappedData,
+            drawCallBuffers[FIF].allocationInfo.pMappedData,
+            &writtenDrawCount,
+            sizeof(u32)
+        );
+
+        std::memcpy
+        (
+            static_cast<u8*>(drawCallBuffers[FIF].allocationInfo.pMappedData) + sizeof(u32),
             drawCalls.data(),
             sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()
         );
 
-        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if (!(drawCallBuffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
                 allocator,
-                buffers[FIF].allocation,
+                drawCallBuffers[FIF].allocation,
                 0,
-                sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()),
+                sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()),
                 "Failed to flush allocation!"
             );
         }
-
-        writtenDrawCount = static_cast<u32>(drawCalls.size());
     }
 
     void IndirectBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : buffers)
+        for (auto& buffer : drawCallBuffers)
         {
             buffer.Destroy(allocator);
         }
+
+        culledDrawCallBuffer.Destroy(allocator);
     }
 }

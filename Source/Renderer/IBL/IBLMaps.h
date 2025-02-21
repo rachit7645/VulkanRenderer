@@ -43,11 +43,11 @@ namespace Renderer::IBL
             Vk::TextureManager& textureManager
         );
 
-        usize hdrMapID     = 0;
-        usize brdfLutID    = 0;
-        usize skyboxID     = 0;
-        usize irradianceID = 0;
-        usize preFilterID  = 0;
+        u32 hdrMapID     = 0;
+        u32 brdfLutID    = 0;
+        u32 skyboxID     = 0;
+        u32 irradianceID = 0;
+        u32 preFilterID  = 0;
     private:
         Vk::Buffer SetupMatrixBuffer(const Vk::Context& context);
 

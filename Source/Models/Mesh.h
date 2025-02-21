@@ -17,18 +17,22 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "Info.h"
 #include "Material.h"
+#include "Vulkan/GeometryBuffer.h"
+#include "Util/AABB.h"
 
 namespace Models
 {
     struct Mesh
     {
-        Info      indexInfo    = {};
-        Info      positionInfo = {};
-        Info      vertexInfo   = {};
-        Material  material     = {};
-        glm::mat4 transform    = glm::identity<glm::mat4>();
+        Vk::GeometryBuffer::Info indexInfo    = {};
+        Vk::GeometryBuffer::Info positionInfo = {};
+        Vk::GeometryBuffer::Info vertexInfo   = {};
+
+        Material material = {};
+
+        glm::mat4  transform = glm::identity<glm::mat4>();
+        Maths::AABB aabb     = {};
     };
 }
 

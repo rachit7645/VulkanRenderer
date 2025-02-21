@@ -67,7 +67,8 @@ namespace Vk
             (
                 presentSupport == VK_TRUE &&
                 properties.queueFlags & VK_QUEUE_GRAPHICS_BIT &&
-                properties.queueFlags & VK_QUEUE_TRANSFER_BIT
+                properties.queueFlags & VK_QUEUE_TRANSFER_BIT &&
+                properties.queueFlags & VK_QUEUE_COMPUTE_BIT
             )
             {
                 graphicsFamily = i;

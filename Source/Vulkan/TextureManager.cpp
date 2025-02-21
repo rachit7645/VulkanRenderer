@@ -31,7 +31,7 @@ namespace Vk
     {
     }
 
-    usize TextureManager::AddTexture
+    u32 TextureManager::AddTexture
     (
         Vk::MegaSet& megaSet,
         VkDevice device,
@@ -41,54 +41,55 @@ namespace Vk
     {
         usize pathHash = std::hash<std::string_view>()(path);
 
-        if (!textureMap.contains(pathHash))
+        for (const auto& [id, textureInfo] : textureMap)
         {
-            Vk::Texture     texture = {};
-            Texture::Upload upload  = {};
-
-            if (Engine::Files::GetExtension(path) == ".hdr")
+            if (pathHash == textureInfo.pathHash)
             {
-                upload = texture.LoadFromFileHDR
-                (
-                    device,
-                    allocator,
-                    m_formatHelper.textureFormatHDR,
-                    path
-                );
+                return id;
             }
-            else
-            {
-                upload = texture.LoadFromFile
-                (
-                    device,
-                    allocator,
-                    path
-                );
-            }
+        }
 
-            const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        Vk::Texture     texture = {};
+        Texture::Upload upload  = {};
 
-            textureMap.emplace
+        if (Engine::Files::GetExtension(path) == ".hdr")
+        {
+            upload = texture.LoadFromFileHDR
             (
-                pathHash,
-                TextureInfo(
-                    id,
-                    Engine::Files::GetNameWithoutExtension(path),
-                    texture
-                )
+                device,
+                allocator,
+                m_formatHelper.textureFormatHDR,
+                path
             );
-
-            m_pendingUploads.emplace_back(texture, upload);
         }
         else
         {
-            Logger::Debug("Loading cached texture! [Path={}]\n", path);
+            upload = texture.LoadFromFile
+            (
+                device,
+                allocator,
+                path
+            );
         }
 
-        return pathHash;
+        const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        textureMap.emplace
+        (
+            id,
+            TextureInfo(
+                pathHash,
+                Engine::Files::GetNameWithoutExtension(path),
+                texture
+            )
+        );
+
+        m_pendingUploads.emplace_back(texture, upload);
+
+        return id;
     }
 
-    usize TextureManager::AddTexture
+    u32 TextureManager::AddTexture
     (
         Vk::MegaSet& megaSet,
         VkDevice device,
@@ -98,8 +99,6 @@ namespace Vk
         const glm::uvec2 size
     )
     {
-        auto nameHash = std::hash<std::string_view>()(name);
-
         Vk::Texture texture = {};
 
         const auto upload = texture.LoadFromMemory
@@ -115,9 +114,9 @@ namespace Vk
 
         textureMap.emplace
         (
-            nameHash,
+            id,
             TextureInfo(
-                id,
+                std::hash<std::string_view>()(name),
                 name.data(),
                 texture
             )
@@ -128,10 +127,10 @@ namespace Vk
         Vk::SetDebugName(device, texture.image.handle,     name);
         Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
 
-        return nameHash;
+        return id;
     }
 
-    usize TextureManager::AddTexture
+    u32 TextureManager::AddTexture
     (
         Vk::MegaSet& megaSet,
         VkDevice device,
@@ -139,15 +138,13 @@ namespace Vk
         const Vk::Texture& texture
     )
     {
-        const auto nameHash = std::hash<std::string_view>{}(name);
-
         const auto id = megaSet.WriteImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         textureMap.emplace
         (
-            nameHash,
+            id,
             TextureInfo(
-                id,
+                std::hash<std::string_view>{}(name),
                 name.data(),
                 texture
             )
@@ -156,7 +153,7 @@ namespace Vk
         Vk::SetDebugName(device, texture.image.handle,     name);
         Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
 
-        return nameHash;
+        return id;
     }
 
     u32 TextureManager::AddSampler
@@ -196,25 +193,13 @@ namespace Vk
         m_pendingUploads.clear();
     }
 
-    u32 TextureManager::GetTextureID(usize pathHash) const
+    const Texture& TextureManager::GetTexture(u32 id) const
     {
-        const auto iter = textureMap.find(pathHash);
+        const auto iter = textureMap.find(id);
 
         if (iter == textureMap.end())
         {
-            Logger::Error("Invalid texture path hash! [Hash={}]\n", pathHash);
-        }
-
-        return iter->second.descriptorID;
-    }
-
-    const Texture& TextureManager::GetTexture(usize pathHash) const
-    {
-        const auto iter = textureMap.find(pathHash);
-
-        if (iter == textureMap.end())
-        {
-            Logger::Error("Invalid texture path hash! [Hash={}]\n", pathHash);
+            Logger::Error("Invalid texture id! [ID={}]\n", id);
         }
 
         return iter->second.texture;
@@ -238,11 +223,11 @@ namespace Vk
         {
             if (ImGui::BeginMenu("Texture Manager"))
             {
-                for (const auto& [pathHash, textureInfo] : textureMap)
+                for (const auto& [id, textureInfo] : textureMap)
                 {
-                    if (ImGui::TreeNode(std::bit_cast<void*>(pathHash), textureInfo.name.c_str()))
+                    if (ImGui::TreeNode(std::bit_cast<void*>(textureInfo.pathHash), textureInfo.name.c_str()))
                     {
-                        ImGui::Text("Descriptor Index | %u", textureInfo.descriptorID);
+                        ImGui::Text("Descriptor Index | %u", id);
                         ImGui::Text("Width            | %u", textureInfo.texture.image.width);
                         ImGui::Text("Height           | %u", textureInfo.texture.image.height);
                         ImGui::Text("Depth            | %u", textureInfo.texture.image.depth);
@@ -262,7 +247,7 @@ namespace Vk
                         const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
                         const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
 
-                        ImGui::Image(textureInfo.descriptorID, imageSize);
+                        ImGui::Image(id, imageSize);
 
                         ImGui::TreePop();
                     }

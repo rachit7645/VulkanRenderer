@@ -24,12 +24,10 @@ namespace Renderer
 {
     struct Mesh
     {
-        glm::mat4  transform;
-        glm::mat3  normalMatrix;
-        glm::uvec3 textureIDs;
-        glm::vec4  albedoFactor;
-        f32        roughnessFactor;
-        f32        metallicFactor;
+        glm::mat4        transform;
+        glm::mat3        normalMatrix;
+        Models::Material material;
+        Maths::AABB      aabb;
     };
 }
 

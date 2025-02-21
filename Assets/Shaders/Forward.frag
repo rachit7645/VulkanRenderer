@@ -22,7 +22,6 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "Constants/Forward.glsl"
-#include "Material.glsl"
 #include "Color.glsl"
 #include "PBR.glsl"
 #include "MegaSet.glsl"
@@ -40,16 +39,16 @@ void main()
 {
     Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
-    vec4 albedo = texture(sampler2D(Textures[MAT_ALBEDO_ID], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
+    vec4 albedo = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
     albedo.rgb  = ToLinear(albedo.rgb);
-    albedo     *= mesh.albedoFactor;
+    albedo     *= mesh.material.albedoFactor;
 
-    vec3 normal = texture(sampler2D(Textures[MAT_NORMAL_ID], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
+    vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
 
-    vec3 aoRghMtl = texture(sampler2D(Textures[MAT_AO_RGH_MTL_ID], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
-    aoRghMtl.g   *= mesh.roughnessFactor;
-    aoRghMtl.b   *= mesh.metallicFactor;
+    vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtl], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
+    aoRghMtl.g   *= mesh.material.roughnessFactor;
+    aoRghMtl.b   *= mesh.material.metallicFactor;
 
     vec3 F0 = mix(vec3(0.04f), albedo.rgb, aoRghMtl.b);
 

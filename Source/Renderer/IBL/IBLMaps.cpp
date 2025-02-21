@@ -386,7 +386,7 @@ namespace Renderer::IBL
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .textureIndex = textureManager.GetTextureID(hdrMapID)
+            .textureIndex = hdrMapID
         };
 
         pipeline.LoadPushConstants
@@ -600,7 +600,7 @@ namespace Renderer::IBL
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .envMapIndex  = textureManager.GetTextureID(skyboxID)
+            .envMapIndex  = skyboxID
         };
 
         pipeline.LoadPushConstants
@@ -803,7 +803,7 @@ namespace Renderer::IBL
                 .positions    = geometryBuffer.cubeBuffer.deviceAddress,
                 .matrices     = matrixBuffer.deviceAddress,
                 .samplerIndex = pipeline.samplerIndex,
-                .envMapIndex  = textureManager.GetTextureID(skyboxID),
+                .envMapIndex  = skyboxID,
                 .roughness    = roughness,
                 .sampleCount  = sampleCount
             };

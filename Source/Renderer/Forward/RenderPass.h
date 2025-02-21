@@ -57,7 +57,6 @@ namespace Renderer::Forward
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
             const IBL::IBLMaps& iblMaps,
-            const Vk::TextureManager& textureManager,
             const Shadow::CascadeBuffer& cascadeBuffer,
             const PointShadow::PointShadowBuffer& pointShadowBuffer,
             const SpotShadow::SpotShadowBuffer& spotShadowBuffer

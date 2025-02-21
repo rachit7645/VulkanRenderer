@@ -50,7 +50,7 @@ namespace Vk
         vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
     }
 
-    std::array<Models::Info, 3> GeometryBuffer::SetupUploads
+    std::array<GeometryBuffer::Info, 3> GeometryBuffer::SetupUploads
     (
         VmaAllocator allocator,
         const std::span<const Models::Index> indices,
@@ -254,7 +254,7 @@ namespace Vk
     }
 
     template<typename T>
-    Models::Info GeometryBuffer::SetupUpload
+    GeometryBuffer::Info GeometryBuffer::SetupUpload
     (
         VmaAllocator allocator,
         const std::span<const T> data,
@@ -274,7 +274,7 @@ namespace Vk
 
         std::memcpy(stagingBuffer.allocationInfo.pMappedData, data.data(), data.size_bytes());
 
-        const Models::Info info =
+        const GeometryBuffer::Info info =
         {
             .offset = offset,
             .count  = static_cast<u32>(data.size())

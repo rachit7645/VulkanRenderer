@@ -289,6 +289,7 @@ namespace Vk
         const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
         const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
         const bool hasUpdateUnusedWhilePending    = vk12Features->descriptorBindingUpdateUnusedWhilePending;
+        const bool hasDrawIndirectCount           = vk12Features->drawIndirectCount;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
@@ -301,7 +302,7 @@ namespace Vk
         const bool vk11       = hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
                                 hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
-                                hasSampledImageUpdateAfterBind && hasUpdateUnusedWhilePending;
+                                hasSampledImageUpdateAfterBind && hasUpdateUnusedWhilePending && hasDrawIndirectCount;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
         return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
@@ -356,6 +357,7 @@ namespace Vk
         vk12Features.descriptorBindingPartiallyBound              = VK_TRUE;
         vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
         vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
+        vk12Features.drawIndirectCount                            = VK_TRUE;
 
         // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};

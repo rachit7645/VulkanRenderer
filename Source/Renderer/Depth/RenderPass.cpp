@@ -81,13 +81,22 @@ namespace Renderer::Depth
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Buffers::IndirectBuffer& indirectBuffer
+        const Buffers::IndirectBuffer& indirectBuffer,
+        Culling::Dispatch& cullingDispatch
     )
     {
         const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        cullingDispatch.ComputeDispatch
+        (
+            FIF,
+            currentCmdBuffer,
+            meshBuffer,
+            indirectBuffer
+        );
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
@@ -170,7 +179,7 @@ namespace Renderer::Depth
         pipeline.pushConstant =
         {
             .scene     = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes    = meshBuffer.buffers[FIF].deviceAddress,
+            .meshes    = meshBuffer.meshBuffers[FIF].deviceAddress,
             .positions = geometryBuffer.positionBuffer.deviceAddress,
         };
 
@@ -184,10 +193,12 @@ namespace Renderer::Depth
 
         geometryBuffer.Bind(currentCmdBuffer);
 
-        vkCmdDrawIndexedIndirect
+        vkCmdDrawIndexedIndirectCount
         (
             currentCmdBuffer.handle,
-            indirectBuffer.buffers[FIF].handle,
+            indirectBuffer.culledDrawCallBuffer.handle,
+            sizeof(u32),
+            indirectBuffer.culledDrawCallBuffer.handle,
             0,
             indirectBuffer.writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)

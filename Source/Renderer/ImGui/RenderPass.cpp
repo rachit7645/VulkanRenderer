@@ -78,7 +78,7 @@ namespace Renderer::DearImGui
                 {width, height}
             );
 
-            io.Fonts->SetTexID(static_cast<ImTextureID>(textureManager.GetTextureID(fontID)));
+            io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
         }
     }
 

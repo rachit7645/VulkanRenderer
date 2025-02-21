@@ -474,7 +474,7 @@ namespace Models
                 }
             }
 
-            auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUploads
+            const auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUploads
             (
                 context.allocator,
                 indices,
@@ -482,13 +482,16 @@ namespace Models
                 vertices
             );
 
+            const auto aabb = Maths::AABB(positions);
+
             meshes.emplace_back
             (
                 indexInfo,
                 positionInfo,
                 vertexInfo,
                 material,
-                nodeMatrix
+                nodeMatrix,
+                aabb
             );
         }
     }
@@ -523,7 +526,7 @@ namespace Models
         const auto attributeIt = primitive.findAttribute(attribute);
         if (attributeIt == primitive.attributes.cend())
         {
-            Logger::Error("Failed to find attribute! [Attrbute={}]\n", attribute);
+            Logger::Error("Failed to find attribute! [Attribute={}]\n", attribute);
         }
 
         const auto& accessor = asset.accessors[attributeIt->accessorIndex];
@@ -541,7 +544,7 @@ namespace Models
         return accessor;
     }
 
-    usize Model::LoadTexture
+    u32 Model::LoadTexture
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,

@@ -21,7 +21,6 @@
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"
-#include "Models/Info.h"
 #include "Models/Vertex.h"
 #include "Util/Util.h"
 #include "CommandBuffer.h"
@@ -31,12 +30,18 @@ namespace Vk
     class GeometryBuffer
     {
     public:
+        struct Info
+        {
+            u32 offset = 0;
+            u32 count  = 0;
+        };
+
         explicit GeometryBuffer(VkDevice device, VmaAllocator allocator);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator) const;
 
-        std::array<Models::Info, 3> SetupUploads
+        std::array<Info, 3> SetupUploads
         (
             VmaAllocator allocator,
             const std::span<const Models::Index> indices,
@@ -65,12 +70,12 @@ namespace Vk
         u32 positionCount = 0;
         u32 vertexCount   = 0;
     private:
-        using Upload = std::pair<Models::Info, Vk::Buffer>;
+        using Upload = std::pair<GeometryBuffer::Info, Vk::Buffer>;
 
         void SetupCubeUpload(VmaAllocator allocator);
 
         template<typename T>
-        Models::Info SetupUpload
+        GeometryBuffer::Info SetupUpload
         (
             VmaAllocator allocator,
             const std::span<const T> data,

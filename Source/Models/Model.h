@@ -87,7 +87,7 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        usize LoadTexture
+        u32 LoadTexture
         (
             const Vk::Context& context,
             Vk::MegaSet& megaSet,

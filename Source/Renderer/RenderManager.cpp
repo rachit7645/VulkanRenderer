@@ -41,6 +41,7 @@ namespace Renderer
           m_shadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_pointShadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_spotShadowPass(m_context, m_formatHelper, m_framebufferManager),
+          m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator),
@@ -53,6 +54,7 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
+            m_cullingDispatch.Destroy(m_context.device);
             m_spotShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_pointShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_shadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
@@ -240,7 +242,8 @@ namespace Renderer
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
-            m_indirectBuffer
+            m_indirectBuffer,
+            m_cullingDispatch
         );
 
         m_forwardPass.Render
@@ -253,7 +256,6 @@ namespace Renderer
             m_meshBuffer,
             m_indirectBuffer,
             m_iblMaps,
-            m_modelManager.textureManager,
             m_shadowPass.cascadeBuffer,
             m_pointShadowPass.pointShadowBuffer,
             m_spotShadowPass.spotShadowBuffer
@@ -266,7 +268,6 @@ namespace Renderer
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_iblMaps,
-            m_modelManager.textureManager,
             m_megaSet
         );
 
@@ -571,13 +572,6 @@ namespace Renderer
             {
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
-                .commandBuffer = m_depthPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
                 .commandBuffer = m_shadowPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
@@ -593,6 +587,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_spotShadowPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_depthPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

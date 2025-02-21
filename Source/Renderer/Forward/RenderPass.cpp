@@ -90,7 +90,6 @@ namespace Renderer::Forward
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
         const IBL::IBLMaps& iblMaps,
-        const Vk::TextureManager& textureManager,
         const Shadow::CascadeBuffer& cascadeBuffer,
         const PointShadow::PointShadowBuffer& pointShadowBuffer,
         const SpotShadow::SpotShadowBuffer& spotShadowBuffer
@@ -203,7 +202,7 @@ namespace Renderer::Forward
         pipeline.pushConstant =
         {
             .scene                   = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes                  = meshBuffer.buffers[FIF].deviceAddress,
+            .meshes                  = meshBuffer.meshBuffers[FIF].deviceAddress,
             .positions               = geometryBuffer.positionBuffer.deviceAddress,
             .vertices                = geometryBuffer.vertexBuffer.deviceAddress,
             .cascades                = cascadeBuffer.buffers[FIF].deviceAddress,
@@ -212,9 +211,9 @@ namespace Renderer::Forward
             .textureSamplerIndex     = pipeline.textureSamplerIndex,
             .iblSamplerIndex         = pipeline.iblSamplerIndex,
             .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
-            .irradianceIndex         = textureManager.GetTextureID(iblMaps.irradianceID),
-            .preFilterIndex          = textureManager.GetTextureID(iblMaps.preFilterID),
-            .brdfLutIndex            = textureManager.GetTextureID(iblMaps.brdfLutID),
+            .irradianceIndex         = iblMaps.irradianceID,
+            .preFilterIndex          = iblMaps.preFilterID,
+            .brdfLutIndex            = iblMaps.brdfLutID,
             .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex,
             .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").descriptorIndex,
             .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").descriptorIndex,
@@ -233,10 +232,12 @@ namespace Renderer::Forward
 
         geometryBuffer.Bind(currentCmdBuffer);
 
-        vkCmdDrawIndexedIndirect
+        vkCmdDrawIndexedIndirectCount
         (
             currentCmdBuffer.handle,
-            indirectBuffer.buffers[FIF].handle,
+            indirectBuffer.culledDrawCallBuffer.handle,
+            sizeof(u32),
+            indirectBuffer.culledDrawCallBuffer.handle,
             0,
             indirectBuffer.writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)
