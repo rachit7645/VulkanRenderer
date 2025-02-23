@@ -24,8 +24,9 @@
 
 void main()
 {
-    Mesh mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3 position = Constants.Positions.positions[gl_VertexIndex];
+    uint meshIndex = Constants.VisibleMeshes.indices[gl_DrawID];
+    Mesh mesh      = Constants.Meshes.meshes[meshIndex];
+    vec3 position  = Constants.Positions.positions[gl_VertexIndex];
 
     vec4 fragPos = mesh.transform * vec4(position, 1.0f);
     gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;

@@ -32,6 +32,13 @@ find_package(simdjson REQUIRED)
 find_package(fmt      REQUIRED)
 find_package(KTX      REQUIRED)
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
+
+if (LTOSupported AND CMAKE_BUILD_TYPE STREQUAL Release)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 # Add sub-projects
 add_subdirectory(Externals/)
 add_subdirectory(Assets/Shaders/)
@@ -52,6 +59,7 @@ add_executable(VulkanRenderer
 	Source/Util/Maths.cpp
     Source/Util/SIMD.cpp
     Source/Util/AABB.cpp
+    Source/Util/Plane.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp

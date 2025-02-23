@@ -177,6 +177,11 @@ namespace Models
                                 ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
                                 ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
 
+                                ImGui::Separator();
+
+                                ImGui::Text("AABB Min    | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
+                                ImGui::Text("AABB Max    | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
+
                                 ImGui::TreePop();
                             }
 

@@ -21,19 +21,37 @@
 #extension GL_EXT_scalar_block_layout  : enable
 
 #include "Constants/Culling.glsl"
+#include "Constants.glsl"
 
-layout(local_size_x = 32) in;
+layout(local_size_x = 64) in;
+
+bool IsVisible(Mesh mesh)
+{
+    AABB aabb = TransformAABB(mesh.aabb, mesh.transform);
+
+    for (int i = 0; i < 6; ++i)
+    {
+        Plane plane = Constants.Planes[i];
+
+        vec3 pVertex = vec3
+        (
+            plane.normal.x > 0.0 ? aabb.AABBmax.x : aabb.AABBmin.x,
+            plane.normal.y > 0.0 ? aabb.AABBmax.y : aabb.AABBmin.y,
+            plane.normal.z > 0.0 ? aabb.AABBmax.z : aabb.AABBmin.z
+        );
+
+        // Positive vertex check
+        if ((dot(plane.normal, pVertex) + plane.dist) < 0.0f)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 void main()
 {
-    if (gl_WorkGroupID.x == 0 && gl_LocalInvocationID.x == 0)
-    {
-        Constants.CulledDrawCalls.count = 0;
-    }
-
-    barrier();
-    memoryBarrierBuffer();
-
     uint index = gl_GlobalInvocationID.x;
 
     if (index >= Constants.DrawCalls.count)
@@ -41,8 +59,15 @@ void main()
         return;
     }
 
+    Mesh mesh = Constants.Meshes.meshes[index];
+
+    if (!IsVisible(mesh))
+    {
+        return;
+    }
+
     uint drawIndex = atomicAdd(Constants.CulledDrawCalls.count, 1);
 
-    Constants.CulledDrawCalls.drawCalls[index] = Constants.DrawCalls.drawCalls[index];
-    Constants.VisibleMeshes.indices[drawIndex] = index;
+    Constants.CulledDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
+    Constants.VisibleMeshes.indices[drawIndex]     = index;
 }

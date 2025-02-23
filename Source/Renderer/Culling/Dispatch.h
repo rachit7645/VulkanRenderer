@@ -21,7 +21,6 @@
 #include "Vulkan/Constants.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
-#include "Renderer/Buffers/SceneBuffer.h"
 
 namespace Renderer::Culling
 {
@@ -35,6 +34,7 @@ namespace Renderer::Culling
         void ComputeDispatch
         (
             usize FIF,
+            const glm::mat4& projectionView,
             const Vk::CommandBuffer& cmdBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer

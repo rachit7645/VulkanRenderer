@@ -85,7 +85,7 @@ namespace Renderer::Buffers
                     transform,
                     normalMatrix,
                     mesh.material,
-                    mesh.aabb.Transform(transform)
+                    mesh.aabb
                 );
             }
         }

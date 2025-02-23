@@ -26,6 +26,10 @@
 // Math constants
 const float PI = 3.14159265359;
 
+// Float bounds
+const float FLOAT_MIN = 1.175494351e-38;
+const float FLOAT_MAX = 3.402823466e+38;
+
 // Gamma correction constants
 const float GAMMA_FACTOR     = 2.2f;
 const float INV_GAMMA_FACTOR = 1.0f / GAMMA_FACTOR;

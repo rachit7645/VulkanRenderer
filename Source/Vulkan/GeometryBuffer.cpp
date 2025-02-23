@@ -21,6 +21,7 @@
 #include "Util/Log.h"
 #include "Models/Model.h"
 #include "DebugUtils.h"
+#include "Renderer/RenderConstants.h"
 
 namespace Vk
 {
@@ -191,7 +192,7 @@ namespace Vk
 
     void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
     {
-        constexpr f32 SKYBOX_SIZE = 500.0f;
+        constexpr f32 SKYBOX_SIZE = Renderer::PLANES.y / 2.0f;
 
         constexpr std::array SKYBOX_VERTICES =
         {
@@ -298,6 +299,11 @@ namespace Vk
         Vk::Buffer& buffer
     )
     {
+        if (count == 0)
+        {
+            return;
+        }
+
         if (count * elementSize > buffer.requestedSize)
         {
             u32 pendingCount = 0;

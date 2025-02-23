@@ -87,6 +87,11 @@ namespace Vk
 
     void Buffer::GetDeviceAddress(VkDevice device)
     {
+        if (handle == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         const VkBufferDeviceAddressInfo bdaInfo =
         {
             .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,

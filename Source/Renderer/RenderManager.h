@@ -120,6 +120,8 @@ namespace Renderer
 
         bool m_isSwapchainOk = true;
 
+        Scene m_scene = {};
+
         Objects::DirLight                  m_sun;
         std::array<Objects::PointLight, 2> m_pointLights;
         std::array<Objects::SpotLight,  2> m_spotLights;

@@ -28,6 +28,7 @@ namespace Renderer::Forward
         // Buffers
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
+        VkDeviceAddress visibleMeshes;
         VkDeviceAddress positions;
         VkDeviceAddress vertices;
         VkDeviceAddress cascades;

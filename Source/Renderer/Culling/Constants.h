@@ -19,15 +19,17 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Util/Plane.h"
+
 namespace Renderer::Culling
 {
-    struct __attribute__((packed)) PushConstant
+    struct PushConstant
     {
         VkDeviceAddress meshes;
         VkDeviceAddress visibleMeshes;
-        VkDeviceAddress frustum;
         VkDeviceAddress drawCalls;
         VkDeviceAddress culledDrawCalls;
+        Maths::Plane    planes[6];
     };
 }
 

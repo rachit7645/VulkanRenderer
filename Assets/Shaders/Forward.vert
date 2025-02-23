@@ -32,9 +32,10 @@ layout(location = 5) out      mat3 fragTBNMatrix;
 
 void main()
 {
-    Mesh   mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3   position = Constants.Positions.positions[gl_VertexIndex];
-    Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
+    uint   meshIndex = Constants.VisibleMeshes.indices[gl_DrawID];
+    Mesh   mesh      = Constants.Meshes.meshes[meshIndex];
+    vec3   position  = Constants.Positions.positions[gl_VertexIndex];
+    Vertex vertex    = Constants.Vertices.vertices[gl_VertexIndex];
 
     vec4 fragPos     = mesh.transform * vec4(position, 1.0f);
     fragPosition     = fragPos.xyz;
@@ -44,7 +45,7 @@ void main()
 
     fragTexCoords = vertex.uv0;
     fragToCamera  = normalize(Constants.Scene.cameraPos - fragPosition);
-    fragDrawID    = gl_DrawID;
+    fragDrawID    = meshIndex;
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);
     vec3 T = normalize(mesh.transform    * vec4(vertex.tangent, 1.0f)).xyz;

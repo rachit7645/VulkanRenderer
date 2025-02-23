@@ -128,22 +128,6 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         );
 
-        /*m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Main/SponzaMainC.gltf"),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );
-
-        m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Curtains/SponzaCurtainsC.gltf"),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );*/
-
         m_renderObjects.emplace_back
         (
             m_modelManager.AddModel(m_context, m_megaSet, "Cottage/CottageC.gltf"),
@@ -160,9 +144,25 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         );
 
+        /*m_renderObjects.emplace_back
+        (
+            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Main/SponzaMainC.gltf"),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f)
+        );
+
+        m_renderObjects.emplace_back
+        (
+            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Curtains/SponzaCurtainsC.gltf"),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f)
+        );*/
+
         /*m_renderObjects.emplace_back(
             m_modelManager.AddModel(m_context, m_megaSet, "Bistro/BistroC.gltf"),
-            glm::vec3(0.0f, 0.0f, -150.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 1.0f, 1.0f)
         );*/
@@ -238,6 +238,7 @@ namespace Renderer
         m_depthPass.Render
         (
             m_currentFIF,
+            m_scene,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -458,7 +459,7 @@ namespace Renderer
             ImGui::EndMainMenuBar();
         }
 
-        const Scene scene =
+        m_scene =
         {
             .projection = Maths::CreateProjectionReverseZ(
                 m_camera.FOV,
@@ -477,7 +478,8 @@ namespace Renderer
         m_lightsBuffer.WriteDirLights(m_currentFIF, m_context.allocator, {&m_sun, 1});
         m_lightsBuffer.WritePointLights(m_currentFIF, m_context.allocator, m_pointLights);
         m_lightsBuffer.WriteSpotLights(m_currentFIF, m_context.allocator, m_spotLights);
-        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, scene);
+        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_scene);
+
         m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);
         m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);
     }

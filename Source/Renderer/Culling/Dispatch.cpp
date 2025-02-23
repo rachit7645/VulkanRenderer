@@ -18,9 +18,12 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Util/Plane.h"
 
 namespace Renderer::Culling
 {
+    constexpr auto WORKGROUP_SIZE = 64;
+
     Dispatch::Dispatch(const Vk::Context& context)
         : pipeline(context)
     {
@@ -30,6 +33,7 @@ namespace Renderer::Culling
     void Dispatch::ComputeDispatch
     (
         usize FIF,
+        const glm::mat4& projectionView,
         const Vk::CommandBuffer& cmdBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer
@@ -43,10 +47,17 @@ namespace Renderer::Culling
         {
             .meshes          = meshBuffer.meshBuffers[FIF].deviceAddress,
             .visibleMeshes   = meshBuffer.visibleMeshBuffer.deviceAddress,
-            .frustum         = indirectBuffer.drawCallBuffers[FIF].deviceAddress,
             .drawCalls       = indirectBuffer.drawCallBuffers[FIF].deviceAddress,
-            .culledDrawCalls = indirectBuffer.culledDrawCallBuffer.deviceAddress
+            .culledDrawCalls = indirectBuffer.culledDrawCallBuffer.deviceAddress,
+            .planes          = {}
         };
+
+        const auto planes = Maths::ExtractFrustumPlanes(projectionView);
+
+        for (usize i = 0; i < planes.size(); ++i)
+        {
+            pipeline.pushConstant.planes[i] = planes[i];
+        }
 
         pipeline.LoadPushConstants
         (
@@ -57,12 +68,66 @@ namespace Renderer::Culling
             &pipeline.pushConstant
         );
 
+        indirectBuffer.culledDrawCallBuffer.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+            VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            0,
+            sizeof(u32)
+        );
+
+        // Reset draw count
+        vkCmdFillBuffer
+        (
+            cmdBuffer.handle,
+            indirectBuffer.culledDrawCallBuffer.handle,
+            0,
+            sizeof(u32),
+            0
+        );
+
+        indirectBuffer.culledDrawCallBuffer.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+            0,
+            sizeof(u32)
+        );
+
+        indirectBuffer.culledDrawCallBuffer.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+            VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+            sizeof(u32),
+            sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.writtenDrawCount
+        );
+
         vkCmdDispatch
         (
             cmdBuffer.handle,
-            static_cast<u32>(std::ceil(static_cast<f32>(indirectBuffer.writtenDrawCount) / 32.0f)),
+            (indirectBuffer.writtenDrawCount / WORKGROUP_SIZE) + 1,
             1,
             1
+        );
+
+        indirectBuffer.culledDrawCallBuffer.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+            VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+            0,
+            sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.writtenDrawCount
         );
 
         meshBuffer.visibleMeshBuffer.Barrier
@@ -74,17 +139,6 @@ namespace Renderer::Culling
             VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
             0,
             sizeof(u32) * indirectBuffer.writtenDrawCount
-        );
-
-        indirectBuffer.culledDrawCallBuffer.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-            0,
-            sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.writtenDrawCount
         );
 
         Vk::EndLabel(cmdBuffer);

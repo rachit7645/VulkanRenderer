@@ -18,12 +18,7 @@
 #define MESH_GLSL
 
 #include "Material.glsl"
-
-struct AABB
-{
-    vec3 AABBmin;
-    vec3 AABBmax;
-};
+#include "AABB.glsl"
 
 struct Mesh
 {

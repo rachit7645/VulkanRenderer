@@ -77,6 +77,7 @@ namespace Renderer::Depth
     void RenderPass::Render
     (
         usize FIF,
+        const Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -93,6 +94,7 @@ namespace Renderer::Depth
         cullingDispatch.ComputeDispatch
         (
             FIF,
+            scene.projection * scene.view,
             currentCmdBuffer,
             meshBuffer,
             indirectBuffer
@@ -178,9 +180,10 @@ namespace Renderer::Depth
 
         pipeline.pushConstant =
         {
-            .scene     = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes    = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .positions = geometryBuffer.positionBuffer.deviceAddress,
+            .scene         = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
+            .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+            .positions     = geometryBuffer.positionBuffer.deviceAddress,
         };
 
         pipeline.LoadPushConstants

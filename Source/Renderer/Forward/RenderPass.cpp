@@ -203,6 +203,7 @@ namespace Renderer::Forward
         {
             .scene                   = sceneBuffer.buffers[FIF].deviceAddress,
             .meshes                  = meshBuffer.meshBuffers[FIF].deviceAddress,
+            .visibleMeshes           = meshBuffer.visibleMeshBuffer.deviceAddress,
             .positions               = geometryBuffer.positionBuffer.deviceAddress,
             .vertices                = geometryBuffer.vertexBuffer.deviceAddress,
             .cascades                = cascadeBuffer.buffers[FIF].deviceAddress,

@@ -23,6 +23,7 @@ namespace Renderer::Depth
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
+        VkDeviceAddress visibleMeshes;
         VkDeviceAddress positions;
     };
 }

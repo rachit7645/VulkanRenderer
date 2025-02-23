@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef FRUSTUM_GLSL
-#define FRUSTUM_GLSL
+#ifndef PLANE_H
+#define PLANE_H
 
-struct Plane
-{
-    vec3  normal;
-    float dist;
-};
+#include "Util.h"
+#include "Externals/GLM.h"
 
-layout(buffer_reference, scalar) readonly buffer FrustumBuffer
+namespace Maths
 {
-    mat4  projection;
-    mat4  view;
-    Plane planes;
-};
+    struct Plane
+    {
+        glm::vec3 normal;
+        f32       distance;
+    };
+
+    std::array<Maths::Plane, 6> ExtractFrustumPlanes(const glm::mat4& projectionView);
+}
 
 #endif
