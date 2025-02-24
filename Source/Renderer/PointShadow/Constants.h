@@ -27,9 +27,11 @@ namespace Renderer::PointShadow
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
+        VkDeviceAddress visibleMeshes;;
         VkDeviceAddress positions;
         VkDeviceAddress pointShadows;
         u32             lightIndex;
+        u32             faceIndex;
     };
 }
 

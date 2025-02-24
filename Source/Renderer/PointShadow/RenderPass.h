@@ -26,6 +26,7 @@
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Culling/Dispatch.h"
 
 namespace Renderer::PointShadow
 {
@@ -48,6 +49,7 @@ namespace Renderer::PointShadow
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            Culling::Dispatch& cullingDispatch,
             const std::span<Objects::PointLight> lights
         );
 

@@ -21,8 +21,8 @@
 
 namespace Renderer::PointShadow
 {
-    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS =  {512,  512};
-    constexpr glm::vec2  POINT_SHADOW_PLANES     =  {1.0f, 25.0f};
+    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {256,  256};
+    constexpr glm::vec2  POINT_SHADOW_PLANES     = {1.0f, 25.0f};
 
     RenderPass::RenderPass
     (
@@ -73,18 +73,21 @@ namespace Renderer::PointShadow
 
         for (usize i = 0; i < Objects::MAX_POINT_LIGHT_COUNT; ++i)
         {
-            framebufferManager.AddFramebufferView
-            (
-                "PointShadowMap",
-                fmt::format("PointShadowMapView/{}", i),
-                Vk::ImageType::Cube,
-                Vk::FramebufferViewSize{
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = static_cast<u32>(6 * i),
-                    .layerCount     = 6,
-                }
-            );
+            for (usize j = 0; j < 6; ++j)
+            {
+                framebufferManager.AddFramebufferView
+                (
+                    "PointShadowMap",
+                    fmt::format("PointShadowMapView/Light{}/{}", i, j),
+                    Vk::ImageType::Single2D,
+                    Vk::FramebufferViewSize{
+                        .baseMipLevel   = 0,
+                        .levelCount     = 1,
+                        .baseArrayLayer = static_cast<u32>(6 * i + j),
+                        .layerCount     = 1,
+                    }
+                );
+            }
         }
 
         Logger::Info("{}\n", "Created point shadow pass!");
@@ -99,6 +102,7 @@ namespace Renderer::PointShadow
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
+        Culling::Dispatch& cullingDispatch,
         const std::span<Objects::PointLight> lights
     )
     {
@@ -161,94 +165,112 @@ namespace Renderer::PointShadow
         {
             Vk::BeginLabel(currentCmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
-            const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/{}", i));
-
-            const VkRenderingAttachmentInfo depthAttachmentInfo =
+            for (usize j = 0; j < 6; ++j)
             {
-                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .pNext              = nullptr,
-                .imageView          = depthAttachmentView.view.handle,
-                .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                .resolveMode        = VK_RESOLVE_MODE_NONE,
-                .resolveImageView   = VK_NULL_HANDLE,
-                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue         = {.depthStencil = {1.0f, 0x0}}
-            };
+                Vk::BeginLabel(currentCmdBuffer, fmt::format("Face #{}", j), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
 
-            const VkRenderingInfo renderInfo =
-            {
-                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-                .pNext                = nullptr,
-                .flags                = 0,
-                .renderArea           = {
+                cullingDispatch.ComputeDispatch
+                (
+                    FIF,
+                    pointShadowData[i].matrices[j],
+                    currentCmdBuffer,
+                    meshBuffer,
+                    indirectBuffer
+                );
+
+                const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/Light{}/{}", i, j));
+
+                const VkRenderingAttachmentInfo depthAttachmentInfo =
+                {
+                    .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                    .pNext              = nullptr,
+                    .imageView          = depthAttachmentView.view.handle,
+                    .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    .resolveMode        = VK_RESOLVE_MODE_NONE,
+                    .resolveImageView   = VK_NULL_HANDLE,
+                    .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                    .clearValue         = {.depthStencil = {1.0f, 0x0}}
+                };
+
+                const VkRenderingInfo renderInfo =
+                {
+                    .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                    .pNext                = nullptr,
+                    .flags                = 0,
+                    .renderArea           = {
+                        .offset = {0, 0},
+                        .extent = {depthAttachment.image.width, depthAttachment.image.height}
+                    },
+                    .layerCount           = 1,
+                    .viewMask             = 0,
+                    .colorAttachmentCount = 0,
+                    .pColorAttachments    = nullptr,
+                    .pDepthAttachment     = &depthAttachmentInfo,
+                    .pStencilAttachment   = nullptr
+                };
+
+                vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+
+                pipeline.Bind(currentCmdBuffer);
+
+                const VkViewport viewport =
+                {
+                    .x        = 0.0f,
+                    .y        = 0.0f,
+                    .width    = static_cast<f32>(depthAttachment.image.width),
+                    .height   = static_cast<f32>(depthAttachment.image.height),
+                    .minDepth = 0.0f,
+                    .maxDepth = 1.0f
+                };
+
+                vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+
+                const VkRect2D scissor =
+                {
                     .offset = {0, 0},
                     .extent = {depthAttachment.image.width, depthAttachment.image.height}
-                },
-                .layerCount           = 1,
-                .viewMask             = 0b111111,
-                .colorAttachmentCount = 0,
-                .pColorAttachments    = nullptr,
-                .pDepthAttachment     = &depthAttachmentInfo,
-                .pStencilAttachment   = nullptr
-            };
+                };
 
-            vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+                vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
-            pipeline.Bind(currentCmdBuffer);
+                pipeline.pushConstant =
+                {
+                    .scene         = sceneBuffer.buffers[FIF].deviceAddress,
+                    .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
+                    .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+                    .positions     = geometryBuffer.positionBuffer.deviceAddress,
+                    .pointShadows  = pointShadowBuffer.buffers[FIF].deviceAddress,
+                    .lightIndex    = static_cast<u32>(i),
+                    .faceIndex     = static_cast<u32>(j)
+                };
 
-            const VkViewport viewport =
-            {
-                .x        = 0.0f,
-                .y        = 0.0f,
-                .width    = static_cast<f32>(depthAttachment.image.width),
-                .height   = static_cast<f32>(depthAttachment.image.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f
-            };
+                pipeline.LoadPushConstants
+                (
+                   currentCmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                   0, sizeof(PointShadow::PushConstant),
+                   reinterpret_cast<void*>(&pipeline.pushConstant)
+                );
 
-            vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+                geometryBuffer.Bind(currentCmdBuffer);
 
-            const VkRect2D scissor =
-            {
-                .offset = {0, 0},
-                .extent = {depthAttachment.image.width, depthAttachment.image.height}
-            };
+                vkCmdDrawIndexedIndirectCount
+                (
+                    currentCmdBuffer.handle,
+                    indirectBuffer.culledDrawCallBuffer.handle,
+                    sizeof(u32),
+                    indirectBuffer.culledDrawCallBuffer.handle,
+                    0,
+                    indirectBuffer.writtenDrawCount,
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
 
-            vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+                vkCmdEndRendering(currentCmdBuffer.handle);
 
-            pipeline.pushConstant =
-            {
-                .scene        = sceneBuffer.buffers[FIF].deviceAddress,
-                .meshes       = meshBuffer.meshBuffers[FIF].deviceAddress,
-                .positions    = geometryBuffer.positionBuffer.deviceAddress,
-                .pointShadows = pointShadowBuffer.buffers[FIF].deviceAddress,
-                .lightIndex   = static_cast<u32>(i)
-            };
-
-            pipeline.LoadPushConstants
-            (
-               currentCmdBuffer,
-               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               0, sizeof(PointShadow::PushConstant),
-               reinterpret_cast<void*>(&pipeline.pushConstant)
-            );
-
-            geometryBuffer.Bind(currentCmdBuffer);
-
-            vkCmdDrawIndexedIndirectCount
-            (
-                currentCmdBuffer.handle,
-                indirectBuffer.drawCallBuffers[FIF].handle,
-                sizeof(u32),
-                indirectBuffer.drawCallBuffers[FIF].handle,
-                0,
-                indirectBuffer.writtenDrawCount,
-                sizeof(VkDrawIndexedIndirectCommand)
-            );
-
-            vkCmdEndRendering(currentCmdBuffer.handle);
+                Vk::EndLabel(currentCmdBuffer);
+            }
 
             Vk::EndLabel(currentCmdBuffer);
         }

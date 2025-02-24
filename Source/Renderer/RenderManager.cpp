@@ -221,6 +221,7 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            m_cullingDispatch,
             m_pointLights
         );
 

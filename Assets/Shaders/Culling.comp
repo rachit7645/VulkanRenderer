@@ -27,21 +27,24 @@ layout(local_size_x = 64) in;
 
 bool IsVisible(Mesh mesh)
 {
-    AABB aabb = TransformAABB(mesh.aabb, mesh.transform);
+    AABB    aabb    = TransformAABB(mesh.aabb, mesh.transform);
+    vec3[8] corners = GetAABBCorners(aabb);
 
     for (int i = 0; i < 6; ++i)
     {
         Plane plane = Constants.Planes[i];
 
-        vec3 pVertex = vec3
-        (
-            plane.normal.x > 0.0 ? aabb.AABBmax.x : aabb.AABBmin.x,
-            plane.normal.y > 0.0 ? aabb.AABBmax.y : aabb.AABBmin.y,
-            plane.normal.z > 0.0 ? aabb.AABBmax.z : aabb.AABBmin.z
-        );
+        uint outside = 0;
 
-        // Positive vertex check
-        if ((dot(plane.normal, pVertex) + plane.dist) < 0.0f)
+        for (uint j = 0; j < 8; ++j)
+        {
+            if ((dot(plane.normal, corners[j]) + plane.dist) < 0.0f)
+            {
+                ++outside;
+            }
+        }
+
+        if (outside == 8)
         {
             return false;
         }

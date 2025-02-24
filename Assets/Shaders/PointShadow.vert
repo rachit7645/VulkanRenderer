@@ -19,25 +19,14 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_multiview            : enable
 
 #include "Constants/PointShadow.glsl"
 
-layout(location = 0) out      vec3  fragPosition;
-layout(location = 1) out flat vec3  fragLightPosition;
-layout(location = 2) out flat float fragShadowFarPlane;
+layout(location = 0) out vec3 fragPosition;
 
 void main()
 {
-    Mesh            mesh       = Constants.Meshes.meshes[gl_DrawID];
-    vec3            position   = Constants.Positions.positions[gl_VertexIndex];
-    PointLight      light      = Constants.Scene.pointLights.lights[Constants.LightIndex];
-    PointShadowData shadowData = Constants.PointShadows.pointShadowData[Constants.LightIndex];
-
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
+    vec4 fragPos = Constants.Meshes.meshes[Constants.VisibleMeshes.indices[gl_DrawID]].transform * vec4(Constants.Positions.positions[gl_VertexIndex], 1.0f);
     fragPosition = fragPos.xyz;
-    gl_Position  = shadowData.matrices[gl_ViewIndex] * fragPos;
-
-    fragLightPosition  = light.position;
-    fragShadowFarPlane = shadowData.shadowPlanes.y;
+    gl_Position  = Constants.PointShadows.pointShadowData[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
 }

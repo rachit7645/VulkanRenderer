@@ -26,7 +26,7 @@ namespace Renderer::PointShadow
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0b111111, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("PointShadow.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("PointShadow.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
