@@ -23,10 +23,11 @@
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    MeshBuffer     Meshes;
-    PositionBuffer Positions;
-    CascadeBuffer  Cascades;
-    uint           Offset;
+    MeshBuffer        Meshes;
+    VisibleMeshBuffer VisibleMeshes;
+    PositionBuffer    Positions;
+    CascadeBuffer     Cascades;
+    uint              Offset;
 } Constants;
 
 #endif

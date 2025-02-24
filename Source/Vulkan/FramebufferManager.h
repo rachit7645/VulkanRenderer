@@ -131,6 +131,8 @@ namespace Vk
 
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
+
+        VkExtent2D swapchainExtent;
     private:
         bool IsViewable(ImageType imageType);
 

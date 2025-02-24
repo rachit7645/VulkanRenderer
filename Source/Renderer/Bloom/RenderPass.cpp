@@ -92,6 +92,18 @@ namespace Renderer::Bloom
         const Vk::MegaSet& megaSet
     )
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Bloom"))
+            {
+                ImGui::DragFloat("Filter Radius", &m_filterRadius, 0.0005f, 0.0f, 0.1f, "%.4f");
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
@@ -112,18 +124,6 @@ namespace Renderer::Bloom
             framebufferManager,
             megaSet
         );
-
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Bloom"))
-            {
-                ImGui::DragFloat("Filter Radius", &m_filterRadius, 0.0005f, 0.0f, 0.1f, "%.4f");
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
 
         Vk::EndLabel(currentCmdBuffer);
 

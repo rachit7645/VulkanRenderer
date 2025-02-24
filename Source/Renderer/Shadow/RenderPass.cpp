@@ -73,6 +73,22 @@ namespace Renderer::Shadow
             }
         );
 
+        for (usize i = 0; i < Shadow::CASCADE_COUNT; ++i)
+        {
+            framebufferManager.AddFramebufferView
+            (
+                "ShadowCascades",
+                fmt::format("ShadowCascadesView/{}", i),
+                Vk::ImageType::Single2D,
+                {
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = static_cast<u32>(i),
+                    .layerCount     = 1,
+                }
+            );
+        }
+
         Logger::Info("{}\n", "Created shadow pass!");
     }
 
@@ -94,10 +110,24 @@ namespace Renderer::Shadow
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
+        Culling::Dispatch& cullingDispatch,
         const Objects::Camera& camera,
         const Objects::DirLight& light
     )
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Cascades"))
+            {
+                ImGui::DragFloat("Cascade Split Lambda", &m_cascadeSplitLambda, 0.005f, 0.0f, 1.0f, "%.3f");
+                ImGui::DragFloat("Cascade Offset",       &m_cascadeOffset,      0.005f, 1.0f, 5.0f, "%.3f");
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
@@ -105,13 +135,12 @@ namespace Renderer::Shadow
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("ShadowPass/FIF{}", FIF), glm::vec4(0.7196f, 0.2488f, 0.6588f, 1.0f));
 
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("ShadowCascadesView");
-        const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
+        const auto aspectRatio = static_cast<f32>(framebufferManager.swapchainExtent.width) / static_cast<f32>(framebufferManager.swapchainExtent.height);
+        const auto cascades    = CalculateCascades(aspectRatio, camera, light);
 
-        const auto& sceneColor = framebufferManager.GetFramebuffer("SceneColor");
-        const auto aspectRatio = static_cast<f32>(sceneColor.image.width) / static_cast<f32>(sceneColor.image.height);
+        cascadeBuffer.LoadCascades(FIF, allocator, cascades);
 
-        cascadeBuffer.LoadCascades(FIF, allocator, CalculateCascades(aspectRatio, camera, light));
+        const auto& depthAttachment = framebufferManager.GetFramebuffer("ShadowCascades");
 
         depthAttachment.image.Barrier
         (
@@ -131,91 +160,110 @@ namespace Renderer::Shadow
             }
         );
 
-        const VkRenderingAttachmentInfo depthAttachmentInfo =
+        for (usize i = 0; i < Shadow::CASCADE_COUNT; ++i)
         {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = depthAttachmentView.view.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {.depthStencil = {1.0f, 0x0}}
-        };
+            cullingDispatch.ComputeDispatch
+            (
+                FIF,
+                cascades[i].matrix,
+                currentCmdBuffer,
+                meshBuffer,
+                indirectBuffer
+            );
 
-        const VkRenderingInfo renderInfo =
-        {
-            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .pNext                = nullptr,
-            .flags                = 0,
-            .renderArea           = {
+            Vk::BeginLabel(currentCmdBuffer, fmt::format("Cascade #{}", i), glm::vec4(0.8196f, 0.2448f, 0.8588f, 1.0f));
+
+            const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("ShadowCascadesView/{}", i));
+
+            const VkRenderingAttachmentInfo depthAttachmentInfo =
+            {
+                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .pNext              = nullptr,
+                .imageView          = depthAttachmentView.view.handle,
+                .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .resolveMode        = VK_RESOLVE_MODE_NONE,
+                .resolveImageView   = VK_NULL_HANDLE,
+                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                .clearValue         = {.depthStencil = {1.0f, 0x0}}
+            };
+
+            const VkRenderingInfo renderInfo =
+            {
+                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                .pNext                = nullptr,
+                .flags                = 0,
+                .renderArea           = {
+                    .offset = {0, 0},
+                    .extent = {depthAttachment.image.width, depthAttachment.image.height}
+                },
+                .layerCount           = 1,
+                .viewMask             = 0,
+                .colorAttachmentCount = 0,
+                .pColorAttachments    = nullptr,
+                .pDepthAttachment     = &depthAttachmentInfo,
+                .pStencilAttachment   = nullptr
+            };
+
+            vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+
+            pipeline.Bind(currentCmdBuffer);
+
+            const VkViewport viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(depthAttachment.image.width),
+                .height   = static_cast<f32>(depthAttachment.image.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
+
+            vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+
+            const VkRect2D scissor =
+            {
                 .offset = {0, 0},
                 .extent = {depthAttachment.image.width, depthAttachment.image.height}
-            },
-            .layerCount           = 1,
-            .viewMask             = Shadow::CASCADES_VIEW_MASK,
-            .colorAttachmentCount = 0,
-            .pColorAttachments    = nullptr,
-            .pDepthAttachment     = &depthAttachmentInfo,
-            .pStencilAttachment   = nullptr
-        };
+            };
 
-        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+            vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
 
-        pipeline.Bind(currentCmdBuffer);
+            pipeline.pushConstant =
+            {
+                .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
+                .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+                .positions     = geometryBuffer.positionBuffer.deviceAddress,
+                .cascades      = cascadeBuffer.buffers[FIF].deviceAddress,
+                .offset        = static_cast<u32>(0 * Shadow::CASCADE_COUNT + i)
+            };
 
-        const VkViewport viewport =
-        {
-            .x        = 0.0f,
-            .y        = 0.0f,
-            .width    = static_cast<f32>(depthAttachment.image.width),
-            .height   = static_cast<f32>(depthAttachment.image.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
+            pipeline.LoadPushConstants
+            (
+               currentCmdBuffer,
+               VK_SHADER_STAGE_VERTEX_BIT,
+               0, sizeof(Shadow::PushConstant),
+               reinterpret_cast<void*>(&pipeline.pushConstant)
+            );
 
-        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+            geometryBuffer.Bind(currentCmdBuffer);
 
-        const VkRect2D scissor =
-        {
-            .offset = {0, 0},
-            .extent = {depthAttachment.image.width, depthAttachment.image.height}
-        };
+            vkCmdDrawIndexedIndirectCount
+            (
+                currentCmdBuffer.handle,
+                indirectBuffer.culledDrawCallBuffer.handle,
+                sizeof(u32),
+                indirectBuffer.culledDrawCallBuffer.handle,
+                0,
+                indirectBuffer.writtenDrawCount,
+                sizeof(VkDrawIndexedIndirectCommand)
+            );
 
-        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+            vkCmdEndRendering(currentCmdBuffer.handle);
 
-        pipeline.pushConstant =
-        {
-            .meshes    = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .positions = geometryBuffer.positionBuffer.deviceAddress,
-            .cascades  = cascadeBuffer.buffers[FIF].deviceAddress,
-            .offset    = 0 * Shadow::CASCADE_COUNT
-        };
-
-        pipeline.LoadPushConstants
-        (
-           currentCmdBuffer,
-           VK_SHADER_STAGE_VERTEX_BIT,
-           0, sizeof(Shadow::PushConstant),
-           reinterpret_cast<void*>(&pipeline.pushConstant)
-        );
-
-        geometryBuffer.Bind(currentCmdBuffer);
-
-        vkCmdDrawIndexedIndirectCount
-        (
-            currentCmdBuffer.handle,
-            indirectBuffer.drawCallBuffers[FIF].handle,
-            sizeof(u32),
-            indirectBuffer.drawCallBuffers[FIF].handle,
-            0,
-            indirectBuffer.writtenDrawCount,
-            sizeof(VkDrawIndexedIndirectCommand)
-        );
-
-        vkCmdEndRendering(currentCmdBuffer.handle);
+            Vk::EndLabel(currentCmdBuffer);
+        }
 
         depthAttachment.image.Barrier
         (
@@ -234,19 +282,6 @@ namespace Renderer::Shadow
                 .layerCount     = depthAttachment.image.arrayLayers
             }
         );
-
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Cascades"))
-            {
-                ImGui::DragFloat("Cascade Split Lambda", &m_cascadeSplitLambda, 0.005f, 0.0f, 1.0f, "%.3f");
-                ImGui::DragFloat("Cascade Offset",       &m_cascadeOffset,      0.005f, 1.0f, 5.0f, "%.3f");
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
 
         Vk::EndLabel(currentCmdBuffer);
 

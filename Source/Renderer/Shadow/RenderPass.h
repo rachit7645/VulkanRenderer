@@ -26,6 +26,7 @@
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Objects/Camera.h"
 #include "Renderer/Objects/Lights.h"
+#include "Renderer/Culling/Dispatch.h"
 
 namespace Renderer::Shadow
 {
@@ -49,6 +50,7 @@ namespace Renderer::Shadow
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            Culling::Dispatch& cullingDispatch,
             const Objects::Camera& camera,
             const Objects::DirLight& light
         );

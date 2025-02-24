@@ -22,8 +22,7 @@
 
 namespace Renderer::Shadow
 {
-    constexpr usize CASCADE_COUNT      = 5;
-    constexpr u32   CASCADES_VIEW_MASK = (1U << CASCADE_COUNT) - 1;
+    constexpr usize CASCADE_COUNT = 5;
 
     struct Cascade
     {

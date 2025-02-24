@@ -55,6 +55,17 @@ namespace Renderer::PostProcess
         const Vk::FramebufferManager& framebufferManager
     )
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Bloom"))
+            {
+                ImGui::DragFloat("Strength", &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
+
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+
         const auto& currentCmdBuffer = cmdBuffers[FIF];
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
         const auto& currentImage     = swapchain.images[swapchain.imageIndex];
@@ -172,17 +183,6 @@ namespace Renderer::PostProcess
         );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
-
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Bloom"))
-            {
-                ImGui::DragFloat("Strength", &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
-
-                ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-        }
 
         Vk::EndLabel(currentCmdBuffer);
 

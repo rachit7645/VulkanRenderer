@@ -65,9 +65,11 @@ namespace Vk
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
-        VkExtent2D swapchainExtent
+        VkExtent2D swapExtent
     )
     {
+        swapchainExtent = swapExtent;
+
         if (m_framebuffers.empty())
         {
             return;
