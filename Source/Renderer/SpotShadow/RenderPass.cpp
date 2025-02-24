@@ -111,6 +111,7 @@ namespace Renderer::SpotShadow
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
+        Culling::Dispatch& cullingDispatch,
         const std::span<Objects::SpotLight>& lights
     )
     {
@@ -168,6 +169,15 @@ namespace Renderer::SpotShadow
 
         for (usize i = 0; i < lights.size(); ++i)
         {
+            cullingDispatch.ComputeDispatch
+            (
+                FIF,
+                matrices[i],
+                currentCmdBuffer,
+                meshBuffer,
+                indirectBuffer
+            );
+
             Vk::BeginLabel(currentCmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.5146f, 0.7488f, 0.9388f, 1.0f));
 
             const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SpotShadowMapView/{}", i));
@@ -229,10 +239,11 @@ namespace Renderer::SpotShadow
 
             pipeline.pushConstant =
             {
-                .meshes       = meshBuffer.meshBuffers[FIF].deviceAddress,
-                .positions    = geometryBuffer.positionBuffer.deviceAddress,
-                .spotShadows  = spotShadowBuffer.buffers[FIF].deviceAddress,
-                .currentIndex = static_cast<u32>(i)
+                .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
+                .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+                .positions     = geometryBuffer.positionBuffer.deviceAddress,
+                .spotShadows   = spotShadowBuffer.buffers[FIF].deviceAddress,
+                .currentIndex  = static_cast<u32>(i)
             };
 
             pipeline.LoadPushConstants
@@ -248,9 +259,9 @@ namespace Renderer::SpotShadow
             vkCmdDrawIndexedIndirectCount
             (
                 currentCmdBuffer.handle,
-                indirectBuffer.drawCallBuffers[FIF].handle,
+                indirectBuffer.culledDrawCallBuffer.handle,
                 sizeof(u32),
-                indirectBuffer.drawCallBuffers[FIF].handle,
+                indirectBuffer.culledDrawCallBuffer.handle,
                 0,
                 indirectBuffer.writtenDrawCount,
                 sizeof(VkDrawIndexedIndirectCommand)

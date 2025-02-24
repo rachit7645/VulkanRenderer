@@ -234,6 +234,7 @@ namespace Renderer
             m_modelManager.geometryBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            m_cullingDispatch,
             m_spotLights
         );
 

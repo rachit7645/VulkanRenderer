@@ -23,10 +23,11 @@
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    MeshBuffer       Meshes;
-    PositionBuffer   Positions;
-    SpotShadowBuffer SpotShadows;
-    uint             CurrentIndex;
+    MeshBuffer        Meshes;
+    VisibleMeshBuffer VisibleMeshes;
+    PositionBuffer    Positions;
+    SpotShadowBuffer  SpotShadows;
+    uint              CurrentIndex;
 } Constants;
 
 #endif

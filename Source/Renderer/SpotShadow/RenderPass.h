@@ -24,8 +24,8 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
-#include "Renderer/Objects/Camera.h"
 #include "Renderer/Objects/Lights.h"
+#include "Renderer/Culling/Dispatch.h"
 
 namespace Renderer::SpotShadow
 {
@@ -49,6 +49,7 @@ namespace Renderer::SpotShadow
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            Culling::Dispatch& cullingDispatch,
             const std::span<Objects::SpotLight>& lights
         );
 
