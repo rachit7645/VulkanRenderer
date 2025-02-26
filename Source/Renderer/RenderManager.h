@@ -27,7 +27,6 @@
 #include "Buffers/LightsBuffer.h"
 #include "IBL/IBLMaps.h"
 #include "PostProcess/RenderPass.h"
-#include "Forward/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
 #include "Skybox/RenderPass.h"
@@ -35,6 +34,8 @@
 #include "Shadow/RenderPass.h"
 #include "PointShadow/RenderPass.h"
 #include "SpotShadow/RenderPass.h"
+#include "GBuffer/RenderPass.h"
+#include "Lighting/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
@@ -90,7 +91,6 @@ namespace Renderer
 
         // Render Passes
         PostProcess::RenderPass m_postProcessPass;
-        Forward::RenderPass     m_forwardPass;
         Depth::RenderPass       m_depthPass;
         DearImGui::RenderPass   m_imGuiPass;
         Skybox::RenderPass      m_skyboxPass;
@@ -98,6 +98,8 @@ namespace Renderer
         Shadow::RenderPass      m_shadowPass;
         PointShadow::RenderPass m_pointShadowPass;
         SpotShadow::RenderPass  m_spotShadowPass;
+        GBuffer::RenderPass     m_gBufferPass;
+        Lighting::RenderPass    m_lightingPass;
         Culling::Dispatch       m_cullingDispatch;
 
         // Buffers

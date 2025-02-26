@@ -75,7 +75,6 @@ namespace Vk
         void Clear(VmaAllocator allocator);
 
         [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
-
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
         void ImGuiDisplay();
@@ -83,7 +82,7 @@ namespace Vk
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         std::unordered_map<u32, TextureInfo> textureMap;
-        std::unordered_map<u32, Vk::Sampler>   samplerMap;
+        std::unordered_map<u32, Vk::Sampler> samplerMap;
     private:
         Vk::FormatHelper m_formatHelper;
 

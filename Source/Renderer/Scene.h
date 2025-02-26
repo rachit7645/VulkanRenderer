@@ -25,12 +25,14 @@ namespace Renderer
 {
     struct Scene
     {
-        glm::mat4       projection  = {};
-        glm::mat4       view        = {};
-        glm::vec3       cameraPos   = {};
-        VkDeviceAddress dirLights   = 0;
-        VkDeviceAddress pointLights = 0;
-        VkDeviceAddress spotLights  = 0;
+        glm::mat4       projection        = {};
+        glm::mat4       inverseProjection = {};
+        glm::mat4       view              = {};
+        glm::mat4       inverseView       = {};
+        glm::vec3       cameraPos         = {};
+        VkDeviceAddress dirLights         = 0;
+        VkDeviceAddress pointLights       = 0;
+        VkDeviceAddress spotLights        = 0;
     };
 }
 

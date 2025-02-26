@@ -74,6 +74,10 @@ file(GLOB SHADER_SOURCES
     SpotShadow.frag
     SpotShadow.vert
     Culling.comp
+    GBuffer.frag
+    GBuffer.vert
+    Lighting.frag
+    Lighting.vert
 )
 
 # Shader headers

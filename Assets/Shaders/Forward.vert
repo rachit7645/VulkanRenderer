@@ -48,7 +48,7 @@ void main()
     fragDrawID    = meshIndex;
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);
-    vec3 T = normalize(mesh.transform    * vec4(vertex.tangent, 1.0f)).xyz;
+    vec3 T = normalize(mesh.transform    * vec4(vertex.tangent, 0.0f)).xyz;
          T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 

@@ -23,9 +23,6 @@
 
 namespace Renderer::Forward
 {
-    // Usings
-    using Models::Vertex;
-
     Pipeline::Pipeline
     (
         const Vk::Context& context,

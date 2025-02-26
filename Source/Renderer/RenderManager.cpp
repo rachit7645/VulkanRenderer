@@ -33,7 +33,6 @@ namespace Renderer
           m_modelManager(m_context, m_formatHelper),
           m_iblMaps(m_context, m_megaSet, m_modelManager.textureManager),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_forwardPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_depthPass(m_context, m_formatHelper, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
@@ -41,6 +40,8 @@ namespace Renderer
           m_shadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_pointShadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_spotShadowPass(m_context, m_formatHelper, m_framebufferManager),
+          m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -55,6 +56,8 @@ namespace Renderer
             m_meshBuffer.Destroy(m_context.allocator);
 
             m_cullingDispatch.Destroy(m_context.device);
+            m_lightingPass.Destroy(m_context.device, m_context.commandPool);
+            m_gBufferPass.Destroy(m_context.device, m_context.commandPool);
             m_spotShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_pointShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_shadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
@@ -62,7 +65,6 @@ namespace Renderer
             m_skyboxPass.Destroy(m_context.device, m_context.commandPool);
             m_imGuiPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_depthPass.Destroy(m_context.device, m_context.commandPool);
-            m_forwardPass.Destroy(m_context.device, m_context.commandPool);
             m_postProcessPass.Destroy(m_context.device, m_context.commandPool);
 
             m_megaSet.Destroy(m_context.device);
@@ -250,7 +252,7 @@ namespace Renderer
             m_cullingDispatch
         );
 
-        m_forwardPass.Render
+        m_gBufferPass.Render
         (
             m_currentFIF,
             m_framebufferManager,
@@ -258,8 +260,16 @@ namespace Renderer
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
-            m_indirectBuffer,
+            m_indirectBuffer
+        );
+
+        m_lightingPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
+            m_megaSet,
             m_iblMaps,
+            m_sceneBuffer,
             m_shadowPass.cascadeBuffer,
             m_pointShadowPass.pointShadowBuffer,
             m_spotShadowPass.spotShadowBuffer
@@ -462,20 +472,25 @@ namespace Renderer
             ImGui::EndMainMenuBar();
         }
 
+        const auto projection = Maths::CreateProjectionReverseZ
+        (
+            m_camera.FOV,
+            static_cast<f32>(m_swapchain.extent.width) /
+            static_cast<f32>(m_swapchain.extent.height),
+            PLANES.x,
+            PLANES.y
+        );
+
         m_scene =
         {
-            .projection = Maths::CreateProjectionReverseZ(
-                m_camera.FOV,
-                static_cast<f32>(m_swapchain.extent.width) /
-                static_cast<f32>(m_swapchain.extent.height),
-                PLANES.x,
-                PLANES.y
-            ),
-            .view        = m_camera.GetViewMatrix(),
-            .cameraPos   = m_camera.position,
-            .dirLights   = m_lightsBuffer.dirLightBuffers[m_currentFIF].deviceAddress,
-            .pointLights = m_lightsBuffer.pointLightBuffers[m_currentFIF].deviceAddress,
-            .spotLights  = m_lightsBuffer.spotLightBuffers[m_currentFIF].deviceAddress
+            .projection        = projection,
+            .inverseProjection = glm::inverse(projection),
+            .view              = m_camera.GetViewMatrix(),
+            .inverseView       = glm::inverse(m_camera.GetViewMatrix()),
+            .cameraPos         = m_camera.position,
+            .dirLights         = m_lightsBuffer.dirLightBuffers[m_currentFIF].deviceAddress,
+            .pointLights       = m_lightsBuffer.pointLightBuffers[m_currentFIF].deviceAddress,
+            .spotLights        = m_lightsBuffer.spotLightBuffers[m_currentFIF].deviceAddress
         };
 
         m_lightsBuffer.WriteDirLights(m_currentFIF, m_context.allocator, {&m_sun, 1});
@@ -605,7 +620,14 @@ namespace Renderer
             {
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
-                .commandBuffer = m_forwardPass.cmdBuffers[m_currentFIF].handle,
+                .commandBuffer = m_gBufferPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_lightingPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

@@ -38,9 +38,9 @@ namespace Renderer::Forward
 
         PushConstant pushConstant = {};
 
-        u32 textureSamplerIndex;
-        u32 iblSamplerIndex;
-        u32 shadowSamplerIndex;
+        u32 textureSamplerIndex = 0;
+        u32 iblSamplerIndex     = 0;
+        u32 shadowSamplerIndex  = 0;
     private:
         void CreatePipeline
         (

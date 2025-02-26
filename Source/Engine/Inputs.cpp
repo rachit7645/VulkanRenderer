@@ -23,10 +23,12 @@ namespace Engine
     Inputs::Inputs()
         : m_keys(SDL_GetKeyboardState(nullptr))
     {
-        // HACK?: Fix joy-con state
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH,            "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED,   "0");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS,          "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
     }
 
     Inputs& Inputs::Get()
@@ -145,13 +147,20 @@ namespace Engine
         const auto y = SDL_GetGamepadAxis(m_gamepad, axisVertical);
 
         constexpr auto AXIS_MAX = static_cast<f32>(SDL_JOYSTICK_AXIS_MAX);
-        f32 normalizedX = static_cast<f32>(x) / AXIS_MAX;
-        f32 normalizedY = static_cast<f32>(y) / AXIS_MAX;
 
-        if (std::abs(normalizedX) < deadZone.x) normalizedX = 0.0f;
-        if (std::abs(normalizedY) < deadZone.y) normalizedY = 0.0f;
+        auto normalized = glm::vec2(x, y) / AXIS_MAX;
 
-        auto direction = glm::normalize(glm::vec2(normalizedX, normalizedY));
+        if (std::abs(normalized.x) < deadZone.x)
+        {
+            normalized.x = 0.0f;
+        }
+
+        if (std::abs(normalized.y) < deadZone.y)
+        {
+            normalized.y = 0.0f;
+        }
+
+        auto direction = glm::normalize(normalized);
 
         if (std::isnan(direction.x) || std::isinf(direction.x))
         {

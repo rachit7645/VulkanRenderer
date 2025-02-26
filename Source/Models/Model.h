@@ -77,9 +77,9 @@ namespace Models
             const glm::mat4& nodeMatrix
         );
 
-        glm::mat4 GetTranformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
+        glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
 
-        const fastgltf::Accessor& GetAccesor
+        const fastgltf::Accessor& GetAccessor
         (
             const fastgltf::Asset& asset,
             const fastgltf::Primitive& primitive,

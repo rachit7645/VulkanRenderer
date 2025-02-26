@@ -23,7 +23,7 @@
 
 namespace Renderer::Forward
 {
-    struct __attribute__((packed)) PushConstant
+    struct PushConstant
     {
         // Buffers
         VkDeviceAddress scene;

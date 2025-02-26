@@ -29,19 +29,6 @@ namespace Models
         glm::vec3 tangent;
     };
 
-    #ifdef ENGINE_DEBUG
-    static_assert
-    (
-        sizeof(Vertex) ==
-        (
-            sizeof(glm::vec3) +
-            sizeof(glm::vec2) +
-            sizeof(glm::vec3)
-        ),
-        "Incompatible vertex structure!"
-    );
-    #endif
-
     using Index = u32;
 }
 

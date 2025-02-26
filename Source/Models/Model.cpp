@@ -146,7 +146,7 @@ namespace Models
     )
     {
         auto& node = asset.nodes[nodeIndex];
-        nodeMatrix = GetTranformMatrix(node, nodeMatrix);
+        nodeMatrix = GetTransformMatrix(node, nodeMatrix);
 
         if (node.meshIndex.has_value())
         {
@@ -283,7 +283,7 @@ namespace Models
 
             // Position
             {
-                const auto& positionAccessor = GetAccesor
+                const auto& positionAccessor = GetAccessor
                 (
                     asset,
                     primitive,
@@ -298,7 +298,7 @@ namespace Models
 
             // Normals
             {
-                const auto& normalAccessor = GetAccesor
+                const auto& normalAccessor = GetAccessor
                 (
                     asset,
                     primitive,
@@ -318,7 +318,7 @@ namespace Models
 
             // UVs
             {
-                const auto& uvAccessor = GetAccesor
+                const auto& uvAccessor = GetAccessor
                 (
                     asset,
                     primitive,
@@ -334,7 +334,7 @@ namespace Models
 
             // Tangent
             {
-                const auto& tangentAccessor = GetAccesor
+               const auto& tangentAccessor = GetAccessor
                (
                     asset,
                     primitive,
@@ -342,10 +342,10 @@ namespace Models
                     fastgltf::AccessorType::Vec4
                 );
 
-                fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
-                {
-                    vertices[index].tangent = tangent;
-                });
+               fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
+               {
+                   vertices[index].tangent = tangent;
+               });
             }
 
             if (!primitive.materialIndex.has_value())
@@ -404,7 +404,7 @@ namespace Models
             {
                 if (mat.normalTexture.has_value())
                 {
-                    // FIXME: Support multiple UV channels
+                    // TODO: Support multiple UV channels
                     if (mat.normalTexture->texCoordIndex != 0)
                     {
                         Logger::Warning
@@ -442,7 +442,7 @@ namespace Models
 
                 if (metallicRoughnessTexture.has_value())
                 {
-                    // FIXME: Support multiple UV channels
+                    // TODO: Support multiple UV channels
                     if (metallicRoughnessTexture->texCoordIndex != 0)
                     {
                         Logger::Warning
@@ -496,7 +496,7 @@ namespace Models
         }
     }
 
-    glm::mat4 Model::GetTranformMatrix(const fastgltf::Node& node, const glm::mat4& base)
+    glm::mat4 Model::GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base)
     {
         return std::visit(fastgltf::visitor {
             [&] (const fastgltf::math::fmat4x4& matrix)
@@ -515,7 +515,7 @@ namespace Models
         }, node.transform);
     }
 
-    const fastgltf::Accessor& Model::GetAccesor
+    const fastgltf::Accessor& Model::GetAccessor
     (
         const fastgltf::Asset& asset,
         const fastgltf::Primitive& primitive,
