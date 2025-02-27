@@ -481,21 +481,21 @@ namespace Renderer
             PLANES.y
         );
 
+        const auto view = m_camera.GetViewMatrix();
+
         m_scene =
         {
             .projection        = projection,
             .inverseProjection = glm::inverse(projection),
-            .view              = m_camera.GetViewMatrix(),
-            .inverseView       = glm::inverse(m_camera.GetViewMatrix()),
+            .view              = view,
+            .inverseView       = glm::inverse(view),
             .cameraPos         = m_camera.position,
-            .dirLights         = m_lightsBuffer.dirLightBuffers[m_currentFIF].deviceAddress,
-            .pointLights       = m_lightsBuffer.pointLightBuffers[m_currentFIF].deviceAddress,
-            .spotLights        = m_lightsBuffer.spotLightBuffers[m_currentFIF].deviceAddress
+            .dirLights         = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset(),
+            .pointLights       = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset(),
+            .spotLights        = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset()
         };
 
-        m_lightsBuffer.WriteDirLights(m_currentFIF, m_context.allocator, {&m_sun, 1});
-        m_lightsBuffer.WritePointLights(m_currentFIF, m_context.allocator, m_pointLights);
-        m_lightsBuffer.WriteSpotLights(m_currentFIF, m_context.allocator, m_spotLights);
+        m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_sun, 1}, m_pointLights, m_spotLights);
         m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_scene);
 
         m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);

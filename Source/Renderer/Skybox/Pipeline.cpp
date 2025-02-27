@@ -54,7 +54,7 @@ namespace Renderer::Skybox
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL, VK_FALSE, {}, {})
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,

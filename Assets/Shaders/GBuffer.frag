@@ -30,7 +30,7 @@ layout(location = 0) in      vec2 fragTexCoords;
 layout(location = 1) in flat uint fragDrawID;
 layout(location = 2) in      mat3 fragTBNMatrix;
 
-layout(location = 0) out vec4 gAlbedo;
+layout(location = 0) out vec3 gAlbedo;
 layout(location = 1) out vec4 gNormal_Rgh_Mtl;
 
 void main()
@@ -38,8 +38,7 @@ void main()
     Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
     vec4 albedo = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
-    albedo.rgb  = ToLinear(albedo.rgb);
-    albedo     *= mesh.material.albedoFactor;
+    albedo.rgb  = ToLinear(albedo.rgb) * mesh.material.albedoFactor.rgb;
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
@@ -48,7 +47,7 @@ void main()
     aoRghMtl.g   *= mesh.material.roughnessFactor;
     aoRghMtl.b   *= mesh.material.metallicFactor;
 
-    gAlbedo = albedo;
+    gAlbedo = albedo.rgb;
 
     gNormal_Rgh_Mtl.rg = PackNormal(normal);
     gNormal_Rgh_Mtl.b  = aoRghMtl.g;

@@ -130,7 +130,7 @@ namespace Renderer::Skybox
             .width    = static_cast<f32>(colorAttachment.image.width),
             .height   = static_cast<f32>(colorAttachment.image.height),
             .minDepth = 0.0f,
-            .maxDepth = 1.0f
+            .maxDepth = 0.0f
         };
 
         vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);

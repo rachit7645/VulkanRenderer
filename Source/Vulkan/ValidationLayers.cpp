@@ -84,7 +84,6 @@ namespace Vk
         vkDestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
     }
 
-    // TODO: Improve validation layer debug callback
     VKAPI_ATTR VkBool32 VKAPI_CALL ValidationLayers::DebugCallback
     (
         VkDebugUtilsMessageSeverityFlagBitsEXT severity,

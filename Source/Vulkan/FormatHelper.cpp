@@ -174,7 +174,7 @@ namespace Vk
             }
         }
 
-        // No format was suitable
+        // No format was suitable, exit
         Logger::VulkanError
         (
             "No valid formats found! [physicalDevice={}] [tiling={}] [features={}]\n",

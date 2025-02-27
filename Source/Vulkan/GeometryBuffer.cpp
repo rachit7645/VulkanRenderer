@@ -192,7 +192,7 @@ namespace Vk
 
     void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
     {
-        constexpr f32 SKYBOX_SIZE = Renderer::PLANES.y / 2.0f;
+        constexpr f32 SKYBOX_SIZE = 1.0f;
 
         constexpr std::array SKYBOX_VERTICES =
         {

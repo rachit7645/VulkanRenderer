@@ -50,7 +50,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebuffer
         (
             "GAlbedo",
-            Vk::FramebufferType::ColorLDR,
+            Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Single2D,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {

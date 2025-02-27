@@ -28,39 +28,29 @@ namespace Renderer::Buffers
     public:
         LightsBuffer(VkDevice device, VmaAllocator allocator);
 
-        void WriteDirLights
+        void WriteLights
         (
             usize FIF,
             VmaAllocator allocator,
-            const std::span<const Objects::DirLight> lights
+            const std::span<const Objects::DirLight> dirLights,
+            const std::span<const Objects::PointLight> pointLights,
+            const std::span<const Objects::SpotLight> spotLights
         );
 
-        void WritePointLights
-        (
-            usize FIF,
-            VmaAllocator allocator,
-            const std::span<const Objects::PointLight> lights
-        );
-
-        void WriteSpotLights
-        (
-            usize FIF,
-            VmaAllocator allocator,
-            const std::span<const Objects::SpotLight> lights
-        );
+        [[nodiscard]] static VkDeviceSize GetDirLightOffset();
+        [[nodiscard]] static VkDeviceSize GetPointLightOffset();
+        [[nodiscard]] static VkDeviceSize GetSpotLightOffset();
 
         void Destroy(VmaAllocator allocator);
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> dirLightBuffers;
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> pointLightBuffers;
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> spotLightBuffers;
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
     private:
         template <typename LightType>
         void WriteLights
         (
-            VmaAllocator allocator,
-            std::span<const LightType> lights,
-            const Vk::Buffer& buffer
+            usize FIF,
+            VkDeviceSize offset,
+            std::span<const LightType> lights
         );
     };
 }

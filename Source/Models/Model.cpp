@@ -368,7 +368,7 @@ namespace Models
 
                 if (baseColorTexture.has_value())
                 {
-                    // FIXME: Support multiple UV channels
+                    // TODO: Support multiple UV channels
                     if (baseColorTexture->texCoordIndex != 0)
                     {
                         Logger::Warning
