@@ -14,39 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef LIGHTING_PUSH_CONSTANT_H
-#define LIGHTING_PUSH_CONSTANT_H
+#ifndef SSAO_CONSTANTS_H
+#define SSAO_CONSTANTS_H
 
 #include <vulkan/vulkan.h>
 
-#include "Vulkan/Util.h"
+#include "Util/Util.h"
 
-namespace Renderer::Lighting
+namespace Renderer::SSAO::Occlusion
 {
     struct PushConstant
     {
         VkDeviceAddress scene;
-        VkDeviceAddress cascades;
-        VkDeviceAddress pointShadows;
-        VkDeviceAddress spotShadows;
+        VkDeviceAddress samples;
 
         u32 gBufferSamplerIndex;
-        u32 iblSamplerIndex;
-        u32 shadowSamplerIndex;
+        u32 noiseSamplerIndex;
 
-        u32 gAlbedoIndex;
         u32 gNormalIndex;
         u32 sceneDepthIndex;
+        u32 noiseIndex;
 
-        u32 irradianceIndex;
-        u32 preFilterIndex;
-        u32 brdfLutIndex;
-
-        u32 shadowMapIndex;
-        u32 pointShadowMapIndex;
-        u32 spotShadowMapIndex;
-
-        u32 aoIndex;
+        f32 radius;
+        f32 bias;
+        f32 power;
     };
 }
 

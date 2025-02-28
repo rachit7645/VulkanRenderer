@@ -25,6 +25,7 @@ layout(buffer_reference, scalar) readonly buffer SceneBuffer
     mat4             inverseProjection;
     mat4             view;
     mat4             inverseView;
+    mat3             normalView;
     vec3             cameraPos;
     DirLightBuffer   dirLights;
     PointLightBuffer pointLights;

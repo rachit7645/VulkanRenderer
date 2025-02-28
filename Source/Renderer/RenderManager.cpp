@@ -42,6 +42,7 @@ namespace Renderer
           m_spotShadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_ssaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -56,6 +57,7 @@ namespace Renderer
             m_meshBuffer.Destroy(m_context.allocator);
 
             m_cullingDispatch.Destroy(m_context.device);
+            m_ssaoPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_lightingPass.Destroy(m_context.device, m_context.commandPool);
             m_gBufferPass.Destroy(m_context.device, m_context.commandPool);
             m_spotShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
@@ -261,6 +263,14 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer
+        );
+
+        m_ssaoPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
+            m_megaSet,
+            m_sceneBuffer
         );
 
         m_lightingPass.Render
@@ -489,6 +499,7 @@ namespace Renderer
             .inverseProjection = glm::inverse(projection),
             .view              = view,
             .inverseView       = glm::inverse(view),
+            .normalView        = Maths::CreateNormalMatrix(view),
             .cameraPos         = m_camera.position,
             .dirLights         = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset(),
             .pointLights       = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset(),
@@ -621,6 +632,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_gBufferPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_ssaoPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo
@@ -787,7 +805,7 @@ namespace Renderer
         ImGui::StyleColorsDark();
 
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
-        m_imGuiPass.SetupBackend(m_context, m_megaSet, m_modelManager.textureManager);
+        m_imGuiPass.SetupBackend(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager);
 
         m_deletionQueue.PushDeletor([&] ()
         {

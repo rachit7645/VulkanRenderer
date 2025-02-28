@@ -32,6 +32,7 @@ namespace Vk
 
     enum class FramebufferType : u8
     {
+        ColorR,
         ColorLDR,
         ColorHDR,
         Depth,

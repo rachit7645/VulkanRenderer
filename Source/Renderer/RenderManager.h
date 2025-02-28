@@ -36,6 +36,7 @@
 #include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
+#include "SSAO/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
@@ -100,6 +101,7 @@ namespace Renderer
         SpotShadow::RenderPass  m_spotShadowPass;
         GBuffer::RenderPass     m_gBufferPass;
         Lighting::RenderPass    m_lightingPass;
+        SSAO::RenderPass        m_ssaoPass;
         Culling::Dispatch       m_cullingDispatch;
 
         // Buffers

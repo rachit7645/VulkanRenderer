@@ -16,12 +16,11 @@
 
 #include "Pipeline.h"
 
-#include "Models/Vertex.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Util.h"
 
-namespace Renderer::Lighting
+namespace Renderer::SSAO::Occlusion
 {
     Pipeline::Pipeline
     (
@@ -44,13 +43,13 @@ namespace Renderer::Lighting
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+        const std::array colorFormats = {formatHelper.rFormat};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("Lighting.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Lighting.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("SSAO.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("SSAO.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -73,8 +72,8 @@ namespace Renderer::Lighting
             .AddDescriptorLayout(megaSet.descriptorSet.layout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "LightingPipeline");
-        Vk::SetDebugName(context.device, layout, "LightingPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "SSAOPipeline");
+        Vk::SetDebugName(context.device, layout, "SSAOPipelineLayout");
     }
 
     void Pipeline::CreatePipelineData
@@ -110,7 +109,7 @@ namespace Renderer::Lighting
             }
         );
 
-        iblSamplerIndex = textureManager.AddSampler
+        noiseSamplerIndex = textureManager.AddSampler
         (
             megaSet,
             device,
@@ -118,53 +117,26 @@ namespace Renderer::Lighting
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
-                .magFilter               = VK_FILTER_LINEAR,
-                .minFilter               = VK_FILTER_LINEAR,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .magFilter               = VK_FILTER_NEAREST,
+                .minFilter               = VK_FILTER_NEAREST,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
                 .maxAnisotropy           = 1.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
-                .maxLod                  = 5.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
                 .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        shadowSamplerIndex = textureManager.AddSampler
-        (
-            megaSet,
-            device,
-            {
-                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                .pNext                   = nullptr,
-                .flags                   = 0,
-                .magFilter               = VK_FILTER_LINEAR,
-                .minFilter               = VK_FILTER_LINEAR,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-                .mipLodBias              = 0.0f,
-                .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
-                .compareEnable           = VK_TRUE,
-                .compareOp               = VK_COMPARE_OP_LESS,
-                .minLod                  = 0.0f,
-                .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-                .unnormalizedCoordinates = VK_FALSE
-            }
-        );
-
-        Vk::SetDebugName(device, textureManager.GetSampler(gBufferSamplerIndex).handle, "LightingPipeline/GBufferSampler");
-        Vk::SetDebugName(device, textureManager.GetSampler(iblSamplerIndex).handle,     "LightingPipeline/IBLSampler");
-        Vk::SetDebugName(device, textureManager.GetSampler(shadowSamplerIndex).handle,  "LightingPipeline/ShadowSampler");
+        Vk::SetDebugName(device, textureManager.GetSampler(gBufferSamplerIndex).handle, "SSAOPipeline/GBufferSampler");
+        Vk::SetDebugName(device, textureManager.GetSampler(noiseSamplerIndex).handle,   "SSAOPipeline/NoiseSampler");
 
         megaSet.Update(device);
     }

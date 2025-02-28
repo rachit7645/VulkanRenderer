@@ -47,8 +47,6 @@ set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 file(GLOB SHADER_SOURCES
     PostProcess.vert
     PostProcess.frag
-    Forward.vert
-    Forward.frag
     Depth.vert
     Depth.frag
     ImGui.vert
@@ -78,6 +76,10 @@ file(GLOB SHADER_SOURCES
     GBuffer.vert
     Lighting.frag
     Lighting.vert
+    SSAO.vert
+    SSAO.frag
+    SSAOBlur.vert
+    SSAOBlur.frag
 )
 
 # Shader headers

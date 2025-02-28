@@ -138,10 +138,11 @@ void main()
         ) * (1.0f - shadow);
     }
 
-    vec3 R          = reflect(-toCamera, normal);
-    vec3 irradiance = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
-    vec3 preFilter  = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), R, roughness * MAX_REFLECTION_LOD).rgb;
-    vec2 brdf       = texture(sampler2D(Textures[Constants.BRDFLUTIndex], Samplers[Constants.IBLSamplerIndex]), vec2(max(dot(normal, toCamera), 0.0f), roughness)).rg;
+    vec3  R          = reflect(-toCamera, normal);
+    vec3  irradiance = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
+    vec3  preFilter  = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec2  brdf       = texture(sampler2D(Textures[Constants.BRDFLUTIndex], Samplers[Constants.IBLSamplerIndex]), vec2(max(dot(normal, toCamera), 0.0f), roughness)).rg;
+    float ao         = texture(sampler2D(Textures[Constants.AOIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
 
     Lo += CalculateAmbient
     (
@@ -153,7 +154,8 @@ void main()
         metallic,
         irradiance,
         preFilter,
-        brdf
+        brdf,
+        ao
     );
 
     outColor = Lo;

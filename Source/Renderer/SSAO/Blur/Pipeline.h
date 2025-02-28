@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef LIGHITNG_PIPELINE_H
-#define LIGHITNG_PIPELINE_H
+#ifndef SSAO_BLUR_PIPELINE_H
+#define SSAO_BLUR_PIPELINE_H
 
 #include "Constants.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::Lighting
+namespace Renderer::SSAO::Blur
 {
     class Pipeline : public Vk::Pipeline
     {
@@ -36,11 +36,9 @@ namespace Renderer::Lighting
             Vk::TextureManager& textureManager
         );
 
-        Lighting::PushConstant pushConstant = {};
+        Blur::PushConstant pushConstant = {};
 
-        u32 gBufferSamplerIndex = 0;
-        u32 iblSamplerIndex     = 0;
-        u32 shadowSamplerIndex  = 0;
+        u32 samplerIndex = 0;
     private:
         void CreatePipeline
         (

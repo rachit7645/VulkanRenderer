@@ -198,6 +198,7 @@ namespace Renderer::Lighting
             .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex,
             .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").descriptorIndex,
             .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").descriptorIndex,
+            .aoIndex                 = framebufferManager.GetFramebufferView("OcclusionBlurView").descriptorIndex,
         };
 
         pipeline.LoadPushConstants

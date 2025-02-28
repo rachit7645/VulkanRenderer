@@ -48,6 +48,7 @@ namespace Renderer::DearImGui
     void RenderPass::SetupBackend
     (
         const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
@@ -75,7 +76,8 @@ namespace Renderer::DearImGui
                 context.allocator,
                 "DearImGuiFont",
                 {pixels, width * (height * 4ull)},
-                {width, height}
+                {width, height},
+                formatHelper.textureFormat
             );
 
             io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));

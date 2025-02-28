@@ -14,38 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef LIGHTING_PUSH_CONSTANT
-#define LIGHTING_PUSH_CONSTANT
-
-#include "Scene.glsl"
-#include "CSM.glsl"
-#include "PointShadowMap.glsl"
-#include "SpotShadowMap.glsl"
+#ifndef SSAO_BLUR_PUSH_CONSTANT
+#define SSAO_BLUR_PUSH_CONSTANT
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer       Scene;
-    CascadeBuffer     Cascades;
-    PointShadowBuffer PointShadows;
-    SpotShadowBuffer  SpotShadows;
-
-    uint GBufferSamplerIndex;
-    uint IBLSamplerIndex;
-    uint ShadowSamplerIndex;
-
-    uint GAlbedoIndex;
-    uint GNormalIndex;
-    uint SceneDepthIndex;
-
-    uint IrradianceIndex;
-    uint PreFilterIndex;
-    uint BRDFLUTIndex;
-
-    uint ShadowMapIndex;
-    uint PointShadowMapIndex;
-    uint SpotShadowMapIndex;
-
-    uint AOIndex;
+    uint SamplerIndex;
+    uint ImageIndex;
 } Constants;
 
 #endif

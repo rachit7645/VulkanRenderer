@@ -129,7 +129,43 @@ namespace Vk
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
-        brdfLutFormat = FindSupportedFormat
+        rFormat = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array
+            {
+                VK_FORMAT_R16_UNORM,
+                VK_FORMAT_R8_UNORM,
+                VK_FORMAT_R16_SFLOAT,
+                VK_FORMAT_R16_SNORM,
+                VK_FORMAT_R8_SNORM,
+                VK_FORMAT_R32_SFLOAT,
+            },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+        );
+
+        rgFormat = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array
+            {
+                VK_FORMAT_R16G16_UNORM,
+                VK_FORMAT_R8G8_UNORM,
+                VK_FORMAT_R16G16_SFLOAT,
+                VK_FORMAT_R16G16_SNORM,
+                VK_FORMAT_R8G8_SNORM,
+                VK_FORMAT_R32G32_SFLOAT,
+            },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+        );
+
+        rgFloatFormat = FindSupportedFormat
         (
             physicalDevice,
             std::array

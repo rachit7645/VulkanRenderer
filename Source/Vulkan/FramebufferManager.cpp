@@ -121,6 +121,13 @@ namespace Vk
 
             switch (framebuffer.type)
             {
+            case FramebufferType::ColorR:
+                createInfo.format = formatHelper.rFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
             case FramebufferType::ColorLDR:
                 createInfo.format = formatHelper.colorAttachmentFormatLDR;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -401,14 +408,7 @@ namespace Vk
 
     bool FramebufferManager::IsViewable(ImageType imageType)
     {
-        switch (imageType)
-        {
-        case ImageType::Single2D:
-            return true;
-
-        default:
-            return false;
-        }
+        return imageType == ImageType::Single2D;
     }
 
     FramebufferSize FramebufferManager::GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData)

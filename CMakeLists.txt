@@ -98,9 +98,6 @@ add_executable(VulkanRenderer
 	# Post Process Pass Sources
 	Source/Renderer/PostProcess/Pipeline.cpp
 	Source/Renderer/PostProcess/RenderPass.cpp
-	# Forward Pass Sources
-	Source/Renderer/Forward/Pipeline.cpp
-	Source/Renderer/Forward/RenderPass.cpp
     # Depth Pass Sources
     Source/Renderer/Depth/Pipeline.cpp
     Source/Renderer/Depth/RenderPass.cpp
@@ -141,6 +138,11 @@ add_executable(VulkanRenderer
     # Lighting Pass Sources
     Source/Renderer/Lighting/Pipeline.cpp
     Source/Renderer/Lighting/RenderPass.cpp
+    # SSAO Pass Sources
+    Source/Renderer/SSAO/Occlusion/Pipeline.cpp
+    Source/Renderer/SSAO/Blur/Pipeline.cpp
+    Source/Renderer/SSAO/RenderPass.cpp
+    Source/Renderer/SSAO/SampleBuffer.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

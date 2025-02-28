@@ -53,7 +53,8 @@ namespace Vk
             VmaAllocator allocator,
             const std::string_view name,
             const std::span<const u8> data,
-            const glm::uvec2 size
+            const glm::uvec2 size,
+            VkFormat format
         );
 
         [[nodiscard]] u32 AddTexture
