@@ -35,27 +35,27 @@ namespace Vk
     {
     public:
         Swapchain(const glm::ivec2& size, const Vk::Context& context);
-        void RecreateSwapChain(const glm::ivec2& size, const Vk::Context& context);
+
+        bool IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context);
+        void RecreateSwapChain(const Vk::Context& context);
+
         void Destroy(VkDevice device);
 
         VkResult Present(VkQueue queue, usize FIF);
         VkResult AcquireSwapChainImage(VkDevice device, usize FIF);
 
-        // Swap chain data
         VkSwapchainKHR handle = VK_NULL_HANDLE;
         VkExtent2D     extent = {};
 
-        // Swapchain images data
         VkFormat                   imageFormat = {};
         std::vector<Vk::Image>     images      = {};
         std::vector<Vk::ImageView> imageViews  = {};
         u32                        imageIndex  = 0;
 
-        // Semaphores
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
     private:
-        void CreateSwapChain(const glm::ivec2& size, const Vk::Context& context);
+        void CreateSwapChain(const Vk::Context& context);
         void DestroySwapchain(VkDevice device);
 
         void CreateSyncObjects(VkDevice device);
@@ -64,9 +64,7 @@ namespace Vk
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
         [[nodiscard]] VkExtent2D ChooseSwapExtent(const glm::ivec2& size) const;
 
-        // Swapchain info
-        Vk::SwapchainInfo       m_swapChainInfo = {};
-        std::array<VkResult, 2> m_status        = {VK_SUCCESS, VK_SUCCESS};
+        Vk::SwapchainInfo m_swapChainInfo = {};
     };
 }
 

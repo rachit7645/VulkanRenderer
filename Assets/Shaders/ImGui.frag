@@ -17,12 +17,12 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
+#extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "Constants/ImGui.glsl"
-#include "GammaCorrect.glsl"
+#include "Color.glsl"
 #include "MegaSet.glsl"
 
 layout(location = 0) in vec4 fragColor;
@@ -32,6 +32,6 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = fragColor * texture(sampler2D(textures[Constants.TextureIndex], samplers[Constants.SamplerIndex]), fragUV.st);
+    outColor = fragColor * texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), fragUV.st);
     outColor = vec4(GammaCorrect(outColor.rgb), outColor.a);
 }

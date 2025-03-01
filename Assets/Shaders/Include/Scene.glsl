@@ -19,12 +19,17 @@
 
 #include "Lights.glsl"
 
-layout(buffer_reference, std430, buffer_reference_align = 16) readonly buffer SceneBuffer
+layout(buffer_reference, scalar) readonly buffer SceneBuffer
 {
-    mat4     projection;
-    mat4     view;
-    vec4     cameraPos;
-    DirLight light;
+    mat4             projection;
+    mat4             inverseProjection;
+    mat4             view;
+    mat4             inverseView;
+    mat3             normalView;
+    vec3             cameraPos;
+    DirLightBuffer   dirLights;
+    PointLightBuffer pointLights;
+    SpotLightBuffer  spotLights;
 };
 
 #endif

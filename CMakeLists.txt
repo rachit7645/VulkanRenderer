@@ -30,7 +30,14 @@ find_package(glm      REQUIRED)
 find_package(fastgltf REQUIRED)
 find_package(simdjson REQUIRED)
 find_package(fmt      REQUIRED)
-find_package(KTX     REQUIRED)
+find_package(KTX      REQUIRED)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
+
+if (LTOSupported AND CMAKE_BUILD_TYPE STREQUAL Release)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -50,6 +57,9 @@ add_executable(VulkanRenderer
 	Source/Util/DeletionQueue.cpp
 	Source/Util/FrameCounter.cpp
 	Source/Util/Maths.cpp
+    Source/Util/SIMD.cpp
+    Source/Util/AABB.cpp
+    Source/Util/Plane.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/ValidationLayers.cpp
@@ -64,7 +74,6 @@ add_executable(VulkanRenderer
 	Source/Vulkan/ImageView.cpp
 	Source/Vulkan/Swapchain.cpp
 	Source/Vulkan/Sampler.cpp
-	Source/Vulkan/DepthBuffer.cpp
 	Source/Vulkan/Pipeline.cpp
 	Source/Vulkan/CommandBuffer.cpp
 	Source/Vulkan/DescriptorWriter.cpp
@@ -73,28 +82,67 @@ add_executable(VulkanRenderer
     Source/Vulkan/MegaSet.cpp
     Source/Vulkan/DebugUtils.cpp
     Source/Vulkan/FormatHelper.cpp
+    Source/Vulkan/FramebufferManager.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
-	Source/Renderer/FreeCamera.cpp
-	Source/Renderer/Camera.cpp
-	Source/Renderer/RenderObject.cpp
-    Source/Renderer/IndirectBuffer.cpp
-    Source/Renderer/MeshBuffer.cpp
-    Source/Renderer/SceneBuffer.cpp
+    # Object sources
+    Source/Renderer/Objects/FreeCamera.cpp
+    Source/Renderer/Objects/Camera.cpp
+    # Renderer Buffer sources
+    Source/Renderer/Buffers/IndirectBuffer.cpp
+    Source/Renderer/Buffers/MeshBuffer.cpp
+    Source/Renderer/Buffers/SceneBuffer.cpp
+    Source/Renderer/Buffers/LightsBuffer.cpp
 	# Post Process Pass Sources
-	Source/Renderer/PostProcess/PostProcessPipeline.cpp
-	Source/Renderer/PostProcess/PostProcessPass.cpp
-	# Forward Pass Sources
-	Source/Renderer/Forward/ForwardPipeline.cpp
-	Source/Renderer/Forward/ForwardPass.cpp
-    # Depth Pass Source
-    Source/Renderer/Depth/DepthPipeline.cpp
-    Source/Renderer/Depth/DepthPass.cpp
-    # ImGui Pass Source
-    Source/Renderer/ImGui/ImGuiPipeline.cpp
-    Source/Renderer/ImGui/ImGuiPass.cpp
+	Source/Renderer/PostProcess/Pipeline.cpp
+	Source/Renderer/PostProcess/RenderPass.cpp
+    # Depth Pass Sources
+    Source/Renderer/Depth/Pipeline.cpp
+    Source/Renderer/Depth/RenderPass.cpp
+    # ImGui Pass Sources
+    Source/Renderer/ImGui/Pipeline.cpp
+    Source/Renderer/ImGui/RenderPass.cpp
+    # Skybox Pass Sources
+    Source/Renderer/Skybox/Pipeline.cpp
+    Source/Renderer/Skybox/RenderPass.cpp
+    # IBL Sources
+    Source/Renderer/IBL/IBLMaps.cpp
+    Source/Renderer/IBL/BRDF/Pipeline.cpp
+    Source/Renderer/IBL/Converter/Pipeline.cpp
+    Source/Renderer/IBL/Convolution/Pipeline.cpp
+    Source/Renderer/IBL/PreFilter/Pipeline.cpp
+    # Bloom Pass sources
+    Source/Renderer/Bloom/RenderPass.cpp
+    Source/Renderer/Bloom/DownSample/Pipeline.cpp
+    Source/Renderer/Bloom/UpSample/Pipeline.cpp
+    # Shadow Pass Sources
+    Source/Renderer/Shadow/Pipeline.cpp
+    Source/Renderer/Shadow/RenderPass.cpp
+    Source/Renderer/Shadow/CascadeBuffer.cpp
+    # Point Shadow Pass Sources
+    Source/Renderer/PointShadow/Pipeline.cpp
+    Source/Renderer/PointShadow/RenderPass.cpp
+    Source/Renderer/PointShadow/PointShadowBuffer.cpp
+    # Point Shadow Pass Sources
+    Source/Renderer/SpotShadow/Pipeline.cpp
+    Source/Renderer/SpotShadow/RenderPass.cpp
+    Source/Renderer/SpotShadow/SpotShadowBuffer.cpp
+    # Culling Dispatch Sources
+    Source/Renderer/Culling/Pipeline.cpp
+    Source/Renderer/Culling/Dispatch.cpp
+    # GBuffer Pass Sources
+    Source/Renderer/GBuffer/Pipeline.cpp
+    Source/Renderer/GBuffer/RenderPass.cpp
+    # Lighting Pass Sources
+    Source/Renderer/Lighting/Pipeline.cpp
+    Source/Renderer/Lighting/RenderPass.cpp
+    # SSAO Pass Sources
+    Source/Renderer/SSAO/Occlusion/Pipeline.cpp
+    Source/Renderer/SSAO/Blur/Pipeline.cpp
+    Source/Renderer/SSAO/RenderPass.cpp
+    Source/Renderer/SSAO/SampleBuffer.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp
@@ -168,6 +216,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<iostream>
 	<numbers>
 	<deque>
+    <variant>
     # C STL Headers
     <cstdint>
     <cstddef>
@@ -185,7 +234,7 @@ target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)
-target_compile_options(VulkanRenderer PRIVATE -march=native)
+target_compile_options(VulkanRenderer PRIVATE -march=native -msse2 -mavx -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)

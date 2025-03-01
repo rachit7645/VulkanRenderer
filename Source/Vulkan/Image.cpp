@@ -30,8 +30,11 @@ namespace Vk
               VK_NULL_HANDLE,
               createInfo.extent.width,
               createInfo.extent.height,
+              createInfo.extent.depth,
               createInfo.mipLevels,
+              createInfo.arrayLayers,
               createInfo.format,
+              createInfo.usage,
               aspect
           )
     {
@@ -86,15 +89,21 @@ namespace Vk
         VkImage image,
         u32 width,
         u32 height,
+        u32 depth,
         u32 mipLevels,
+        u32 arrayLayers,
         VkFormat format,
+        VkImageUsageFlags usage,
         VkImageAspectFlags aspect
     )
         : handle(image),
           width(width),
           height(height),
+          depth(depth),
           mipLevels(mipLevels),
+          arrayLayers(arrayLayers),
           format(format),
+          usage(usage),
           aspect(aspect)
     {
     }
@@ -119,7 +128,7 @@ namespace Vk
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
         const VkImageSubresourceRange& subresourceRange
-    )
+    ) const
     {
         const VkImageMemoryBarrier2 barrier =
         {
@@ -153,7 +162,7 @@ namespace Vk
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
     }
 
-    void Image::GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer)
+    void Image::GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer) const
     {
         if (mipLevels <= 1)
         {
@@ -171,79 +180,82 @@ namespace Vk
                     .baseMipLevel   = 0,
                     .levelCount     = mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1
+                    .layerCount     = arrayLayers
                 }
             );
 
             return;
         }
 
-        s32 mipWidth  = static_cast<s32>(width);
-        s32 mipHeight = static_cast<s32>(height);
-
-        for (u32 i = 1; i < mipLevels; ++i)
+        for (u32 i = 0; i < arrayLayers; ++i)
         {
-            Barrier
-            (
-                cmdBuffer,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                VK_ACCESS_2_TRANSFER_READ_BIT,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            s32 mipWidth  = static_cast<s32>(width);
+            s32 mipHeight = static_cast<s32>(height);
+
+            for (u32 j = 1; j < mipLevels; ++j)
+            {
+                Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_READ_BIT,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    {
+                        .aspectMask     = aspect,
+                        .baseMipLevel   = j - 1,
+                        .levelCount     = 1,
+                        .baseArrayLayer = i,
+                        .layerCount     = 1
+                    }
+                );
+
+                const VkImageBlit2 blitRegion =
                 {
-                    .aspectMask     = aspect,
-                    .baseMipLevel   = i - 1,
-                    .levelCount     = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            );
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+                    .pNext = nullptr,
+                    .srcSubresource = {
+                        .aspectMask     = aspect,
+                        .mipLevel       = j - 1,
+                        .baseArrayLayer = i,
+                        .layerCount     = 1
+                    },
+                    .srcOffsets = {
+                        {0, 0, 0},
+                        {mipWidth, mipHeight, 1}
+                    },
+                    .dstSubresource = {
+                        .aspectMask     = aspect,
+                        .mipLevel       = j,
+                        .baseArrayLayer = i,
+                        .layerCount     = 1
+                    },
+                    .dstOffsets = {
+                        {0, 0, 0},
+                        {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1}
+                    }
+                };
 
-            VkImageBlit2 blitRegion =
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
-                .pNext = nullptr,
-                .srcSubresource = {
-                    .aspectMask     = aspect,
-                    .mipLevel       = i - 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                },
-                .srcOffsets = {
-                    {0, 0, 0},
-                    {mipWidth, mipHeight, 1}
-                },
-                .dstSubresource = {
-                    .aspectMask     = aspect,
-                    .mipLevel       = i,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                },
-                .dstOffsets = {
-                    {0, 0, 0},
-                    {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1}
-                }
-            };
+                const VkBlitImageInfo2 blitInfo =
+                {
+                    .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                    .pNext          = nullptr,
+                    .srcImage       = handle,
+                    .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .dstImage       = handle,
+                    .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .regionCount    = 1,
+                    .pRegions       = &blitRegion,
+                    .filter         = VK_FILTER_LINEAR
+                };
 
-            VkBlitImageInfo2 blitInfo =
-            {
-                .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
-                .pNext          = nullptr,
-                .srcImage       = handle,
-                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                .dstImage       = handle,
-                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .regionCount    = 1,
-                .pRegions       = &blitRegion,
-                .filter         = VK_FILTER_LINEAR
-            };
+                vkCmdBlitImage2(cmdBuffer.handle, &blitInfo);
 
-            vkCmdBlitImage2(cmdBuffer.handle, &blitInfo);
-
-            if (mipWidth > 1) mipWidth /= 2;
-            if (mipHeight > 1) mipHeight /= 2;
+                if (mipWidth > 1) mipWidth /= 2;
+                if (mipHeight > 1) mipHeight /= 2;
+            }
         }
 
         // Level 0 to Level (mipLevels - 1)
@@ -261,7 +273,7 @@ namespace Vk
                 .baseMipLevel   = 0,
                 .levelCount     = mipLevels - 1,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = arrayLayers
             }
         );
 
@@ -281,13 +293,18 @@ namespace Vk
                 .baseMipLevel   = mipLevels - 1,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = arrayLayers
             }
         );
     }
 
     void Image::Destroy(VmaAllocator allocator) const
     {
+        if (handle == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         Logger::Debug
         (
             "Destroying image! [handle={}] [allocation={}]\n",

@@ -17,7 +17,6 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
 
-#include <vector>
 #include <vulkan/vulkan.h>
 
 #include "Context.h"
@@ -30,23 +29,16 @@ namespace Vk
     class Pipeline
     {
     public:
+        Pipeline(VkPipeline pipeline, VkPipelineLayout layout, VkPipelineBindPoint bindPoint);
+
         Pipeline() = default;
         virtual ~Pipeline() = default;
 
-        // No copying
-        Pipeline(const Pipeline&) = delete;
-        Pipeline& operator=(const Pipeline&) = delete;
-
-        // Only moving
-        Pipeline(Pipeline&& other) noexcept = default;
-        Pipeline& operator=(Pipeline&& other) noexcept = default;
-
-        void Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const;
+        void Bind(const Vk::CommandBuffer& cmdBuffer) const;
 
         void BindDescriptors
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkPipelineBindPoint bindPoint,
             u32 firstSet,
             const std::span<const VkDescriptorSet> descriptors
         ) const;
@@ -60,14 +52,12 @@ namespace Vk
             void* pValues
         ) const;
 
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         // Handles
-        VkPipeline       handle = {};
-        VkPipelineLayout layout = {};
-
-        // Deletion queue
-        Util::DeletionQueue m_deletionQueue = {};
+        VkPipeline          handle    = VK_NULL_HANDLE;
+        VkPipelineLayout    layout    = VK_NULL_HANDLE;
+        VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     };
 }
 

@@ -19,13 +19,27 @@
 
 vec4 UnpackRGBA8(uint data)
 {
+    const float ONE_BY_255 = 1.0f / 255.0f;
+
     return vec4
     (
-        float((data >> 0)  & 0xFF) / 255.0f,
-        float((data >> 8)  & 0xFF) / 255.0f,
-        float((data >> 16) & 0xFF) / 255.0f,
-        float((data >> 24) & 0xFF) / 255.0f
+        float(bitfieldExtract(data, 0,  8)) * ONE_BY_255,
+        float(bitfieldExtract(data, 8,  8)) * ONE_BY_255,
+        float(bitfieldExtract(data, 16, 8)) * ONE_BY_255,
+        float(bitfieldExtract(data, 24, 8)) * ONE_BY_255
     );
+}
+
+vec2 GetSphericalMapUV(vec3 v)
+{
+    // (1 / 2π, 1 / π)
+    const vec2 INVERSE_ATAN = vec2(0.1591f, 0.3183f);
+
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv     *= INVERSE_ATAN;
+    uv     += 0.5f;
+
+    return uv;
 }
 
 #endif

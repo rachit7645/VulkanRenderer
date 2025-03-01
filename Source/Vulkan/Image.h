@@ -37,8 +37,11 @@ namespace Vk
             VkImage image,
             u32 width,
             u32 height,
+            u32 depth,
             u32 mipLevels,
+            u32 arrayLayers,
             VkFormat format,
+            VkImageUsageFlags usage,
             VkImageAspectFlags aspect
         );
 
@@ -54,24 +57,27 @@ namespace Vk
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
             const VkImageSubresourceRange& subresourceRange
-        );
+        ) const;
 
-        void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer);
+        void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer) const;
 
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
         VkImage           handle         = VK_NULL_HANDLE;
-        VmaAllocation     allocation     = {};
+        VmaAllocation     allocation     = VK_NULL_HANDLE;
         VmaAllocationInfo allocationInfo = {};
 
         // Image dimensions
-        u32 width     = 0;
-        u32 height    = 0;
-        u32 mipLevels = 1;
+        u32 width       = 0;
+        u32 height      = 0;
+        u32 depth       = 0;
+        u32 mipLevels   = 1;
+        u32 arrayLayers = 1;
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
+        VkImageUsageFlags  usage  = 0;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     };
 }
@@ -82,8 +88,22 @@ struct std::hash<Vk::Image>
 {
     std::size_t operator()(const Vk::Image& image) const noexcept
     {
-        // This is basic but it should work
-        return std::hash<VkImage>()(image.handle) ^ std::hash<VmaAllocation>()(image.allocation);
+        const std::size_t hash1 = std::hash<VkImage      >{}(image.handle);
+        const std::size_t hash2 = std::hash<VmaAllocation>{}(image.allocation);
+        const std::size_t hash3 = std::hash<u32          >{}(image.width);
+        const std::size_t hash4 = std::hash<u32          >{}(image.height);
+        const std::size_t hash5 = std::hash<VkFormat     >{}(image.format);
+        const std::size_t hash6 = std::hash<u32          >{}(image.mipLevels);
+        const std::size_t hash7 = std::hash<u32          >{}(image.arrayLayers);
+
+        // Mix hashes using std::rotl for better distribution
+        return hash1 ^
+               std::rotl(hash2, 1) ^
+               std::rotl(hash3, 2) ^
+               std::rotl(hash4, 3) ^
+               std::rotl(hash5, 4) ^
+               std::rotl(hash6, 5) ^
+               std::rotl(hash7, 6);
     }
 };
 

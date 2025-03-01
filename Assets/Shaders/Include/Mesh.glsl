@@ -17,21 +17,25 @@
 #ifndef MESH_GLSL
 #define MESH_GLSL
 
-#include "Vertex.glsl"
+#include "Material.glsl"
+#include "AABB.glsl"
 
 struct Mesh
 {
-    mat4  transform;
-    mat3  normalMatrix;
-    uvec3 textureIDs;
-    vec4  albedoFactor;
-    float roughnessFactor;
-    float metallicFactor;
+    mat4     transform;
+    mat3     normalMatrix;
+    Material material;
+    AABB     aabb;
 };
 
 layout(buffer_reference, scalar) readonly buffer MeshBuffer
 {
     Mesh meshes[];
+};
+
+layout(buffer_reference, scalar) readonly buffer VisibleMeshBuffer
+{
+    uint indices[];
 };
 
 #endif

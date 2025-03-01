@@ -20,14 +20,31 @@
 #include "Mesh.glsl"
 #include "Scene.glsl"
 #include "Vertex.glsl"
+#include "CSM.glsl"
+#include "PointShadowMap.glsl"
+#include "SpotShadowMap.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer    Scene;
-    MeshBuffer     Meshes;
-    PositionBuffer Positions;
-    VertexBuffer   Vertices;
-    uint           SamplerIndex;
+    SceneBuffer       Scene;
+    MeshBuffer        Meshes;
+    VisibleMeshBuffer VisibleMeshes;
+    PositionBuffer    Positions;
+    VertexBuffer      Vertices;
+    CascadeBuffer     Cascades;
+    PointShadowBuffer PointShadows;
+    SpotShadowBuffer  SpotShadows;
+
+    uint TextureSamplerIndex;
+    uint IBLSamplerIndex;
+    uint ShadowSamplerIndex;
+
+    uint IrradianceIndex;
+    uint PreFilterIndex;
+    uint BRDFLUTIndex;
+    uint ShadowMapIndex;
+    uint PointShadowMapIndex;
+    uint SpotShadowMapIndex;
 } Constants;
 
 #endif

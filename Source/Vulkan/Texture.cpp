@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 #include <vulkan/utility/vk_format_utils.h>
 #include <volk/volk.h>
 
 #include "Texture.h"
+
 #include "Util.h"
 #include "Buffer.h"
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Enum.h"
+#include "Util/SIMD.h"
 
 namespace Vk
 {
@@ -67,7 +72,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocInfo.pMappedData, pTexture->pData, pTexture->dataSize);
+        std::memcpy(stagingBuffer.allocationInfo.pMappedData, pTexture->pData, pTexture->dataSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
         copyRegions.reserve(pTexture->numLevels);
@@ -144,6 +149,115 @@ namespace Vk
         return {stagingBuffer, std::move(copyRegions)};
     }
 
+    Texture::Upload Texture::LoadFromFileHDR
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        VkFormat format,
+        const std::string_view path
+    )
+    {
+        s32 width    = 0;
+        s32 height   = 0;
+        s32 channels = 0;
+
+        const f32* data = stbi_loadf
+        (
+            path.data(),
+            &width,
+            &height,
+            &channels,
+            STBI_rgb_alpha
+        );
+
+        if (data == nullptr)
+        {
+            Logger::Error("Unable to load texture! [Error={}] [Path={}]\n", stbi_failure_reason(), path);
+        }
+
+        const usize        elemCount = width * height * STBI_rgb_alpha;
+        const VkDeviceSize imageSize = elemCount * sizeof(f16);
+
+        const auto stagingBuffer = Vk::Buffer
+        (
+            allocator,
+            imageSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        Util::ConvertF32ToF16(data, std::bit_cast<f16*>(stagingBuffer.allocationInfo.pMappedData), elemCount);
+
+        stbi_image_free(std::bit_cast<void*>(data));
+
+        std::vector<VkBufferImageCopy2> copyRegions = {};
+
+        copyRegions.emplace_back(VkBufferImageCopy2{
+            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+            .pNext             = nullptr,
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource  = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {static_cast<u32>(width), static_cast<u32>(height), 1}
+        });
+
+        image = Vk::Image
+        (
+            allocator,
+            {
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = format,
+                .extent                = {static_cast<u32>(width), static_cast<u32>(height), 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 1,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        imageView = Vk::ImageView
+        (
+            device,
+            image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            image.format,
+            {
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        const auto name = Engine::Files::GetNameWithoutExtension(path);
+
+        Vk::SetDebugName(device, image.handle,     name);
+        Vk::SetDebugName(device, imageView.handle, name + "_View");
+
+        Logger::Debug("Loaded texture! [Path={}]\n", path);
+
+        return {stagingBuffer, std::move(copyRegions)};
+    }
+
     Texture::Upload Texture::LoadFromMemory
     (
         VkDevice device,
@@ -163,7 +277,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocInfo.pMappedData, data.data(), data.size_bytes());
+        std::memcpy(stagingBuffer.allocationInfo.pMappedData, data.data(), data.size_bytes());
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 

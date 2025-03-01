@@ -16,6 +16,7 @@
 
 #include "Swapchain.h"
 
+#include <thread>
 #include <volk/volk.h>
 
 #include "Vulkan/DebugUtils.h"
@@ -26,15 +27,30 @@ namespace Vk
 {
     Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
     {
-        CreateSwapChain(size, context);
+        IsSurfaceValid(size, context);
+        CreateSwapChain(context);
         CreateSyncObjects(context.device);
+
         Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    void Swapchain::RecreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
+    bool Swapchain::IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context)
+    {
+        m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
+        extent          = ChooseSwapExtent(size);
+
+        if (extent.width == 0 || extent.height == 0)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    void Swapchain::RecreateSwapChain(const Vk::Context& context)
     {
         DestroySwapchain(context.device);
-        CreateSwapChain(size, context);
+        CreateSwapChain(context);
 
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
@@ -62,7 +78,7 @@ namespace Vk
 
     VkResult Swapchain::AcquireSwapChainImage(VkDevice device, usize FIF)
     {
-        VkAcquireNextImageInfoKHR acquireNextImageInfo =
+        const VkAcquireNextImageInfoKHR acquireNextImageInfo =
         {
             .sType      = VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
             .pNext      = nullptr,
@@ -81,11 +97,8 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const glm::ivec2& size, const Vk::Context& context)
+    void Swapchain::CreateSwapChain(const Vk::Context& context)
     {
-        m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
-        extent          = ChooseSwapExtent(size);
-
         const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
         const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
 
@@ -113,7 +126,7 @@ namespace Vk
             .pPresentModes    = &presentMode
         };
 
-        VkSwapchainCreateInfoKHR createInfo =
+        const VkSwapchainCreateInfoKHR createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext                 = &presentModesCreateInfo,
@@ -189,7 +202,10 @@ namespace Vk
                 extent.width,
                 extent.height,
                 1,
+                1,
+                1,
                 imageFormat,
+                createInfo.imageUsage,
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
 
@@ -220,33 +236,55 @@ namespace Vk
             context.commandPool,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
+                std::vector<VkImageMemoryBarrier2> barriers = {};
+                barriers.reserve(images.size());
+
                 for (auto&& image : images)
                 {
-                    image.Barrier
-                    (
-                        cmdBuffer,
-                        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-                        VK_ACCESS_2_NONE,
-                        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-                        VK_ACCESS_2_NONE,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                        {
+                    barriers.push_back(VkImageMemoryBarrier2
+                    {
+                        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                        .pNext               = nullptr,
+                        .srcStageMask        = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+                        .srcAccessMask       = VK_ACCESS_2_NONE,
+                        .dstStageMask        = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+                        .dstAccessMask       = VK_ACCESS_2_NONE,
+                        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+                        .newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image               = image.handle,
+                        .subresourceRange    = {
                             .aspectMask     = image.aspect,
                             .baseMipLevel   = 0,
                             .levelCount     = image.mipLevels,
                             .baseArrayLayer = 0,
                             .layerCount     = 1
                         }
-                    );
+                    });
                 }
+
+                const VkDependencyInfo dependencyInfo =
+                {
+                    .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                    .pNext                    = nullptr,
+                    .dependencyFlags          = 0,
+                    .memoryBarrierCount       = 0,
+                    .pMemoryBarriers          = nullptr,
+                    .bufferMemoryBarrierCount = 0,
+                    .pBufferMemoryBarriers    = nullptr,
+                    .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
+                    .pImageMemoryBarriers     = barriers.data()
+                };
+
+                vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
             }
         );
-    }
+    }   
 
     void Swapchain::CreateSyncObjects(VkDevice device)
     {
-        VkSemaphoreCreateInfo semaphoreInfo =
+        const VkSemaphoreCreateInfo semaphoreInfo =
         {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             .pNext = nullptr,

@@ -61,7 +61,7 @@ namespace Engine
             const glm::vec2& deadZone
         ) const;
 
-        // Keys from SDL
+        // Key array from SDL
         const bool* m_keys = nullptr;
         // Game controller from SDL
         SDL_Gamepad* m_gamepad = nullptr;
@@ -71,7 +71,7 @@ namespace Engine
         glm::vec2 m_mouseScroll   = {};
 
         // Flags
-        bool m_wasMouseMoved = false;
+        bool m_wasMouseMoved    = false;
         bool m_wasMouseScrolled = false;
     };
 }

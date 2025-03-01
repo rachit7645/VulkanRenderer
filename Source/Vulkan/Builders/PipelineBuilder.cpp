@@ -47,7 +47,7 @@ namespace Vk::Builders
 
         switch (m_pipelineType)
         {
-        case PipelineType::Graphics:
+        case VK_PIPELINE_BIND_POINT_GRAPHICS:
         {
             const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
             {
@@ -86,9 +86,9 @@ namespace Vk::Builders
         }
         break;
 
-        case PipelineType::Compute:
+        case VK_PIPELINE_BIND_POINT_COMPUTE:
         {
-            VkComputePipelineCreateInfo pipelineCreateInfo =
+            const VkComputePipelineCreateInfo pipelineCreateInfo =
             {
                 .sType              = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
                 .pNext              = nullptr,
@@ -117,12 +117,12 @@ namespace Vk::Builders
             Logger::Error("{}\n", "Invalid pipeline type!");
         }
 
-        return {pipeline, pipelineLayout};
+        return {pipeline, pipelineLayout, m_pipelineType};
     }
 
-    PipelineBuilder& PipelineBuilder::SetPipelineType(PipelineType type)
+    PipelineBuilder& PipelineBuilder::SetPipelineType(VkPipelineBindPoint bindPoint)
     {
-        m_pipelineType = type;
+        m_pipelineType = bindPoint;
 
         return *this;
     }
@@ -159,6 +159,7 @@ namespace Vk::Builders
 
     PipelineBuilder& PipelineBuilder::SetRenderingInfo
     (
+        u32 viewMask,
         const std::span<const VkFormat> colorFormats,
         VkFormat depthFormat,
         VkFormat stencilFormat
@@ -170,7 +171,7 @@ namespace Vk::Builders
         {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .pNext                   = nullptr,
-            .viewMask                = 0,
+            .viewMask                = viewMask,
             .colorAttachmentCount    = static_cast<u32>(m_renderingColorFormats.size()),
             .pColorAttachmentFormats = m_renderingColorFormats.data(),
             .depthAttachmentFormat   = depthFormat,
@@ -200,9 +201,9 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetDynamicStates(const std::span<const VkDynamicState> vkDynamicStates)
+    PipelineBuilder& PipelineBuilder::SetDynamicStates(const std::span<const VkDynamicState> dynamicStates)
     {
-        m_dynamicStates = std::vector(vkDynamicStates.begin(), vkDynamicStates.end());
+        m_dynamicStates = std::vector(dynamicStates.begin(), dynamicStates.end());
 
         m_dynamicStateInfo =
         {
@@ -239,14 +240,20 @@ namespace Vk::Builders
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode)
+    PipelineBuilder& PipelineBuilder::SetRasterizerState
+    (
+        VkBool32 depthClampEnable,
+        VkCullModeFlags cullMode,
+        VkFrontFace frontFace,
+        VkPolygonMode polygonMode
+    )
     {
         m_rasterizationInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .depthClampEnable        = VK_FALSE,
+            .depthClampEnable        = depthClampEnable,
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode             = polygonMode,
             .cullMode                = cullMode,

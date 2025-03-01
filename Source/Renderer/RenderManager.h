@@ -19,18 +19,29 @@
 
 #include <vulkan/vulkan.h>
 
-#include "FreeCamera.h"
 #include "RenderObject.h"
-#include "IndirectBuffer.h"
-#include "MeshBuffer.h"
-#include "SceneBuffer.h"
-#include "PostProcess/PostProcessPass.h"
-#include "Forward/ForwardPass.h"
-#include "Depth/DepthPass.h"
-#include "ImGui/ImGuiPass.h"
+#include "Objects/FreeCamera.h"
+#include "Buffers/IndirectBuffer.h"
+#include "Buffers/MeshBuffer.h"
+#include "Buffers/SceneBuffer.h"
+#include "Buffers/LightsBuffer.h"
+#include "IBL/IBLMaps.h"
+#include "PostProcess/RenderPass.h"
+#include "Depth/RenderPass.h"
+#include "ImGui/RenderPass.h"
+#include "Skybox/RenderPass.h"
+#include "Bloom/RenderPass.h"
+#include "Shadow/RenderPass.h"
+#include "PointShadow/RenderPass.h"
+#include "SpotShadow/RenderPass.h"
+#include "GBuffer/RenderPass.h"
+#include "Lighting/RenderPass.h"
+#include "SSAO/RenderPass.h"
+#include "Culling/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/FramebufferManager.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -49,8 +60,8 @@ namespace Renderer
         RenderManager& operator=(const RenderManager&) = delete;
 
         // Only moving
-        RenderManager(RenderManager&& other)            = default;
-        RenderManager& operator=(RenderManager&& other) = default;
+        RenderManager(RenderManager&& other)            noexcept = default;
+        RenderManager& operator=(RenderManager&& other) noexcept = default;
 
         void Render();
         [[nodiscard]] bool HandleEvents();
@@ -73,23 +84,35 @@ namespace Renderer
 
         Vk::FormatHelper m_formatHelper;
 
-        Models::ModelManager m_modelManager;
-        Vk::MegaSet          m_megaSet;
+        Vk::MegaSet            m_megaSet;
+        Vk::FramebufferManager m_framebufferManager;
+        Models::ModelManager   m_modelManager;
+
+        IBL::IBLMaps m_iblMaps;
 
         // Render Passes
-        PostProcess::PostProcessPass m_postProcessPass;
-        Forward::ForwardPass         m_forwardPass;
-        Depth::DepthPass             m_depthPass;
-        DearImGui::ImGuiPass         m_imGuiPass;
+        PostProcess::RenderPass m_postProcessPass;
+        Depth::RenderPass       m_depthPass;
+        DearImGui::RenderPass   m_imGuiPass;
+        Skybox::RenderPass      m_skyboxPass;
+        Bloom::RenderPass       m_bloomPass;
+        Shadow::RenderPass      m_shadowPass;
+        PointShadow::RenderPass m_pointShadowPass;
+        SpotShadow::RenderPass  m_spotShadowPass;
+        GBuffer::RenderPass     m_gBufferPass;
+        Lighting::RenderPass    m_lightingPass;
+        SSAO::RenderPass        m_ssaoPass;
+        Culling::Dispatch       m_cullingDispatch;
 
         // Buffers
-        MeshBuffer     m_meshBuffer;
-        IndirectBuffer m_indirectBuffer;
-        SceneBuffer    m_sceneBuffer;
+        Buffers::MeshBuffer     m_meshBuffer;
+        Buffers::IndirectBuffer m_indirectBuffer;
+        Buffers::SceneBuffer    m_sceneBuffer;
+        Buffers::LightsBuffer   m_lightsBuffer;
 
         // Scene objects
         std::vector<Renderer::RenderObject> m_renderObjects;
-        Renderer::FreeCamera                m_camera;
+        Objects::FreeCamera                 m_camera;
 
         // Sync objects
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
@@ -101,12 +124,11 @@ namespace Renderer
 
         bool m_isSwapchainOk = true;
 
-        DirLight m_sun =
-        {
-            .position  = {-30.0f, -30.0f, -10.0f, 1.0f},
-            .color     = {1.0f,   0.956f, 0.898f, 1.0f},
-            .intensity = {5.0f,   5.0f,   5.0f,   1.0f}
-        };
+        Scene m_scene = {};
+
+        Objects::DirLight                  m_sun;
+        std::array<Objects::PointLight, 2> m_pointLights;
+        std::array<Objects::SpotLight,  2> m_spotLights;
 
         Util::DeletionQueue m_deletionQueue = {};
     };

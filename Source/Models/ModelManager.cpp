@@ -63,7 +63,7 @@ namespace Models
         Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            geometryBuffer.Update(cmdBuffer);
+            geometryBuffer.Update(cmdBuffer, context.device, context.allocator);
             textureManager.Update(cmdBuffer);
         cmdBuffer.EndRecording();
 
@@ -106,7 +106,7 @@ namespace Models
                 1,
                 &submitInfo,
                 transferFence),
-                "Failed to submit tranfer command buffers!"
+                "Failed to submit transfer command buffers!"
             );
 
             Vk::CheckResult(vkWaitForFences(
@@ -115,7 +115,7 @@ namespace Models
                 &transferFence,
                 VK_TRUE,
                 std::numeric_limits<u64>::max()),
-                "Error while waiting for tranfers!"
+                "Error while waiting for transfer!"
             );
         }
 
@@ -159,9 +159,9 @@ namespace Models
                                 ImGui::Text("Texture Name                  | ID");
                                 ImGui::Separator();
 
-                                ImGui::Text("Albedo                        | %llu", mesh.material.albedo);
-                                ImGui::Text("Normal Map                    | %llu", mesh.material.normal);
-                                ImGui::Text("AO + Roughness + Metallic Map | %llu", mesh.material.aoRghMtl);
+                                ImGui::Text("Albedo                        | %u", mesh.material.albedo);
+                                ImGui::Text("Normal Map                    | %u", mesh.material.normal);
+                                ImGui::Text("AO + Roughness + Metallic Map | %u", mesh.material.aoRghMtl);
 
                                 ImGui::Separator();
                                 ImGui::Text("Factor Name | Value");
@@ -176,6 +176,11 @@ namespace Models
 
                                 ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
                                 ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
+
+                                ImGui::Separator();
+
+                                ImGui::Text("AABB Min    | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
+                                ImGui::Text("AABB Max    | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
 
                                 ImGui::TreePop();
                             }

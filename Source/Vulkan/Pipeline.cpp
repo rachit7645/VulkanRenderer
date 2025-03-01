@@ -23,7 +23,14 @@
 
 namespace Vk
 {
-    void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer, VkPipelineBindPoint bindPoint) const
+    Pipeline::Pipeline(VkPipeline pipeline, VkPipelineLayout layout, VkPipelineBindPoint bindPoint)
+        : handle(pipeline),
+          layout(layout),
+          bindPoint(bindPoint)
+    {
+    }
+
+    void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
         vkCmdBindPipeline
         (
@@ -36,7 +43,6 @@ namespace Vk
     void Pipeline::BindDescriptors
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkPipelineBindPoint bindPoint,
         u32 firstSet,
         const std::span<const VkDescriptorSet> descriptors
     ) const
@@ -74,10 +80,8 @@ namespace Vk
         );
     }
 
-    void Pipeline::Destroy(VkDevice device)
+    void Pipeline::Destroy(VkDevice device) const
     {
-        m_deletionQueue.FlushQueue();
-
         vkDestroyPipeline(device, handle, nullptr);
         vkDestroyPipelineLayout(device, layout, nullptr);
     }

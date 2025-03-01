@@ -47,32 +47,49 @@ set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 file(GLOB SHADER_SOURCES
     PostProcess.vert
     PostProcess.frag
-    Forward.vert
-    Forward.frag
     Depth.vert
     Depth.frag
     ImGui.vert
     ImGui.frag
+    BRDF.frag
+    BRDF.vert
+    Converter.vert
+    Converter.frag
+    Skybox.frag
+    Skybox.vert
+    Convolution.frag
+    Convolution.vert
+    PreFilter.vert
+    PreFilter.frag
+    DownSample.vert
+    DownSample.frag
+    UpSample.frag
+    UpSample.vert
+    Shadow.frag
+    Shadow.vert
+    PointShadow.frag
+    PointShadow.vert
+    SpotShadow.frag
+    SpotShadow.vert
+    Culling.comp
+    GBuffer.frag
+    GBuffer.vert
+    Lighting.frag
+    Lighting.vert
+    SSAO.vert
+    SSAO.frag
+    SSAOBlur.vert
+    SSAOBlur.frag
 )
 
-# Shader files
-file(GLOB SHADER_HEADERS
-    Include/ACES.glsl
-    Include/Constants.glsl
-    Include/GammaCorrect.glsl
-    Include/Lights.glsl
-    Include/Material.glsl
-    Include/Mesh.glsl
-    Include/PBR.glsl
-    Include/Scene.glsl
-    Include/Vertex.glsl
-    Include/MegaSet.glsl
-    Include/Converter.glsl
-    Include/Constants/Forward.glsl
-    Include/Constants/Swapchain.glsl
-    Include/Constants/Depth.glsl
-    Include/Constants/ImGui.glsl
+# Shader headers
+file(GLOB_RECURSE SHADER_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/Include/*.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/Include/Constants/*.glsl
 )
+
+# Ensure CMake reconfigures when new includes are added
+set_property(GLOBAL PROPERTY CMAKE_CONFIGURE_DEPENDS ${SHADER_HEADERS})
 
 # For each shader to be compiled
 foreach(Shader ${SHADER_SOURCES})

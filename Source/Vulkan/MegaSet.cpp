@@ -25,7 +25,7 @@
 namespace Vk
 {
     constexpr u32 MAX_SAMPLERS       = 1 << 8;
-    constexpr u32 MAX_SAMPLED_IMAGES = 1 << 16;
+    constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
 
     MegaSet::MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)
     {
@@ -67,9 +67,9 @@ namespace Vk
         constexpr std::array<VkDescriptorBindingFlags, DescriptorBinding::BINDINGS_COUNT> bindingFlags =
         {
             // Samplers
-            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
-            // Sampled image
-            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT,
+            // Sampled images
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT
         };
 
         const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo =

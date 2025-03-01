@@ -30,14 +30,7 @@ namespace Vk::Builders
     class PipelineBuilder
     {
     public:
-        using Products = std::pair<VkPipeline, VkPipelineLayout>;
-
-        enum class PipelineType : u8
-        {
-            None,
-            Graphics,
-            Compute
-        };
+        using Products = std::tuple<VkPipeline, VkPipelineLayout, VkPipelineBindPoint>;
 
         explicit PipelineBuilder(const Vk::Context& context);
         ~PipelineBuilder();
@@ -52,17 +45,18 @@ namespace Vk::Builders
 
         Products Build();
 
-        [[nodiscard]] PipelineBuilder& SetPipelineType(PipelineType type);
+        [[nodiscard]] PipelineBuilder& SetPipelineType(VkPipelineBindPoint bindPoint);
 
         [[nodiscard]] PipelineBuilder& SetRenderingInfo
         (
+            u32 viewMask,
             const std::span<const VkFormat> colorFormats,
             VkFormat depthFormat,
             VkFormat stencilFormat
         );
 
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
-        [[nodiscard]] PipelineBuilder& SetDynamicStates(const std::span<const VkDynamicState> vkDynamicStates);
+        [[nodiscard]] PipelineBuilder& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
 
         [[nodiscard]] PipelineBuilder& SetVertexInputState
         (
@@ -71,7 +65,15 @@ namespace Vk::Builders
         );
 
         [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
-        [[nodiscard]] PipelineBuilder& SetRasterizerState(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPolygonMode polygonMode);
+
+        [[nodiscard]] PipelineBuilder& SetRasterizerState
+        (
+            VkBool32 depthClampEnable,
+            VkCullModeFlags cullMode,
+            VkFrontFace frontFace,
+            VkPolygonMode polygonMode
+        );
+
         [[nodiscard]] PipelineBuilder& SetMSAAState();
 
         [[nodiscard]] PipelineBuilder& SetDepthStencilState
@@ -101,7 +103,7 @@ namespace Vk::Builders
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         [[nodiscard]] PipelineBuilder& AddDescriptorLayout(VkDescriptorSetLayout layout);
     private:
-        PipelineType m_pipelineType = PipelineType::None;
+        VkPipelineBindPoint m_pipelineType = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
         VkPipelineRenderingCreateInfo m_renderingCreateInfo;
         std::vector<VkFormat>         m_renderingColorFormats;

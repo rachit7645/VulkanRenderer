@@ -65,4 +65,9 @@ namespace Engine::Files
     {
         return filesystem::path(fileName).stem().string();
     }
+
+    std::string GetExtension(const std::string_view fileName)
+    {
+        return filesystem::path(fileName).extension().string();
+    }
 }

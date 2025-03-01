@@ -41,10 +41,14 @@ namespace Engine::Files
     /// @param path Path of file
     /// @returns std::vector of binary data
     [[nodiscard]] std::vector<u8> ReadBytes(const std::string_view path);
-    /// @brief Get file name from path (constexpr version)
-    /// @param path Path of file
-    /// @returns std::string_view of file name from original path
+    /// @brief Get file name without extension from file name
+    /// @param fileName Name of file
+    /// @returns std::string of file name without extension
     [[nodiscard]] std::string GetNameWithoutExtension(const std::string_view fileName);
+    /// @brief Get extension from file name
+    /// @param fileName Name of file
+    /// @returns std::string of extension
+    [[nodiscard]] std::string GetExtension(const std::string_view fileName);
     /// @brief Get file name from path (constexpr version)
     /// @param path Path of file
     /// @returns std::string_view of file name from original path

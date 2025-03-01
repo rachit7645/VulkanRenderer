@@ -38,6 +38,14 @@ namespace Vk
             const std::string_view path
         );
 
+        Upload LoadFromFileHDR
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            VkFormat format,
+            const std::string_view path
+        );
+
         Upload LoadFromMemory
         (
             VkDevice device,

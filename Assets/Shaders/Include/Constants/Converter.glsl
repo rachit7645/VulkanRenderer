@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef CONVERTER_GLSL
-#define CONVERTER_GLSL
+#ifndef CONVERTER_PUSH_CONSTANT
+#define CONVERTER_PUSH_CONSTANT
 
-vec4 UnpackRGBA8(uint data)
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
 {
-    return vec4
-    (
-        float((data >> 0)  & 0xFF) / 255.0f,
-        float((data >> 8)  & 0xFF) / 255.0f,
-        float((data >> 16) & 0xFF) / 255.0f,
-        float((data >> 24) & 0xFF) / 255.0f
-    );
-}
+    vec3 positions[];
+};
+
+layout(buffer_reference, scalar) readonly buffer MatrixBuffer
+{
+    mat4 matrices[];
+};
+
+layout(push_constant, scalar) uniform ConstantsBuffer
+{
+    VertexBuffer Vertices;
+    MatrixBuffer Matrices;
+    uint         SamplerIndex;
+    uint         TextureIndex;
+} Constants;
 
 #endif

@@ -155,6 +155,11 @@ namespace Vk
     void SetDebugName(UNUSED VkDevice device, UNUSED T object, UNUSED const std::string_view name)
     {
         #ifdef ENGINE_DEBUG
+        if (object == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         const VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo =
         {
             .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
@@ -172,9 +177,9 @@ namespace Vk
     }
 
     void BeginLabel(const Vk::CommandBuffer& cmdBuffer, const std::string_view name, const glm::vec4& color);
-    void BeginLabel(VkQueue queue, const std::string_view name, const glm::vec4& color);
-
     void EndLabel(const Vk::CommandBuffer& cmdBuffer);
+
+    void BeginLabel(VkQueue queue, const std::string_view name, const glm::vec4& color);
     void EndLabel(VkQueue queue);
 }
 

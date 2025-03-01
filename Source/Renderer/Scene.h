@@ -17,18 +17,23 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include "Objects/Lights.h"
 #include "Externals/GLM.h"
 #include "Vulkan/Util.h"
-#include "Renderer/DirLight.h"
 
 namespace Renderer
 {
-    struct VULKAN_GLSL_DATA Scene
+    struct Scene
     {
-        glm::mat4 projection = {};
-        glm::mat4 view       = {};
-        glm::vec4 cameraPos  = {};
-        DirLight  dirLight   = {};
+        glm::mat4       projection        = {};
+        glm::mat4       inverseProjection = {};
+        glm::mat4       view              = {};
+        glm::mat4       inverseView       = {};
+        glm::mat3       normalView        = {};
+        glm::vec3       cameraPos         = {};
+        VkDeviceAddress dirLights         = 0;
+        VkDeviceAddress pointLights       = 0;
+        VkDeviceAddress spotLights        = 0;
     };
 }
 

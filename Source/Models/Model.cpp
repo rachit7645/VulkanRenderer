@@ -146,7 +146,7 @@ namespace Models
     )
     {
         auto& node = asset.nodes[nodeIndex];
-        nodeMatrix = GetTranformMatrix(node, nodeMatrix);
+        nodeMatrix = GetTransformMatrix(node, nodeMatrix);
 
         if (node.meshIndex.has_value())
         {
@@ -283,7 +283,7 @@ namespace Models
 
             // Position
             {
-                const auto& positionAccessor = GetAccesor
+                const auto& positionAccessor = GetAccessor
                 (
                     asset,
                     primitive,
@@ -298,7 +298,7 @@ namespace Models
 
             // Normals
             {
-                const auto& normalAccessor = GetAccesor
+                const auto& normalAccessor = GetAccessor
                 (
                     asset,
                     primitive,
@@ -318,7 +318,7 @@ namespace Models
 
             // UVs
             {
-                const auto& uvAccessor = GetAccesor
+                const auto& uvAccessor = GetAccessor
                 (
                     asset,
                     primitive,
@@ -334,7 +334,7 @@ namespace Models
 
             // Tangent
             {
-                const auto& tangentAccessor = GetAccesor
+               const auto& tangentAccessor = GetAccessor
                (
                     asset,
                     primitive,
@@ -342,10 +342,10 @@ namespace Models
                     fastgltf::AccessorType::Vec4
                 );
 
-                fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
-                {
-                    vertices[index].tangent = tangent;
-                });
+               fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
+               {
+                   vertices[index].tangent = tangent;
+               });
             }
 
             if (!primitive.materialIndex.has_value())
@@ -368,7 +368,7 @@ namespace Models
 
                 if (baseColorTexture.has_value())
                 {
-                    // FIXME: Support multiple UV channels
+                    // TODO: Support multiple UV channels
                     if (baseColorTexture->texCoordIndex != 0)
                     {
                         Logger::Warning
@@ -404,7 +404,7 @@ namespace Models
             {
                 if (mat.normalTexture.has_value())
                 {
-                    // FIXME: Support multiple UV channels
+                    // TODO: Support multiple UV channels
                     if (mat.normalTexture->texCoordIndex != 0)
                     {
                         Logger::Warning
@@ -442,7 +442,7 @@ namespace Models
 
                 if (metallicRoughnessTexture.has_value())
                 {
-                    // FIXME: Support multiple UV channels
+                    // TODO: Support multiple UV channels
                     if (metallicRoughnessTexture->texCoordIndex != 0)
                     {
                         Logger::Warning
@@ -474,7 +474,7 @@ namespace Models
                 }
             }
 
-            auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUpload
+            const auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUploads
             (
                 context.allocator,
                 indices,
@@ -482,18 +482,21 @@ namespace Models
                 vertices
             );
 
+            const auto aabb = Maths::AABB(positions);
+
             meshes.emplace_back
             (
                 indexInfo,
                 positionInfo,
                 vertexInfo,
                 material,
-                nodeMatrix
+                nodeMatrix,
+                aabb
             );
         }
     }
 
-    glm::mat4 Model::GetTranformMatrix(const fastgltf::Node& node, const glm::mat4& base)
+    glm::mat4 Model::GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base)
     {
         return std::visit(fastgltf::visitor {
             [&] (const fastgltf::math::fmat4x4& matrix)
@@ -512,7 +515,7 @@ namespace Models
         }, node.transform);
     }
 
-    const fastgltf::Accessor& Model::GetAccesor
+    const fastgltf::Accessor& Model::GetAccessor
     (
         const fastgltf::Asset& asset,
         const fastgltf::Primitive& primitive,
@@ -523,7 +526,7 @@ namespace Models
         const auto attributeIt = primitive.findAttribute(attribute);
         if (attributeIt == primitive.attributes.cend())
         {
-            Logger::Error("Failed to find attribute! [Attrbute={}]\n", attribute);
+            Logger::Error("Failed to find attribute! [Attribute={}]\n", attribute);
         }
 
         const auto& accessor = asset.accessors[attributeIt->accessorIndex];
@@ -541,7 +544,7 @@ namespace Models
         return accessor;
     }
 
-    usize Model::LoadTexture
+    u32 Model::LoadTexture
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,

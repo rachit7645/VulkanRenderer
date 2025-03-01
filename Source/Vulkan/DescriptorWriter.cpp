@@ -90,6 +90,11 @@ namespace Vk
 
     void DescriptorWriter::Update(VkDevice device)
     {
+        if (writes.empty())
+        {
+            return;
+        }
+
         vkUpdateDescriptorSets
         (
             device,

@@ -1,16 +1,18 @@
-// Copyright (c) 2023 - 2025 Rachit
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "GeometryBuffer.h"
 
@@ -19,52 +21,29 @@
 #include "Util/Log.h"
 #include "Models/Model.h"
 #include "DebugUtils.h"
+#include "Renderer/RenderConstants.h"
 
 namespace Vk
 {
+    constexpr f64 BUFFER_GROWTH_FACTOR = 1.5;
+
     GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
     {
-        // TODO: Implement resizing
-        constexpr VkDeviceSize INITIAL_INDEX_SIZE    = (1 << 20) * sizeof(Models::Index);
-        constexpr VkDeviceSize INITIAL_POSITION_SIZE = (1 << 18) * sizeof(glm::vec3);
-        constexpr VkDeviceSize INITIAL_VERTEX_SIZE   = (1 << 18) * sizeof(Models::Vertex);
-
-        indexBuffer = Vk::Buffer
+        cubeBuffer = Vk::Buffer
         (
             allocator,
-            INITIAL_INDEX_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            0,
-            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-        );
-
-        positionBuffer = Vk::Buffer
-        (
-            allocator,
-            INITIAL_POSITION_SIZE,
+            36 * sizeof(glm::vec3),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        vertexBuffer = Vk::Buffer
-        (
-            allocator,
-            INITIAL_VERTEX_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            0,
-            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-        );
+        cubeBuffer.GetDeviceAddress(device);
 
-        positionBuffer.GetDeviceAddress(device);
-        vertexBuffer.GetDeviceAddress(device);
+        Vk::SetDebugName(device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
 
-        Vk::SetDebugName(device, indexBuffer.handle,    "GeometryBuffer/IndexBuffer");
-        Vk::SetDebugName(device, positionBuffer.handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, vertexBuffer.handle,   "GeometryBuffer/VertexBuffer");
+        SetupCubeUpload(allocator);
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
@@ -72,130 +51,119 @@ namespace Vk
         vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
     }
 
-    std::array<Models::Info, 3> GeometryBuffer::SetupUpload
+    std::array<GeometryBuffer::Info, 3> GeometryBuffer::SetupUploads
     (
         VmaAllocator allocator,
-        const std::vector<Models::Index>& indices,
-        const std::vector<glm::vec3>& positions,
-        const std::vector<Models::Vertex>& vertices
+        const std::span<const Models::Index> indices,
+        const std::span<const glm::vec3> positions,
+        const std::span<const Models::Vertex> vertices
     )
     {
-        auto SetupStagingBuffer = [allocator] (VkDeviceSize sizeBytes, const void* data) -> Vk::Buffer
-        {
-            const auto stagingBuffer = Vk::Buffer
-            (
-                allocator,
-                sizeBytes,
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                VMA_MEMORY_USAGE_AUTO
-            );
+        const auto indexInfo = SetupUpload
+        (
+            allocator,
+            indices,
+            indexCount,
+            m_pendingIndexUploads
+        );
 
-            std::memcpy(stagingBuffer.allocInfo.pMappedData, data, sizeBytes);
+        const auto positionInfo = SetupUpload
+        (
+            allocator,
+            positions,
+            positionCount,
+            m_pendingPositionUploads
+        );
 
-            return stagingBuffer;
-        };
-
-        const Models::Info indexInfo =
-        {
-            .offset = indexCount,
-            .count  = static_cast<u32>(indices.size())
-        };
-
-        const Models::Info positionInfo =
-        {
-            .offset = positionCount,
-            .count  = static_cast<u32>(positions.size())
-        };
-
-        const Models::Info vertexInfo =
-        {
-            .offset = vertexCount,
-            .count  = static_cast<u32>(vertices.size())
-        };
-
-        const VkDeviceSize indexSizeBytes    = indexInfo.count    * sizeof(Models::Index);
-        const VkDeviceSize positionSizeBytes = positionInfo.count * sizeof(glm::vec3);
-        const VkDeviceSize vertexSizeBytes   = vertexInfo.count   * sizeof(Models::Vertex);
-
-        m_pendingIndexUploads.push_back(std::make_pair(indexInfo, SetupStagingBuffer(indexSizeBytes, indices.data())));
-        m_pendingPositionUploads.push_back(std::make_pair(positionInfo, SetupStagingBuffer(positionSizeBytes, positions.data())));
-        m_pendingVertexUploads.push_back(std::make_pair(vertexInfo, SetupStagingBuffer(vertexSizeBytes, vertices.data())));
-
-        indexCount    += indices.size();
-        positionCount += positions.size();
-        vertexCount   += vertices.size();
+        const auto vertexInfo = SetupUpload
+        (
+            allocator,
+            vertices,
+            vertexCount,
+            m_pendingVertexUploads
+        );
 
         return {indexInfo, positionInfo, vertexInfo};
     }
 
-    void GeometryBuffer::Update(const Vk::CommandBuffer& cmdBuffer)
+    void GeometryBuffer::Update
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator
+    )
     {
         Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
-        Vk::BeginLabel(cmdBuffer, "Index Transfer", {0.8901f, 0.0549f, 0.3607f, 1.0f});
-        for (const auto& [indexInfo, indexStagingBuffer] : m_pendingIndexUploads)
-        {
-            const VkDeviceSize offsetBytes = indexInfo.offset * sizeof(Models::Index);
-            const VkDeviceSize sizeBytes   = indexInfo.count  * sizeof(Models::Index);
+        ResizeBuffers(cmdBuffer, device, allocator);
 
-            UploadToBuffer
-            (
-                cmdBuffer,
-                indexStagingBuffer,
-                indexBuffer,
-                offsetBytes,
-                sizeBytes,
-                VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-                VK_ACCESS_2_INDEX_READ_BIT
-            );
-        }
+        Vk::BeginLabel(cmdBuffer, "Index Transfer", {0.8901f, 0.0549f, 0.3607f, 1.0f});
+
+        FlushUploads
+        (
+            cmdBuffer,
+            indexBuffer,
+            m_pendingIndexUploads,
+            sizeof(Models::Index),
+            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+            VK_ACCESS_2_INDEX_READ_BIT
+        );
+
         Vk::EndLabel(cmdBuffer);
 
         Vk::BeginLabel(cmdBuffer, "Position Transfer", {0.4039f, 0.0509f, 0.5215f, 1.0f});
-        for (const auto& [positionInfo, positionStagingBuffer] : m_pendingPositionUploads)
-        {
-            const VkDeviceSize offsetBytes = positionInfo.offset * sizeof(glm::vec3);
-            const VkDeviceSize sizeBytes   = positionInfo.count  * sizeof(glm::vec3);
 
-            UploadToBuffer
-            (
-                cmdBuffer,
-                positionStagingBuffer,
-                positionBuffer,
-                offsetBytes,
-                sizeBytes,
-                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-                VK_ACCESS_2_SHADER_STORAGE_READ_BIT
-            );
-        }
+        FlushUploads
+        (
+            cmdBuffer,
+            positionBuffer,
+            m_pendingPositionUploads,
+            sizeof(glm::vec3),
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT
+        );
+
         Vk::EndLabel(cmdBuffer);
 
         Vk::BeginLabel(cmdBuffer, "Vertex Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
-        for (const auto& [vertexInfo, vertexStagingBuffer] : m_pendingVertexUploads)
+
+        FlushUploads
+        (
+            cmdBuffer,
+            vertexBuffer,
+            m_pendingVertexUploads,
+            sizeof(Models::Vertex),
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT
+        );
+
+        Vk::EndLabel(cmdBuffer);
+
+        if (m_cubeStagingBuffer.has_value())
         {
-            const VkDeviceSize offsetBytes = vertexInfo.offset * sizeof(Models::Vertex);
-            const VkDeviceSize sizeBytes   = vertexInfo.count  * sizeof(Models::Vertex);
+            Vk::BeginLabel(cmdBuffer, "Cube Transfer", {0.5117f, 0.0749f, 0.3901f, 1.0f});
 
             UploadToBuffer
             (
                 cmdBuffer,
-                vertexStagingBuffer,
-                vertexBuffer,
-                offsetBytes,
-                sizeBytes,
+                m_cubeStagingBuffer.value(),
+                cubeBuffer,
+                0,
+                36 * sizeof(glm::vec3),
                 VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 VK_ACCESS_2_SHADER_STORAGE_READ_BIT
             );
+
+            Vk::EndLabel(cmdBuffer);
         }
-        Vk::EndLabel(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }
 
     void GeometryBuffer::Clear(VmaAllocator allocator)
     {
+        m_deletionQueue.FlushQueue();
+
         for (const auto& buffer : m_pendingIndexUploads | std::views::values)
         {
             buffer.Destroy(allocator);
@@ -211,9 +179,263 @@ namespace Vk
             buffer.Destroy(allocator);
         }
 
+        if (m_cubeStagingBuffer.has_value())
+        {
+            m_cubeStagingBuffer->Destroy(allocator);
+            m_cubeStagingBuffer = std::nullopt;
+        }
+
         m_pendingIndexUploads.clear();
         m_pendingPositionUploads.clear();
         m_pendingVertexUploads.clear();
+    }
+
+    void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
+    {
+        constexpr f32 SKYBOX_SIZE = 1.0f;
+
+        constexpr std::array SKYBOX_VERTICES =
+        {
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
+            -SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
+             SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
+            -SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
+
+            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+             SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE
+        };
+
+        constexpr usize VERTICES_SIZE = SKYBOX_VERTICES.size() * sizeof(f32);
+
+        m_cubeStagingBuffer = Vk::Buffer
+        (
+            allocator,
+            VERTICES_SIZE,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        std::memcpy(m_cubeStagingBuffer->allocationInfo.pMappedData, SKYBOX_VERTICES.data(), VERTICES_SIZE);
+    }
+
+    template<typename T>
+    GeometryBuffer::Info GeometryBuffer::SetupUpload
+    (
+        VmaAllocator allocator,
+        const std::span<const T> data,
+        u32& offset,
+        std::vector<Upload>& uploads
+    )
+    {
+        const auto stagingBuffer = Vk::Buffer
+        (
+            allocator,
+            data.size_bytes(),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        std::memcpy(stagingBuffer.allocationInfo.pMappedData, data.data(), data.size_bytes());
+
+        const GeometryBuffer::Info info =
+        {
+            .offset = offset,
+            .count  = static_cast<u32>(data.size())
+        };
+
+        uploads.emplace_back(info, stagingBuffer);
+
+        offset += data.size();
+
+        return info;
+    }
+
+    void GeometryBuffer::ResizeBuffer
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VmaAllocator allocator,
+        u32 count,
+        const std::span<const Upload> uploads,
+        usize elementSize,
+        VkBufferUsageFlags usage,
+        Vk::Buffer& buffer
+    )
+    {
+        if (count == 0)
+        {
+            return;
+        }
+
+        if (count * elementSize > buffer.requestedSize)
+        {
+            u32 pendingCount = 0;
+
+            for (const auto [_, count] : uploads | std::views::keys)
+            {
+                pendingCount += count;
+            }
+
+            const Vk::Buffer oldBuffer = buffer;
+            const usize      newSize   = static_cast<usize>(static_cast<f64>(count) * BUFFER_GROWTH_FACTOR) * elementSize;
+
+            buffer = Vk::Buffer
+            (
+                allocator,
+                newSize,
+                usage,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                0,
+                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+            );
+
+            if (oldBuffer.handle != VK_NULL_HANDLE && (count - pendingCount) > 0)
+            {
+                const VkBufferCopy2 copyRegion =
+                {
+                    .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                    .pNext     = nullptr,
+                    .srcOffset = 0,
+                    .dstOffset = 0,
+                    .size      = (count - pendingCount) * elementSize
+                };
+
+                const VkCopyBufferInfo2 copyInfo =
+                {
+                    .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                    .pNext       = nullptr,
+                    .srcBuffer   = oldBuffer.handle,
+                    .dstBuffer   = buffer.handle,
+                    .regionCount = 1,
+                    .pRegions    = &copyRegion,
+                };
+
+                vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+            }
+
+            m_deletionQueue.PushDeletor([oldBuffer, allocator] ()
+            {
+                oldBuffer.Destroy(allocator);
+            });
+        }
+    }
+
+    void GeometryBuffer::ResizeBuffers
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator
+    )
+    {
+        ResizeBuffer
+        (
+            cmdBuffer,
+            allocator,
+            indexCount,
+            m_pendingIndexUploads,
+            sizeof(Models::Index),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            indexBuffer
+        );
+
+        ResizeBuffer
+        (
+            cmdBuffer,
+            allocator,
+            positionCount,
+            m_pendingPositionUploads,
+            sizeof(glm::vec3),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            positionBuffer
+        );
+
+        ResizeBuffer
+        (
+            cmdBuffer,
+            allocator,
+            vertexCount,
+            m_pendingVertexUploads,
+            sizeof(Models::Vertex),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            vertexBuffer
+        );
+
+        positionBuffer.GetDeviceAddress(device);
+        vertexBuffer.GetDeviceAddress(device);
+
+        Vk::SetDebugName(device, indexBuffer.handle,    "GeometryBuffer/IndexBuffer");
+        Vk::SetDebugName(device, positionBuffer.handle, "GeometryBuffer/PositionBuffer");
+        Vk::SetDebugName(device, vertexBuffer.handle,   "GeometryBuffer/VertexBuffer");
+    }
+
+    void GeometryBuffer::FlushUploads
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Buffer& destination,
+        const std::vector<Upload>& uploads,
+        usize elementSize,
+        VkPipelineStageFlags2 dstStageMask,
+        VkAccessFlags2 dstAccessMask
+    )
+    {
+        for (const auto& [info, stagingBuffer] : uploads)
+        {
+            UploadToBuffer
+            (
+                cmdBuffer,
+                stagingBuffer,
+                destination,
+                info.offset * elementSize,
+                info.count * elementSize,
+                dstStageMask,
+                dstAccessMask
+            );
+        }
     }
 
     void GeometryBuffer::UploadToBuffer
@@ -227,13 +449,13 @@ namespace Vk
         VkAccessFlags2 dstAccessMask
     )
     {
-        if ((sizeBytes + offsetBytes) > destination.allocInfo.size)
+        if ((sizeBytes + offsetBytes) > destination.requestedSize)
         {
             Logger::Error
             (
                 "Not enough space in destination buffer! [Required={}] [Available={}]\n",
                 sizeBytes,
-                destination.allocInfo.size - offsetBytes
+                destination.requestedSize - offsetBytes
             );
         }
 
@@ -284,8 +506,8 @@ namespace Vk
                     "Index Buffer    | %u | %llu/%llu/%llu",
                     indexCount,
                     indexCount * sizeof(Models::Index),
-                    indexBuffer.allocInfo.size - (indexCount * sizeof(Models::Index)),
-                    indexBuffer.allocInfo.size
+                    indexBuffer.allocationInfo.size - (indexCount * sizeof(Models::Index)),
+                    indexBuffer.allocationInfo.size
                 );
 
                 ImGui::Text
@@ -293,8 +515,8 @@ namespace Vk
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionCount,
                     positionCount * sizeof(glm::vec3),
-                    positionBuffer.allocInfo.size - (positionCount * sizeof(glm::vec3)),
-                    positionBuffer.allocInfo.size
+                    positionBuffer.allocationInfo.size - (positionCount * sizeof(glm::vec3)),
+                    positionBuffer.allocationInfo.size
                 );
 
                 ImGui::Text
@@ -302,8 +524,8 @@ namespace Vk
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexCount,
                     vertexCount * sizeof(Models::Vertex),
-                    vertexBuffer.allocInfo.size - (vertexCount * sizeof(Models::Vertex)),
-                    vertexBuffer.allocInfo.size
+                    vertexBuffer.allocationInfo.size - (vertexCount * sizeof(Models::Vertex)),
+                    vertexBuffer.allocationInfo.size
                 );
 
                 ImGui::EndMenu();
@@ -318,5 +540,6 @@ namespace Vk
         indexBuffer.Destroy(allocator);
         positionBuffer.Destroy(allocator);
         vertexBuffer.Destroy(allocator);
+        cubeBuffer.Destroy(allocator);
     }
 }

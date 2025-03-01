@@ -19,11 +19,39 @@
 #ifndef CONSTANTS_GLSL
 #define CONSTANTS_GLSL
 
+// Config
+#define CSM_ENABLE_SMOOTH_TRANSITION 1
+#define CSM_ENABLE_PCF               1
+
 // Math constants
 const float PI = 3.14159265359;
+
+// Float bounds
+const float FLOAT_MIN = 1.175494351e-38;
+const float FLOAT_MAX = 3.402823466e+38;
 
 // Gamma correction constants
 const float GAMMA_FACTOR     = 2.2f;
 const float INV_GAMMA_FACTOR = 1.0f / GAMMA_FACTOR;
+
+// IBL Constants
+const float CONVOLUTION_SAMPLE_DELTA = 0.025f;
+const uint  BRDF_LUT_SAMPLE_COUNT    = 512u;
+const float MAX_REFLECTION_LOD       = 5.0f;
+
+// Shadow Constants
+const float SHADOW_MIN_BIAS      = 0.005f;
+const float SHADOW_MAX_BIAS      = 0.05f;
+const float SHADOW_BIAS_MODIFIER = 0.35f;
+const int   SHADOW_PCF_RANGE     = 1; // p = 2 * r + 1 for a p * p PCF filter
+const float SHADOW_BLEND_RANGE   = 25.0f;
+
+// Point Shadow Constants
+const int   POINT_SHADOW_NUM_SAMPLES = 20;
+const float POINT_SHADOW_BIAS        = 0.15f;
+
+// Spot shadow constants
+const float MIN_SPOT_SHADOW_BIAS = 0.000005f;
+const float MAX_SPOT_SHADOW_BIAS = 0.00025f;
 
 #endif

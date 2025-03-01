@@ -17,35 +17,39 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference     : enable
+#extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
 #include "Constants/Forward.glsl"
 #include "Material.glsl"
 
 layout(location = 0) out      vec3 fragPosition;
-layout(location = 1) out      vec2 fragTexCoords;
-layout(location = 2) out      vec3 fragToCamera;
-layout(location = 3) out flat uint fragDrawID;
-layout(location = 4) out      mat3 fragTBNMatrix;
+layout(location = 1) out      vec3 fragViewPosition;
+layout(location = 2) out      vec2 fragTexCoords;
+layout(location = 3) out      vec3 fragToCamera;
+layout(location = 4) out flat uint fragDrawID;
+layout(location = 5) out      mat3 fragTBNMatrix;
 
 void main()
 {
-    Mesh   mesh     = Constants.Meshes.meshes[gl_DrawID];
-    vec3   position = Constants.Positions.positions[gl_VertexIndex];
-    Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
+    uint   meshIndex = Constants.VisibleMeshes.indices[gl_DrawID];
+    Mesh   mesh      = Constants.Meshes.meshes[meshIndex];
+    vec3   position  = Constants.Positions.positions[gl_VertexIndex];
+    Vertex vertex    = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    fragPosition = fragPos.xyz;
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
+    vec4 fragPos     = mesh.transform * vec4(position, 1.0f);
+    fragPosition     = fragPos.xyz;
+    vec4 fragViewPos = Constants.Scene.view * fragPos;
+    fragViewPosition = fragViewPos.xyz;
+    gl_Position      = Constants.Scene.projection * fragViewPos;
 
     fragTexCoords = vertex.uv0;
-    fragToCamera  = normalize(Constants.Scene.cameraPos.xyz - fragPosition);
-    fragDrawID    = gl_DrawID;
+    fragToCamera  = normalize(Constants.Scene.cameraPos - fragPosition);
+    fragDrawID    = meshIndex;
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);
-    vec3 T = normalize(mesh.normalMatrix * vertex.tangent);
-         T = Orthogonalize(T, N);
+    vec3 T = normalize(mesh.transform    * vec4(vertex.tangent, 0.0f)).xyz;
+         T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 
     fragTBNMatrix = mat3(T, B, N);

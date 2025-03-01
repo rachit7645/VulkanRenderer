@@ -31,14 +31,14 @@ namespace Vk
     public:
         struct TextureInfo
         {
-            u32         descriptorID;
+            usize       pathHash;
             std::string name;
             Vk::Texture texture;
         };
 
         explicit TextureManager(const Vk::FormatHelper& formatHelper);
 
-        [[nodiscard]] usize AddTexture
+        [[nodiscard]] u32 AddTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
@@ -46,14 +46,23 @@ namespace Vk
             const std::string_view path
         );
 
-        [[nodiscard]] usize AddTexture
+        [[nodiscard]] u32 AddTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
             VmaAllocator allocator,
             const std::string_view name,
             const std::span<const u8> data,
-            const glm::uvec2 size
+            const glm::uvec2 size,
+            VkFormat format
+        );
+
+        [[nodiscard]] u32 AddTexture
+        (
+            Vk::MegaSet& megaSet,
+            VkDevice device,
+            const std::string_view name,
+            const Vk::Texture& texture
         );
 
         [[nodiscard]] u32 AddSampler
@@ -66,20 +75,17 @@ namespace Vk
         void Update(const Vk::CommandBuffer& cmdBuffer);
         void Clear(VmaAllocator allocator);
 
-        [[nodiscard]] u32 GetTextureID(usize pathHash) const;
-        [[nodiscard]] const Vk::Texture& GetTexture(usize pathHash) const;
-
+        [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
         void ImGuiDisplay();
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        std::unordered_map<usize, TextureInfo> textureMap;
-        std::unordered_map<u32, Vk::Sampler>   samplerMap;
+        std::unordered_map<u32, TextureInfo> textureMap;
+        std::unordered_map<u32, Vk::Sampler> samplerMap;
     private:
-        VkFormat m_format     = VK_FORMAT_UNDEFINED;
-        VkFormat m_formatSRGB = VK_FORMAT_UNDEFINED;
+        Vk::FormatHelper m_formatHelper;
 
         std::vector<std::pair<Vk::Texture, Texture::Upload>> m_pendingUploads;
     };

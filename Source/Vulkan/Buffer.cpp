@@ -33,7 +33,9 @@ namespace Vk
         VmaAllocationCreateFlags allocationFlags,
         VmaMemoryUsage memoryUsage
     )
+        : requestedSize(size)
     {
+        // TODO: Use flags2 once RenderDoc supports it
         const VkBufferCreateInfo createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -64,16 +66,18 @@ namespace Vk
             &allocCreateInfo,
             &handle,
             &allocation,
-            &allocInfo),
+            &allocationInfo),
             "Failed to create vertex buffer!"
         );
+
+        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
 
         Logger::Debug("Created buffer! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Buffer::Map(VmaAllocator allocator)
     {
-        vmaMapMemory(allocator, allocation, &allocInfo.pMappedData);
+        vmaMapMemory(allocator, allocation, &allocationInfo.pMappedData);
     }
 
     void Buffer::Unmap(VmaAllocator allocator)
@@ -83,6 +87,11 @@ namespace Vk
 
     void Buffer::GetDeviceAddress(VkDevice device)
     {
+        if (handle == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         const VkBufferDeviceAddressInfo bdaInfo =
         {
             .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
@@ -91,6 +100,13 @@ namespace Vk
         };
 
         deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
+
+        Logger::Debug
+        (
+            "Acquired device address! [Buffer={}] [Device Address={}]\n",
+            std::bit_cast<void*>(handle),
+            std::bit_cast<void*>(deviceAddress)
+        );
     }
 
     void Buffer::Barrier
@@ -137,6 +153,11 @@ namespace Vk
 
     void Buffer::Destroy(VmaAllocator allocator) const
     {
+        if (handle == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         Logger::Debug
         (
             "Destroying buffer [buffer={}] [allocation={}]\n",

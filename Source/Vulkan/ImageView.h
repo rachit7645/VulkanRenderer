@@ -19,7 +19,6 @@
 
 #include <vulkan/vulkan.h>
 #include "Image.h"
-#include "Util/Util.h"
 
 namespace Vk
 {
@@ -53,7 +52,7 @@ namespace std
     template <>
     struct hash<Vk::ImageView>
     {
-        std::size_t operator()(const Vk::ImageView& imageView) const
+        std::size_t operator()(const Vk::ImageView& imageView) const noexcept
         {
             // Since VkImageView is a pointer, its safe to hash it directly
             return std::hash<VkImageView>()(imageView.handle);

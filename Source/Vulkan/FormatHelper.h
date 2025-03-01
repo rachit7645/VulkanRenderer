@@ -26,11 +26,18 @@ namespace Vk
     public:
         explicit FormatHelper(VkPhysicalDevice physicalDevice);
 
-        VkFormat textureFormat;
-        VkFormat textureFormatSRGB;
-        VkFormat colorAttachmentFormatLDR;
-        VkFormat colorAttachmentFormatHDR;
-        VkFormat depthFormat;
+        VkFormat textureFormat            = VK_FORMAT_UNDEFINED;
+        VkFormat textureFormatSRGB        = VK_FORMAT_UNDEFINED;
+        VkFormat textureFormatBC7         = VK_FORMAT_UNDEFINED;
+        VkFormat textureFormatBC7SRGB     = VK_FORMAT_UNDEFINED;
+        VkFormat textureFormatHDR         = VK_FORMAT_UNDEFINED;
+        VkFormat colorAttachmentFormatLDR = VK_FORMAT_UNDEFINED;
+        VkFormat colorAttachmentFormatHDR = VK_FORMAT_UNDEFINED;
+        VkFormat depthFormat              = VK_FORMAT_UNDEFINED;
+        VkFormat depthStencilFormat       = VK_FORMAT_UNDEFINED;
+        VkFormat rFormat                  = VK_FORMAT_UNDEFINED;
+        VkFormat rgFormat                 = VK_FORMAT_UNDEFINED;
+        VkFormat rgFloatFormat            = VK_FORMAT_UNDEFINED;
     private:
         VkFormat FindSupportedFormat
         (
