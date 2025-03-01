@@ -71,7 +71,7 @@ void main()
 
     occlusion = 1.0f - (occlusion / Constants.Samples.sampleCount);
 
-    outSSAO = pow(occlusion, Constants.Power);
+    outSSAO = clamp(pow(occlusion, Constants.Power), 0.0f, 1.0f);
 }
 
 vec3 GetViewPosition(vec2 uv)

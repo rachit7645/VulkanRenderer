@@ -43,6 +43,6 @@ void main()
         }
     }
 
-    outSSAO = blur / (4.0f * 4.0f);
+    outSSAO = clamp(blur / (4.0f * 4.0f), 0.0f, 1.0f);
 }  
 
