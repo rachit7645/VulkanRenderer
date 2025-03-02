@@ -151,6 +151,12 @@ namespace Vk
         static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_SHADER_MODULE;
     };
 
+    template <>
+    struct VulkanObjectType<VkAccelerationStructureKHR>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
+    };
+
     template<typename T>
     void SetDebugName(UNUSED VkDevice device, UNUSED T object, UNUSED const std::string_view name)
     {

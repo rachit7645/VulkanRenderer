@@ -320,7 +320,7 @@ namespace Renderer::DearImGui
         {
             Vk::SetDebugName(context.device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, vertexBuffer] ()
+            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, vertexBuffer] () mutable
             {
                 vertexBuffer.Destroy(allocator);
             });
@@ -344,7 +344,7 @@ namespace Renderer::DearImGui
         {
             Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, indexBuffer] ()
+            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, indexBuffer] () mutable
             {
                 indexBuffer.Destroy(allocator);
             });
@@ -427,12 +427,12 @@ namespace Renderer::DearImGui
 
         pipeline.Destroy(device);
 
-        for (const auto& buffer : m_vertexBuffers)
+        for (auto& buffer : m_vertexBuffers)
         {
             buffer.Destroy(allocator);
         }
 
-        for (const auto& buffer : m_indexBuffers)
+        for (auto& buffer : m_indexBuffers)
         {
             buffer.Destroy(allocator);
         }

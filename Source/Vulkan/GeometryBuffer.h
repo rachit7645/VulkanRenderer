@@ -39,7 +39,7 @@ namespace Vk
         explicit GeometryBuffer(VkDevice device, VmaAllocator allocator);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
-        void Destroy(VmaAllocator allocator) const;
+        void Destroy(VmaAllocator allocator);
 
         std::array<Info, 3> SetupUploads
         (

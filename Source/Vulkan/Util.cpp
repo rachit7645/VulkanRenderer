@@ -95,7 +95,7 @@ namespace Vk
             1,
             &fence,
             VK_TRUE,
-            std::numeric_limits<u64>::max()),
+            60000000000ull),
             "Error while waiting for command buffer to be executed!"
         );
 

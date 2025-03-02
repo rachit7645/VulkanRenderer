@@ -70,6 +70,7 @@ namespace Renderer
             m_postProcessPass.Destroy(m_context.device, m_context.commandPool);
 
             m_megaSet.Destroy(m_context.device);
+            m_as.Destroy(m_context.device, m_context.allocator);
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
 
@@ -187,6 +188,13 @@ namespace Renderer
             m_modelManager.textureManager
         );
 
+        m_as.BuildBottomLevelAS
+        (
+            m_context,
+            m_modelManager,
+            m_renderObjects
+        );
+
         m_frameCounter.Reset();
     }
 
@@ -207,14 +215,17 @@ namespace Renderer
         m_shadowPass.Render
         (
             m_currentFIF,
+            m_context.device,
             m_context.allocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_meshBuffer,
             m_indirectBuffer,
             m_cullingDispatch,
+            m_as,
             m_camera,
-            m_sun
+            m_sun,
+            m_renderObjects
         );
 
         m_pointShadowPass.Render

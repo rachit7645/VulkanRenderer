@@ -242,7 +242,7 @@ namespace Renderer::IBL
             );
         }
 
-        m_deletionQueue.PushDeletor([context, matrixBuffer]
+        m_deletionQueue.PushDeletor([context, matrixBuffer] () mutable
         {
             matrixBuffer.Destroy(context.allocator);
         });

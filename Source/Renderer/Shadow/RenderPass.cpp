@@ -105,14 +105,17 @@ namespace Renderer::Shadow
     void RenderPass::Render
     (
         usize FIF,
+        VkDevice device,
         VmaAllocator allocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
         Culling::Dispatch& cullingDispatch,
+        Vk::AccelerationStructure& as,
         const Objects::Camera& camera,
-        const Objects::DirLight& light
+        const Objects::DirLight& light,
+        const std::span<const Renderer::RenderObject> renderObjects
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -132,6 +135,15 @@ namespace Renderer::Shadow
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        as.BuildTopLevelAS
+        (
+            FIF,
+            currentCmdBuffer,
+            device,
+            allocator,
+            renderObjects
+        );
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("ShadowPass/FIF{}", FIF), glm::vec4(0.7196f, 0.2488f, 0.6588f, 1.0f));
 

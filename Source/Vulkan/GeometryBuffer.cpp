@@ -164,17 +164,17 @@ namespace Vk
     {
         m_deletionQueue.FlushQueue();
 
-        for (const auto& buffer : m_pendingIndexUploads | std::views::values)
+        for (auto& buffer : m_pendingIndexUploads | std::views::values)
         {
             buffer.Destroy(allocator);
         }
 
-        for (const auto& buffer : m_pendingPositionUploads | std::views::values)
+        for (auto& buffer : m_pendingPositionUploads | std::views::values)
         {
             buffer.Destroy(allocator);
         }
 
-        for (const auto& buffer : m_pendingVertexUploads | std::views::values)
+        for (auto& buffer : m_pendingVertexUploads | std::views::values)
         {
             buffer.Destroy(allocator);
         }
@@ -313,8 +313,9 @@ namespace Vk
                 pendingCount += count;
             }
 
-            const Vk::Buffer oldBuffer = buffer;
-            const usize      newSize   = static_cast<usize>(static_cast<f64>(count) * BUFFER_GROWTH_FACTOR) * elementSize;
+            auto oldBuffer = buffer;
+
+            const auto newSize = static_cast<usize>(static_cast<f64>(count) * BUFFER_GROWTH_FACTOR) * elementSize;
 
             buffer = Vk::Buffer
             (
@@ -350,7 +351,7 @@ namespace Vk
                 vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
             }
 
-            m_deletionQueue.PushDeletor([oldBuffer, allocator] ()
+            m_deletionQueue.PushDeletor([oldBuffer, allocator] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
@@ -373,7 +374,9 @@ namespace Vk
             sizeof(Models::Index),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             indexBuffer
         );
 
@@ -387,7 +390,8 @@ namespace Vk
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             positionBuffer
         );
 
@@ -401,10 +405,12 @@ namespace Vk
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             vertexBuffer
         );
 
+        indexBuffer.GetDeviceAddress(device);
         positionBuffer.GetDeviceAddress(device);
         vertexBuffer.GetDeviceAddress(device);
 
@@ -535,7 +541,7 @@ namespace Vk
         }
     }
 
-    void GeometryBuffer::Destroy(VmaAllocator allocator) const
+    void GeometryBuffer::Destroy(VmaAllocator allocator)
     {
         indexBuffer.Destroy(allocator);
         positionBuffer.Destroy(allocator);

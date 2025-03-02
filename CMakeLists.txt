@@ -83,6 +83,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/DebugUtils.cpp
     Source/Vulkan/FormatHelper.cpp
     Source/Vulkan/FramebufferManager.cpp
+    Source/Vulkan/AccelerationStructure.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources

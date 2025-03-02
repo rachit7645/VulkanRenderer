@@ -55,7 +55,7 @@ namespace Vk
             VkDeviceSize size
         ) const;
 
-        void Destroy(VmaAllocator allocator) const;
+        void Destroy(VmaAllocator allocator);
 
         // Vulkan handles
         VkBuffer        handle        = VK_NULL_HANDLE;

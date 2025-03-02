@@ -54,6 +54,8 @@ namespace Vk
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
         VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
         #ifdef ENGINE_DEBUG
         VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
         #endif
@@ -187,8 +189,13 @@ namespace Vk
             VkPhysicalDeviceProperties2 propertySet = {};
             propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
+            VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
+            accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+            accelerationStructureFeatures.pNext = nullptr;
+
             VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenanceFeatures = {};
             swapchainMaintenanceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
+            swapchainMaintenanceFeatures.pNext = &accelerationStructureFeatures;
 
             VkPhysicalDeviceVulkan11Features vk11Features = {};
             vk11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
@@ -244,10 +251,11 @@ namespace Vk
     {
         const auto queues = QueueFamilyIndices(phyDevice, surface);
 
-        const auto vk13Features                 = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
-        const auto vk12Features                 = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
-        const auto vk11Features                 = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
-        const auto swapchainMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
+        const auto vk13Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
+        const auto vk12Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
+        const auto vk11Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
+        const auto swapchainMaintenanceFeatures  = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
+        const auto accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureSet.pNext);
 
         // Score parts
         const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
@@ -259,6 +267,8 @@ namespace Vk
         // Need extensions to calculate these
         bool isSwapChainAdequate     = false;
         bool hasSwapchainMaintenance = false;
+        bool hasAS                   = false;
+        bool hasASUpdateAfterBind    = false;
 
         if (hasExtensions)
         {
@@ -266,6 +276,9 @@ namespace Vk
 
             isSwapChainAdequate     = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
             hasSwapchainMaintenance = swapchainMaintenanceFeatures->swapchainMaintenance1;
+
+            hasAS                = accelerationStructureFeatures->accelerationStructure;
+            hasASUpdateAfterBind = accelerationStructureFeatures->descriptorBindingAccelerationStructureUpdateAfterBind;
         }
 
         // Standard features
@@ -298,7 +311,7 @@ namespace Vk
 
         const bool required   = areQueuesValid && hasExtensions;
         const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray && hasDepthClamp;
-        const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance;
+        const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind;
         const bool vk11       = hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
                                 hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
@@ -331,20 +344,23 @@ namespace Vk
             });
         }
 
-        // Swapchain Maintenance
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
+        accelerationStructureFeatures.sType                                                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+        accelerationStructureFeatures.pNext                                                 = nullptr;
+        accelerationStructureFeatures.accelerationStructure                                 = VK_TRUE;
+        accelerationStructureFeatures.descriptorBindingAccelerationStructureUpdateAfterBind = VK_TRUE;
+
         VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenanceFeatures = {};
         swapchainMaintenanceFeatures.sType                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
-        swapchainMaintenanceFeatures.pNext                 = nullptr;
+        swapchainMaintenanceFeatures.pNext                 = &accelerationStructureFeatures;
         swapchainMaintenanceFeatures.swapchainMaintenance1 = VK_TRUE;
 
-        // Add required Vulkan 1.1 features here
         VkPhysicalDeviceVulkan11Features vk11Features = {};
         vk11Features.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
         vk11Features.pNext                = &swapchainMaintenanceFeatures;
         vk11Features.shaderDrawParameters = VK_TRUE;
         vk11Features.multiview            = VK_TRUE;
 
-        // Add required Vulkan 1.2 features here
         VkPhysicalDeviceVulkan12Features vk12Features = {};
         vk12Features.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         vk12Features.pNext                                        = &vk11Features;
@@ -359,7 +375,6 @@ namespace Vk
         vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
         vk12Features.drawIndirectCount                            = VK_TRUE;
 
-        // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
         vk13Features.pNext            = &vk12Features;
@@ -367,7 +382,6 @@ namespace Vk
         vk13Features.dynamicRendering = VK_TRUE;
         vk13Features.maintenance4     = VK_TRUE;
 
-        // Add required features here
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
         deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         deviceFeatures.pNext                         = &vk13Features;

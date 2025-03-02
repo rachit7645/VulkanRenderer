@@ -38,7 +38,7 @@ namespace Renderer::SSAO
             VMA_MEMORY_USAGE_AUTO
         );
 
-        const auto stagingBuffer = Vk::Buffer
+        auto stagingBuffer = Vk::Buffer
         (
             context.allocator,
             BUFFER_SIZE,

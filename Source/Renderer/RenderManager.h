@@ -46,6 +46,7 @@
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Models/ModelManager.h"
+#include "Vulkan/AccelerationStructure.h"
 
 namespace Renderer
 {
@@ -84,9 +85,10 @@ namespace Renderer
 
         Vk::FormatHelper m_formatHelper;
 
-        Vk::MegaSet            m_megaSet;
-        Vk::FramebufferManager m_framebufferManager;
-        Models::ModelManager   m_modelManager;
+        Vk::MegaSet               m_megaSet;
+        Vk::FramebufferManager    m_framebufferManager;
+        Vk::AccelerationStructure m_as;
+        Models::ModelManager      m_modelManager;
 
         IBL::IBLMaps m_iblMaps;
 
