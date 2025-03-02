@@ -22,7 +22,6 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "Constants/GBuffer.glsl"
-#include "Color.glsl"
 #include "Packing.glsl"
 #include "MegaSet.glsl"
 
@@ -37,8 +36,8 @@ void main()
 {
     Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
-    vec4 albedo = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
-    albedo.rgb  = ToLinear(albedo.rgb) * mesh.material.albedoFactor.rgb;
+    vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
+    albedo.rgb  *= mesh.material.albedoFactor.rgb;
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);

@@ -60,12 +60,10 @@ namespace Util
         for (usize i = 0; i < threadCount; ++i)
         {
             const usize start = i * chunkSize;
-            const usize end   = start + chunkSize;
+            const usize end   = (i == threadCount - 1) ? (start + chunkSize + countLeft) : (start + chunkSize);
 
             threads.emplace_back(ConvertF32ToF16Range, source, destination, start, end);
         }
-
-        ConvertF32ToF16Range(source, destination, count - countLeft, count);
 
         for (auto& thread : threads)
         {

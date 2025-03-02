@@ -159,7 +159,7 @@ namespace Renderer::Skybox
            reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
-        std::array descriptorSets = {megaSet.descriptorSet.handle};
+        std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
         vkCmdDraw

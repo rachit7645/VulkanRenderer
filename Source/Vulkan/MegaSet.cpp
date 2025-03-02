@@ -113,7 +113,7 @@ namespace Vk
             device,
             &createInfo,
             nullptr,
-            &descriptorSet.layout),
+            &descriptorLayout),
             "Failed to create mega set layout!"
         );
 
@@ -123,18 +123,18 @@ namespace Vk
             .pNext              = nullptr,
             .descriptorPool     = m_descriptorPool,
             .descriptorSetCount = 1,
-            .pSetLayouts        = &descriptorSet.layout
+            .pSetLayouts        = &descriptorLayout
         };
 
         Vk::CheckResult
         (
-            vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet.handle),
+            vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet),
             "Failed to allocate mega set"
         );
 
-        Vk::SetDebugName(device, m_descriptorPool,     "MegaSet/DescriptorPool");
-        Vk::SetDebugName(device, descriptorSet.layout, "MegaSet/DescriptorLayout");
-        Vk::SetDebugName(device, descriptorSet.handle, "MegaSet/DescriptorSet");
+        Vk::SetDebugName(device, m_descriptorPool, "MegaSet/DescriptorPool");
+        Vk::SetDebugName(device, descriptorLayout, "MegaSet/DescriptorLayout");
+        Vk::SetDebugName(device, descriptorSet,    "MegaSet/DescriptorSet");
 
         Logger::Info("{}\n", "Initialised mega set!");
     }
@@ -145,7 +145,7 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet.handle,
+            descriptorSet,
             DescriptorBinding::SAMPLER_BINDING,
             id,
             sampler.handle,
@@ -163,7 +163,7 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet.handle,
+            descriptorSet,
             DescriptorBinding::SAMPLED_IMAGES_BINDING,
             id,
             VK_NULL_HANDLE,
@@ -184,7 +184,7 @@ namespace Vk
     void MegaSet::Destroy(VkDevice device)
     {
         vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorSet.layout, nullptr);
+        vkDestroyDescriptorSetLayout(device, descriptorLayout, nullptr);
 
         Logger::Info("{}\n", "Destroyed mega set!");
     }

@@ -170,7 +170,7 @@ namespace Renderer::PostProcess
         );
 
         // Mega set
-        std::array descriptorSets = {megaSet.descriptorSet.handle};
+        std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
         vkCmdDraw

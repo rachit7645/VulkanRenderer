@@ -19,7 +19,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "DescriptorSet.h"
 #include "DescriptorWriter.h"
 #include "Sampler.h"
 #include "ImageView.h"
@@ -45,7 +44,8 @@ namespace Vk
 
         void Destroy(VkDevice device);
 
-        Vk::DescriptorSet descriptorSet;
+        VkDescriptorSet       descriptorSet    = VK_NULL_HANDLE;
+        VkDescriptorSetLayout descriptorLayout = VK_NULL_HANDLE;
     private:
         VkDescriptorPool     m_descriptorPool = VK_NULL_HANDLE;
         Vk::DescriptorWriter m_writer         = {};

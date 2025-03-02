@@ -122,7 +122,7 @@ namespace Renderer::SSAO
         }
 
         std::array<f16, 2 * NOISE_COUNT> ssaoNoiseHalf = {};
-        Util::ConvertF32ToF16(&ssaoNoise[0][0], ssaoNoiseHalf.data(), ssaoNoiseHalf.size());
+        Util::ConvertF32ToF16Range(&ssaoNoise[0][0], ssaoNoiseHalf.data(), 0, ssaoNoiseHalf.size());
 
         noiseTexture = textureManager.AddTexture
         (
@@ -302,7 +302,7 @@ namespace Renderer::SSAO
             reinterpret_cast<void*>(&occlusionPipeline.pushConstant)
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         occlusionPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
@@ -441,7 +441,7 @@ namespace Renderer::SSAO
             reinterpret_cast<void*>(&blurPipeline.pushConstant)
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         blurPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw

@@ -217,6 +217,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<numbers>
 	<deque>
     <variant>
+    <list>
     # C STL Headers
     <cstdint>
     <cstddef>

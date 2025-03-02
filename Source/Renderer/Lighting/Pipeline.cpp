@@ -70,7 +70,7 @@ namespace Renderer::Lighting
             )
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
-            .AddDescriptorLayout(megaSet.descriptorSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "LightingPipeline");

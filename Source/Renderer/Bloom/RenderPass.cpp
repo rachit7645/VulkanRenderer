@@ -244,7 +244,7 @@ namespace Renderer::Bloom
                reinterpret_cast<void*>(&downsamplePipeline.pushConstant)
             );
 
-            std::array descriptorSets = {megaSet.descriptorSet.handle};
+            std::array descriptorSets = {megaSet.descriptorSet};
             downsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
@@ -402,7 +402,7 @@ namespace Renderer::Bloom
                reinterpret_cast<void*>(&upsamplePipeline.pushConstant)
             );
 
-            std::array descriptorSets = {megaSet.descriptorSet.handle};
+            std::array descriptorSets = {megaSet.descriptorSet};
             upsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw

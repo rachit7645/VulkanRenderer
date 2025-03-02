@@ -22,7 +22,6 @@
 #include "Context.h"
 #include "Util/Util.h"
 #include "CommandBuffer.h"
-#include "DescriptorSet.h"
 
 namespace Vk
 {

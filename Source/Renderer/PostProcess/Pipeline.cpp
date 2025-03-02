@@ -64,7 +64,7 @@ namespace Renderer::PostProcess
             )
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::PushConstant))
-            .AddDescriptorLayout(megaSet.descriptorSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "SwapchainPipeline");

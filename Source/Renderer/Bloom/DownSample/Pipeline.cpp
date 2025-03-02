@@ -69,7 +69,7 @@ namespace Renderer::Bloom::DownSample
             )
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::PushConstant))
-            .AddDescriptorLayout(megaSet.descriptorSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "DownSamplePipeline");

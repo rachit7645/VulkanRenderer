@@ -399,7 +399,7 @@ namespace Renderer::IBL
         );
 
         // Mega set
-        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
@@ -613,7 +613,7 @@ namespace Renderer::IBL
         );
 
         // Mega set
-        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
@@ -818,7 +818,7 @@ namespace Renderer::IBL
             );
 
             // Mega set
-            const std::array descriptorSets = {megaSet.descriptorSet.handle};
+            const std::array descriptorSets = {megaSet.descriptorSet};
             pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw

@@ -274,7 +274,7 @@ namespace Renderer::GBuffer
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
         geometryBuffer.Bind(currentCmdBuffer);

@@ -71,7 +71,7 @@ namespace Renderer::Forward
             )
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
-            .AddDescriptorLayout(megaSet.descriptorSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "ForwardPipeline");

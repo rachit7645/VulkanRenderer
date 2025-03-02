@@ -69,7 +69,7 @@ namespace Renderer::SSAO::Blur
             )
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(Blur::PushConstant)))
-            .AddDescriptorLayout(megaSet.descriptorSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "SSAOBlurPipeline");

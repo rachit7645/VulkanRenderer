@@ -21,8 +21,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "Constants/PostProcess.glsl"
-#include "Color.glsl"
-#include "ACES.glsl"
+#include "Tonemap.glsl"
 #include "MegaSet.glsl"
 
 layout(location = 0) in vec2 fragUV;
@@ -35,7 +34,7 @@ void main()
     vec3 bloomColor = texture(sampler2D(Textures[Constants.BloomIndex], Samplers[Constants.SamplerIndex]), fragUV).rgb;
 
     vec3 color = mix(hdrColor, bloomColor, Constants.BloomStrength);
-         color = GammaCorrect(ACESFast(color));
+         color = ACESFast(color);
 
     outColor = vec4(color, 1.0f);
 }
