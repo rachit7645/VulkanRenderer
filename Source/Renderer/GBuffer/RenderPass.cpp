@@ -52,6 +52,7 @@ namespace Renderer::GBuffer
             "GAlbedo",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Single2D,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -69,6 +70,7 @@ namespace Renderer::GBuffer
             "GNormal_Rgh_Mtl",
             Vk::FramebufferType::ColorLDR,
             Vk::ImageType::Single2D,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return

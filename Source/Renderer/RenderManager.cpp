@@ -43,6 +43,7 @@ namespace Renderer
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_ssaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_shadowRTPass(m_context, m_framebufferManager),
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -57,6 +58,7 @@ namespace Renderer
             m_meshBuffer.Destroy(m_context.allocator);
 
             m_cullingDispatch.Destroy(m_context.device);
+            m_shadowRTPass.Destroy(m_context.device, m_context.commandPool);
             m_ssaoPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_lightingPass.Destroy(m_context.device, m_context.commandPool);
             m_gBufferPass.Destroy(m_context.device, m_context.commandPool);
@@ -70,7 +72,7 @@ namespace Renderer
             m_postProcessPass.Destroy(m_context.device, m_context.commandPool);
 
             m_megaSet.Destroy(m_context.device);
-            m_as.Destroy(m_context.device, m_context.allocator);
+            m_accelerationStructure.Destroy(m_context.device, m_context.allocator);
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
 
@@ -188,7 +190,7 @@ namespace Renderer
             m_modelManager.textureManager
         );
 
-        m_as.BuildBottomLevelAS
+        m_accelerationStructure.BuildBottomLevelAS
         (
             m_context,
             m_modelManager,
@@ -212,20 +214,27 @@ namespace Renderer
         BeginFrame();
         Update();
 
-        m_shadowPass.Render
+        m_shadowRTPass.Render
         (
             m_currentFIF,
             m_context.device,
+            m_context.allocator,
+            m_framebufferManager,
+            m_accelerationStructure,
+            m_renderObjects
+        );
+
+        m_shadowPass.Render
+        (
+            m_currentFIF,
             m_context.allocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_meshBuffer,
             m_indirectBuffer,
             m_cullingDispatch,
-            m_as,
             m_camera,
-            m_sun,
-            m_renderObjects
+            m_sun
         );
 
         m_pointShadowPass.Render
@@ -610,6 +619,13 @@ namespace Renderer
 
         const std::array cmdBufferInfos =
         {
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_shadowRTPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
             VkCommandBufferSubmitInfo
             {
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,

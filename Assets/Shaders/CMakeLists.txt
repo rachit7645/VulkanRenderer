@@ -80,6 +80,9 @@ file(GLOB SHADER_SOURCES
     SSAO.frag
     SSAOBlur.vert
     SSAOBlur.frag
+    Shadow.rgen
+    Shadow.rchit
+    Shadow.rmiss
 )
 
 # Shader headers

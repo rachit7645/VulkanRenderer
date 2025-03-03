@@ -90,10 +90,11 @@ namespace Vk
 
     struct Framebuffer
     {
-        FramebufferType     type      = FramebufferType::ColorLDR;
-        FramebufferSizeData sizeData  = {};
-        ImageType           imageType = ImageType::Single2D;
-        Vk::Image           image     = {};
+        FramebufferType     type          = FramebufferType::ColorLDR;
+        FramebufferSizeData sizeData      = {};
+        ImageType           imageType     = ImageType::Single2D;
+        Vk::Image           image         = {};
+        VkImageLayout       initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     };
 
     class FramebufferManager
@@ -104,6 +105,7 @@ namespace Vk
             const std::string_view name,
             FramebufferType type,
             ImageType imageType,
+            VkImageLayout initialLayout,
             const FramebufferSizeData& sizeData
         );
 

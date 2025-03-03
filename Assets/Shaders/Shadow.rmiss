@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-#version 460
+#version 460 core
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
-
-
-#include "Constants/Converter.glsl"
-#include "MegaSet.glsl"
-#include "Converter.glsl"
-
-layout(location = 0) in vec3 worldPos;
-
-layout(location = 0) out vec3 outColor;
+#extension GL_EXT_ray_tracing : enable
 
 void main()
 {
-    vec3 normal = normalize(worldPos);
-    vec2 uv     = GetSphericalMapUV(normal);
-
-    outColor = texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
 }

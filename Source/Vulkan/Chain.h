@@ -51,6 +51,16 @@ namespace Vk
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
     };
 
+    template<> struct VulkanStructType<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>
+    {
+        static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    };
+
+    template<> struct VulkanStructType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>
+    {
+        static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+    };
+
     template<typename T>
     T* FindStructureInChain(void* pNext)
     {

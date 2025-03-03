@@ -50,6 +50,7 @@ namespace Renderer::Bloom
             "Bloom",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Array2D,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             [device = context.device] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews("Bloom", device);

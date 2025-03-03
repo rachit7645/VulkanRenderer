@@ -315,7 +315,7 @@ namespace Vk
                     sizeof(VkDeviceSize) * compactedSizes.size(),
                     compactedSizes.data(),
                     sizeof(VkDeviceSize),
-                    VK_QUERY_RESULT_WAIT_BIT),
+                    VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_64_BIT),
                     "Failed to retrieve BLAS compacted size!"
                 );
 

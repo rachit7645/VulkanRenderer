@@ -22,7 +22,6 @@
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Vulkan/AccelerationStructure.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Objects/Camera.h"
@@ -46,17 +45,14 @@ namespace Renderer::Shadow
         void Render
         (
             usize FIF,
-            VkDevice device,
             VmaAllocator allocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
             Culling::Dispatch& cullingDispatch,
-            Vk::AccelerationStructure& as,
             const Objects::Camera& camera,
-            const Objects::DirLight& light,
-            const std::span<const Renderer::RenderObject> renderObjects
+            const Objects::DirLight& light
         );
 
         Shadow::Pipeline pipeline;

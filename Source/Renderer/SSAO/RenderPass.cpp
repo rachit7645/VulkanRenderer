@@ -53,6 +53,7 @@ namespace Renderer::SSAO
             "Occlusion",
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -70,6 +71,7 @@ namespace Renderer::SSAO
             "OcclusionBlur",
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return

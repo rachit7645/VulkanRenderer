@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef SHADOW_RT_PIPELINE_H
+#define SHADOW_RT_PIPELINE_H
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
 
-
-#include "Constants/Converter.glsl"
-#include "MegaSet.glsl"
-#include "Converter.glsl"
-
-layout(location = 0) in vec3 worldPos;
-
-layout(location = 0) out vec3 outColor;
-
-void main()
+namespace Renderer::ShadowRT
 {
-    vec3 normal = normalize(worldPos);
-    vec2 uv     = GetSphericalMapUV(normal);
+    class Pipeline : public Vk::Pipeline
+    {
+    public:
+        Pipeline(const Vk::Context& context);
 
-    outColor = texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
+        ShadowRT::PushConstant pushConstant = {};
+    };
 }
+
+#endif

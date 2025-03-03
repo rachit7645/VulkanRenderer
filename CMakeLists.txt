@@ -144,6 +144,9 @@ add_executable(VulkanRenderer
     Source/Renderer/SSAO/Blur/Pipeline.cpp
     Source/Renderer/SSAO/RenderPass.cpp
     Source/Renderer/SSAO/SampleBuffer.cpp
+    # Shadow RT sources
+    Source/Renderer/ShadowRT/Pipeline.cpp
+    Source/Renderer/ShadowRT/RenderPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

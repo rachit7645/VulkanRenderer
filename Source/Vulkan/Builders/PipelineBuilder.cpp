@@ -113,6 +113,41 @@ namespace Vk::Builders
         }
         break;
 
+        case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
+        {
+            const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
+            {
+                .sType                        = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+                .pNext                        = nullptr,
+                .flags                        = 0,
+                .stageCount                   = static_cast<u32>(m_shaderStageCreateInfos.size()),
+                .pStages                      = m_shaderStageCreateInfos.data(),
+                .groupCount                   = static_cast<u32>(m_shaderGroups.size()),
+                .pGroups                      = m_shaderGroups.data(),
+                .maxPipelineRayRecursionDepth = m_maxRayRecursionDepth,
+                .pLibraryInfo                 = nullptr,
+                .pLibraryInterface            = nullptr,
+                .pDynamicState                = &m_dynamicStateInfo,
+                .layout                       = pipelineLayout,
+                .basePipelineHandle           = VK_NULL_HANDLE,
+                .basePipelineIndex            = -1
+            };
+
+            Vk::CheckResult(vkCreateRayTracingPipelinesKHR(
+                m_context->device,
+                VK_NULL_HANDLE,
+                VK_NULL_HANDLE,
+                1,
+                &pipelineCreateInfo,
+                nullptr,
+                &pipeline),
+                "Failed to create ray tracing pipeline!"
+            );
+
+            Logger::Debug("Created ray tracing pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
+        }
+        break;
+
         default:
             Logger::Error("{}\n", "Invalid pipeline type!");
         }
@@ -148,6 +183,8 @@ namespace Vk::Builders
         m_msaaStateInfo       = {.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO   };
         m_depthStencilInfo    = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
         m_colorBlendInfo      = {.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO   };
+
+        m_maxRayRecursionDepth = 0;
 
         // Reset warning stack
         #if defined(__GNUC__) && !defined(__clang__)
@@ -185,8 +222,7 @@ namespace Vk::Builders
     {
         m_shaderModules.emplace_back(m_context->device, path);
 
-        const VkPipelineShaderStageCreateInfo stageCreateInfo =
-        {
+        m_shaderStageCreateInfos.emplace_back(VkPipelineShaderStageCreateInfo{
             .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             .pNext               = nullptr,
             .flags               = 0,
@@ -194,9 +230,37 @@ namespace Vk::Builders
             .module              = m_shaderModules.back().handle,
             .pName               = "main",
             .pSpecializationInfo = nullptr
-        };
+        });
 
-        m_shaderStageCreateInfos.emplace_back(stageCreateInfo);
+        return *this;
+    }
+
+    PipelineBuilder& PipelineBuilder::AttachShaderGroup
+    (
+        VkRayTracingShaderGroupTypeKHR groupType,
+        u32 generalShader,
+        u32 closestHitShader,
+        u32 anyHitShader,
+        u32 intersectionShader
+    )
+    {
+        m_shaderGroups.emplace_back(VkRayTracingShaderGroupCreateInfoKHR{
+            .sType                           = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+            .pNext                           = nullptr,
+            .type                            = groupType,
+            .generalShader                   = generalShader,
+            .closestHitShader                = closestHitShader,
+            .anyHitShader                    = anyHitShader,
+            .intersectionShader              = intersectionShader,
+            .pShaderGroupCaptureReplayHandle = nullptr
+        });
+
+        return *this;
+    }
+
+    [[nodiscard]] PipelineBuilder& PipelineBuilder::SetMaxRayRecursionDepth(u32 maxRayRecursionDepth)
+    {
+        m_maxRayRecursionDepth = maxRayRecursionDepth;
 
         return *this;
     }

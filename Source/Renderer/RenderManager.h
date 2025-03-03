@@ -37,16 +37,17 @@
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
 #include "SSAO/RenderPass.h"
+#include "ShadowRT/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/FramebufferManager.h"
+#include "Vulkan/AccelerationStructure.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Models/ModelManager.h"
-#include "Vulkan/AccelerationStructure.h"
 
 namespace Renderer
 {
@@ -87,7 +88,7 @@ namespace Renderer
 
         Vk::MegaSet               m_megaSet;
         Vk::FramebufferManager    m_framebufferManager;
-        Vk::AccelerationStructure m_as;
+        Vk::AccelerationStructure m_accelerationStructure;
         Models::ModelManager      m_modelManager;
 
         IBL::IBLMaps m_iblMaps;
@@ -104,6 +105,7 @@ namespace Renderer
         GBuffer::RenderPass     m_gBufferPass;
         Lighting::RenderPass    m_lightingPass;
         SSAO::RenderPass        m_ssaoPass;
+        ShadowRT::RenderPass    m_shadowRTPass;
         Culling::Dispatch       m_cullingDispatch;
 
         // Buffers

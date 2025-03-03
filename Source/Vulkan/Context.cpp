@@ -16,7 +16,6 @@
 
 #include "Context.h"
 
-#include <map>
 #include <unordered_map>
 #include <array>
 #include <vector>
@@ -56,6 +55,8 @@ namespace Vk
         VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME,
         VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME,
         #ifdef ENGINE_DEBUG
         VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
         #endif
@@ -180,18 +181,32 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto properties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
-        auto features   = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
-        auto scores     = std::map<usize, VkPhysicalDevice>{};
+        auto rtPipelineProperties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
+        auto properties           = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
+        auto features             = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
+        auto scores               = std::unordered_map<VkPhysicalDevice, usize>{};
 
         for (const auto& currentDevice : devices)
         {
+            VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtPipelinePropertySet = {};
+            rtPipelinePropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+            rtPipelinePropertySet.pNext = nullptr;
+
             VkPhysicalDeviceProperties2 propertySet = {};
             propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+            propertySet.pNext = &rtPipelinePropertySet;
+
+            VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
+            rayTracingMaintenance1Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+            rayTracingMaintenance1Features.pNext = nullptr;
+
+            VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
+            rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+            rayTracingPipelineFeatures.pNext = &rayTracingMaintenance1Features;
 
             VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
             accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-            accelerationStructureFeatures.pNext = nullptr;
+            accelerationStructureFeatures.pNext = &rayTracingPipelineFeatures;
 
             VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenanceFeatures = {};
             swapchainMaintenanceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
@@ -216,22 +231,33 @@ namespace Vk
             vkGetPhysicalDeviceProperties2(currentDevice, &propertySet);
             vkGetPhysicalDeviceFeatures2(currentDevice, &featureSet);
 
+            rtPipelineProperties.emplace(currentDevice, rtPipelinePropertySet);
             properties.emplace(currentDevice, propertySet);
             features.emplace(currentDevice, featureSet);
-
-            scores.emplace(CalculateScore(currentDevice, propertySet, featureSet), currentDevice);
+            scores.emplace(currentDevice, CalculateScore(currentDevice, propertySet, featureSet));
         }
 
-        // Best GPU => Highest score
-        const auto [highestScore, bestDevice] = *scores.crbegin();
+        VkPhysicalDevice bestDevice   = VK_NULL_HANDLE;
+        usize            highestScore = 0;
+
+        for (const auto& [device, score] : scores)
+        {
+            if (score > highestScore)
+            {
+                highestScore = score;
+                bestDevice   = device;
+            }
+        }
+
         // Score = 0 => Required features not supported
         if (highestScore == 0)
         {
             Logger::VulkanError("Failed to find any suitable physical device!");
         }
 
-        physicalDevice       = bestDevice;
-        physicalDeviceLimits = properties[physicalDevice].properties.limits;
+        physicalDevice               = bestDevice;
+        physicalDeviceLimits         = properties[physicalDevice].properties.limits;
+        rayTracingPipelineProperties = rtPipelineProperties[physicalDevice];
 
         Logger::Info
         (
@@ -256,6 +282,8 @@ namespace Vk
         const auto vk11Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
         const auto swapchainMaintenanceFeatures  = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
         const auto accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureSet.pNext);
+        const auto rayTracingPipelineFeatures    = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureSet.pNext);
+        const auto rayTracingMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(featureSet.pNext);
 
         // Score parts
         const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
@@ -269,6 +297,9 @@ namespace Vk
         bool hasSwapchainMaintenance = false;
         bool hasAS                   = false;
         bool hasASUpdateAfterBind    = false;
+        bool hasRTPipeline           = false;
+        bool hasRTCulling            = false;
+        bool hasRTMaintenance        = false;
 
         if (hasExtensions)
         {
@@ -279,6 +310,11 @@ namespace Vk
 
             hasAS                = accelerationStructureFeatures->accelerationStructure;
             hasASUpdateAfterBind = accelerationStructureFeatures->descriptorBindingAccelerationStructureUpdateAfterBind;
+
+            hasRTPipeline = rayTracingPipelineFeatures->rayTracingPipeline;
+            hasRTCulling  = rayTracingPipelineFeatures->rayTraversalPrimitiveCulling;
+
+            hasRTMaintenance = rayTracingMaintenanceFeatures->rayTracingMaintenance1;
         }
 
         // Standard features
@@ -310,8 +346,10 @@ namespace Vk
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
         const bool required   = areQueuesValid && hasExtensions;
-        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray && hasDepthClamp;
-        const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind;
+        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray &&
+                                hasDepthClamp;
+        const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
+                                hasRTPipeline && hasRTCulling && hasRTMaintenance;
         const bool vk11       = hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
                                 hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
@@ -344,9 +382,20 @@ namespace Vk
             });
         }
 
+        VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
+        rayTracingMaintenance1Features.sType                  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+        rayTracingMaintenance1Features.pNext                  = nullptr;
+        rayTracingMaintenance1Features.rayTracingMaintenance1 = VK_TRUE;
+
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
+        rayTracingPipelineFeatures.sType                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+        rayTracingPipelineFeatures.pNext                        = &rayTracingMaintenance1Features;
+        rayTracingPipelineFeatures.rayTracingPipeline           = VK_TRUE;
+        rayTracingPipelineFeatures.rayTraversalPrimitiveCulling = VK_TRUE;
+
         VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
         accelerationStructureFeatures.sType                                                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-        accelerationStructureFeatures.pNext                                                 = nullptr;
+        accelerationStructureFeatures.pNext                                                 = &rayTracingPipelineFeatures;
         accelerationStructureFeatures.accelerationStructure                                 = VK_TRUE;
         accelerationStructureFeatures.descriptorBindingAccelerationStructureUpdateAfterBind = VK_TRUE;
 

@@ -27,6 +27,7 @@ namespace Vk
         const std::string_view name,
         FramebufferType type,
         ImageType imageType,
+        VkImageLayout initialLayout,
         const FramebufferSizeData& sizeData
     )
     {
@@ -36,10 +37,11 @@ namespace Vk
         }
 
         m_framebuffers.emplace(name, Framebuffer{
-            .type      = type,
-            .sizeData  = sizeData,
-            .imageType = imageType,
-            .image     = {}
+            .type          = type,
+            .sizeData      = sizeData,
+            .imageType     = imageType,
+            .image         = {},
+            .initialLayout = initialLayout
         });
     }
 
@@ -178,15 +180,43 @@ namespace Vk
 
             framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
 
+            Vk::SetDebugName(context.device, framebuffer.image.handle, name);
+
+            if (isFixedSize)
+            {
+                m_fixedFramebuffers.insert(name);
+            }
+
+            updatedFramebuffers.insert(name);
+
+            VkPipelineStageFlags2 dstStageMask;
+            VkAccessFlags2        dstAccessMask;
+
+            switch (framebuffer.initialLayout)
+            {
+            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+                dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+                dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+                break;
+
+            case VK_IMAGE_LAYOUT_GENERAL:
+                dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+                dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;
+                break;
+
+            default:
+                continue;
+            }
+
             barriers.push_back(VkImageMemoryBarrier2{
                 .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext               = nullptr,
                 .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
                 .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask       = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask        = dstStageMask,
+                .dstAccessMask       = dstAccessMask,
                 .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout           = framebuffer.initialLayout,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image               = framebuffer.image.handle,
@@ -198,15 +228,6 @@ namespace Vk
                     .layerCount     = framebuffer.image.arrayLayers
                 }
             });
-
-            Vk::SetDebugName(context.device, framebuffer.image.handle, name);
-
-            if (isFixedSize)
-            {
-                m_fixedFramebuffers.insert(name);
-            }
-
-            updatedFramebuffers.insert(name);
         }
 
         for (auto& [name, framebufferView] : m_framebufferViews)
