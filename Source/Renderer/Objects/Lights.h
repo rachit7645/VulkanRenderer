@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef DIRECTIONAL_LIGHT_H
-#define DIRECTIONAL_LIGHT_H
+#ifndef LIGHTS_H
+#define LIGHTS_H
 
 #include "Externals/GLM.h"
 #include "Util/Util.h"

@@ -24,9 +24,11 @@ namespace Renderer::ShadowRT
     RenderPass::RenderPass
     (
         const Vk::Context& context,
+        const Vk::MegaSet& megaSet,
         Vk::FramebufferManager& framebufferManager
     )
-        : pipeline(context)
+        : pipeline(context, megaSet),
+          sbtBuffer(context, pipeline)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -45,7 +47,7 @@ namespace Renderer::ShadowRT
             "ShadowRT",
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
-            VK_IMAGE_LAYOUT_GENERAL,
+            true,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -79,6 +81,7 @@ namespace Renderer::ShadowRT
         usize FIF,
         VkDevice device,
         VmaAllocator allocator,
+        const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager,
         Vk::AccelerationStructure& accelerationStructure,
         const std::span<const Renderer::RenderObject> renderObjects
@@ -98,12 +101,90 @@ namespace Renderer::ShadowRT
             renderObjects
         );
 
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("ShadowRTPass/FIF{}", FIF), glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
+
+        const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
+        const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);
+
+        shadowMap.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_GENERAL,
+            {
+                .aspectMask     = shadowMap.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = shadowMap.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = shadowMap.image.arrayLayers
+            }
+        );
+
+        pipeline.Bind(currentCmdBuffer);
+
+        pipeline.pushConstant =
+        {
+            .tlas        = accelerationStructure.topLevelASes[FIF].deviceAddress,
+            .outputImage = shadowMapView.storageImageIndex
+        };
+
+        pipeline.LoadPushConstants
+        (
+            currentCmdBuffer,
+            VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+            0, sizeof(ShadowRT::PushConstant),
+            &pipeline.pushConstant
+        );
+
+        const std::array descriptorSets = {megaSet.descriptorSet};
+        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
+
+        const VkStridedDeviceAddressRegionKHR callableSBT = {};
+
+        vkCmdTraceRaysKHR
+        (
+            currentCmdBuffer.handle,
+            &sbtBuffer.raygenRegion,
+            &sbtBuffer.missRegion,
+            &sbtBuffer.hitRegion,
+            &callableSBT,
+            shadowMap.image.width,
+            shadowMap.image.height,
+            1
+        );
+
+        shadowMap.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = shadowMap.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = shadowMap.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = shadowMap.image.arrayLayers
+            }
+        );
+
+        Vk::EndLabel(currentCmdBuffer);
+
         currentCmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying shadow pass!");
+
+        sbtBuffer.Destroy(allocator);
 
         Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 

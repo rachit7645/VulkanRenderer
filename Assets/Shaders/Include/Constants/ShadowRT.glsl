@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef SHADOW_RT_PIPELINE_H
-#define SHADOW_RT_PIPELINE_H
+#ifndef SHADOW_RT_PUSH_CONSTANT
+#define SHADOW_RT_PUSH_CONSTANT
 
-#include "Constants.h"
-#include "Vulkan/Pipeline.h"
-#include "Vulkan/FormatHelper.h"
-#include "Vulkan/MegaSet.h"
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable
 
-namespace Renderer::ShadowRT
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    class Pipeline : public Vk::Pipeline
-    {
-    public:
-        Pipeline(const Vk::Context& context, const Vk::MegaSet& megaSet);
-
-        ShadowRT::PushConstant pushConstant = {};
-    };
-}
+    uint64_t TLAS;
+    uint     OutputImage;
+} Constants;
 
 #endif

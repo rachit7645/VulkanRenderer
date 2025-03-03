@@ -50,7 +50,7 @@ namespace Renderer::Bloom
             "Bloom",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Array2D,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            false,
             [device = context.device] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews("Bloom", device);
@@ -233,7 +233,7 @@ namespace Renderer::Bloom
             downsamplePipeline.pushConstant =
             {
                 .samplerIndex  = downsamplePipeline.samplerIndex,
-                .imageIndex    = srcView.descriptorIndex,
+                .imageIndex    = srcView.sampledImageIndex,
                 .isFirstSample = (mip == 0) ? 1u : 0u
             };
 
@@ -391,7 +391,7 @@ namespace Renderer::Bloom
             upsamplePipeline.pushConstant =
             {
                 .samplerIndex  = upsamplePipeline.samplerIndex,
-                .imageIndex    = srcView.descriptorIndex,
+                .imageIndex    = srcView.sampledImageIndex,
                 .filterRadius  = m_filterRadius
             };
 

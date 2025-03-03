@@ -147,6 +147,7 @@ add_executable(VulkanRenderer
     # Shadow RT sources
     Source/Renderer/ShadowRT/Pipeline.cpp
     Source/Renderer/ShadowRT/RenderPass.cpp
+    Source/Renderer/ShadowRT/SBTBuffer.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

@@ -32,13 +32,15 @@ namespace Vk
         {
             SAMPLER_BINDING        = 0,
             SAMPLED_IMAGES_BINDING = 1,
+            STORAGE_IMAGES_BINDING = 2,
             BINDINGS_COUNT
         };
 
         MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits);
 
         [[nodiscard]] u32 WriteSampler(const Vk::Sampler& sampler);
-        [[nodiscard]] u32 WriteImage(const Vk::ImageView& imageView, VkImageLayout layout);
+        [[nodiscard]] u32 WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout);
+        [[nodiscard]] u32 WriteStorageImage(const Vk::ImageView& imageView);
 
         void Update(VkDevice device);
 
@@ -52,6 +54,7 @@ namespace Vk
 
         u32 m_samplerID = 0;
         u32 m_imageID   = 0;
+        u32 m_storageID = 0;
     };
 }
 

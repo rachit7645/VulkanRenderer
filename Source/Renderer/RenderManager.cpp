@@ -43,7 +43,7 @@ namespace Renderer
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_ssaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_shadowRTPass(m_context, m_framebufferManager),
+          m_shadowRTPass(m_context, m_megaSet, m_framebufferManager),
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -58,7 +58,7 @@ namespace Renderer
             m_meshBuffer.Destroy(m_context.allocator);
 
             m_cullingDispatch.Destroy(m_context.device);
-            m_shadowRTPass.Destroy(m_context.device, m_context.commandPool);
+            m_shadowRTPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_ssaoPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_lightingPass.Destroy(m_context.device, m_context.commandPool);
             m_gBufferPass.Destroy(m_context.device, m_context.commandPool);
@@ -219,6 +219,7 @@ namespace Renderer
             m_currentFIF,
             m_context.device,
             m_context.allocator,
+            m_megaSet,
             m_framebufferManager,
             m_accelerationStructure,
             m_renderObjects

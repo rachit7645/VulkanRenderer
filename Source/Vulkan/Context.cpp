@@ -324,21 +324,24 @@ namespace Vk
         const bool hasBC                = featureSet.features.textureCompressionBC;
         const bool hasImageCubeArray    = featureSet.features.imageCubeArray;
         const bool hasDepthClamp        = featureSet.features.depthClamp;
+        const bool hasInt64             = featureSet.features.shaderInt64;
 
         // Vulkan 1.1 features
         const bool hasShaderDrawParameters = vk11Features->shaderDrawParameters;
         const bool hasMultiView            = vk11Features->multiview;
 
         // Vulkan 1.2 features
-        const bool hasBDA                         = vk12Features->bufferDeviceAddress;
-        const bool hasScalarLayout                = vk12Features->scalarBlockLayout;
-        const bool hasDescriptorIndexing          = vk12Features->descriptorIndexing;
-        const bool hasNonUniformIndexing          = vk12Features->shaderSampledImageArrayNonUniformIndexing;
-        const bool hasRuntimeDescriptorArray      = vk12Features->runtimeDescriptorArray;
-        const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
-        const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
-        const bool hasUpdateUnusedWhilePending    = vk12Features->descriptorBindingUpdateUnusedWhilePending;
-        const bool hasDrawIndirectCount           = vk12Features->drawIndirectCount;
+        const bool hasBDA                            = vk12Features->bufferDeviceAddress;
+        const bool hasScalarLayout                   = vk12Features->scalarBlockLayout;
+        const bool hasDescriptorIndexing             = vk12Features->descriptorIndexing;
+        const bool hasSampledImageNonUniformIndexing = vk12Features->shaderSampledImageArrayNonUniformIndexing;
+        const bool hasStorageImageNonUniformIndexing = vk12Features->shaderStorageImageArrayNonUniformIndexing;
+        const bool hasRuntimeDescriptorArray         = vk12Features->runtimeDescriptorArray;
+        const bool hasPartiallyBoundDescriptors      = vk12Features->descriptorBindingPartiallyBound;
+        const bool hasSampledImageUpdateAfterBind    = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
+        const bool hasStorageImageUpdateAfterBind    = vk12Features->descriptorBindingStorageImageUpdateAfterBind;
+        const bool hasUpdateUnusedWhilePending       = vk12Features->descriptorBindingUpdateUnusedWhilePending;
+        const bool hasDrawIndirectCount              = vk12Features->drawIndirectCount;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
@@ -347,13 +350,14 @@ namespace Vk
 
         const bool required   = areQueuesValid && hasExtensions;
         const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray &&
-                                hasDepthClamp;
+                                hasDepthClamp && hasInt64;
         const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
                                 hasRTPipeline && hasRTCulling && hasRTMaintenance;
         const bool vk11       = hasShaderDrawParameters && hasMultiView;
-        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
-                                hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
-                                hasSampledImageUpdateAfterBind && hasUpdateUnusedWhilePending && hasDrawIndirectCount;
+        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
+                                hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
+                                hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
+                                hasDrawIndirectCount;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
         return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
@@ -417,10 +421,12 @@ namespace Vk
         vk12Features.scalarBlockLayout                            = VK_TRUE;
         vk12Features.descriptorIndexing                           = VK_TRUE;
         vk12Features.shaderSampledImageArrayNonUniformIndexing    = VK_TRUE;
+        vk12Features.shaderStorageImageArrayNonUniformIndexing    = VK_TRUE;
         vk12Features.runtimeDescriptorArray                       = VK_TRUE;
         vk12Features.descriptorBindingVariableDescriptorCount     = VK_TRUE;
         vk12Features.descriptorBindingPartiallyBound              = VK_TRUE;
         vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+        vk12Features.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
         vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
         vk12Features.drawIndirectCount                            = VK_TRUE;
 
@@ -440,6 +446,7 @@ namespace Vk
         deviceFeatures.features.textureCompressionBC = VK_TRUE;
         deviceFeatures.features.imageCubeArray       = VK_TRUE;
         deviceFeatures.features.depthClamp           = VK_TRUE;
+        deviceFeatures.features.shaderInt64          = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

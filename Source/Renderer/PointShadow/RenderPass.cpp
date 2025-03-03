@@ -50,7 +50,7 @@ namespace Renderer::PointShadow
             "PointShadowMap",
             Vk::FramebufferType::Depth,
             Vk::ImageType::ArrayCube,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            false,
             Vk::FramebufferSize{
                 .width       = POINT_SHADOW_DIMENSIONS.x,
                 .height      = POINT_SHADOW_DIMENSIONS.y,

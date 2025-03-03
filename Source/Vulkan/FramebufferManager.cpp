@@ -27,7 +27,7 @@ namespace Vk
         const std::string_view name,
         FramebufferType type,
         ImageType imageType,
-        VkImageLayout initialLayout,
+        bool isStorageImage,
         const FramebufferSizeData& sizeData
     )
     {
@@ -37,11 +37,11 @@ namespace Vk
         }
 
         m_framebuffers.emplace(name, Framebuffer{
-            .type          = type,
-            .sizeData      = sizeData,
-            .imageType     = imageType,
-            .image         = {},
-            .initialLayout = initialLayout
+            .type           = type,
+            .sizeData       = sizeData,
+            .imageType      = imageType,
+            .image          = {},
+            .isStorageImage = isStorageImage
         });
     }
 
@@ -55,7 +55,7 @@ namespace Vk
     {
         m_framebufferViews.emplace(name, FramebufferView{
             .framebuffer     = framebufferName.data(),
-            .descriptorIndex = std::numeric_limits<u32>::max(),
+            .sampledImageIndex = std::numeric_limits<u32>::max(),
             .type            = imageType,
             .size            = size,
             .view            = {}
@@ -178,6 +178,11 @@ namespace Vk
                 break;
             }
 
+            if (framebuffer.isStorageImage)
+            {
+                createInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+            }
+
             framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
 
             Vk::SetDebugName(context.device, framebuffer.image.handle, name);
@@ -189,34 +194,15 @@ namespace Vk
 
             updatedFramebuffers.insert(name);
 
-            VkPipelineStageFlags2 dstStageMask;
-            VkAccessFlags2        dstAccessMask;
-
-            switch (framebuffer.initialLayout)
-            {
-            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-                dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-                break;
-
-            case VK_IMAGE_LAYOUT_GENERAL:
-                dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-                dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;
-                break;
-
-            default:
-                continue;
-            }
-
             barriers.push_back(VkImageMemoryBarrier2{
                 .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext               = nullptr,
                 .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
                 .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = dstStageMask,
-                .dstAccessMask       = dstAccessMask,
+                .dstStageMask        = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask       = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout           = framebuffer.initialLayout,
+                .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image               = framebuffer.image.handle,
@@ -274,7 +260,12 @@ namespace Vk
                 }
             );
 
-            framebufferView.descriptorIndex = megaSet.WriteImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            framebufferView.sampledImageIndex = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+            if (framebuffer.isStorageImage)
+            {
+                framebufferView.storageImageIndex = megaSet.WriteStorageImage(framebufferView.view);
+            }
 
             Vk::SetDebugName(context.device, framebufferView.view.handle, name);
         }
@@ -393,7 +384,7 @@ namespace Vk
 
                     if (ImGui::TreeNode(name.c_str()))
                     {
-                        ImGui::Text("Descriptor Index | %u",        framebufferView.descriptorIndex);
+                        ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageIndex);
                         ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
                         ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
                         ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
@@ -412,7 +403,7 @@ namespace Vk
                         const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
                         const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
 
-                        ImGui::Image(framebufferView.descriptorIndex, imageSize);
+                        ImGui::Image(framebufferView.sampledImageIndex, imageSize);
 
                         ImGui::TreePop();
                     }

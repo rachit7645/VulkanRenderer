@@ -75,7 +75,7 @@ namespace Renderer::SSAO
         );
 
         f32 m_radius = 0.7f;
-        f32 m_bias   = 0.001f;
+        f32 m_bias   = 0.021f;
         f32 m_power  = 1.5f;
     };
 }

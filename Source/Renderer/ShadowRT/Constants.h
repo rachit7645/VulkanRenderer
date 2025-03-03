@@ -26,6 +26,7 @@ namespace Renderer::ShadowRT
     struct PushConstant
     {
         VkDeviceAddress tlas;
+        u32             outputImage;
     };
 }
 

@@ -78,11 +78,12 @@ namespace Vk
 
     struct FramebufferView
     {
-        std::string         framebuffer     = {};
-        u32                 descriptorIndex = 0;
-        ImageType           type            = ImageType::Single2D;
-        FramebufferViewSize size            = {};
-        Vk::ImageView       view            = {};
+        std::string         framebuffer       = {};
+        u32                 sampledImageIndex = 0;
+        u32                 storageImageIndex = 0;
+        ImageType           type              = ImageType::Single2D;
+        FramebufferViewSize size              = {};
+        Vk::ImageView       view              = {};
     };
 
     using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&, FramebufferManager&)>;
@@ -90,11 +91,11 @@ namespace Vk
 
     struct Framebuffer
     {
-        FramebufferType     type          = FramebufferType::ColorLDR;
-        FramebufferSizeData sizeData      = {};
-        ImageType           imageType     = ImageType::Single2D;
-        Vk::Image           image         = {};
-        VkImageLayout       initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        FramebufferType     type           = FramebufferType::ColorLDR;
+        FramebufferSizeData sizeData       = {};
+        ImageType           imageType      = ImageType::Single2D;
+        Vk::Image           image          = {};
+        bool                isStorageImage = false;
     };
 
     class FramebufferManager
@@ -105,7 +106,7 @@ namespace Vk
             const std::string_view name,
             FramebufferType type,
             ImageType imageType,
-            VkImageLayout initialLayout,
+            bool isStorageImage,
             const FramebufferSizeData& sizeData
         );
 

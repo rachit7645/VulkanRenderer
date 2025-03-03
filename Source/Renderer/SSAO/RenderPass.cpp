@@ -53,7 +53,7 @@ namespace Renderer::SSAO
             "Occlusion",
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            false,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -71,7 +71,7 @@ namespace Renderer::SSAO
             "OcclusionBlur",
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            false,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -288,8 +288,8 @@ namespace Renderer::SSAO
             .samples             = sampleBuffer.buffer.deviceAddress,
             .gBufferSamplerIndex = occlusionPipeline.gBufferSamplerIndex,
             .noiseSamplerIndex   = occlusionPipeline.noiseSamplerIndex,
-            .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").descriptorIndex,
-            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").descriptorIndex,
+            .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
             .noiseIndex          = noiseTexture,
             .radius              = m_radius,
             .bias                = m_bias,
@@ -432,7 +432,7 @@ namespace Renderer::SSAO
         blurPipeline.pushConstant =
         {
             .samplerIndex = blurPipeline.samplerIndex,
-            .imageIndex   = framebufferManager.GetFramebufferView("OcclusionView").descriptorIndex
+            .imageIndex   = framebufferManager.GetFramebufferView("OcclusionView").sampledImageIndex
         };
 
         blurPipeline.LoadPushConstants

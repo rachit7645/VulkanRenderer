@@ -52,7 +52,7 @@ namespace Renderer::Shadow
             "ShadowCascades",
             Vk::FramebufferType::Depth,
             Vk::ImageType::Single2D,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            false,
             Vk::FramebufferSize{
                 .width       = SHADOW_DIMENSIONS.x,
                 .height      = SHADOW_DIMENSIONS.y,

@@ -25,12 +25,14 @@
 namespace Vk
 {
     constexpr u32 MAX_SAMPLERS       = 1 << 8;
-    constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
+    constexpr u32 MAX_SAMPLED_IMAGES = 1 << 12;
+    constexpr u32 MAX_STORAGE_IMAGES = 1 << 8;
 
     MegaSet::MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)
     {
         const auto maxSamplers      = std::min(deviceLimits.maxDescriptorSetSamplers,      MAX_SAMPLERS);
         const auto maxSampledImages = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_IMAGES);
+        const auto maxStorageImages = std::min(deviceLimits.maxDescriptorSetStorageImages, MAX_STORAGE_IMAGES);
 
         const std::array poolSizes =
         {
@@ -43,6 +45,11 @@ namespace Vk
             {
                 .type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                 .descriptorCount = maxSampledImages
+            },
+            VkDescriptorPoolSize
+            {
+                .type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                .descriptorCount = maxStorageImages
             }
         };
 
@@ -69,6 +76,8 @@ namespace Vk
             // Samplers
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT,
             // Sampled images
+            VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT,
+            // Storage images
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT
         };
 
@@ -95,6 +104,14 @@ namespace Vk
                 .binding            = DescriptorBinding::SAMPLED_IMAGES_BINDING,
                 .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                 .descriptorCount    = maxSampledImages,
+                .stageFlags         = VK_SHADER_STAGE_ALL,
+                .pImmutableSamplers = nullptr
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding            = DescriptorBinding::STORAGE_IMAGES_BINDING,
+                .descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                .descriptorCount    = maxStorageImages,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
                 .pImmutableSamplers = nullptr
             }
@@ -157,7 +174,7 @@ namespace Vk
         return id;
     }
 
-    u32 MegaSet::WriteImage(const Vk::ImageView& imageView, VkImageLayout layout)
+    u32 MegaSet::WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout)
     {
         const auto id = m_imageID++;
 
@@ -170,6 +187,24 @@ namespace Vk
             imageView.handle,
             layout,
             VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+        );
+
+        return id;
+    }
+
+    u32 MegaSet::WriteStorageImage(const Vk::ImageView& imageView)
+    {
+        const auto id = m_storageID++;
+
+        m_writer.WriteImage
+        (
+            descriptorSet,
+            DescriptorBinding::STORAGE_IMAGES_BINDING,
+            id,
+            VK_NULL_HANDLE,
+            imageView.handle,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
         );
 
         return id;

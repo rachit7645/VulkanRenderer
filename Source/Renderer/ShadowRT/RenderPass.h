@@ -17,6 +17,7 @@
 #ifndef SHADOW_RT_PASS_H
 #define SHADOW_RT_PASS_H
 
+#include "SBTBuffer.h"
 #include "Pipeline.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
@@ -31,16 +32,18 @@ namespace Renderer::ShadowRT
         RenderPass
         (
             const Vk::Context& context,
+            const Vk::MegaSet& megaSet,
             Vk::FramebufferManager& framebufferManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
 
         void Render
         (
             usize FIF,
             VkDevice device,
             VmaAllocator allocator,
+            const Vk::MegaSet& megaSet,
             const Vk::FramebufferManager& framebufferManager,
             Vk::AccelerationStructure& accelerationStructure,
             const std::span<const Renderer::RenderObject> renderObjects
@@ -49,6 +52,8 @@ namespace Renderer::ShadowRT
         ShadowRT::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+
+        ShadowRT::SBTBuffer sbtBuffer;
     };
 }
 

@@ -52,7 +52,7 @@ namespace Renderer::Lighting
             "SceneColor",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Single2D,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            false,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -190,16 +190,16 @@ namespace Renderer::Lighting
             .gBufferSamplerIndex     = pipeline.gBufferSamplerIndex,
             .iblSamplerIndex         = pipeline.iblSamplerIndex,
             .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
-            .gAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoView").descriptorIndex,
-            .gNormalIndex            = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").descriptorIndex,
-            .sceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").descriptorIndex,
+            .gAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
+            .gNormalIndex            = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .sceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
             .irradianceIndex         = iblMaps.irradianceID,
             .preFilterIndex          = iblMaps.preFilterID,
             .brdfLutIndex            = iblMaps.brdfLutID,
-            .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex,
-            .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").descriptorIndex,
-            .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").descriptorIndex,
-            .aoIndex                 = framebufferManager.GetFramebufferView("OcclusionBlurView").descriptorIndex,
+            .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").sampledImageIndex,
+            .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
+            .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
+            .aoIndex                 = framebufferManager.GetFramebufferView("OcclusionBlurView").sampledImageIndex,
         };
 
         pipeline.LoadPushConstants

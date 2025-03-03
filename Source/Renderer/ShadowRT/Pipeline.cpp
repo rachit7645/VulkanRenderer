@@ -20,17 +20,19 @@
 
 namespace Renderer::ShadowRT
 {
-    Pipeline::Pipeline(const Vk::Context& context)
+    Pipeline::Pipeline(const Vk::Context& context, const Vk::MegaSet& megaSet)
     {
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
             .AttachShader("Shadow.rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-            .AttachShader("Shadow.rchit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
             .AttachShader("Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
+            .AttachShader("Shadow.rchit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
             .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, 1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             2,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, 2,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .SetMaxRayRecursionDepth(1)
             .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(ShadowRT::PushConstant))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "ShadowRTPipeline");

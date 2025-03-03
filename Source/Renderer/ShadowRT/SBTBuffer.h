@@ -14,22 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef SHADOW_RT_PIPELINE_H
-#define SHADOW_RT_PIPELINE_H
+#ifndef SBT_BUFFER_H
+#define SBT_BUFFER_H
 
-#include "Constants.h"
-#include "Vulkan/Pipeline.h"
-#include "Vulkan/FormatHelper.h"
-#include "Vulkan/MegaSet.h"
+#include "Pipeline.h"
+#include "Externals/GLM.h"
+#include "Vulkan/Buffer.h"
+#include "Vulkan/Constants.h"
 
 namespace Renderer::ShadowRT
 {
-    class Pipeline : public Vk::Pipeline
+    class SBTBuffer
     {
     public:
-        Pipeline(const Vk::Context& context, const Vk::MegaSet& megaSet);
+        SBTBuffer(const Vk::Context& context, const ShadowRT::Pipeline& pipeline);
 
-        ShadowRT::PushConstant pushConstant = {};
+        void Destroy(VmaAllocator allocator);
+
+        Vk::Buffer buffer;
+
+        VkStridedDeviceAddressRegionKHR raygenRegion;
+        VkStridedDeviceAddressRegionKHR missRegion;
+        VkStridedDeviceAddressRegionKHR hitRegion;
     };
 }
 

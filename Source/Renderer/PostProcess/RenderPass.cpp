@@ -156,8 +156,8 @@ namespace Renderer::PostProcess
         pipeline.pushConstant =
         {
             .samplerIndex  = pipeline.samplerIndex,
-            .imageIndex    = framebufferManager.GetFramebufferView("SceneColorView").descriptorIndex,
-            .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").descriptorIndex,
+            .imageIndex    = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
+            .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
             .bloomStrength = m_bloomStrength
         };
 
@@ -170,7 +170,7 @@ namespace Renderer::PostProcess
         );
 
         // Mega set
-        std::array descriptorSets = {megaSet.descriptorSet};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
