@@ -118,10 +118,6 @@ add_executable(VulkanRenderer
     Source/Renderer/Bloom/RenderPass.cpp
     Source/Renderer/Bloom/DownSample/Pipeline.cpp
     Source/Renderer/Bloom/UpSample/Pipeline.cpp
-    # Shadow Pass Sources
-    Source/Renderer/Shadow/Pipeline.cpp
-    Source/Renderer/Shadow/RenderPass.cpp
-    Source/Renderer/Shadow/CascadeBuffer.cpp
     # Point Shadow Pass Sources
     Source/Renderer/PointShadow/Pipeline.cpp
     Source/Renderer/PointShadow/RenderPass.cpp

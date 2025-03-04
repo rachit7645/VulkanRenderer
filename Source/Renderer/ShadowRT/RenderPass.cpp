@@ -24,10 +24,11 @@ namespace Renderer::ShadowRT
     RenderPass::RenderPass
     (
         const Vk::Context& context,
-        const Vk::MegaSet& megaSet,
-        Vk::FramebufferManager& framebufferManager
+        Vk::FramebufferManager& framebufferManager,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
     )
-        : pipeline(context, megaSet),
+        : pipeline(context, megaSet, textureManager),
           sbtBuffer(context, pipeline)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
@@ -83,6 +84,7 @@ namespace Renderer::ShadowRT
         VmaAllocator allocator,
         const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager,
+        const Buffers::SceneBuffer& sceneBuffer,
         Vk::AccelerationStructure& accelerationStructure,
         const std::span<const Renderer::RenderObject> renderObjects
     )
@@ -128,8 +130,12 @@ namespace Renderer::ShadowRT
 
         pipeline.pushConstant =
         {
-            .tlas        = accelerationStructure.topLevelASes[FIF].deviceAddress,
-            .outputImage = shadowMapView.storageImageIndex
+            .tlas                = accelerationStructure.topLevelASes[FIF].deviceAddress,
+            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .gBufferSamplerIndex = pipeline.gBufferSamplerIndex,
+            .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .outputImage         = shadowMapView.storageImageIndex
         };
 
         pipeline.LoadPushConstants

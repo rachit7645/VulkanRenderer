@@ -26,6 +26,10 @@ namespace Renderer::ShadowRT
     struct PushConstant
     {
         VkDeviceAddress tlas;
+        VkDeviceAddress scene;
+        u32             gBufferSamplerIndex;
+        u32             gNormalIndex;
+        u32             sceneDepthIndex;
         u32             outputImage;
     };
 }

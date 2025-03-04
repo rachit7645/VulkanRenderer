@@ -23,6 +23,7 @@
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
+#include "Renderer/Buffers/SceneBuffer.h"
 
 namespace Renderer::ShadowRT
 {
@@ -32,8 +33,9 @@ namespace Renderer::ShadowRT
         RenderPass
         (
             const Vk::Context& context,
-            const Vk::MegaSet& megaSet,
-            Vk::FramebufferManager& framebufferManager
+            Vk::FramebufferManager& framebufferManager,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
         );
 
         void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
@@ -45,6 +47,7 @@ namespace Renderer::ShadowRT
             VmaAllocator allocator,
             const Vk::MegaSet& megaSet,
             const Vk::FramebufferManager& framebufferManager,
+            const Buffers::SceneBuffer& sceneBuffer,
             Vk::AccelerationStructure& accelerationStructure,
             const std::span<const Renderer::RenderObject> renderObjects
         );

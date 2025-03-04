@@ -26,7 +26,6 @@ namespace Renderer::Lighting
     struct PushConstant
     {
         VkDeviceAddress scene;
-        VkDeviceAddress cascades;
         VkDeviceAddress pointShadows;
         VkDeviceAddress spotShadows;
 

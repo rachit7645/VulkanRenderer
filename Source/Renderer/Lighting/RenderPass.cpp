@@ -88,7 +88,6 @@ namespace Renderer::Lighting
         const Vk::MegaSet& megaSet,
         const IBL::IBLMaps& iblMaps,
         const Buffers::SceneBuffer& sceneBuffer,
-        const Shadow::CascadeBuffer& cascadeBuffer,
         const PointShadow::PointShadowBuffer& pointShadowBuffer,
         const SpotShadow::SpotShadowBuffer& spotShadowBuffer
     )
@@ -184,7 +183,6 @@ namespace Renderer::Lighting
         pipeline.pushConstant =
         {
             .scene                   = sceneBuffer.buffers[FIF].deviceAddress,
-            .cascades                = cascadeBuffer.buffers[FIF].deviceAddress,
             .pointShadows            = pointShadowBuffer.buffers[FIF].deviceAddress,
             .spotShadows             = spotShadowBuffer.buffers[FIF].deviceAddress,
             .gBufferSamplerIndex     = pipeline.gBufferSamplerIndex,
@@ -196,7 +194,7 @@ namespace Renderer::Lighting
             .irradianceIndex         = iblMaps.irradianceID,
             .preFilterIndex          = iblMaps.preFilterID,
             .brdfLutIndex            = iblMaps.brdfLutID,
-            .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").sampledImageIndex,
+            .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
             .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
             .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
             .aoIndex                 = framebufferManager.GetFramebufferView("OcclusionBlurView").sampledImageIndex,

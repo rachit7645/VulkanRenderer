@@ -20,7 +20,12 @@
 
 namespace Renderer::ShadowRT
 {
-    Pipeline::Pipeline(const Vk::Context& context, const Vk::MegaSet& megaSet)
+    Pipeline::Pipeline
+    (
+        const Vk::Context& context,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
+    )
     {
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
@@ -35,7 +40,34 @@ namespace Renderer::ShadowRT
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ShadowRTPipeline");
-        Vk::SetDebugName(context.device, layout, "ShadowRTPipelineLayout");
+        gBufferSamplerIndex = textureManager.AddSampler
+        (
+            megaSet,
+            context.device,
+            {
+                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                .pNext                   = nullptr,
+                .flags                   = 0,
+                .magFilter               = VK_FILTER_NEAREST,
+                .minFilter               = VK_FILTER_NEAREST,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                .mipLodBias              = 0.0f,
+                .anisotropyEnable        = VK_FALSE,
+                .maxAnisotropy           = 0.0f,
+                .compareEnable           = VK_FALSE,
+                .compareOp               = VK_COMPARE_OP_ALWAYS,
+                .minLod                  = 0.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
+                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .unnormalizedCoordinates = VK_FALSE
+            }
+        );
+
+        Vk::SetDebugName(context.device, handle,                                                "ShadowRTPipeline");
+        Vk::SetDebugName(context.device, layout,                                                "ShadowRTPipelineLayout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(gBufferSamplerIndex).handle, "ShadowRTPipeline/GBufferSampler");
     }
 }

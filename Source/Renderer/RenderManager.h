@@ -31,7 +31,6 @@
 #include "ImGui/RenderPass.h"
 #include "Skybox/RenderPass.h"
 #include "Bloom/RenderPass.h"
-#include "Shadow/RenderPass.h"
 #include "PointShadow/RenderPass.h"
 #include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
@@ -99,7 +98,6 @@ namespace Renderer
         DearImGui::RenderPass   m_imGuiPass;
         Skybox::RenderPass      m_skyboxPass;
         Bloom::RenderPass       m_bloomPass;
-        Shadow::RenderPass      m_shadowPass;
         PointShadow::RenderPass m_pointShadowPass;
         SpotShadow::RenderPass  m_spotShadowPass;
         GBuffer::RenderPass     m_gBufferPass;

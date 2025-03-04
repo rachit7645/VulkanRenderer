@@ -19,7 +19,7 @@
 
 #include "Constants.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/FormatHelper.h"
+#include "Vulkan/TextureManager.h"
 #include "Vulkan/MegaSet.h"
 
 namespace Renderer::ShadowRT
@@ -27,9 +27,16 @@ namespace Renderer::ShadowRT
     class Pipeline : public Vk::Pipeline
     {
     public:
-        Pipeline(const Vk::Context& context, const Vk::MegaSet& megaSet);
+        Pipeline
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
 
         ShadowRT::PushConstant pushConstant = {};
+
+        u32 gBufferSamplerIndex = 0;
     };
 }
 

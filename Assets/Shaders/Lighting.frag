@@ -57,17 +57,7 @@ void main()
         DirLight  light     = Constants.Scene.dirLights.lights[i];
         LightInfo lightInfo = GetLightInfo(light);
 
-        float shadow = CalculateShadow
-        (
-            i,
-            worldPosition,
-            viewPosition,
-            normal,
-            lightInfo.L,
-            Constants.Cascades,
-            TextureArrays[Constants.ShadowMapIndex],
-            Samplers[Constants.ShadowSamplerIndex]
-        );
+        float shadow = texture(sampler2D(Textures[Constants.ShadowMapIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
 
         Lo += CalculateLight
         (

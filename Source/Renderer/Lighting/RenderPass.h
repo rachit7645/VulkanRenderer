@@ -23,7 +23,6 @@
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
@@ -54,7 +53,6 @@ namespace Renderer::Lighting
             const Vk::MegaSet& megaSet,
             const IBL::IBLMaps& iblMaps,
             const Buffers::SceneBuffer& sceneBuffer,
-            const Shadow::CascadeBuffer& cascadeBuffer,
             const PointShadow::PointShadowBuffer& pointShadowBuffer,
             const SpotShadow::SpotShadowBuffer& spotShadowBuffer
         );

@@ -31,6 +31,7 @@ namespace Renderer
         glm::mat4       inverseView       = {};
         glm::mat3       normalView        = {};
         glm::vec3       cameraPos         = {};
+        glm::vec2       planes            = {};
         VkDeviceAddress dirLights         = 0;
         VkDeviceAddress pointLights       = 0;
         VkDeviceAddress spotLights        = 0;

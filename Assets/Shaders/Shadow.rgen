@@ -23,13 +23,49 @@
 
 #include "Constants/ShadowRT.glsl"
 #include "MegaSet.glsl"
+#include "Packing.glsl"
+
+layout(location = 0) rayPayloadEXT bool isInShadow;
 
 void main()
 {
     ivec2 pixelCoords = ivec2(gl_LaunchIDEXT.xy);
-    ivec2 outputSize  = imageSize(Images[Constants.OutputImage]);
+    vec2  pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
+    vec2  uv          = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
 
-    float random = 0.5f * ((float(pixelCoords.x) / float(outputSize.x)) + (float(pixelCoords.y) / float(outputSize.y)));
+    vec4  gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
+    vec3  normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
 
-    imageStore(Images[Constants.OutputImage], pixelCoords, vec4(random, 0.0f, 0.0f, 0.0f));
+    vec4  gDepth            = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
+    float depth             = gDepth.r;
+    vec4  projectedPosition = Constants.Scene.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
+    vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
+    vec3  worldPosition     = vec3(Constants.Scene.inverseView * vec4(viewPosition, 1.0f));
+
+    vec3 origin    = worldPosition + normal * 0.01f;
+    vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
+
+    uint  rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
+    uint  cullMask = 0xFF;
+    float tmin     = 0.001f;
+    float tmax     = Constants.Scene.planes.y;
+
+    isInShadow = false;
+
+    traceRayEXT
+    (
+        accelerationStructureEXT(Constants.TLAS),
+        rayFlags,
+        cullMask,
+        0,
+        0,
+        0,
+        origin,
+        tmin,
+        direction,
+        tmax,
+        0
+    );
+
+    imageStore(Images[Constants.OutputImage], pixelCoords, vec4(isInShadow ? 0.0f : 1.0f, 0.0f, 0.0f, 0.0f));
 }
