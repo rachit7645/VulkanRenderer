@@ -32,12 +32,10 @@
 
 namespace Vk
 {
-    // Required validation layers
     #ifdef ENGINE_ENABLE_VALIDATION
     constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     #endif
 
-    // Required instance extensions
     constexpr std::array REQUIRED_INSTANCE_EXTENSIONS =
     {
         VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
@@ -47,7 +45,6 @@ namespace Vk
         #endif
     };
 
-    // Required device extensions
     constexpr std::array REQUIRED_DEVICE_EXTENSIONS =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -196,9 +193,19 @@ namespace Vk
             propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
             propertySet.pNext = &rtPipelinePropertySet;
 
+            #ifdef ENGINE_DEBUG
+            VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR shaderRelaxedExtendedInstructionFeatures = {};
+            shaderRelaxedExtendedInstructionFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+            shaderRelaxedExtendedInstructionFeatures.pNext = nullptr;
+            #endif
+
             VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
             rayTracingMaintenance1Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+            #ifdef ENGINE_DEBUG
+            rayTracingMaintenance1Features.pNext = &shaderRelaxedExtendedInstructionFeatures;
+            #else
             rayTracingMaintenance1Features.pNext = nullptr;
+            #endif
 
             VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
             rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
@@ -285,6 +292,10 @@ namespace Vk
         const auto rayTracingPipelineFeatures    = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureSet.pNext);
         const auto rayTracingMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(featureSet.pNext);
 
+        #ifdef ENGINE_DEBUG
+        const auto shaderRelaxedExtendedInstructionFeatures = Vk::FindStructureInChain<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(featureSet.pNext);
+        #endif
+
         // Score parts
         const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
 
@@ -301,6 +312,10 @@ namespace Vk
         bool hasRTCulling            = false;
         bool hasRTMaintenance        = false;
 
+        #ifdef ENGINE_DEBUG
+        bool hasShaderRelaxedExtendedInstruction = false;
+        #endif
+
         if (hasExtensions)
         {
             const auto swapChainInfo = Vk::SwapchainInfo(phyDevice, surface);
@@ -315,6 +330,10 @@ namespace Vk
             hasRTCulling  = rayTracingPipelineFeatures->rayTraversalPrimitiveCulling;
 
             hasRTMaintenance = rayTracingMaintenanceFeatures->rayTracingMaintenance1;
+
+            #ifdef ENGINE_DEBUG
+            hasShaderRelaxedExtendedInstruction = shaderRelaxedExtendedInstructionFeatures->shaderRelaxedExtendedInstruction;
+            #endif
         }
 
         // Standard features
@@ -352,7 +371,11 @@ namespace Vk
         const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray &&
                                 hasDepthClamp && hasInt64;
         const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
-                                hasRTPipeline && hasRTCulling && hasRTMaintenance;
+                                hasRTPipeline && hasRTCulling && hasRTMaintenance
+                                #ifdef ENGINE_DEBUG
+                                && hasShaderRelaxedExtendedInstruction
+                                #endif
+                                ;
         const bool vk11       = hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                                 hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
@@ -386,9 +409,20 @@ namespace Vk
             });
         }
 
+        #ifdef ENGINE_DEBUG
+        VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR shaderRelaxedExtendedInstructionFeatures = {};
+        shaderRelaxedExtendedInstructionFeatures.sType                            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+        shaderRelaxedExtendedInstructionFeatures.pNext                            = nullptr;
+        shaderRelaxedExtendedInstructionFeatures.shaderRelaxedExtendedInstruction = VK_TRUE;
+        #endif
+
         VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
         rayTracingMaintenance1Features.sType                  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+        #ifdef ENGINE_DEBUG
+        rayTracingMaintenance1Features.pNext                  = &shaderRelaxedExtendedInstructionFeatures;
+        #else
         rayTracingMaintenance1Features.pNext                  = nullptr;
+        #endif
         rayTracingMaintenance1Features.rayTracingMaintenance1 = VK_TRUE;
 
         VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};

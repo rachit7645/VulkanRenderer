@@ -20,7 +20,11 @@
 float TanArcCos(float x)
 {
     // tan(acos(x)) = sqrt(1 - x^2) / x
-    return sqrt(1.0f - (x * x)) / x;
+
+    float numerator   = max(1.0f - (x * x), 0.0f);
+    float denominator = max(x, 0.0001f);
+
+    return sqrt(numerator) / denominator;
 }
 
 #endif

@@ -148,6 +148,14 @@ namespace Renderer
             glm::vec3(1.0f, 1.0f, 1.0f)
         );
 
+        m_renderObjects.emplace_back
+        (
+            m_modelManager.AddModel(m_context, m_megaSet, "Mario/MarioC.gltf"),
+            glm::vec3(50.0f, 0.0f, 12.0f),
+            glm::vec3(-std::numbers::pi / 2.0f, 0.0f, std::numbers::pi / 2.0f + 0.9f),
+            glm::vec3(22.0f, 22.0f, 22.0f)
+        );
+
         /*m_renderObjects.emplace_back
         (
             m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Main/SponzaMainC.gltf"),
@@ -200,13 +208,14 @@ namespace Renderer
     void RenderManager::Render()
     {
         WaitForFences();
-        AcquireSwapchainImage();
 
         // Swapchain is not ok, wait for resize event
         if (!m_isSwapchainOk)
         {
             return;
         }
+
+        AcquireSwapchainImage();
 
         BeginFrame();
         Update();
@@ -403,7 +412,7 @@ namespace Renderer
 
                         ImGui::DragFloat3("Position", &renderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
                         ImGui::DragFloat3("Rotation", &renderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
-                        ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,                      0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,                     0.0f, 0.0f, "%.2f");
 
                         ImGui::TreePop();
                     }
@@ -414,7 +423,7 @@ namespace Renderer
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("Light"))
+            if (ImGui::BeginMenu("Lights"))
             {
                 if (ImGui::BeginMenu("Directional"))
                 {
@@ -542,18 +551,15 @@ namespace Renderer
 
     void RenderManager::AcquireSwapchainImage()
     {
-        if (m_isSwapchainOk)
-        {
-            const auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
+        const auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
 
-            if (result == VK_ERROR_OUT_OF_DATE_KHR)
-            {
-                m_isSwapchainOk = false;
-            }
-            else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-            {
-                Vk::CheckResult(result, "Failed to acquire swapchain image!");
-            }
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            m_isSwapchainOk = false;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            Vk::CheckResult(result, "Failed to acquire swapchain image!");
         }
     }
 

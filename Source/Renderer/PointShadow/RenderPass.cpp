@@ -21,7 +21,7 @@
 
 namespace Renderer::PointShadow
 {
-    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {256,  256};
+    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512,  512};
     constexpr glm::vec2  POINT_SHADOW_PLANES     = {1.0f, 25.0f};
 
     RenderPass::RenderPass

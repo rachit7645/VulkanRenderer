@@ -24,12 +24,13 @@
 #include "Constants/ShadowRT.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
+#include "Constants.glsl"
+#include "Math.glsl"
 
-layout(location = 0) rayPayloadEXT bool isInShadow;
+layout(location = 0) rayPayloadEXT float shadowAmount;
 
 void main()
 {
-    ivec2 pixelCoords = ivec2(gl_LaunchIDEXT.xy);
     vec2  pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
     vec2  uv          = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
 
@@ -42,15 +43,20 @@ void main()
     vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
     vec3  worldPosition     = vec3(Constants.Scene.inverseView * vec4(viewPosition, 1.0f));
 
-    vec3 origin    = worldPosition + normal * 0.01f;
     vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
+
+    float cosTheta = clamp(dot(normal, direction), 0.0f, 1.0f);
+    float bias     = RT_SHADOW_MIN_BIAS * TanArcCos(cosTheta);
+    bias           = clamp(bias, 0.0f, RT_SHADOW_MAX_BIAS);
+
+    vec3 origin = worldPosition + normal * bias;
 
     uint  rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
     uint  cullMask = 0xFF;
     float tmin     = 0.001f;
     float tmax     = Constants.Scene.planes.y;
 
-    isInShadow = false;
+    shadowAmount = 0.0f;
 
     traceRayEXT
     (
@@ -67,5 +73,5 @@ void main()
         0
     );
 
-    imageStore(Images[Constants.OutputImage], pixelCoords, vec4(isInShadow ? 0.0f : 1.0f, 0.0f, 0.0f, 0.0f));
+    imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f - shadowAmount, 0.0f, 0.0f, 0.0f));
 }

@@ -33,9 +33,9 @@ namespace Renderer::ShadowRT
 
         Vk::Buffer buffer;
 
-        VkStridedDeviceAddressRegionKHR raygenRegion;
-        VkStridedDeviceAddressRegionKHR missRegion;
-        VkStridedDeviceAddressRegionKHR hitRegion;
+        VkStridedDeviceAddressRegionKHR raygenRegion = {};
+        VkStridedDeviceAddressRegionKHR missRegion   = {};
+        VkStridedDeviceAddressRegionKHR hitRegion    = {};
     };
 }
 

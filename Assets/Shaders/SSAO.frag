@@ -51,7 +51,7 @@ void main()
 
     float occlusion = 0.0f;
 
-    for(uint i = 0; i < Constants.Samples.sampleCount; ++i)
+    for (uint i = 0; i < Constants.Samples.sampleCount; ++i)
     {
         vec3 samplePosition = TBN * Constants.Samples.samples[i];
              samplePosition = viewPosition + samplePosition * Constants.Radius;

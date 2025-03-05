@@ -18,9 +18,9 @@
 
 #extension GL_EXT_ray_tracing : enable
 
-layout(location = 0) rayPayloadInEXT bool isInShadow;
+layout(location = 0) rayPayloadInEXT float shadowAmount;
 
 void main()
 {
-    isInShadow = true;
+    shadowAmount = 1.0f;
 }

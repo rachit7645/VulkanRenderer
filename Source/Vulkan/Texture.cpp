@@ -82,6 +82,10 @@ namespace Vk
             ktx_size_t offset;
             ktxTexture_GetImageOffset(reinterpret_cast<ktxTexture*>(pTexture), mipLevel, 0, 0, &offset);
 
+            const u32 width  = std::max(pTexture->baseWidth  >> mipLevel, 1u);
+            const u32 height = std::max(pTexture->baseHeight >> mipLevel, 1u);
+            const u32 depth  = std::max(pTexture->baseDepth  >> mipLevel, 1u);
+
             copyRegions.emplace_back(VkBufferImageCopy2{
                 .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
                 .pNext             = nullptr,
@@ -95,7 +99,7 @@ namespace Vk
                     .layerCount     = 1
                 },
                 .imageOffset = {0, 0, 0},
-                .imageExtent = {pTexture->baseWidth >> mipLevel, pTexture->baseHeight >> mipLevel, 1}
+                .imageExtent = {width, height, depth}
             });
         }
 

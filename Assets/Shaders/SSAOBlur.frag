@@ -43,5 +43,4 @@ void main()
     }
 
     outSSAO = clamp(blur / (4.0f * 4.0f), 0.0f, 1.0f);
-}  
-
+}

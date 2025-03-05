@@ -54,4 +54,8 @@ const float POINT_SHADOW_BIAS        = 0.15f;
 const float MIN_SPOT_SHADOW_BIAS = 0.000005f;
 const float MAX_SPOT_SHADOW_BIAS = 0.00025f;
 
+// RT Shadow Constants
+const float RT_SHADOW_MIN_BIAS = 0.0005f;
+const float RT_SHADOW_MAX_BIAS = 0.005f;
+
 #endif

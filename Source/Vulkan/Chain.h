@@ -61,6 +61,11 @@ namespace Vk
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
     };
 
+    template<> struct VulkanStructType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>
+    {
+        static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+    };
+
     template<typename T>
     T* FindStructureInChain(void* pNext)
     {
