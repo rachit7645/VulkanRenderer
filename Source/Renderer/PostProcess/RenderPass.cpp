@@ -41,16 +41,16 @@ namespace Renderer::PostProcess
                 VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
 
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("SwapchainPass/FIF{}", i));
+            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("PostProcessPass/FIF{}", i));
         }
 
-        Logger::Info("{}\n", "Created swapchain pass!");
+        Logger::Info("{}\n", "Created post process pass!");
     }
 
     void RenderPass::Render
     (
         usize FIF,
-        Vk::Swapchain& swapchain,
+        const Vk::Swapchain& swapchain,
         const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager
     )
@@ -73,7 +73,7 @@ namespace Renderer::PostProcess
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("SwapchainPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("PostProcessPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
         currentImage.Barrier
         (
@@ -156,7 +156,7 @@ namespace Renderer::PostProcess
         pipeline.pushConstant =
         {
             .samplerIndex  = pipeline.samplerIndex,
-            .imageIndex    = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
+            .imageIndex    = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", FIF)).sampledImageIndex,
             .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
             .bloomStrength = m_bloomStrength
         };

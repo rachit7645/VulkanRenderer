@@ -367,6 +367,45 @@ namespace Vk
         const bool hasDynRender    = vk13Features->dynamicRendering;
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
+        /*
+        Logger::Debug("discreteGPU score                   {}\n", discreteGPU);
+        Logger::Debug("areQueuesValid                      {}\n", areQueuesValid);
+        Logger::Debug("hasExtensions                       {}\n", hasExtensions);
+        Logger::Debug("isSwapChainAdequate                 {}\n", isSwapChainAdequate);
+        Logger::Debug("hasSwapchainMaintenance             {}\n", hasSwapchainMaintenance);
+        Logger::Debug("hasAS                               {}\n", hasAS);
+        Logger::Debug("hasASUpdateAfterBind                {}\n", hasASUpdateAfterBind);
+        Logger::Debug("hasRTPipeline                       {}\n", hasRTPipeline);
+        Logger::Debug("hasRTCulling                        {}\n", hasRTCulling);
+        Logger::Debug("hasRTMaintenance                    {}\n", hasRTMaintenance);
+        #ifdef ENGINE_DEBUG
+        Logger::Debug("hasShaderRelaxedExtendedInstruction {}\n", hasShaderRelaxedExtendedInstruction);
+        #endif
+        Logger::Debug("hasAnisotropy                       {}\n", hasAnisotropy);
+        Logger::Debug("hasWireframe                        {}\n", hasWireframe);
+        Logger::Debug("hasMultiDrawIndirect                {}\n", hasMultiDrawIndirect);
+        Logger::Debug("hasBC                               {}\n", hasBC);
+        Logger::Debug("hasImageCubeArray                   {}\n", hasImageCubeArray);
+        Logger::Debug("hasDepthClamp                       {}\n", hasDepthClamp);
+        Logger::Debug("hasInt64                            {}\n", hasInt64);
+        Logger::Debug("hasShaderDrawParameters             {}\n", hasShaderDrawParameters);
+        Logger::Debug("hasMultiView                        {}\n", hasMultiView);
+        Logger::Debug("hasBDA                              {}\n", hasBDA);
+        Logger::Debug("hasScalarLayout                     {}\n", hasScalarLayout);
+        Logger::Debug("hasDescriptorIndexing               {}\n", hasDescriptorIndexing);
+        Logger::Debug("hasSampledImageNonUniformIndexing   {}\n", hasSampledImageNonUniformIndexing);
+        Logger::Debug("hasStorageImageNonUniformIndexing   {}\n", hasStorageImageNonUniformIndexing);
+        Logger::Debug("hasRuntimeDescriptorArray           {}\n", hasRuntimeDescriptorArray);
+        Logger::Debug("hasPartiallyBoundDescriptors        {}\n", hasPartiallyBoundDescriptors);
+        Logger::Debug("hasSampledImageUpdateAfterBind      {}\n", hasSampledImageUpdateAfterBind);
+        Logger::Debug("hasStorageImageUpdateAfterBind      {}\n", hasStorageImageUpdateAfterBind);
+        Logger::Debug("hasUpdateUnusedWhilePending         {}\n", hasUpdateUnusedWhilePending);
+        Logger::Debug("hasDrawIndirectCount                {}\n", hasDrawIndirectCount);
+        Logger::Debug("hasSync2                            {}\n", hasSync2);
+        Logger::Debug("hasDynRender                        {}\n", hasDynRender);
+        Logger::Debug("hasMaintenance4                     {}\n", hasMaintenance4);
+        */
+
         const bool required   = areQueuesValid && hasExtensions;
         const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray &&
                                 hasDepthClamp && hasInt64;

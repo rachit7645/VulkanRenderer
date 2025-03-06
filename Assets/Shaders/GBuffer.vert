@@ -38,9 +38,11 @@ void main()
 
     vec4 worldPosition = mesh.transform * vec4(position, 1.0f);
 
-    gl_Position      = Constants.Scene.currentMatrices.projection * Constants.Scene.currentMatrices.view * worldPosition;
-    currentPosition  = gl_Position;
+    currentPosition  = Constants.Scene.currentMatrices.projection * Constants.Scene.currentMatrices.view * worldPosition;
     previousPosition = Constants.Scene.previousMatrices.projection * Constants.Scene.previousMatrices.view * worldPosition;
+
+    gl_Position     = currentPosition;
+    gl_Position.xy += Constants.Offset * gl_Position.w;
 
     fragTexCoords = vertex.uv0;
     fragDrawID    = meshIndex;

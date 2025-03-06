@@ -83,6 +83,8 @@ file(GLOB SHADER_SOURCES
     Shadow.rgen
     Shadow.rchit
     Shadow.rmiss
+    TAA.frag
+    TAA.vert
 )
 
 # Shader headers

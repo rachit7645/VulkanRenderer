@@ -23,7 +23,7 @@
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Vulkan/DebugUtils.h"
 
-namespace Renderer::Forward
+namespace Renderer::TAA
 {
     RenderPass::RenderPass
     (
@@ -44,14 +44,15 @@ namespace Renderer::Forward
                 VK_COMMAND_BUFFER_LEVEL_PRIMARY
             );
 
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ForwardPass/FIF{}", i));
+            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("TAAPass/FIF{}", i));
         }
 
         framebufferManager.AddFramebuffer
         (
-            "SceneColor",
+            "TAABuffer",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Single2D,
+            false,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -59,53 +60,61 @@ namespace Renderer::Forward
                     .width       = extent.width,
                     .height      = extent.height,
                     .mipLevels   = 1,
-                    .arrayLayers = 1
+                    .arrayLayers = Vk::FRAMES_IN_FLIGHT
                 };
             }
         );
 
-        framebufferManager.AddFramebufferView
-        (
-            "SceneColor",
-            "SceneColorView",
-            Vk::ImageType::Single2D,
-            Vk::FramebufferViewSize{
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            }
-        );
+        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+        {
+            framebufferManager.AddFramebufferView
+            (
+                "TAABuffer",
+                fmt::format("TAABufferView/{}", i),
+                Vk::ImageType::Single2D,
+                Vk::FramebufferViewSize{
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = static_cast<u32>(i),
+                    .layerCount     = 1
+                }
+            );
+        }
 
-        Logger::Info("{}\n", "Created forward pass!");
+        Logger::Info("{}\n", "Created TAA pass!");
     }
 
     void RenderPass::Render
     (
         usize FIF,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet,
-        const Vk::GeometryBuffer& geometryBuffer,
-        const Buffers::SceneBuffer& sceneBuffer,
-        const Buffers::MeshBuffer& meshBuffer,
-        const Buffers::IndirectBuffer& indirectBuffer,
-        const IBL::IBLMaps& iblMaps,
-        const Shadow::CascadeBuffer& cascadeBuffer,
-        const PointShadow::PointShadowBuffer& pointShadowBuffer,
-        const SpotShadow::SpotShadowBuffer& spotShadowBuffer
+        const Vk::MegaSet& megaSet
     )
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("TAA"))
+            {
+                ImGui::DragFloat("Modulation Factor", &m_modulationFactor, 0.01f, 0.0f, 1.0f, "%.3f");
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("ForwardPass/FIF{}", FIF), glm::vec4(0.9098f, 0.1843f, 0.0549f, 1.0f));
+        Vk::BeginLabel(currentCmdBuffer, fmt::format("TAAPass/FIF{}", FIF), glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
 
-        const auto& colorAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneColorView/{}", FIF));
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+        const usize currentIndex  = FIF;
+        const usize previousIndex = (FIF - 1) % Vk::FRAMES_IN_FLIGHT;
 
-        const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
+        const auto& colorAttachmentView = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", currentIndex));
+        const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
 
         colorAttachment.image.Barrier
         (
@@ -120,8 +129,8 @@ namespace Renderer::Forward
                 .aspectMask     = colorAttachment.image.aspect,
                 .baseMipLevel   = 0,
                 .levelCount     = colorAttachment.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = colorAttachment.image.arrayLayers
+                .baseArrayLayer = static_cast<u32>(currentIndex),
+                .layerCount     = 1
             }
         );
 
@@ -144,20 +153,6 @@ namespace Renderer::Forward
             }}}
         };
 
-        const VkRenderingAttachmentInfo depthAttachmentInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = depthAttachmentView.view.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_NONE,
-            .clearValue         = {.depthStencil = {0.0f, 0x0}}
-        };
-
         const VkRenderingInfo renderInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -171,7 +166,7 @@ namespace Renderer::Forward
             .viewMask             = 0,
             .colorAttachmentCount = 1,
             .pColorAttachments    = &colorAttachmentInfo,
-            .pDepthAttachment     = &depthAttachmentInfo,
+            .pDepthAttachment     = nullptr,
             .pStencilAttachment   = nullptr
         };
 
@@ -201,50 +196,53 @@ namespace Renderer::Forward
 
         pipeline.pushConstant =
         {
-            .scene                   = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes                  = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .visibleMeshes           = meshBuffer.visibleMeshBuffer.deviceAddress,
-            .positions               = geometryBuffer.positionBuffer.deviceAddress,
-            .vertices                = geometryBuffer.vertexBuffer.deviceAddress,
-            .cascades                = cascadeBuffer.buffers[FIF].deviceAddress,
-            .pointShadows            = pointShadowBuffer.buffers[FIF].deviceAddress,
-            .spotShadows             = spotShadowBuffer.buffers[FIF].deviceAddress,
-            .textureSamplerIndex     = pipeline.textureSamplerIndex,
-            .iblSamplerIndex         = pipeline.iblSamplerIndex,
-            .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
-            .irradianceIndex         = iblMaps.irradianceID,
-            .preFilterIndex          = iblMaps.preFilterID,
-            .brdfLutIndex            = iblMaps.brdfLutID,
-            .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowCascadesView").descriptorIndex,
-            .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").descriptorIndex,
-            .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").descriptorIndex,
+            .pointSamplerIndex  = pipeline.pointSamplerIndex,
+            .linearSamplerIndex = pipeline.linearSamplerIndex,
+            .currentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
+            .historyBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
+            .velocityIndex      = framebufferManager.GetFramebufferView("MotionVectorsView").sampledImageIndex,
+            .modulationFactor   = m_modulationFactor
         };
 
         pipeline.LoadPushConstants
         (
             currentCmdBuffer,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, sizeof(Forward::PushConstant),
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0, sizeof(TAA::PushConstant),
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
-        std::array descriptorSets = {megaSet.descriptorSet};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
-        geometryBuffer.Bind(currentCmdBuffer);
-
-        vkCmdDrawIndexedIndirectCount
+        vkCmdDraw
         (
             currentCmdBuffer.handle,
-            indirectBuffer.culledDrawCallBuffer.handle,
-            sizeof(u32),
-            indirectBuffer.culledDrawCallBuffer.handle,
+            3,
+            1,
             0,
-            indirectBuffer.writtenDrawCount,
-            sizeof(VkDrawIndexedIndirectCommand)
+            0
         );
 
         vkCmdEndRendering(currentCmdBuffer.handle);
+
+        colorAttachment.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = colorAttachment.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = colorAttachment.image.mipLevels,
+                .baseArrayLayer = static_cast<u32>(currentIndex),
+                .layerCount     = 1
+            }
+        );
 
         Vk::EndLabel(currentCmdBuffer);
 
@@ -253,7 +251,7 @@ namespace Renderer::Forward
 
     void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
-        Logger::Debug("{}\n", "Destroying forward pass!");
+        Logger::Debug("{}\n", "Destroying TAA pass!");
 
         for (auto&& cmdBuffer : cmdBuffers)
         {

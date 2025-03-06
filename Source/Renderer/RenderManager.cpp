@@ -42,6 +42,7 @@ namespace Renderer
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_ssaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowRTPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -56,6 +57,7 @@ namespace Renderer
             m_meshBuffer.Destroy(m_context.allocator);
 
             m_cullingDispatch.Destroy(m_context.device);
+            m_taaPass.Destroy(m_context.device, m_context.commandPool);
             m_shadowRTPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_ssaoPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_lightingPass.Destroy(m_context.device, m_context.commandPool);
@@ -248,6 +250,7 @@ namespace Renderer
         m_depthPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_scene,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
@@ -260,6 +263,7 @@ namespace Renderer
         m_gBufferPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.geometryBuffer,
@@ -306,6 +310,13 @@ namespace Renderer
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_iblMaps,
+            m_megaSet
+        );
+
+        m_taaPass.Render
+        (
+            m_currentFIF,
+            m_framebufferManager,
             m_megaSet
         );
 
@@ -588,6 +599,8 @@ namespace Renderer
         }
 
         Vk::EndLabel(m_context.graphicsQueue);
+
+        ++m_frameIndex;
     }
 
     void RenderManager::SubmitQueue()
@@ -668,6 +681,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_skyboxPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_taaPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

@@ -52,6 +52,7 @@ namespace Renderer::Bloom
     private:
         void RenderDownSamples
         (
+            usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet

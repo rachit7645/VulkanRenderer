@@ -14,42 +14,41 @@
  * limitations under the License.
  */
 
-#ifndef POST_PROCESS_PASS_H
-#define POST_PROCESS_PASS_H
+#ifndef TAA_PIPELINE_H
+#define TAA_PIPELINE_H
 
-#include "Pipeline.h"
-#include "Vulkan/CommandBuffer.h"
-#include "Vulkan/Swapchain.h"
-#include "Vulkan/FramebufferManager.h"
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/TextureManager.h"
 
-namespace Renderer::PostProcess
+namespace Renderer::TAA
 {
-    class RenderPass
+    class Pipeline : public Vk::Pipeline
     {
     public:
-        RenderPass
+        Pipeline
         (
             const Vk::Context& context,
-            const Vk::Swapchain& swapchain,
+            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        TAA::PushConstant pushConstant = {};
 
-        void Render
+        u32 pointSamplerIndex;
+        u32 linearSamplerIndex;
+    private:
+        void CreatePipeline
         (
-            usize FIF,
-            const Vk::Swapchain& swapchain,
-            const Vk::MegaSet& megaSet,
-            const Vk::FramebufferManager& framebufferManager
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
         );
 
-        PostProcess::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
-    private:
-        f32 m_bloomStrength = 0.031f;
+        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

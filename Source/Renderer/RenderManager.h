@@ -37,6 +37,7 @@
 #include "Lighting/RenderPass.h"
 #include "SSAO/RenderPass.h"
 #include "ShadowRT/RenderPass.h"
+#include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
@@ -104,6 +105,7 @@ namespace Renderer
         Lighting::RenderPass    m_lightingPass;
         SSAO::RenderPass        m_ssaoPass;
         ShadowRT::RenderPass    m_shadowRTPass;
+        TAA::RenderPass         m_taaPass;
         Culling::Dispatch       m_cullingDispatch;
 
         // Buffers
@@ -120,7 +122,8 @@ namespace Renderer
         std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
 
         // Frame index
-        usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
+        usize m_currentFIF  = Vk::FRAMES_IN_FLIGHT - 1;
+        usize m_frameIndex = 0;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
 

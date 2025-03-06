@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PUSH_CONSTANT
-#define GBUFFER_PUSH_CONSTANT
-
-#include "Mesh.glsl"
-#include "Scene.glsl"
-#include "Vertex.glsl"
+#ifndef TAA_PUSH_CONSTANT
+#define TAA_PUSH_CONSTANT
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer       Scene;
-    MeshBuffer        Meshes;
-    VisibleMeshBuffer VisibleMeshes;
-    PositionBuffer    Positions;
-    VertexBuffer      Vertices;
-    vec2              Offset;
-    uint              TextureSamplerIndex;
+    uint  PointSamplerIndex;
+    uint  LinearSamplerIndex;
+    uint  CurrentColorIndex;
+    uint  HistoryBufferIndex;
+    uint  VelocityIndex;
+    float ModulationFactor;
 } Constants;
 
 #endif

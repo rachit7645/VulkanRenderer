@@ -27,9 +27,40 @@ namespace Maths
     glm::mat3 CreateNormalMatrix(const glm::mat4& transform);
 
     template<typename T>
-    T Lerp(T a, T b, T factor)
+    constexpr T Lerp(T a, T b, T factor)
     {
         return a + factor * (b - a);
+    }
+
+    constexpr f32 Halton(usize index, usize base)
+    {
+        f64 result = 0.0;
+        f64 f      = 1.0 / static_cast<f64>(base);
+
+        index += 1;
+
+        while (index > 0)
+        {
+            result += f * static_cast<f64>(index % base);
+
+            index /= base;
+            f     /= static_cast<f64>(base);
+        }
+
+        return static_cast<f32>(result);
+    }
+
+    template<usize N>
+    constexpr std::array<glm::vec2, N> GenerateHaltonSequence()
+    {
+        std::array<glm::vec2, N> sequence = {};
+
+        for (usize i = 0; i < N; ++i)
+        {
+            sequence[i] = {Halton(i, 2), Halton(i, 3)};
+        }
+
+        return sequence;
     }
 }
 

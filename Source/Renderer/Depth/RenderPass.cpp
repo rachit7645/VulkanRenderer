@@ -78,6 +78,7 @@ namespace Renderer::Depth
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -185,6 +186,7 @@ namespace Renderer::Depth
             .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
             .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
             .positions     = geometryBuffer.positionBuffer.deviceAddress,
+            .offset        = ((Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT] - glm::vec2(0.5f)) / glm::vec2(depthAttachment.image.width, depthAttachment.image.height)) * 2.0f,
         };
 
         pipeline.LoadPushConstants

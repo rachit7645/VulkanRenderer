@@ -144,6 +144,9 @@ add_executable(VulkanRenderer
     Source/Renderer/ShadowRT/Pipeline.cpp
     Source/Renderer/ShadowRT/RenderPass.cpp
     Source/Renderer/ShadowRT/SBTBuffer.cpp
+    # TAA Sources
+    Source/Renderer/TAA/Pipeline.cpp
+    Source/Renderer/TAA/RenderPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

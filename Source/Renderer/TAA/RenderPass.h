@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PASS_H
-#define GBUFFER_PASS_H
+#ifndef TAA_PASS_H
+#define TAA_PASS_H
 
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
@@ -23,12 +23,8 @@
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/RenderConstants.h"
-#include "Renderer/Buffers/IndirectBuffer.h"
-#include "Renderer/Buffers/MeshBuffer.h"
-#include "Renderer/Buffers/SceneBuffer.h"
 
-namespace Renderer::GBuffer
+namespace Renderer::TAA
 {
     class RenderPass
     {
@@ -47,18 +43,15 @@ namespace Renderer::GBuffer
         void Render
         (
             usize FIF,
-            usize frameIndex,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet,
-            const Vk::GeometryBuffer& geometryBuffer,
-            const Buffers::SceneBuffer& sceneBuffer,
-            const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
+            const Vk::MegaSet& megaSet
         );
 
-        GBuffer::Pipeline pipeline;
+        TAA::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+    private:
+        f32 m_modulationFactor = 0.9f;
     };
 }
 

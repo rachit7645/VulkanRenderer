@@ -27,6 +27,7 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     MeshBuffer        Meshes;
     VisibleMeshBuffer VisibleMeshes;
     PositionBuffer    Positions;
+    vec2              Offset;
 } Constants;
 
 #endif

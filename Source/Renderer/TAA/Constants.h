@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PUSH_CONSTANT
-#define GBUFFER_PUSH_CONSTANT
+#ifndef TAA_PUSH_CONSTANT_H
+#define TAA_PUSH_CONSTANT_H
 
-#include "Mesh.glsl"
-#include "Scene.glsl"
-#include "Vertex.glsl"
+#include <vulkan/vulkan.h>
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+#include "Vulkan/Util.h"
+
+namespace Renderer::TAA
 {
-    SceneBuffer       Scene;
-    MeshBuffer        Meshes;
-    VisibleMeshBuffer VisibleMeshes;
-    PositionBuffer    Positions;
-    VertexBuffer      Vertices;
-    vec2              Offset;
-    uint              TextureSamplerIndex;
-} Constants;
+    struct PushConstant
+    {
+        u32 pointSamplerIndex;
+        u32 linearSamplerIndex;
+        u32 currentColorIndex;
+        u32 historyBufferIndex;
+        u32 velocityIndex;
+        f32 modulationFactor;
+    };
+}
 
 #endif

@@ -30,6 +30,7 @@ namespace Renderer::GBuffer
         VkDeviceAddress visibleMeshes;
         VkDeviceAddress positions;
         VkDeviceAddress vertices;
+        glm::vec2       offset;
         u32             textureSamplerIndex;
     };
 }

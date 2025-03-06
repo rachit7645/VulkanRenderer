@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PUSH_CONSTANT
-#define GBUFFER_PUSH_CONSTANT
+#version 460
 
-#include "Mesh.glsl"
-#include "Scene.glsl"
-#include "Vertex.glsl"
+layout(location = 0) out vec2 fragUV;
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+void main()
 {
-    SceneBuffer       Scene;
-    MeshBuffer        Meshes;
-    VisibleMeshBuffer VisibleMeshes;
-    PositionBuffer    Positions;
-    VertexBuffer      Vertices;
-    vec2              Offset;
-    uint              TextureSamplerIndex;
-} Constants;
-
-#endif
+    // https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
+    fragUV      = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
+    gl_Position = vec4(fragUV * 2.0f - 1.0f, 0.0f, 1.0f);
+}

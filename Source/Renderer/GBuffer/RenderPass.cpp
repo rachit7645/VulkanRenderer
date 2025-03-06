@@ -86,7 +86,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebuffer
         (
             "MotionVectors",
-            Vk::FramebufferType::ColorRG,
+            Vk::FramebufferType::ColorRG_Float,
             Vk::ImageType::Single2D,
             false,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
@@ -146,6 +146,7 @@ namespace Renderer::GBuffer
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -166,9 +167,10 @@ namespace Renderer::GBuffer
         const auto& motionVectorsView   = framebufferManager.GetFramebufferView("MotionVectorsView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
-        const auto& gAlbedo        = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
-        const auto& gNormal        = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
-        const auto& motionVectors  = framebufferManager.GetFramebuffer(motionVectorsView.framebuffer);
+        const auto& gAlbedo         = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
+        const auto& gNormal         = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
+        const auto& motionVectors   = framebufferManager.GetFramebuffer(motionVectorsView.framebuffer);
+        const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
 
         gAlbedo.image.Barrier
         (
@@ -325,12 +327,13 @@ namespace Renderer::GBuffer
 
         pipeline.pushConstant =
         {
-            .scene                   = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes                  = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .visibleMeshes           = meshBuffer.visibleMeshBuffer.deviceAddress,
-            .positions               = geometryBuffer.positionBuffer.deviceAddress,
-            .vertices                = geometryBuffer.vertexBuffer.deviceAddress,
-            .textureSamplerIndex     = pipeline.textureSamplerIndex
+            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
+            .visibleMeshes       = meshBuffer.visibleMeshBuffer.deviceAddress,
+            .positions           = geometryBuffer.positionBuffer.deviceAddress,
+            .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
+            .offset              = ((Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT] - glm::vec2(0.5f)) / glm::vec2(depthAttachment.image.width, depthAttachment.image.height)) * 2.0f,
+            .textureSamplerIndex = pipeline.textureSamplerIndex
         };
 
         pipeline.LoadPushConstants

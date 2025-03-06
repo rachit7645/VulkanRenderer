@@ -19,12 +19,13 @@
 
 namespace Renderer::Depth
 {
-    struct __attribute__((packed)) PushConstant
+    struct PushConstant
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
         VkDeviceAddress visibleMeshes;
         VkDeviceAddress positions;
+        glm::vec2       offset;
     };
 }
 
