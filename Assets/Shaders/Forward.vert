@@ -39,12 +39,12 @@ void main()
 
     vec4 fragPos     = mesh.transform * vec4(position, 1.0f);
     fragPosition     = fragPos.xyz;
-    vec4 fragViewPos = Constants.Scene.view * fragPos;
+    vec4 fragViewPos = Constants.Scene.currentMatrices.view * fragPos;
     fragViewPosition = fragViewPos.xyz;
-    gl_Position      = Constants.Scene.projection * fragViewPos;
+    gl_Position      = Constants.Scene.currentMatrices.projection * fragViewPos;
 
     fragTexCoords = vertex.uv0;
-    fragToCamera  = normalize(Constants.Scene.cameraPos - fragPosition);
+    fragToCamera  = normalize(Constants.Scene.currentMatrices.cameraPos - fragPosition);
     fragDrawID    = meshIndex;
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);

@@ -496,6 +496,8 @@ namespace Renderer
             ImGui::EndMainMenuBar();
         }
 
+        m_scene.previousMatrices = m_scene.currentMatrices;
+
         const auto projection = Maths::CreateProjectionReverseZ
         (
             m_camera.FOV,
@@ -507,19 +509,20 @@ namespace Renderer
 
         const auto view = m_camera.GetViewMatrix();
 
-        m_scene =
+        m_scene.currentMatrices  =
         {
             .projection        = projection,
             .inverseProjection = glm::inverse(projection),
             .view              = view,
             .inverseView       = glm::inverse(view),
             .normalView        = Maths::CreateNormalMatrix(view),
-            .cameraPos         = m_camera.position,
-            .planes            = Renderer::PLANES,
-            .dirLights         = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset(),
-            .pointLights       = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset(),
-            .spotLights        = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset()
+            .cameraPos         = m_camera.position
         };
+
+        m_scene.planes            = Renderer::PLANES;
+        m_scene.dirLights         = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
+        m_scene.pointLights       = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset();
+        m_scene.spotLights        = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset();
 
         m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_sun, 1}, m_pointLights, m_spotLights);
         m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_scene);

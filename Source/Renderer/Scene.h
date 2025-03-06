@@ -17,13 +17,13 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "Objects/Lights.h"
+#include <vulkan/vulkan.h>
+
 #include "Externals/GLM.h"
-#include "Vulkan/Util.h"
 
 namespace Renderer
 {
-    struct Scene
+    struct SceneMatrices
     {
         glm::mat4       projection        = {};
         glm::mat4       inverseProjection = {};
@@ -31,6 +31,12 @@ namespace Renderer
         glm::mat4       inverseView       = {};
         glm::mat3       normalView        = {};
         glm::vec3       cameraPos         = {};
+    };
+
+    struct Scene
+    {
+        SceneMatrices   currentMatrices   = {};
+        SceneMatrices   previousMatrices  = {};
         glm::vec2       planes            = {};
         VkDeviceAddress dirLights         = 0;
         VkDeviceAddress pointLights       = 0;

@@ -95,7 +95,7 @@ namespace Renderer::Depth
         cullingDispatch.ComputeDispatch
         (
             FIF,
-            scene.projection * scene.view,
+            scene.currentMatrices.projection * scene.currentMatrices.view,
             currentCmdBuffer,
             meshBuffer,
             indirectBuffer

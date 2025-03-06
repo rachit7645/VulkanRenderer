@@ -35,7 +35,7 @@ void main()
     vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
 
     vec3 normal = UnpackNormal(gNormal_Rgh_Mtl.rg);
-         normal = Constants.Scene.normalView * normal;
+         normal = Constants.Scene.currentMatrices.normalView * normal;
          normal = normalize(normal);
 
     vec3 viewPosition = GetViewPosition(fragUV);
@@ -57,7 +57,7 @@ void main()
              samplePosition = viewPosition + samplePosition * Constants.Radius;
         
         vec4 offset      = vec4(samplePosition, 1.0f);
-             offset      = Constants.Scene.projection * offset;
+             offset      = Constants.Scene.currentMatrices.projection * offset;
              offset.xyz /= offset.w;
              offset.xyz  = offset.xyz * 0.5f + 0.5f;
 
@@ -77,7 +77,7 @@ vec3 GetViewPosition(vec2 uv)
 {
     vec4  gDepth            = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     float depth             = gDepth.r;
-    vec4  projectedPosition = Constants.Scene.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
+    vec4  projectedPosition = Constants.Scene.currentMatrices.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
     vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
 
     return viewPosition;

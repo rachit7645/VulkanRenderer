@@ -19,14 +19,20 @@
 
 #include "Lights.glsl"
 
+struct SceneMatrices
+{
+    mat4 projection;
+    mat4 inverseProjection;
+    mat4 view;
+    mat4 inverseView;
+    mat3 normalView;
+    vec3 cameraPos;
+};
+
 layout(buffer_reference, scalar) readonly buffer SceneBuffer
 {
-    mat4             projection;
-    mat4             inverseProjection;
-    mat4             view;
-    mat4             inverseView;
-    mat3             normalView;
-    vec3             cameraPos;
+    SceneMatrices    currentMatrices;
+    SceneMatrices    previousMatrices;
     vec2             planes;
     DirLightBuffer   dirLights;
     PointLightBuffer pointLights;

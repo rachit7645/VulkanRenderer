@@ -24,12 +24,15 @@
 #include "Packing.glsl"
 #include "MegaSet.glsl"
 
-layout(location = 0) in      vec2 fragTexCoords;
-layout(location = 1) in flat uint fragDrawID;
-layout(location = 2) in      mat3 fragTBNMatrix;
+layout(location = 0) in      vec4 currentPosition;
+layout(location = 1) in      vec4 previousPosition;
+layout(location = 2) in      vec2 fragTexCoords;
+layout(location = 3) in flat uint fragDrawID;
+layout(location = 4) in      mat3 fragTBNMatrix;
 
 layout(location = 0) out vec3 gAlbedo;
 layout(location = 1) out vec4 gNormal_Rgh_Mtl;
+layout(location = 2) out vec2 motionVectors;
 
 void main()
 {
@@ -38,6 +41,8 @@ void main()
     vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
     albedo.rgb  *= mesh.material.albedoFactor.rgb;
 
+    gAlbedo = albedo.rgb;
+
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
     normal      = GetNormalFromMap(normal, fragTBNMatrix);
 
@@ -45,9 +50,12 @@ void main()
     aoRghMtl.g   *= mesh.material.roughnessFactor;
     aoRghMtl.b   *= mesh.material.metallicFactor;
 
-    gAlbedo = albedo.rgb;
-
     gNormal_Rgh_Mtl.rg = PackNormal(normal);
     gNormal_Rgh_Mtl.b  = aoRghMtl.g;
     gNormal_Rgh_Mtl.a  = aoRghMtl.b;
+
+    vec2 current  = (currentPosition.xy  / currentPosition.w)  * 0.5f + 0.5f;
+    vec2 previous = (previousPosition.xy / previousPosition.w) * 0.5f + 0.5f;
+
+    motionVectors = current - previous;
 }

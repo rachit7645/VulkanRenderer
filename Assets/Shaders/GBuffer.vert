@@ -23,9 +23,11 @@
 #include "Constants/GBuffer.glsl"
 #include "Material.glsl"
 
-layout(location = 0) out      vec2 fragTexCoords;
-layout(location = 1) out flat uint fragDrawID;
-layout(location = 2) out      mat3 fragTBNMatrix;
+layout(location = 0) out      vec4 currentPosition;
+layout(location = 1) out      vec4 previousPosition;
+layout(location = 2) out      vec2 fragTexCoords;
+layout(location = 3) out flat uint fragDrawID;
+layout(location = 4) out      mat3 fragTBNMatrix;
 
 void main()
 {
@@ -34,7 +36,11 @@ void main()
     vec3   position  = Constants.Positions.positions[gl_VertexIndex];
     Vertex vertex    = Constants.Vertices.vertices[gl_VertexIndex];
 
-    gl_Position = Constants.Scene.projection * Constants.Scene.view * mesh.transform * vec4(position, 1.0f);
+    vec4 worldPosition = mesh.transform * vec4(position, 1.0f);
+
+    gl_Position      = Constants.Scene.currentMatrices.projection * Constants.Scene.currentMatrices.view * worldPosition;
+    currentPosition  = gl_Position;
+    previousPosition = Constants.Scene.previousMatrices.projection * Constants.Scene.previousMatrices.view * worldPosition;
 
     fragTexCoords = vertex.uv0;
     fragDrawID    = meshIndex;

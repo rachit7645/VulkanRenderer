@@ -27,10 +27,10 @@ layout(location = 0) out vec3 txCoords;
 void main()
 {
     // Disable translation
-    mat4 view = mat4(mat3(Constants.Scene.view));
+    mat4 view = mat4(mat3(Constants.Scene.currentMatrices.view));
 
     vec3 position = Constants.Vertices.positions[gl_VertexIndex];
 
     txCoords    = normalize(position);
-    gl_Position = Constants.Scene.projection * view * vec4(position, 1.0f);
+    gl_Position = Constants.Scene.currentMatrices.projection * view * vec4(position, 1.0f);
 }

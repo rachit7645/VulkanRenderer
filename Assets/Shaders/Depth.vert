@@ -29,5 +29,5 @@ void main()
     vec3 position  = Constants.Positions.positions[gl_VertexIndex];
 
     vec4 fragPos = mesh.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.projection * Constants.Scene.view * fragPos;
+    gl_Position  = Constants.Scene.currentMatrices.projection * Constants.Scene.currentMatrices.view * fragPos;
 }

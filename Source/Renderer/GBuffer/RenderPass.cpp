@@ -83,6 +83,24 @@ namespace Renderer::GBuffer
             }
         );
 
+        framebufferManager.AddFramebuffer
+        (
+            "MotionVectors",
+            Vk::FramebufferType::ColorRG,
+            Vk::ImageType::Single2D,
+            false,
+            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            }
+        );
+
         framebufferManager.AddFramebufferView
         (
             "GAlbedo",
@@ -100,6 +118,19 @@ namespace Renderer::GBuffer
         (
             "GNormal_Rgh_Mtl",
             "GNormal_Rgh_Mtl_View",
+            Vk::ImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "MotionVectors",
+            "MotionVectorsView",
             Vk::ImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -132,10 +163,12 @@ namespace Renderer::GBuffer
 
         const auto& gAlbedoView         = framebufferManager.GetFramebufferView("GAlbedoView");
         const auto& gNormalView         = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View");
+        const auto& motionVectorsView   = framebufferManager.GetFramebufferView("MotionVectorsView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
-        const auto& gAlbedo = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
-        const auto& gNormal = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
+        const auto& gAlbedo        = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
+        const auto& gNormal        = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
+        const auto& motionVectors  = framebufferManager.GetFramebuffer(motionVectorsView.framebuffer);
 
         gAlbedo.image.Barrier
         (
@@ -173,6 +206,24 @@ namespace Renderer::GBuffer
             }
         );
 
+        motionVectors.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = motionVectors.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = motionVectors.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = motionVectors.image.arrayLayers
+            }
+        );
+
         const VkRenderingAttachmentInfo gAlbedoInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -201,6 +252,20 @@ namespace Renderer::GBuffer
             .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
         };
 
+        const VkRenderingAttachmentInfo motionVectorsInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = motionVectorsView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
+        };
+
         const VkRenderingAttachmentInfo depthAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -215,7 +280,7 @@ namespace Renderer::GBuffer
             .clearValue         = {.depthStencil = {0.0f, 0x0}}
         };
 
-        const std::array colorAttachments = {gAlbedoInfo, gNormalInfo};
+        const std::array colorAttachments = {gAlbedoInfo, gNormalInfo, motionVectorsInfo};
 
         const VkRenderingInfo renderInfo =
         {
@@ -327,6 +392,24 @@ namespace Renderer::GBuffer
                 .levelCount     = gNormal.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = gNormal.image.arrayLayers
+            }
+        );
+
+        motionVectors.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = motionVectors.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = motionVectors.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = motionVectors.image.arrayLayers
             }
         );
 

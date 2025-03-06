@@ -130,6 +130,20 @@ namespace Vk
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
+            case FramebufferType::ColorRG:
+                createInfo.format = formatHelper.rgFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorRG_Float:
+                createInfo.format = formatHelper.rgFloatFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
             case FramebufferType::ColorLDR:
                 createInfo.format = formatHelper.colorAttachmentFormatLDR;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;

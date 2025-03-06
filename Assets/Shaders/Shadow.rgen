@@ -39,9 +39,9 @@ void main()
 
     vec4  gDepth            = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     float depth             = gDepth.r;
-    vec4  projectedPosition = Constants.Scene.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
+    vec4  projectedPosition = Constants.Scene.currentMatrices.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
     vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
-    vec3  worldPosition     = vec3(Constants.Scene.inverseView * vec4(viewPosition, 1.0f));
+    vec3  worldPosition     = vec3(Constants.Scene.currentMatrices.inverseView * vec4(viewPosition, 1.0f));
 
     vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
 

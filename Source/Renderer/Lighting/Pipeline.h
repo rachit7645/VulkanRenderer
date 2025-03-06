@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef LIGHITNG_PIPELINE_H
-#define LIGHITNG_PIPELINE_H
+#ifndef LIGHTING_PIPELINE_H
+#define LIGHTING_PIPELINE_H
 
 #include "Constants.h"
 #include "Vulkan/Pipeline.h"
