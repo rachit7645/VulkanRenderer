@@ -50,8 +50,6 @@ namespace Renderer::TAA
         TAA::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
-    private:
-        f32 m_modulationFactor = 0.9f;
     };
 }
 

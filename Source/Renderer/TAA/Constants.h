@@ -30,7 +30,7 @@ namespace Renderer::TAA
         u32 currentColorIndex;
         u32 historyBufferIndex;
         u32 velocityIndex;
-        f32 modulationFactor;
+        u32 sceneDepthIndex;
     };
 }
 

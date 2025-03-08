@@ -24,7 +24,7 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint  CurrentColorIndex;
     uint  HistoryBufferIndex;
     uint  VelocityIndex;
-    float ModulationFactor;
+    uint  SceneDepthIndex;
 } Constants;
 
 #endif

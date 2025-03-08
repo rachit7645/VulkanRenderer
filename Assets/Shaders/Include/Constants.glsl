@@ -58,4 +58,8 @@ const float MAX_SPOT_SHADOW_BIAS = 0.00025f;
 const float RT_SHADOW_MIN_BIAS = 0.0005f;
 const float RT_SHADOW_MAX_BIAS = 0.005f;
 
+// TAA Constants
+const float TAA_DEFAULT_HISTORY_BLEND_RATE = 0.1f;
+const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
+
 #endif

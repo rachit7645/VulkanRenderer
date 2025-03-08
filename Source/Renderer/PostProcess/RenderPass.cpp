@@ -156,7 +156,7 @@ namespace Renderer::PostProcess
         pipeline.pushConstant =
         {
             .samplerIndex  = pipeline.samplerIndex,
-            .imageIndex    = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", FIF)).sampledImageIndex,
+            .imageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageIndex,
             .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
             .bloomStrength = m_bloomStrength
         };

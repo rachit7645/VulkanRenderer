@@ -43,7 +43,7 @@ namespace Renderer::PostProcess
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("PostProcess.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Trongle.vert",     VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("PostProcess.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)

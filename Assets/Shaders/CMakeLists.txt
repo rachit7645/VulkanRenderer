@@ -45,14 +45,12 @@ set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 
 # Shader files
 file(GLOB SHADER_SOURCES
-    PostProcess.vert
     PostProcess.frag
     Depth.vert
     Depth.frag
     ImGui.vert
     ImGui.frag
     BRDF.frag
-    BRDF.vert
     Converter.vert
     Converter.frag
     Skybox.frag
@@ -61,10 +59,8 @@ file(GLOB SHADER_SOURCES
     Convolution.vert
     PreFilter.vert
     PreFilter.frag
-    DownSample.vert
     DownSample.frag
     UpSample.frag
-    UpSample.vert
     Shadow.frag
     Shadow.vert
     PointShadow.frag
@@ -75,16 +71,13 @@ file(GLOB SHADER_SOURCES
     GBuffer.frag
     GBuffer.vert
     Lighting.frag
-    Lighting.vert
-    SSAO.vert
     SSAO.frag
-    SSAOBlur.vert
     SSAOBlur.frag
     Shadow.rgen
     Shadow.rchit
     Shadow.rmiss
     TAA.frag
-    TAA.vert
+    Trongle.vert
 )
 
 # Shader headers

@@ -38,8 +38,8 @@ namespace Renderer::TAA
 
         TAA::PushConstant pushConstant = {};
 
-        u32 pointSamplerIndex;
-        u32 linearSamplerIndex;
+        u32 pointSamplerIndex  = 0;
+        u32 linearSamplerIndex = 0;
     private:
         void CreatePipeline
         (

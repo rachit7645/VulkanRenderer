@@ -37,6 +37,7 @@ namespace Vk
         ColorRG_Float,
         ColorLDR,
         ColorHDR,
+        ColorHDR_WithAlpha,
         Depth,
         DepthStencil
     };

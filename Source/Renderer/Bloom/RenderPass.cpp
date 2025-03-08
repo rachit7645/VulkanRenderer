@@ -114,7 +114,6 @@ namespace Renderer::Bloom
 
         RenderDownSamples
         (
-            FIF,
             currentCmdBuffer,
             framebufferManager,
             megaSet
@@ -134,7 +133,6 @@ namespace Renderer::Bloom
 
     void RenderPass::RenderDownSamples
     (
-        usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
@@ -144,7 +142,7 @@ namespace Renderer::Bloom
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
-        auto srcView = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", FIF));
+        auto srcView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
         auto dstView = framebufferManager.GetFramebufferView("BloomView/0");
 
         for (u32 mip = 0; mip < bloomBuffer.image.mipLevels; ++mip)

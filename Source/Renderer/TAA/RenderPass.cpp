@@ -49,8 +49,26 @@ namespace Renderer::TAA
 
         framebufferManager.AddFramebuffer
         (
-            "TAABuffer",
+            "ResolvedSceneColor",
             Vk::FramebufferType::ColorHDR,
+            Vk::ImageType::Single2D,
+            false,
+            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "TAABuffer",
+            Vk::FramebufferType::ColorHDR_WithAlpha,
             Vk::ImageType::Single2D,
             false,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
@@ -62,6 +80,19 @@ namespace Renderer::TAA
                     .mipLevels   = 1,
                     .arrayLayers = Vk::FRAMES_IN_FLIGHT
                 };
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "ResolvedSceneColor",
+            "ResolvedSceneColorView",
+            Vk::ImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
             }
         );
 
@@ -91,18 +122,6 @@ namespace Renderer::TAA
         const Vk::MegaSet& megaSet
     )
     {
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("TAA"))
-            {
-                ImGui::DragFloat("Modulation Factor", &m_modulationFactor, 0.01f, 0.0f, 1.0f, "%.3f");
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
-
         const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
@@ -113,10 +132,13 @@ namespace Renderer::TAA
         const usize currentIndex  = FIF;
         const usize previousIndex = (FIF - 1) % Vk::FRAMES_IN_FLIGHT;
 
-        const auto& colorAttachmentView = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", currentIndex));
-        const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
+        const auto& resolvedView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
+        const auto& historyView  = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", currentIndex));
 
-        colorAttachment.image.Barrier
+        const auto& resolved = framebufferManager.GetFramebuffer(resolvedView.framebuffer);
+        const auto& history  = framebufferManager.GetFramebuffer(historyView.framebuffer);
+
+        resolved.image.Barrier
         (
             currentCmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -126,19 +148,37 @@ namespace Renderer::TAA
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             {
-                .aspectMask     = colorAttachment.image.aspect,
+                .aspectMask     = resolved.image.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = colorAttachment.image.mipLevels,
+                .levelCount     = resolved.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = resolved.image.arrayLayers
+            }
+        );
+
+        history.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = history.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = history.image.mipLevels,
                 .baseArrayLayer = static_cast<u32>(currentIndex),
                 .layerCount     = 1
             }
         );
 
-        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        const VkRenderingAttachmentInfo resolvedInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = colorAttachmentView.view.handle,
+            .imageView          = resolvedView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -153,6 +193,27 @@ namespace Renderer::TAA
             }}}
         };
 
+        const VkRenderingAttachmentInfo historyInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = historyView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{
+                Renderer::CLEAR_COLOR.r,
+                Renderer::CLEAR_COLOR.g,
+                Renderer::CLEAR_COLOR.b,
+                Renderer::CLEAR_COLOR.a
+            }}}
+        };
+
+        const std::array colorAttachments = {resolvedInfo, historyInfo};
+
         const VkRenderingInfo renderInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -160,12 +221,12 @@ namespace Renderer::TAA
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = {colorAttachment.image.width, colorAttachment.image.height}
+                .extent = {resolved.image.width, resolved.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &colorAttachmentInfo,
+            .colorAttachmentCount = static_cast<u32>(colorAttachments.size()),
+            .pColorAttachments    = colorAttachments.data(),
             .pDepthAttachment     = nullptr,
             .pStencilAttachment   = nullptr
         };
@@ -178,8 +239,8 @@ namespace Renderer::TAA
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(colorAttachment.image.width),
-            .height   = static_cast<f32>(colorAttachment.image.height),
+            .width    = static_cast<f32>(resolved.image.width),
+            .height   = static_cast<f32>(resolved.image.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -189,7 +250,7 @@ namespace Renderer::TAA
         const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = {colorAttachment.image.width, colorAttachment.image.height}
+            .extent = {resolved.image.width, resolved.image.height}
         };
 
         vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
@@ -201,7 +262,7 @@ namespace Renderer::TAA
             .currentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
             .historyBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
             .velocityIndex      = framebufferManager.GetFramebufferView("MotionVectorsView").sampledImageIndex,
-            .modulationFactor   = m_modulationFactor
+            .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
         };
 
         pipeline.LoadPushConstants
@@ -209,7 +270,7 @@ namespace Renderer::TAA
             currentCmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(TAA::PushConstant),
-            reinterpret_cast<void*>(&pipeline.pushConstant)
+            &pipeline.pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
@@ -226,7 +287,7 @@ namespace Renderer::TAA
 
         vkCmdEndRendering(currentCmdBuffer.handle);
 
-        colorAttachment.image.Barrier
+        resolved.image.Barrier
         (
             currentCmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -236,9 +297,27 @@ namespace Renderer::TAA
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             {
-                .aspectMask     = colorAttachment.image.aspect,
+                .aspectMask     = resolved.image.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = colorAttachment.image.mipLevels,
+                .levelCount     = resolved.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = resolved.image.arrayLayers
+            }
+        );
+
+        history.image.Barrier
+        (
+            currentCmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = history.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = history.image.mipLevels,
                 .baseArrayLayer = static_cast<u32>(currentIndex),
                 .layerCount     = 1
             }

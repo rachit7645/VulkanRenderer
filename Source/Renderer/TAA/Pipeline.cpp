@@ -44,13 +44,13 @@ namespace Renderer::TAA
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatHDRWithAlpha};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("TAA.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("TAA.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("TAA.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -68,8 +68,21 @@ namespace Renderer::TAA
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
+            .AddBlendAttachment(
+                    VK_FALSE,
+                    VK_BLEND_FACTOR_ONE,
+                    VK_BLEND_FACTOR_ZERO,
+                    VK_BLEND_OP_ADD,
+                    VK_BLEND_FACTOR_ONE,
+                    VK_BLEND_FACTOR_ZERO,
+                    VK_BLEND_OP_ADD,
+                    VK_COLOR_COMPONENT_R_BIT |
+                    VK_COLOR_COMPONENT_G_BIT |
+                    VK_COLOR_COMPONENT_B_BIT |
+                    VK_COLOR_COMPONENT_A_BIT
+                )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::PushConstant))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

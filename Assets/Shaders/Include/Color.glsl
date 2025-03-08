@@ -51,4 +51,24 @@ float KarisAverage(vec3 color)
     return 1.0f / (1.0f + luma);
 }
 
+// https://github.com/playdeadgames/temporal/blob/master/Assets/Shaders/TemporalReprojection.shader
+
+vec3 RGBToYCoCg(vec3 color)
+{
+    float y  = ( color.r / 4.0f) + (color.g / 2.0f) + (color.b / 4.0f);
+    float co = ( color.r / 2.0f) - (color.b / 2.0f);
+    float cg = (-color.r / 4.0f) + (color.g / 2.0f) - (color.b / 4.0f);
+
+    return vec3(y, co, cg);
+}
+
+vec3 YCoCgToRGB(vec3 color)
+{
+    float r = color.x + color.y - color.z;
+    float g = color.x + color.z;
+    float b = color.x - color.y - color.z;
+
+    return clamp(vec3(r, g, b), 0.0, 1.0);
+}
+
 #endif

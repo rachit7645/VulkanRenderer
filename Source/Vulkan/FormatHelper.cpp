@@ -100,6 +100,22 @@ namespace Vk
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT
         );
 
+        colorAttachmentFormatHDRWithAlpha = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array
+            {
+                VK_FORMAT_R16G16B16A16_SFLOAT,
+                VK_FORMAT_R32G32B32A32_SFLOAT,
+                VK_FORMAT_R64G64B64A64_SFLOAT
+            },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT
+        );
+
         depthFormat = FindSupportedFormat
         (
             physicalDevice,
