@@ -48,7 +48,7 @@ namespace Renderer::Buffers
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> meshBuffers;
 
-        Vk::Buffer visibleMeshBuffer;
+        Vk::Buffer visibilityBuffer;
     };
 }
 

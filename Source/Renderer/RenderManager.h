@@ -119,10 +119,10 @@ namespace Renderer
         Objects::FreeCamera                 m_camera;
 
         // Sync objects
-        std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
+        std::array<VkFence, Vk::FRAMES_IN_FLIGHT> m_inFlightFences = {};
 
         // Frame index
-        usize m_currentFIF  = Vk::FRAMES_IN_FLIGHT - 1;
+        usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
         usize m_frameIndex = 0;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};

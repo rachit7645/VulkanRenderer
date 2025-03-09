@@ -241,7 +241,7 @@ namespace Renderer::SpotShadow
             pipeline.pushConstant =
             {
                 .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-                .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+                .visibleMeshes = meshBuffer.visibilityBuffer.deviceAddress,
                 .positions     = geometryBuffer.positionBuffer.deviceAddress,
                 .spotShadows   = spotShadowBuffer.buffers[FIF].deviceAddress,
                 .currentIndex  = static_cast<u32>(i)

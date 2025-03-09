@@ -54,7 +54,7 @@ void main()
     uint  rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
     uint  cullMask = 0xFF;
     float tmin     = 0.001f;
-    float tmax     = Constants.Scene.planes.y;
+    float tmax     = Constants.Scene.farPlane;
 
     shadowAmount = 0.0f;
 

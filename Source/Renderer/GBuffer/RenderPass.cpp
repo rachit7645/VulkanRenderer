@@ -146,7 +146,6 @@ namespace Renderer::GBuffer
     void RenderPass::Render
     (
         usize FIF,
-        usize frameIndex,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -170,7 +169,6 @@ namespace Renderer::GBuffer
         const auto& gAlbedo         = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
         const auto& gNormal         = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
         const auto& motionVectors   = framebufferManager.GetFramebuffer(motionVectorsView.framebuffer);
-        const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
 
         gAlbedo.image.Barrier
         (
@@ -329,10 +327,9 @@ namespace Renderer::GBuffer
         {
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .visibleMeshes       = meshBuffer.visibleMeshBuffer.deviceAddress,
+            .visibleMeshes       = meshBuffer.visibilityBuffer.deviceAddress,
             .positions           = geometryBuffer.positionBuffer.deviceAddress,
             .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
-            .offset              = ((Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT] - glm::vec2(0.5f)) / glm::vec2(depthAttachment.image.width, depthAttachment.image.height)) * 2.0f,
             .textureSamplerIndex = pipeline.textureSamplerIndex
         };
 
@@ -341,7 +338,7 @@ namespace Renderer::GBuffer
             currentCmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(GBuffer::PushConstant),
-            reinterpret_cast<void*>(&pipeline.pushConstant)
+            &pipeline.pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

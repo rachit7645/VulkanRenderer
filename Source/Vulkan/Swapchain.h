@@ -41,7 +41,7 @@ namespace Vk
 
         void Destroy(VkDevice device);
 
-        VkResult Present(VkQueue queue, usize FIF);
+        VkResult Present(VkDevice device, VkQueue queue, usize FIF);
         VkResult AcquireSwapChainImage(VkDevice device, usize FIF);
 
         VkSwapchainKHR handle = VK_NULL_HANDLE;
@@ -54,6 +54,8 @@ namespace Vk
 
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
+
+        std::array<VkFence, FRAMES_IN_FLIGHT> presentFences = {};
     private:
         void CreateSwapChain(const Vk::Context& context);
         void DestroySwapchain(VkDevice device);

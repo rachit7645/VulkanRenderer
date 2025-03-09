@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PUSH_CONSTANT_H
-#define GBUFFER_PUSH_CONSTANT_H
+#ifndef FRUSTUM_BUFFER_H
+#define FRUSTUM_BUFFER_H
 
-#include <vulkan/vulkan.h>
+#include "Vulkan/Buffer.h"
+#include "Vulkan/Constants.h"
+#include "Externals/GLM.h"
 
-#include "Vulkan/Util.h"
-
-namespace Renderer::GBuffer
+namespace Renderer::Culling
 {
-    struct PushConstant
+    class FrustumBuffer
     {
-        VkDeviceAddress scene;
-        VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
-        VkDeviceAddress positions;
-        VkDeviceAddress vertices;
-        u32             textureSamplerIndex;
+    public:
+        FrustumBuffer(VkDevice device, VmaAllocator allocator);
+
+        void LoadPlanes
+        (
+            usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
+            const glm::mat4& projectionView
+        );
+
+        void Destroy(VmaAllocator allocator);
+
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
     };
 }
 

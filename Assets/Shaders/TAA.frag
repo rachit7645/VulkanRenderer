@@ -171,7 +171,7 @@ void main()
 vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 aabbMin, vec3 aabbMax)
 {
     vec3  pClip  = 0.5f * (aabbMax + aabbMin);
-    vec3  eClip  = 0.5f * (aabbMax - aabbMin) + 0.00001f;
+    vec3  eClip  = 0.5f * (aabbMax - aabbMin) + 0.00000001f;
     vec3  vClip  = historyColor - pClip;
     vec3  vUnit  = vClip / eClip;
     vec3  aUnit  = abs(vUnit);

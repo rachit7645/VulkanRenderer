@@ -17,8 +17,6 @@
 #ifndef SSAO_PASS_H
 #define SSAO_PASS_H
 
-#include <Renderer/SSAO/Blur/Pipeline.h>
-
 #include "SampleBuffer.h"
 #include "Occlusion/Pipeline.h"
 #include "Blur/Pipeline.h"

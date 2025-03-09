@@ -20,24 +20,27 @@
 #include <vulkan/vulkan.h>
 
 #include "Externals/GLM.h"
+#include "Util/Plane.h"
 
 namespace Renderer
 {
     struct SceneMatrices
     {
-        glm::mat4       projection        = {};
-        glm::mat4       inverseProjection = {};
-        glm::mat4       view              = {};
-        glm::mat4       inverseView       = {};
-        glm::mat3       normalView        = {};
-        glm::vec3       cameraPos         = {};
+        glm::mat4 projection         = {};
+        glm::mat4 inverseProjection  = {};
+        glm::mat4 jitteredProjection = {};
+        glm::mat4 view               = {};
+        glm::mat4 inverseView        = {};
+        glm::mat3 normalView         = {};
+        glm::vec3 cameraPos          = {};
     };
 
     struct Scene
     {
         SceneMatrices   currentMatrices   = {};
         SceneMatrices   previousMatrices  = {};
-        glm::vec2       planes            = {};
+        f32             nearPlane         = 0.0f;
+        f32             farPlane          = 0.0f;
         VkDeviceAddress dirLights         = 0;
         VkDeviceAddress pointLights       = 0;
         VkDeviceAddress spotLights        = 0;

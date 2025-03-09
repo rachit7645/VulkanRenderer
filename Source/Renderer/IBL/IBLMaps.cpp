@@ -28,8 +28,6 @@
 
 namespace Renderer::IBL
 {
-    constexpr auto HDR_MAP = "industrial_sunset_puresky_4k.hdr";
-
     constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
     constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
@@ -38,29 +36,9 @@ namespace Renderer::IBL
     constexpr usize PREFILTER_MIPMAP_LEVELS = 5;    // TODO: Make this a non-const property
     constexpr usize PREFILTER_SAMPLE_COUNT  = 512;
 
-    IBLMaps::IBLMaps
-    (
-        const Vk::Context& context,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        // HDRi Environment Maps are always flipped for some reason idk why
-        stbi_set_flip_vertically_on_load(true);
-
-        hdrMapID = textureManager.AddTexture
-        (
-            megaSet,
-            context.device,
-            context.allocator,
-            Engine::Files::GetAssetPath("GFX/IBL/", HDR_MAP)
-        );
-
-        stbi_set_flip_vertically_on_load(false);
-    }
-
     void IBLMaps::Generate
     (
+        const std::string_view hdrMap,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -68,6 +46,13 @@ namespace Renderer::IBL
         Vk::TextureManager& textureManager
     )
     {
+        const auto hdrMapAssetPath = Engine::Files::GetAssetPath("GFX/IBL/", hdrMap);
+
+        if (!Engine::Files::Exists(hdrMapAssetPath))
+        {
+            return;
+        }
+
         auto cmdBuffer = Vk::CommandBuffer
         (
             context.device,
@@ -77,12 +62,44 @@ namespace Renderer::IBL
 
         const auto matrixBuffer = SetupMatrixBuffer(context);
 
-        megaSet.Update(context.device);
-
         Vk::BeginLabel(context.graphicsQueue, "IBLMaps::Generate", {0.9215f, 0.8470f, 0.0274f, 1.0f});
 
         cmdBuffer.Reset(0);
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        if (skyboxID.has_value())
+        {
+            textureManager.DestroyTexture(context.device, context.allocator, skyboxID.value());
+            skyboxID = std::nullopt;
+        }
+
+        if (irradianceID.has_value())
+        {
+            textureManager.DestroyTexture(context.device, context.allocator, irradianceID.value());
+            irradianceID = std::nullopt;
+        }
+
+        if (preFilterID.has_value())
+        {
+            textureManager.DestroyTexture(context.device, context.allocator, preFilterID.value());
+            preFilterID = std::nullopt;
+        }
+
+        // HDRi Environment Maps are always flipped for some reason idk why
+        stbi_set_flip_vertically_on_load(true);
+
+        const auto hdrMapID = textureManager.AddTexture
+        (
+            megaSet,
+            context.device,
+            context.allocator,
+            hdrMapAssetPath
+        );
+
+        stbi_set_flip_vertically_on_load(false);
+
+        textureManager.Update(cmdBuffer);
+        megaSet.Update(context.device);
 
         CreateCubeMap
         (
@@ -92,7 +109,8 @@ namespace Renderer::IBL
             geometryBuffer,
             matrixBuffer,
             megaSet,
-            textureManager
+            textureManager,
+            hdrMapID
         );
 
         CreateIrradianceMap
@@ -117,14 +135,17 @@ namespace Renderer::IBL
             textureManager
         );
 
-        CreateBRDFLUT
-        (
-            cmdBuffer,
-            context,
-            formatHelper,
-            megaSet,
-            textureManager
-        );
+        if (!brdfLutID.has_value())
+        {
+            CreateBRDFLUT
+            (
+                cmdBuffer,
+                context,
+                formatHelper,
+                megaSet,
+                textureManager
+            );
+        }
 
         cmdBuffer.EndRecording();
 
@@ -189,6 +210,9 @@ namespace Renderer::IBL
             m_deletionQueue.FlushQueue();
 
             cmdBuffer.Free(context.device, context.commandPool);
+
+            textureManager.ClearUploads(context.allocator);
+            textureManager.DestroyTexture(context.device, context.allocator, hdrMapID);
         }
 
         megaSet.Update(context.device);
@@ -258,7 +282,8 @@ namespace Renderer::IBL
         const Vk::GeometryBuffer& geometryBuffer,
         const Vk::Buffer& matrixBuffer,
         Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Vk::TextureManager& textureManager,
+        u32 hdrMapID
     )
     {
         auto pipeline = Converter::Pipeline(context, formatHelper, megaSet, textureManager);
@@ -600,7 +625,7 @@ namespace Renderer::IBL
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .envMapIndex  = skyboxID
+            .envMapIndex  = skyboxID.value()
         };
 
         pipeline.LoadPushConstants
@@ -803,7 +828,7 @@ namespace Renderer::IBL
                 .positions    = geometryBuffer.cubeBuffer.deviceAddress,
                 .matrices     = matrixBuffer.deviceAddress,
                 .samplerIndex = pipeline.samplerIndex,
-                .envMapIndex  = skyboxID,
+                .envMapIndex  = skyboxID.value(),
                 .roughness    = roughness,
                 .sampleCount  = sampleCount
             };

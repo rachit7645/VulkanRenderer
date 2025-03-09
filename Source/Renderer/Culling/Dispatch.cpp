@@ -25,7 +25,8 @@ namespace Renderer::Culling
     constexpr auto WORKGROUP_SIZE = 64;
 
     Dispatch::Dispatch(const Vk::Context& context)
-        : pipeline(context)
+        : pipeline(context),
+          frustumBuffer(context.device, context.allocator)
     {
         Logger::Info("{}\n", "Created culling dispatch pass!");
     }
@@ -41,23 +42,18 @@ namespace Renderer::Culling
     {
         Vk::BeginLabel(cmdBuffer, fmt::format("CullingDispatch/FIF{}", FIF), glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
 
+        frustumBuffer.LoadPlanes(FIF, cmdBuffer, projectionView);
+
         pipeline.Bind(cmdBuffer);
 
         pipeline.pushConstant =
         {
             .meshes          = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .visibleMeshes   = meshBuffer.visibleMeshBuffer.deviceAddress,
+            .visibleMeshes   = meshBuffer.visibilityBuffer.deviceAddress,
             .drawCalls       = indirectBuffer.drawCallBuffers[FIF].deviceAddress,
             .culledDrawCalls = indirectBuffer.culledDrawCallBuffer.deviceAddress,
-            .planes          = {}
+            .frustum         = frustumBuffer.buffers[FIF].deviceAddress
         };
-
-        const auto planes = Maths::ExtractFrustumPlanes(projectionView);
-
-        for (usize i = 0; i < planes.size(); ++i)
-        {
-            pipeline.pushConstant.planes[i] = planes[i];
-        }
 
         pipeline.LoadPushConstants
         (
@@ -130,7 +126,7 @@ namespace Renderer::Culling
             sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.writtenDrawCount
         );
 
-        meshBuffer.visibleMeshBuffer.Barrier
+        meshBuffer.visibilityBuffer.Barrier
         (
             cmdBuffer,
             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
@@ -144,9 +140,11 @@ namespace Renderer::Culling
         Vk::EndLabel(cmdBuffer);
     }
 
-    void Dispatch::Destroy(VkDevice device)
+    void Dispatch::Destroy(VkDevice device, VmaAllocator allocator)
     {
         Logger::Debug("{}\n", "Destroying culling dispatch pass!");
+
+        frustumBuffer.Destroy(allocator);
 
         pipeline.Destroy(device);
     }

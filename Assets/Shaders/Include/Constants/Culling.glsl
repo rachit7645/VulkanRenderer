@@ -20,12 +20,7 @@
 #include "Mesh.glsl"
 #include "Vertex.glsl"
 #include "DrawCall.glsl"
-
-struct Plane
-{
-    vec3  normal;
-    float dist;
-};
+#include "Frustum.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
@@ -33,7 +28,7 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     VisibleMeshBuffer VisibleMeshes;
     DrawBuffer        DrawCalls;
     CulledDrawBuffer  CulledDrawCalls;
-    Plane             Planes[6];
+    FrustumBuffer     Frustum;
 } Constants;
 
 #endif

@@ -25,7 +25,6 @@ namespace Renderer::Depth
         VkDeviceAddress meshes;
         VkDeviceAddress visibleMeshes;
         VkDeviceAddress positions;
-        glm::vec2       offset;
     };
 }
 

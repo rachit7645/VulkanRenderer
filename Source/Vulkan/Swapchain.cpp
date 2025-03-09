@@ -49,27 +49,56 @@ namespace Vk
 
     void Swapchain::RecreateSwapChain(const Vk::Context& context)
     {
+        Vk::CheckResult(vkWaitForFences(
+            context.device,
+            presentFences.size(),
+            presentFences.data(),
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fence!"
+        );
+
         DestroySwapchain(context.device);
         CreateSwapChain(context);
 
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    VkResult Swapchain::Present(VkQueue queue, usize FIF)
+    VkResult Swapchain::Present(VkDevice device, VkQueue queue, usize FIF)
     {
-        const std::array signalSemaphores = {renderFinishedSemaphores[FIF]};
-        const std::array swapChains       = {handle};
-        const std::array imageIndices     = {imageIndex};
+        Vk::CheckResult(vkWaitForFences(
+            device,
+            1,
+            &presentFences[FIF],
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fence!"
+        );
+
+        Vk::CheckResult(vkResetFences(
+            device,
+            1,
+            &presentFences[FIF]),
+            "Unable to reset fence!"
+        );
+
+        const VkSwapchainPresentFenceInfoEXT fenceInfo =
+        {
+            .sType          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT,
+            .pNext          = nullptr,
+            .swapchainCount = 1,
+            .pFences        = &presentFences[FIF]
+        };
 
         const VkPresentInfoKHR presentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext              = nullptr,
-            .waitSemaphoreCount = static_cast<u32>(signalSemaphores.size()),
-            .pWaitSemaphores    = signalSemaphores.data(),
-            .swapchainCount     = static_cast<u32>(swapChains.size()),
-            .pSwapchains        = swapChains.data(),
-            .pImageIndices      = imageIndices.data(),
+            .pNext              = &fenceInfo,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores    = &renderFinishedSemaphores[FIF],
+            .swapchainCount     = 1,
+            .pSwapchains        = &handle,
+            .pImageIndices      = &imageIndex,
             .pResults           = nullptr
         };
 
@@ -158,7 +187,10 @@ namespace Vk
 
         Vk::SetDebugName(context.device, handle, "Swapchain");
 
-        vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
+        if (createInfo.oldSwapchain != VK_NULL_HANDLE)
+        {
+            vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
+        }
 
         Vk::CheckResult(vkGetSwapchainImagesKHR
         (
@@ -284,6 +316,13 @@ namespace Vk
 
     void Swapchain::CreateSyncObjects(VkDevice device)
     {
+        const VkFenceCreateInfo fenceInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT
+        };
+
         const VkSemaphoreCreateInfo semaphoreInfo =
         {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -293,6 +332,14 @@ namespace Vk
 
         for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
         {
+            Vk::CheckResult(vkCreateFence(
+                device,
+                &fenceInfo,
+                nullptr,
+                &presentFences[i]),
+                "Failed to create present fence!"
+            );
+
             Vk::CheckResult(vkCreateSemaphore(
                 device,
                 &semaphoreInfo,
@@ -309,6 +356,7 @@ namespace Vk
                 "Failed to create render semaphore!"
             );
 
+            Vk::SetDebugName(device, presentFences[i],            fmt::format("Swapchain/PresentFence{}",            i));
             Vk::SetDebugName(device, imageAvailableSemaphores[i], fmt::format("Swapchain/ImageAvailableSemaphore{}", i));
             Vk::SetDebugName(device, renderFinishedSemaphores[i], fmt::format("Swapchain/RenderFinishedSemaphore{}", i));
         }
@@ -415,6 +463,8 @@ namespace Vk
 
         for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
         {
+            vkDestroyFence(device, presentFences[i], nullptr);
+
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
             vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         }

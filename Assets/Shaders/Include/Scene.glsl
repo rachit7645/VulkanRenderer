@@ -23,6 +23,7 @@ struct SceneMatrices
 {
     mat4 projection;
     mat4 inverseProjection;
+    mat4 jitteredProjection;
     mat4 view;
     mat4 inverseView;
     mat3 normalView;
@@ -33,7 +34,8 @@ layout(buffer_reference, scalar) readonly buffer SceneBuffer
 {
     SceneMatrices    currentMatrices;
     SceneMatrices    previousMatrices;
-    vec2             planes;
+    float            nearPlane;
+    float            farPlane;
     DirLightBuffer   dirLights;
     PointLightBuffer pointLights;
     SpotLightBuffer  spotLights;

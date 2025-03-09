@@ -25,7 +25,7 @@
 namespace Vk
 {
     constexpr u32 MAX_SAMPLERS       = 1 << 8;
-    constexpr u32 MAX_SAMPLED_IMAGES = 1 << 12;
+    constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
     constexpr u32 MAX_STORAGE_IMAGES = 1 << 8;
 
     MegaSet::MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)

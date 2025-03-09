@@ -129,6 +129,7 @@ add_executable(VulkanRenderer
     # Culling Dispatch Sources
     Source/Renderer/Culling/Pipeline.cpp
     Source/Renderer/Culling/Dispatch.cpp
+    Source/Renderer/Culling/FrustumBuffer.cpp
     # GBuffer Pass Sources
     Source/Renderer/GBuffer/Pipeline.cpp
     Source/Renderer/GBuffer/RenderPass.cpp

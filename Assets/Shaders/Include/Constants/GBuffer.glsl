@@ -28,7 +28,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     VisibleMeshBuffer VisibleMeshes;
     PositionBuffer    Positions;
     VertexBuffer      Vertices;
-    vec2              Offset;
     uint              TextureSamplerIndex;
 } Constants;
 

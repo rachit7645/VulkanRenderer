@@ -78,7 +78,6 @@ namespace Renderer::Depth
     void RenderPass::Render
     (
         usize FIF,
-        usize frameIndex,
         const Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -184,9 +183,8 @@ namespace Renderer::Depth
         {
             .scene         = sceneBuffer.buffers[FIF].deviceAddress,
             .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
-            .positions     = geometryBuffer.positionBuffer.deviceAddress,
-            .offset        = ((Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT] - glm::vec2(0.5f)) / glm::vec2(depthAttachment.image.width, depthAttachment.image.height)) * 2.0f,
+            .visibleMeshes = meshBuffer.visibilityBuffer.deviceAddress,
+            .positions     = geometryBuffer.positionBuffer.deviceAddress
         };
 
         pipeline.LoadPushConstants
@@ -194,7 +192,7 @@ namespace Renderer::Depth
            currentCmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT,
            0, sizeof(Depth::PushConstant),
-           reinterpret_cast<void*>(&pipeline.pushConstant)
+           &pipeline.pushConstant
         );
 
         geometryBuffer.Bind(currentCmdBuffer);

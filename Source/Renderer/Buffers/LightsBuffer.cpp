@@ -21,19 +21,24 @@
 
 namespace Renderer::Buffers
 {
+    struct LightsBufferGLSL
+    {
+        u32                 dirLightCount                               = 0;
+        Objects::DirLight   dirLights[Objects::MAX_DIR_LIGHT_COUNT]     = {};
+        u32                 pointLightCount                             = 0;
+        Objects::PointLight pointLights[Objects::MAX_POINT_LIGHT_COUNT] = {};
+        u32                 spotLightCount                              = 0;
+        Objects::SpotLight  spotLights[Objects::MAX_SPOT_LIGHT_COUNT]   = {};
+    };
+
     LightsBuffer::LightsBuffer(VkDevice device, VmaAllocator allocator)
     {
-        constexpr VkDeviceSize LIGHT_BUFFER_SIZE =
-            sizeof(u32) + Objects::MAX_DIR_LIGHT_COUNT   * sizeof(Objects::DirLight)   +
-            sizeof(u32) + Objects::MAX_POINT_LIGHT_COUNT * sizeof(Objects::PointLight) +
-            sizeof(u32) + Objects::MAX_SPOT_LIGHT_COUNT  * sizeof(Objects::SpotLight);
-
         for (usize i = 0; i < buffers.size(); ++i)
         {
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                LIGHT_BUFFER_SIZE,
+                sizeof(LightsBufferGLSL),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -127,18 +132,17 @@ namespace Renderer::Buffers
 
     VkDeviceSize LightsBuffer::GetDirLightOffset()
     {
-        return 0;
+        return offsetof(LightsBufferGLSL, dirLightCount);
     }
 
     VkDeviceSize LightsBuffer::GetPointLightOffset()
     {
-        return sizeof(u32) + Objects::MAX_DIR_LIGHT_COUNT * sizeof(Objects::DirLight);
+        return offsetof(LightsBufferGLSL, pointLightCount);
     }
 
     VkDeviceSize LightsBuffer::GetSpotLightOffset()
     {
-        return sizeof(u32) + Objects::MAX_DIR_LIGHT_COUNT   * sizeof(Objects::DirLight) +
-               sizeof(u32) + Objects::MAX_POINT_LIGHT_COUNT * sizeof(Objects::PointLight);
+        return offsetof(LightsBufferGLSL, spotLightCount);
     }
 
     void LightsBuffer::Destroy(VmaAllocator allocator)

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MODELMANAGER_H
-#define MODELMANAGER_H
+#ifndef MODEL_MANAGER_H
+#define MODEL_MANAGER_H
 
 #include <unordered_map>
 

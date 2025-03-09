@@ -240,7 +240,7 @@ namespace Renderer::PointShadow
                 {
                     .scene         = sceneBuffer.buffers[FIF].deviceAddress,
                     .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-                    .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+                    .visibleMeshes = meshBuffer.visibilityBuffer.deviceAddress,
                     .positions     = geometryBuffer.positionBuffer.deviceAddress,
                     .pointShadows  = pointShadowBuffer.buffers[FIF].deviceAddress,
                     .lightIndex    = static_cast<u32>(i),

@@ -25,6 +25,8 @@
 
 namespace Renderer::TAA
 {
+    constexpr usize TAA_HISTORY_SIZE = 2;
+
     RenderPass::RenderPass
     (
         const Vk::Context& context,
@@ -78,7 +80,7 @@ namespace Renderer::TAA
                     .width       = extent.width,
                     .height      = extent.height,
                     .mipLevels   = 1,
-                    .arrayLayers = Vk::FRAMES_IN_FLIGHT
+                    .arrayLayers = TAA_HISTORY_SIZE
                 };
             }
         );
@@ -96,7 +98,7 @@ namespace Renderer::TAA
             }
         );
 
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+        for (usize i = 0; i < TAA_HISTORY_SIZE; ++i)
         {
             framebufferManager.AddFramebufferView
             (
@@ -118,6 +120,7 @@ namespace Renderer::TAA
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
     )
@@ -129,8 +132,8 @@ namespace Renderer::TAA
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("TAAPass/FIF{}", FIF), glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
 
-        const usize currentIndex  = FIF;
-        const usize previousIndex = (FIF - 1) % Vk::FRAMES_IN_FLIGHT;
+        const usize currentIndex  = frameIndex                          % TAA_HISTORY_SIZE;
+        const usize previousIndex = (frameIndex + TAA_HISTORY_SIZE - 1) % TAA_HISTORY_SIZE;
 
         const auto& resolvedView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
         const auto& historyView  = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", currentIndex));

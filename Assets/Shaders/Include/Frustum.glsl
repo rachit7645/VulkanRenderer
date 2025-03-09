@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PUSH_CONSTANT_H
-#define GBUFFER_PUSH_CONSTANT_H
+#ifndef FRUSTUM_GLSL
+#define FRUSTUM_GLSL
 
-#include <vulkan/vulkan.h>
-
-#include "Vulkan/Util.h"
-
-namespace Renderer::GBuffer
+struct Plane
 {
-    struct PushConstant
-    {
-        VkDeviceAddress scene;
-        VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
-        VkDeviceAddress positions;
-        VkDeviceAddress vertices;
-        u32             textureSamplerIndex;
-    };
-}
+    vec3  normal;
+    float dist;
+};
+
+layout(buffer_reference, scalar) readonly buffer FrustumBuffer
+{
+    Plane planes[6];
+};
 
 #endif

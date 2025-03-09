@@ -36,13 +36,13 @@ void main()
     vec3   position  = Constants.Positions.positions[gl_VertexIndex];
     Vertex vertex    = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 worldPosition = mesh.transform * vec4(position, 1.0f);
+    vec4 worldPosition       = mesh.transform                       * vec4(position, 1.0f);
+    vec4 currentViewPosition = Constants.Scene.currentMatrices.view * worldPosition;
 
-    currentPosition  = Constants.Scene.currentMatrices.projection * Constants.Scene.currentMatrices.view * worldPosition;
+    currentPosition  = Constants.Scene.currentMatrices.projection  * currentViewPosition;
     previousPosition = Constants.Scene.previousMatrices.projection * Constants.Scene.previousMatrices.view * worldPosition;
 
-    gl_Position     = currentPosition;
-    gl_Position.xy += Constants.Offset * gl_Position.w;
+    gl_Position = Constants.Scene.currentMatrices.jitteredProjection * currentViewPosition;
 
     fragTexCoords = vertex.uv0;
     fragDrawID    = meshIndex;

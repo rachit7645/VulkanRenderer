@@ -31,7 +31,6 @@ namespace Renderer
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context.device, m_context.physicalDeviceLimits),
           m_modelManager(m_context, m_formatHelper),
-          m_iblMaps(m_context, m_megaSet, m_modelManager.textureManager),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_depthPass(m_context, m_formatHelper, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
@@ -56,7 +55,7 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
-            m_cullingDispatch.Destroy(m_context.device);
+            m_cullingDispatch.Destroy(m_context.device, m_context.allocator);
             m_taaPass.Destroy(m_context.device, m_context.commandPool);
             m_shadowRTPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_ssaoPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
@@ -190,6 +189,7 @@ namespace Renderer
 
         m_iblMaps.Generate
         (
+            "industrial_sunset_puresky_4k.hdr",
             m_context,
             m_formatHelper,
             m_modelManager.geometryBuffer,
@@ -203,6 +203,8 @@ namespace Renderer
             m_modelManager,
             m_renderObjects
         );
+
+        m_megaSet.Update(m_context.device);
 
         m_frameCounter.Reset();
     }
@@ -250,7 +252,6 @@ namespace Renderer
         m_depthPass.Render
         (
             m_currentFIF,
-            m_frameIndex,
             m_scene,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
@@ -263,7 +264,6 @@ namespace Renderer
         m_gBufferPass.Render
         (
             m_currentFIF,
-            m_frameIndex,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.geometryBuffer,
@@ -316,6 +316,7 @@ namespace Renderer
         m_taaPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_framebufferManager,
             m_megaSet
         );
@@ -359,6 +360,30 @@ namespace Renderer
 
         if (ImGui::BeginMainMenuBar())
         {
+            if (ImGui::BeginMenu("IBL"))
+            {
+                static std::string hdrMap;
+                ImGui::InputText("HDR Map Path", &hdrMap);
+
+                if (ImGui::Button("Load") && !hdrMap.empty())
+                {
+                    // TODO: Figure out a better way to wait for resources to be available
+                    Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
+
+                    m_iblMaps.Generate
+                    (
+                        hdrMap,
+                        m_context,
+                        m_formatHelper,
+                        m_modelManager.geometryBuffer,
+                        m_megaSet,
+                        m_modelManager.textureManager
+                    );
+                }
+
+                ImGui::EndMenu();
+            }
+
             if (ImGui::BeginMenu("Memory"))
             {
                 std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets = {};
@@ -518,22 +543,34 @@ namespace Renderer
             PLANES.y
         );
 
+        auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
+        jitter     -= glm::vec2(0.5f);
+        jitter     /= glm::vec2(m_swapchain.extent.width, m_swapchain.extent.height);
+        jitter     *= 2.0f;
+        
+        auto jitteredProjection = projection;
+
+        jitteredProjection[2][0] += jitter.x;
+        jitteredProjection[2][1] += jitter.y;
+
         const auto view = m_camera.GetViewMatrix();
 
         m_scene.currentMatrices  =
         {
-            .projection        = projection,
-            .inverseProjection = glm::inverse(projection),
-            .view              = view,
-            .inverseView       = glm::inverse(view),
-            .normalView        = Maths::CreateNormalMatrix(view),
-            .cameraPos         = m_camera.position
+            .projection         = projection,
+            .inverseProjection  = glm::inverse(projection),
+            .jitteredProjection = jitteredProjection,
+            .view               = view,
+            .inverseView        = glm::inverse(view),
+            .normalView         = Maths::CreateNormalMatrix(view),
+            .cameraPos          = m_camera.position
         };
 
-        m_scene.planes            = Renderer::PLANES;
-        m_scene.dirLights         = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
-        m_scene.pointLights       = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset();
-        m_scene.spotLights        = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset();
+        m_scene.nearPlane   = Renderer::PLANES.x;
+        m_scene.farPlane    = Renderer::PLANES.y;
+        m_scene.dirLights   = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
+        m_scene.pointLights = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset();
+        m_scene.spotLights  = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset();
 
         m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_sun, 1}, m_pointLights, m_spotLights);
         m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_scene);
@@ -549,7 +586,7 @@ namespace Renderer
         Vk::CheckResult(vkWaitForFences(
             m_context.device,
             1,
-            &inFlightFences[m_currentFIF],
+            &m_inFlightFences[m_currentFIF],
             VK_TRUE,
             std::numeric_limits<u64>::max()),
             "Failed to wait for fence!"
@@ -558,7 +595,7 @@ namespace Renderer
         Vk::CheckResult(vkResetFences(
             m_context.device,
             1,
-            &inFlightFences[m_currentFIF]),
+            &m_inFlightFences[m_currentFIF]),
             "Unable to reset fence!"
         );
     }
@@ -587,7 +624,7 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
-        const auto result = m_swapchain.Present(m_context.graphicsQueue, m_currentFIF);
+        const auto result = m_swapchain.Present(m_context.device, m_context.graphicsQueue, m_currentFIF);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -730,15 +767,13 @@ namespace Renderer
             m_context.graphicsQueue,
             1,
             &submitInfo,
-            inFlightFences[m_currentFIF]),
+            m_inFlightFences[m_currentFIF]),
             "Failed to submit queue!"
         );
     }
 
     void RenderManager::Resize()
     {
-        Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
-
         if (!m_swapchain.IsSurfaceValid(m_window.size, m_context))
         {
             m_isSwapchainOk = false;
@@ -866,16 +901,16 @@ namespace Renderer
                 m_context.device,
                 &fenceInfo,
                 nullptr,
-                &inFlightFences[i]),
+                &m_inFlightFences[i]),
                 "Failed to create in flight fences!"
             );
 
-            Vk::SetDebugName(m_context.device, inFlightFences[i], fmt::format("RenderManager/InFlightFence{}", i));
+            Vk::SetDebugName(m_context.device, m_inFlightFences[i], fmt::format("RenderManager/InFlightFence{}", i));
         }
 
         m_deletionQueue.PushDeletor([&] ()
         {
-            for (const auto fence : inFlightFences)
+            for (const auto fence : m_inFlightFences)
             {
                 vkDestroyFence(m_context.device, fence, nullptr);
             }

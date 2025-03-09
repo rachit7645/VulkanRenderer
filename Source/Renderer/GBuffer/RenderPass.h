@@ -23,7 +23,6 @@
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/RenderConstants.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
@@ -47,7 +46,6 @@ namespace Renderer::GBuffer
         void Render
         (
             usize FIF,
-            usize frameIndex,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,

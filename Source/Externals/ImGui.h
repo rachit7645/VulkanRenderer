@@ -18,6 +18,7 @@
 #define EXT_IMGUI_H
 
 #include "imgui/imgui.h"
+#include "imgui/misc/cpp/imgui_stdlib.h"
 #include "imgui/backends/imgui_impl_sdl3.h"
 
 #endif

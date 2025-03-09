@@ -21,7 +21,6 @@
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/RenderConstants.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
@@ -44,7 +43,6 @@ namespace Renderer::Depth
         void Render
         (
             usize FIF,
-            usize frameIndex,
             const Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,

@@ -28,7 +28,6 @@ void main()
     Mesh mesh      = Constants.Meshes.meshes[meshIndex];
     vec3 position  = Constants.Positions.positions[gl_VertexIndex];
 
-    vec4 fragPos    = mesh.transform * vec4(position, 1.0f);
-    gl_Position     = Constants.Scene.currentMatrices.projection * Constants.Scene.currentMatrices.view * fragPos;
-    gl_Position.xy += Constants.Offset * gl_Position.w;
+    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
+    gl_Position  = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * fragPos;
 }

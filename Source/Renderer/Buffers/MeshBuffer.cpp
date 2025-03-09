@@ -42,7 +42,7 @@ namespace Renderer::Buffers
             Vk::SetDebugName(device, meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
 
-        visibleMeshBuffer = Vk::Buffer
+        visibilityBuffer = Vk::Buffer
         (
             allocator,
             MAX_MESH_COUNT * sizeof(u32),
@@ -52,9 +52,9 @@ namespace Renderer::Buffers
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        visibleMeshBuffer.GetDeviceAddress(device);
+        visibilityBuffer.GetDeviceAddress(device);
 
-        Vk::SetDebugName(device, visibleMeshBuffer.handle, "VisibleMeshBuffer");
+        Vk::SetDebugName(device, visibilityBuffer.handle, "VisibilityBuffer");
     }
 
     void MeshBuffer::LoadMeshes
@@ -116,6 +116,6 @@ namespace Renderer::Buffers
             buffer.Destroy(allocator);
         }
 
-        visibleMeshBuffer.Destroy(allocator);
+        visibilityBuffer.Destroy(allocator);
     }
 }

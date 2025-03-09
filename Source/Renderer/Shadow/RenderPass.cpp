@@ -257,7 +257,7 @@ namespace Renderer::Shadow
                 sizeof(u32),
                 indirectBuffer.culledDrawCallBuffer.handle,
                 0,
-                indirectBuffer.writtenDrawCount,
+                indirectBuffer.writtenDrawCallCounts[FIF],
                 sizeof(VkDrawIndexedIndirectCommand)
             );
 

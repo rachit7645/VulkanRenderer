@@ -32,7 +32,7 @@ bool IsVisible(Mesh mesh)
 
     for (uint i = 0; i < 6; ++i)
     {
-        Plane plane = Constants.Planes[i];
+        Plane plane = Constants.Frustum.planes[i];
 
         uint outside = 0;
 
