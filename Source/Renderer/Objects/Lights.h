@@ -23,8 +23,8 @@
 namespace Renderer::Objects
 {
     constexpr auto MAX_DIR_LIGHT_COUNT   = 1u;
-    constexpr auto MAX_POINT_LIGHT_COUNT = 16u;
-    constexpr auto MAX_SPOT_LIGHT_COUNT  = 16u;
+    constexpr auto MAX_POINT_LIGHT_COUNT = 4u;
+    constexpr auto MAX_SPOT_LIGHT_COUNT  = 4u;
 
     struct DirLight
     {

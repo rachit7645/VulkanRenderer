@@ -47,7 +47,7 @@ const int   SHADOW_PCF_RANGE     = 1; // p = 2 * r + 1 for a p * p PCF filter
 const float SHADOW_BLEND_RANGE   = 25.0f;
 
 // Point Shadow Constants
-const int   POINT_SHADOW_NUM_SAMPLES = 20;
+const uint  POINT_SHADOW_NUM_SAMPLES = 20;
 const float POINT_SHADOW_BIAS        = 0.15f;
 
 // Spot shadow constants
@@ -62,4 +62,7 @@ const float RT_SHADOW_MAX_BIAS = 0.005f;
 const float TAA_DEFAULT_HISTORY_BLEND_RATE = 0.1f;
 const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
 
+// Gaussian blur constants
+const int   GAUSSIAN_FILTER_SIZE                           = 2; // p = 2 * r + 1
+const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0.24477, 0.38774, 0.24477, 0.06136);
 #endif

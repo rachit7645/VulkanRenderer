@@ -16,12 +16,11 @@
 
 #include "Pipeline.h"
 
-#include "Models/Vertex.h"
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Util.h"
 
-namespace Renderer::TAA
+namespace Renderer::SSAO::Blur::Vertical
 {
     Pipeline::Pipeline
     (
@@ -44,13 +43,13 @@ namespace Renderer::TAA
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatHDRWithAlpha};
+        const std::array colorFormats = {formatHelper.rFormat};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Misc/TAA.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Misc/Trongle.vert",    VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("AO/BlurVertical.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -68,26 +67,13 @@ namespace Renderer::TAA
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .AddBlendAttachment(
-                    VK_FALSE,
-                    VK_BLEND_FACTOR_ONE,
-                    VK_BLEND_FACTOR_ZERO,
-                    VK_BLEND_OP_ADD,
-                    VK_BLEND_FACTOR_ONE,
-                    VK_BLEND_FACTOR_ZERO,
-                    VK_BLEND_OP_ADD,
-                    VK_COLOR_COMPONENT_R_BIT |
-                    VK_COLOR_COMPONENT_G_BIT |
-                    VK_COLOR_COMPONENT_B_BIT |
-                    VK_COLOR_COMPONENT_A_BIT
-            )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(Blur::PushConstant)))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "TAAPipeline");
-        Vk::SetDebugName(context.device, layout, "TAAPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "SSAOBlurVerticalPipeline");
+        Vk::SetDebugName(context.device, layout, "SSAOBlurVerticalPipelineLayout");
     }
 
     void Pipeline::CreatePipelineData
@@ -97,33 +83,7 @@ namespace Renderer::TAA
         Vk::TextureManager& textureManager
     )
     {
-        pointSamplerIndex = textureManager.AddSampler
-        (
-            megaSet,
-            device,
-            {
-                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                .pNext                   = nullptr,
-                .flags                   = 0,
-                .magFilter               = VK_FILTER_NEAREST,
-                .minFilter               = VK_FILTER_NEAREST,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .mipLodBias              = 0.0f,
-                .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 0.0f,
-                .compareEnable           = VK_FALSE,
-                .compareOp               = VK_COMPARE_OP_ALWAYS,
-                .minLod                  = 0.0f,
-                .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-                .unnormalizedCoordinates = VK_FALSE
-            }
-        );
-
-        linearSamplerIndex = textureManager.AddSampler
+        samplerIndex = textureManager.AddSampler
         (
             megaSet,
             device,
@@ -149,8 +109,7 @@ namespace Renderer::TAA
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(pointSamplerIndex).handle,  "TAAPipeline/PointSampler");
-        Vk::SetDebugName(device, textureManager.GetSampler(linearSamplerIndex).handle, "TAAPipeline/LinearSampler");
+        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "SSAOBlurVerticalPipeline/Sampler");
 
         megaSet.Update(device);
     }

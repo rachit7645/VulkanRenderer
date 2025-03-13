@@ -55,9 +55,14 @@ float CalculatePointShadow
     float viewDistance = length(cameraPosition - fragPosition);
     float diskRadius   = (1.0f + (viewDistance / pointShadowData.shadowPlanes.y)) / pointShadowData.shadowPlanes.y;
 
-    for(int i = 0; i < POINT_SHADOW_NUM_SAMPLES; ++i)
+    for(uint i = 0; i < POINT_SHADOW_NUM_SAMPLES; ++i)
     {
-        shadow += texture(samplerCubeArrayShadow(pointShadowMap, pointShadowSampler), vec4(fragToLight + GRID_SAMPLING_DISK[i] * diskRadius, lightIndex), (currentDepth - POINT_SHADOW_BIAS) / pointShadowData.shadowPlanes.y);
+        shadow += texture
+        (
+            samplerCubeArrayShadow(pointShadowMap, pointShadowSampler),
+            vec4(fragToLight + GRID_SAMPLING_DISK[i] * diskRadius, lightIndex),
+            (currentDepth - POINT_SHADOW_BIAS) / pointShadowData.shadowPlanes.y
+        );
     }
 
     shadow /= float(POINT_SHADOW_NUM_SAMPLES);

@@ -29,7 +29,7 @@ namespace Renderer::ShadowRT
         Vk::TextureManager& textureManager
     )
         : pipeline(context, megaSet, textureManager),
-          sbtBuffer(context, pipeline)
+          shaderBindingTable(context, pipeline, 1, 0, 0)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -149,15 +149,13 @@ namespace Renderer::ShadowRT
         const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
 
-        const VkStridedDeviceAddressRegionKHR callableSBT = {};
-
         vkCmdTraceRaysKHR
         (
             currentCmdBuffer.handle,
-            &sbtBuffer.raygenRegion,
-            &sbtBuffer.missRegion,
-            &sbtBuffer.hitRegion,
-            &callableSBT,
+            &shaderBindingTable.raygenRegion,
+            &shaderBindingTable.missRegion,
+            &shaderBindingTable.hitRegion,
+            &shaderBindingTable.callableRegion,
             shadowMap.image.width,
             shadowMap.image.height,
             1
@@ -190,7 +188,7 @@ namespace Renderer::ShadowRT
     {
         Logger::Debug("{}\n", "Destroying shadow pass!");
 
-        sbtBuffer.Destroy(allocator);
+        shaderBindingTable.Destroy(allocator);
 
         Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 

@@ -84,6 +84,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/FormatHelper.cpp
     Source/Vulkan/FramebufferManager.cpp
     Source/Vulkan/AccelerationStructure.cpp
+    Source/Vulkan/ShaderBindingTable.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources
@@ -136,15 +137,15 @@ add_executable(VulkanRenderer
     # Lighting Pass Sources
     Source/Renderer/Lighting/Pipeline.cpp
     Source/Renderer/Lighting/RenderPass.cpp
-    # SSAO Pass Sources
-    Source/Renderer/SSAO/Occlusion/Pipeline.cpp
-    Source/Renderer/SSAO/Blur/Pipeline.cpp
-    Source/Renderer/SSAO/RenderPass.cpp
-    Source/Renderer/SSAO/SampleBuffer.cpp
+    # AO Pass Sources
+    Source/Renderer/AO/Occlusion/Pipeline.cpp
+    Source/Renderer/AO/Blur/Vertical/Pipeline.cpp
+    Source/Renderer/AO/Blur/Horizontal/Pipeline.cpp
+    Source/Renderer/AO/RenderPass.cpp
+    Source/Renderer/AO/SampleBuffer.cpp
     # Shadow RT sources
     Source/Renderer/ShadowRT/Pipeline.cpp
     Source/Renderer/ShadowRT/RenderPass.cpp
-    Source/Renderer/ShadowRT/SBTBuffer.cpp
     # TAA Sources
     Source/Renderer/TAA/Pipeline.cpp
     Source/Renderer/TAA/RenderPass.cpp

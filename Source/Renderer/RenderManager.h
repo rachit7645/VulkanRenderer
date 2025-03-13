@@ -35,7 +35,7 @@
 #include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "SSAO/RenderPass.h"
+#include "AO/RenderPass.h"
 #include "ShadowRT/RenderPass.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"

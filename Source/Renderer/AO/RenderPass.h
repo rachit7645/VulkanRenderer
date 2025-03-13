@@ -19,7 +19,8 @@
 
 #include "SampleBuffer.h"
 #include "Occlusion/Pipeline.h"
-#include "Blur/Pipeline.h"
+#include "Blur/Horizontal/Pipeline.h"
+#include "Blur/Vertical/Pipeline.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
@@ -48,8 +49,9 @@ namespace Renderer::SSAO
 
         void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
 
-        Occlusion::Pipeline occlusionPipeline;
-        Blur::Pipeline      blurPipeline;
+        Occlusion::Pipeline        occlusionPipeline;
+        Blur::Horizontal::Pipeline blurHorizontalPipeline;
+        Blur::Vertical::Pipeline   blurVerticalPipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
@@ -65,7 +67,14 @@ namespace Renderer::SSAO
             const Buffers::SceneBuffer& sceneBuffer
         );
 
-        void RenderBlur
+        void RenderBlurHorizontal
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet
+        );
+
+        void RenderBlurVertical
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,

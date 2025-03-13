@@ -14,28 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef SBT_BUFFER_H
-#define SBT_BUFFER_H
+#ifndef SHADER_BINDING_TABLE_H
+#define SHADER_BINDING_TABLE_H
 
 #include "Pipeline.h"
-#include "Externals/GLM.h"
-#include "Vulkan/Buffer.h"
-#include "Vulkan/Constants.h"
+#include "Buffer.h"
 
-namespace Renderer::ShadowRT
+namespace Vk
 {
-    class SBTBuffer
+    class ShaderBindingTable
     {
     public:
-        SBTBuffer(const Vk::Context& context, const ShadowRT::Pipeline& pipeline);
+        ShaderBindingTable
+        (
+            const Vk::Context& context,
+            const Vk::Pipeline& pipeline,
+            u32 missCount,
+            u32 hitCount,
+            u32 callableCount
+        );
 
         void Destroy(VmaAllocator allocator);
 
         Vk::Buffer buffer;
 
-        VkStridedDeviceAddressRegionKHR raygenRegion = {};
-        VkStridedDeviceAddressRegionKHR missRegion   = {};
-        VkStridedDeviceAddressRegionKHR hitRegion    = {};
+        VkStridedDeviceAddressRegionKHR raygenRegion   = {};
+        VkStridedDeviceAddressRegionKHR missRegion     = {};
+        VkStridedDeviceAddressRegionKHR hitRegion      = {};
+        VkStridedDeviceAddressRegionKHR callableRegion = {};
     };
 }
 

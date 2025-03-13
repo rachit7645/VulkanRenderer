@@ -29,37 +29,37 @@ layout(location = 0) in vec2 fragUV;
 
 layout(location = 0) out vec3 downsample;
 
+vec3 SampleSource(vec2 offset);
+
 void main()
 {
-    #define SRC_TEXTURE sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex])
-
-    vec2 srcTexelSize = 1.0f / vec2(textureSize(SRC_TEXTURE, 0));
+    vec2 srcTexelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), 0));
     
     float x = srcTexelSize.x;
     float y = srcTexelSize.y;
 
     // A - B - C
-    vec3 a = texture(SRC_TEXTURE, vec2(fragUV.x - 2.0f * x, fragUV.y + 2.0f * y)).rgb;
-    vec3 b = texture(SRC_TEXTURE, vec2(fragUV.x,            fragUV.y + 2.0f * y)).rgb;
-    vec3 c = texture(SRC_TEXTURE, vec2(fragUV.x + 2.0f * x, fragUV.y + 2.0f * y)).rgb;
+    vec3 a = SampleSource(vec2(-2.0f * x, 2.0f * y));
+    vec3 b = SampleSource(vec2( 0.0f,     2.0f * y));
+    vec3 c = SampleSource(vec2( 2.0f * x, 2.0f * y));
 
     // D - E - F
-    vec3 d = texture(SRC_TEXTURE, vec2(fragUV.x - 2.0f * x, fragUV.y)).rgb;
-    vec3 e = texture(SRC_TEXTURE, vec2(fragUV.x,            fragUV.y)).rgb;
-    vec3 f = texture(SRC_TEXTURE, vec2(fragUV.x + 2.0f * x, fragUV.y)).rgb;
+    vec3 d = SampleSource(vec2(-2.0f * x, 0.0f));
+    vec3 e = SampleSource(vec2( 0.0f,     0.0f));
+    vec3 f = SampleSource(vec2( 2.0f * x, 0.0f));
 
     // G - H - I
-    vec3 g = texture(SRC_TEXTURE, vec2(fragUV.x - 2.0f * x, fragUV.y - 2.0f * y)).rgb;
-    vec3 h = texture(SRC_TEXTURE, vec2(fragUV.x,            fragUV.y - 2.0f * y)).rgb;
-    vec3 i = texture(SRC_TEXTURE, vec2(fragUV.x + 2.0f * x, fragUV.y - 2.0f * y)).rgb;
+    vec3 g = SampleSource(vec2(-2.0f * x, -2.0f * y));
+    vec3 h = SampleSource(vec2( 0.0f,     -2.0f * y));
+    vec3 i = SampleSource(vec2( 2.0f * x, -2.0f * y));
 
     // - J - K -
-    vec3 j = texture(SRC_TEXTURE, vec2(fragUV.x - x, fragUV.y + y)).rgb;
-    vec3 k = texture(SRC_TEXTURE, vec2(fragUV.x + x, fragUV.y + y)).rgb;
+    vec3 j = SampleSource(vec2(-x, y));
+    vec3 k = SampleSource(vec2( x, y));
 
     // - L - M -
-    vec3 l = texture(SRC_TEXTURE, vec2(fragUV.x - x, fragUV.y - y)).rgb;
-    vec3 m = texture(SRC_TEXTURE, vec2(fragUV.x + x, fragUV.y - y)).rgb;
+    vec3 l = SampleSource(vec2(-x, -y));
+    vec3 m = SampleSource(vec2( x, -y));
 
     if (Constants.IsFirstSample == 1)
     {
@@ -90,4 +90,9 @@ void main()
 
     // Fix for black spots
     downsample = max(downsample, 0.0001f);
+}
+
+vec3 SampleSource(vec2 offset)
+{
+    return texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV + offset).rgb;
 }

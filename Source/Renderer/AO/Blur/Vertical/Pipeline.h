@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef SSAO_BLUR_PIPELINE_H
-#define SSAO_BLUR_PIPELINE_H
+#ifndef SSAO_BLUR_VERTICAL_PIPELINE_H
+#define SSAO_BLUR_VERTICAL_PIPELINE_H
 
-#include "Constants.h"
+#include "Renderer/AO/Blur/Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::SSAO::Blur
+namespace Renderer::SSAO::Blur::Vertical
 {
     class Pipeline : public Vk::Pipeline
     {

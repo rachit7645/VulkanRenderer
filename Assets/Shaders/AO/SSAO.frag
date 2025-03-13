@@ -28,7 +28,9 @@ layout(location = 0) in vec2 fragUV;
 
 layout(location = 0) out float outSSAO;
 
-vec3 GetViewPosition(vec2 uv);
+float GetDepth(vec2 uv);
+vec3  GetViewPosition(vec2 uv);
+float GetViewZ(vec2 uv);
 
 void main()
 {
@@ -56,12 +58,12 @@ void main()
         vec3 samplePosition = TBN * Constants.Samples.samples[i];
              samplePosition = viewPosition + samplePosition * Constants.Radius;
         
-        vec4 offset      = vec4(samplePosition, 1.0f);
-             offset      = Constants.Scene.currentMatrices.projection * offset;
-             offset.xyz /= offset.w;
-             offset.xyz  = offset.xyz * 0.5f + 0.5f;
+        vec4 offset     = vec4(samplePosition, 1.0f);
+             offset     = Constants.Scene.currentMatrices.projection * offset;
+             offset.xy /= offset.w;
+             offset.xy  = offset.xy * 0.5f + 0.5f;
 
-        float sampleDepth = GetViewPosition(offset.xy).z;
+        float sampleDepth = GetViewZ(offset.xy);
 
         float rangeCheck = smoothstep(0.0f, 1.0f, Constants.Radius / abs(viewPosition.z - sampleDepth));
 
@@ -73,12 +75,35 @@ void main()
     outSSAO = clamp(pow(occlusion, Constants.Power), 0.0f, 1.0f);
 }
 
+float GetDepth(vec2 uv)
+{
+    vec4  gDepth = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
+    float depth  = gDepth.r;
+
+    return depth;
+}
+
 vec3 GetViewPosition(vec2 uv)
 {
-    vec4  gDepth            = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
-    float depth             = gDepth.r;
+    float depth             = GetDepth(uv);
     vec4  projectedPosition = Constants.Scene.currentMatrices.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
     vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
 
     return viewPosition;
+}
+
+float GetViewZ(vec2 uv)
+{
+    float depth = GetDepth(uv);
+
+    mat4 inverseProjection = Constants.Scene.currentMatrices.inverseProjection;
+
+    float a = inverseProjection[2][2];
+    float b = inverseProjection[3][2];
+    float c = inverseProjection[2][3];
+    float d = inverseProjection[3][3];
+
+    float viewZ = (a * depth + b) / (c * depth + d);
+
+    return viewZ;
 }

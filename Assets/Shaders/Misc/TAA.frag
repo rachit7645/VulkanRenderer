@@ -112,10 +112,10 @@ void main()
     vec2 texelPosition12 = (texelCenter + (w2 / w12)) * texelSize;
 
     vec3 historyColor  = texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition0.y )).rgb * w12.x * w0.y;
-    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition0.x,  texelPosition12.y)).rgb * w0.x  * w12.y;
-    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition12.y)).rgb * w12.x * w12.y;
-    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition3.x,  texelPosition12.y)).rgb * w3.x  * w12.y;
-    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition3.y )).rgb * w12.x * w3.y;
+         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition0.x,  texelPosition12.y)).rgb * w0.x  * w12.y;
+         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition12.y)).rgb * w12.x * w12.y;
+         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition3.x,  texelPosition12.y)).rgb * w3.x  * w12.y;
+         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition3.y )).rgb * w12.x * w3.y;
 
     vec3 currentColor = texture(sampler2D(Textures[Constants.CurrentColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
     currentColor = ToneMap(currentColor);

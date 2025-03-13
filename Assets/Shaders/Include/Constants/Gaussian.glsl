@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#version 460 core
+#ifndef GAUSSIAN_BLUR_PUSH_CONSTANT
+#define GAUSSIAN_BLUR_PUSH_CONSTANT
 
-#extension GL_EXT_ray_tracing : enable
-
-layout(location = 0) rayPayloadInEXT float shadowAmount;
-
-void main()
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    shadowAmount = 1.0f;
-}
+    uint SamplerIndex;
+    uint ImageIndex;
+} Constants;
+
+#endif

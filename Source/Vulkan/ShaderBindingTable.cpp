@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-#include "SBTBuffer.h"
+#include "ShaderBindingTable.h"
+#include "DebugUtils.h"
 
-#include "Vulkan/DebugUtils.h"
-
-namespace Renderer::ShadowRT
+namespace Vk
 {
-    SBTBuffer::SBTBuffer(const Vk::Context& context, const ShadowRT::Pipeline& pipeline)
+    ShaderBindingTable::ShaderBindingTable
+    (
+        const Vk::Context& context,
+        const Vk::Pipeline& pipeline,
+        u32 missCount,
+        u32 hitCount,
+        u32 callableCount
+    )
     {
-        const u32          handleCount = 3;
+        const u32          handleCount = 1 + missCount + hitCount + callableCount;
         const VkDeviceSize handleSize  = context.rayTracingPipelineProperties.shaderGroupHandleSize;
         const VkDeviceSize handlesSize = handleCount * handleSize;
 
@@ -42,13 +48,18 @@ namespace Renderer::ShadowRT
         const VkDeviceSize sbtStrideAligned  = Util::Align(handleSizeAligned, context.rayTracingPipelineProperties.shaderGroupBaseAlignment);
 
         raygenRegion.stride = sbtStrideAligned;
-        raygenRegion.size   = raygenRegion.stride;
-        missRegion.stride   = sbtStrideAligned;
-        missRegion.size     = raygenRegion.stride;
-        hitRegion.stride    = sbtStrideAligned;
-        hitRegion.size      = raygenRegion.stride;
+        raygenRegion.size   = 1 * raygenRegion.stride;
 
-        const VkDeviceSize sbtSize = raygenRegion.size + missRegion.size + hitRegion.size;
+        missRegion.stride = sbtStrideAligned;
+        missRegion.size   = missCount * missRegion.stride;
+
+        hitRegion.stride = sbtStrideAligned;
+        hitRegion.size   = hitCount * hitRegion.stride;
+
+        callableRegion.stride = sbtStrideAligned;
+        callableRegion.size   = callableCount * callableRegion.stride;
+
+        const VkDeviceSize sbtSize = raygenRegion.size + missRegion.size + hitRegion.size + callableRegion.size;
 
         auto stagingBuffer = Vk::Buffer
         (
@@ -60,7 +71,12 @@ namespace Renderer::ShadowRT
             VMA_MEMORY_USAGE_AUTO
         );
 
-        u8* pMappedData = static_cast<u8*>(stagingBuffer.allocationInfo.pMappedData);
+        const auto pMappedData = static_cast<u8*>(stagingBuffer.allocationInfo.pMappedData);
+
+        const usize raygenOffset   = 0;
+        const usize missOffset     = raygenOffset + 1         * handleSize;
+        const usize hitOffset      = missOffset   + missCount * handleSize;
+        const usize callableOffset = hitOffset    + hitCount  * handleSize;
 
         // Raygen
         std::memcpy
@@ -71,20 +87,37 @@ namespace Renderer::ShadowRT
         );
 
         // Miss
-        std::memcpy
-        (
-            pMappedData + raygenRegion.size,
-            handlesData.data() + 1 * handleSize,
-            handleSize
-        );
+        for (u32 i = 0; i < missCount; ++i)
+        {
+            std::memcpy
+            (
+                pMappedData + raygenRegion.size + i * missRegion.stride, // Base + RayGen + Current Miss (Strided)
+                handlesData.data() + missOffset + (i * handleSize),      // Base + Raygen + Current Miss
+                handleSize
+            );
+        }
 
         // Hit
-        std::memcpy
-        (
-            pMappedData + raygenRegion.size + missRegion.size,
-            handlesData.data() + 2 * handleSize,
-            handleSize
-        );
+        for (u32 i = 0; i < hitCount; ++i)
+        {
+            std::memcpy
+            (
+                pMappedData + raygenRegion.size + missRegion.size + i * hitRegion.stride, // Base + RayGen + Miss + Current Hit (Strided)
+                handlesData.data() + hitOffset + (i * handleSize),                        // Base + Raygen + Miss + Current Hit
+                handleSize
+            );
+        }
+
+        // Callable
+        for (u32 i = 0; i < callableCount; ++i)
+        {
+            std::memcpy
+            (
+                pMappedData + raygenRegion.size + missRegion.size + hitRegion.size + i * callableRegion.stride, // Base + RayGen + Miss + Hit + Current Callable (Strided)
+                handlesData.data() + callableOffset + (i * handleSize),                                         // Base + Raygen + Miss + Hit + Current Callable
+                handleSize
+            );
+        }
 
         if (!(stagingBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
@@ -152,16 +185,18 @@ namespace Renderer::ShadowRT
         );
 
         buffer.GetDeviceAddress(context.device);
-        raygenRegion.deviceAddress = buffer.deviceAddress;
-        missRegion.deviceAddress   = buffer.deviceAddress + raygenRegion.size;
-        hitRegion.deviceAddress    = buffer.deviceAddress + raygenRegion.size + hitRegion.size;
 
-        Vk::SetDebugName(context.device, buffer.handle, "SBTBuffer");
+        raygenRegion.deviceAddress   = buffer.deviceAddress;
+        missRegion.deviceAddress     = buffer.deviceAddress + raygenRegion.size;
+        hitRegion.deviceAddress      = buffer.deviceAddress + raygenRegion.size + missRegion.size;
+        callableRegion.deviceAddress = buffer.deviceAddress + raygenRegion.size + missRegion.size + hitRegion.size;
+
+        Vk::SetDebugName(context.device, buffer.handle, "ShaderBindingTable/Buffer");
 
         stagingBuffer.Destroy(context.allocator);
     }
 
-    void SBTBuffer::Destroy(VmaAllocator allocator)
+    void ShaderBindingTable::Destroy(VmaAllocator allocator)
     {
         buffer.Destroy(allocator);
     }

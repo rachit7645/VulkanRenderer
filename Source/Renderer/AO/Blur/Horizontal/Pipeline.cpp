@@ -20,7 +20,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Util/Util.h"
 
-namespace Renderer::SSAO::Blur
+namespace Renderer::SSAO::Blur::Horizontal
 {
     Pipeline::Pipeline
     (
@@ -48,8 +48,8 @@ namespace Renderer::SSAO::Blur
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("Trongle.vert",  VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("SSAOBlur.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Misc/Trongle.vert",      VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("AO/BlurHorizontal.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -68,12 +68,12 @@ namespace Renderer::SSAO::Blur
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(Blur::PushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Blur::PushConstant))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "SSAOBlurPipeline");
-        Vk::SetDebugName(context.device, layout, "SSAOBlurPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "SSAOBlurHorizontalPipeline");
+        Vk::SetDebugName(context.device, layout, "SSAOBlurHorizontalPipelineLayout");
     }
 
     void Pipeline::CreatePipelineData
@@ -91,8 +91,8 @@ namespace Renderer::SSAO::Blur
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
-                .magFilter               = VK_FILTER_NEAREST,
-                .minFilter               = VK_FILTER_NEAREST,
+                .magFilter               = VK_FILTER_LINEAR,
+                .minFilter               = VK_FILTER_LINEAR,
                 .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
                 .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -109,7 +109,7 @@ namespace Renderer::SSAO::Blur
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "SSAOPipeline/SamplerIndex");
+        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "SSAOBlurHorizontalPipeline/Sampler");
 
         megaSet.Update(device);
     }

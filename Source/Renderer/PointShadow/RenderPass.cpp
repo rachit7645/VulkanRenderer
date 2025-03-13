@@ -68,7 +68,7 @@ namespace Renderer::PointShadow
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = static_cast<u32>(6 * Objects::MAX_POINT_LIGHT_COUNT),
+                .layerCount     = 6 * Objects::MAX_POINT_LIGHT_COUNT,
             }
         );
 
@@ -115,29 +115,29 @@ namespace Renderer::PointShadow
         Vk::BeginLabel(currentCmdBuffer, fmt::format("PointShadowPass/FIF{}", FIF), glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
 
         std::vector<PointShadow::PointShadowData> pointShadowData;
-        pointShadowData.reserve(lights.size());
+        pointShadowData.resize(lights.size());
 
-        for (const auto& light : lights)
+        const auto projection = glm::perspective
+        (
+            glm::radians(90.0f),
+            static_cast<f32>(POINT_SHADOW_DIMENSIONS.x) / static_cast<f32>(POINT_SHADOW_DIMENSIONS.y),
+            POINT_SHADOW_PLANES.x,
+            POINT_SHADOW_PLANES.y
+        );
+
+        for (usize i = 0; i < lights.size(); ++i)
         {
-            glm::mat4 projection = glm::perspective
-            (
-                glm::radians(90.0f),
-                static_cast<f32>(POINT_SHADOW_DIMENSIONS.x) / static_cast<f32>(POINT_SHADOW_DIMENSIONS.y),
-                POINT_SHADOW_PLANES.x,
-                POINT_SHADOW_PLANES.y
-            );
-
-            pointShadowData.emplace_back(PointShadow::PointShadowData{
+            pointShadowData[i] = PointShadow::PointShadowData{
                 .matrices     = {
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(light.position, light.position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
                 },
                 .shadowPlanes = POINT_SHADOW_PLANES
-            });
+            };
         }
 
         pointShadowBuffer.LoadPointShadowData(FIF, allocator, pointShadowData);
@@ -166,20 +166,20 @@ namespace Renderer::PointShadow
         {
             Vk::BeginLabel(currentCmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
-            for (usize j = 0; j < 6; ++j)
+            for (usize face = 0; face < 6; ++face)
             {
-                Vk::BeginLabel(currentCmdBuffer, fmt::format("Face #{}", j), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
+                Vk::BeginLabel(currentCmdBuffer, fmt::format("Face #{}", face), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
 
                 cullingDispatch.ComputeDispatch
                 (
                     FIF,
-                    pointShadowData[i].matrices[j],
+                    pointShadowData[i].matrices[face],
                     currentCmdBuffer,
                     meshBuffer,
                     indirectBuffer
                 );
 
-                const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/Light{}/{}", i, j));
+                const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/Light{}/{}", i, face));
 
                 const VkRenderingAttachmentInfo depthAttachmentInfo =
                 {
@@ -244,7 +244,7 @@ namespace Renderer::PointShadow
                     .positions     = geometryBuffer.positionBuffer.deviceAddress,
                     .pointShadows  = pointShadowBuffer.buffers[FIF].deviceAddress,
                     .lightIndex    = static_cast<u32>(i),
-                    .faceIndex     = static_cast<u32>(j)
+                    .faceIndex     = static_cast<u32>(face)
                 };
 
                 pipeline.LoadPushConstants
@@ -252,7 +252,7 @@ namespace Renderer::PointShadow
                    currentCmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                    0, sizeof(PointShadow::PushConstant),
-                   reinterpret_cast<void*>(&pipeline.pushConstant)
+                   &pipeline.pushConstant
                 );
 
                 geometryBuffer.Bind(currentCmdBuffer);

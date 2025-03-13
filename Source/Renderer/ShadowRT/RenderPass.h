@@ -17,12 +17,12 @@
 #ifndef SHADOW_RT_PASS_H
 #define SHADOW_RT_PASS_H
 
-#include "SBTBuffer.h"
 #include "Pipeline.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
+#include "Vulkan/ShaderBindingTable.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 
 namespace Renderer::ShadowRT
@@ -56,7 +56,7 @@ namespace Renderer::ShadowRT
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
-        ShadowRT::SBTBuffer sbtBuffer;
+        Vk::ShaderBindingTable shaderBindingTable;
     };
 }
 

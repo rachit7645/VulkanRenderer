@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef SHADOW_RT_PUSH_CONSTANT
-#define SHADOW_RT_PUSH_CONSTANT
+#version 460
 
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
 
-#include "Scene.glsl"
+#include "Constants/ImGui.glsl"
+#include "Color.glsl"
+#include "MegaSet.glsl"
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+layout(location = 0) in vec4 fragColor;
+layout(location = 1) in vec2 fragUV;
+
+layout(location = 0) out vec4 outColor;
+
+void main()
 {
-    uint64_t    TLAS;
-    SceneBuffer Scene;
-    uint        GBufferSamplerIndex;
-    uint        GNormalIndex;
-    uint        SceneDepthIndex;
-    uint        OutputImage;
-} Constants;
-
-#endif
+    outColor = fragColor * texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), fragUV.st);
+    outColor = vec4(SRGBToLinear(outColor.rgb), outColor.a);
+}

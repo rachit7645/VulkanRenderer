@@ -17,30 +17,23 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/SSAOBlur.glsl"
+#include "Constants/PostProcess.glsl"
+#include "Tonemap.glsl"
 #include "MegaSet.glsl"
 
 layout(location = 0) in vec2 fragUV;
 
-layout(location = 0) out float outSSAO;
+layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    vec2 texelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), 0));
+    vec3 hdrColor   = texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV).rgb;
+    vec3 bloomColor = texture(sampler2D(Textures[Constants.BloomIndex], Samplers[Constants.SamplerIndex]), fragUV).rgb;
 
-    float blur = 0.0f;
+    vec3 color = mix(hdrColor, bloomColor, Constants.BloomStrength);
+         color = ACESFast(color);
 
-    for (int x = -2; x < 2; ++x)
-    {
-        for (int y = -2; y < 2; ++y)
-        {
-            vec2 offset = vec2(x, y) * texelSize;
-            blur       += texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV + offset).r;
-        }
-    }
-
-    outSSAO = clamp(blur / (4.0f * 4.0f), 0.0f, 1.0f);
+    outColor = vec4(color, 1.0f);
 }

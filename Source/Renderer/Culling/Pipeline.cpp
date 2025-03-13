@@ -24,7 +24,7 @@ namespace Renderer::Culling
     {
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("Culling.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("Misc/Culling.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::PushConstant))
             .Build();
 

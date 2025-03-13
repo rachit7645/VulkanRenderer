@@ -25,7 +25,7 @@ namespace Renderer::SSAO
 {
     SampleBuffer::SampleBuffer(const Vk::Context& context)
     {
-        constexpr u32          SAMPLE_COUNT = 12;
+        constexpr u32          SAMPLE_COUNT = 8;
         constexpr VkDeviceSize BUFFER_SIZE  = sizeof(u32) + SAMPLE_COUNT * sizeof(glm::vec3);
 
         buffer = Vk::Buffer

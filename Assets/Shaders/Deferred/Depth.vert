@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef SHADOW_RT_PUSH_CONSTANT
-#define SHADOW_RT_PUSH_CONSTANT
+#version 460
 
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
 
-#include "Scene.glsl"
+#include "Constants/Depth.glsl"
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+void main()
 {
-    uint64_t    TLAS;
-    SceneBuffer Scene;
-    uint        GBufferSamplerIndex;
-    uint        GNormalIndex;
-    uint        SceneDepthIndex;
-    uint        OutputImage;
-} Constants;
+    uint meshIndex = Constants.VisibleMeshes.indices[gl_DrawID];
+    Mesh mesh      = Constants.Meshes.meshes[meshIndex];
+    vec3 position  = Constants.Positions.positions[gl_VertexIndex];
 
-#endif
+    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
+    gl_Position  = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * fragPos;
+}

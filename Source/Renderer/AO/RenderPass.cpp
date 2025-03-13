@@ -33,7 +33,8 @@ namespace Renderer::SSAO
         Vk::TextureManager& textureManager
     )
         : occlusionPipeline(context, formatHelper, megaSet, textureManager),
-          blurPipeline(context, formatHelper, megaSet, textureManager),
+          blurHorizontalPipeline(context, formatHelper, megaSet, textureManager),
+          blurVerticalPipeline(context, formatHelper, megaSet, textureManager),
           sampleBuffer(context)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
@@ -68,7 +69,25 @@ namespace Renderer::SSAO
 
         framebufferManager.AddFramebuffer
         (
-            "OcclusionBlur",
+            "OcclusionBlurHorizontal",
+            Vk::FramebufferType::ColorR,
+            Vk::ImageType::Single2D,
+            false,
+            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "OcclusionBlurVertical",
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
             false,
@@ -99,8 +118,21 @@ namespace Renderer::SSAO
 
         framebufferManager.AddFramebufferView
         (
-            "OcclusionBlur",
-            "OcclusionBlurView",
+            "OcclusionBlurHorizontal",
+            "OcclusionBlurHorizontalView",
+            Vk::ImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "OcclusionBlurVertical",
+            "OcclusionBlurVerticalView",
             Vk::ImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -154,7 +186,7 @@ namespace Renderer::SSAO
             {
                 ImGui::DragFloat("Radius", &m_radius, 0.005f,  0.0f, 1.0f, "%.3f");
                 ImGui::DragFloat("Bias",   &m_bias,   0.0005f, 0.0f, 1.0f, "%.4f");
-                ImGui::DragFloat("Power",  &m_power,  0.05f,  0.0f, 0.0f, "%.3f");
+                ImGui::DragFloat("Power",  &m_power,  0.05f,   0.0f, 0.0f, "%.3f");
 
                 ImGui::EndMenu();
             }
@@ -178,7 +210,14 @@ namespace Renderer::SSAO
             sceneBuffer
         );
 
-        RenderBlur
+        RenderBlurHorizontal
+        (
+            currentCmdBuffer,
+            framebufferManager,
+            megaSet
+        );
+
+        RenderBlurVertical
         (
             currentCmdBuffer,
             framebufferManager,
@@ -301,7 +340,7 @@ namespace Renderer::SSAO
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(Occlusion::PushConstant),
-            reinterpret_cast<void*>(&occlusionPipeline.pushConstant)
+            &occlusionPipeline.pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
@@ -339,16 +378,16 @@ namespace Renderer::SSAO
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::RenderBlur
+    void RenderPass::RenderBlurHorizontal
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
     )
     {
-        Vk::BeginLabel(cmdBuffer, "Blur", glm::vec4(0.7098f, 0.3823f, 0.2129f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "Blur/Horizontal", glm::vec4(0.7098f, 0.3823f, 0.2129f, 1.0f));
 
-        const auto& colorAttachmentView = framebufferManager.GetFramebufferView("OcclusionBlurView");
+        const auto& colorAttachmentView = framebufferManager.GetFramebufferView("OcclusionBlurHorizontalView");
         const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
 
         colorAttachment.image.Barrier
@@ -407,7 +446,7 @@ namespace Renderer::SSAO
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        blurPipeline.Bind(cmdBuffer);
+        blurHorizontalPipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -429,22 +468,161 @@ namespace Renderer::SSAO
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        blurPipeline.pushConstant =
+        blurHorizontalPipeline.pushConstant =
         {
-            .samplerIndex = blurPipeline.samplerIndex,
+            .samplerIndex = blurHorizontalPipeline.samplerIndex,
             .imageIndex   = framebufferManager.GetFramebufferView("OcclusionView").sampledImageIndex
         };
 
-        blurPipeline.LoadPushConstants
+        blurHorizontalPipeline.LoadPushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(Blur::PushConstant),
-            reinterpret_cast<void*>(&blurPipeline.pushConstant)
+            &blurHorizontalPipeline.pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        blurPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        blurHorizontalPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+        vkCmdDraw
+        (
+            cmdBuffer.handle,
+            3,
+            1,
+            0,
+            0
+        );
+
+        vkCmdEndRendering(cmdBuffer.handle);
+
+        colorAttachment.image.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = colorAttachment.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = colorAttachment.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = colorAttachment.image.arrayLayers
+            }
+        );
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void RenderPass::RenderBlurVertical
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Blur/Vertical", glm::vec4(0.7098f, 0.6823f, 0.1129f, 1.0f));
+
+        const auto& colorAttachmentView = framebufferManager.GetFramebufferView("OcclusionBlurVerticalView");
+        const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
+
+        colorAttachment.image.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = colorAttachment.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = colorAttachment.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = colorAttachment.image.arrayLayers
+            }
+        );
+
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = colorAttachmentView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{
+                Renderer::CLEAR_COLOR.r,
+                Renderer::CLEAR_COLOR.g,
+                Renderer::CLEAR_COLOR.b,
+                Renderer::CLEAR_COLOR.a
+            }}}
+        };
+
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {0, 0},
+                .extent = {colorAttachment.image.width, colorAttachment.image.height}
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
+
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+        blurVerticalPipeline.Bind(cmdBuffer);
+
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(colorAttachment.image.width),
+            .height   = static_cast<f32>(colorAttachment.image.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {0, 0},
+            .extent = {colorAttachment.image.width, colorAttachment.image.height}
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+        blurVerticalPipeline.pushConstant =
+        {
+            .samplerIndex = blurVerticalPipeline.samplerIndex,
+            .imageIndex   = framebufferManager.GetFramebufferView("OcclusionBlurHorizontalView").sampledImageIndex
+        };
+
+        blurVerticalPipeline.LoadPushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0, sizeof(Blur::PushConstant),
+            &blurVerticalPipeline.pushConstant
+        );
+
+        const std::array descriptorSets = {megaSet.descriptorSet};
+        blurVerticalPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -487,6 +665,7 @@ namespace Renderer::SSAO
         Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
         occlusionPipeline.Destroy(device);
-        blurPipeline.Destroy(device);
+        blurHorizontalPipeline.Destroy(device);
+        blurVerticalPipeline.Destroy(device);
     }
 }

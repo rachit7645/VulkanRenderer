@@ -26,32 +26,37 @@ layout(location = 0) in vec2 fragUV;
 
 layout (location = 0) out vec3 upsample;
 
+vec3 SampleSource(vec2 offset);
+
 void main()
 {
-    #define SRC_TEXTURE sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex])
-    
     // Radius is in texture coordinate space so that it varies per mip level
     float x = Constants.FilterRadius;
     float y = Constants.FilterRadius;
 
     // A - B - C
-    vec3 a = texture(SRC_TEXTURE, vec2(fragUV.x - x, fragUV.y + y)).rgb;
-    vec3 b = texture(SRC_TEXTURE, vec2(fragUV.x,     fragUV.y + y)).rgb;
-    vec3 c = texture(SRC_TEXTURE, vec2(fragUV.x + x, fragUV.y + y)).rgb;
+    vec3 a = SampleSource(vec2(-x,    y));
+    vec3 b = SampleSource(vec2( 0.0f, y));
+    vec3 c = SampleSource(vec2( x,    y));
 
     // D - E - F
-    vec3 d = texture(SRC_TEXTURE, vec2(fragUV.x - x, fragUV.y)).rgb;
-    vec3 e = texture(SRC_TEXTURE, vec2(fragUV.x,     fragUV.y)).rgb;
-    vec3 f = texture(SRC_TEXTURE, vec2(fragUV.x + x, fragUV.y)).rgb;
+    vec3 d = SampleSource(vec2(-x,    0.0f));
+    vec3 e = SampleSource(vec2( 0.0f, 0.0f));
+    vec3 f = SampleSource(vec2( x,    0.0f));
 
     // G - H - I
-    vec3 g = texture(SRC_TEXTURE, vec2(fragUV.x - x, fragUV.y - y)).rgb;
-    vec3 h = texture(SRC_TEXTURE, vec2(fragUV.x,     fragUV.y - y)).rgb;
-    vec3 i = texture(SRC_TEXTURE, vec2(fragUV.x + x, fragUV.y - y)).rgb;
+    vec3 g = SampleSource(vec2(-x,    -y));
+    vec3 h = SampleSource(vec2( 0.0f, -y));
+    vec3 i = SampleSource(vec2( x,    -y));
 
     // Apply weighted distribution using a 3x3 tent filter
     upsample  = e * 4.0f;
     upsample += (b + d + f + h) * 2.0f;
     upsample += (a + c + g + i);
     upsample *= 1.0f / 16.0f;
+}
+
+vec3 SampleSource(vec2 offset)
+{
+    return texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV + offset).rgb;
 }

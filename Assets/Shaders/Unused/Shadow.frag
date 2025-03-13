@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SHADOW_RT_PUSH_CONSTANT
-#define SHADOW_RT_PUSH_CONSTANT
+#version 460
 
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable
-
-#include "Scene.glsl"
-
-layout(push_constant, scalar) uniform ConstantsBuffer
+void main()
 {
-    uint64_t    TLAS;
-    SceneBuffer Scene;
-    uint        GBufferSamplerIndex;
-    uint        GNormalIndex;
-    uint        SceneDepthIndex;
-    uint        OutputImage;
-} Constants;
-
-#endif
+}
