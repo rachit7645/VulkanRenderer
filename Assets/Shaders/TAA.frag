@@ -21,7 +21,7 @@
 // https://advances.realtimerendering.com/s2014/index.html#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING
 
 // Implementaion referenced: https://github.com/bevyengine/bevy/blob/main/crates/bevy_core_pipeline/src/taa/taa.wgsl
-        
+
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
@@ -40,27 +40,29 @@ layout(location = 0) out vec3 resolvedOutput;
 layout(location = 1) out vec4 historyOutput;
 
 vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 aabbMin, vec3 aabbMax);
+vec3 ToneMap(vec3 color);
+vec3 ReverseToneMap(vec3 color);
 vec3 SampleSceneColor(vec2 fragUV);
 
 void main()
 {
     vec2 sceneColorSize = vec2(textureSize(sampler2D(Textures[Constants.CurrentColorIndex], Samplers[Constants.PointSamplerIndex]), 0));
     vec2 texelSize      = 1.0f / sceneColorSize;
-    
+
     // https://advances.realtimerendering.com/s2014/index.html#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING, slide 27
-    
+
     float offset = texelSize.x * 2.0f;
-    
+
     vec2 depthUVTopLeft     = fragUV + vec2(-offset,  offset);
     vec2 depthUVTopRight    = fragUV + vec2( offset,  offset);
     vec2 depthUVBottomLeft  = fragUV + vec2(-offset, -offset);
     vec2 depthUVBottomRight = fragUV + vec2( offset, -offset);
-    
+
     vec2 closestUV = fragUV;
-    
+
     float depthTopLeft  = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), depthUVTopLeft).r;
     float depthTopRight = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), depthUVTopRight).r;
-    
+
     float closestDepth = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), fragUV).r;
 
     float depthBottomLeft  = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), depthUVBottomLeft).r;
@@ -110,12 +112,13 @@ void main()
     vec2 texelPosition12 = (texelCenter + (w2 / w12)) * texelSize;
 
     vec3 historyColor  = texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition0.y )).rgb * w12.x * w0.y;
-         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition0.x,  texelPosition12.y)).rgb * w0.x  * w12.y;
-         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition12.y)).rgb * w12.x * w12.y;
-         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition3.x,  texelPosition12.y)).rgb * w3.x  * w12.y;
-         historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition3.y )).rgb * w12.x * w3.y;
-    
+    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition0.x,  texelPosition12.y)).rgb * w0.x  * w12.y;
+    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition12.y)).rgb * w12.x * w12.y;
+    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition3.x,  texelPosition12.y)).rgb * w3.x  * w12.y;
+    historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition3.y )).rgb * w12.x * w3.y;
+
     vec3 currentColor = texture(sampler2D(Textures[Constants.CurrentColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
+    currentColor = ToneMap(currentColor);
 
     // YCoCg: https://advances.realtimerendering.com/s2014/index.html#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING, slide 33
     // Variance clipping: https://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
@@ -128,10 +131,10 @@ void main()
     vec3 sampleBottomLeft   = SampleSceneColor(fragUV + vec2(-texelSize.x, -texelSize.y));
     vec3 sampleBottomMiddle = SampleSceneColor(fragUV + vec2( 0.0f,        -texelSize.y));
     vec3 sampleBottomRight  = SampleSceneColor(fragUV + vec2( texelSize.x, -texelSize.y));
-    
+
     vec3 moment1 = sampleTopLeft + sampleTopMiddle + sampleTopRight + sampleMiddleLeft + sampleMiddleMiddle + sampleMiddleRight + sampleBottomLeft + sampleBottomMiddle + sampleBottomRight;
     vec3 moment2 = (sampleTopLeft * sampleTopLeft) + (sampleTopMiddle * sampleTopMiddle) + (sampleTopRight * sampleTopRight) + (sampleMiddleLeft * sampleMiddleLeft) + (sampleMiddleMiddle * sampleMiddleMiddle) + (sampleMiddleRight * sampleMiddleRight) + (sampleBottomLeft * sampleBottomLeft) + (sampleBottomMiddle * sampleBottomMiddle) + (sampleBottomRight * sampleBottomRight);
-    
+
     vec3 mean         = moment1 / 9.0f;
     vec3 variance     = (moment2 / 9.0f) - (mean * mean);
     vec3 stdDeviation = sqrt(max(variance, vec3(0.0f)));
@@ -162,8 +165,8 @@ void main()
     }
 
     currentColor = mix(historyColor, currentColor, currentColorFactor);
-    
-    resolvedOutput = currentColor;
+
+    resolvedOutput = ReverseToneMap(currentColor);
     historyOutput  = vec4(currentColor, historyConfidence);
 }
 
@@ -186,9 +189,19 @@ vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 aabbMin, v
     }
 }
 
+vec3 ToneMap(vec3 color)
+{
+    return color * rcp(max3(color) + 1.0f);
+}
+
+vec3 ReverseToneMap(vec3 color)
+{
+    return color * rcp(1.0 - max3(color));
+}
+
 vec3 SampleSceneColor(vec2 fragUV)
 {
     vec3 color = texture(sampler2D(Textures[Constants.CurrentColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
 
-    return RGBToYCoCg(color);
+    return RGBToYCoCg(ToneMap(color));
 }

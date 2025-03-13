@@ -32,4 +32,9 @@ float max3(vec3 x)
     return max(x.r, max(x.g, x.b));
 }
 
+float rcp(float x)
+{
+    return 1.0f / x;
+}
+
 #endif
