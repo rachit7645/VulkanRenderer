@@ -17,6 +17,10 @@
 #ifndef MATH_GLSL
 #define MATH_GLSL
 
+// I'm too damn lazy to replace all calls to saturate
+// Fuck you Microsoft
+#define saturate(x) clamp(x, 0.0f, 1.0f)
+
 float TanArcCos(float x)
 {
     // tan(acos(x)) = sqrt(1 - x^2) / x

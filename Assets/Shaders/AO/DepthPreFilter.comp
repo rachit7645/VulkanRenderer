@@ -1,0 +1,164 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * GLSL Port of https://github.com/GameTechDev/XeGTAO/
+ * Copyright (C) 2016-2021, Intel Corporation
+ * SPDX-License-Identifier: MIT
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Constants/DepthPreFilter.glsl"
+#include "Math.glsl"
+#include "Constants.glsl"
+#include "MegaSet.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+shared float g_ScratchDepths[8][8];
+
+float XeGTAO_ClampDepth(float depth);
+float XeGTAO_ScreenSpaceToViewSpaceDepth(float screenDepth);
+float XeGTAO_DepthMipFilter(float depth0, float depth1, float depth2, float depth3);
+bool  XeGTAO_DepthWriteCheck(uint modulo);
+
+void main()
+{
+    vec2 viewportPixelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), 0));
+
+    // MIP 0
+    ivec2 baseCoord  = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 pixelCoord = baseCoord * 2;
+
+    vec4 depths4 = textureGather(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), pixelCoord * viewportPixelSize);
+
+    float depth0 = XeGTAO_ClampDepth(XeGTAO_ScreenSpaceToViewSpaceDepth(depths4.w));
+    float depth1 = XeGTAO_ClampDepth(XeGTAO_ScreenSpaceToViewSpaceDepth(depths4.z));
+    float depth2 = XeGTAO_ClampDepth(XeGTAO_ScreenSpaceToViewSpaceDepth(depths4.x));
+    float depth3 = XeGTAO_ClampDepth(XeGTAO_ScreenSpaceToViewSpaceDepth(depths4.y));
+
+    imageStore(Images[Constants.OutDepthMip0Index], pixelCoord + ivec2(0, 0), vec4(depth0, 0.0f, 0.0f, 0.0f));
+    imageStore(Images[Constants.OutDepthMip0Index], pixelCoord + ivec2(1, 0), vec4(depth0, 0.0f, 0.0f, 0.0f));
+    imageStore(Images[Constants.OutDepthMip0Index], pixelCoord + ivec2(0, 1), vec4(depth0, 0.0f, 0.0f, 0.0f));
+    imageStore(Images[Constants.OutDepthMip0Index], pixelCoord + ivec2(1, 1), vec4(depth0, 0.0f, 0.0f, 0.0f));
+
+    // MIP 1
+    float dm1 = XeGTAO_DepthMipFilter(depth0, depth1, depth2, depth3);
+
+    imageStore(Images[Constants.OutDepthMip1Index], baseCoord, vec4(dm1, 0.0f, 0.0f, 0.0f));
+
+    g_ScratchDepths[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = dm1;
+
+    memoryBarrierShared();
+    barrier();
+
+    // MIP 2
+    if (XeGTAO_DepthWriteCheck(2))
+    {
+        float inTL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 0];
+        float inTR = g_ScratchDepths[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 0];
+        float inBL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 1];
+        float inBR = g_ScratchDepths[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 1];
+
+        float dm2 = XeGTAO_DepthMipFilter(inTL, inTR, inBL, inBR);
+
+        imageStore(Images[Constants.OutDepthMip2Index], baseCoord / 2, vec4(dm2, 0.0f, 0.0f, 0.0f));
+
+        g_ScratchDepths[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = dm2;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    // MIP 3
+    if (XeGTAO_DepthWriteCheck(4))
+    {
+        float inTL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 0];
+        float inTR = g_ScratchDepths[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 0];
+        float inBL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 2];
+        float inBR = g_ScratchDepths[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 2];
+
+        float dm3 = XeGTAO_DepthMipFilter(inTL, inTR, inBL, inBR);
+
+        imageStore(Images[Constants.OutDepthMip3Index], baseCoord / 4, vec4(dm3, 0.0f, 0.0f, 0.0f));
+
+        g_ScratchDepths[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = dm3;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    // MIP 4
+    if (XeGTAO_DepthWriteCheck(8))
+    {
+        float inTL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 0];
+        float inTR = g_ScratchDepths[gl_LocalInvocationID.x + 4][gl_LocalInvocationID.y + 0];
+        float inBL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 4];
+        float inBR = g_ScratchDepths[gl_LocalInvocationID.x + 4][gl_LocalInvocationID.y + 4];
+
+        float dm4 = XeGTAO_DepthMipFilter(inTL, inTR, inBL, inBR);
+
+        imageStore(Images[Constants.OutDepthMip4Index], baseCoord / 8, vec4(dm4, 0.0f, 0.0f, 0.0f));
+    }
+}
+
+// This is also a good place to do non-linear depth conversion for cases where one wants the 'radius' (effectively the threshold between near-field and far-field GI),
+// is required to be non-linear (i.e. very large outdoors environments).
+float XeGTAO_ClampDepth(float depth)
+{
+    return clamp(depth, 0.0f, FLOAT_MAX);
+}
+
+float XeGTAO_ScreenSpaceToViewSpaceDepth(float screenDepth)
+{
+    // Optimised version of "-cameraClipNear / (cameraClipFar - projDepth * (cameraClipFar - cameraClipNear)) * cameraClipFar"
+    return Constants.DepthLinearizeMul / (Constants.DepthLinearizeAdd - screenDepth);
+}
+
+// Weighted average depth filter
+float XeGTAO_DepthMipFilter(float depth0, float depth1, float depth2, float depth3)
+{
+    float maxDepth = max(max(depth0, depth1), max(depth2, depth3));
+
+    const float depthRangeScaleFactor = 0.75f; // found empirically :) (Rachit's Note: I guess I'll trust you)
+
+    float effectRadius = depthRangeScaleFactor * Constants.EffectRadius * Constants.RadiusMultiplier;
+    float falloffRange = Constants.EffectFalloffRange * effectRadius;
+
+    float falloffFrom = effectRadius * (1.0f - Constants.EffectFalloffRange);
+
+    float falloffMul = -1.0f / falloffRange;
+    float falloffAdd = falloffFrom / (falloffRange) + 1.0f;
+
+    float weight0 = saturate((maxDepth - depth0) * falloffMul + falloffAdd);
+    float weight1 = saturate((maxDepth - depth1) * falloffMul + falloffAdd);
+    float weight2 = saturate((maxDepth - depth2) * falloffMul + falloffAdd);
+    float weight3 = saturate((maxDepth - depth3) * falloffMul + falloffAdd);
+
+    float weightSum = weight0 + weight1 + weight2 + weight3;
+
+    return (weight0 * depth0 + weight1 * depth1 + weight2 * depth2 + weight3 * depth3) / weightSum;
+}
+
+bool XeGTAO_DepthWriteCheck(uint modulo)
+{
+    return all(equal(gl_LocalInvocationID.xy % uvec2(modulo), uvec2(0)));
+}

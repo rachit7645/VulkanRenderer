@@ -24,7 +24,7 @@
 #define CSM_ENABLE_PCF               1
 
 // Math constants
-const float PI = 3.14159265359;
+const float PI = 3.1415926535897932384626433832795;
 
 // Float bounds
 const float FLOAT_MIN = 1.175494351e-38;
@@ -65,4 +65,9 @@ const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
 // Gaussian blur constants
 const int   GAUSSIAN_FILTER_SIZE                           = 2; // p = 2 * r + 1
 const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0.24477, 0.38774, 0.24477, 0.06136);
+
+// XeGTAO Constants
+const float XE_GTAO_OCCLUSION_TERM_SCALE = 1.5f;
+const float XE_GTAO_LEAK_THRESHOLD       = 2.5f;
+const float XE_GTAO_LEAK_STRENGTH        = 0.5f;
 #endif
