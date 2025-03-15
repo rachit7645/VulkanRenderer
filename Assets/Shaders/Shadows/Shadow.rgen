@@ -31,11 +31,11 @@ layout(location = 0) rayPayloadEXT float shadowAmount;
 
 void main()
 {
-    vec2  pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
-    vec2  uv          = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
+    vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
+    vec2 uv          = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
 
-    vec4  gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
-    vec3  normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
+    vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
+    vec3 normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
 
     vec4  gDepth            = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     float depth             = gDepth.r;

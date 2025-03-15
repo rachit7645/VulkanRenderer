@@ -70,4 +70,7 @@ const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0
 const float XE_GTAO_OCCLUSION_TERM_SCALE = 1.5f;
 const float XE_GTAO_LEAK_THRESHOLD       = 2.5f;
 const float XE_GTAO_LEAK_STRENGTH        = 0.5f;
+const uint  XE_GTAO_SLICE_COUNT          = 3;
+const uint  XE_GTAO_STEPS                = 3;
+const uint  XE_GTAO_DEPTH_MIP_LEVELS     = 5;
 #endif

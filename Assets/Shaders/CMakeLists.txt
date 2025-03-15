@@ -78,6 +78,7 @@ file(GLOB SHADER_SOURCES
     AO/BlurVertical.frag
     AO/DepthPreFilter.comp
     AO/Denoise.comp
+    AO/XeGTAO.comp
 )
 
 # Shader headers
