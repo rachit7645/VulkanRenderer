@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef DEPTH_PREFILTER_PIPELINE_H
-#define DEPTH_PREFILTER_PIPELINE_H
+#ifndef XE_GTAO_OCCLUSION_PIPELINE_H
+#define XE_GTAO_OCCLUSION_PIPELINE_H
 
 #include "Constants.h"
 #include "Vulkan/Pipeline.h"
@@ -23,7 +23,7 @@
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::AO::XeGTAO::DepthPreFilter
+namespace Renderer::AO::XeGTAO::Occlusion
 {
     class Pipeline : public Vk::Pipeline
     {
@@ -35,7 +35,7 @@ namespace Renderer::AO::XeGTAO::DepthPreFilter
             Vk::TextureManager& textureManager
         );
 
-        DepthPreFilter::PushConstant pushConstant = {};
+        Occlusion::PushConstant pushConstant = {};
 
         u32 samplerIndex = 0;
     };

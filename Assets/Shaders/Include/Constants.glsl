@@ -61,6 +61,7 @@ const float RT_SHADOW_MAX_BIAS = 0.005f;
 // TAA Constants
 const float TAA_DEFAULT_HISTORY_BLEND_RATE = 0.1f;
 const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
+const float TAA_JITTER_SAMPLES             = 64;
 
 // Gaussian blur constants
 const int   GAUSSIAN_FILTER_SIZE                           = 2; // p = 2 * r + 1
@@ -73,4 +74,6 @@ const float XE_GTAO_LEAK_STRENGTH        = 0.5f;
 const uint  XE_GTAO_SLICE_COUNT          = 3;
 const uint  XE_GTAO_STEPS                = 3;
 const uint  XE_GTAO_DEPTH_MIP_LEVELS     = 5;
+const uint  XE_GTAO_HILBERT_LEVEL        = 6;
+const uint  XE_GTAO_HILBERT_WIDTH        = 1u << XE_GTAO_HILBERT_LEVEL;
 #endif

@@ -40,7 +40,7 @@ namespace Renderer
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_ssaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_xegtaoPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_xegtaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowRTPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
@@ -288,7 +288,8 @@ namespace Renderer
             m_frameIndex,
             m_scene,
             m_framebufferManager,
-            m_megaSet
+            m_megaSet,
+            m_sceneBuffer
         );
 
         m_shadowRTPass.Render

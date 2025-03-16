@@ -36,8 +36,10 @@ namespace Vk
         VkFormat colorAttachmentFormatHDRWithAlpha = VK_FORMAT_UNDEFINED;
         VkFormat depthFormat                       = VK_FORMAT_UNDEFINED;
         VkFormat depthStencilFormat                = VK_FORMAT_UNDEFINED;
-        VkFormat rFormat                           = VK_FORMAT_UNDEFINED;
-        VkFormat rgFormat                          = VK_FORMAT_UNDEFINED;
+        VkFormat rNormFormat                       = VK_FORMAT_UNDEFINED;
+        VkFormat rU8Format                         = VK_FORMAT_UNDEFINED;
+        VkFormat rU16Format                        = VK_FORMAT_UNDEFINED;
+        VkFormat rgNormFormat                      = VK_FORMAT_UNDEFINED;
         VkFormat rgFloatFormat                     = VK_FORMAT_UNDEFINED;
     private:
         VkFormat FindSupportedFormat

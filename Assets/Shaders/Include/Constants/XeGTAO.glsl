@@ -23,7 +23,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
 {
     SceneBuffer Scene;
 
-    uint HilbertSamplerIndex;
     uint SamplerIndex;
 
     uint HilbertLUTIndex;

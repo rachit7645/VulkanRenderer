@@ -1,0 +1,54 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef XE_GTAO_OCCLUSION_CONSTANTS_H
+#define XE_GTAO_OCCLUSION_CONSTANTS_H
+
+#include <vulkan/vulkan.h>
+
+#include "Util/Util.h"
+#include "Externals/GLM.h"
+
+namespace Renderer::AO::XeGTAO::Occlusion
+{
+    struct PushConstant
+    {
+        VkDeviceAddress scene;
+
+        u32 samplerIndex;
+
+        u32 hilbertLUTIndex;
+        u32 gNormalIndex;
+        u32 viewSpaceDepthIndex;
+
+        u32 outWorkingEdges;
+        u32 outWorkingAOIndex;
+
+        u32       temporalIndex;
+        glm::vec2 ndcToViewMul;
+        glm::vec2 ndcToViewAdd;
+
+        f32 effectRadius;
+        f32 effectFalloffRange;
+        f32 radiusMultiplier;
+        f32 sampleDistributionPower;
+        f32 thinOccluderCompensation;
+        f32 depthMIPSamplingOffset;
+        f32 finalValuePower;
+    };
+}
+
+#endif

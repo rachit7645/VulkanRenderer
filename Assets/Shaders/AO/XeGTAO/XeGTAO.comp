@@ -179,11 +179,11 @@ void main()
                 sampleOffset = round(sampleOffset) * viewportPixelSize;
 
                 vec2  sampleScreenPos0 = normalizedScreenPos + sampleOffset;
-                float SZ0              = texture(sampler2D(Textures[Constants.ViewSpaceDepthIndex], Samplers[Constants.SamplerIndex]), sampleScreenPos0, mipLevel).x;
+                float SZ0              = textureLod(sampler2D(Textures[Constants.ViewSpaceDepthIndex], Samplers[Constants.SamplerIndex]), sampleScreenPos0, mipLevel).x;
                 vec3  samplePos0       = XeGTAO_ComputeViewspacePosition(sampleScreenPos0, SZ0);
 
                 vec2  sampleScreenPos1 = normalizedScreenPos - sampleOffset;
-                float SZ1              = texture(sampler2D(Textures[Constants.ViewSpaceDepthIndex], Samplers[Constants.SamplerIndex]), sampleScreenPos1, mipLevel).x;
+                float SZ1              = textureLod(sampler2D(Textures[Constants.ViewSpaceDepthIndex], Samplers[Constants.SamplerIndex]), sampleScreenPos1, mipLevel).x;
                 vec3  samplePos1       = XeGTAO_ComputeViewspacePosition(sampleScreenPos1, SZ1);
 
                 vec3  sampleDelta0 = (samplePos0 - vec3(pixCenterPos)); // using float for sampleDelta causes precision issues
@@ -240,8 +240,8 @@ vec2 SpatioTemporalNoise(ivec2 pixelCoord)
 {
     // Hilbert curve driving R2 (see https://www.shadertoy.com/view/3tB3z3)
     // load from lookup texture...
-    uint index  = uint(texelFetch(sampler2D(Textures[Constants.HilbertLUTIndex], Samplers[Constants.HilbertSamplerIndex]), pixelCoord % 64, 0).x * 255.0f);
-         index += 288 * (Constants.TemporalIndex % 64); // why 288? tried out a few and that's the best so far (with XE_HILBERT_LEVEL 6U) - but there's probably better :)
+    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.SamplerIndex]), pixelCoord % int(XE_GTAO_HILBERT_WIDTH), 0).x);
+         index += 288 * (Constants.TemporalIndex % XE_GTAO_HILBERT_WIDTH); // why 288? tried out a few and that's the best so far (with XE_HILBERT_LEVEL 6U) - but there's probably better :)
 
     // R2 sequence - see http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
     return vec2(fract(0.5f + index * vec2(0.75487766624669276005f, 0.5698402909980532659114f)));
@@ -316,5 +316,5 @@ void XeGTAO_OutputWorkingTerm(ivec2 pixelCoord, float visibility)
 {
     visibility = saturate(visibility / float(XE_GTAO_OCCLUSION_TERM_SCALE));
 
-    imageStore(Images[Constants.OutWorkingAOIndex], pixelCoord, vec4(visibility + (0.5f / 255.0f), 0.0f, 0.0f, 0.0f));
+    imageStore(UImages[Constants.OutWorkingAOIndex], pixelCoord, uvec4(uint(visibility * 255.0f + 0.5f), 0.0f, 0.0f, 0.0f));
 }

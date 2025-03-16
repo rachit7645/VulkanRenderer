@@ -124,14 +124,21 @@ namespace Vk
             switch (framebuffer.type)
             {
             case FramebufferType::ColorR:
-                createInfo.format = formatHelper.rFormat;
+                createInfo.format = formatHelper.rNormFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorR_U8:
+                createInfo.format = formatHelper.rU8Format;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorRG:
-                createInfo.format = formatHelper.rgFormat;
+                createInfo.format = formatHelper.rgNormFormat;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;

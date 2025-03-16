@@ -17,15 +17,15 @@
 #ifndef XE_GTAO_RENDER_PASS_H
 #define XE_GTAO_RENDER_PASS_H
 
-#include <Renderer/Scene.h>
-
 #include "DepthPreFilter/Pipeline.h"
+#include "Occlusion/Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 #include "Renderer/Scene.h"
+#include "Renderer/Buffers/SceneBuffer.h"
 
 namespace Renderer::AO::XeGTAO
 {
@@ -35,6 +35,7 @@ namespace Renderer::AO::XeGTAO
         RenderPass
         (
             const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
             Vk::FramebufferManager& framebufferManager,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
@@ -46,14 +47,18 @@ namespace Renderer::AO::XeGTAO
             usize frameIndex,
             const Renderer::Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Buffers::SceneBuffer& sceneBuffer
         );
 
         void Destroy(VkDevice device, VkCommandPool cmdPool);
 
         DepthPreFilter::Pipeline depthPreFilterPipeline;
+        Occlusion::Pipeline      occlusionPipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+
+        u32 hilbertLUT = 0;
     private:
         void PreFilterDepth
         (
@@ -63,9 +68,24 @@ namespace Renderer::AO::XeGTAO
             const Vk::MegaSet& megaSet
         );
 
-        f32 m_effectRadius       = 0.5f;
-        f32 m_effectFalloffRange = 0.615f;
-        f32 m_radiusMultiplier   = 1.457f;
+        void Occlusion
+        (
+            usize FIF,
+            usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Renderer::Scene& scene,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
+            const Buffers::SceneBuffer& sceneBuffer
+        );
+
+        f32 m_effectRadius             = 0.5f;
+        f32 m_effectFalloffRange       = 0.615f;
+        f32 m_radiusMultiplier         = 1.457f;
+        f32 m_sampleDistributionPower  = 2.0f;
+        f32 m_thinOccluderCompensation = 0.0f;
+        f32 m_depthMIPSamplingOffset   = 3.3f;
+        f32 m_finalValuePower          = 2.2f;
     };
 }
 
