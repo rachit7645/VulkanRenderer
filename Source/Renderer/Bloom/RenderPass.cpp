@@ -237,7 +237,7 @@ namespace Renderer::Bloom
                 .isFirstSample = (mip == 0) ? 1u : 0u
             };
 
-            downsamplePipeline.LoadPushConstants
+            downsamplePipeline.PushConstants
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -395,7 +395,7 @@ namespace Renderer::Bloom
                 .filterRadius  = m_filterRadius
             };
 
-            upsamplePipeline.LoadPushConstants
+            upsamplePipeline.PushConstants
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

@@ -200,7 +200,7 @@ namespace Renderer::Lighting
             .aoIndex                 = framebufferManager.GetFramebufferView("OcclusionBlurVerticalView").sampledImageIndex,
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,

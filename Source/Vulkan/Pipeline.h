@@ -42,7 +42,7 @@ namespace Vk
             const std::span<const VkDescriptorSet> descriptors
         ) const;
 
-        void LoadPushConstants
+        void PushConstants
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkShaderStageFlags stages,

@@ -73,12 +73,12 @@ file(GLOB SHADER_SOURCES
     Deferred/GBuffer.frag
     Deferred/GBuffer.vert
     Deferred/Lighting.frag
-    AO/SSAO.frag
-    AO/BlurHorizontal.frag
-    AO/BlurVertical.frag
-    AO/DepthPreFilter.comp
-    AO/Denoise.comp
-    AO/XeGTAO.comp
+    AO/SSAO/SSAO.frag
+    AO/SSAO/BlurHorizontal.frag
+    AO/SSAO/BlurVertical.frag
+    AO/XeGTAO/DepthPreFilter.comp
+    AO/XeGTAO/Denoise.comp
+    AO/XeGTAO/XeGTAO.comp
 )
 
 # Shader headers

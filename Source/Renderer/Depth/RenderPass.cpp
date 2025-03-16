@@ -187,7 +187,7 @@ namespace Renderer::Depth
             .positions     = geometryBuffer.positionBuffer.deviceAddress
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
            currentCmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT,

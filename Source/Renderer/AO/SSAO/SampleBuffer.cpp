@@ -21,7 +21,7 @@
 #include "Util/Random.h"
 #include "Util/Maths.h"
 
-namespace Renderer::SSAO
+namespace Renderer::AO::SSAO
 {
     SampleBuffer::SampleBuffer(const Vk::Context& context)
     {

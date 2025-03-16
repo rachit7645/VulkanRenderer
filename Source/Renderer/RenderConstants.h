@@ -32,7 +32,7 @@ namespace Renderer
     // World Up direction
     constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
     // TAA Jitter Samples
-    constexpr usize JITTER_SAMPLE_COUNT = 64;
+    constexpr usize JITTER_SAMPLE_COUNT = 64; // Needs to be 64 for XeGTAO
     constexpr auto  JITTER_SAMPLES      = Maths::GenerateHaltonSequence<JITTER_SAMPLE_COUNT>();
 }
 

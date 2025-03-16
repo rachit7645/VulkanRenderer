@@ -247,7 +247,7 @@ namespace Renderer::PointShadow
                     .faceIndex     = static_cast<u32>(face)
                 };
 
-                pipeline.LoadPushConstants
+                pipeline.PushConstants
                 (
                    currentCmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

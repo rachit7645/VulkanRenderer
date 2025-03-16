@@ -19,7 +19,7 @@
 
 #include "Util/Util.h"
 
-namespace Renderer::SSAO::Blur
+namespace Renderer::AO::SSAO::Blur
 {
     struct PushConstant
     {

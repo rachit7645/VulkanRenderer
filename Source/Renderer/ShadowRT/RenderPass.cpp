@@ -138,7 +138,7 @@ namespace Renderer::ShadowRT
             .outputImage         = shadowMapView.storageImageIndex
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_RAYGEN_BIT_KHR,

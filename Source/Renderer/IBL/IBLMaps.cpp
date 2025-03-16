@@ -414,7 +414,7 @@ namespace Renderer::IBL
             .textureIndex = hdrMapID
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -628,7 +628,7 @@ namespace Renderer::IBL
             .envMapIndex  = skyboxID.value()
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -833,7 +833,7 @@ namespace Renderer::IBL
                 .sampleCount  = sampleCount
             };
 
-            pipeline.LoadPushConstants
+            pipeline.PushConstants
             (
                 cmdBuffer,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

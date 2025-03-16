@@ -22,7 +22,7 @@
 #include "Util/SIMD.h"
 #include "Renderer/RenderConstants.h"
 
-namespace Renderer::SSAO
+namespace Renderer::AO::SSAO
 {
     RenderPass::RenderPass
     (
@@ -335,7 +335,7 @@ namespace Renderer::SSAO
             .power               = m_power
         };
 
-        occlusionPipeline.LoadPushConstants
+        occlusionPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -474,7 +474,7 @@ namespace Renderer::SSAO
             .imageIndex   = framebufferManager.GetFramebufferView("OcclusionView").sampledImageIndex
         };
 
-        blurHorizontalPipeline.LoadPushConstants
+        blurHorizontalPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -613,7 +613,7 @@ namespace Renderer::SSAO
             .imageIndex   = framebufferManager.GetFramebufferView("OcclusionBlurHorizontalView").sampledImageIndex
         };
 
-        blurVerticalPipeline.LoadPushConstants
+        blurVerticalPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,

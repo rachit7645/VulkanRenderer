@@ -25,7 +25,7 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 
-namespace Renderer::SSAO
+namespace Renderer::AO::SSAO
 {
     class RenderPass
     {

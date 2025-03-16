@@ -161,7 +161,7 @@ namespace Renderer::PostProcess
             .bloomStrength = m_bloomStrength
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,

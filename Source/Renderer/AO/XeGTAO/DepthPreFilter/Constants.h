@@ -14,30 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef SSAO_CONSTANTS_H
-#define SSAO_CONSTANTS_H
+#ifndef DEPTH_PREFILTER_CONSTANTS_H
+#define DEPTH_PREFILTER_CONSTANTS_H
 
 #include <vulkan/vulkan.h>
 
 #include "Util/Util.h"
 
-namespace Renderer::SSAO::Occlusion
+namespace Renderer::AO::XeGTAO::DepthPreFilter
 {
     struct PushConstant
     {
-        VkDeviceAddress scene;
-        VkDeviceAddress samples;
-
-        u32 gBufferSamplerIndex;
-        u32 noiseSamplerIndex;
-
-        u32 gNormalIndex;
+        u32 depthSamplerIndex;
         u32 sceneDepthIndex;
-        u32 noiseIndex;
 
-        f32 radius;
-        f32 bias;
-        f32 power;
+        u32 outDepthMip0Index;
+        u32 outDepthMip1Index;
+        u32 outDepthMip2Index;
+        u32 outDepthMip3Index;
+        u32 outDepthMip4Index;
+
+        f32 depthLinearizeMul;
+        f32 depthLinearizeAdd;
+
+        f32 effectRadius;
+        f32 effectFalloffRange;
+        f32 radiusMultiplier;
     };
 }
 

@@ -151,7 +151,7 @@ namespace Renderer::Skybox
             .cubemapIndex = iblMaps.skyboxID.value()
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
            currentCmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

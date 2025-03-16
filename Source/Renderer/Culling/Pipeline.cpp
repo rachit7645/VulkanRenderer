@@ -28,7 +28,7 @@ namespace Renderer::Culling
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::PushConstant))
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ComputePipeline");
-        Vk::SetDebugName(context.device, layout, "ComputePipelineLayout");
+        Vk::SetDebugName(context.device, handle, "CullingPipeline");
+        Vk::SetDebugName(context.device, layout, "CullingPipelineLayout");
     }
 }

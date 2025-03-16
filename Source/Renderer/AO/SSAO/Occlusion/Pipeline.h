@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef SSAO_BLUR_VERTICAL_PIPELINE_H
-#define SSAO_BLUR_VERTICAL_PIPELINE_H
+#ifndef SSAO_PIPELINE_H
+#define SSAO_PIPELINE_H
 
-#include "Renderer/AO/Blur/Constants.h"
+#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::SSAO::Blur::Vertical
+namespace Renderer::AO::SSAO::Occlusion
 {
     class Pipeline : public Vk::Pipeline
     {
@@ -36,9 +36,10 @@ namespace Renderer::SSAO::Blur::Vertical
             Vk::TextureManager& textureManager
         );
 
-        Blur::PushConstant pushConstant = {};
+        Occlusion::PushConstant pushConstant = {};
 
-        u32 samplerIndex = 0;
+        u32 gBufferSamplerIndex = 0;
+        u32 noiseSamplerIndex   = 0;
     private:
         void CreatePipeline
         (

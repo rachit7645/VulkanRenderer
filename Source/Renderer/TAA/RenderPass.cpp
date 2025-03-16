@@ -268,7 +268,7 @@ namespace Renderer::TAA
             .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             currentCmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,

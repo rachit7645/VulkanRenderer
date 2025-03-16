@@ -26,7 +26,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Denoise.glsl"
+#include "Constants/XeGTAODenoise.glsl"
 #include "Math.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"

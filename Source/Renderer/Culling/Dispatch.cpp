@@ -55,7 +55,7 @@ namespace Renderer::Culling
             .frustum         = frustumBuffer.buffers[FIF].deviceAddress
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,

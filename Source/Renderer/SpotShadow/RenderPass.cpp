@@ -247,7 +247,7 @@ namespace Renderer::SpotShadow
                 .currentIndex  = static_cast<u32>(i)
             };
 
-            pipeline.LoadPushConstants
+            pipeline.PushConstants
             (
                currentCmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT,

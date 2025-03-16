@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef SAMPLES_BUFFER_H
-#define SAMPLES_BUFFER_H
+#ifndef SSAO_CONSTANTS_H
+#define SSAO_CONSTANTS_H
 
-#include "Externals/GLM.h"
-#include "Vulkan/Buffer.h"
-#include "Vulkan/Constants.h"
+#include <vulkan/vulkan.h>
 
-namespace Renderer::SSAO
+#include "Util/Util.h"
+
+namespace Renderer::AO::SSAO::Occlusion
 {
-    class SampleBuffer
+    struct PushConstant
     {
-    public:
-        SampleBuffer(const Vk::Context& context);
+        VkDeviceAddress scene;
+        VkDeviceAddress samples;
 
-        void Destroy(VmaAllocator allocator);
+        u32 gBufferSamplerIndex;
+        u32 noiseSamplerIndex;
 
-        Vk::Buffer buffer;
+        u32 gNormalIndex;
+        u32 sceneDepthIndex;
+        u32 noiseIndex;
+
+        f32 radius;
+        f32 bias;
+        f32 power;
     };
 }
 

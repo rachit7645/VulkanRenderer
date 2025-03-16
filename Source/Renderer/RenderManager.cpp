@@ -40,6 +40,7 @@ namespace Renderer
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_ssaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_xegtaoPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowRTPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
@@ -58,6 +59,7 @@ namespace Renderer
             m_cullingDispatch.Destroy(m_context.device, m_context.allocator);
             m_taaPass.Destroy(m_context.device, m_context.commandPool);
             m_shadowRTPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
+            m_xegtaoPass.Destroy(m_context.device, m_context.commandPool);
             m_ssaoPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_lightingPass.Destroy(m_context.device, m_context.commandPool);
             m_gBufferPass.Destroy(m_context.device, m_context.commandPool);
@@ -278,6 +280,15 @@ namespace Renderer
             m_framebufferManager,
             m_megaSet,
             m_sceneBuffer
+        );
+
+        m_xegtaoPass.Render
+        (
+            m_currentFIF,
+            m_frameIndex,
+            m_scene,
+            m_framebufferManager,
+            m_megaSet
         );
 
         m_shadowRTPass.Render
@@ -697,6 +708,13 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_ssaoPass.cmdBuffers[m_currentFIF].handle,
+                .deviceMask    = 1
+            },
+            VkCommandBufferSubmitInfo
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = m_xegtaoPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

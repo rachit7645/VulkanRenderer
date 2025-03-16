@@ -233,7 +233,7 @@ namespace Renderer::DearImGui
         pipeline.pushConstant.translate    = glm::vec2(-1.0f) - (displayPos * pipeline.pushConstant.scale);
         pipeline.pushConstant.samplerIndex = pipeline.samplerIndex;
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -275,7 +275,7 @@ namespace Renderer::DearImGui
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
                 pipeline.pushConstant.textureIndex = cmd.GetTexID();
-                pipeline.LoadPushConstants
+                pipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
