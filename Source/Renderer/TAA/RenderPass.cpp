@@ -53,8 +53,8 @@ namespace Renderer::TAA
         (
             "ResolvedSceneColor",
             Vk::FramebufferType::ColorHDR,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -71,8 +71,8 @@ namespace Renderer::TAA
         (
             "TAABuffer",
             Vk::FramebufferType::ColorHDR_WithAlpha,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -89,7 +89,7 @@ namespace Renderer::TAA
         (
             "ResolvedSceneColor",
             "ResolvedSceneColorView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -104,7 +104,7 @@ namespace Renderer::TAA
             (
                 "TAABuffer",
                 fmt::format("TAABufferView/{}", i),
-                Vk::ImageType::Single2D,
+                Vk::FramebufferImageType::Single2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = 0,
                     .levelCount     = 1,
@@ -131,6 +131,78 @@ namespace Renderer::TAA
         currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("TAAPass/FIF{}", FIF), glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("TAA"))
+            {
+                if (ImGui::Button("Reset History"))
+                {
+                    const auto& history = framebufferManager.GetFramebuffer("TAABuffer");
+
+                    history.image.Barrier
+                    (
+                        currentCmdBuffer,
+                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                        VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                        VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        {
+                            .aspectMask     = history.image.aspect,
+                            .baseMipLevel   = 0,
+                            .levelCount     = history.image.mipLevels,
+                            .baseArrayLayer = 0,
+                            .layerCount     = history.image.arrayLayers
+                        }
+                    );
+
+                    const VkClearColorValue clearColor = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
+
+                    const VkImageSubresourceRange subresourceRange =
+                    {
+                        .aspectMask     = history.image.aspect,
+                        .baseMipLevel   = 0,
+                        .levelCount     = history.image.mipLevels,
+                        .baseArrayLayer = 0,
+                        .layerCount     = history.image.arrayLayers
+                    };
+
+                    vkCmdClearColorImage
+                    (
+                        currentCmdBuffer.handle,
+                        history.image.handle,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        &clearColor,
+                        1,
+                        &subresourceRange
+                    );
+
+                    history.image.Barrier
+                    (
+                        currentCmdBuffer,
+                        VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                        VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        {
+                            .aspectMask     = history.image.aspect,
+                            .baseMipLevel   = 0,
+                            .levelCount     = history.image.mipLevels,
+                            .baseArrayLayer = 0,
+                            .layerCount     = history.image.arrayLayers
+                        }
+                    );
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
 
         const usize currentIndex  = frameIndex                          % TAA_HISTORY_SIZE;
         const usize previousIndex = (frameIndex + TAA_HISTORY_SIZE - 1) % TAA_HISTORY_SIZE;

@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef DEPTH_PREFILTER_CONSTANTS_H
-#define DEPTH_PREFILTER_CONSTANTS_H
+#ifndef XE_GTAO_DENOISE_CONSTANTS_H
+#define XE_GTAO_DENOISE_CONSTANTS_H
 
 #include <vulkan/vulkan.h>
 
 #include "Util/Util.h"
+#include "Externals/GLM.h"
 
-namespace Renderer::AO::XeGTAO::DepthPreFilter
+namespace Renderer::AO::XeGTAO::Denoise
 {
     struct PushConstant
     {
-        u32 depthSamplerIndex;
-        u32 sceneDepthIndex;
-
-        u32 outDepthMip0Index;
-        u32 outDepthMip1Index;
-        u32 outDepthMip2Index;
-        u32 outDepthMip3Index;
-        u32 outDepthMip4Index;
+        u32 samplerIndex;
+        u32 sourceEdgesIndex;
+        u32 sourceAOIndex;
+        u32 outAOIndex;
+        u32 finalApply;
     };
 }
 

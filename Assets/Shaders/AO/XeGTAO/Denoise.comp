@@ -33,8 +33,7 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-vec4 XeGTAO_UnpackEdges(float _packedVal);
-vec4 XeGTAO_DecodeGatherPartial(uvec4 packedValue);
+vec4 XeGTAO_UnpackEdges(float packedVal);
 void XeGTAO_AddSample(float ssaoValue, float edgeValue, inout float sum, inout float sumWeight);
 void XeGTAO_Output(ivec2 pixelCoord, float outputValue);
 
@@ -43,7 +42,7 @@ void main()
     vec2  viewportPixelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.SourceEdgesIndex], Samplers[Constants.SamplerIndex]), 0));
     ivec2 pixelCoordBase    = ivec2(gl_GlobalInvocationID.xy) * ivec2(2, 1);
 
-    float blurAmount = (Constants.FinalApply == 1) ? Constants.DenoiseBlurBeta : Constants.DenoiseBlurBeta / 5.0f;
+    float blurAmount = (Constants.FinalApply == 1) ? XE_GTAO_DENOISE_BLUR_BETA : XE_GTAO_DENOISE_BLUR_BETA / 5.0f;
     float diagWeight = 0.85f * 0.5f; // Rachit's Note: Magic constants, YAY
 
     // gather edge and visibility quads, used later
@@ -52,10 +51,10 @@ void main()
     vec4 edgesQ1      = textureGatherOffset(sampler2D(Textures[Constants.SourceEdgesIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(2, 0));
     vec4 edgesQ2      = textureGatherOffset(sampler2D(Textures[Constants.SourceEdgesIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(1, 2));
 
-    vec4 visQ0 = XeGTAO_DecodeGatherPartial(textureGatherOffset(usampler2D(UTextures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(0, 0)));
-    vec4 visQ1 = XeGTAO_DecodeGatherPartial(textureGatherOffset(usampler2D(UTextures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(2, 0)));
-    vec4 visQ2 = XeGTAO_DecodeGatherPartial(textureGatherOffset(usampler2D(UTextures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(0, 2)));
-    vec4 visQ3 = XeGTAO_DecodeGatherPartial(textureGatherOffset(usampler2D(UTextures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(2, 2)));
+    vec4 visQ0 = textureGatherOffset(sampler2D(Textures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(0, 0));
+    vec4 visQ1 = textureGatherOffset(sampler2D(Textures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(2, 0));
+    vec4 visQ2 = textureGatherOffset(sampler2D(Textures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(0, 2));
+    vec4 visQ3 = textureGatherOffset(sampler2D(Textures[Constants.SourceAOIndex], Samplers[Constants.SamplerIndex]), gatherCenter, ivec2(2, 2));
 
     vec2 aoTerm;         // Pixel pixelCoordBase and Pixel pixelCoordBase + ivec2(1, 0)
     vec4 edgesC_LRTB[2];
@@ -122,30 +121,18 @@ void main()
     }
 }
 
-vec4 XeGTAO_UnpackEdges(float _packedVal)
+vec4 XeGTAO_UnpackEdges(float packedVal)
 {
-    uint packedVal = uint(_packedVal * 255.5f);
+    uint packedValUint = uint(packedVal * 255.5f);
     vec4 edgesLRTB;
 
     // there's really no need for mask (as it's an 8 bit input) but I'll leave it in so it doesn't cause any trouble in the future
-    edgesLRTB.x = float((packedVal >> 6) & 0x03) / 3.0f;
-    edgesLRTB.y = float((packedVal >> 4) & 0x03) / 3.0f;
-    edgesLRTB.z = float((packedVal >> 2) & 0x03) / 3.0f;
-    edgesLRTB.w = float((packedVal >> 0) & 0x03) / 3.0f;
+    edgesLRTB.x = float((packedValUint >> 6) & 0x03) / 3.0f;
+    edgesLRTB.y = float((packedValUint >> 4) & 0x03) / 3.0f;
+    edgesLRTB.z = float((packedValUint >> 2) & 0x03) / 3.0f;
+    edgesLRTB.w = float((packedValUint >> 0) & 0x03) / 3.0f;
 
     return saturate(edgesLRTB);
-}
-
-vec4 XeGTAO_DecodeGatherPartial(uvec4 packedValue)
-{
-    vec4 outDecoded;
-
-    for (uint i = 0; i < 4; ++i)
-    {
-        outDecoded[i] = float(packedValue[i]) / 255.0f;
-    }
-
-    return outDecoded;
 }
 
 void XeGTAO_AddSample(float ssaoValue, float edgeValue, inout float sum, inout float sumWeight)
@@ -160,5 +147,5 @@ void XeGTAO_Output(ivec2 pixelCoord, float outputValue)
 {
     outputValue *= (Constants.FinalApply == 1) ? XE_GTAO_OCCLUSION_TERM_SCALE : 1.0f;
 
-    imageStore(UImages[Constants.OutAOIndex], pixelCoord, uvec4(uint(outputValue * 255.0f + 0.5f), 0.0f, 0.0f, 0.0f));
+    imageStore(Images[Constants.OutAOIndex], pixelCoord, vec4(outputValue + (0.5f / 255.0f), 0.0f, 0.0f, 0.0f));
 }

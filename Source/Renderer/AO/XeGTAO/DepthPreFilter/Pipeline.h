@@ -19,7 +19,6 @@
 
 #include "Constants.h"
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 

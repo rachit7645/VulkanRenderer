@@ -24,7 +24,8 @@
 #define CSM_ENABLE_PCF               1
 
 // Math constants
-const float PI = 3.1415926535897932384626433832795;
+const float PI      = 3.1415926535897932384626433832795;
+const float HALF_PI = 1.5707963267948966192313216916398;
 
 // Float bounds
 const float FLOAT_MIN = 1.175494351e-38;
@@ -68,12 +69,28 @@ const int   GAUSSIAN_FILTER_SIZE                           = 2; // p = 2 * r + 1
 const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0.24477, 0.38774, 0.24477, 0.06136);
 
 // XeGTAO Constants
-const float XE_GTAO_OCCLUSION_TERM_SCALE = 1.5f;
-const float XE_GTAO_LEAK_THRESHOLD       = 2.5f;
-const float XE_GTAO_LEAK_STRENGTH        = 0.5f;
-const uint  XE_GTAO_SLICE_COUNT          = 3;
-const uint  XE_GTAO_STEPS                = 3;
-const uint  XE_GTAO_DEPTH_MIP_LEVELS     = 5;
-const uint  XE_GTAO_HILBERT_LEVEL        = 6;
-const uint  XE_GTAO_HILBERT_WIDTH        = 1u << XE_GTAO_HILBERT_LEVEL;
+
+// Setting | Slices | Steps
+// Low     | 1      | 2
+// Medium  | 2      | 2
+// High    | 3      | 3
+// Ultra   | 9      | 3
+const uint XE_GTAO_SLICE_COUNT = 2;
+const uint XE_GTAO_STEPS       = 2;
+
+const float XE_GTAO_DEFAULT_RADIUS                     = 0.5f;
+const float XE_GTAO_DEFAULT_RADIUS_MULTIPLIER          = 1.457f;
+const float XE_GTAO_DEFAULT_FALLOFF_RANGE              = 0.615f;
+const float XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER  = 2.0f;
+const float XE_GTAO_DEFAULT_FINAL_VALUE_POWER          = 2.2f;
+const float XE_GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET  = 3.30f;
+const float XE_GTAO_OCCLUSION_TERM_SCALE               = 1.5f;
+
+const float XE_GTAO_LEAK_THRESHOLD = 2.5f;
+const float XE_GTAO_LEAK_STRENGTH  = 0.5f;
+
+const uint  XE_GTAO_DEPTH_MIP_LEVELS  = 5;
+const uint  XE_GTAO_HILBERT_LEVEL     = 6;
+const uint  XE_GTAO_HILBERT_WIDTH     = 1u << XE_GTAO_HILBERT_LEVEL;
+const float XE_GTAO_DENOISE_BLUR_BETA = 1.2f;
 #endif

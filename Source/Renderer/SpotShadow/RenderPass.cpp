@@ -52,8 +52,8 @@ namespace Renderer::SpotShadow
         (
             "SpotShadowMap",
             Vk::FramebufferType::Depth,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
                 .width       = SHADOW_DIMENSIONS.x,
                 .height      = SHADOW_DIMENSIONS.y,
@@ -66,7 +66,7 @@ namespace Renderer::SpotShadow
         (
             "SpotShadowMap",
             "SpotShadowMapView",
-            Vk::ImageType::Array2D,
+            Vk::FramebufferImageType::Array2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -81,7 +81,7 @@ namespace Renderer::SpotShadow
             (
                 "SpotShadowMap",
                 fmt::format("SpotShadowMapView/{}", i),
-                Vk::ImageType::Single2D,
+                Vk::FramebufferImageType::Single2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = 0,
                     .levelCount     = 1,
@@ -126,7 +126,7 @@ namespace Renderer::SpotShadow
         std::vector<glm::mat4> matrices = {};
         matrices.reserve(lights.size());
 
-        const glm::mat4 projection = glm::perspective
+        const glm::mat4 projection = glm::perspectiveRH_ZO
         (
             glm::radians(90.0f),
             1.0f,

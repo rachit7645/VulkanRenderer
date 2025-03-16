@@ -46,9 +46,9 @@ namespace Renderer::ShadowRT
         framebufferManager.AddFramebuffer
         (
             "ShadowRT",
-            Vk::FramebufferType::ColorR,
-            Vk::ImageType::Single2D,
-            true,
+            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -65,7 +65,7 @@ namespace Renderer::ShadowRT
         (
             "ShadowRT",
             "ShadowRTView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,

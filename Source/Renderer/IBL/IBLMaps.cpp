@@ -220,7 +220,7 @@ namespace Renderer::IBL
 
     Vk::Buffer IBLMaps::SetupMatrixBuffer(const Vk::Context& context)
     {
-        const auto projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+        const auto projection = glm::perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
         const std::array matrices =
         {

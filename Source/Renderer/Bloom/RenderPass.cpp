@@ -49,8 +49,8 @@ namespace Renderer::Bloom
         (
             "Bloom",
             Vk::FramebufferType::ColorHDR,
-            Vk::ImageType::Array2D,
-            false,
+            Vk::FramebufferImageType::Array2D,
+            Vk::FramebufferUsage::Sampled,
             [device = context.device] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews("Bloom", device);
@@ -69,7 +69,7 @@ namespace Renderer::Bloom
                     (
                         "Bloom",
                         fmt::format("BloomView/{}", mipLevel),
-                        Vk::ImageType::Single2D,
+                        Vk::FramebufferImageType::Single2D,
                         {
                             .baseMipLevel   = mipLevel,
                             .levelCount     = 1,

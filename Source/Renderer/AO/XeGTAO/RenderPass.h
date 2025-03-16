@@ -19,6 +19,7 @@
 
 #include "DepthPreFilter/Pipeline.h"
 #include "Occlusion/Pipeline.h"
+#include "Denoise/Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
@@ -45,7 +46,6 @@ namespace Renderer::AO::XeGTAO
         (
             usize FIF,
             usize frameIndex,
-            const Renderer::Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Buffers::SceneBuffer& sceneBuffer
@@ -55,6 +55,7 @@ namespace Renderer::AO::XeGTAO
 
         DepthPreFilter::Pipeline depthPreFilterPipeline;
         Occlusion::Pipeline      occlusionPipeline;
+        Denoise::Pipeline        denoisePipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
@@ -63,7 +64,6 @@ namespace Renderer::AO::XeGTAO
         void PreFilterDepth
         (
             const Vk::CommandBuffer& cmdBuffer,
-            const Renderer::Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet
         );
@@ -73,19 +73,17 @@ namespace Renderer::AO::XeGTAO
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
-            const Renderer::Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Buffers::SceneBuffer& sceneBuffer
         );
 
-        f32 m_effectRadius             = 0.5f;
-        f32 m_effectFalloffRange       = 0.615f;
-        f32 m_radiusMultiplier         = 1.457f;
-        f32 m_sampleDistributionPower  = 2.0f;
-        f32 m_thinOccluderCompensation = 0.0f;
-        f32 m_depthMIPSamplingOffset   = 3.3f;
-        f32 m_finalValuePower          = 2.2f;
+        void Denoise
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet
+        );
     };
 }
 

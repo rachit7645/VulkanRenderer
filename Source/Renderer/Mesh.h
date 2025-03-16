@@ -24,8 +24,8 @@ namespace Renderer
 {
     struct Mesh
     {
-        glm::mat4        transform    = glm::identity<glm::mat4>();;
-        glm::mat3        normalMatrix = glm::identity<glm::mat4>();;
+        glm::mat4        transform    = glm::identity<glm::mat4>();
+        glm::mat3        normalMatrix = glm::identity<glm::mat4>();
         Models::Material material     = {};
         Maths::AABB      aabb         = {};
     };

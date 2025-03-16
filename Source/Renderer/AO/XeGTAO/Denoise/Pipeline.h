@@ -14,25 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef DEPTH_PREFILTER_CONSTANTS_H
-#define DEPTH_PREFILTER_CONSTANTS_H
+#ifndef XE_GTAO_DENOISE_PIPELINE_H
+#define XE_GTAO_DENOISE_PIPELINE_H
 
-#include <vulkan/vulkan.h>
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/TextureManager.h"
 
-#include "Util/Util.h"
-
-namespace Renderer::AO::XeGTAO::DepthPreFilter
+namespace Renderer::AO::XeGTAO::Denoise
 {
-    struct PushConstant
+    class Pipeline : public Vk::Pipeline
     {
-        u32 depthSamplerIndex;
-        u32 sceneDepthIndex;
+    public:
+        Pipeline
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
 
-        u32 outDepthMip0Index;
-        u32 outDepthMip1Index;
-        u32 outDepthMip2Index;
-        u32 outDepthMip3Index;
-        u32 outDepthMip4Index;
+        Denoise::PushConstant pushConstant = {};
+
+        u32 samplerIndex = 0;
     };
 }
 

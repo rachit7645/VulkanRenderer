@@ -45,8 +45,8 @@ namespace Renderer::Depth
         (
             "SceneDepth",
             Vk::FramebufferType::Depth,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -63,7 +63,7 @@ namespace Renderer::Depth
         (
             "SceneDepth",
             "SceneDepthView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,

@@ -51,8 +51,8 @@ namespace Renderer::GBuffer
         (
             "GAlbedo",
             Vk::FramebufferType::ColorHDR,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -69,8 +69,8 @@ namespace Renderer::GBuffer
         (
             "GNormal_Rgh_Mtl",
             Vk::FramebufferType::ColorLDR,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -87,8 +87,8 @@ namespace Renderer::GBuffer
         (
             "MotionVectors",
             Vk::FramebufferType::ColorRG_Float,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -105,7 +105,7 @@ namespace Renderer::GBuffer
         (
             "GAlbedo",
             "GAlbedoView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -118,7 +118,7 @@ namespace Renderer::GBuffer
         (
             "GNormal_Rgh_Mtl",
             "GNormal_Rgh_Mtl_View",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -131,7 +131,7 @@ namespace Renderer::GBuffer
         (
             "MotionVectors",
             "MotionVectorsView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,

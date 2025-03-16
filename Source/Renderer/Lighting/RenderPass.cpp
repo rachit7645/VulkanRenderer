@@ -51,8 +51,8 @@ namespace Renderer::Lighting
         (
             "SceneColor",
             Vk::FramebufferType::ColorHDR,
-            Vk::ImageType::Single2D,
-            false,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -69,7 +69,7 @@ namespace Renderer::Lighting
         (
             "SceneColor",
             "SceneColorView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -197,7 +197,7 @@ namespace Renderer::Lighting
             .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
             .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
             .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
-            .aoIndex                 = framebufferManager.GetFramebufferView("OcclusionBlurVerticalView").sampledImageIndex,
+            .aoIndex                 = framebufferManager.GetFramebufferView("XeGTAO/OcclusionView").sampledImageIndex,
         };
 
         pipeline.PushConstants
@@ -205,7 +205,7 @@ namespace Renderer::Lighting
             currentCmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(Lighting::PushConstant),
-            reinterpret_cast<void*>(&pipeline.pushConstant)
+            &pipeline.pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

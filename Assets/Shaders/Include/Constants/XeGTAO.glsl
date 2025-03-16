@@ -33,16 +33,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint OutWorkingAOIndex;
 
     uint TemporalIndex;
-    vec2 NDCToViewMul;
-    vec2 NDCToViewAdd;
-
-    float EffectRadius;
-    float EffectFalloffRange;
-    float RadiusMultiplier;
-    float SampleDistributionPower;
-    float ThinOccluderCompensation;
-    float DepthMIPSamplingOffset;
-    float FinalValuePower;
 } Constants;
 
 #endif

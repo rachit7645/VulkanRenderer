@@ -134,20 +134,6 @@ namespace Vk
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
 
-        depthStencilFormat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array
-            {
-                VK_FORMAT_D24_UNORM_S8_UINT,
-                VK_FORMAT_D32_SFLOAT_S8_UINT,
-                VK_FORMAT_D16_UNORM_S8_UINT
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-
         rNormFormat = FindSupportedFormat
         (
             physicalDevice,
@@ -165,13 +151,13 @@ namespace Vk
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
 
-        rU8Format = FindSupportedFormat
+        r8NormFormat = FindSupportedFormat
         (
             physicalDevice,
             std::array
             {
-                VK_FORMAT_R8_UINT,
-                VK_FORMAT_R8_SINT
+                VK_FORMAT_R8_UNORM,
+                VK_FORMAT_R8_SNORM
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
@@ -194,30 +180,13 @@ namespace Vk
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
 
-        rgNormFormat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array
-            {
-                VK_FORMAT_R16G16_UNORM,
-                VK_FORMAT_R16G16_SNORM,
-                VK_FORMAT_R8G8_UNORM,
-                VK_FORMAT_R8G8_SNORM
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
         rgFloatFormat = FindSupportedFormat
         (
             physicalDevice,
             std::array
             {
                 VK_FORMAT_R16G16_SFLOAT,
-                VK_FORMAT_R32G32_SFLOAT,
-                VK_FORMAT_B10G11R11_UFLOAT_PACK32
+                VK_FORMAT_R32G32_SFLOAT
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |

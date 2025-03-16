@@ -27,13 +27,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint OutDepthMip2Index;
     uint OutDepthMip3Index;
     uint OutDepthMip4Index;
-
-    float DepthLinearizeMul;
-    float DepthLinearizeAdd;
-
-    float EffectRadius;
-    float EffectFalloffRange;
-    float RadiusMultiplier;
 } Constants;
 
 #endif

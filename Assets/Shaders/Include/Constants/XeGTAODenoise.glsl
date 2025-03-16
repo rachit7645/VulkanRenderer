@@ -20,13 +20,10 @@
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
     uint SamplerIndex;
-
     uint SourceEdgesIndex;
     uint SourceAOIndex;
     uint OutAOIndex;
-
-    uint  FinalApply;
-    float DenoiseBlurBeta;
+    uint FinalApply;
 } Constants;
 
 #endif

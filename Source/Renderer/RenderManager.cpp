@@ -35,11 +35,11 @@ namespace Renderer
           m_depthPass(m_context, m_formatHelper, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
-          m_bloomPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),          m_pointShadowPass(m_context, m_formatHelper, m_framebufferManager),
+          m_bloomPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_pointShadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_spotShadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_ssaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_xegtaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowRTPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
@@ -60,7 +60,6 @@ namespace Renderer
             m_taaPass.Destroy(m_context.device, m_context.commandPool);
             m_shadowRTPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_xegtaoPass.Destroy(m_context.device, m_context.commandPool);
-            m_ssaoPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
             m_lightingPass.Destroy(m_context.device, m_context.commandPool);
             m_gBufferPass.Destroy(m_context.device, m_context.commandPool);
             m_spotShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
@@ -274,19 +273,10 @@ namespace Renderer
             m_indirectBuffer
         );
 
-        m_ssaoPass.Render
-        (
-            m_currentFIF,
-            m_framebufferManager,
-            m_megaSet,
-            m_sceneBuffer
-        );
-
         m_xegtaoPass.Render
         (
             m_currentFIF,
             m_frameIndex,
-            m_scene,
             m_framebufferManager,
             m_megaSet,
             m_sceneBuffer
@@ -551,8 +541,8 @@ namespace Renderer
             m_camera.FOV,
             static_cast<f32>(m_swapchain.extent.width) /
             static_cast<f32>(m_swapchain.extent.height),
-            PLANES.x,
-            PLANES.y
+            Renderer::NEAR_PLANE,
+            Renderer::FAR_PLANE
         );
 
         auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
@@ -578,8 +568,8 @@ namespace Renderer
             .cameraPos          = m_camera.position
         };
 
-        m_scene.nearPlane   = Renderer::PLANES.x;
-        m_scene.farPlane    = Renderer::PLANES.y;
+        m_scene.nearPlane   = Renderer::NEAR_PLANE;
+        m_scene.farPlane    = Renderer::FAR_PLANE;
         m_scene.dirLights   = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
         m_scene.pointLights = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset();
         m_scene.spotLights  = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset();
@@ -702,13 +692,6 @@ namespace Renderer
                 .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
                 .pNext         = nullptr,
                 .commandBuffer = m_gBufferPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_ssaoPass.cmdBuffers[m_currentFIF].handle,
                 .deviceMask    = 1
             },
             VkCommandBufferSubmitInfo

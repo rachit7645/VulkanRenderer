@@ -28,11 +28,12 @@ namespace Renderer
     // Default field of view
     constexpr f32 DEFAULT_FOV = glm::radians(80.0f);
     // Near and far plane
-    constexpr glm::vec2 PLANES = {0.1f, 512.0f};
+    constexpr f32 NEAR_PLANE = 0.1f;
+    constexpr f32 FAR_PLANE  = 512.0f;
     // World Up direction
     constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
     // TAA Jitter Samples
-    constexpr usize JITTER_SAMPLE_COUNT = 64; // Needs to be 64 for XeGTAO
+    constexpr usize JITTER_SAMPLE_COUNT = 64;
     constexpr auto  JITTER_SAMPLES      = Maths::GenerateHaltonSequence<JITTER_SAMPLE_COUNT>();
 }
 

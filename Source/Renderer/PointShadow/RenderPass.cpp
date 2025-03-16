@@ -49,8 +49,8 @@ namespace Renderer::PointShadow
         (
             "PointShadowMap",
             Vk::FramebufferType::Depth,
-            Vk::ImageType::ArrayCube,
-            false,
+            Vk::FramebufferImageType::ArrayCube,
+            Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
                 .width       = POINT_SHADOW_DIMENSIONS.x,
                 .height      = POINT_SHADOW_DIMENSIONS.y,
@@ -63,7 +63,7 @@ namespace Renderer::PointShadow
         (
             "PointShadowMap",
             "PointShadowMapView",
-            Vk::ImageType::ArrayCube,
+            Vk::FramebufferImageType::ArrayCube,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -80,7 +80,7 @@ namespace Renderer::PointShadow
                 (
                     "PointShadowMap",
                     fmt::format("PointShadowMapView/Light{}/{}", i, j),
-                    Vk::ImageType::Single2D,
+                    Vk::FramebufferImageType::Single2D,
                     Vk::FramebufferViewSize{
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -117,7 +117,7 @@ namespace Renderer::PointShadow
         std::vector<PointShadow::PointShadowData> pointShadowData;
         pointShadowData.resize(lights.size());
 
-        const auto projection = glm::perspective
+        const auto projection = glm::perspectiveRH_ZO
         (
             glm::radians(90.0f),
             static_cast<f32>(POINT_SHADOW_DIMENSIONS.x) / static_cast<f32>(POINT_SHADOW_DIMENSIONS.y),

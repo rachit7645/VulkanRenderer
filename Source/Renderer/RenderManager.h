@@ -35,7 +35,6 @@
 #include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "AO/SSAO/RenderPass.h"
 #include "AO/XeGTAO/RenderPass.h"
 #include "ShadowRT/RenderPass.h"
 #include "TAA/RenderPass.h"
@@ -104,7 +103,6 @@ namespace Renderer
         SpotShadow::RenderPass  m_spotShadowPass;
         GBuffer::RenderPass     m_gBufferPass;
         Lighting::RenderPass    m_lightingPass;
-        AO::SSAO::RenderPass    m_ssaoPass;
         AO::XeGTAO::RenderPass  m_xegtaoPass;
         ShadowRT::RenderPass    m_shadowRTPass;
         TAA::RenderPass         m_taaPass;

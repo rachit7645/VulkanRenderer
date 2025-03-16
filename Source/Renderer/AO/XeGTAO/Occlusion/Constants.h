@@ -37,17 +37,7 @@ namespace Renderer::AO::XeGTAO::Occlusion
         u32 outWorkingEdges;
         u32 outWorkingAOIndex;
 
-        u32       temporalIndex;
-        glm::vec2 ndcToViewMul;
-        glm::vec2 ndcToViewAdd;
-
-        f32 effectRadius;
-        f32 effectFalloffRange;
-        f32 radiusMultiplier;
-        f32 sampleDistributionPower;
-        f32 thinOccluderCompensation;
-        f32 depthMIPSamplingOffset;
-        f32 finalValuePower;
+        u32 temporalIndex;
     };
 }
 

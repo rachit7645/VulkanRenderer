@@ -16,18 +16,21 @@
 
 #include "RenderPass.h"
 
+#include <Renderer/RenderConstants.h>
+
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Maths.h"
 
 namespace Renderer::AO::XeGTAO
 {
-    // Must match the value in Constants.glsl
-    constexpr u32        XE_GTAO_DEPTH_MIP_LEVELS        = 5;
-    constexpr u32        XE_GTAO_HILBERT_LEVEL           = 6;
-    constexpr u32        XE_GTAO_HILBERT_WIDTH           = 1u << XE_GTAO_HILBERT_LEVEL;
-    constexpr u32        XE_GTA0_WORKING_AO_HISTORY_SIZE = 2;
-    constexpr glm::uvec2 XE_GTAO_NUM_THREADS             = {8, 8};
+    constexpr u32   XE_GTAO_DEPTH_MIP_LEVELS        = 5;
+    constexpr u32   XE_GTAO_HILBERT_LEVEL           = 6;                           // Must match the value in Constants.glsl
+    constexpr u32   XE_GTAO_HILBERT_WIDTH           = 1u << XE_GTAO_HILBERT_LEVEL; // Must match the value in Constants.glsl
+    constexpr usize XE_GTA0_DENOISE_PASS_COUNT      = 1;                           // Must be at least 1
+    constexpr u32   XE_GTA0_WORKING_AO_HISTORY_SIZE = (XE_GTA0_DENOISE_PASS_COUNT == 1) ? 1 : 2;
+
+    constexpr glm::uvec2 XE_GTAO_NUM_THREADS = {8, 8};
 
     RenderPass::RenderPass
     (
@@ -38,7 +41,8 @@ namespace Renderer::AO::XeGTAO
         Vk::TextureManager& textureManager
     )
         : depthPreFilterPipeline(context, megaSet, textureManager),
-          occlusionPipeline(context, megaSet, textureManager)
+          occlusionPipeline(context, megaSet, textureManager),
+          denoisePipeline(context, megaSet, textureManager)
     {
         for (usize i = 0; i < cmdBuffers.size(); ++i)
         {
@@ -56,8 +60,8 @@ namespace Renderer::AO::XeGTAO
         (
             "XeGTAO/DepthMipChain",
             Vk::FramebufferType::Depth,
-            Vk::ImageType::Single2D,
-            true,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -74,7 +78,7 @@ namespace Renderer::AO::XeGTAO
         (
             "XeGTAO/DepthMipChain",
             "XeGTAO/DepthMipChainView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = XE_GTAO_DEPTH_MIP_LEVELS,
@@ -89,7 +93,7 @@ namespace Renderer::AO::XeGTAO
             (
                 "XeGTAO/DepthMipChain",
                 fmt::format("XeGTAO/DepthMipChainView/Mip{}", i),
-                Vk::ImageType::Single2D,
+                Vk::FramebufferImageType::Single2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = i,
                     .levelCount     = 1,
@@ -102,9 +106,9 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/Edges",
-            Vk::FramebufferType::ColorR,
-            Vk::ImageType::Single2D,
-            true,
+            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -121,7 +125,7 @@ namespace Renderer::AO::XeGTAO
         (
             "XeGTAO/Edges",
             "XeGTAO/EdgesView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -133,9 +137,9 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/WorkingAO",
-            Vk::FramebufferType::ColorR_U8,
-            Vk::ImageType::Single2D,
-            true,
+            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -154,7 +158,7 @@ namespace Renderer::AO::XeGTAO
             (
                 "XeGTAO/WorkingAO",
                 fmt::format("XeGTAO/WorkingAOView/{}", i),
-                Vk::ImageType::Single2D,
+                Vk::FramebufferImageType::Single2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = 0,
                     .levelCount     = 1,
@@ -167,9 +171,9 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/Occlusion",
-            Vk::FramebufferType::ColorR_U8,
-            Vk::ImageType::Single2D,
-            true,
+            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
                 return
@@ -186,7 +190,7 @@ namespace Renderer::AO::XeGTAO
         (
             "XeGTAO/Occlusion",
             "XeGTAO/OcclusionView",
-            Vk::ImageType::Single2D,
+            Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -214,7 +218,6 @@ namespace Renderer::AO::XeGTAO
     (
         usize FIF,
         usize frameIndex,
-        const Renderer::Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Buffers::SceneBuffer& sceneBuffer
@@ -230,7 +233,6 @@ namespace Renderer::AO::XeGTAO
         PreFilterDepth
         (
             currentCmdBuffer,
-            scene,
             framebufferManager,
             megaSet
         );
@@ -240,10 +242,16 @@ namespace Renderer::AO::XeGTAO
             FIF,
             frameIndex,
             currentCmdBuffer,
-            scene,
             framebufferManager,
             megaSet,
             sceneBuffer
+        );
+
+        Denoise
+        (
+            currentCmdBuffer,
+            framebufferManager,
+            megaSet
         );
 
         Vk::EndLabel(currentCmdBuffer);
@@ -254,7 +262,6 @@ namespace Renderer::AO::XeGTAO
     void RenderPass::PreFilterDepth
     (
         const Vk::CommandBuffer& cmdBuffer,
-        const Renderer::Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
     )
@@ -285,18 +292,13 @@ namespace Renderer::AO::XeGTAO
 
         depthPreFilterPipeline.pushConstant =
         {
-            .depthSamplerIndex  = depthPreFilterPipeline.samplerIndex,
-            .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .outDepthMip0Index  = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip0").storageImageIndex,
-            .outDepthMip1Index  = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip1").storageImageIndex,
-            .outDepthMip2Index  = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip2").storageImageIndex,
-            .outDepthMip3Index  = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip3").storageImageIndex,
-            .outDepthMip4Index  = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip4").storageImageIndex,
-            .depthLinearizeMul  = -scene.currentMatrices.projection[3][2],
-            .depthLinearizeAdd  = scene.currentMatrices.projection[2][2],
-            .effectRadius       = m_effectRadius,
-            .effectFalloffRange = m_effectFalloffRange,
-            .radiusMultiplier   = m_radiusMultiplier
+            .depthSamplerIndex = depthPreFilterPipeline.samplerIndex,
+            .sceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .outDepthMip0Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip0").storageImageIndex,
+            .outDepthMip1Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip1").storageImageIndex,
+            .outDepthMip2Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip2").storageImageIndex,
+            .outDepthMip3Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip3").storageImageIndex,
+            .outDepthMip4Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip4").storageImageIndex,
         };
 
         depthPreFilterPipeline.PushConstants
@@ -344,7 +346,6 @@ namespace Renderer::AO::XeGTAO
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
-        const Renderer::Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Buffers::SceneBuffer& sceneBuffer
@@ -393,31 +394,16 @@ namespace Renderer::AO::XeGTAO
 
         occlusionPipeline.Bind(cmdBuffer);
 
-        const glm::vec2 cameraTanHalfFOV =
-        {
-            1.0f / scene.currentMatrices.projection[1][1],
-            1.0f / scene.currentMatrices.projection[0][0]
-        };
-
         occlusionPipeline.pushConstant =
         {
-            .scene                    = sceneBuffer.buffers[FIF].deviceAddress,
-            .samplerIndex             = occlusionPipeline.samplerIndex,
-            .hilbertLUTIndex          = hilbertLUT,
-            .gNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .viewSpaceDepthIndex      = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView").sampledImageIndex,
-            .outWorkingEdges          = framebufferManager.GetFramebufferView("XeGTAO/EdgesView").storageImageIndex,
-            .outWorkingAOIndex        = framebufferManager.GetFramebufferView("XeGTAO/WorkingAOView/0").storageImageIndex,
-            .temporalIndex            = static_cast<u32>(frameIndex % XE_GTAO_HILBERT_WIDTH),
-            .ndcToViewMul             = glm::vec2(cameraTanHalfFOV.x *  2.0f, cameraTanHalfFOV.y * -2.0f),
-            .ndcToViewAdd             = glm::vec2(cameraTanHalfFOV.x * -1.0f, cameraTanHalfFOV.y *  1.0f),
-            .effectRadius             = m_effectRadius,
-            .effectFalloffRange       = m_effectFalloffRange,
-            .radiusMultiplier         = m_radiusMultiplier,
-            .sampleDistributionPower  = m_sampleDistributionPower,
-            .thinOccluderCompensation = m_thinOccluderCompensation,
-            .depthMIPSamplingOffset   = m_depthMIPSamplingOffset,
-            .finalValuePower          = m_finalValuePower
+            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .samplerIndex        = occlusionPipeline.samplerIndex,
+            .hilbertLUTIndex     = hilbertLUT,
+            .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .viewSpaceDepthIndex = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView").sampledImageIndex,
+            .outWorkingEdges     = framebufferManager.GetFramebufferView("XeGTAO/EdgesView").storageImageIndex,
+            .outWorkingAOIndex   = framebufferManager.GetFramebufferView("XeGTAO/WorkingAOView/0").storageImageIndex,
+            .temporalIndex       = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT)
         };
 
         occlusionPipeline.PushConstants
@@ -478,12 +464,106 @@ namespace Renderer::AO::XeGTAO
         Vk::EndLabel(cmdBuffer);
     }
 
+    void RenderPass::Denoise
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));
+
+        const auto& workingAO = framebufferManager.GetFramebuffer("XeGTAO/WorkingAO");
+
+        denoisePipeline.Bind(cmdBuffer);
+
+        const std::array descriptorSets = {megaSet.descriptorSet};
+        denoisePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+        for (usize i = 1; i <= XE_GTA0_DENOISE_PASS_COUNT; ++i)
+        {
+            const bool finalApply = (i == XE_GTA0_DENOISE_PASS_COUNT);
+
+            const u32 previousIndex = (i + XE_GTA0_WORKING_AO_HISTORY_SIZE - 1) % XE_GTA0_WORKING_AO_HISTORY_SIZE;
+            const u32 currentIndex  = i % XE_GTA0_WORKING_AO_HISTORY_SIZE;
+
+            const auto& previousView = framebufferManager.GetFramebufferView(fmt::format("XeGTAO/WorkingAOView/{}", previousIndex));
+            const auto& currentView  = finalApply ? framebufferManager.GetFramebufferView("XeGTAO/OcclusionView") : framebufferManager.GetFramebufferView(fmt::format("XeGTAO/WorkingAOView/{}", currentIndex));
+
+            const auto& currentFramebuffer = finalApply ? framebufferManager.GetFramebuffer("XeGTAO/Occlusion") : workingAO;
+
+            currentFramebuffer.image.Barrier
+            (
+               cmdBuffer,
+               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+               VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+               VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               VK_IMAGE_LAYOUT_GENERAL,
+               {
+                   .aspectMask     = currentFramebuffer.image.aspect,
+                   .baseMipLevel   = 0,
+                   .levelCount     = currentFramebuffer.image.mipLevels,
+                   .baseArrayLayer = finalApply ? 0 : currentIndex,
+                   .layerCount     = finalApply ? currentFramebuffer.image.arrayLayers : 1
+               }
+            );
+
+            denoisePipeline.pushConstant =
+            {
+                .samplerIndex     = denoisePipeline.samplerIndex,
+                .sourceEdgesIndex = framebufferManager.GetFramebufferView("XeGTAO/EdgesView").sampledImageIndex,
+                .sourceAOIndex    = previousView.sampledImageIndex,
+                .outAOIndex       = currentView.storageImageIndex,
+                .finalApply       = finalApply ? 1u : 0
+            };
+
+            denoisePipeline.PushConstants
+            (
+                cmdBuffer,
+                VK_SHADER_STAGE_COMPUTE_BIT,
+                0, sizeof(Denoise::PushConstant),
+                &denoisePipeline.pushConstant
+            );
+
+            vkCmdDispatch
+            (
+                cmdBuffer.handle,
+                (workingAO.image.width  + XE_GTAO_NUM_THREADS.x - 1) / XE_GTAO_NUM_THREADS.x,
+                (workingAO.image.height + XE_GTAO_NUM_THREADS.y - 1) / XE_GTAO_NUM_THREADS.y,
+                1
+            );
+
+            currentFramebuffer.image.Barrier
+            (
+               cmdBuffer,
+               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+               VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+               VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+               VK_IMAGE_LAYOUT_GENERAL,
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               {
+                   .aspectMask     = currentFramebuffer.image.aspect,
+                   .baseMipLevel   = 0,
+                   .levelCount     = currentFramebuffer.image.mipLevels,
+                   .baseArrayLayer = finalApply ? 0 : currentIndex,
+                   .layerCount     = finalApply ? currentFramebuffer.image.arrayLayers : 1
+               }
+            );
+        }
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
     void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
     {
         Logger::Debug("{}\n", "Destroying XeGTAO pass!");
 
         depthPreFilterPipeline.Destroy(device);
         occlusionPipeline.Destroy(device);
+        denoisePipeline.Destroy(device);
 
         Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
     }

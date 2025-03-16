@@ -26,8 +26,8 @@ namespace Vk
     (
         const std::string_view name,
         FramebufferType type,
-        ImageType imageType,
-        bool isStorageImage,
+        FramebufferImageType imageType,
+        FramebufferUsage usage,
         const FramebufferSizeData& sizeData
     )
     {
@@ -37,11 +37,11 @@ namespace Vk
         }
 
         m_framebuffers.emplace(name, Framebuffer{
-            .type           = type,
-            .sizeData       = sizeData,
-            .imageType      = imageType,
-            .image          = {},
-            .isStorageImage = isStorageImage
+            .type      = type,
+            .sizeData  = sizeData,
+            .imageType = imageType,
+            .usage     = usage,
+            .image     = {},
         });
     }
 
@@ -49,7 +49,7 @@ namespace Vk
     (
         const std::string_view framebufferName,
         const std::string_view name,
-        ImageType imageType,
+        FramebufferImageType imageType,
         const FramebufferViewSize& size
     )
     {
@@ -125,90 +125,86 @@ namespace Vk
             {
             case FramebufferType::ColorR:
                 createInfo.format = formatHelper.rNormFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
-            case FramebufferType::ColorR_U8:
-                createInfo.format = formatHelper.rU8Format;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorRG:
-                createInfo.format = formatHelper.rgNormFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+            case FramebufferType::ColorR_Norm8:
+                createInfo.format = formatHelper.r8NormFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorRG_Float:
                 createInfo.format = formatHelper.rgFloatFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorLDR:
                 createInfo.format = formatHelper.colorAttachmentFormatLDR;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorHDR:
                 createInfo.format = formatHelper.colorAttachmentFormatHDR;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorHDR_WithAlpha:
                 createInfo.format = formatHelper.colorAttachmentFormatHDRWithAlpha;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::Depth:
                 createInfo.format = formatHelper.depthFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
-                break;
-
-            case FramebufferType::DepthStencil:
-                createInfo.format = formatHelper.depthStencilFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-                aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
                 break;
             }
 
             switch (framebuffer.imageType)
             {
-            case ImageType::Single2D:
+            case FramebufferImageType::Single2D:
                 createInfo.flags = 0;
                 break;
 
-            case ImageType::Array2D:
+            case FramebufferImageType::Array2D:
                 createInfo.flags = 0;
                 break;
 
-            case ImageType::Cube:
+            case FramebufferImageType::Cube:
                 createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
                 break;
 
-            case ImageType::ArrayCube:
+            case FramebufferImageType::ArrayCube:
                 createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
                 break;
             }
 
-            if (framebuffer.isStorageImage)
+            if ((framebuffer.usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
+            {
+                createInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+            }
+
+            if ((framebuffer.usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
             {
                 createInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+            }
+
+            if ((framebuffer.usage & FramebufferUsage::TransferDestination) == FramebufferUsage::TransferDestination)
+            {
+                createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             }
 
             framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
@@ -259,16 +255,16 @@ namespace Vk
 
             switch (framebufferView.type)
             {
-            case ImageType::Single2D:
+            case FramebufferImageType::Single2D:
                 viewType = VK_IMAGE_VIEW_TYPE_2D;
                 break;
-            case ImageType::Array2D:
+            case FramebufferImageType::Array2D:
                 viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
                 break;
-            case ImageType::Cube:
+            case FramebufferImageType::Cube:
                 viewType = VK_IMAGE_VIEW_TYPE_CUBE;
                 break;
-            case ImageType::ArrayCube:
+            case FramebufferImageType::ArrayCube:
                 viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
                 break;
             }
@@ -290,7 +286,7 @@ namespace Vk
 
             framebufferView.sampledImageIndex = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            if (framebuffer.isStorageImage)
+            if ((framebuffer.usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
             {
                 framebufferView.storageImageIndex = megaSet.WriteStorageImage(framebufferView.view);
             }
@@ -446,9 +442,9 @@ namespace Vk
         }
     }
 
-    bool FramebufferManager::IsViewable(ImageType imageType)
+    bool FramebufferManager::IsViewable(FramebufferImageType imageType)
     {
-        return imageType == ImageType::Single2D;
+        return imageType == FramebufferImageType::Single2D;
     }
 
     FramebufferSize FramebufferManager::GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData)

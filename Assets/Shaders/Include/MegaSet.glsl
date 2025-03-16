@@ -27,7 +27,6 @@ layout(set = 0, binding = 1) uniform textureCube      Cubemaps[];
 layout(set = 0, binding = 1) uniform texture2DArray   TextureArrays[];
 layout(set = 0, binding = 1) uniform textureCubeArray CubemapArrays[];
 
-layout(set = 0, binding = 2) uniform writeonly image2D  Images[];
-layout(set = 0, binding = 2) uniform writeonly uimage2D UImages[];
+layout(set = 0, binding = 2) uniform writeonly image2D Images[];
 
 #endif

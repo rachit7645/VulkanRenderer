@@ -25,6 +25,7 @@
 #include "ImageView.h"
 #include "FormatHelper.h"
 #include "MegaSet.h"
+#include "Util/Enum.h"
 
 namespace Vk
 {
@@ -33,22 +34,28 @@ namespace Vk
     enum class FramebufferType : u8
     {
         ColorR,
-        ColorR_U8,
-        ColorRG,
+        ColorR_Norm8,
         ColorRG_Float,
         ColorLDR,
         ColorHDR,
         ColorHDR_WithAlpha,
-        Depth,
-        DepthStencil
+        Depth
     };
 
-    enum class ImageType : u8
+    enum class FramebufferImageType : u8
     {
         Single2D,
         Array2D,
         Cube,
         ArrayCube
+    };
+
+    enum class FramebufferUsage : u8
+    {
+        None                = 0,
+        Sampled             = 1U << 0,
+        Storage             = 1U << 1,
+        TransferDestination = 1U << 2
     };
 
     struct FramebufferSize
@@ -82,12 +89,12 @@ namespace Vk
 
     struct FramebufferView
     {
-        std::string         framebuffer       = {};
-        u32                 sampledImageIndex = 0;
-        u32                 storageImageIndex = 0;
-        ImageType           type              = ImageType::Single2D;
-        FramebufferViewSize size              = {};
-        Vk::ImageView       view              = {};
+        std::string          framebuffer       = {};
+        u32                  sampledImageIndex = 0;
+        u32                  storageImageIndex = 0;
+        FramebufferImageType type              = FramebufferImageType::Single2D;
+        FramebufferViewSize  size              = {};
+        Vk::ImageView        view              = {};
     };
 
     using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&, FramebufferManager&)>;
@@ -95,11 +102,11 @@ namespace Vk
 
     struct Framebuffer
     {
-        FramebufferType     type           = FramebufferType::ColorLDR;
-        FramebufferSizeData sizeData       = {};
-        ImageType           imageType      = ImageType::Single2D;
-        Vk::Image           image          = {};
-        bool                isStorageImage = false;
+        FramebufferType      type      = FramebufferType::ColorLDR;
+        FramebufferSizeData  sizeData  = {};
+        FramebufferImageType imageType = FramebufferImageType::Single2D;
+        FramebufferUsage     usage     = FramebufferUsage::None;
+        Vk::Image            image     = {};
     };
 
     class FramebufferManager
@@ -109,8 +116,8 @@ namespace Vk
         (
             const std::string_view name,
             FramebufferType type,
-            ImageType imageType,
-            bool isStorageImage,
+            FramebufferImageType imageType,
+            FramebufferUsage usage,
             const FramebufferSizeData& sizeData
         );
 
@@ -118,7 +125,7 @@ namespace Vk
         (
             const std::string_view framebufferName,
             const std::string_view name,
-            ImageType imageType,
+            FramebufferImageType imageType,
             const FramebufferViewSize& size
         );
 
@@ -142,7 +149,7 @@ namespace Vk
 
         VkExtent2D swapchainExtent;
     private:
-        bool IsViewable(ImageType imageType);
+        bool IsViewable(FramebufferImageType imageType);
 
         FramebufferSize GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData);
 
