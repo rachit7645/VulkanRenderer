@@ -560,7 +560,7 @@ namespace Renderer
         m_scene.currentMatrices  =
         {
             .projection         = projection,
-            .inverseProjection  = glm::inverse(projection),
+            .inverseProjection  = glm::inverse(jitteredProjection),
             .jitteredProjection = jitteredProjection,
             .view               = view,
             .inverseView        = glm::inverse(view),
