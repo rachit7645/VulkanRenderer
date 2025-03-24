@@ -46,6 +46,7 @@ namespace Renderer::GBuffer
         void Render
         (
             usize FIF,
+            usize frameIndex,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,

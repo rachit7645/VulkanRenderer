@@ -18,6 +18,7 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Renderer/Depth/RenderPass.h"
 
 namespace Renderer::ShadowRT
 {
@@ -80,6 +81,7 @@ namespace Renderer::ShadowRT
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         VkDevice device,
         VmaAllocator allocator,
         const Vk::MegaSet& megaSet,
@@ -134,7 +136,7 @@ namespace Renderer::ShadowRT
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .gBufferSamplerIndex = pipeline.gBufferSamplerIndex,
             .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .sceneDepthIndex     = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
             .outputImage         = shadowMapView.storageImageIndex
         };
 

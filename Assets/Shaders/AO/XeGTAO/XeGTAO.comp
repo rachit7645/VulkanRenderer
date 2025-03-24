@@ -28,7 +28,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/XeGTAO.glsl"
+#include "Constants/AO/XeGTAO/XeGTAO.glsl"
 #include "Math.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
@@ -245,11 +245,7 @@ float XeGTAO_PackEdges(vec4 edgesLRTB)
 
 vec3 XeGTAO_ComputeViewspacePosition(vec2 uv, float depth)
 {
-    vec2 clipXY    = uv * 2.0f - 1.0f;
-    vec4 projected = Constants.Scene.currentMatrices.inverseProjection * vec4(clipXY, depth, 1.0f);
-    vec3 view      = projected.xyz / projected.w;
-
-    return view;
+    return GetViewPosition(Constants.Scene.currentMatrices, uv, depth);
 }
 
 // http://h14s.p5r.org/2012/09/0x5f3759df.html, [Drobot2014a] Low Level Optimizations for GCN, https://blog.selfshadow.com/publications/s2016-shading-course/activision/s2016_pbs_activision_occlusion.pdf slide 63

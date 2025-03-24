@@ -19,5 +19,4 @@
 * RT Global Illumination
 * Fog
 * Volumetric Lighting
-* Motion Vectors fix for meshes
 * Wait for frames in flight before framebuffer recreation

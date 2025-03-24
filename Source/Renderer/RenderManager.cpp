@@ -253,6 +253,7 @@ namespace Renderer
         m_depthPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_scene,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
@@ -265,6 +266,7 @@ namespace Renderer
         m_gBufferPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.geometryBuffer,
@@ -285,6 +287,7 @@ namespace Renderer
         m_shadowRTPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_context.device,
             m_context.allocator,
             m_megaSet,
@@ -297,6 +300,7 @@ namespace Renderer
         m_lightingPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_framebufferManager,
             m_megaSet,
             m_iblMaps,
@@ -308,6 +312,7 @@ namespace Renderer
         m_skyboxPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -381,6 +386,8 @@ namespace Renderer
                         m_megaSet,
                         m_modelManager.textureManager
                     );
+
+                    m_taaPass.ResetHistory();
                 }
 
                 ImGui::EndMenu();
@@ -560,14 +567,15 @@ namespace Renderer
         m_scene.currentMatrices  =
         {
             .projection         = projection,
-            .inverseProjection  = glm::inverse(jitteredProjection),
+            .inverseProjection  = glm::inverse(projection),
             .jitteredProjection = jitteredProjection,
             .view               = view,
             .inverseView        = glm::inverse(view),
             .normalView         = Maths::CreateNormalMatrix(view),
-            .cameraPos          = m_camera.position
+            .jitterOffset       = jitter
         };
 
+        m_scene.cameraPosition   = m_camera.position;
         m_scene.nearPlane   = Renderer::NEAR_PLANE;
         m_scene.farPlane    = Renderer::FAR_PLANE;
         m_scene.dirLights   = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
@@ -782,10 +790,27 @@ namespace Renderer
             return;
         }
 
+        std::vector<VkFence> fences;
+        fences.reserve(2 * Vk::FRAMES_IN_FLIGHT);
+
+        std::ranges::copy(m_swapchain.presentFences, std::back_inserter(fences));
+        std::ranges::copy(m_inFlightFences,          std::back_inserter(fences));
+
+        Vk::CheckResult(vkWaitForFences(
+            m_context.device,
+            fences.size(),
+            fences.data(),
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fences!"
+        );
+
         m_swapchain.RecreateSwapChain(m_context);
 
         m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
         m_megaSet.Update(m_context.device);
+
+        m_taaPass.ResetHistory();
 
         m_isSwapchainOk = true;
 

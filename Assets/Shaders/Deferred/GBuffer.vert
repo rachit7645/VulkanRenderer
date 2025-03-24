@@ -20,14 +20,13 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/GBuffer.glsl"
+#include "Constants/Deferred/GBuffer.glsl"
 #include "Material.glsl"
 
 layout(location = 0) out      vec4 currentPosition;
-layout(location = 1) out      vec4 previousPosition;
-layout(location = 2) out      vec2 fragTexCoords;
-layout(location = 3) out flat uint fragDrawID;
-layout(location = 4) out      mat3 fragTBNMatrix;
+layout(location = 1) out      vec2 fragTexCoords;
+layout(location = 2) out flat uint fragDrawID;
+layout(location = 3) out      mat3 fragTBNMatrix;
 
 void main()
 {
@@ -39,10 +38,8 @@ void main()
     vec4 worldPosition       = mesh.transform                       * vec4(position, 1.0f);
     vec4 currentViewPosition = Constants.Scene.currentMatrices.view * worldPosition;
 
-    currentPosition  = Constants.Scene.currentMatrices.projection  * currentViewPosition;
-    previousPosition = Constants.Scene.previousMatrices.projection * Constants.Scene.previousMatrices.view * worldPosition;
-
-    gl_Position = Constants.Scene.currentMatrices.jitteredProjection * currentViewPosition;
+    currentPosition = Constants.Scene.currentMatrices.projection         * currentViewPosition;
+    gl_Position     = Constants.Scene.currentMatrices.jitteredProjection * currentViewPosition;
 
     fragTexCoords = vertex.uv0;
     fragDrawID    = meshIndex;

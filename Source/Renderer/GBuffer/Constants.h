@@ -31,6 +31,8 @@ namespace Renderer::GBuffer
         VkDeviceAddress positions;
         VkDeviceAddress vertices;
         u32             textureSamplerIndex;
+        u32             depthSamplerIndex;
+        u32             previousDepthIndex;
     };
 }
 

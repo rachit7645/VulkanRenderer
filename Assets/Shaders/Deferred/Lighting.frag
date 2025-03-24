@@ -20,7 +20,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Lighting.glsl"
+#include "Constants/Deferred/Lighting.glsl"
 #include "Color.glsl"
 #include "PBR.glsl"
 #include "MegaSet.glsl"
@@ -40,13 +40,10 @@ void main()
     float roughness       = gNormal_Rgh_Mtl.b;
     float metallic        = gNormal_Rgh_Mtl.a;
 
-    vec4  gDepth            = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    float depth             = gDepth.r;
-    vec4  projectedPosition = Constants.Scene.currentMatrices.inverseProjection * vec4(fragUV * 2.0f - 1.0f, depth, 1.0f);
-    vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
-    vec3  worldPosition     = vec3(Constants.Scene.currentMatrices.inverseView * vec4(viewPosition, 1.0f));
+    float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
+    vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, fragUV, depth);
 
-    vec3 toCamera = normalize(Constants.Scene.currentMatrices.cameraPos - worldPosition);
+    vec3 toCamera = normalize(Constants.Scene.cameraPosition - worldPosition);
 
     vec3 F0 = mix(vec3(0.04f), albedo, metallic);
 
@@ -81,7 +78,7 @@ void main()
             i,
             worldPosition,
             light.position,
-            Constants.Scene.currentMatrices.cameraPos,
+            Constants.Scene.cameraPosition,
             Constants.PointShadows.pointShadowData[i],
             CubemapArrays[Constants.PointShadowMapIndex],
             Samplers[Constants.ShadowSamplerIndex]

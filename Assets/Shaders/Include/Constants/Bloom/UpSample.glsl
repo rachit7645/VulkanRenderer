@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef GAUSSIAN_BLUR_PUSH_CONSTANT
-#define GAUSSIAN_BLUR_PUSH_CONSTANT
+#ifndef UPSAMPLE_PUSH_CONSTANT
+#define UPSAMPLE_PUSH_CONSTANT
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    uint SamplerIndex;
-    uint ImageIndex;
+    uint  SamplerIndex;
+    uint  ImageIndex;
+    float FilterRadius;
 } Constants;
 
 #endif

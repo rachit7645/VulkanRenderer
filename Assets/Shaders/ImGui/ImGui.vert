@@ -20,7 +20,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/ImGui.glsl"
+#include "Constants/ImGui/ImGui.glsl"
 #include "Converter.glsl"
 
 layout(location = 0) out vec4 fragColor;

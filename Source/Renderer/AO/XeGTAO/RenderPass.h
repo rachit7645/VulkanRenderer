@@ -63,6 +63,7 @@ namespace Renderer::AO::XeGTAO
     private:
         void PreFilterDepth
         (
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet

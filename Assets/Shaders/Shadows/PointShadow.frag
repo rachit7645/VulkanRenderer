@@ -22,7 +22,7 @@
 
 layout(location = 0) in vec3 fragPosition;
 
-#include "Constants/PointShadow.glsl"
+#include "Constants/Shadows/PointShadow.glsl"
 
 void main()
 {

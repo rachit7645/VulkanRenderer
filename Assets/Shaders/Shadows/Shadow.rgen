@@ -21,7 +21,7 @@
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_ray_tracing          : enable
 
-#include "Constants/ShadowRT.glsl"
+#include "Constants/Shadows/ShadowRT.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
 #include "Constants.glsl"
@@ -37,11 +37,8 @@ void main()
     vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     vec3 normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
 
-    vec4  gDepth            = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
-    float depth             = gDepth.r;
-    vec4  projectedPosition = Constants.Scene.currentMatrices.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
-    vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
-    vec3  worldPosition     = vec3(Constants.Scene.currentMatrices.inverseView * vec4(viewPosition, 1.0f));
+    float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv).r;
+    vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
 
     vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
 

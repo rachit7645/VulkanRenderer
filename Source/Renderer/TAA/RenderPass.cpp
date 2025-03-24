@@ -20,7 +20,7 @@
 #include "Util/Maths.h"
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
-#include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::TAA
@@ -138,70 +138,75 @@ namespace Renderer::TAA
             {
                 if (ImGui::Button("Reset History"))
                 {
-                    const auto& history = framebufferManager.GetFramebuffer("TAABuffer");
-
-                    history.image.Barrier
-                    (
-                        currentCmdBuffer,
-                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                        VK_PIPELINE_STAGE_2_CLEAR_BIT,
-                        VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        {
-                            .aspectMask     = history.image.aspect,
-                            .baseMipLevel   = 0,
-                            .levelCount     = history.image.mipLevels,
-                            .baseArrayLayer = 0,
-                            .layerCount     = history.image.arrayLayers
-                        }
-                    );
-
-                    const VkClearColorValue clearColor = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
-
-                    const VkImageSubresourceRange subresourceRange =
-                    {
-                        .aspectMask     = history.image.aspect,
-                        .baseMipLevel   = 0,
-                        .levelCount     = history.image.mipLevels,
-                        .baseArrayLayer = 0,
-                        .layerCount     = history.image.arrayLayers
-                    };
-
-                    vkCmdClearColorImage
-                    (
-                        currentCmdBuffer.handle,
-                        history.image.handle,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        &clearColor,
-                        1,
-                        &subresourceRange
-                    );
-
-                    history.image.Barrier
-                    (
-                        currentCmdBuffer,
-                        VK_PIPELINE_STAGE_2_CLEAR_BIT,
-                        VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                        {
-                            .aspectMask     = history.image.aspect,
-                            .baseMipLevel   = 0,
-                            .levelCount     = history.image.mipLevels,
-                            .baseArrayLayer = 0,
-                            .layerCount     = history.image.arrayLayers
-                        }
-                    );
+                    m_hasToResetHistory = true;
                 }
 
                 ImGui::EndMenu();
             }
 
             ImGui::EndMainMenuBar();
+        }
+
+        if (m_hasToResetHistory)
+        {
+            const auto& history = framebufferManager.GetFramebuffer("TAABuffer");
+
+            history.image.Barrier
+            (
+                currentCmdBuffer,
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                {
+                    .aspectMask     = history.image.aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = history.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = history.image.arrayLayers
+                }
+            );
+
+            const VkClearColorValue clearColor = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
+
+            const VkImageSubresourceRange subresourceRange =
+            {
+                .aspectMask     = history.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = history.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = history.image.arrayLayers
+            };
+
+            vkCmdClearColorImage
+            (
+                currentCmdBuffer.handle,
+                history.image.handle,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                &clearColor,
+                1,
+                &subresourceRange
+            );
+
+            history.image.Barrier
+            (
+                currentCmdBuffer,
+                VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                {
+                    .aspectMask     = history.image.aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = history.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = history.image.arrayLayers
+                }
+            );
         }
 
         const usize currentIndex  = frameIndex                          % TAA_HISTORY_SIZE;
@@ -337,7 +342,7 @@ namespace Renderer::TAA
             .currentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
             .historyBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
             .velocityIndex      = framebufferManager.GetFramebufferView("MotionVectorsView").sampledImageIndex,
-            .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
+            .sceneDepthIndex    = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex
         };
 
         pipeline.PushConstants
@@ -401,6 +406,11 @@ namespace Renderer::TAA
         Vk::EndLabel(currentCmdBuffer);
 
         currentCmdBuffer.EndRecording();
+    }
+
+    void RenderPass::ResetHistory()
+    {
+        m_hasToResetHistory = true;
     }
 
     void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)

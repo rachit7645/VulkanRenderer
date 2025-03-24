@@ -28,6 +28,8 @@
 
 namespace Renderer::Depth
 {
+    constexpr usize DEPTH_HISTORY_SIZE = 2;
+
     class RenderPass
     {
     public:
@@ -43,6 +45,7 @@ namespace Renderer::Depth
         void Render
         (
             usize FIF,
+            usize frameIndex,
             const Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,

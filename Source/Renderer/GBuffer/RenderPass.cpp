@@ -21,6 +21,7 @@
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::GBuffer
@@ -146,6 +147,7 @@ namespace Renderer::GBuffer
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -161,10 +163,13 @@ namespace Renderer::GBuffer
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("GBufferPass/FIF{}", FIF), glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
+        const usize currentDepthIndex  = frameIndex % Depth::DEPTH_HISTORY_SIZE;
+        const usize previousDepthIndex = (frameIndex + Depth::DEPTH_HISTORY_SIZE - 1) % Depth::DEPTH_HISTORY_SIZE;
+
         const auto& gAlbedoView         = framebufferManager.GetFramebufferView("GAlbedoView");
         const auto& gNormalView         = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View");
         const auto& motionVectorsView   = framebufferManager.GetFramebufferView("MotionVectorsView");
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", currentDepthIndex));
 
         const auto& gAlbedo         = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
         const auto& gNormal         = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
@@ -330,7 +335,9 @@ namespace Renderer::GBuffer
             .visibleMeshes       = meshBuffer.visibilityBuffer.deviceAddress,
             .positions           = geometryBuffer.positionBuffer.deviceAddress,
             .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
-            .textureSamplerIndex = pipeline.textureSamplerIndex
+            .textureSamplerIndex = pipeline.textureSamplerIndex,
+            .depthSamplerIndex   = pipeline.depthSamplerIndex,
+            .previousDepthIndex  = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", previousDepthIndex)).sampledImageIndex
         };
 
         pipeline.PushConstants

@@ -14,21 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PUSH_CONSTANT
-#define GBUFFER_PUSH_CONSTANT
+#ifndef PREFILER_PUSH_CONSTANT
+#define PREFILER_PUSH_CONSTANT
 
-#include "Mesh.glsl"
-#include "Scene.glsl"
-#include "Vertex.glsl"
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
+{
+    vec3 positions[];
+};
+
+layout(buffer_reference, scalar) readonly buffer MatrixBuffer
+{
+    mat4 matrices[];
+};
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer       Scene;
-    MeshBuffer        Meshes;
-    VisibleMeshBuffer VisibleMeshes;
-    PositionBuffer    Positions;
-    VertexBuffer      Vertices;
-    uint              TextureSamplerIndex;
+    VertexBuffer Vertices;
+    MatrixBuffer Matrices;
+    uint         SamplerIndex;
+    uint         EnvMapIndex;
+    float        Roughness;
+    uint         SampleCount;
 } Constants;
 
 #endif

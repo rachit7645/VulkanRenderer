@@ -21,6 +21,7 @@
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Lighting
@@ -84,6 +85,7 @@ namespace Renderer::Lighting
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const IBL::IBLMaps& iblMaps,
@@ -190,7 +192,7 @@ namespace Renderer::Lighting
             .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
             .gAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
             .gNormalIndex            = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .sceneDepthIndex         = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
             .irradianceIndex         = iblMaps.irradianceID.value(),
             .preFilterIndex          = iblMaps.preFilterID.value(),
             .brdfLutIndex            = iblMaps.brdfLutID.value(),

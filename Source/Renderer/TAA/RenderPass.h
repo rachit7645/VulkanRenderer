@@ -48,9 +48,13 @@ namespace Renderer::TAA
             const Vk::MegaSet& megaSet
         );
 
+        void ResetHistory();
+
         TAA::Pipeline pipeline;
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
+    private:
+        bool m_hasToResetHistory = false;
     };
 }
 

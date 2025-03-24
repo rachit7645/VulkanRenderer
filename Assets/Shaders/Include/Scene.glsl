@@ -27,18 +27,43 @@ struct SceneMatrices
     mat4 view;
     mat4 inverseView;
     mat3 normalView;
-    vec3 cameraPos;
+    vec2 jitterOffset;
 };
 
 layout(buffer_reference, scalar) readonly buffer SceneBuffer
 {
     SceneMatrices    currentMatrices;
     SceneMatrices    previousMatrices;
+    vec3             cameraPosition;
     float            nearPlane;
     float            farPlane;
     DirLightBuffer   dirLights;
     PointLightBuffer pointLights;
     SpotLightBuffer  spotLights;
 };
+
+vec4 GetClipPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
+{
+    vec4 clipPosition     = vec4(screenUV * 2.0f - 1.0f, depth, 1.0f);
+         clipPosition.xy -= sceneMatrices.jitterOffset;
+
+    return clipPosition;
+}
+
+vec3 GetViewPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
+{
+    vec4 projectedPosition = sceneMatrices.inverseProjection * GetClipPosition(sceneMatrices, screenUV, depth);
+    vec3 viewPosition      = projectedPosition.xyz / projectedPosition.w;
+
+    return viewPosition;
+}
+
+vec3 GetWorldPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
+{
+    vec3 viewPosition  = GetViewPosition(sceneMatrices, screenUV, depth);
+    vec3 worldPosition = vec3(sceneMatrices.inverseView * vec4(viewPosition, 1.0f));
+
+    return worldPosition;
+}
 
 #endif

@@ -26,7 +26,6 @@
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
-#include "Renderer/Shadow/CascadeBuffer.h"
 #include "Renderer/PointShadow/PointShadowBuffer.h"
 #include "Renderer/SpotShadow/SpotShadowBuffer.h"
 
@@ -49,6 +48,7 @@ namespace Renderer::Lighting
         void Render
         (
             usize FIF,
+            usize frameIndex,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const IBL::IBLMaps& iblMaps,

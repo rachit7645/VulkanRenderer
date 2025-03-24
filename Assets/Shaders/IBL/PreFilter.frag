@@ -20,7 +20,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/PreFilter.glsl"
+#include "Constants/IBL/PreFilter.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
 #include "Sampling.glsl" 

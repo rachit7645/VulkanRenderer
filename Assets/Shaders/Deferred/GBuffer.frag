@@ -20,15 +20,14 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/GBuffer.glsl"
+#include "Constants/Deferred/GBuffer.glsl"
 #include "Packing.glsl"
 #include "MegaSet.glsl"
 
 layout(location = 0) in      vec4 currentPosition;
-layout(location = 1) in      vec4 previousPosition;
-layout(location = 2) in      vec2 fragTexCoords;
-layout(location = 3) in flat uint fragDrawID;
-layout(location = 4) in      mat3 fragTBNMatrix;
+layout(location = 1) in      vec2 fragTexCoords;
+layout(location = 2) in flat uint fragDrawID;
+layout(location = 3) in      mat3 fragTBNMatrix;
 
 layout(location = 0) out vec3 gAlbedo;
 layout(location = 1) out vec4 gNormal_Rgh_Mtl;
@@ -54,8 +53,14 @@ void main()
     gNormal_Rgh_Mtl.b  = aoRghMtl.g;
     gNormal_Rgh_Mtl.a  = aoRghMtl.b;
 
-    vec2 current  = (currentPosition.xy  / currentPosition.w)  * 0.5f + 0.5f;
-    vec2 previous = (previousPosition.xy / previousPosition.w) * 0.5f + 0.5f;
+    ivec2 depthSize = textureSize(sampler2D(Textures[Constants.PreviousDepthIndex], Samplers[Constants.DepthSamplerIndex]), 0);
+    vec2  screenUV  = (vec2(gl_FragCoord.xy) + 0.5f) / vec2(depthSize);
+
+    float previousDepth       = texture(sampler2D(Textures[Constants.PreviousDepthIndex], Samplers[Constants.DepthSamplerIndex]), screenUV).r;
+    vec4  reprojectedPosition = GetClipPosition(Constants.Scene.previousMatrices, screenUV, previousDepth);
+
+    vec2 current  = (currentPosition.xy / currentPosition.w) * 0.5f + 0.5f;
+    vec2 previous = reprojectedPosition.xy * 0.5f + 0.5f;
 
     motionVectors = current - previous;
 }

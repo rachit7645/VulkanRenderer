@@ -19,6 +19,7 @@
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Renderer/Depth/RenderPass.h"
 
 namespace Renderer::Skybox
 {
@@ -49,6 +50,7 @@ namespace Renderer::Skybox
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -63,8 +65,10 @@ namespace Renderer::Skybox
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
+        const usize currentDepthIndex = frameIndex % Depth::DEPTH_HISTORY_SIZE;
+
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", currentDepthIndex));
 
         const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
         const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
@@ -204,8 +208,8 @@ namespace Renderer::Skybox
                 .aspectMask     = depthAttachment.image.aspect,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthAttachment.image.arrayLayers
+                .baseArrayLayer = static_cast<u32>(currentDepthIndex),
+                .layerCount     = 1
             }
         );
 

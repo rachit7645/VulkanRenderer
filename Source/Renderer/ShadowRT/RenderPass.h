@@ -43,6 +43,7 @@ namespace Renderer::ShadowRT
         void Render
         (
             usize FIF,
+            usize frameIndex,
             VkDevice device,
             VmaAllocator allocator,
             const Vk::MegaSet& megaSet,

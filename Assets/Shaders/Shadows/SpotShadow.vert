@@ -20,7 +20,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/SpotShadow.glsl"
+#include "Constants/Shadows/SpotShadow.glsl"
 
 void main()
 {

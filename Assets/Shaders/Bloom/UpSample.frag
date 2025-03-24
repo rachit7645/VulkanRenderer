@@ -19,8 +19,8 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
+#include "Constants/Bloom/UpSample.glsl"
 #include "MegaSet.glsl"
-#include "Constants/UpSample.glsl"
 
 layout(location = 0) in vec2 fragUV;
 

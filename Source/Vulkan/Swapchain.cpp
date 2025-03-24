@@ -49,15 +49,6 @@ namespace Vk
 
     void Swapchain::RecreateSwapChain(const Vk::Context& context)
     {
-        Vk::CheckResult(vkWaitForFences(
-            context.device,
-            presentFences.size(),
-            presentFences.data(),
-            VK_TRUE,
-            std::numeric_limits<u64>::max()),
-            "Failed to wait for fence!"
-        );
-
         DestroySwapchain(context.device);
         CreateSwapChain(context);
 

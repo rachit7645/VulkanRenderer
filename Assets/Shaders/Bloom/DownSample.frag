@@ -20,10 +20,10 @@
 
 #extension GL_EXT_scalar_block_layout  : enable
 
+#include "Constants/Bloom/DownSample.glsl"
 #include "Constants.glsl"
 #include "Color.glsl"
 #include "MegaSet.glsl"
-#include "Constants/DownSample.glsl"
 
 layout(location = 0) in vec2 fragUV;
 

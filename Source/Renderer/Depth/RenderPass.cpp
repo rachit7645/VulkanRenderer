@@ -54,23 +54,26 @@ namespace Renderer::Depth
                     .width       = extent.width,
                     .height      = extent.height,
                     .mipLevels   = 1,
-                    .arrayLayers = 1
+                    .arrayLayers = DEPTH_HISTORY_SIZE
                 };
             }
         );
 
-        framebufferManager.AddFramebufferView
-        (
-            "SceneDepth",
-            "SceneDepthView",
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferViewSize{
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            }
-        );
+        for (usize i = 0; i < DEPTH_HISTORY_SIZE; ++i)
+        {
+            framebufferManager.AddFramebufferView
+            (
+                "SceneDepth",
+                fmt::format("SceneDepthView/{}", i),
+                Vk::FramebufferImageType::Single2D,
+                Vk::FramebufferViewSize{
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = static_cast<u32>(i),
+                    .layerCount     = 1
+                }
+            );
+        }
 
         Logger::Info("{}\n", "Created depth pass!");
     }
@@ -78,6 +81,7 @@ namespace Renderer::Depth
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -103,8 +107,10 @@ namespace Renderer::Depth
 
         Vk::BeginLabel(currentCmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
-        const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
+        const usize currentIndex = frameIndex % DEPTH_HISTORY_SIZE;
+
+        const auto& depthAttachment     = framebufferManager.GetFramebuffer("SceneDepth");
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", currentIndex));
 
         depthAttachment.image.Barrier
         (
@@ -119,8 +125,8 @@ namespace Renderer::Depth
                 .aspectMask     = depthAttachment.image.aspect,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthAttachment.image.arrayLayers
+                .baseArrayLayer = static_cast<u32>(currentIndex),
+                .layerCount     = 1
             }
         );
 

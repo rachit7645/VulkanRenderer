@@ -17,6 +17,7 @@
 #include "RenderPass.h"
 
 #include <Renderer/RenderConstants.h>
+#include <Renderer/Depth/RenderPass.h>
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
@@ -232,6 +233,7 @@ namespace Renderer::AO::XeGTAO
 
         PreFilterDepth
         (
+            frameIndex,
             currentCmdBuffer,
             framebufferManager,
             megaSet
@@ -261,6 +263,7 @@ namespace Renderer::AO::XeGTAO
 
     void RenderPass::PreFilterDepth
     (
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
@@ -293,7 +296,7 @@ namespace Renderer::AO::XeGTAO
         depthPreFilterPipeline.pushConstant =
         {
             .depthSamplerIndex = depthPreFilterPipeline.samplerIndex,
-            .sceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .sceneDepthIndex   = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
             .outDepthMip0Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip0").storageImageIndex,
             .outDepthMip1Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip1").storageImageIndex,
             .outDepthMip2Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip2").storageImageIndex,

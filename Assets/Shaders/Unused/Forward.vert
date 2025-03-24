@@ -44,7 +44,7 @@ void main()
     gl_Position      = Constants.Scene.currentMatrices.projection * fragViewPos;
 
     fragTexCoords = vertex.uv0;
-    fragToCamera  = normalize(Constants.Scene.currentMatrices.cameraPos - fragPosition);
+    fragToCamera  = normalize(Constants.Scene.cameraPosition - fragPosition);
     fragDrawID    = meshIndex;
 
     vec3 N = normalize(mesh.normalMatrix * vertex.normal);

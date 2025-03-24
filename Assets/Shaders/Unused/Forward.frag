@@ -93,7 +93,7 @@ void main()
             i,
             fragPosition,
             light.position,
-            Constants.Scene.currentMatrices.cameraPos,
+            Constants.Scene.cameraPosition,
             Constants.PointShadows.pointShadowData[i],
             CubemapArrays[Constants.PointShadowMapIndex],
             Samplers[Constants.ShadowSamplerIndex]

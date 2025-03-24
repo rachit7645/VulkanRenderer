@@ -32,13 +32,14 @@ namespace Renderer
         glm::mat4 view               = {};
         glm::mat4 inverseView        = {};
         glm::mat3 normalView         = {};
-        glm::vec3 cameraPos          = {};
+        glm::vec2 jitterOffset       = {};
     };
 
     struct Scene
     {
         SceneMatrices   currentMatrices   = {};
         SceneMatrices   previousMatrices  = {};
+        glm::vec3       cameraPosition         = {};
         f32             nearPlane         = 0.0f;
         f32             farPlane          = 0.0f;
         VkDeviceAddress dirLights         = 0;
