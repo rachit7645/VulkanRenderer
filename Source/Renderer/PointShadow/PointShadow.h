@@ -25,7 +25,6 @@ namespace Renderer::PointShadow
     struct PointShadowData
     {
         glm::mat4 matrices[6];
-        glm::vec2 shadowPlanes;
     };
 }
 

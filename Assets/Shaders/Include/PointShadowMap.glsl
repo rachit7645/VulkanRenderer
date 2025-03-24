@@ -20,11 +20,11 @@
 struct PointShadowData
 {
     mat4 matrices[6];
-    vec2 shadowPlanes;
 };
 
 layout(buffer_reference, scalar) readonly buffer PointShadowBuffer
 {
+    vec2            shadowPlanes;
     PointShadowData pointShadowData[];
 };
 
@@ -34,7 +34,7 @@ float CalculatePointShadow
     vec3 fragPosition,
     vec3 lightPosition,
     vec3 cameraPosition,
-    PointShadowData pointShadowData,
+    PointShadowBuffer pointShadowBuffer,
     textureCubeArray pointShadowMap,
     sampler pointShadowSampler
 )
@@ -53,7 +53,7 @@ float CalculatePointShadow
 
     float shadow       = 0.0f;
     float viewDistance = length(cameraPosition - fragPosition);
-    float diskRadius   = (1.0f + (viewDistance / pointShadowData.shadowPlanes.y)) / pointShadowData.shadowPlanes.y;
+    float diskRadius   = (1.0f + (viewDistance / pointShadowBuffer.shadowPlanes.y)) / pointShadowBuffer.shadowPlanes.y;
 
     for(uint i = 0; i < POINT_SHADOW_NUM_SAMPLES; ++i)
     {
@@ -61,7 +61,7 @@ float CalculatePointShadow
         (
             samplerCubeArrayShadow(pointShadowMap, pointShadowSampler),
             vec4(fragToLight + GRID_SAMPLING_DISK[i] * diskRadius, lightIndex),
-            (currentDepth - POINT_SHADOW_BIAS) / pointShadowData.shadowPlanes.y
+            (currentDepth - POINT_SHADOW_BIAS) / pointShadowBuffer.shadowPlanes.y
         );
     }
 

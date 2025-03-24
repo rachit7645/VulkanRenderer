@@ -135,12 +135,11 @@ namespace Renderer::PointShadow
                     projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
                     projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
                     projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-                },
-                .shadowPlanes = POINT_SHADOW_PLANES
+                }
             };
         }
 
-        pointShadowBuffer.LoadPointShadowData(FIF, allocator, pointShadowData);
+        pointShadowBuffer.LoadPointShadowData(FIF, allocator, POINT_SHADOW_PLANES, pointShadowData);
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("PointShadowMap");
 

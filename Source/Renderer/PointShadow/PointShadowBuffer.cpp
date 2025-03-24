@@ -29,7 +29,7 @@ namespace Renderer::PointShadow
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                sizeof(PointShadow::PointShadowBuffer) * Objects::MAX_POINT_LIGHT_COUNT,
+                sizeof(glm::vec2) + sizeof(PointShadow::PointShadowBuffer) * Objects::MAX_POINT_LIGHT_COUNT,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -46,12 +46,22 @@ namespace Renderer::PointShadow
     (
         usize FIF,
         VmaAllocator allocator,
+        const glm::vec2& shadowPlanes,
         const std::span<const PointShadow::PointShadowData> pointShadows
     )
     {
+        auto pMappedData = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData);
+
         std::memcpy
         (
-            buffers[FIF].allocationInfo.pMappedData,
+            pMappedData,
+            glm::value_ptr(shadowPlanes),
+            sizeof(glm::vec2)
+        );
+
+        std::memcpy
+        (
+            pMappedData + sizeof(glm::vec2),
             pointShadows.data(),
             pointShadows.size_bytes()
         );
@@ -62,7 +72,7 @@ namespace Renderer::PointShadow
                 allocator,
                 buffers[FIF].allocation,
                 0,
-                pointShadows.size_bytes()),
+                sizeof(glm::vec2) + pointShadows.size_bytes()),
                 "Failed to flush allocation!"
             );
         }

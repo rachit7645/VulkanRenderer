@@ -31,8 +31,8 @@ namespace Models
 
         Material material = {};
 
-        glm::mat4  transform = glm::identity<glm::mat4>();
-        Maths::AABB aabb     = {};
+        glm::mat4   transform = glm::identity<glm::mat4>();
+        Maths::AABB aabb      = {};
     };
 }
 

@@ -35,7 +35,6 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 shared float g_ScratchDepths[8][8];
 
-float XeGTAO_ClampDepth(float depth);
 float XeGTAO_DepthMipFilter(float depth0, float depth1, float depth2, float depth3);
 bool  XeGTAO_DepthWriteCheck(uint modulo);
 
@@ -49,10 +48,10 @@ void main()
 
     vec4 depths4 = textureGatherOffset(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), pixelCoord * viewportPixelSize, ivec2(1, 1));
 
-    float depth0 = XeGTAO_ClampDepth(depths4.w);
-    float depth1 = XeGTAO_ClampDepth(depths4.z);
-    float depth2 = XeGTAO_ClampDepth(depths4.x);
-    float depth3 = XeGTAO_ClampDepth(depths4.y);
+    float depth0 = depths4.w;
+    float depth1 = depths4.z;
+    float depth2 = depths4.x;
+    float depth3 = depths4.y;
 
     imageStore(Images[Constants.OutDepthMip0Index], pixelCoord + ivec2(0, 0), vec4(depth0, 0.0f, 0.0f, 0.0f));
     imageStore(Images[Constants.OutDepthMip0Index], pixelCoord + ivec2(1, 0), vec4(depth1, 0.0f, 0.0f, 0.0f));
@@ -110,13 +109,6 @@ void main()
         float dm4 = XeGTAO_DepthMipFilter(inTL, inTR, inBL, inBR);
         imageStore(Images[Constants.OutDepthMip4Index], baseCoord / 8, vec4(dm4, 0.0f, 0.0f, 0.0f));
     }
-}
-
-// This is also a good place to do non-linear depth conversion for cases where one wants the 'radius' (effectively the threshold between near-field and far-field GI),
-// is required to be non-linear (i.e. very large outdoors environments).
-float XeGTAO_ClampDepth(float depth)
-{
-    return clamp(depth, 0.0f, FLOAT_MAX);
 }
 
 // Weighted average depth filter

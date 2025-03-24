@@ -33,7 +33,7 @@ namespace Renderer::IBL
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
     constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
-    constexpr usize PREFILTER_MIPMAP_LEVELS = 5;    // TODO: Make this a non-const property
+    constexpr usize PREFILTER_MIPMAP_LEVELS = 5;
     constexpr usize PREFILTER_SAMPLE_COUNT  = 512;
 
     void IBLMaps::Generate

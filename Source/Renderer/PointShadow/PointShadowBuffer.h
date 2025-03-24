@@ -32,6 +32,7 @@ namespace Renderer::PointShadow
         (
             usize FIF,
             VmaAllocator allocator,
+            const glm::vec2& shadowPlanes,
             const std::span<const PointShadow::PointShadowData> pointShadows
         );
 
