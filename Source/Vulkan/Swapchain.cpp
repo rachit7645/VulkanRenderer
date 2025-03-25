@@ -27,9 +27,13 @@ namespace Vk
 {
     Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
     {
-        IsSurfaceValid(size, context);
+        if (!IsSurfaceValid(size, context))
+        {
+            Logger::Error("{]\n", "Invalid surface!");
+        }
+
         CreateSwapChain(context);
-        CreateSyncObjects(context.device);
+        CreateStaticSyncObjects(context.device);
 
         Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
@@ -55,12 +59,12 @@ namespace Vk
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
-    VkResult Swapchain::Present(VkDevice device, VkQueue queue, usize FIF)
+    VkResult Swapchain::Present(VkDevice device, VkQueue queue)
     {
         Vk::CheckResult(vkWaitForFences(
             device,
             1,
-            &presentFences[FIF],
+            &presentFences[imageIndex],
             VK_TRUE,
             std::numeric_limits<u64>::max()),
             "Failed to wait for fence!"
@@ -69,7 +73,7 @@ namespace Vk
         Vk::CheckResult(vkResetFences(
             device,
             1,
-            &presentFences[FIF]),
+            &presentFences[imageIndex]),
             "Unable to reset fence!"
         );
 
@@ -78,7 +82,7 @@ namespace Vk
             .sType          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT,
             .pNext          = nullptr,
             .swapchainCount = 1,
-            .pFences        = &presentFences[FIF]
+            .pFences        = &presentFences[imageIndex]
         };
 
         const VkPresentInfoKHR presentInfo =
@@ -86,7 +90,7 @@ namespace Vk
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext              = &fenceInfo,
             .waitSemaphoreCount = 1,
-            .pWaitSemaphores    = &renderFinishedSemaphores[FIF],
+            .pWaitSemaphores    = &renderFinishedSemaphores[imageIndex],
             .swapchainCount     = 1,
             .pSwapchains        = &handle,
             .pImageIndices      = &imageIndex,
@@ -183,8 +187,7 @@ namespace Vk
             vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
         }
 
-        Vk::CheckResult(vkGetSwapchainImagesKHR
-        (
+        Vk::CheckResult(vkGetSwapchainImagesKHR(
             context.device,
             handle,
             &imageCount,
@@ -203,8 +206,7 @@ namespace Vk
         }
 
         auto _images = std::vector<VkImage>(imageCount);
-        Vk::CheckResult(vkGetSwapchainImagesKHR
-        (
+        Vk::CheckResult(vkGetSwapchainImagesKHR(
             context.device,
             handle,
             &imageCount,
@@ -303,7 +305,32 @@ namespace Vk
                 vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
             }
         );
-    }   
+
+        CreateSyncObjects(context.device);
+    }
+
+    void Swapchain::CreateStaticSyncObjects(VkDevice device)
+    {
+        const VkSemaphoreCreateInfo semaphoreInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
+        {
+            Vk::CheckResult(vkCreateSemaphore(
+                device,
+                &semaphoreInfo,
+                nullptr,
+                &imageAvailableSemaphores[i]),
+                "Failed to create image semaphore!"
+            );
+
+            Vk::SetDebugName(device, imageAvailableSemaphores[i], fmt::format("Swapchain/ImageAvailableSemaphore{}", i));
+        }
+    }
 
     void Swapchain::CreateSyncObjects(VkDevice device)
     {
@@ -321,7 +348,10 @@ namespace Vk
             .flags = 0
         };
 
-        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
+        presentFences.resize(images.size());
+        renderFinishedSemaphores.resize(images.size());
+
+        for (usize i = 0; i < images.size(); ++i)
         {
             Vk::CheckResult(vkCreateFence(
                 device,
@@ -335,20 +365,11 @@ namespace Vk
                 device,
                 &semaphoreInfo,
                 nullptr,
-                &imageAvailableSemaphores[i]),
-                "Failed to create image semaphore!"
-            );
-
-            Vk::CheckResult(vkCreateSemaphore(
-                device,
-                &semaphoreInfo,
-                nullptr,
                 &renderFinishedSemaphores[i]),
                 "Failed to create render semaphore!"
             );
 
             Vk::SetDebugName(device, presentFences[i],            fmt::format("Swapchain/PresentFence{}",            i));
-            Vk::SetDebugName(device, imageAvailableSemaphores[i], fmt::format("Swapchain/ImageAvailableSemaphore{}", i));
             Vk::SetDebugName(device, renderFinishedSemaphores[i], fmt::format("Swapchain/RenderFinishedSemaphore{}", i));
         }
 
@@ -435,9 +456,19 @@ namespace Vk
 
     void Swapchain::DestroySwapchain(VkDevice device)
     {
-        for (auto&& imageView : imageViews)
+        for (auto& imageView : imageViews)
         {
             imageView.Destroy(device);
+        }
+
+        for (const auto fence : presentFences)
+        {
+            vkDestroyFence(device, fence, nullptr);
+        }
+
+        for (const auto semaphore : renderFinishedSemaphores)
+        {
+            vkDestroySemaphore(device, semaphore, nullptr);
         }
 
         images.clear();
@@ -454,9 +485,6 @@ namespace Vk
 
         for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
         {
-            vkDestroyFence(device, presentFences[i], nullptr);
-
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
             vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         }
     }

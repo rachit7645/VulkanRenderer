@@ -26,7 +26,7 @@ layout(location = 0) in vec2 fragUV;
 
 layout (location = 0) out vec3 upsample;
 
-vec3 SampleSource(vec2 offset);
+vec3 SampleSource(float x, float y);
 
 void main()
 {
@@ -35,19 +35,19 @@ void main()
     float y = Constants.FilterRadius;
 
     // A - B - C
-    vec3 a = SampleSource(vec2(-x,    y));
-    vec3 b = SampleSource(vec2( 0.0f, y));
-    vec3 c = SampleSource(vec2( x,    y));
+    vec3 a = SampleSource(-x,    y);
+    vec3 b = SampleSource( 0.0f, y);
+    vec3 c = SampleSource( x,    y);
 
     // D - E - F
-    vec3 d = SampleSource(vec2(-x,    0.0f));
-    vec3 e = SampleSource(vec2( 0.0f, 0.0f));
-    vec3 f = SampleSource(vec2( x,    0.0f));
+    vec3 d = SampleSource(-x,    0.0f);
+    vec3 e = SampleSource( 0.0f, 0.0f);
+    vec3 f = SampleSource( x,    0.0f);
 
     // G - H - I
-    vec3 g = SampleSource(vec2(-x,    -y));
-    vec3 h = SampleSource(vec2( 0.0f, -y));
-    vec3 i = SampleSource(vec2( x,    -y));
+    vec3 g = SampleSource(-x,    -y);
+    vec3 h = SampleSource( 0.0f, -y);
+    vec3 i = SampleSource( x,    -y);
 
     // Apply weighted distribution using a 3x3 tent filter
     upsample  = e * 4.0f;
@@ -56,7 +56,7 @@ void main()
     upsample *= 1.0f / 16.0f;
 }
 
-vec3 SampleSource(vec2 offset)
+vec3 SampleSource(float x, float y)
 {
-    return texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV + offset).rgb;
+    return texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV + vec2(x, y)).rgb;
 }

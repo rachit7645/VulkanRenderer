@@ -37,7 +37,6 @@ namespace Renderer::DearImGui
         void SetupBackend
         (
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );

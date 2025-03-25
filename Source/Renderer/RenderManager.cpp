@@ -634,7 +634,7 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
-        const auto result = m_swapchain.Present(m_context.device, m_context.graphicsQueue, m_currentFIF);
+        const auto result = m_swapchain.Present(m_context.device, m_context.graphicsQueue);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -656,7 +656,7 @@ namespace Renderer
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
-            .semaphore   = m_swapchain.renderFinishedSemaphores[m_currentFIF],
+            .semaphore   = m_swapchain.renderFinishedSemaphores[m_swapchain.imageIndex],
             .value       = 0,
             .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
             .deviceIndex = 0
@@ -791,7 +791,6 @@ namespace Renderer
         }
 
         std::vector<VkFence> fences;
-        fences.reserve(2 * Vk::FRAMES_IN_FLIGHT);
 
         std::ranges::copy(m_swapchain.presentFences, std::back_inserter(fences));
         std::ranges::copy(m_inFlightFences,          std::back_inserter(fences));
@@ -902,7 +901,7 @@ namespace Renderer
         ImGui::StyleColorsDark();
 
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
-        m_imGuiPass.SetupBackend(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager);
+        m_imGuiPass.SetupBackend(m_context, m_megaSet, m_modelManager.textureManager);
 
         m_deletionQueue.PushDeletor([&] ()
         {

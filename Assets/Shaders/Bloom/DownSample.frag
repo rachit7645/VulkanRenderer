@@ -29,7 +29,7 @@ layout(location = 0) in vec2 fragUV;
 
 layout(location = 0) out vec3 downsample;
 
-vec3 SampleSource(vec2 offset);
+vec3 SampleSource(float x, float y);
 
 void main()
 {
@@ -39,27 +39,27 @@ void main()
     float y = srcTexelSize.y;
 
     // A - B - C
-    vec3 a = SampleSource(vec2(-2.0f * x, 2.0f * y));
-    vec3 b = SampleSource(vec2( 0.0f,     2.0f * y));
-    vec3 c = SampleSource(vec2( 2.0f * x, 2.0f * y));
+    vec3 a = SampleSource(-2.0f * x, 2.0f * y);
+    vec3 b = SampleSource( 0.0f,     2.0f * y);
+    vec3 c = SampleSource( 2.0f * x, 2.0f * y);
 
     // D - E - F
-    vec3 d = SampleSource(vec2(-2.0f * x, 0.0f));
-    vec3 e = SampleSource(vec2( 0.0f,     0.0f));
-    vec3 f = SampleSource(vec2( 2.0f * x, 0.0f));
+    vec3 d = SampleSource(-2.0f * x, 0.0f);
+    vec3 e = SampleSource( 0.0f,     0.0f);
+    vec3 f = SampleSource( 2.0f * x, 0.0f);
 
     // G - H - I
-    vec3 g = SampleSource(vec2(-2.0f * x, -2.0f * y));
-    vec3 h = SampleSource(vec2( 0.0f,     -2.0f * y));
-    vec3 i = SampleSource(vec2( 2.0f * x, -2.0f * y));
+    vec3 g = SampleSource(-2.0f * x, -2.0f * y);
+    vec3 h = SampleSource( 0.0f,     -2.0f * y);
+    vec3 i = SampleSource( 2.0f * x, -2.0f * y);
 
     // - J - K -
-    vec3 j = SampleSource(vec2(-x, y));
-    vec3 k = SampleSource(vec2( x, y));
+    vec3 k = SampleSource( x, y);
+    vec3 j = SampleSource(-x, y);
 
     // - L - M -
-    vec3 l = SampleSource(vec2(-x, -y));
-    vec3 m = SampleSource(vec2( x, -y));
+    vec3 l = SampleSource(-x, -y);
+    vec3 m = SampleSource( x, -y);
 
     if (Constants.IsFirstSample == 1)
     {
@@ -92,7 +92,7 @@ void main()
     downsample = max(downsample, 0.0001f);
 }
 
-vec3 SampleSource(vec2 offset)
+vec3 SampleSource(float x, float y)
 {
-    return texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV + offset).rgb;
+    return texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV + vec2(x, y)).rgb;
 }

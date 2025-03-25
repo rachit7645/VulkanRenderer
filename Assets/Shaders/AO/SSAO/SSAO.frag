@@ -85,11 +85,7 @@ float GetDepth(vec2 uv)
 
 vec3 GetViewPosition(vec2 uv)
 {
-    float depth             = GetDepth(uv);
-    vec4  projectedPosition = Constants.Scene.currentMatrices.inverseProjection * vec4(uv * 2.0f - 1.0f, depth, 1.0f);
-    vec3  viewPosition      = projectedPosition.xyz / projectedPosition.w;
-
-    return viewPosition;
+    return GetViewPosition(Constants.Scene.currentMatrices, uv, GetDepth(uv));
 }
 
 float GetViewZ(vec2 uv)

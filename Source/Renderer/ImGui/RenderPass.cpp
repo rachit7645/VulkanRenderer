@@ -48,7 +48,6 @@ namespace Renderer::DearImGui
     void RenderPass::SetupBackend
     (
         const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
@@ -77,7 +76,7 @@ namespace Renderer::DearImGui
                 "DearImGuiFont",
                 {pixels, width * (height * 4ull)},
                 {width, height},
-                formatHelper.textureFormat
+                VK_FORMAT_R8G8B8A8_UNORM
             );
 
             io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
@@ -252,8 +251,8 @@ namespace Renderer::DearImGui
         {
             for (const auto& cmd : drawList->CmdBuffer)
             {
-                auto clipMin = glm::vec2((glm::vec2(cmd.ClipRect.x, cmd.ClipRect.y) - displayPos) * framebufferScale);
-                auto clipMax = glm::vec2((glm::vec2(cmd.ClipRect.z, cmd.ClipRect.w) - displayPos) * framebufferScale);
+                auto clipMin = (glm::vec2(cmd.ClipRect.x, cmd.ClipRect.y) - displayPos) * framebufferScale;
+                auto clipMax = (glm::vec2(cmd.ClipRect.z, cmd.ClipRect.w) - displayPos) * framebufferScale;
 
                 if (clipMin.x < 0.0f) { clipMin.x = 0.0f; }
                 if (clipMin.y < 0.0f) { clipMin.y = 0.0f; }
