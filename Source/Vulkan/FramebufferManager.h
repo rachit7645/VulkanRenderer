@@ -33,12 +33,16 @@ namespace Vk
 
     enum class FramebufferType : u8
     {
-        ColorR,
-        ColorR_Norm8,
-        ColorRG_Float,
+        // Special Color Formats
+        ColorR_Unorm8,
+        ColorRG_SFloat,
+        ColorRGBA_UNorm8,
+        ColorBGR_SFloat_10_11_11,
+        // Regular Color Formats
         ColorLDR,
         ColorHDR,
         ColorHDR_WithAlpha,
+        // Regular Depth Formats
         Depth
     };
 
@@ -146,9 +150,10 @@ namespace Vk
 
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
-
-        VkExtent2D swapchainExtent;
     private:
+        template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
+        void AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage);
+
         bool IsViewable(FramebufferImageType imageType);
 
         FramebufferSize GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData);

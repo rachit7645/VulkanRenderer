@@ -107,7 +107,7 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/Edges",
-            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferType::ColorR_Unorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
@@ -138,7 +138,7 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/WorkingAO",
-            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferType::ColorR_Unorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
@@ -172,7 +172,7 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/Occlusion",
-            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferType::ColorR_Unorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
@@ -209,7 +209,7 @@ namespace Renderer::AO::XeGTAO
             "XeGTAO/HilbertLUT",
             {reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data()), HILBERT_SEQUENCE.size() * sizeof(u16)},
             {XE_GTAO_HILBERT_WIDTH, XE_GTAO_HILBERT_WIDTH},
-            formatHelper.rU16Format
+            formatHelper.rUint16Format
         );
 
         Logger::Info("{}\n", "Created XeGTAO pass!");
@@ -224,6 +224,21 @@ namespace Renderer::AO::XeGTAO
         const Buffers::SceneBuffer& sceneBuffer
     )
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("XeGTAO"))
+            {
+                ImGui::DragFloat("Power", &m_finalValuePower, 0.05f, 0.0f, 0.0f, "%.4f");
+
+                // Power must not be negative
+                m_finalValuePower = std::max(m_finalValuePower, 0.0f);
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         const auto& currentCmdBuffer = cmdBuffers[FIF];
 
         currentCmdBuffer.Reset(0);
@@ -406,7 +421,8 @@ namespace Renderer::AO::XeGTAO
             .viewSpaceDepthIndex = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView").sampledImageIndex,
             .outWorkingEdges     = framebufferManager.GetFramebufferView("XeGTAO/EdgesView").storageImageIndex,
             .outWorkingAOIndex   = framebufferManager.GetFramebufferView("XeGTAO/WorkingAOView/0").storageImageIndex,
-            .temporalIndex       = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT)
+            .temporalIndex       = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
+            .finalValuePower     = m_finalValuePower
         };
 
         occlusionPipeline.PushConstants

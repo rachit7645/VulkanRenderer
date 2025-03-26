@@ -35,11 +35,6 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
     list(APPEND SHADER_FLAGS -gVS)
 endif()
 
-# Debug Without Validation config
-if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    list(APPEND SHADER_FLAGS -gVS)
-endif()
-
 # Includes
 set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 

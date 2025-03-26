@@ -45,7 +45,8 @@ void main()
 
     vec3 toCamera = normalize(Constants.Scene.cameraPosition - worldPosition);
 
-    vec3 F0 = mix(vec3(0.04f), albedo, metallic);
+    vec3  F0    = mix(vec3(0.04f), albedo, metallic);
+    float NdotV = max(dot(normal, toCamera), 0.0f);
 
     vec3 Lo = vec3(0.0f);
 
@@ -64,7 +65,8 @@ void main()
             F0,
             albedo,
             roughness,
-            metallic
+            metallic,
+            NdotV
         ) * shadow;
     }
 
@@ -92,7 +94,8 @@ void main()
             F0,
             albedo,
             roughness,
-            metallic
+            metallic,
+            NdotV
         ) * shadow;
     }
 
@@ -120,7 +123,8 @@ void main()
             F0,
             albedo,
             roughness,
-            metallic
+            metallic,
+            NdotV
         ) * (1.0f - shadow);
     }
 
@@ -141,7 +145,8 @@ void main()
         irradiance,
         preFilter,
         brdf,
-        ao
+        ao,
+        NdotV
     );
 
     outColor = Lo;

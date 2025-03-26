@@ -44,8 +44,7 @@ layout(buffer_reference, scalar) readonly buffer SceneBuffer
 
 vec4 GetClipPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
 {
-    vec4 clipPosition     = vec4(screenUV * 2.0f - 1.0f, depth, 1.0f);
-         clipPosition.xy -= sceneMatrices.jitterOffset;
+    vec4 clipPosition = vec4(screenUV * 2.0f - 1.0f, depth, 1.0f);
 
     return clipPosition;
 }

@@ -36,7 +36,7 @@ namespace Vk
             BINDINGS_COUNT
         };
 
-        MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits);
+        MegaSet(const Vk::Context& context);
 
         [[nodiscard]] u32 WriteSampler(const Vk::Sampler& sampler);
         [[nodiscard]] u32 WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout);

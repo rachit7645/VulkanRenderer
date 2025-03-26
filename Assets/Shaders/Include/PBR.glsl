@@ -20,6 +20,7 @@
 #define PBR_GLSL
 
 #include "Lights.glsl"
+#include "Math.glsl"
 
 // Trowbridge-Reitz Normal Distribution Function
 float DistributionGGX(float NdotH, float a)
@@ -32,6 +33,63 @@ float DistributionGGX(float NdotH, float a)
 	denom       = PI * denom * denom;
 
 	return nom / denom;
+}
+
+// Smith's Self Shadowing
+float GeometrySmith(float NdotL, float NdotV, float a)
+{
+    float a2 = a * a;
+
+    float ggxV = NdotL * sqrt(NdotV * NdotV * (1.0f - a2) + a2);
+    float ggxL = NdotV * sqrt(NdotL * NdotL * (1.0f - a2) + a2);
+
+    return 2.0f * NdotL * NdotV / max(ggxV + ggxL, 1e-5f);
+}
+
+// Fresnel equation
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0f - F0) * pow5(clamp(1.0f - cosTheta, 0.0f, 1.0f));
+}
+
+vec3 CalculateLight
+(
+    LightInfo lightInfo,
+    vec3 N,
+    vec3 V,
+    vec3 F0,
+    vec3 albedo,
+    float roughness,
+    float metallic,
+    float NdotV
+)
+{
+    vec3 L = lightInfo.L;
+    vec3 H = normalize(V + L);
+
+    float NdotL = max(dot(N, L), 0.0f);
+    float NdotH = max(dot(N, H), 0.0f);
+    float HdotV = max(dot(H, V), 0.0f);
+
+    // Squared Roughness as proposed by Disney
+    float a = roughness * roughness;
+
+	// Cook-Torrance BRDF
+	float NDF = DistributionGGX(NdotH, a);
+	float G   = GeometrySmith(NdotL, NdotV, a);
+	vec3  F   = FresnelSchlick(HdotV, F0);
+
+	// Specular
+	vec3  numerator   = NDF * G * F;
+    float denominator = max(4.0f * NdotV * NdotL, 1e-5f);
+    vec3  specular    = numerator / denominator;
+
+	// Diffuse energy conservation
+	vec3 kS = F;
+	vec3 kD = vec3(1.0f) - kS;
+	kD     *= 1.0f - metallic;
+
+	return (kD * (albedo / PI) + specular) * lightInfo.radiance * NdotL;
 }
 
 // Schlick's Approximation for IBL
@@ -58,68 +116,10 @@ float GeometrySmith_IBL(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-// Smith's Self Shadowing
-float GeometrySmith(float NdotL, float NdotV, float a)
-{
-    float a2 = a * a;
-
-    float ggxV = NdotL * sqrt(NdotV * NdotV * (1.0f - a2) + a2);
-    float ggxL = NdotV * sqrt(NdotL * NdotL * (1.0f - a2) + a2);
-
-    // Add epsilon to avoid division by zero
-    float ggx = ggxV + ggxL + 1e-5f;
-
-    return 0.5f / ggx;
-}
-
-// Fresnel equation
-vec3 FresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
-}
-
 // Fresnel equation with injected roughness parameter
 vec3 FresnelSchlick_IBL(float cosTheta, vec3 F0, float roughness)
 {
-    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
-}
-
-vec3 CalculateLight
-(
-    LightInfo lightInfo,
-    vec3 N,
-    vec3 V,
-    vec3 F0,
-    vec3 albedo,
-    float roughness,
-    float metallic
-)
-{
-    vec3 L = lightInfo.L;
-    vec3 H = normalize(V + L);
-
-    float NdotV = max(dot(N, V), 0.0f);
-    float NdotL = max(dot(N, L), 0.0f);
-    float NdotH = max(dot(N, H), 0.0f);
-    float HdotV = max(dot(H, V), 0.0f);
-
-    // Squared Roughness as proposed by Disney
-    float a = roughness * roughness;
-
-	// Cook-Torrance BRDF
-	float NDF = DistributionGGX(NdotH, a);
-	float G   = GeometrySmith(NdotL, NdotV, a);
-	vec3  F   = FresnelSchlick(HdotV, F0);
-
-	// Specular
-	vec3 specular = NDF * G * F;
-
-	// Diffuse energy conservation
-	vec3 kS = F;
-	vec3 kD = vec3(1.0f) - kS;
-	kD     *= 1.0f - metallic;
-
-	return (kD * (albedo / PI) + specular) * lightInfo.radiance * NdotL;
+    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(clamp(1.0f - cosTheta, 0.0f, 1.0f));
 }
 
 vec3 CalculateAmbient
@@ -133,10 +133,11 @@ vec3 CalculateAmbient
     vec3 irradiance,
     vec3 preFilter,
     vec2 brdf,
-    float ao
+    float ao,
+    float NdotV
 )
 {
-    vec3 F = FresnelSchlick_IBL(max(dot(N, V), 0.0f), F0, roughness);
+    vec3 F = FresnelSchlick_IBL(NdotV, F0, roughness);
 
     // Energy conservation
     vec3 kS = F;

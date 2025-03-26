@@ -62,7 +62,7 @@ add_executable(VulkanRenderer
     Source/Util/Plane.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
-	Source/Vulkan/ValidationLayers.cpp
+	Source/Vulkan/DebugCallback.cpp
 	Source/Vulkan/Context.cpp
 	Source/Vulkan/QueueFamilyIndices.cpp
 	Source/Vulkan/SwapchainInfo.cpp
@@ -240,24 +240,14 @@ target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)
-target_compile_options(VulkanRenderer PRIVATE -march=native -msse2 -mavx -mavx2 -mf16c)
+target_compile_options(VulkanRenderer PRIVATE -msse2 -mavx -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Engine Debug Mode
 	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
-    # Enable validation layers
-    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_ENABLE_VALIDATION)
 	# Enable debug output
 	target_compile_options(VulkanRenderer PRIVATE -g)
-endif()
-
-# Debug Without Validation config
-if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    # Engine Debug Mode
-    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
-    # Enable debug output
-    target_compile_options(VulkanRenderer PRIVATE -g)
 endif()
 
 # Add shader dependency

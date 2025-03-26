@@ -25,7 +25,6 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
-#include "Renderer/Scene.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 
 namespace Renderer::AO::XeGTAO
@@ -85,6 +84,8 @@ namespace Renderer::AO::XeGTAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet
         );
+
+        f32 m_finalValuePower = 1.7f;
     };
 }
 

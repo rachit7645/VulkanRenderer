@@ -29,7 +29,7 @@ namespace Renderer
         : m_context(m_window.handle),
           m_swapchain(m_window.size, m_context),
           m_formatHelper(m_context.physicalDevice),
-          m_megaSet(m_context.device, m_context.physicalDeviceLimits),
+          m_megaSet(m_context),
           m_modelManager(m_context, m_formatHelper),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_depthPass(m_context, m_formatHelper, m_framebufferManager),
@@ -567,7 +567,7 @@ namespace Renderer
         m_scene.currentMatrices  =
         {
             .projection         = projection,
-            .inverseProjection  = glm::inverse(projection),
+            .inverseProjection  = glm::inverse(jitteredProjection),
             .jitteredProjection = jitteredProjection,
             .view               = view,
             .inverseView        = glm::inverse(view),
@@ -575,12 +575,12 @@ namespace Renderer
             .jitterOffset       = jitter
         };
 
-        m_scene.cameraPosition   = m_camera.position;
-        m_scene.nearPlane   = Renderer::NEAR_PLANE;
-        m_scene.farPlane    = Renderer::FAR_PLANE;
-        m_scene.dirLights   = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
-        m_scene.pointLights = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset();
-        m_scene.spotLights  = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset();
+        m_scene.cameraPosition = m_camera.position;
+        m_scene.nearPlane      = Renderer::NEAR_PLANE;
+        m_scene.farPlane       = Renderer::FAR_PLANE;
+        m_scene.dirLights      = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
+        m_scene.pointLights    = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset();
+        m_scene.spotLights     = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset();
 
         m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_sun, 1}, m_pointLights, m_spotLights);
         m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_scene);

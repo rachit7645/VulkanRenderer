@@ -9,7 +9,6 @@
 * Settings
 * Shader Hot Reloading
 * Write a README
-* Use MDI for ImGui rendering 
 * Pull all dependencies from git submodules
 * Render Graph
 * Multithreaded command buffer recording

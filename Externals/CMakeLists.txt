@@ -62,18 +62,12 @@ target_compile_options(imgui PRIVATE -w)
 # -O3 optimisations
 target_compile_options(imgui PRIVATE -O3)
 # Enable CPU vectorisation (SSE or better)
-target_compile_options(imgui PRIVATE -march=native)
+target_compile_options(imgui PRIVATE -msse2 -mavx -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Enable debug output
 	target_compile_options(imgui PRIVATE -g)
-endif()
-
-# Debug Without Validation config
-if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    # Enable debug output
-    target_compile_options(imgui PRIVATE -g)
 endif()
 
 # Link libraries

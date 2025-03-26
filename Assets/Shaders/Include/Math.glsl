@@ -41,4 +41,12 @@ float rcp(float x)
     return 1.0f / x;
 }
 
+float pow5(float x)
+{
+    float x2 = x * x;
+    float x5 = x * (x2 * x2);
+
+    return x5;
+}
+
 #endif

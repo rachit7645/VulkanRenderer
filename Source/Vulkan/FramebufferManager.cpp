@@ -67,11 +67,9 @@ namespace Vk
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
-        VkExtent2D swapExtent
+        VkExtent2D swapchainExtent
     )
     {
-        swapchainExtent = swapExtent;
-
         if (m_framebuffers.empty())
         {
             return;
@@ -123,22 +121,29 @@ namespace Vk
 
             switch (framebuffer.type)
             {
-            case FramebufferType::ColorR:
-                createInfo.format = formatHelper.rNormFormat;
+            case FramebufferType::ColorR_Unorm8:
+                createInfo.format = formatHelper.r8UnormFormat;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
-            case FramebufferType::ColorR_Norm8:
-                createInfo.format = formatHelper.r8NormFormat;
+            case FramebufferType::ColorRG_SFloat:
+                createInfo.format = formatHelper.rgSFloatFormat;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
-            case FramebufferType::ColorRG_Float:
-                createInfo.format = formatHelper.rgFloatFormat;
+            case FramebufferType::ColorRGBA_UNorm8:
+                createInfo.format = formatHelper.rgba8UnormFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorBGR_SFloat_10_11_11:
+                createInfo.format = formatHelper.b10g11r11SFloat;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -192,20 +197,10 @@ namespace Vk
                 break;
             }
 
-            if ((framebuffer.usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
-            {
-                createInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-            }
-
-            if ((framebuffer.usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
-            {
-                createInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-            }
-
-            if ((framebuffer.usage & FramebufferUsage::TransferDestination) == FramebufferUsage::TransferDestination)
-            {
-                createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            }
+            // Add new usages here
+            AddUsage<FramebufferUsage::Sampled,             VK_IMAGE_USAGE_SAMPLED_BIT     >(framebuffer.usage, createInfo.usage);
+            AddUsage<FramebufferUsage::Storage,             VK_IMAGE_USAGE_STORAGE_BIT     >(framebuffer.usage, createInfo.usage);
+            AddUsage<FramebufferUsage::TransferDestination, VK_IMAGE_USAGE_TRANSFER_DST_BIT>(framebuffer.usage, createInfo.usage);
 
             framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
 
@@ -439,6 +434,15 @@ namespace Vk
             }
 
             ImGui::EndMainMenuBar();
+        }
+    }
+
+    template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
+    void FramebufferManager::AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage)
+    {
+        if ((framebufferUsage & FBUsage) == FBUsage)
+        {
+            vulkanUsage |= VkUsage;
         }
     }
 

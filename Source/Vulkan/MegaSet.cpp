@@ -28,11 +28,11 @@ namespace Vk
     constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
     constexpr u32 MAX_STORAGE_IMAGES = 1 << 8;
 
-    MegaSet::MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits)
+    MegaSet::MegaSet(const Vk::Context& context)
     {
-        const auto maxSamplers      = std::min(deviceLimits.maxDescriptorSetSamplers,      MAX_SAMPLERS);
-        const auto maxSampledImages = std::min(deviceLimits.maxDescriptorSetSampledImages, MAX_SAMPLED_IMAGES);
-        const auto maxStorageImages = std::min(deviceLimits.maxDescriptorSetStorageImages, MAX_STORAGE_IMAGES);
+        const auto maxSamplers      = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers,      MAX_SAMPLERS);
+        const auto maxSampledImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
+        const auto maxStorageImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
 
         const std::array poolSizes =
         {
@@ -64,7 +64,7 @@ namespace Vk
         };
 
         Vk::CheckResult(vkCreateDescriptorPool(
-            device,
+            context.device,
             &poolCreateInfo,
             nullptr,
             &m_descriptorPool),
@@ -127,7 +127,7 @@ namespace Vk
         };
 
         Vk::CheckResult(vkCreateDescriptorSetLayout(
-            device,
+            context.device,
             &createInfo,
             nullptr,
             &descriptorLayout),
@@ -145,13 +145,13 @@ namespace Vk
 
         Vk::CheckResult
         (
-            vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet),
+            vkAllocateDescriptorSets(context.device, &allocInfo, &descriptorSet),
             "Failed to allocate mega set"
         );
 
-        Vk::SetDebugName(device, m_descriptorPool, "MegaSet/DescriptorPool");
-        Vk::SetDebugName(device, descriptorLayout, "MegaSet/DescriptorLayout");
-        Vk::SetDebugName(device, descriptorSet,    "MegaSet/DescriptorSet");
+        Vk::SetDebugName(context.device, m_descriptorPool, "MegaSet/DescriptorPool");
+        Vk::SetDebugName(context.device, descriptorLayout, "MegaSet/DescriptorLayout");
+        Vk::SetDebugName(context.device, descriptorSet,    "MegaSet/DescriptorSet");
 
         Logger::Info("{}\n", "Initialised mega set!");
     }

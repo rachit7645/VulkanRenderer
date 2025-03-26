@@ -38,6 +38,8 @@ namespace Renderer::AO::XeGTAO::Occlusion
         u32 outWorkingAOIndex;
 
         u32 temporalIndex;
+
+        f32 finalValuePower;
     };
 }
 

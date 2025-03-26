@@ -47,7 +47,7 @@ namespace Renderer::ShadowRT
         framebufferManager.AddFramebuffer
         (
             "ShadowRT",
-            Vk::FramebufferType::ColorR_Norm8,
+            Vk::FramebufferType::ColorR_Unorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize

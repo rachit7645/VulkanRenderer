@@ -33,6 +33,8 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint OutWorkingAOIndex;
 
     uint TemporalIndex;
+
+    float FinalValuePower;
 } Constants;
 
 #endif

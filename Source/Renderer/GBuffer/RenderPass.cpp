@@ -51,7 +51,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebuffer
         (
             "GAlbedo",
-            Vk::FramebufferType::ColorHDR,
+            Vk::FramebufferType::ColorBGR_SFloat_10_11_11,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
@@ -69,7 +69,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebuffer
         (
             "GNormal_Rgh_Mtl",
-            Vk::FramebufferType::ColorLDR,
+            Vk::FramebufferType::ColorRGBA_UNorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
@@ -87,7 +87,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebuffer
         (
             "MotionVectors",
-            Vk::FramebufferType::ColorRG_Float,
+            Vk::FramebufferType::ColorRG_SFloat,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize

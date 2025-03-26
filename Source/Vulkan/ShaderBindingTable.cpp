@@ -29,7 +29,7 @@ namespace Vk
     )
     {
         const u32          handleCount = 1 + missCount + hitCount + callableCount;
-        const VkDeviceSize handleSize  = context.rayTracingPipelineProperties.shaderGroupHandleSize;
+        const VkDeviceSize handleSize  = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
         const VkDeviceSize handlesSize = handleCount * handleSize;
 
         auto handlesData = std::vector<u8>(handlesSize);
@@ -44,8 +44,8 @@ namespace Vk
             "Failed to get ray tracing shader group handles!"
         );
 
-        const VkDeviceSize handleSizeAligned = Util::Align(handleSize,        context.rayTracingPipelineProperties.shaderGroupHandleAlignment);
-        const VkDeviceSize sbtStrideAligned  = Util::Align(handleSizeAligned, context.rayTracingPipelineProperties.shaderGroupBaseAlignment);
+        const VkDeviceSize handleSizeAligned = Util::Align(handleSize,        context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment);
+        const VkDeviceSize sbtStrideAligned  = Util::Align(handleSizeAligned, context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment);
 
         raygenRegion.stride = sbtStrideAligned;
         raygenRegion.size   = 1 * raygenRegion.stride;

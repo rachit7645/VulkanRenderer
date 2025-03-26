@@ -82,7 +82,6 @@ const float XE_GTAO_DEFAULT_RADIUS                     = 0.5f;
 const float XE_GTAO_DEFAULT_RADIUS_MULTIPLIER          = 1.457f;
 const float XE_GTAO_DEFAULT_FALLOFF_RANGE              = 0.615f;
 const float XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER  = 2.0f;
-const float XE_GTAO_DEFAULT_FINAL_VALUE_POWER          = 2.2f;
 const float XE_GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET  = 3.30f;
 const float XE_GTAO_OCCLUSION_TERM_SCALE               = 1.5f;
 

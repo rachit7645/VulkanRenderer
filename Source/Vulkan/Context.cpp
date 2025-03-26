@@ -32,10 +32,6 @@
 
 namespace Vk
 {
-    #ifdef ENGINE_ENABLE_VALIDATION
-    constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
-    #endif
-
     constexpr std::array REQUIRED_INSTANCE_EXTENSIONS =
     {
         VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
@@ -91,29 +87,20 @@ namespace Vk
             .apiVersion         = VULKAN_API_VERSION
         };
 
-        auto extensions = Vk::LoadInstanceExtensions(REQUIRED_INSTANCE_EXTENSIONS);
-
-        #ifdef ENGINE_ENABLE_VALIDATION
-        m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
-        #endif
+        const auto extensions = Vk::LoadInstanceExtensions(REQUIRED_INSTANCE_EXTENSIONS);
 
         const VkInstanceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            #ifdef ENGINE_ENABLE_VALIDATION
-            .pNext                   = &m_layers.messengerInfo,
+            #ifdef ENGINE_DEBUG
+            .pNext                   = &m_debugCallback.messengerInfo,
             #else
             .pNext                   = nullptr,
             #endif
             .flags                   = 0,
             .pApplicationInfo        = &appInfo,
-            #ifdef ENGINE_ENABLE_VALIDATION
-            .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
-            .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
-            #else
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
-            #endif
             .enabledExtensionCount   = static_cast<u32>(extensions.size()),
             .ppEnabledExtensionNames = extensions.data(),
         };
@@ -129,8 +116,8 @@ namespace Vk
 
         volkLoadInstanceOnly(instance);
 
-        #ifdef ENGINE_ENABLE_VALIDATION
-        m_layers.SetupMessenger(instance);
+        #ifdef ENGINE_DEBUG
+        m_debugCallback.SetupMessenger(instance);
         #endif
     }
 
@@ -178,10 +165,13 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto rtPipelineProperties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
         auto properties           = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
-        auto features             = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
-        auto scores               = std::unordered_map<VkPhysicalDevice, usize>{};
+        auto vk11Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
+        auto vk12Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
+        auto rtPipelineProperties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
+
+        auto features = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
+        auto scores   = std::unordered_map<VkPhysicalDevice, usize>{};
 
         for (const auto& currentDevice : devices)
         {
@@ -189,9 +179,17 @@ namespace Vk
             rtPipelinePropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
             rtPipelinePropertySet.pNext = nullptr;
 
+            VkPhysicalDeviceVulkan12Properties vk12PropertySet = {};
+            vk12PropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
+            vk12PropertySet.pNext = &rtPipelinePropertySet;
+
+            VkPhysicalDeviceVulkan11Properties vk11PropertySet = {};
+            vk11PropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES;
+            vk11PropertySet.pNext = &vk12PropertySet;
+
             VkPhysicalDeviceProperties2 propertySet = {};
             propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-            propertySet.pNext = &rtPipelinePropertySet;
+            propertySet.pNext = &vk11PropertySet;
 
             #ifdef ENGINE_DEBUG
             VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR shaderRelaxedExtendedInstructionFeatures = {};
@@ -238,8 +236,11 @@ namespace Vk
             vkGetPhysicalDeviceProperties2(currentDevice, &propertySet);
             vkGetPhysicalDeviceFeatures2(currentDevice, &featureSet);
 
-            rtPipelineProperties.emplace(currentDevice, rtPipelinePropertySet);
             properties.emplace(currentDevice, propertySet);
+            vk11Properties.emplace(currentDevice, vk11PropertySet);
+            vk12Properties.emplace(currentDevice, vk12PropertySet);
+            rtPipelineProperties.emplace(currentDevice, rtPipelinePropertySet);
+
             features.emplace(currentDevice, featureSet);
             scores.emplace(currentDevice, CalculateScore(currentDevice, propertySet, featureSet));
         }
@@ -262,9 +263,11 @@ namespace Vk
             Logger::VulkanError("Failed to find any suitable physical device!");
         }
 
-        physicalDevice               = bestDevice;
-        physicalDeviceLimits         = properties[physicalDevice].properties.limits;
-        rayTracingPipelineProperties = rtPipelineProperties[physicalDevice];
+        physicalDevice                             = bestDevice;
+        physicalDeviceLimits                       = properties[physicalDevice].properties.limits;
+        physicalDeviceRayTracingPipelineProperties = rtPipelineProperties[physicalDevice];
+        physicalDeviceVulkan11Properties           = vk11Properties[physicalDevice];
+        physicalDeviceVulkan12Properties           = vk12Properties[physicalDevice];
 
         Logger::Info
         (
@@ -284,9 +287,11 @@ namespace Vk
     {
         const auto queues = QueueFamilyIndices(phyDevice, surface);
 
-        const auto vk13Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
-        const auto vk12Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
+        const auto vk11Properties = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Properties>(propertySet.pNext);
+
         const auto vk11Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
+        const auto vk12Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
+        const auto vk13Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
         const auto swapchainMaintenanceFeatures  = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
         const auto accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureSet.pNext);
         const auto rayTracingPipelineFeatures    = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureSet.pNext);
@@ -337,6 +342,7 @@ namespace Vk
         }
 
         // Standard features
+        const bool hasPushConstantSize  = propertySet.properties.limits.maxPushConstantsSize >= 128;
         const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
         const bool hasWireframe         = featureSet.features.fillModeNonSolid;
         const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
@@ -346,6 +352,7 @@ namespace Vk
         const bool hasInt64             = featureSet.features.shaderInt64;
 
         // Vulkan 1.1 features
+        const bool hasEnoughMultiView      = vk11Properties->maxMultiviewViewCount >= 6;
         const bool hasShaderDrawParameters = vk11Features->shaderDrawParameters;
         const bool hasMultiView            = vk11Features->multiview;
 
@@ -368,15 +375,15 @@ namespace Vk
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
         const bool required   = areQueuesValid && hasExtensions;
-        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray &&
-                                hasDepthClamp && hasInt64;
+        const bool standard   = hasPushConstantSize && hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC &&
+                                hasImageCubeArray && hasDepthClamp && hasInt64;
         const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
                                 hasRTPipeline && hasRTCulling && hasRTMaintenance
                                 #ifdef ENGINE_DEBUG
                                 && hasShaderRelaxedExtendedInstruction
                                 #endif
                                 ;
-        const bool vk11       = hasShaderDrawParameters && hasMultiView;
+        const bool vk11       = hasEnoughMultiView && hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                                 hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                                 hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
@@ -489,13 +496,8 @@ namespace Vk
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
-            #ifdef ENGINE_ENABLE_VALIDATION
-            .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
-            .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
-            #else
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
-            #endif
             .enabledExtensionCount   = static_cast<u32>(REQUIRED_DEVICE_EXTENSIONS.size()),
             .ppEnabledExtensionNames = REQUIRED_DEVICE_EXTENSIONS.data(),
             .pEnabledFeatures        = nullptr
@@ -628,8 +630,8 @@ namespace Vk
 
         vkDestroyDevice(device, nullptr);
 
-        #ifdef ENGINE_ENABLE_VALIDATION
-        m_layers.Destroy(instance);
+        #ifdef ENGINE_DEBUG
+        m_debugCallback.Destroy(instance);
         #endif
 
         vkDestroyInstance(instance, nullptr);

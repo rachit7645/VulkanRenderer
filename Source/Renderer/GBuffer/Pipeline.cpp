@@ -44,7 +44,7 @@ namespace Renderer::GBuffer
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatLDR, formatHelper.rgFloatFormat};
+        const std::array colorFormats = {formatHelper.b10g11r11SFloat, formatHelper.rgba8UnormFormat, formatHelper.rgSFloatFormat};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)

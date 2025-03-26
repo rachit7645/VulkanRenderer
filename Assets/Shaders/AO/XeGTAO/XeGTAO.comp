@@ -194,7 +194,7 @@ void main()
     }
 
     visibility /= float(XE_GTAO_SLICE_COUNT);
-    visibility  = pow(visibility, XE_GTAO_DEFAULT_FINAL_VALUE_POWER);
+    visibility  = pow(visibility, Constants.FinalValuePower);
     visibility  = clamp(visibility, 0.03f, 1.0f); // disallow total occlusion (which wouldn't make any sense anyhow since pixel is visible but also helps with packing bent normals)
 
     XeGTAO_OutputWorkingTerm(pixelCoord, visibility);

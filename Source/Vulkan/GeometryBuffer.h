@@ -45,7 +45,7 @@ namespace Vk
         (
             VmaAllocator allocator,
             const std::span<const Models::Index> indices,
-            const std::span<const glm::vec3> positions,
+            const std::span<const Models::Position> positions,
             const std::span<const Models::Vertex> vertices
         );
 

@@ -32,7 +32,7 @@ namespace Vk
         cubeBuffer = Vk::Buffer
         (
             allocator,
-            36 * sizeof(glm::vec3),
+            36 * sizeof(Models::Position),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
@@ -55,7 +55,7 @@ namespace Vk
     (
         VmaAllocator allocator,
         const std::span<const Models::Index> indices,
-        const std::span<const glm::vec3> positions,
+        const std::span<const Models::Position> positions,
         const std::span<const Models::Vertex> vertices
     )
     {
@@ -118,7 +118,7 @@ namespace Vk
             cmdBuffer,
             positionBuffer,
             m_pendingPositionUploads,
-            sizeof(glm::vec3),
+            sizeof(Models::Position),
             VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
             VK_ACCESS_2_SHADER_STORAGE_READ_BIT
         );
@@ -386,7 +386,7 @@ namespace Vk
             allocator,
             positionCount,
             m_pendingPositionUploads,
-            sizeof(glm::vec3),
+            sizeof(Models::Position),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
@@ -520,8 +520,8 @@ namespace Vk
                 (
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionCount,
-                    positionCount * sizeof(glm::vec3),
-                    positionBuffer.allocationInfo.size - (positionCount * sizeof(glm::vec3)),
+                    positionCount * sizeof(Models::Position),
+                    positionBuffer.allocationInfo.size - (positionCount * sizeof(Models::Position)),
                     positionBuffer.allocationInfo.size
                 );
 
