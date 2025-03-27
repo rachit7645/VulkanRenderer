@@ -32,7 +32,6 @@ namespace Renderer
         glm::mat4 view               = {};
         glm::mat4 inverseView        = {};
         glm::mat3 normalView         = {};
-        glm::vec2 jitterOffset       = {};
     };
 
     struct Scene

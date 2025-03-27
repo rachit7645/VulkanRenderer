@@ -85,6 +85,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/FramebufferManager.cpp
     Source/Vulkan/AccelerationStructure.cpp
     Source/Vulkan/ShaderBindingTable.cpp
+    Source/Vulkan/DescriptorAllocator.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources
@@ -223,6 +224,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<deque>
     <variant>
     <list>
+    <queue>
     # C STL Headers
     <cstdint>
     <cstddef>

@@ -51,9 +51,9 @@ namespace Renderer::Bloom
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Array2D,
             Vk::FramebufferUsage::Sampled,
-            [device = context.device] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [device = context.device, &megaSet] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
             {
-                framebufferManager.DeleteFramebufferViews("Bloom", device);
+                framebufferManager.DeleteFramebufferViews("Bloom", device, megaSet);
 
                 const auto size = Vk::FramebufferSize
                 {
@@ -181,12 +181,7 @@ namespace Renderer::Bloom
                 .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                 .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
                 .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue         = {{{
-                    Renderer::CLEAR_COLOR.r,
-                    Renderer::CLEAR_COLOR.g,
-                    Renderer::CLEAR_COLOR.b,
-                    Renderer::CLEAR_COLOR.a
-                }}}
+                .clearValue         = {}
             };
 
             const VkRenderingInfo renderInfo =
@@ -339,12 +334,7 @@ namespace Renderer::Bloom
                 .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                 .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
                 .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue         = {{{
-                    Renderer::CLEAR_COLOR.r,
-                    Renderer::CLEAR_COLOR.g,
-                    Renderer::CLEAR_COLOR.b,
-                    Renderer::CLEAR_COLOR.a
-                }}}
+                .clearValue         = {}
             };
 
             const VkRenderingInfo renderInfo =

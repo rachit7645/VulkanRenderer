@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Util/Log.h"
-#include "Util/Maths.h"
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 #include "Renderer/Depth/RenderPass.h"
@@ -169,7 +168,7 @@ namespace Renderer::TAA
                 }
             );
 
-            const VkClearColorValue clearColor = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
+            constexpr VkClearColorValue clearColor = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
 
             const VkImageSubresourceRange subresourceRange =
             {
@@ -207,6 +206,8 @@ namespace Renderer::TAA
                     .layerCount     = history.image.arrayLayers
                 }
             );
+
+            m_hasToResetHistory = false;
         }
 
         const usize currentIndex  = frameIndex                          % TAA_HISTORY_SIZE;
@@ -265,12 +266,7 @@ namespace Renderer::TAA
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const VkRenderingAttachmentInfo historyInfo =
@@ -284,12 +280,7 @@ namespace Renderer::TAA
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const std::array colorAttachments = {resolvedInfo, historyInfo};

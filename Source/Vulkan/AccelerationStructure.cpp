@@ -264,7 +264,7 @@ namespace Vk
                     VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                     VK_ACCESS_2_TRANSFER_WRITE_BIT,
                     VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-                    VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+                    VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_2_SHADER_READ_BIT,
                     0,
                     transforms.size() * sizeof(VkTransformMatrixKHR)
                 );

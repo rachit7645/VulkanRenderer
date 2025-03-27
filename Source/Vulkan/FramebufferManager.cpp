@@ -244,6 +244,8 @@ namespace Vk
 
             const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
 
+            FreeDescriptors(megaSet, framebufferView, framebuffer.usage);
+
             framebufferView.view.Destroy(context.device);
 
             VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -279,12 +281,7 @@ namespace Vk
                 }
             );
 
-            framebufferView.sampledImageIndex = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-            if ((framebuffer.usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
-            {
-                framebufferView.storageImageIndex = megaSet.WriteStorageImage(framebufferView.view);
-            }
+            AllocateDescriptors(megaSet, framebufferView, framebuffer.usage);
 
             Vk::SetDebugName(context.device, framebufferView.view.handle, name);
         }
@@ -367,23 +364,98 @@ namespace Vk
         return iter->second;
     }
 
-    void FramebufferManager::DeleteFramebufferViews(const std::string_view framebufferName, VkDevice device)
+    void FramebufferManager::DeleteFramebufferViews
+    (
+        const std::string_view framebufferName,
+        VkDevice device,
+        Vk::MegaSet& megaSet
+    )
     {
         if (!m_framebuffers.contains(framebufferName.data()))
         {
             Logger::Error("Framebuffer not found! [Name={}]\n", framebufferName);
         }
 
+        const auto& framebuffer = m_framebuffers.at(framebufferName.data());
+
         std::erase_if(m_framebufferViews, [&] (const auto& pair) -> bool
         {
-            if (pair.second.framebuffer == framebufferName)
+            const Vk::FramebufferView& framebufferView = pair.second;
+
+            if (framebufferView.framebuffer == framebufferName)
             {
-                pair.second.view.Destroy(device);
+                FreeDescriptors(megaSet, framebufferView, framebuffer.usage);
+
+                framebufferView.view.Destroy(device);
+
                 return true;
             }
 
             return false;
         });
+    }
+
+    FramebufferSize FramebufferManager::GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData)
+    {
+        if (std::holds_alternative<FramebufferSize>(sizeData))
+        {
+            return std::get<FramebufferSize>(sizeData);
+        }
+
+        if (std::holds_alternative<FramebufferResizeCallback>(sizeData))
+        {
+            return std::get<FramebufferResizeCallback>(sizeData)(extent, *this);
+        }
+
+        Logger::Error("{}\n", "Invalid framebuffer size!");
+    }
+
+    template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
+    void FramebufferManager::AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage)
+    {
+        if ((framebufferUsage & FBUsage) == FBUsage)
+        {
+            vulkanUsage |= VkUsage;
+        }
+    }
+
+    void FramebufferManager::AllocateDescriptors
+    (
+        Vk::MegaSet& megaSet,
+        Vk::FramebufferView& framebufferView,
+        Vk::FramebufferUsage usage
+    )
+    {
+        if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
+        {
+            framebufferView.sampledImageIndex = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
+        {
+            framebufferView.storageImageIndex = megaSet.WriteStorageImage(framebufferView.view);
+        }
+    }
+
+    void FramebufferManager::FreeDescriptors
+    (
+        Vk::MegaSet& megaSet,
+        const Vk::FramebufferView& framebufferView,
+        Vk::FramebufferUsage usage
+    )
+    {
+        if (framebufferView.view.handle != VK_NULL_HANDLE)
+        {
+            if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
+            {
+                megaSet.FreeSampledImage(framebufferView.sampledImageIndex);
+            }
+
+            if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
+            {
+                megaSet.FreeStorageImage(framebufferView.storageImageIndex);
+            }
+        }
     }
 
     void FramebufferManager::ImGuiDisplay()
@@ -437,33 +509,9 @@ namespace Vk
         }
     }
 
-    template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
-    void FramebufferManager::AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage)
-    {
-        if ((framebufferUsage & FBUsage) == FBUsage)
-        {
-            vulkanUsage |= VkUsage;
-        }
-    }
-
     bool FramebufferManager::IsViewable(FramebufferImageType imageType)
     {
         return imageType == FramebufferImageType::Single2D;
-    }
-
-    FramebufferSize FramebufferManager::GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData)
-    {
-        if (std::holds_alternative<FramebufferSize>(sizeData))
-        {
-            return std::get<FramebufferSize>(sizeData);
-        }
-
-        if (std::holds_alternative<FramebufferResizeCallback>(sizeData))
-        {
-            return std::get<FramebufferResizeCallback>(sizeData)(extent, *this);
-        }
-
-        Logger::Error("{}\n", "Invalid framebuffer size!");
     }
 
     void FramebufferManager::Destroy(VkDevice device, VmaAllocator allocator)

@@ -20,6 +20,7 @@
 #include <vulkan/vulkan.h>
 
 #include "DescriptorWriter.h"
+#include "DescriptorAllocator.h"
 #include "Sampler.h"
 #include "ImageView.h"
 
@@ -36,13 +37,19 @@ namespace Vk
             BINDINGS_COUNT
         };
 
-        MegaSet(const Vk::Context& context);
+        explicit MegaSet(const Vk::Context& context);
 
         [[nodiscard]] u32 WriteSampler(const Vk::Sampler& sampler);
         [[nodiscard]] u32 WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout);
         [[nodiscard]] u32 WriteStorageImage(const Vk::ImageView& imageView);
 
+        void FreeSampler(u32 id);
+        void FreeSampledImage(u32 id);
+        void FreeStorageImage(u32 id);
+
         void Update(VkDevice device);
+
+        void ImGuiDisplay();
 
         void Destroy(VkDevice device);
 
@@ -52,9 +59,9 @@ namespace Vk
         VkDescriptorPool     m_descriptorPool = VK_NULL_HANDLE;
         Vk::DescriptorWriter m_writer         = {};
 
-        u32 m_samplerID = 0;
-        u32 m_imageID   = 0;
-        u32 m_storageID = 0;
+        Vk::DescriptorAllocator m_samplerAllocator      = {};
+        Vk::DescriptorAllocator m_sampledImageAllocator = {};
+        Vk::DescriptorAllocator m_storageImageAllocator = {};
     };
 }
 

@@ -106,7 +106,9 @@ namespace Renderer
         AO::XeGTAO::RenderPass  m_xegtaoPass;
         ShadowRT::RenderPass    m_shadowRTPass;
         TAA::RenderPass         m_taaPass;
-        Culling::Dispatch       m_cullingDispatch;
+
+        // Dispatches
+        Culling::Dispatch m_cullingDispatch;
 
         // Buffers
         Buffers::MeshBuffer     m_meshBuffer;
@@ -134,6 +136,8 @@ namespace Renderer
         Objects::DirLight                  m_sun;
         std::array<Objects::PointLight, 2> m_pointLights;
         std::array<Objects::SpotLight,  2> m_spotLights;
+
+        std::string m_hdrMap;
 
         Util::DeletionQueue m_deletionQueue = {};
     };

@@ -19,7 +19,6 @@
 
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
@@ -54,7 +53,7 @@ namespace Renderer::TAA
 
         std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
-        bool m_hasToResetHistory = false;
+        bool m_hasToResetHistory = true;
     };
 }
 

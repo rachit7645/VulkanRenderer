@@ -133,12 +133,7 @@ namespace Renderer::Lighting
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const VkRenderingInfo renderInfo =

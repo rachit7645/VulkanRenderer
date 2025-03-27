@@ -364,22 +364,22 @@ namespace Renderer
 
         m_modelManager.ImGuiDisplay();
         m_framebufferManager.ImGuiDisplay();
+        m_megaSet.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("IBL"))
             {
-                static std::string hdrMap;
-                ImGui::InputText("HDR Map Path", &hdrMap);
+                ImGui::InputText("HDR Map Path", &m_hdrMap);
 
-                if (ImGui::Button("Load") && !hdrMap.empty())
+                if (ImGui::Button("Load") && !m_hdrMap.empty())
                 {
                     // TODO: Figure out a better way to wait for resources to be available
                     Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
 
                     m_iblMaps.Generate
                     (
-                        hdrMap,
+                        m_hdrMap,
                         m_context,
                         m_formatHelper,
                         m_modelManager.geometryBuffer,
@@ -571,8 +571,7 @@ namespace Renderer
             .jitteredProjection = jitteredProjection,
             .view               = view,
             .inverseView        = glm::inverse(view),
-            .normalView         = Maths::CreateNormalMatrix(view),
-            .jitterOffset       = jitter
+            .normalView         = Maths::CreateNormalMatrix(view)
         };
 
         m_scene.cameraPosition = m_camera.position;

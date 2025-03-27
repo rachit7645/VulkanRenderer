@@ -146,17 +146,36 @@ namespace Vk
         [[nodiscard]] FramebufferView& GetFramebufferView(const std::string_view name);
         [[nodiscard]] const FramebufferView& GetFramebufferView(const std::string_view name) const;
 
-        void DeleteFramebufferViews(const std::string_view framebufferName, VkDevice device);
+        void DeleteFramebufferViews
+        (
+            const std::string_view framebufferName,
+            VkDevice device,
+            Vk::MegaSet& megaSet
+        );
 
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
+        FramebufferSize GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData);
+
         template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
         void AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage);
 
-        bool IsViewable(FramebufferImageType imageType);
+        void AllocateDescriptors
+        (
+            Vk::MegaSet& megaSet,
+            Vk::FramebufferView& framebufferView,
+            Vk::FramebufferUsage usage
+        );
 
-        FramebufferSize GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData);
+        void FreeDescriptors
+        (
+            Vk::MegaSet& megaSet,
+            const Vk::FramebufferView& framebufferView,
+            Vk::FramebufferUsage usage
+        );
+
+        bool IsViewable(FramebufferImageType imageType);
 
         std::unordered_map<std::string, Framebuffer> m_framebuffers;
         std::map<std::string, FramebufferView>       m_framebufferViews;

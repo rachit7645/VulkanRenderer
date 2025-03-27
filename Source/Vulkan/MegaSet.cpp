@@ -26,13 +26,13 @@ namespace Vk
 {
     constexpr u32 MAX_SAMPLERS       = 1 << 8;
     constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
-    constexpr u32 MAX_STORAGE_IMAGES = 1 << 8;
+    constexpr u32 MAX_STORAGE_IMAGES = 1 << 10;
 
     MegaSet::MegaSet(const Vk::Context& context)
     {
-        const auto maxSamplers      = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers,      MAX_SAMPLERS);
-        const auto maxSampledImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
-        const auto maxStorageImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
+        const auto maxSamplers      = std::min(context.physicalDeviceVulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers,      MAX_SAMPLERS);
+        const auto maxSampledImages = std::min(context.physicalDeviceVulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
+        const auto maxStorageImages = std::min(context.physicalDeviceVulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
 
         const std::array poolSizes =
         {
@@ -149,6 +149,10 @@ namespace Vk
             "Failed to allocate mega set"
         );
 
+        m_samplerAllocator      = Vk::DescriptorAllocator(maxSamplers);
+        m_sampledImageAllocator = Vk::DescriptorAllocator(maxSampledImages);
+        m_storageImageAllocator = Vk::DescriptorAllocator(maxStorageImages);
+
         Vk::SetDebugName(context.device, m_descriptorPool, "MegaSet/DescriptorPool");
         Vk::SetDebugName(context.device, descriptorLayout, "MegaSet/DescriptorLayout");
         Vk::SetDebugName(context.device, descriptorSet,    "MegaSet/DescriptorSet");
@@ -158,7 +162,7 @@ namespace Vk
 
     u32 MegaSet::WriteSampler(const Vk::Sampler& sampler)
     {
-        const auto id = m_samplerID++;
+        const auto id = m_samplerAllocator.Allocate();
 
         m_writer.WriteImage
         (
@@ -176,7 +180,7 @@ namespace Vk
 
     u32 MegaSet::WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout)
     {
-        const auto id = m_imageID++;
+        const auto id = m_sampledImageAllocator.Allocate();
 
         m_writer.WriteImage
         (
@@ -194,7 +198,7 @@ namespace Vk
 
     u32 MegaSet::WriteStorageImage(const Vk::ImageView& imageView)
     {
-        const auto id = m_storageID++;
+        const auto id = m_storageImageAllocator.Allocate();
 
         m_writer.WriteImage
         (
@@ -210,10 +214,88 @@ namespace Vk
         return id;
     }
 
+    void MegaSet::FreeSampler(u32 id)
+    {
+        m_samplerAllocator.Free(id);
+    }
+
+    void MegaSet::FreeSampledImage(u32 id)
+    {
+        m_sampledImageAllocator.Free(id);
+    }
+
+    void MegaSet::FreeStorageImage(u32 id)
+    {
+        m_storageImageAllocator.Free(id);
+    }
+
     void MegaSet::Update(VkDevice device)
     {
         m_writer.Update(device);
         m_writer.Clear();
+    }
+
+    void MegaSet::ImGuiDisplay()
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("MegaSet"))
+            {
+                ImGui::Text
+                (
+                    "%-8s | %-14s | %-10s | %-10s | %-4s | %-8s",
+                    "Binding",
+                    "Type",
+                    "Allocated",
+                    "Free Slots",
+                    "Used",
+                    "Max Count"
+                );
+
+                ImGui::Separator();
+
+                ImGui::Text
+                (
+                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
+                    DescriptorBinding::SAMPLER_BINDING,
+                    "Sampler",
+                    m_samplerAllocator.GetAllocatedCount(),
+                    m_samplerAllocator.GetFreeSlotCount(),
+                    m_samplerAllocator.GetUsedCount(),
+                    m_samplerAllocator.GetMaxCount()
+                );
+
+                ImGui::Separator();
+
+                ImGui::Text
+                (
+                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
+                    DescriptorBinding::SAMPLED_IMAGES_BINDING,
+                    "Sampled Image",
+                    m_sampledImageAllocator.GetAllocatedCount(),
+                    m_sampledImageAllocator.GetFreeSlotCount(),
+                    m_sampledImageAllocator.GetUsedCount(),
+                    m_sampledImageAllocator.GetMaxCount()
+                );
+
+                ImGui::Separator();
+
+                ImGui::Text
+                (
+                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
+                    DescriptorBinding::STORAGE_IMAGES_BINDING,
+                    "Storage Image",
+                    m_storageImageAllocator.GetAllocatedCount(),
+                    m_storageImageAllocator.GetFreeSlotCount(),
+                    m_storageImageAllocator.GetUsedCount(),
+                    m_storageImageAllocator.GetMaxCount()
+                );
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
     }
 
     void MegaSet::Destroy(VkDevice device)

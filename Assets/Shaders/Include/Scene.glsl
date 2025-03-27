@@ -27,7 +27,6 @@ struct SceneMatrices
     mat4 view;
     mat4 inverseView;
     mat3 normalView;
-    vec2 jitterOffset;
 };
 
 layout(buffer_reference, scalar) readonly buffer SceneBuffer

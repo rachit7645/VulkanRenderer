@@ -84,12 +84,7 @@ namespace Renderer::Skybox
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const VkRenderingAttachmentInfo depthAttachmentInfo =
@@ -103,7 +98,7 @@ namespace Renderer::Skybox
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
             .storeOp            = VK_ATTACHMENT_STORE_OP_NONE,
-            .clearValue         = {.depthStencil = {0.0f, 0x0}}
+            .clearValue         = {}
         };
 
         const VkRenderingInfo renderInfo =
