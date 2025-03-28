@@ -52,7 +52,7 @@ namespace Renderer::Forward
             "SceneColor",
             Vk::FramebufferType::ColorHDR,
             Vk::ImageType::Single2D,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {

@@ -55,7 +55,7 @@ namespace Renderer::AO::SSAO
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
             false,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {
@@ -73,7 +73,7 @@ namespace Renderer::AO::SSAO
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
             false,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {
@@ -91,7 +91,7 @@ namespace Renderer::AO::SSAO
             Vk::FramebufferType::ColorR,
             Vk::ImageType::Single2D,
             false,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {

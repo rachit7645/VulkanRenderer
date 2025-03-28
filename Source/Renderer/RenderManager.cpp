@@ -198,12 +198,7 @@ namespace Renderer
             m_modelManager.textureManager
         );
 
-        m_accelerationStructure.BuildBottomLevelAS
-        (
-            m_context,
-            m_modelManager,
-            m_renderObjects
-        );
+        m_accelerationStructure.BuildBottomLevelAS(m_context, m_modelManager, m_renderObjects);
 
         m_megaSet.Update(m_context.device);
 
@@ -555,7 +550,6 @@ namespace Renderer
         auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
         jitter     -= glm::vec2(0.5f);
         jitter     /= glm::vec2(m_swapchain.extent.width, m_swapchain.extent.height);
-        jitter     *= 2.0f;
         
         auto jitteredProjection = projection;
 

@@ -19,7 +19,6 @@
 
 #include <unordered_set>
 #include <unordered_map>
-#include <map>
 
 #include "Image.h"
 #include "ImageView.h"
@@ -69,7 +68,7 @@ namespace Vk
         u32 mipLevels   = 0;
         u32 arrayLayers = 0;
 
-        bool Matches(const Vk::Image& image) const
+        [[nodiscard]] bool Matches(const Vk::Image& image) const
         {
             if (image.handle == VK_NULL_HANDLE)
             {
@@ -101,16 +100,24 @@ namespace Vk
         Vk::ImageView        view              = {};
     };
 
-    using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&, FramebufferManager&)>;
+    struct FramebufferInitialState
+    {
+        VkPipelineStageFlags2 dstStageMask  = VK_PIPELINE_STAGE_2_NONE;
+        VkAccessFlags2        dstAccessMask = VK_ACCESS_2_NONE;
+        VkImageLayout         initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    };
+
+    using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&)>;
     using FramebufferSizeData       = std::variant<std::monostate, FramebufferSize, FramebufferResizeCallback>;
 
     struct Framebuffer
     {
-        FramebufferType      type      = FramebufferType::ColorLDR;
-        FramebufferSizeData  sizeData  = {};
-        FramebufferImageType imageType = FramebufferImageType::Single2D;
-        FramebufferUsage     usage     = FramebufferUsage::None;
-        Vk::Image            image     = {};
+        FramebufferType         type         = FramebufferType::ColorLDR;
+        FramebufferImageType    imageType    = FramebufferImageType::Single2D;
+        FramebufferUsage        usage        = FramebufferUsage::None;
+        FramebufferSizeData     sizeData     = {};
+        FramebufferInitialState initialState = {};
+        Vk::Image               image        = {};
     };
 
     class FramebufferManager
@@ -122,7 +129,8 @@ namespace Vk
             FramebufferType type,
             FramebufferImageType imageType,
             FramebufferUsage usage,
-            const FramebufferSizeData& sizeData
+            const FramebufferSizeData& sizeData,
+            const FramebufferInitialState& initialState
         );
 
         void AddFramebufferView
@@ -175,12 +183,10 @@ namespace Vk
             Vk::FramebufferUsage usage
         );
 
-        bool IsViewable(FramebufferImageType imageType);
+        std::unordered_map<std::string, Framebuffer>     m_framebuffers;
+        std::unordered_map<std::string, FramebufferView> m_framebufferViews;
 
-        std::unordered_map<std::string, Framebuffer> m_framebuffers;
-        std::map<std::string, FramebufferView>       m_framebufferViews;
-
-        std::unordered_set<std::string> m_fixedFramebuffers;
+        std::unordered_set<std::string> m_fixedSizeFramebuffers;
     };
 }
 

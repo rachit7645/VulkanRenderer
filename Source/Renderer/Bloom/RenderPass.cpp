@@ -51,7 +51,7 @@ namespace Renderer::Bloom
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Array2D,
             Vk::FramebufferUsage::Sampled,
-            [device = context.device, &megaSet] (const VkExtent2D& extent, Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [device = context.device, &framebufferManager, &megaSet] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews("Bloom", device, megaSet);
 
@@ -80,6 +80,11 @@ namespace Renderer::Bloom
                 }
 
                 return size;
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 

@@ -50,7 +50,7 @@ namespace Renderer::ShadowRT
             Vk::FramebufferType::ColorR_Unorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {
@@ -59,6 +59,11 @@ namespace Renderer::ShadowRT
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 

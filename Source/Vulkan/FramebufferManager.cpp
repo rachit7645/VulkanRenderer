@@ -28,7 +28,8 @@ namespace Vk
         FramebufferType type,
         FramebufferImageType imageType,
         FramebufferUsage usage,
-        const FramebufferSizeData& sizeData
+        const FramebufferSizeData& sizeData,
+        const FramebufferInitialState& initialState
     )
     {
         if (m_framebuffers.contains(name.data()))
@@ -37,11 +38,12 @@ namespace Vk
         }
 
         m_framebuffers.emplace(name, Framebuffer{
-            .type      = type,
-            .sizeData  = sizeData,
-            .imageType = imageType,
-            .usage     = usage,
-            .image     = {},
+            .type         = type,
+            .imageType    = imageType,
+            .usage        = usage,
+            .sizeData     = sizeData,
+            .initialState = initialState,
+            .image        = {}
         });
     }
 
@@ -86,7 +88,7 @@ namespace Vk
             (
                 framebuffer.image.handle != VK_NULL_HANDLE &&
                 isFixedSize &&
-                m_fixedFramebuffers.contains(name)
+                m_fixedSizeFramebuffers.contains(name)
             )
             {
                 continue;
@@ -208,7 +210,7 @@ namespace Vk
 
             if (isFixedSize)
             {
-                m_fixedFramebuffers.insert(name);
+                m_fixedSizeFramebuffers.insert(name);
             }
 
             updatedFramebuffers.insert(name);
@@ -218,10 +220,10 @@ namespace Vk
                 .pNext               = nullptr,
                 .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
                 .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask       = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask        = framebuffer.initialState.dstStageMask,
+                .dstAccessMask       = framebuffer.initialState.dstAccessMask,
                 .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout           = framebuffer.initialState.initialLayout,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image               = framebuffer.image.handle,
@@ -404,7 +406,7 @@ namespace Vk
 
         if (std::holds_alternative<FramebufferResizeCallback>(sizeData))
         {
-            return std::get<FramebufferResizeCallback>(sizeData)(extent, *this);
+            return std::get<FramebufferResizeCallback>(sizeData)(extent);
         }
 
         Logger::Error("{}\n", "Invalid framebuffer size!");
@@ -464,14 +466,66 @@ namespace Vk
         {
             if (ImGui::BeginMenu("Framebuffer Manager"))
             {
-                for (const auto& [name, framebufferView] : m_framebufferViews)
+                std::vector<std::pair<std::string, FramebufferView>> sortedFramebufferViews
+                (
+                    m_framebufferViews.begin(),
+                    m_framebufferViews.end()
+                );
+                
+                auto CustomOrderedSort = [](const std::string& a, const std::string& b)
+                {
+                    usize i = 0;
+                    usize j = 0;
+
+                    while (i < a.length() && j < b.length())
+                    {
+                        if (std::isdigit(a[i]) && std::isdigit(b[j]))
+                        {
+                            const usize aNumberStart = i;
+                            const usize bNumberStart = j;
+
+                            while (i < a.length() && std::isdigit(a[i]))
+                            {
+                                ++i;
+                            }
+
+                            while (j < b.length() && std::isdigit(b[j]))
+                            {
+                                ++j;
+                            }
+
+                            const usize aAsNumber = std::stoi(a.substr(aNumberStart, i - aNumberStart));
+                            const usize bAsNumber = std::stoi(b.substr(bNumberStart, j - bNumberStart));
+
+                            if (aAsNumber != bAsNumber)
+                            {
+                                return aAsNumber < bAsNumber;
+                            }
+
+                            i = aNumberStart;
+                            j = bNumberStart;
+                        }
+
+                        if (a[i] != b[j])
+                        {
+                            return a[i] < b[j];
+                        }
+
+                        ++i;
+                        ++j;
+                    }
+
+                    return a.length() < b.length();
+                };
+
+                std::ranges::sort(sortedFramebufferViews,[&CustomOrderedSort] (const auto& a, const auto& b)
+                {
+                    return CustomOrderedSort(a.first, b.first);
+                });
+
+                for (const auto& [name, framebufferView] : sortedFramebufferViews)
                 {
                     const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
-
-                    if (!IsViewable(framebufferView.type))
-                    {
-                        continue;
-                    }
 
                     if (ImGui::TreeNode(name.c_str()))
                     {
@@ -507,11 +561,6 @@ namespace Vk
 
             ImGui::EndMainMenuBar();
         }
-    }
-
-    bool FramebufferManager::IsViewable(FramebufferImageType imageType)
-    {
-        return imageType == FramebufferImageType::Single2D;
     }
 
     void FramebufferManager::Destroy(VkDevice device, VmaAllocator allocator)

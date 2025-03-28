@@ -311,10 +311,18 @@ namespace Vk
 
     void Swapchain::CreateStaticSyncObjects(VkDevice device)
     {
+        const VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
+        {
+            .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+            .pNext         = nullptr,
+            .semaphoreType = VK_SEMAPHORE_TYPE_BINARY,
+            .initialValue  = 0
+        };
+
         const VkSemaphoreCreateInfo semaphoreInfo =
         {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            .pNext = nullptr,
+            .pNext = &semaphoreTypeCreateInfo,
             .flags = 0
         };
 
@@ -341,10 +349,18 @@ namespace Vk
             .flags = VK_FENCE_CREATE_SIGNALED_BIT
         };
 
+        const VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
+        {
+            .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+            .pNext         = nullptr,
+            .semaphoreType = VK_SEMAPHORE_TYPE_BINARY,
+            .initialValue  = 0
+        };
+
         const VkSemaphoreCreateInfo semaphoreInfo =
         {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            .pNext = nullptr,
+            .pNext = &semaphoreTypeCreateInfo,
             .flags = 0
         };
 

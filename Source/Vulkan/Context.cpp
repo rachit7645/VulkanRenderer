@@ -352,9 +352,9 @@ namespace Vk
         const bool hasInt64             = featureSet.features.shaderInt64;
 
         // Vulkan 1.1 features
-        const bool hasEnoughMultiView      = vk11Properties->maxMultiviewViewCount >= 6;
-        const bool hasShaderDrawParameters = vk11Features->shaderDrawParameters;
-        const bool hasMultiView            = vk11Features->multiview;
+        const bool hasRequiredMultiViewCount = vk11Properties->maxMultiviewViewCount >= 6;
+        const bool hasShaderDrawParameters   = vk11Features->shaderDrawParameters;
+        const bool hasMultiView              = vk11Features->multiview;
 
         // Vulkan 1.2 features
         const bool hasBDA                            = vk12Features->bufferDeviceAddress;
@@ -383,7 +383,7 @@ namespace Vk
                                 && hasShaderRelaxedExtendedInstruction
                                 #endif
                                 ;
-        const bool vk11       = hasEnoughMultiView && hasShaderDrawParameters && hasMultiView;
+        const bool vk11       = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView;
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                                 hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                                 hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&

@@ -21,7 +21,6 @@
 #include "Util/Util.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
-#include "Externals/VMA.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer::Buffers

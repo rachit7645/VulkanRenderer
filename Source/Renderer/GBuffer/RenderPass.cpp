@@ -54,7 +54,7 @@ namespace Renderer::GBuffer
             Vk::FramebufferType::ColorBGR_SFloat_10_11_11,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {
@@ -63,6 +63,11 @@ namespace Renderer::GBuffer
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -72,7 +77,7 @@ namespace Renderer::GBuffer
             Vk::FramebufferType::ColorRGBA_UNorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {
@@ -81,6 +86,11 @@ namespace Renderer::GBuffer
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -90,7 +100,7 @@ namespace Renderer::GBuffer
             Vk::FramebufferType::ColorRG_SFloat,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {
@@ -99,6 +109,11 @@ namespace Renderer::GBuffer
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 

@@ -78,7 +78,7 @@ namespace Renderer::PostProcess
         currentImage.Barrier
         (
             currentCmdBuffer,
-            VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_2_NONE,
             VK_ACCESS_2_NONE,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
