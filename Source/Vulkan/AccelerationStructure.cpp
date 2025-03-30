@@ -18,6 +18,7 @@
 
 #include "DebugUtils.h"
 #include "Util.h"
+#include "ImmediateSubmit.h"
 #include "Util/Maths.h"
 
 namespace Vk
@@ -25,6 +26,7 @@ namespace Vk
     void AccelerationStructure::BuildBottomLevelAS
     (
         const Vk::Context& context,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects
     )
@@ -234,7 +236,7 @@ namespace Vk
         (
             context.device,
             context.graphicsQueue,
-            context.commandPool,
+            cmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
                 const VkBufferCopy2 transformCopyRegion =
@@ -301,7 +303,7 @@ namespace Vk
         (
             context.device,
             context.graphicsQueue,
-            context.commandPool,
+            cmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
                 std::vector<VkDeviceSize> compactedSizes = {};

@@ -22,6 +22,7 @@
 #include "Model.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
+#include "Vulkan/CommandBufferAllocator.h"
 #include "Util/Util.h"
 
 namespace Models
@@ -35,7 +36,7 @@ namespace Models
         [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);
         [[nodiscard]] const Model& GetModel(usize modelID) const;
 
-        void Update(const Vk::Context& context);
+        void Update(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
 
         void ImGuiDisplay();
 

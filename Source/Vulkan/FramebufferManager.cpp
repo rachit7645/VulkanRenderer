@@ -17,7 +17,7 @@
 #include "FramebufferManager.h"
 
 #include "DebugUtils.h"
-#include "Util.h"
+#include "ImmediateSubmit.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -68,6 +68,7 @@ namespace Vk
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Vk::MegaSet& megaSet,
         VkExtent2D swapchainExtent
     )
@@ -294,7 +295,7 @@ namespace Vk
             (
                 context.device,
                 context.graphicsQueue,
-                context.commandPool,
+                cmdBufferAllocator,
                 [&] (const Vk::CommandBuffer cmdBuffer)
                 {
                     const VkDependencyInfo dependencyInfo =

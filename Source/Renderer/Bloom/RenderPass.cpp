@@ -33,18 +33,6 @@ namespace Renderer::Bloom
         : downsamplePipeline(context, formatHelper, megaSet, textureManager),
           upsamplePipeline(context, formatHelper, megaSet, textureManager)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("BloomPass/FIF{}", i));
-        }
-
         framebufferManager.AddFramebuffer
         (
             "Bloom",
@@ -94,6 +82,8 @@ namespace Renderer::Bloom
     void RenderPass::Render
     (
         usize FIF,
+        VkDevice device,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
     )
@@ -110,30 +100,29 @@ namespace Renderer::Bloom
             ImGui::EndMainMenuBar();
         }
 
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("BloomPass/FIF{}", FIF), {0.6796f, 0.4538f, 0.1518f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, fmt::format("BloomPass/FIF{}", FIF), {0.6796f, 0.4538f, 0.1518f, 1.0f});
 
         RenderDownSamples
         (
-            currentCmdBuffer,
+            cmdBuffer,
             framebufferManager,
             megaSet
         );
 
         RenderUpSamples
         (
-            currentCmdBuffer,
+            cmdBuffer,
             framebufferManager,
             megaSet
         );
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
     void RenderPass::RenderDownSamples
@@ -436,13 +425,11 @@ namespace Renderer::Bloom
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying bloom pass!");
 
         downsamplePipeline.Destroy(device);
         upsamplePipeline.Destroy(device);
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
     }
 }

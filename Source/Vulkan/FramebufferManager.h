@@ -24,6 +24,7 @@
 #include "ImageView.h"
 #include "FormatHelper.h"
 #include "MegaSet.h"
+#include "CommandBufferAllocator.h"
 #include "Util/Enum.h"
 
 namespace Vk
@@ -145,6 +146,7 @@ namespace Vk
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Vk::MegaSet& megaSet,
             VkExtent2D swapchainExtent
         );

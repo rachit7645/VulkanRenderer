@@ -35,19 +35,19 @@ namespace Renderer::PostProcess
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
+            VkDevice device,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::Swapchain& swapchain,
             const Vk::MegaSet& megaSet,
             const Vk::FramebufferManager& framebufferManager
         );
 
         PostProcess::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
         f32 m_bloomStrength = 0.031f;
     };

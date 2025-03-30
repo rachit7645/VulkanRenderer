@@ -17,30 +17,12 @@
 #ifndef VK_UTIL_H
 #define VK_UTIL_H
 
-#include <functional>
 #include <string_view>
 #include <vulkan/vulkan.h>
 
-#include "Util/Util.h"
-#include "CommandBuffer.h"
-
-// STD140 / STD430 alignment
-#define VULKAN_GLSL_DATA alignas(16)
-
 namespace Vk
 {
-    void ImmediateSubmit
-    (
-        VkDevice device,
-        VkQueue queue,
-        VkCommandPool cmdPool,
-        const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
-        const std::source_location location = std::source_location::current()
-    );
-
     void CheckResult(VkResult result, const std::string_view message);
-    // For ImGui
-    void CheckResult(VkResult result);
 }
 
 #endif

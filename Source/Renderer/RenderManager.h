@@ -44,6 +44,7 @@
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
+#include "Vulkan/CommandBufferAllocator.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -80,9 +81,10 @@ namespace Renderer
         void CreateSyncObjects();
 
         // Object handles
-        Engine::Window m_window;
-        Vk::Context    m_context;
-        Vk::Swapchain  m_swapchain;
+        Engine::Window             m_window;
+        Vk::Context                m_context;
+        Vk::CommandBufferAllocator m_cmdBufferAllocator;
+        Vk::Swapchain              m_swapchain;
 
         Vk::FormatHelper m_formatHelper;
 

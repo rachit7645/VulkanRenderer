@@ -66,7 +66,6 @@ namespace Vk
         PickPhysicalDevice();
         CreateLogicalDevice();
 
-        CreateCommandPool();
         CreateAllocator();
 
         AddDebugNames();
@@ -524,33 +523,6 @@ namespace Vk
         );
     }
 
-    void Context::CreateCommandPool()
-    {
-        const VkCommandPoolCreateInfo createInfo =
-        {
-            .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext            = nullptr,
-            .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = queueFamilies.graphicsFamily.value_or(0)
-        };
-
-        Vk::CheckResult(vkCreateCommandPool(
-            device,
-            &createInfo,
-            nullptr,
-            &commandPool),
-            "Failed to create command pool!"
-        );
-
-        Logger::Info("Created command pool! [handle={}]\n", std::bit_cast<void*>(commandPool));
-
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            Vk::CheckResult(vkResetCommandPool(device, commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT), "Failed to reset command pool!");
-            vkDestroyCommandPool(device, commandPool, nullptr);
-        });
-    }
-
     void Context::CreateAllocator()
     {
         const VmaVulkanFunctions vulkanFunctions =
@@ -621,7 +593,6 @@ namespace Vk
         Vk::SetDebugName(device, device,         "Device");
         Vk::SetDebugName(device, surface,        "SDL3Surface");
         Vk::SetDebugName(device, graphicsQueue,  "GraphicsQueue");
-        Vk::SetDebugName(device, commandPool,    "GlobalCommandPool");
     }
 
     void Context::Destroy()

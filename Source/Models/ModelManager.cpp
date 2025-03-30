@@ -51,14 +51,9 @@ namespace Models
         return iter->second;
     }
 
-    void ModelManager::Update(const Vk::Context& context)
+    void ModelManager::Update(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
-        auto cmdBuffer = Vk::CommandBuffer
-        (
-            context.device,
-            context.commandPool,
-            VK_COMMAND_BUFFER_LEVEL_PRIMARY
-        );
+        const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
@@ -127,7 +122,7 @@ namespace Models
             textureManager.ClearUploads(context.allocator);
 
             vkDestroyFence(context.device, transferFence, nullptr);
-            cmdBuffer.Free(context.device, context.commandPool);
+            cmdBufferAllocator.FreeGlobalCommandBuffer(cmdBuffer);
         }
     }
 

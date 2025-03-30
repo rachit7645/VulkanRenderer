@@ -40,13 +40,15 @@ namespace Renderer::Depth
             Vk::FramebufferManager& framebufferManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
             usize frameIndex,
             const Scene& scene,
+            VkDevice device,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
@@ -56,8 +58,6 @@ namespace Renderer::Depth
         );
 
         Depth::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     };
 }
 

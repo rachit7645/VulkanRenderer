@@ -19,7 +19,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Vulkan/Util.h"
+#include "Util/Util.h"
 
 namespace Renderer::GBuffer
 {

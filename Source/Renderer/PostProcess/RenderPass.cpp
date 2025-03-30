@@ -32,24 +32,14 @@ namespace Renderer::PostProcess
     )
         : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("PostProcessPass/FIF{}", i));
-        }
-
         Logger::Info("{}\n", "Created post process pass!");
     }
 
     void RenderPass::Render
     (
         usize FIF,
+        VkDevice device,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::Swapchain& swapchain,
         const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager
@@ -66,18 +56,18 @@ namespace Renderer::PostProcess
             ImGui::EndMainMenuBar();
         }
 
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
         const auto& currentImage     = swapchain.images[swapchain.imageIndex];
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("PostProcessPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("PostProcessPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
         currentImage.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_NONE,
             VK_ACCESS_2_NONE,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -124,9 +114,9 @@ namespace Renderer::PostProcess
             .pStencilAttachment   = nullptr
         };
 
-        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -138,7 +128,7 @@ namespace Renderer::PostProcess
             .maxDepth = 1.0f
         };
 
-        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
         const VkRect2D scissor =
         {
@@ -146,7 +136,7 @@ namespace Renderer::PostProcess
             .extent = swapchain.extent
         };
 
-        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         pipeline.pushConstant =
         {
@@ -158,7 +148,7 @@ namespace Renderer::PostProcess
 
         pipeline.PushConstants
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(PostProcess::PushConstant),
             reinterpret_cast<void*>(&pipeline.pushConstant)
@@ -166,32 +156,27 @@ namespace Renderer::PostProcess
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
-            currentCmdBuffer.handle,
+            cmdBuffer.handle,
             3,
             1,
             0,
             0
         );
 
-        vkCmdEndRendering(currentCmdBuffer.handle);
+        vkCmdEndRendering(cmdBuffer.handle);
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying swapchain pass!");
-
-        for (auto&& cmdBuffer : cmdBuffers)
-        {
-            cmdBuffer.Free(device, cmdPool);
-        }
 
         pipeline.Destroy(device);
     }

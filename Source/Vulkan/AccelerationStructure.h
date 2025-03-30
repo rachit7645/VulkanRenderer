@@ -21,6 +21,7 @@
 #include "CommandBuffer.h"
 #include "Context.h"
 #include "Buffer.h"
+#include "CommandBufferAllocator.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"
 
@@ -39,6 +40,7 @@ namespace Vk
         void BuildBottomLevelAS
         (
             const Vk::Context& context,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects
         );

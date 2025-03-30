@@ -30,18 +30,6 @@ namespace Renderer::DearImGui
     )
         : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ImGuiPass/FIF{}", i));
-        }
-
         Logger::Info("{}\n", "Created imgui pass!");
     }
 
@@ -86,6 +74,7 @@ namespace Renderer::DearImGui
     void RenderPass::Render
     (
         usize FIF,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::Context& context,
         const Vk::Swapchain& swapchain,
         const Vk::MegaSet& megaSet
@@ -96,12 +85,11 @@ namespace Renderer::DearImGui
         ImGui::Render();
         const auto drawData = ImGui::GetDrawData();
 
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("ImGuiPass/FIF{}", FIF), glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("ImGuiPass/FIF{}", FIF), glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
 
         if (drawData->TotalVtxCount > 0)
         {
@@ -109,7 +97,7 @@ namespace Renderer::DearImGui
             (
                 FIF,
                 drawData,
-                currentCmdBuffer,
+                cmdBuffer,
                 context,
                 swapchain,
                 megaSet
@@ -120,7 +108,7 @@ namespace Renderer::DearImGui
 
         currentImage.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
@@ -136,9 +124,9 @@ namespace Renderer::DearImGui
             }
         );
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
     void RenderPass::RenderGui
@@ -418,11 +406,9 @@ namespace Renderer::DearImGui
         }
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
         Logger::Debug("{}\n", "Destroying ImGui pass!");
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
         pipeline.Destroy(device);
 

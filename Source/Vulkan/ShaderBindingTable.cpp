@@ -16,12 +16,14 @@
 
 #include "ShaderBindingTable.h"
 #include "DebugUtils.h"
+#include "ImmediateSubmit.h"
 
 namespace Vk
 {
     ShaderBindingTable::ShaderBindingTable
     (
         const Vk::Context& context,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::Pipeline& pipeline,
         u32 missCount,
         u32 hitCount,
@@ -147,7 +149,7 @@ namespace Vk
         (
             context.device,
             context.graphicsQueue,
-            context.commandPool,
+            cmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
                 const VkBufferCopy2 copyRegion =

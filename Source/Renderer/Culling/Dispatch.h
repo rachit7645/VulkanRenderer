@@ -19,7 +19,6 @@
 
 #include "Pipeline.h"
 #include "FrustumBuffer.h"
-#include "Vulkan/Constants.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 

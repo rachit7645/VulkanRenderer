@@ -16,23 +16,21 @@
 
 #include "Swapchain.h"
 
-#include <thread>
-#include <volk/volk.h>
-
-#include "Vulkan/DebugUtils.h"
+#include "DebugUtils.h"
+#include "ImmediateSubmit.h"
 #include "Util/Log.h"
 #include "Util.h"
 
 namespace Vk
 {
-    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
+    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
         if (!IsSurfaceValid(size, context))
         {
             Logger::Error("{]\n", "Invalid surface!");
         }
 
-        CreateSwapChain(context);
+        CreateSwapChain(context, cmdBufferAllocator);
         CreateStaticSyncObjects(context.device);
 
         Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
@@ -51,10 +49,10 @@ namespace Vk
         return true;
     }
 
-    void Swapchain::RecreateSwapChain(const Vk::Context& context)
+    void Swapchain::RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
         DestroySwapchain(context.device);
-        CreateSwapChain(context);
+        CreateSwapChain(context, cmdBufferAllocator);
 
         Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
@@ -121,7 +119,7 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Vk::Context& context)
+    void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
         const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
         const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
@@ -258,7 +256,7 @@ namespace Vk
         (
             context.device,
             context.graphicsQueue,
-            context.commandPool,
+            cmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
                 std::vector<VkImageMemoryBarrier2> barriers = {};

@@ -43,7 +43,9 @@ namespace Renderer::PointShadow
         void Render
         (
             usize FIF,
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
@@ -53,11 +55,9 @@ namespace Renderer::PointShadow
             const std::span<Objects::PointLight> lights
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         PointShadow::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
         PointShadow::PointShadowBuffer pointShadowBuffer;
     };

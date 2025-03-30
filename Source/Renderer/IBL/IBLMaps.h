@@ -21,6 +21,7 @@
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
+#include "Vulkan/CommandBufferAllocator.h"
 
 namespace Renderer::IBL
 {
@@ -29,6 +30,7 @@ namespace Renderer::IBL
     public:
         void Generate
         (
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const std::string_view hdrMap,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,

@@ -27,7 +27,8 @@ namespace Renderer
 {
     RenderManager::RenderManager()
         : m_context(m_window.handle),
-          m_swapchain(m_window.size, m_context),
+          m_cmdBufferAllocator(m_context.device, m_context.queueFamilies),
+          m_swapchain(m_window.size, m_context, m_cmdBufferAllocator),
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
           m_modelManager(m_context, m_formatHelper),
@@ -41,7 +42,7 @@ namespace Renderer
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_xegtaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_shadowRTPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_shadowRTPass(m_context, m_cmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
@@ -57,18 +58,18 @@ namespace Renderer
             m_meshBuffer.Destroy(m_context.allocator);
 
             m_cullingDispatch.Destroy(m_context.device, m_context.allocator);
-            m_taaPass.Destroy(m_context.device, m_context.commandPool);
-            m_shadowRTPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
-            m_xegtaoPass.Destroy(m_context.device, m_context.commandPool);
-            m_lightingPass.Destroy(m_context.device, m_context.commandPool);
-            m_gBufferPass.Destroy(m_context.device, m_context.commandPool);
-            m_spotShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
-            m_pointShadowPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
-            m_bloomPass.Destroy(m_context.device, m_context.commandPool);
-            m_skyboxPass.Destroy(m_context.device, m_context.commandPool);
-            m_imGuiPass.Destroy(m_context.device, m_context.allocator, m_context.commandPool);
-            m_depthPass.Destroy(m_context.device, m_context.commandPool);
-            m_postProcessPass.Destroy(m_context.device, m_context.commandPool);
+            m_taaPass.Destroy(m_context.device);
+            m_shadowRTPass.Destroy(m_context.device, m_context.allocator);
+            m_xegtaoPass.Destroy(m_context.device);
+            m_lightingPass.Destroy(m_context.device);
+            m_gBufferPass.Destroy(m_context.device);
+            m_spotShadowPass.Destroy(m_context.device, m_context.allocator);
+            m_pointShadowPass.Destroy(m_context.device, m_context.allocator);
+            m_bloomPass.Destroy(m_context.device);
+            m_skyboxPass.Destroy(m_context.device);
+            m_imGuiPass.Destroy(m_context.device, m_context.allocator);
+            m_depthPass.Destroy(m_context.device);
+            m_postProcessPass.Destroy(m_context.device);
 
             m_megaSet.Destroy(m_context.device);
             m_accelerationStructure.Destroy(m_context.device, m_context.allocator);
@@ -76,6 +77,7 @@ namespace Renderer
             m_modelManager.Destroy(m_context.device, m_context.allocator);
 
             m_swapchain.Destroy(m_context.device);
+            m_cmdBufferAllocator.Destroy(m_context.device);
             m_context.Destroy();
         });
 
@@ -185,11 +187,12 @@ namespace Renderer
         InitImGui();
         CreateSyncObjects();
 
-        m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
-        m_modelManager.Update(m_context);
+        m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
+        m_modelManager.Update(m_context, m_cmdBufferAllocator);
 
         m_iblMaps.Generate
         (
+            m_cmdBufferAllocator,
             "industrial_sunset_puresky_4k.hdr",
             m_context,
             m_formatHelper,
@@ -198,7 +201,7 @@ namespace Renderer
             m_modelManager.textureManager
         );
 
-        m_accelerationStructure.BuildBottomLevelAS(m_context, m_modelManager, m_renderObjects);
+        m_accelerationStructure.BuildBottomLevelAS(m_context, m_cmdBufferAllocator, m_modelManager, m_renderObjects);
 
         m_megaSet.Update(m_context.device);
 
@@ -223,7 +226,9 @@ namespace Renderer
         m_pointShadowPass.Render
         (
             m_currentFIF,
+            m_context.device,
             m_context.allocator,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -236,7 +241,9 @@ namespace Renderer
         m_spotShadowPass.Render
         (
             m_currentFIF,
+            m_context.device,
             m_context.allocator,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_meshBuffer,
@@ -250,6 +257,8 @@ namespace Renderer
             m_currentFIF,
             m_frameIndex,
             m_scene,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -262,6 +271,8 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.geometryBuffer,
@@ -274,6 +285,8 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_megaSet,
             m_sceneBuffer
@@ -285,6 +298,7 @@ namespace Renderer
             m_frameIndex,
             m_context.device,
             m_context.allocator,
+            m_cmdBufferAllocator,
             m_megaSet,
             m_framebufferManager,
             m_sceneBuffer,
@@ -296,6 +310,8 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_megaSet,
             m_iblMaps,
@@ -308,6 +324,8 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -319,6 +337,8 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_megaSet
         );
@@ -326,6 +346,8 @@ namespace Renderer
         m_bloomPass.Render
         (
             m_currentFIF,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_framebufferManager,
             m_megaSet
         );
@@ -333,6 +355,8 @@ namespace Renderer
         m_postProcessPass.Render
         (
             m_currentFIF,
+            m_context.device,
+            m_cmdBufferAllocator,
             m_swapchain,
             m_megaSet,
             m_framebufferManager
@@ -341,6 +365,7 @@ namespace Renderer
         m_imGuiPass.Render
         (
             m_currentFIF,
+            m_cmdBufferAllocator,
             m_context,
             m_swapchain,
             m_megaSet
@@ -374,6 +399,7 @@ namespace Renderer
 
                     m_iblMaps.Generate
                     (
+                        m_cmdBufferAllocator,
                         m_hdrMap,
                         m_context,
                         m_formatHelper,
@@ -623,6 +649,8 @@ namespace Renderer
 
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
+
+        m_cmdBufferAllocator.ResetPool(m_currentFIF, m_context.device);
     }
 
     void RenderManager::EndFrame()
@@ -665,93 +693,7 @@ namespace Renderer
             .deviceIndex = 0
         };
 
-        const std::array cmdBufferInfos =
-        {
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_pointShadowPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_spotShadowPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_depthPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_gBufferPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_xegtaoPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_shadowRTPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_lightingPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_skyboxPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_taaPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_bloomPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_postProcessPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            },
-            VkCommandBufferSubmitInfo
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = m_imGuiPass.cmdBuffers[m_currentFIF].handle,
-                .deviceMask    = 1
-            }
-        };
+        const auto cmdBufferInfos = m_cmdBufferAllocator.GetGraphicsQueueSubmits(m_currentFIF);
 
         const VkSubmitInfo2 submitInfo =
         {
@@ -797,9 +739,9 @@ namespace Renderer
             "Failed to wait for fences!"
         );
 
-        m_swapchain.RecreateSwapChain(m_context);
+        m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
 
-        m_framebufferManager.Update(m_context, m_formatHelper, m_megaSet, m_swapchain.extent);
+        m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
         m_megaSet.Update(m_context.device);
 
         m_taaPass.ResetHistory();

@@ -33,12 +33,13 @@ namespace Renderer::ShadowRT
         RenderPass
         (
             const Vk::Context& context,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Vk::FramebufferManager& framebufferManager,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         void Render
         (
@@ -46,6 +47,7 @@ namespace Renderer::ShadowRT
             usize frameIndex,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::MegaSet& megaSet,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
@@ -54,8 +56,6 @@ namespace Renderer::ShadowRT
         );
 
         ShadowRT::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
         Vk::ShaderBindingTable shaderBindingTable;
     };

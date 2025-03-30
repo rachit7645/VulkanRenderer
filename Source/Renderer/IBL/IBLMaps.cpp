@@ -38,6 +38,7 @@ namespace Renderer::IBL
 
     void IBLMaps::Generate
     (
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const std::string_view hdrMap,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
@@ -53,12 +54,7 @@ namespace Renderer::IBL
             return;
         }
 
-        auto cmdBuffer = Vk::CommandBuffer
-        (
-            context.device,
-            context.commandPool,
-            VK_COMMAND_BUFFER_LEVEL_PRIMARY
-        );
+        const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         const auto matrixBuffer = SetupMatrixBuffer(context);
 
@@ -209,7 +205,7 @@ namespace Renderer::IBL
 
             m_deletionQueue.FlushQueue();
 
-            cmdBuffer.Free(context.device, context.commandPool);
+            cmdBufferAllocator.FreeGlobalCommandBuffer(cmdBuffer);
 
             textureManager.ClearUploads(context.allocator);
             textureManager.DestroyTexture(context.device, context.allocator, hdrMapID);

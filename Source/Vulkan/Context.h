@@ -53,9 +53,6 @@ namespace Vk
         Vk::QueueFamilyIndices queueFamilies;
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
 
-        // Pools
-        VkCommandPool commandPool = VK_NULL_HANDLE;
-
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
     private:
@@ -72,7 +69,6 @@ namespace Vk
             const VkPhysicalDeviceFeatures2& featureSet
         );
 
-        void CreateCommandPool();
         void CreateAllocator();
 
         void AddDebugNames();

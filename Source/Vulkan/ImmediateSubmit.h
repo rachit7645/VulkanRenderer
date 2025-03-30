@@ -14,31 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef SSAO_CONSTANTS_H
-#define SSAO_CONSTANTS_H
+#ifndef IMMEDIATE_SUBMIT_H
+#define IMMEDIATE_SUBMIT_H
 
+#include <functional>
+#include <source_location>
 #include <vulkan/vulkan.h>
 
-#include "Util/Util.h"
+#include "CommandBuffer.h"
+#include "CommandBufferAllocator.h"
 
-namespace Renderer::AO::SSAO::Occlusion
+namespace Vk
 {
-    struct PushConstant
-    {
-        VkDeviceAddress scene;
-        VkDeviceAddress samples;
-
-        u32 gBufferSamplerIndex;
-        u32 noiseSamplerIndex;
-
-        u32 gNormalIndex;
-        u32 sceneDepthIndex;
-        u32 noiseIndex;
-
-        f32 radius;
-        f32 bias;
-        f32 power;
-    };
+    void ImmediateSubmit
+    (
+        VkDevice device,
+        VkQueue queue,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
+        const std::source_location location = std::source_location::current()
+    );
 }
 
 #endif

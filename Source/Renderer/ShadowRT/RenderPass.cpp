@@ -25,25 +25,14 @@ namespace Renderer::ShadowRT
     RenderPass::RenderPass
     (
         const Vk::Context& context,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Vk::FramebufferManager& framebufferManager,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
         : pipeline(context, megaSet, textureManager),
-          shaderBindingTable(context, pipeline, 1, 0, 0)
+          shaderBindingTable(context, cmdBufferAllocator, pipeline, 1, 0, 0)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ShadowRTPass/FIF{}", i));
-        }
-
         framebufferManager.AddFramebuffer
         (
             "ShadowRT",
@@ -89,6 +78,7 @@ namespace Renderer::ShadowRT
         usize frameIndex,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -96,28 +86,27 @@ namespace Renderer::ShadowRT
         const std::span<const Renderer::RenderObject> renderObjects
     )
     {
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         accelerationStructure.BuildTopLevelAS
         (
             FIF,
-            currentCmdBuffer,
+            cmdBuffer,
             device,
             allocator,
             renderObjects
         );
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("ShadowRTPass/FIF{}", FIF), glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("ShadowRTPass/FIF{}", FIF), glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
 
         const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
         const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);
 
         shadowMap.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
@@ -133,7 +122,7 @@ namespace Renderer::ShadowRT
             }
         );
 
-        pipeline.Bind(currentCmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         pipeline.pushConstant =
         {
@@ -147,18 +136,18 @@ namespace Renderer::ShadowRT
 
         pipeline.PushConstants
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_SHADER_STAGE_RAYGEN_BIT_KHR,
             0, sizeof(ShadowRT::PushConstant),
             &pipeline.pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdTraceRaysKHR
         (
-            currentCmdBuffer.handle,
+            cmdBuffer.handle,
             &shaderBindingTable.raygenRegion,
             &shaderBindingTable.missRegion,
             &shaderBindingTable.hitRegion,
@@ -170,7 +159,7 @@ namespace Renderer::ShadowRT
 
         shadowMap.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
             VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -186,18 +175,16 @@ namespace Renderer::ShadowRT
             }
         );
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
         Logger::Debug("{}\n", "Destroying shadow pass!");
 
         shaderBindingTable.Destroy(allocator);
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
         pipeline.Destroy(device);
     }

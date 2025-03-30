@@ -45,18 +45,18 @@ namespace Renderer::AO::XeGTAO
         (
             usize FIF,
             usize frameIndex,
+            VkDevice device,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Buffers::SceneBuffer& sceneBuffer
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device);
 
         DepthPreFilter::Pipeline depthPreFilterPipeline;
         Occlusion::Pipeline      occlusionPipeline;
         Denoise::Pipeline        denoisePipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
         u32 hilbertLUT = 0;
     private:

@@ -32,18 +32,6 @@ namespace Renderer::Skybox
     )
         : pipeline(context, formatHelper, megaSet, textureManager)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("SkyboxPass/FIF{}", i));
-        }
-
         Logger::Info("{}\n", "Created skybox pass!");
     }
 
@@ -51,6 +39,8 @@ namespace Renderer::Skybox
     (
         usize FIF,
         usize frameIndex,
+        VkDevice device,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -58,12 +48,11 @@ namespace Renderer::Skybox
         const Vk::MegaSet& megaSet
     )
     {
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), {0.2796f, 0.8588f, 0.3548f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
         const usize currentDepthIndex = frameIndex % Depth::DEPTH_HISTORY_SIZE;
 
@@ -118,9 +107,9 @@ namespace Renderer::Skybox
             .pStencilAttachment   = nullptr
         };
 
-        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -132,7 +121,7 @@ namespace Renderer::Skybox
             .maxDepth = 0.0f
         };
 
-        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
         const VkRect2D scissor =
         {
@@ -140,7 +129,7 @@ namespace Renderer::Skybox
             .extent = {colorAttachment.image.width, colorAttachment.image.height}
         };
 
-        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         pipeline.pushConstant =
         {
@@ -152,29 +141,29 @@ namespace Renderer::Skybox
 
         pipeline.PushConstants
         (
-           currentCmdBuffer,
+           cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
            0, sizeof(Skybox::PushConstant),
            reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
         std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
-            currentCmdBuffer.handle,
+            cmdBuffer.handle,
             36,
             1,
             0,
             0
         );
 
-        vkCmdEndRendering(currentCmdBuffer.handle);
+        vkCmdEndRendering(cmdBuffer.handle);
 
         colorAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -192,7 +181,7 @@ namespace Renderer::Skybox
 
         depthAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -208,16 +197,14 @@ namespace Renderer::Skybox
             }
         );
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying skybox pass!");
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
         pipeline.Destroy(device);
     }

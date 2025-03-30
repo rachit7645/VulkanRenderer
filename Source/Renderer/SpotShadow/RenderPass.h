@@ -39,12 +39,14 @@ namespace Renderer::SpotShadow
             Vk::FramebufferManager& framebufferManager
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         void Render
         (
             usize FIF,
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::MeshBuffer& meshBuffer,
@@ -54,8 +56,6 @@ namespace Renderer::SpotShadow
         );
 
         SpotShadow::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
 
         SpotShadow::SpotShadowBuffer spotShadowBuffer;
     };

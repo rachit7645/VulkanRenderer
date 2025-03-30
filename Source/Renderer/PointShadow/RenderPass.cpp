@@ -33,18 +33,6 @@ namespace Renderer::PointShadow
         : pipeline(context, formatHelper),
           pointShadowBuffer(context.device, context.allocator)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("DepthPass/FIF{}", i));
-        }
-
         framebufferManager.AddFramebuffer
         (
             "PointShadowMap",
@@ -102,7 +90,9 @@ namespace Renderer::PointShadow
     void RenderPass::Render
     (
         usize FIF,
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -112,12 +102,11 @@ namespace Renderer::PointShadow
         const std::span<Objects::PointLight> lights
     )
     {
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("PointShadowPass/FIF{}", FIF), glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("PointShadowPass/FIF{}", FIF), glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
 
         std::vector<PointShadow::PointShadowData> pointShadowData;
         pointShadowData.resize(lights.size());
@@ -150,7 +139,7 @@ namespace Renderer::PointShadow
 
         depthAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
@@ -168,17 +157,17 @@ namespace Renderer::PointShadow
 
         for (usize i = 0; i < lights.size(); ++i)
         {
-            Vk::BeginLabel(currentCmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
+            Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
             for (usize face = 0; face < 6; ++face)
             {
-                Vk::BeginLabel(currentCmdBuffer, fmt::format("Face #{}", face), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
+                Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", face), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
 
                 cullingDispatch.ComputeDispatch
                 (
                     FIF,
                     pointShadowData[i].matrices[face],
-                    currentCmdBuffer,
+                    cmdBuffer,
                     meshBuffer,
                     indirectBuffer
                 );
@@ -216,9 +205,9 @@ namespace Renderer::PointShadow
                     .pStencilAttachment   = nullptr
                 };
 
-                vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+                vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-                pipeline.Bind(currentCmdBuffer);
+                pipeline.Bind(cmdBuffer);
 
                 const VkViewport viewport =
                 {
@@ -230,7 +219,7 @@ namespace Renderer::PointShadow
                     .maxDepth = 1.0f
                 };
 
-                vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+                vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
                 const VkRect2D scissor =
                 {
@@ -238,7 +227,7 @@ namespace Renderer::PointShadow
                     .extent = {depthAttachment.image.width, depthAttachment.image.height}
                 };
 
-                vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+                vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
                 pipeline.pushConstant =
                 {
@@ -253,17 +242,17 @@ namespace Renderer::PointShadow
 
                 pipeline.PushConstants
                 (
-                   currentCmdBuffer,
+                   cmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                    0, sizeof(PointShadow::PushConstant),
                    &pipeline.pushConstant
                 );
 
-                geometryBuffer.Bind(currentCmdBuffer);
+                geometryBuffer.Bind(cmdBuffer);
 
                 vkCmdDrawIndexedIndirectCount
                 (
-                    currentCmdBuffer.handle,
+                    cmdBuffer.handle,
                     indirectBuffer.culledDrawCallBuffer.handle,
                     sizeof(u32),
                     indirectBuffer.culledDrawCallBuffer.handle,
@@ -272,17 +261,17 @@ namespace Renderer::PointShadow
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
-                vkCmdEndRendering(currentCmdBuffer.handle);
+                vkCmdEndRendering(cmdBuffer.handle);
 
-                Vk::EndLabel(currentCmdBuffer);
+                Vk::EndLabel(cmdBuffer);
             }
 
-            Vk::EndLabel(currentCmdBuffer);
+            Vk::EndLabel(cmdBuffer);
         }
 
         depthAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -298,18 +287,16 @@ namespace Renderer::PointShadow
             }
         );
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
         Logger::Debug("{}\n", "Destroying point shadow pass!");
 
         pointShadowBuffer.Destroy(allocator);
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
         pipeline.Destroy(device);
     }

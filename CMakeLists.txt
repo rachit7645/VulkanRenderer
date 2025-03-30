@@ -86,6 +86,8 @@ add_executable(VulkanRenderer
     Source/Vulkan/AccelerationStructure.cpp
     Source/Vulkan/ShaderBindingTable.cpp
     Source/Vulkan/DescriptorAllocator.cpp
+    Source/Vulkan/CommandBufferAllocator.cpp
+    Source/Vulkan/ImmediateSubmit.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources
@@ -250,6 +252,12 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
 	# Enable debug output
 	target_compile_options(VulkanRenderer PRIVATE -g)
+endif()
+
+# Release config
+if (CMAKE_BUILD_TYPE STREQUAL Release)
+    # Release Mode
+    target_compile_definitions(VulkanRenderer PRIVATE NDEBUG)
 endif()
 
 # Add shader dependency

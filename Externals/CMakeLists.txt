@@ -23,11 +23,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
-option(VOLK_PULL_IN_VULKAN OFF)
-option(VOLK_INSTALL        ON)
+set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in VOLK" FORCE)
+set(VOLK_INSTALL        OFF CACHE BOOL "Enable volk installation"          FORCE)
 
 # Libraries with CMake support
-add_subdirectory(vma/)
+add_subdirectory(VMA/)
 add_subdirectory(volk/)
 
 # ImGui source files
@@ -36,9 +36,9 @@ add_library(imgui STATIC
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
 	imgui/imgui_widgets.cpp
-	# imgui/imgui_demo.cpp
 	imgui/backends/imgui_impl_sdl3.cpp
 	imgui/misc/cpp/imgui_stdlib.cpp
+    # imgui/imgui_demo.cpp
 )
 
 # ImGui precompiled headers

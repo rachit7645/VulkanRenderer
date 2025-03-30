@@ -24,95 +24,11 @@
 
 namespace Vk
 {
-    void ImmediateSubmit
-    (
-        VkDevice device,
-        VkQueue queue,
-        VkCommandPool cmdPool,
-        const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
-        UNUSED const std::source_location location
-    )
-    {
-        auto cmdBuffer = Vk::CommandBuffer
-        (
-            device,
-            cmdPool,
-            VK_COMMAND_BUFFER_LEVEL_PRIMARY
-        );
-
-        const VkFenceCreateInfo fenceCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0
-        };
-
-        VkFence fence;
-        vkCreateFence(device, &fenceCreateInfo, nullptr, &fence);
-
-        const auto name = fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location));
-
-        Vk::SetDebugName(device, cmdBuffer.handle, name);
-        Vk::SetDebugName(device, fence,            name);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            Vk::BeginLabel(cmdBuffer, name, glm::vec4(glm::vec3(0.0f), 1.0f));
-                CmdFunction(cmdBuffer);
-            Vk::EndLabel(cmdBuffer);
-        cmdBuffer.EndRecording();
-
-        VkCommandBufferSubmitInfo cmdBufferInfo =
-        {
-            .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-            .pNext         = nullptr,
-            .commandBuffer = cmdBuffer.handle,
-            .deviceMask    = 0
-        };
-
-        const VkSubmitInfo2 submitInfo =
-        {
-            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-            .pNext                    = nullptr,
-            .flags                    = 0,
-            .waitSemaphoreInfoCount   = 0,
-            .pWaitSemaphoreInfos      = nullptr,
-            .commandBufferInfoCount   = 1,
-            .pCommandBufferInfos      = &cmdBufferInfo,
-            .signalSemaphoreInfoCount = 0,
-            .pSignalSemaphoreInfos    = nullptr
-        };
-
-        Vk::CheckResult(vkQueueSubmit2(
-            queue,
-            1,
-            &submitInfo,
-            fence),
-            "Failed to submit immediate command buffer!"
-        );
-
-        Vk::CheckResult(vkWaitForFences(
-            device,
-            1,
-            &fence,
-            VK_TRUE,
-            60000000000ull),
-            "Error while waiting for command buffer to be executed!"
-        );
-
-        vkDestroyFence(device, fence, nullptr);
-        cmdBuffer.Free(device, cmdPool);
-    }
-
     void CheckResult(VkResult result, const std::string_view message)
     {
         if (result != VK_SUCCESS)
         {
             Logger::VulkanError("[{}] {}\n", string_VkResult(result), message.data());
         }
-    }
-
-    void CheckResult(VkResult result)
-    {
-        CheckResult(result, "ImGui Error!");
     }
 }

@@ -37,12 +37,14 @@ namespace Renderer::TAA
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
             usize frameIndex,
+            VkDevice device,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet
         );
@@ -50,8 +52,6 @@ namespace Renderer::TAA
         void ResetHistory();
 
         TAA::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
         bool m_hasToResetHistory = true;
     };

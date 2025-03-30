@@ -29,18 +29,6 @@ namespace Renderer::Depth
     )
         : pipeline(context, formatHelper)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("DepthPass/FIF{}", i));
-        }
-
         framebufferManager.AddFramebuffer
         (
             "SceneDepth",
@@ -88,6 +76,8 @@ namespace Renderer::Depth
         usize FIF,
         usize frameIndex,
         const Scene& scene,
+        VkDevice device,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -96,21 +86,20 @@ namespace Renderer::Depth
         Culling::Dispatch& cullingDispatch
     )
     {
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         cullingDispatch.ComputeDispatch
         (
             FIF,
             scene.currentMatrices.projection * scene.currentMatrices.view,
-            currentCmdBuffer,
+            cmdBuffer,
             meshBuffer,
             indirectBuffer
         );
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
         const usize currentIndex = frameIndex % DEPTH_HISTORY_SIZE;
 
@@ -119,7 +108,7 @@ namespace Renderer::Depth
 
         depthAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
@@ -166,9 +155,9 @@ namespace Renderer::Depth
             .pStencilAttachment   = nullptr
         };
 
-        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -180,7 +169,7 @@ namespace Renderer::Depth
             .maxDepth = 1.0f
         };
 
-        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
         const VkRect2D scissor =
         {
@@ -188,7 +177,7 @@ namespace Renderer::Depth
             .extent = {depthAttachment.image.width, depthAttachment.image.height}
         };
 
-        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         pipeline.pushConstant =
         {
@@ -200,17 +189,17 @@ namespace Renderer::Depth
 
         pipeline.PushConstants
         (
-           currentCmdBuffer,
+           cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT,
            0, sizeof(Depth::PushConstant),
            &pipeline.pushConstant
         );
 
-        geometryBuffer.Bind(currentCmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
         vkCmdDrawIndexedIndirectCount
         (
-            currentCmdBuffer.handle,
+            cmdBuffer.handle,
             indirectBuffer.culledDrawCallBuffer.handle,
             sizeof(u32),
             indirectBuffer.culledDrawCallBuffer.handle,
@@ -219,18 +208,16 @@ namespace Renderer::Depth
             sizeof(VkDrawIndexedIndirectCommand)
         );
 
-        vkCmdEndRendering(currentCmdBuffer.handle);
+        vkCmdEndRendering(cmdBuffer.handle);
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying depth pass!");
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
         pipeline.Destroy(device);
     }

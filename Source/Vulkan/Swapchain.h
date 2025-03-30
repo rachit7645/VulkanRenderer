@@ -18,7 +18,6 @@
 #define VK_SWAPCHAIN_H
 
 #include <vector>
-#include <memory>
 
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
@@ -28,16 +27,17 @@
 #include "ImageView.h"
 #include "Context.h"
 #include "Constants.h"
+#include "CommandBufferAllocator.h"
 
 namespace Vk
 {
     class Swapchain
     {
     public:
-        Swapchain(const glm::ivec2& size, const Vk::Context& context);
+        Swapchain(const glm::ivec2& size, const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
 
         bool IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context);
-        void RecreateSwapChain(const Vk::Context& context);
+        void RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
 
         void Destroy(VkDevice device);
 
@@ -57,7 +57,7 @@ namespace Vk
         std::vector<VkSemaphore> renderFinishedSemaphores = {};
         std::vector<VkFence>     presentFences            = {};
     private:
-        void CreateSwapChain(const Vk::Context& context);
+        void CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
         void DestroySwapchain(VkDevice device);
 
         void CreateStaticSyncObjects(VkDevice device);

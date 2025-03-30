@@ -36,18 +36,6 @@ namespace Renderer::GBuffer
     )
         : pipeline(context, formatHelper, megaSet, textureManager)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("GBufferPass/FIF{}", i));
-        }
-
         framebufferManager.AddFramebuffer
         (
             "GAlbedo",
@@ -163,6 +151,8 @@ namespace Renderer::GBuffer
     (
         usize FIF,
         usize frameIndex,
+        VkDevice device,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -171,12 +161,11 @@ namespace Renderer::GBuffer
         const Buffers::IndirectBuffer& indirectBuffer
     )
     {
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("GBufferPass/FIF{}", FIF), glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("GBufferPass/FIF{}", FIF), glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
         const usize currentDepthIndex  = frameIndex % Depth::DEPTH_HISTORY_SIZE;
         const usize previousDepthIndex = (frameIndex + Depth::DEPTH_HISTORY_SIZE - 1) % Depth::DEPTH_HISTORY_SIZE;
@@ -192,7 +181,7 @@ namespace Renderer::GBuffer
 
         gAlbedo.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -210,7 +199,7 @@ namespace Renderer::GBuffer
 
         gNormal.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -228,7 +217,7 @@ namespace Renderer::GBuffer
 
         motionVectors.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -319,9 +308,9 @@ namespace Renderer::GBuffer
             .pStencilAttachment   = nullptr
         };
 
-        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -333,7 +322,7 @@ namespace Renderer::GBuffer
             .maxDepth = 1.0f
         };
 
-        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
         const VkRect2D scissor =
         {
@@ -341,7 +330,7 @@ namespace Renderer::GBuffer
             .extent = {gAlbedo.image.width, gAlbedo.image.height}
         };
 
-        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         pipeline.pushConstant =
         {
@@ -357,20 +346,20 @@ namespace Renderer::GBuffer
 
         pipeline.PushConstants
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(GBuffer::PushConstant),
             &pipeline.pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
-        geometryBuffer.Bind(currentCmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
         vkCmdDrawIndexedIndirectCount
         (
-            currentCmdBuffer.handle,
+            cmdBuffer.handle,
             indirectBuffer.culledDrawCallBuffer.handle,
             sizeof(u32),
             indirectBuffer.culledDrawCallBuffer.handle,
@@ -379,11 +368,11 @@ namespace Renderer::GBuffer
             sizeof(VkDrawIndexedIndirectCommand)
         );
 
-        vkCmdEndRendering(currentCmdBuffer.handle);
+        vkCmdEndRendering(cmdBuffer.handle);
 
         gAlbedo.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -401,7 +390,7 @@ namespace Renderer::GBuffer
 
         gNormal.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -419,7 +408,7 @@ namespace Renderer::GBuffer
 
         motionVectors.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -435,19 +424,14 @@ namespace Renderer::GBuffer
             }
         );
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying GBuffer pass!");
-
-        for (auto&& cmdBuffer : cmdBuffers)
-        {
-            cmdBuffer.Free(device, cmdPool);
-        }
 
         pipeline.Destroy(device);
     }

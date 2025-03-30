@@ -19,6 +19,7 @@
 
 #include "Pipeline.h"
 #include "Buffer.h"
+#include "CommandBufferAllocator.h"
 
 namespace Vk
 {
@@ -28,6 +29,7 @@ namespace Vk
         ShaderBindingTable
         (
             const Vk::Context& context,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::Pipeline& pipeline,
             u32 missCount,
             u32 hitCount,

@@ -41,19 +41,18 @@ namespace Renderer::DearImGui
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         void Render
         (
             usize FIF,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::Context& context,
             const Vk::Swapchain& swapchain,
             const Vk::MegaSet& megaSet
         );
 
         DearImGui::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
         void RenderGui
         (

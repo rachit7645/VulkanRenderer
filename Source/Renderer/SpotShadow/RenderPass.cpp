@@ -36,18 +36,6 @@ namespace Renderer::SpotShadow
         : pipeline(context, formatHelper),
           spotShadowBuffer(context.device, context.allocator)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("SpotShadowPass/FIF{}", i));
-        }
-
         framebufferManager.AddFramebuffer
         (
             "SpotShadowMap",
@@ -99,20 +87,12 @@ namespace Renderer::SpotShadow
         Logger::Info("{}\n", "Created spot shadow pass!");
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
-    {
-        Logger::Debug("{}\n", "Destroying spot shadow pass!");
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
-
-        spotShadowBuffer.Destroy(allocator);
-        pipeline.Destroy(device);
-    }
-
     void RenderPass::Render
     (
         usize FIF,
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::MeshBuffer& meshBuffer,
@@ -121,12 +101,11 @@ namespace Renderer::SpotShadow
         const std::span<Objects::SpotLight>& lights
     )
     {
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
+        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("SpotShadowPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("SpotShadowPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
 
         std::vector<glm::mat4> matrices = {};
         matrices.reserve(lights.size());
@@ -157,7 +136,7 @@ namespace Renderer::SpotShadow
 
         depthAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
@@ -179,12 +158,12 @@ namespace Renderer::SpotShadow
             (
                 FIF,
                 matrices[i],
-                currentCmdBuffer,
+                cmdBuffer,
                 meshBuffer,
                 indirectBuffer
             );
 
-            Vk::BeginLabel(currentCmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.5146f, 0.7488f, 0.9388f, 1.0f));
+            Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.5146f, 0.7488f, 0.9388f, 1.0f));
 
             const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SpotShadowMapView/{}", i));
 
@@ -219,9 +198,9 @@ namespace Renderer::SpotShadow
                 .pStencilAttachment   = nullptr
             };
 
-            vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+            vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            pipeline.Bind(currentCmdBuffer);
+            pipeline.Bind(cmdBuffer);
 
             const VkViewport viewport =
             {
@@ -233,7 +212,7 @@ namespace Renderer::SpotShadow
                 .maxDepth = 1.0f
             };
 
-            vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+            vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
             const VkRect2D scissor =
             {
@@ -241,7 +220,7 @@ namespace Renderer::SpotShadow
                 .extent = {depthAttachment.image.width, depthAttachment.image.height}
             };
 
-            vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+            vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
             pipeline.pushConstant =
             {
@@ -254,17 +233,17 @@ namespace Renderer::SpotShadow
 
             pipeline.PushConstants
             (
-               currentCmdBuffer,
+               cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT,
                0, sizeof(SpotShadow::PushConstant),
                reinterpret_cast<void*>(&pipeline.pushConstant)
             );
 
-            geometryBuffer.Bind(currentCmdBuffer);
+            geometryBuffer.Bind(cmdBuffer);
 
             vkCmdDrawIndexedIndirectCount
             (
-                currentCmdBuffer.handle,
+                cmdBuffer.handle,
                 indirectBuffer.culledDrawCallBuffer.handle,
                 sizeof(u32),
                 indirectBuffer.culledDrawCallBuffer.handle,
@@ -273,14 +252,14 @@ namespace Renderer::SpotShadow
                 sizeof(VkDrawIndexedIndirectCommand)
             );
 
-            vkCmdEndRendering(currentCmdBuffer.handle);
+            vkCmdEndRendering(cmdBuffer.handle);
 
-            Vk::EndLabel(currentCmdBuffer);
+            Vk::EndLabel(cmdBuffer);
         }
 
         depthAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -296,8 +275,16 @@ namespace Renderer::SpotShadow
             }
         );
 
-        Vk::EndLabel(currentCmdBuffer);
+        Vk::EndLabel(cmdBuffer);
 
-        currentCmdBuffer.EndRecording();
+        cmdBuffer.EndRecording();
+    }
+
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
+    {
+        Logger::Debug("{}\n", "Destroying spot shadow pass!");
+
+        spotShadowBuffer.Destroy(allocator);
+        pipeline.Destroy(device);
     }
 }
