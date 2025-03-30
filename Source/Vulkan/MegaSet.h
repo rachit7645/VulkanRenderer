@@ -31,10 +31,10 @@ namespace Vk
     public:
         enum DescriptorBinding : u32
         {
-            SAMPLER_BINDING        = 0,
-            SAMPLED_IMAGES_BINDING = 1,
-            STORAGE_IMAGES_BINDING = 2,
-            BINDINGS_COUNT
+            MEGA_SET_SAMPLER_BINDING        = 0,
+            MEGA_SET_SAMPLED_IMAGES_BINDING = 1,
+            MEGA_SET_STORAGE_IMAGES_BINDING = 2,
+            MEGA_SET_BINDINGS_COUNT
         };
 
         explicit MegaSet(const Vk::Context& context);

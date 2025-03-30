@@ -29,6 +29,7 @@ namespace Renderer
         : m_context(m_window.handle),
           m_cmdBufferAllocator(m_context.device, m_context.queueFamilies),
           m_swapchain(m_window.size, m_context, m_cmdBufferAllocator),
+          m_timeline(m_context.device),
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
           m_modelManager(m_context, m_formatHelper),
@@ -76,6 +77,7 @@ namespace Renderer
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
 
+            m_timeline.Destroy(m_context.device);
             m_swapchain.Destroy(m_context.device);
             m_cmdBufferAllocator.Destroy(m_context.device);
             m_context.Destroy();
@@ -185,7 +187,6 @@ namespace Renderer
 
         // ImGui Yoy
         InitImGui();
-        CreateSyncObjects();
 
         m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
         m_modelManager.Update(m_context, m_cmdBufferAllocator);
@@ -210,7 +211,7 @@ namespace Renderer
 
     void RenderManager::Render()
     {
-        WaitForFences();
+        WaitForTimeline();
 
         // Swapchain is not ok, wait for resize event
         if (!m_isSwapchainOk)
@@ -608,25 +609,15 @@ namespace Renderer
         m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);
     }
 
-    void RenderManager::WaitForFences()
+    void RenderManager::WaitForTimeline()
     {
+        // Frame indices 0 to Vk::FRAMES_IN_FLIGHT - 1 do not need to wait for anything
+        if (m_frameIndex >= Vk::FRAMES_IN_FLIGHT)
+        {
+            m_timeline.WaitForStage(m_frameIndex - Vk::FRAMES_IN_FLIGHT, Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED, m_context.device);
+        }
+
         m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
-
-        Vk::CheckResult(vkWaitForFences(
-            m_context.device,
-            1,
-            &m_inFlightFences[m_currentFIF],
-            VK_TRUE,
-            std::numeric_limits<u64>::max()),
-            "Failed to wait for fence!"
-        );
-
-        Vk::CheckResult(vkResetFences(
-            m_context.device,
-            1,
-            &m_inFlightFences[m_currentFIF]),
-            "Unable to reset fence!"
-        );
     }
 
     void RenderManager::AcquireSwapchainImage()
@@ -673,23 +664,25 @@ namespace Renderer
 
     void RenderManager::SubmitQueue()
     {
-        const VkSemaphoreSubmitInfo signalSemaphoreInfo =
-        {
-            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext       = nullptr,
-            .semaphore   = m_swapchain.renderFinishedSemaphores[m_swapchain.imageIndex],
-            .value       = 0,
-            .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-            .deviceIndex = 0
-        };
+        m_timeline.AcquireImageToTimeline(m_frameIndex, m_context.graphicsQueue, m_swapchain.imageAvailableSemaphores[m_currentFIF]);
 
         const VkSemaphoreSubmitInfo waitSemaphoreInfo =
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
-            .semaphore   = m_swapchain.imageAvailableSemaphores[m_currentFIF],
-            .value       = 0,
-            .stageMask   = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            .semaphore   = m_timeline.semaphore,
+            .value       = m_timeline.GetTimelineValue(m_frameIndex, Vk::Timeline::TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
+            .stageMask   = VK_PIPELINE_STAGE_2_NONE,
+            .deviceIndex = 0
+        };
+
+        const VkSemaphoreSubmitInfo signalSemaphoreInfo =
+        {
+            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .pNext       = nullptr,
+            .semaphore   = m_timeline.semaphore,
+            .value       = m_timeline.GetTimelineValue(m_frameIndex, Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED),
+            .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
             .deviceIndex = 0
         };
 
@@ -712,9 +705,11 @@ namespace Renderer
             m_context.graphicsQueue,
             1,
             &submitInfo,
-            m_inFlightFences[m_currentFIF]),
+            VK_NULL_HANDLE),
             "Failed to submit queue!"
         );
+
+        m_timeline.TimelineToRenderFinished(m_frameIndex, m_context.graphicsQueue, m_swapchain.renderFinishedSemaphores[m_swapchain.imageIndex]);
     }
 
     void RenderManager::Resize()
@@ -725,19 +720,16 @@ namespace Renderer
             return;
         }
 
-        std::vector<VkFence> fences;
-
-        std::ranges::copy(m_swapchain.presentFences, std::back_inserter(fences));
-        std::ranges::copy(m_inFlightFences,          std::back_inserter(fences));
-
         Vk::CheckResult(vkWaitForFences(
             m_context.device,
-            fences.size(),
-            fences.data(),
+            m_swapchain.presentFences.size(),
+            m_swapchain.presentFences.data(),
             VK_TRUE,
             std::numeric_limits<u64>::max()),
             "Failed to wait for fences!"
         );
+
+        m_timeline.WaitForStage(m_frameIndex - 1, Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED, m_context.device);
 
         m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
 
@@ -845,39 +837,6 @@ namespace Renderer
             ImGui_ImplSDL3_Shutdown();
             ImGui::DestroyContext();
         });
-    }
-
-    void RenderManager::CreateSyncObjects()
-    {
-        const VkFenceCreateInfo fenceInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = VK_FENCE_CREATE_SIGNALED_BIT
-        };
-
-        for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
-        {
-            Vk::CheckResult(vkCreateFence(
-                m_context.device,
-                &fenceInfo,
-                nullptr,
-                &m_inFlightFences[i]),
-                "Failed to create in flight fences!"
-            );
-
-            Vk::SetDebugName(m_context.device, m_inFlightFences[i], fmt::format("RenderManager/InFlightFence{}", i));
-        }
-
-        m_deletionQueue.PushDeletor([&] ()
-        {
-            for (const auto fence : m_inFlightFences)
-            {
-                vkDestroyFence(m_context.device, fence, nullptr);
-            }
-        });
-
-        Logger::Info("{}\n", "Created synchronisation objects!");
     }
 
     RenderManager::~RenderManager()

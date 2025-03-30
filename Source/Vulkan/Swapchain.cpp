@@ -497,9 +497,9 @@ namespace Vk
 
         vkDestroySwapchainKHR(device, handle, nullptr);
 
-        for (usize i = 0; i < FRAMES_IN_FLIGHT; ++i)
+        for (const auto semaphore : imageAvailableSemaphores)
         {
-            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+            vkDestroySemaphore(device, semaphore, nullptr);
         }
     }
 }

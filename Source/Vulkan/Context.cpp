@@ -343,7 +343,6 @@ namespace Vk
         // Standard features
         const bool hasPushConstantSize  = propertySet.properties.limits.maxPushConstantsSize >= 128;
         const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
-        const bool hasWireframe         = featureSet.features.fillModeNonSolid;
         const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
         const bool hasBC                = featureSet.features.textureCompressionBC;
         const bool hasImageCubeArray    = featureSet.features.imageCubeArray;
@@ -367,6 +366,7 @@ namespace Vk
         const bool hasStorageImageUpdateAfterBind    = vk12Features->descriptorBindingStorageImageUpdateAfterBind;
         const bool hasUpdateUnusedWhilePending       = vk12Features->descriptorBindingUpdateUnusedWhilePending;
         const bool hasDrawIndirectCount              = vk12Features->drawIndirectCount;
+        const bool hasTimelineSemaphore              = vk12Features->timelineSemaphore;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
@@ -374,7 +374,7 @@ namespace Vk
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
         const bool required   = areQueuesValid && hasExtensions;
-        const bool standard   = hasPushConstantSize && hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC &&
+        const bool standard   = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
                                 hasImageCubeArray && hasDepthClamp && hasInt64;
         const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
                                 hasRTPipeline && hasRTCulling && hasRTMaintenance
@@ -386,7 +386,7 @@ namespace Vk
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                                 hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                                 hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
-                                hasDrawIndirectCount;
+                                hasDrawIndirectCount && hasTimelineSemaphore;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
         return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
@@ -469,6 +469,7 @@ namespace Vk
         vk12Features.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
         vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
         vk12Features.drawIndirectCount                            = VK_TRUE;
+        vk12Features.timelineSemaphore                            = VK_TRUE;
 
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -481,7 +482,6 @@ namespace Vk
         deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         deviceFeatures.pNext                         = &vk13Features;
         deviceFeatures.features.samplerAnisotropy    = VK_TRUE;
-        deviceFeatures.features.fillModeNonSolid     = VK_TRUE;
         deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
         deviceFeatures.features.textureCompressionBC = VK_TRUE;
         deviceFeatures.features.imageCubeArray       = VK_TRUE;

@@ -24,12 +24,12 @@
 
 namespace Vk
 {
-    constexpr u32 MAX_SAMPLERS       = 1 << 8;
-    constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
-    constexpr u32 MAX_STORAGE_IMAGES = 1 << 10;
-
     MegaSet::MegaSet(const Vk::Context& context)
     {
+        constexpr u32 MAX_SAMPLERS       = 1 << 8;
+        constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
+        constexpr u32 MAX_STORAGE_IMAGES = 1 << 10;
+        
         const auto maxSamplers      = std::min(context.physicalDeviceVulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers,      MAX_SAMPLERS);
         const auto maxSampledImages = std::min(context.physicalDeviceVulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
         const auto maxStorageImages = std::min(context.physicalDeviceVulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
@@ -71,7 +71,7 @@ namespace Vk
             "Failed to create mega set descriptor pool!"
         );
 
-        constexpr std::array<VkDescriptorBindingFlags, DescriptorBinding::BINDINGS_COUNT> bindingFlags =
+        constexpr std::array<VkDescriptorBindingFlags, DescriptorBinding::MEGA_SET_BINDINGS_COUNT> bindingFlags =
         {
             // Samplers
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT,
@@ -93,7 +93,7 @@ namespace Vk
         {
             VkDescriptorSetLayoutBinding
             {
-                .binding            = DescriptorBinding::SAMPLER_BINDING,
+                .binding            = DescriptorBinding::MEGA_SET_SAMPLER_BINDING,
                 .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLER,
                 .descriptorCount    = maxSamplers,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
@@ -101,7 +101,7 @@ namespace Vk
             },
             VkDescriptorSetLayoutBinding
             {
-                .binding            = DescriptorBinding::SAMPLED_IMAGES_BINDING,
+                .binding            = DescriptorBinding::MEGA_SET_SAMPLED_IMAGES_BINDING,
                 .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                 .descriptorCount    = maxSampledImages,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
@@ -109,7 +109,7 @@ namespace Vk
             },
             VkDescriptorSetLayoutBinding
             {
-                .binding            = DescriptorBinding::STORAGE_IMAGES_BINDING,
+                .binding            = DescriptorBinding::MEGA_SET_STORAGE_IMAGES_BINDING,
                 .descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
                 .descriptorCount    = maxStorageImages,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
@@ -167,7 +167,7 @@ namespace Vk
         m_writer.WriteImage
         (
             descriptorSet,
-            DescriptorBinding::SAMPLER_BINDING,
+            DescriptorBinding::MEGA_SET_SAMPLER_BINDING,
             id,
             sampler.handle,
             VK_NULL_HANDLE,
@@ -185,7 +185,7 @@ namespace Vk
         m_writer.WriteImage
         (
             descriptorSet,
-            DescriptorBinding::SAMPLED_IMAGES_BINDING,
+            DescriptorBinding::MEGA_SET_SAMPLED_IMAGES_BINDING,
             id,
             VK_NULL_HANDLE,
             imageView.handle,
@@ -203,7 +203,7 @@ namespace Vk
         m_writer.WriteImage
         (
             descriptorSet,
-            DescriptorBinding::STORAGE_IMAGES_BINDING,
+            DescriptorBinding::MEGA_SET_STORAGE_IMAGES_BINDING,
             id,
             VK_NULL_HANDLE,
             imageView.handle,
@@ -257,7 +257,7 @@ namespace Vk
                 ImGui::Text
                 (
                     "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    DescriptorBinding::SAMPLER_BINDING,
+                    DescriptorBinding::MEGA_SET_SAMPLER_BINDING,
                     "Sampler",
                     m_samplerAllocator.GetAllocatedCount(),
                     m_samplerAllocator.GetFreeSlotCount(),
@@ -270,7 +270,7 @@ namespace Vk
                 ImGui::Text
                 (
                     "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    DescriptorBinding::SAMPLED_IMAGES_BINDING,
+                    DescriptorBinding::MEGA_SET_SAMPLED_IMAGES_BINDING,
                     "Sampled Image",
                     m_sampledImageAllocator.GetAllocatedCount(),
                     m_sampledImageAllocator.GetFreeSlotCount(),
@@ -283,7 +283,7 @@ namespace Vk
                 ImGui::Text
                 (
                     "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    DescriptorBinding::STORAGE_IMAGES_BINDING,
+                    DescriptorBinding::MEGA_SET_STORAGE_IMAGES_BINDING,
                     "Storage Image",
                     m_storageImageAllocator.GetAllocatedCount(),
                     m_storageImageAllocator.GetFreeSlotCount(),

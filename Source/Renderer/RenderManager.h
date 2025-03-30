@@ -45,6 +45,7 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/CommandBufferAllocator.h"
+#include "Vulkan/Timeline.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -69,7 +70,7 @@ namespace Renderer
         void Render();
         [[nodiscard]] bool HandleEvents();
     private:
-        void WaitForFences();
+        void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
         void Update();
@@ -78,13 +79,13 @@ namespace Renderer
         void Resize();
 
         void InitImGui();
-        void CreateSyncObjects();
 
         // Object handles
         Engine::Window             m_window;
         Vk::Context                m_context;
         Vk::CommandBufferAllocator m_cmdBufferAllocator;
         Vk::Swapchain              m_swapchain;
+        Vk::Timeline               m_timeline;
 
         Vk::FormatHelper m_formatHelper;
 
@@ -121,9 +122,6 @@ namespace Renderer
         // Scene objects
         std::vector<Renderer::RenderObject> m_renderObjects;
         Objects::FreeCamera                 m_camera;
-
-        // Sync objects
-        std::array<VkFence, Vk::FRAMES_IN_FLIGHT> m_inFlightFences = {};
 
         // Frame index
         usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
