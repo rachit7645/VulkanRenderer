@@ -25,6 +25,8 @@
 #include "PBR.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
+#include "PointShadowMap.glsl"
+#include "SpotShadowMap.glsl"
 
 layout(location = 0) in vec2 fragUV;
 
@@ -75,13 +77,31 @@ void main()
         PointLight light     = Constants.Scene.pointLights.lights[i];
         LightInfo  lightInfo = GetLightInfo(light, worldPosition);
 
+        Lo += CalculateLight
+        (
+            lightInfo,
+            normal,
+            toCamera,
+            F0,
+            albedo,
+            roughness,
+            metallic,
+            NdotV
+        );
+    }
+
+    for (uint i = 0; i < Constants.Scene.shadowedPointLights.count; ++i)
+    {
+        ShadowedPointLight light     = Constants.Scene.shadowedPointLights.lights[i];
+        LightInfo          lightInfo = GetLightInfo(light, worldPosition);
+
         float shadow = CalculatePointShadow
         (
             i,
+            light,
+            Constants.Scene.commonLight.pointLightShadowPlanes,
             worldPosition,
-            light.position,
             Constants.Scene.cameraPosition,
-            Constants.PointShadows,
             CubemapArrays[Constants.PointShadowMapIndex],
             Samplers[Constants.ShadowSamplerIndex]
         );
@@ -104,13 +124,30 @@ void main()
         SpotLight light     = Constants.Scene.spotLights.lights[i];
         LightInfo lightInfo = GetLightInfo(light, worldPosition);
 
+        Lo += CalculateLight
+        (
+            lightInfo,
+            normal,
+            toCamera,
+            F0,
+            albedo,
+            roughness,
+            metallic,
+            NdotV
+        );
+    }
+
+    for (uint i = 0; i < Constants.Scene.shadowedSpotLights.count; ++i)
+    {
+        ShadowedSpotLight light     = Constants.Scene.shadowedSpotLights.lights[i];
+        LightInfo         lightInfo = GetLightInfo(light, worldPosition);
+
         float shadow = CalculateSpotShadow
         (
             i,
+            light,
             worldPosition,
             normal,
-            light.position,
-            Constants.SpotShadows.matrices[i],
             TextureArrays[Constants.SpotShadowMapIndex],
             Samplers[Constants.ShadowSamplerIndex]
         );

@@ -17,24 +17,15 @@
 #ifndef POINT_SHADOW_MAP_GLSL
 #define POINT_SHADOW_MAP_GLSL
 
-struct PointShadowData
-{
-    mat4 matrices[6];
-};
-
-layout(buffer_reference, scalar) readonly buffer PointShadowBuffer
-{
-    vec2            shadowPlanes;
-    PointShadowData pointShadowData[];
-};
+#include "Lights.glsl"
 
 float CalculatePointShadow
 (
     uint lightIndex,
+    ShadowedPointLight light,
+    vec2 pointLightShadowPlanes,
     vec3 fragPosition,
-    vec3 lightPosition,
     vec3 cameraPosition,
-    PointShadowBuffer pointShadowBuffer,
     textureCubeArray pointShadowMap,
     sampler pointShadowSampler
 )
@@ -48,12 +39,12 @@ float CalculatePointShadow
         vec3(0.0f, 1.0f,  1.0f), vec3( 0.0f, -1.0f,  1.0f), vec3( 0.0f, -1.0f, -1.0f), vec3( 0.0f, 1.0f, -1.0f)
     );
 
-    vec3  fragToLight  = fragPosition - lightPosition;
+    vec3  fragToLight  = fragPosition - light.position;
     float currentDepth = length(fragToLight);
 
     float shadow       = 0.0f;
     float viewDistance = length(cameraPosition - fragPosition);
-    float diskRadius   = (1.0f + (viewDistance / pointShadowBuffer.shadowPlanes.y)) / pointShadowBuffer.shadowPlanes.y;
+    float diskRadius   = (1.0f + (viewDistance / pointLightShadowPlanes.y)) / pointLightShadowPlanes.y;
 
     for(uint i = 0; i < POINT_SHADOW_NUM_SAMPLES; ++i)
     {
@@ -61,7 +52,7 @@ float CalculatePointShadow
         (
             samplerCubeArrayShadow(pointShadowMap, pointShadowSampler),
             vec4(fragToLight + GRID_SAMPLING_DISK[i] * diskRadius, lightIndex),
-            (currentDepth - POINT_SHADOW_BIAS) / pointShadowBuffer.shadowPlanes.y
+            (currentDepth - POINT_SHADOW_BIAS) / pointLightShadowPlanes.y
         );
     }
 

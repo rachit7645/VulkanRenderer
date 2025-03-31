@@ -19,14 +19,14 @@
 
 #include "Mesh.glsl"
 #include "Vertex.glsl"
-#include "SpotShadowMap.glsl"
+#include "Scene.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
+    SceneBuffer       Scene;
     MeshBuffer        Meshes;
     VisibleMeshBuffer VisibleMeshes;
     PositionBuffer    Positions;
-    SpotShadowBuffer  SpotShadows;
     uint              CurrentIndex;
 } Constants;
 

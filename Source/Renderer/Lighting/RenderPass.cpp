@@ -83,9 +83,7 @@ namespace Renderer::Lighting
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const IBL::IBLMaps& iblMaps,
-        const Buffers::SceneBuffer& sceneBuffer,
-        const PointShadow::PointShadowBuffer& pointShadowBuffer,
-        const SpotShadow::SpotShadowBuffer& spotShadowBuffer
+        const Buffers::SceneBuffer& sceneBuffer
     )
     {
         const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -172,22 +170,20 @@ namespace Renderer::Lighting
 
         pipeline.pushConstant =
         {
-            .scene                   = sceneBuffer.buffers[FIF].deviceAddress,
-            .pointShadows            = pointShadowBuffer.buffers[FIF].deviceAddress,
-            .spotShadows             = spotShadowBuffer.buffers[FIF].deviceAddress,
-            .gBufferSamplerIndex     = pipeline.gBufferSamplerIndex,
-            .iblSamplerIndex         = pipeline.iblSamplerIndex,
-            .shadowSamplerIndex      = pipeline.shadowSamplerIndex,
-            .gAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
-            .gNormalIndex            = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex         = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
-            .irradianceIndex         = iblMaps.irradianceID.value(),
-            .preFilterIndex          = iblMaps.preFilterID.value(),
-            .brdfLutIndex            = iblMaps.brdfLutID.value(),
-            .shadowMapIndex          = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
-            .pointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
-            .spotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
-            .aoIndex                 = framebufferManager.GetFramebufferView("XeGTAO/OcclusionView").sampledImageIndex,
+            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .gBufferSamplerIndex = pipeline.gBufferSamplerIndex,
+            .iblSamplerIndex     = pipeline.iblSamplerIndex,
+            .shadowSamplerIndex  = pipeline.shadowSamplerIndex,
+            .gAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
+            .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .sceneDepthIndex     = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
+            .irradianceIndex     = iblMaps.irradianceID.value(),
+            .preFilterIndex      = iblMaps.preFilterID.value(),
+            .brdfLutIndex        = iblMaps.brdfLutID.value(),
+            .shadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
+            .pointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
+            .spotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
+            .aoIndex             = framebufferManager.GetFramebufferView("XeGTAO/OcclusionView").sampledImageIndex,
         };
 
         pipeline.PushConstants

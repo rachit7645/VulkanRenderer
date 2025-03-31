@@ -20,7 +20,6 @@
 #include "Mesh.glsl"
 #include "Scene.glsl"
 #include "Vertex.glsl"
-#include "PointShadowMap.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
@@ -28,7 +27,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     MeshBuffer        Meshes;
     VisibleMeshBuffer VisibleMeshes;
     PositionBuffer    Positions;
-    PointShadowBuffer PointShadows;
     uint              LightIndex;
     uint              FaceIndex;
 } Constants;

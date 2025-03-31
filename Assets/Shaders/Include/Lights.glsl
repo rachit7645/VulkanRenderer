@@ -36,6 +36,15 @@ struct PointLight
     vec3 attenuation;
 };
 
+struct ShadowedPointLight
+{
+    vec3 position;
+    vec3 color;
+    vec3 intensity;
+    vec3 attenuation;
+    mat4 matrices[6];
+};
+
 struct SpotLight
 {
     vec3 position;
@@ -44,6 +53,22 @@ struct SpotLight
     vec3 attenuation;
     vec3 direction;
     vec2 cutOff;
+};
+
+struct ShadowedSpotLight
+{
+    vec3 position;
+    vec3 color;
+    vec3 intensity;
+    vec3 attenuation;
+    vec3 direction;
+    vec2 cutOff;
+    mat4 matrix;
+};
+
+layout(buffer_reference, scalar) readonly buffer CommonLightBuffer
+{
+    vec2 pointLightShadowPlanes;
 };
 
 layout(buffer_reference, scalar) readonly buffer DirLightBuffer
@@ -58,10 +83,22 @@ layout(buffer_reference, scalar) readonly buffer PointLightBuffer
     PointLight lights[];
 };
 
+layout(buffer_reference, scalar) readonly buffer ShadowedPointLightBuffer
+{
+    uint               count;
+    ShadowedPointLight lights[];
+};
+
 layout(buffer_reference, scalar) readonly buffer SpotLightBuffer
 {
     uint      count;
     SpotLight lights[];
+};
+
+layout(buffer_reference, scalar) readonly buffer ShadowedSpotLightBuffer
+{
+    uint              count;
+    ShadowedSpotLight lights[];
 };
 
 struct LightInfo
@@ -70,9 +107,9 @@ struct LightInfo
     vec3 radiance;
 };
 
-float CalculateAttenuation(vec3 position, vec3 ATT, vec3 fragPos)
+float CalculateAttenuation(vec3 position, vec3 ATT, vec3 fragPosition)
 {
-    float distance = length(position - fragPos);
+    float distance = length(position - fragPosition);
 
     float attenuation = ATT.x + (ATT.y * distance) + (ATT.z * distance * distance);
           attenuation = 1.0f / max(attenuation, 0.0001f);
@@ -100,23 +137,46 @@ LightInfo GetLightInfo(DirLight light)
     return info;
 }
 
-LightInfo GetLightInfo(PointLight light, vec3 fragPos)
+LightInfo GetLightInfo(PointLight light, vec3 fragPosition)
 {
     LightInfo info;
 
-    info.L            = normalize(light.position - fragPos);
-    float attenuation = CalculateAttenuation(light.position, light.attenuation, fragPos);
+    info.L            = normalize(light.position - fragPosition);
+    float attenuation = CalculateAttenuation(light.position, light.attenuation, fragPosition);
     info.radiance     = light.color.rgb * light.intensity * attenuation;
 
     return info;
 }
 
-LightInfo GetLightInfo(SpotLight light, vec3 fragPos)
+LightInfo GetLightInfo(ShadowedPointLight light, vec3 fragPosition)
 {
     LightInfo info;
 
-    info.L            = normalize(light.position - fragPos);
-    float attenuation = CalculateAttenuation(light.position, light.attenuation, fragPos);
+    info.L            = normalize(light.position - fragPosition);
+    float attenuation = CalculateAttenuation(light.position, light.attenuation, fragPosition);
+    info.radiance     = light.color.rgb * light.intensity * attenuation;
+
+    return info;
+}
+
+LightInfo GetLightInfo(SpotLight light, vec3 fragPosition)
+{
+    LightInfo info;
+
+    info.L            = normalize(light.position - fragPosition);
+    float attenuation = CalculateAttenuation(light.position, light.attenuation, fragPosition);
+    float intensity   = CalculateSpotIntensity(info.L, light.direction, light.cutOff);
+    info.radiance     = light.color * light.intensity * attenuation * intensity;
+
+    return info;
+}
+
+LightInfo GetLightInfo(ShadowedSpotLight light, vec3 fragPosition)
+{
+    LightInfo info;
+
+    info.L            = normalize(light.position - fragPosition);
+    float attenuation = CalculateAttenuation(light.position, light.attenuation, fragPosition);
     float intensity   = CalculateSpotIntensity(info.L, light.direction, light.cutOff);
     info.radiance     = light.color * light.intensity * attenuation * intensity;
 

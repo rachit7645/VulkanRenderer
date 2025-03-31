@@ -126,11 +126,9 @@ add_executable(VulkanRenderer
     # Point Shadow Pass Sources
     Source/Renderer/PointShadow/Pipeline.cpp
     Source/Renderer/PointShadow/RenderPass.cpp
-    Source/Renderer/PointShadow/PointShadowBuffer.cpp
     # Point Shadow Pass Sources
     Source/Renderer/SpotShadow/Pipeline.cpp
     Source/Renderer/SpotShadow/RenderPass.cpp
-    Source/Renderer/SpotShadow/SpotShadowBuffer.cpp
     # Culling Dispatch Sources
     Source/Renderer/Culling/Pipeline.cpp
     Source/Renderer/Culling/Dispatch.cpp

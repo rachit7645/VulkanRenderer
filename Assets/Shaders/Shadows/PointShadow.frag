@@ -29,7 +29,7 @@ void main()
     float lightDistance = length(fragPosition - Constants.Scene.pointLights.lights[Constants.LightIndex].position);
 
     // Map to [0, 1] to store into depth buffer
-    lightDistance = lightDistance / Constants.PointShadows.shadowPlanes.y;
+    lightDistance = lightDistance / Constants.Scene.commonLight.pointLightShadowPlanes.y;
 
     gl_FragDepth = lightDistance;
 }

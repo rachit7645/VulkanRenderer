@@ -64,8 +64,8 @@ namespace Renderer
             m_xegtaoPass.Destroy(m_context.device);
             m_lightingPass.Destroy(m_context.device);
             m_gBufferPass.Destroy(m_context.device);
-            m_spotShadowPass.Destroy(m_context.device, m_context.allocator);
-            m_pointShadowPass.Destroy(m_context.device, m_context.allocator);
+            m_spotShadowPass.Destroy(m_context.device);
+            m_pointShadowPass.Destroy(m_context.device);
             m_bloomPass.Destroy(m_context.device);
             m_skyboxPass.Destroy(m_context.device);
             m_imGuiPass.Destroy(m_context.device, m_context.allocator);
@@ -228,29 +228,28 @@ namespace Renderer
         (
             m_currentFIF,
             m_context.device,
-            m_context.allocator,
             m_cmdBufferAllocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_cullingDispatch,
-            m_pointLights
+            m_lightsBuffer,
+            m_cullingDispatch
         );
 
         m_spotShadowPass.Render
         (
             m_currentFIF,
             m_context.device,
-            m_context.allocator,
             m_cmdBufferAllocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
+            m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_cullingDispatch,
-            m_spotLights
+            m_lightsBuffer,
+            m_cullingDispatch
         );
 
         m_depthPass.Render
@@ -316,9 +315,7 @@ namespace Renderer
             m_framebufferManager,
             m_megaSet,
             m_iblMaps,
-            m_sceneBuffer,
-            m_pointShadowPass.pointShadowBuffer,
-            m_spotShadowPass.spotShadowBuffer
+            m_sceneBuffer
         );
 
         m_skyboxPass.Render
@@ -598,9 +595,15 @@ namespace Renderer
         m_scene.cameraPosition = m_camera.position;
         m_scene.nearPlane      = Renderer::NEAR_PLANE;
         m_scene.farPlane       = Renderer::FAR_PLANE;
-        m_scene.dirLights      = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetDirLightOffset();
-        m_scene.pointLights    = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetPointLightOffset();
-        m_scene.spotLights     = m_lightsBuffer.buffers[m_currentFIF].deviceAddress + m_lightsBuffer.GetSpotLightOffset();
+
+        const auto lightsBuffer = m_lightsBuffer.buffers[m_currentFIF].deviceAddress;
+
+        m_scene.commonLight         = lightsBuffer + 0;
+        m_scene.dirLights           = lightsBuffer + m_lightsBuffer.GetDirLightOffset();
+        m_scene.pointLights         = lightsBuffer + m_lightsBuffer.GetPointLightOffset();
+        m_scene.shadowedPointLights = lightsBuffer + m_lightsBuffer.GetShadowedPointLightOffset();
+        m_scene.spotLights          = lightsBuffer + m_lightsBuffer.GetSpotLightOffset();
+        m_scene.shadowedSpotLights  = lightsBuffer + m_lightsBuffer.GetShadowedSpotLightOffset();
 
         m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_sun, 1}, m_pointLights, m_spotLights);
         m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_scene);

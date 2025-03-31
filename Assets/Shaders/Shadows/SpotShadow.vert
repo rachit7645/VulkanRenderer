@@ -27,7 +27,7 @@ void main()
     uint meshIndex = Constants.VisibleMeshes.indices[gl_DrawID];
     Mesh mesh      = Constants.Meshes.meshes[meshIndex];
     vec3 position  = Constants.Positions.positions[gl_VertexIndex];
-    mat4 matrix    = Constants.SpotShadows.matrices[Constants.CurrentIndex];
+    mat4 matrix    = Constants.Scene.shadowedSpotLights.lights[Constants.CurrentIndex].matrix;
 
     gl_Position = matrix * mesh.transform * vec4(position, 1.0f);
 }

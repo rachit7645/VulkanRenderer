@@ -36,14 +36,19 @@ namespace Renderer
 
     struct Scene
     {
-        SceneMatrices   currentMatrices   = {};
-        SceneMatrices   previousMatrices  = {};
-        glm::vec3       cameraPosition         = {};
-        f32             nearPlane         = 0.0f;
-        f32             farPlane          = 0.0f;
-        VkDeviceAddress dirLights         = 0;
-        VkDeviceAddress pointLights       = 0;
-        VkDeviceAddress spotLights        = 0;
+        SceneMatrices currentMatrices  = {};
+        SceneMatrices previousMatrices = {};
+        glm::vec3     cameraPosition   = {};
+
+        f32 nearPlane = 0.0f;
+        f32 farPlane  = 0.0f;
+
+        VkDeviceAddress commonLight         = 0;
+        VkDeviceAddress dirLights           = 0;
+        VkDeviceAddress pointLights         = 0;
+        VkDeviceAddress shadowedPointLights = 0;
+        VkDeviceAddress spotLights          = 0;
+        VkDeviceAddress shadowedSpotLights  = 0;
     };
 }
 

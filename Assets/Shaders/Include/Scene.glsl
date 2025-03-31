@@ -31,14 +31,19 @@ struct SceneMatrices
 
 layout(buffer_reference, scalar) readonly buffer SceneBuffer
 {
-    SceneMatrices    currentMatrices;
-    SceneMatrices    previousMatrices;
-    vec3             cameraPosition;
-    float            nearPlane;
-    float            farPlane;
-    DirLightBuffer   dirLights;
-    PointLightBuffer pointLights;
-    SpotLightBuffer  spotLights;
+    SceneMatrices currentMatrices;
+    SceneMatrices previousMatrices;
+    vec3          cameraPosition;
+
+    float nearPlane;
+    float farPlane;
+
+    CommonLightBuffer        commonLight;
+    DirLightBuffer           dirLights;
+    PointLightBuffer         pointLights;
+    ShadowedPointLightBuffer shadowedPointLights;
+    SpotLightBuffer          spotLights;
+    ShadowedSpotLightBuffer  shadowedSpotLights;
 };
 
 vec4 GetClipPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)

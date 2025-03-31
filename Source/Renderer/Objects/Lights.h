@@ -22,9 +22,17 @@
 
 namespace Renderer::Objects
 {
-    constexpr auto MAX_DIR_LIGHT_COUNT   = 1u;
-    constexpr auto MAX_POINT_LIGHT_COUNT = 4u;
-    constexpr auto MAX_SPOT_LIGHT_COUNT  = 4u;
+    constexpr u32 MAX_DIR_LIGHT_COUNT            = 1;
+    constexpr u32 MAX_POINT_LIGHT_COUNT          = 16;
+    constexpr u32 MAX_SHADOWED_POINT_LIGHT_COUNT = 4;
+    constexpr u32 MAX_SPOT_LIGHT_COUNT           = 16;
+    constexpr u32 MAX_SHADOWED_SPOT_LIGHT_COUNT  = 4;
+
+    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS   = {512,  512};
+    constexpr glm::vec2  POINT_LIGHT_SHADOW_PLANES = {1.0f, 25.0f};
+
+    constexpr glm::uvec2 SPOT_LIGHT_SHADOW_DIMENSIONS = {1024, 1024};
+    constexpr glm::vec2  SPOT_LIGHT_SHADOW_PLANES     = {0.1f, 100.0f};
 
     struct DirLight
     {
@@ -35,10 +43,43 @@ namespace Renderer::Objects
 
     struct PointLight
     {
-        glm::vec3 position       = {0.0f, 0.0f, 0.0f};
-        glm::vec3 color          = {0.0f, 0.0f, 0.0f};
-        glm::vec3 intensity      = {0.0f, 0.0f, 0.0f};
-        glm::vec3 attenuation    = {0.0f, 0.0f, 0.0f};
+        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
+        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+    };
+
+    struct ShadowedPointLight
+    {
+        ShadowedPointLight() = default;
+
+        ShadowedPointLight(const PointLight& pointLight)
+            : position(pointLight.position),
+              color(pointLight.color),
+              intensity(pointLight.intensity),
+              attenuation(pointLight.attenuation)
+        {
+            const auto projection = glm::perspectiveRH_ZO
+            (
+                glm::radians(90.0f),
+                static_cast<f32>(Objects::POINT_SHADOW_DIMENSIONS.x) / static_cast<f32>(Objects::POINT_SHADOW_DIMENSIONS.y),
+                Objects::POINT_LIGHT_SHADOW_PLANES.x,
+                Objects::POINT_LIGHT_SHADOW_PLANES.y
+            );
+
+            matrices[0] = projection * glm::lookAt(position, position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+            matrices[1] = projection * glm::lookAt(position, position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+            matrices[2] = projection * glm::lookAt(position, position + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f));
+            matrices[3] = projection * glm::lookAt(position, position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f));
+            matrices[4] = projection * glm::lookAt(position, position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+            matrices[5] = projection * glm::lookAt(position, position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+        }
+        
+        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
+        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+        glm::mat4 matrices[6] = {};
     };
 
     struct SpotLight
@@ -49,6 +90,45 @@ namespace Renderer::Objects
         glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
         glm::vec3 direction   = {0.0f, 0.0f, 0.0f};
         glm::vec2 cutOff      = {0.0f, 0.0f};
+    };
+
+    struct ShadowedSpotLight
+    {
+        ShadowedSpotLight() = default;
+
+        ShadowedSpotLight(const SpotLight& spotLight)
+            : position(spotLight.position),
+              color(spotLight.color),
+              intensity(spotLight.intensity),
+              attenuation(spotLight.attenuation),
+              direction(spotLight.direction),
+              cutOff(spotLight.cutOff)
+        {
+            const glm::mat4 projection = glm::perspectiveRH_ZO
+            (
+                glm::radians(90.0f),
+                1.0f,
+                Objects::SPOT_LIGHT_SHADOW_PLANES.x,
+                Objects::SPOT_LIGHT_SHADOW_PLANES.y
+            );
+
+            const glm::mat4 view = glm::lookAt
+            (
+               position,
+               glm::vec3(0.0f, 0.0f, 0.0f),
+               glm::vec3(0.0f, 1.0f, 0.0f)
+            );
+
+            matrix = projection * view;
+        }
+
+        glm::vec3 position    = {0.0f, 0.0f, 0.0f};
+        glm::vec3 color       = {0.0f, 0.0f, 0.0f};
+        glm::vec3 intensity   = {0.0f, 0.0f, 0.0f};
+        glm::vec3 attenuation = {0.0f, 0.0f, 0.0f};
+        glm::vec3 direction   = {0.0f, 0.0f, 0.0f};
+        glm::vec2 cutOff      = {0.0f, 0.0f};
+        glm::mat4 matrix      = glm::identity<glm::mat4>();
     };
 }
 

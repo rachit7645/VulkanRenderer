@@ -18,13 +18,12 @@
 #define SPOT_SHADOW_PASS_H
 
 #include "Pipeline.h"
-#include "SpotShadowBuffer.h"
-#include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
-#include "Renderer/Objects/Lights.h"
+#include "Renderer/Buffers/LightsBuffer.h"
+#include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
 
 namespace Renderer::SpotShadow
@@ -39,25 +38,23 @@ namespace Renderer::SpotShadow
             Vk::FramebufferManager& framebufferManager
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator);
-
         void Render
         (
             usize FIF,
             VkDevice device,
-            VmaAllocator allocator,
             Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
+            const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            Culling::Dispatch& cullingDispatch,
-            const std::span<Objects::SpotLight>& lights
+            const Buffers::LightsBuffer& lightsBuffer,
+            Culling::Dispatch& cullingDispatch
         );
 
-        SpotShadow::Pipeline pipeline;
+        void Destroy(VkDevice device);
 
-        SpotShadow::SpotShadowBuffer spotShadowBuffer;
+        SpotShadow::Pipeline pipeline;
     };
 }
 

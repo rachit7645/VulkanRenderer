@@ -26,8 +26,6 @@ namespace Renderer::Lighting
     struct PushConstant
     {
         VkDeviceAddress scene;
-        VkDeviceAddress pointShadows;
-        VkDeviceAddress spotShadows;
 
         u32 gBufferSamplerIndex;
         u32 iblSamplerIndex;

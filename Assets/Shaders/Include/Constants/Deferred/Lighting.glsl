@@ -18,14 +18,10 @@
 #define LIGHTING_PUSH_CONSTANT
 
 #include "Scene.glsl"
-#include "PointShadowMap.glsl"
-#include "SpotShadowMap.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer       Scene;
-    PointShadowBuffer PointShadows;
-    SpotShadowBuffer  SpotShadows;
+    SceneBuffer Scene;
 
     uint GBufferSamplerIndex;
     uint IBLSamplerIndex;

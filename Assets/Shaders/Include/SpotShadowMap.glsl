@@ -19,24 +19,19 @@
 
 #include "Math.glsl"
 #include "Constants.glsl"
-
-layout(buffer_reference, scalar) readonly buffer SpotShadowBuffer
-{
-    mat4 matrices[];
-};
+#include "Lights.glsl"
 
 float CalculateSpotShadow
 (
     uint lightIndex,
+    ShadowedSpotLight light,
     vec3 fragPosition,
     vec3 normal,
-    vec3 lightPosition,
-    mat4 shadowMatrix,
     texture2DArray spotShadowMap,
     sampler shadowSampler
 )
 {
-    vec4 lightSpacePos = shadowMatrix * vec4(fragPosition, 1.0f);
+    vec4 lightSpacePos = light.matrix * vec4(fragPosition, 1.0f);
 
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     projCoords      = projCoords * 0.5f + 0.5f;
@@ -51,7 +46,7 @@ float CalculateSpotShadow
     }
 
     // Calculate slope-scaled bias
-    float cosTheta = clamp(dot(normal, normalize(lightPosition)), 0.0f, 1.0f);
+    float cosTheta = clamp(dot(normal, normalize(light.position)), 0.0f, 1.0f);
     float bias     = MIN_SPOT_SHADOW_BIAS * TanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, MAX_SPOT_SHADOW_BIAS);
 

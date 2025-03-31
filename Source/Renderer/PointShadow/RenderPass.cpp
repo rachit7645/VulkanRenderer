@@ -21,17 +21,13 @@
 
 namespace Renderer::PointShadow
 {
-    constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512,  512};
-    constexpr glm::vec2  POINT_SHADOW_PLANES     = {1.0f, 25.0f};
-
     RenderPass::RenderPass
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Vk::FramebufferManager& framebufferManager
     )
-        : pipeline(context, formatHelper),
-          pointShadowBuffer(context.device, context.allocator)
+        : pipeline(context, formatHelper)
     {
         framebufferManager.AddFramebuffer
         (
@@ -40,10 +36,10 @@ namespace Renderer::PointShadow
             Vk::FramebufferImageType::ArrayCube,
             Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
-                .width       = POINT_SHADOW_DIMENSIONS.x,
-                .height      = POINT_SHADOW_DIMENSIONS.y,
+                .width       = Objects::POINT_SHADOW_DIMENSIONS.x,
+                .height      = Objects::POINT_SHADOW_DIMENSIONS.y,
                 .mipLevels   = 1,
-                .arrayLayers = 6 * Objects::MAX_POINT_LIGHT_COUNT
+                .arrayLayers = 6 * Objects::MAX_SHADOWED_POINT_LIGHT_COUNT
             },
             {
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -61,11 +57,11 @@ namespace Renderer::PointShadow
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = 6 * Objects::MAX_POINT_LIGHT_COUNT,
+                .layerCount     = 6 * Objects::MAX_SHADOWED_POINT_LIGHT_COUNT,
             }
         );
 
-        for (usize i = 0; i < Objects::MAX_POINT_LIGHT_COUNT; ++i)
+        for (usize i = 0; i < Objects::MAX_SHADOWED_POINT_LIGHT_COUNT; ++i)
         {
             for (usize j = 0; j < 6; ++j)
             {
@@ -91,15 +87,14 @@ namespace Renderer::PointShadow
     (
         usize FIF,
         VkDevice device,
-        VmaAllocator allocator,
         Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        Culling::Dispatch& cullingDispatch,
-        const std::span<Objects::PointLight> lights
+        const Buffers::LightsBuffer& lightsBuffer,
+        Culling::Dispatch& cullingDispatch
     )
     {
         const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -107,33 +102,6 @@ namespace Renderer::PointShadow
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(cmdBuffer, fmt::format("PointShadowPass/FIF{}", FIF), glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
-
-        std::vector<PointShadow::PointShadowData> pointShadowData;
-        pointShadowData.resize(lights.size());
-
-        const auto projection = glm::perspectiveRH_ZO
-        (
-            glm::radians(90.0f),
-            static_cast<f32>(POINT_SHADOW_DIMENSIONS.x) / static_cast<f32>(POINT_SHADOW_DIMENSIONS.y),
-            POINT_SHADOW_PLANES.x,
-            POINT_SHADOW_PLANES.y
-        );
-
-        for (usize i = 0; i < lights.size(); ++i)
-        {
-            pointShadowData[i] = PointShadow::PointShadowData{
-                .matrices     = {
-                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-                    projection * glm::lookAt(lights[i].position, lights[i].position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-                }
-            };
-        }
-
-        pointShadowBuffer.LoadPointShadowData(FIF, allocator, POINT_SHADOW_PLANES, pointShadowData);
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("PointShadowMap");
 
@@ -155,7 +123,7 @@ namespace Renderer::PointShadow
             }
         );
 
-        for (usize i = 0; i < lights.size(); ++i)
+        for (usize i = 0; i < lightsBuffer.shadowedPointLights.size(); ++i)
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
@@ -166,7 +134,7 @@ namespace Renderer::PointShadow
                 cullingDispatch.ComputeDispatch
                 (
                     FIF,
-                    pointShadowData[i].matrices[face],
+                    lightsBuffer.shadowedPointLights[i].matrices[face],
                     cmdBuffer,
                     meshBuffer,
                     indirectBuffer
@@ -235,7 +203,6 @@ namespace Renderer::PointShadow
                     .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .visibleMeshes = meshBuffer.visibilityBuffer.deviceAddress,
                     .positions     = geometryBuffer.positionBuffer.deviceAddress,
-                    .pointShadows  = pointShadowBuffer.buffers[FIF].deviceAddress,
                     .lightIndex    = static_cast<u32>(i),
                     .faceIndex     = static_cast<u32>(face)
                 };
@@ -292,11 +259,9 @@ namespace Renderer::PointShadow
         cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying point shadow pass!");
-
-        pointShadowBuffer.Destroy(allocator);
 
         pipeline.Destroy(device);
     }

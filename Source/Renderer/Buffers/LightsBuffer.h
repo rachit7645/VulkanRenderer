@@ -32,26 +32,29 @@ namespace Renderer::Buffers
         (
             usize FIF,
             VmaAllocator allocator,
-            const std::span<const Objects::DirLight> dirLights,
-            const std::span<const Objects::PointLight> pointLights,
-            const std::span<const Objects::SpotLight> spotLights
+            const std::span<const Objects::DirLight> inDirLights,
+            const std::span<const Objects::PointLight> inPointLights,
+            const std::span<const Objects::SpotLight> inSpotLights
         );
 
         [[nodiscard]] static VkDeviceSize GetDirLightOffset();
         [[nodiscard]] static VkDeviceSize GetPointLightOffset();
+        [[nodiscard]] static VkDeviceSize GetShadowedPointLightOffset();
         [[nodiscard]] static VkDeviceSize GetSpotLightOffset();
+        [[nodiscard]] static VkDeviceSize GetShadowedSpotLightOffset();
 
         void Destroy(VmaAllocator allocator);
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
+
+        std::vector<Objects::DirLight>           dirLights;
+        std::vector<Objects::PointLight>         pointLights;
+        std::vector<Objects::ShadowedPointLight> shadowedPointLights;
+        std::vector<Objects::SpotLight>          spotLights;
+        std::vector<Objects::ShadowedSpotLight>  shadowedSpotLights;
     private:
-        template <typename LightType>
-        void WriteLights
-        (
-            usize FIF,
-            VkDeviceSize offset,
-            std::span<const LightType> lights
-        );
+        template <typename T>
+        [[nodiscard]] std::vector<std::remove_const_t<T>> WriteLights(usize FIF, VkDeviceSize offset, const std::span<T> lights, u32 maxLightCount);
     };
 }
 

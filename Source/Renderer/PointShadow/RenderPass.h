@@ -17,15 +17,15 @@
 #ifndef POINT_SHADOW_PASS_H
 #define POINT_SHADOW_PASS_H
 
+#include <Renderer/Buffers/LightsBuffer.h>
+
 #include "Pipeline.h"
-#include "PointShadowBuffer.h"
-#include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Objects/Lights.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Buffers/LightsBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
 
 namespace Renderer::PointShadow
@@ -44,22 +44,19 @@ namespace Renderer::PointShadow
         (
             usize FIF,
             VkDevice device,
-            VmaAllocator allocator,
             Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            Culling::Dispatch& cullingDispatch,
-            const std::span<Objects::PointLight> lights
+            const Buffers::LightsBuffer& lightsBuffer,
+            Culling::Dispatch& cullingDispatch
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Destroy(VkDevice device);
 
         PointShadow::Pipeline pipeline;
-
-        PointShadow::PointShadowBuffer pointShadowBuffer;
     };
 }
 

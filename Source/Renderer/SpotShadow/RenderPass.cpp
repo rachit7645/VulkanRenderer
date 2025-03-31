@@ -24,17 +24,13 @@
 
 namespace Renderer::SpotShadow
 {
-    constexpr glm::uvec2 SHADOW_DIMENSIONS = {1024, 1024};
-    constexpr glm::vec2  SHADOW_PLANES     = {0.1f, 100.0f};
-
     RenderPass::RenderPass
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Vk::FramebufferManager& framebufferManager
     )
-        : pipeline(context, formatHelper),
-          spotShadowBuffer(context.device, context.allocator)
+        : pipeline(context, formatHelper)
     {
         framebufferManager.AddFramebuffer
         (
@@ -43,10 +39,10 @@ namespace Renderer::SpotShadow
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
-                .width       = SHADOW_DIMENSIONS.x,
-                .height      = SHADOW_DIMENSIONS.y,
+                .width       = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.x,
+                .height      = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.y,
                 .mipLevels   = 1,
-                .arrayLayers = Objects::MAX_SPOT_LIGHT_COUNT
+                .arrayLayers = Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT
             },
             {
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -64,11 +60,11 @@ namespace Renderer::SpotShadow
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = Objects::MAX_SPOT_LIGHT_COUNT,
+                .layerCount     = Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT,
             }
         );
 
-        for (usize i = 0; i < Objects::MAX_SPOT_LIGHT_COUNT; ++i)
+        for (usize i = 0; i < Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT; ++i)
         {
             framebufferManager.AddFramebufferView
             (
@@ -91,14 +87,14 @@ namespace Renderer::SpotShadow
     (
         usize FIF,
         VkDevice device,
-        VmaAllocator allocator,
         Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
+        const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        Culling::Dispatch& cullingDispatch,
-        const std::span<Objects::SpotLight>& lights
+        const Buffers::LightsBuffer& lightsBuffer,
+        Culling::Dispatch& cullingDispatch
     )
     {
         const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -106,31 +102,6 @@ namespace Renderer::SpotShadow
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(cmdBuffer, fmt::format("SpotShadowPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
-
-        std::vector<glm::mat4> matrices = {};
-        matrices.reserve(lights.size());
-
-        const glm::mat4 projection = glm::perspectiveRH_ZO
-        (
-            glm::radians(90.0f),
-            1.0f,
-            SHADOW_PLANES.x,
-            SHADOW_PLANES.y
-        );
-
-        for (const auto& light : lights)
-        {
-            const glm::mat4 view = glm::lookAt
-            (
-                light.position,
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3(0.0f, 1.0f, 0.0f)
-            );
-
-            matrices.emplace_back(projection * view);
-        }
-
-        spotShadowBuffer.LoadMatrices(FIF, allocator, matrices);
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("SpotShadowMap");
 
@@ -152,12 +123,12 @@ namespace Renderer::SpotShadow
             }
         );
 
-        for (usize i = 0; i < lights.size(); ++i)
+        for (usize i = 0; i < lightsBuffer.shadowedSpotLights.size(); ++i)
         {
             cullingDispatch.ComputeDispatch
             (
                 FIF,
-                matrices[i],
+                lightsBuffer.shadowedSpotLights[i].matrix,
                 cmdBuffer,
                 meshBuffer,
                 indirectBuffer
@@ -224,10 +195,10 @@ namespace Renderer::SpotShadow
 
             pipeline.pushConstant =
             {
+                .scene         = sceneBuffer.buffers[FIF].deviceAddress,
                 .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
                 .visibleMeshes = meshBuffer.visibilityBuffer.deviceAddress,
                 .positions     = geometryBuffer.positionBuffer.deviceAddress,
-                .spotShadows   = spotShadowBuffer.buffers[FIF].deviceAddress,
                 .currentIndex  = static_cast<u32>(i)
             };
 
@@ -235,8 +206,9 @@ namespace Renderer::SpotShadow
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT,
-               0, sizeof(SpotShadow::PushConstant),
-               reinterpret_cast<void*>(&pipeline.pushConstant)
+               0,
+               sizeof(SpotShadow::PushConstant),
+               &pipeline.pushConstant
             );
 
             geometryBuffer.Bind(cmdBuffer);
@@ -280,11 +252,10 @@ namespace Renderer::SpotShadow
         cmdBuffer.EndRecording();
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying spot shadow pass!");
 
-        spotShadowBuffer.Destroy(allocator);
         pipeline.Destroy(device);
     }
 }

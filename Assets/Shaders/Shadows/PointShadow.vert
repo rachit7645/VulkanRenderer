@@ -28,5 +28,5 @@ void main()
 {
     vec4 fragPos = Constants.Meshes.meshes[Constants.VisibleMeshes.indices[gl_DrawID]].transform * vec4(Constants.Positions.positions[gl_VertexIndex], 1.0f);
     fragPosition = fragPos.xyz;
-    gl_Position  = Constants.PointShadows.pointShadowData[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
+    gl_Position  = Constants.Scene.shadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
 }
