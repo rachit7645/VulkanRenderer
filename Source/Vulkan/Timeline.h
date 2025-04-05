@@ -29,7 +29,7 @@ namespace Vk
         enum TimelineStage : u64
         {
             TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED = 0,
-            TIMELINE_STAGE_RENDER_FINISHED         = 1,
+            TIMELINE_STAGE_RENDER_FINISHED          = 1,
             TIMELINE_STAGE_COUNT
         };
 
@@ -38,7 +38,7 @@ namespace Vk
         void AcquireImageToTimeline(usize frameIndex, VkQueue queue, VkSemaphore imageAcquire);
         void TimelineToRenderFinished(usize frameIndex, VkQueue queue, VkSemaphore renderFinished);
 
-        u64 GetTimelineValue(usize frameIndex, TimelineStage timelineStage);
+        u64 GetTimelineValue(usize frameIndex, TimelineStage timelineStage) const;
 
         void WaitForStage(usize frameIndex, TimelineStage timelineStage, VkDevice device);
 

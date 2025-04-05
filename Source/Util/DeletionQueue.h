@@ -17,7 +17,7 @@
 #ifndef DELETION_QUEUE_H
 #define DELETION_QUEUE_H
 
-#include <deque>
+#include <stack>
 #include <functional>
 
 namespace Util
@@ -28,7 +28,7 @@ namespace Util
         void PushDeletor(std::function<void()>&& function);
         void FlushQueue();
     private:
-        std::deque<std::function<void()>> m_deletors;
+        std::stack<std::function<void()>> m_deletors;
     };
 }
 

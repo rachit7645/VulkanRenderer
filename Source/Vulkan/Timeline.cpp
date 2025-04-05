@@ -137,7 +137,7 @@ namespace Vk
         );
     }
 
-    u64 Timeline::GetTimelineValue(usize frameIndex, TimelineStage timelineStage)
+    u64 Timeline::GetTimelineValue(usize frameIndex, TimelineStage timelineStage) const
     {
         // Since we use an initial value of 0, an easy fix is to add 1 to the frame index
         // 0 -> 1 * TIMELINE_STAGE_COUNT + 0 -> ....

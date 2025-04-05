@@ -130,60 +130,69 @@ namespace Renderer
             }
         };
 
-        m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/SponzaC.gltf"),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );
+        // Object Set #1
+        m_renderObjects =
+        {
+            Renderer::RenderObject
+            {
+                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/SponzaC.gltf"),
+                .position = glm::vec3(0.0f, 0.0f, 0.0f),
+                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
+                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
+            },
+            Renderer::RenderObject
+            {
+                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Cottage/CottageC.gltf"),
+                .position = glm::vec3(50.0f, 0.0f, 0.0f),
+                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
+                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
+            },
+            Renderer::RenderObject
+            {
+                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "EnvTest/glTF-IBL/EnvironmentTestC.gltf"),
+                .position = glm::vec3(-50.0f, 0.0f, 0.0f),
+                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
+                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
+            },
+            Renderer::RenderObject
+            {
+                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Mario/MarioC.gltf"),
+                .position = glm::vec3(50.0f, 0.0f, 12.0f),
+                .rotation = glm::vec3(-std::numbers::pi / 2.0f, 0.0f, std::numbers::pi / 2.0f + 0.9f),
+                .scale    = glm::vec3(22.0f, 22.0f, 22.0f)
+            }
+        };
 
-        m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "Cottage/CottageC.gltf"),
-            glm::vec3(50.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );
+        // Object Set #2
+        /*m_renderObjects =
+        {
+            Renderer::RenderObject
+            {
+                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Main/SponzaMainC.gltf"),
+                .position = glm::vec3(0.0f, 0.0f, 0.0f),
+                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
+                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
+            },
+            Renderer::RenderObject
+            {
+                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Curtains/SponzaCurtainsC.gltf"),
+                .position = glm::vec3(0.0f, 0.0f, 0.0f),
+                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
+                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
+            }
+        };*/
 
-        m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "EnvTest/glTF-IBL/EnvironmentTestC.gltf"),
-            glm::vec3(-50.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );
-
-        m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "Mario/MarioC.gltf"),
-            glm::vec3(50.0f, 0.0f, 12.0f),
-            glm::vec3(-std::numbers::pi / 2.0f, 0.0f, std::numbers::pi / 2.0f + 0.9f),
-            glm::vec3(22.0f, 22.0f, 22.0f)
-        );
-
-        /*m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Main/SponzaMainC.gltf"),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );
-
-        m_renderObjects.emplace_back
-        (
-            m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Curtains/SponzaCurtainsC.gltf"),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );*/
-
-        /*m_renderObjects.emplace_back(
-            m_modelManager.AddModel(m_context, m_megaSet, "Bistro/BistroC.gltf"),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        );*/
+        // Object Set #3
+        /*m_renderObjects =
+        {
+            Renderer::RenderObject
+            {
+                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Bistro/BistroC.gltf"),
+                .position = glm::vec3(0.0f, 0.0f, 0.0f),
+                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
+                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
+            }
+        };*/
 
         // ImGui Yoy
         InitImGui();
@@ -562,13 +571,12 @@ namespace Renderer
 
         m_scene.previousMatrices = m_scene.currentMatrices;
 
-        const auto projection = Maths::CreateProjectionReverseZ
+        const auto projection = Maths::CreateInfiniteProjectionReverseZ
         (
             m_camera.FOV,
             static_cast<f32>(m_swapchain.extent.width) /
             static_cast<f32>(m_swapchain.extent.height),
-            Renderer::NEAR_PLANE,
-            Renderer::FAR_PLANE
+            Renderer::NEAR_PLANE
         );
 
         auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
@@ -635,6 +643,8 @@ namespace Renderer
         {
             Vk::CheckResult(result, "Failed to acquire swapchain image!");
         }
+
+        m_timeline.AcquireImageToTimeline(m_frameIndex, m_context.graphicsQueue, m_swapchain.imageAvailableSemaphores[m_currentFIF]);
     }
 
     void RenderManager::BeginFrame()
@@ -649,6 +659,8 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
+        m_timeline.TimelineToRenderFinished(m_frameIndex, m_context.graphicsQueue, m_swapchain.renderFinishedSemaphores[m_swapchain.imageIndex]);
+
         const auto result = m_swapchain.Present(m_context.device, m_context.graphicsQueue);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -667,8 +679,6 @@ namespace Renderer
 
     void RenderManager::SubmitQueue()
     {
-        m_timeline.AcquireImageToTimeline(m_frameIndex, m_context.graphicsQueue, m_swapchain.imageAvailableSemaphores[m_currentFIF]);
-
         const VkSemaphoreSubmitInfo waitSemaphoreInfo =
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
@@ -711,8 +721,6 @@ namespace Renderer
             VK_NULL_HANDLE),
             "Failed to submit queue!"
         );
-
-        m_timeline.TimelineToRenderFinished(m_frameIndex, m_context.graphicsQueue, m_swapchain.renderFinishedSemaphores[m_swapchain.imageIndex]);
     }
 
     void RenderManager::Resize()

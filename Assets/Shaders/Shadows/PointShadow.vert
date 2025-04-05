@@ -24,6 +24,7 @@
 
 layout(location = 0) out vec3 fragPosition;
 
+// Note: Writing the shader in this compact way reduces register pressure a lot (for some reason)
 void main()
 {
     vec4 fragPos = Constants.Meshes.meshes[Constants.VisibleMeshes.indices[gl_DrawID]].transform * vec4(Constants.Positions.positions[gl_VertexIndex], 1.0f);

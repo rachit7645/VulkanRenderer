@@ -98,7 +98,7 @@ namespace Renderer::Buffers
                 inShadowedPointLights[i] = inPointLights[i];
             }
 
-            const auto uploadedPointLights = (inPointLights.size() - shadowedPointLights.size() <= 0) ? std::span<Objects::PointLight>{} : std::span(inPointLights.begin() + shadowedPointLights.size(), inPointLights.end());
+            const auto uploadedPointLights = (inPointLights.size() <= inShadowedPointLights.size()) ? std::span<Objects::PointLight>{} : std::span(inPointLights.begin() + inShadowedPointLights.size(), inPointLights.end());
 
             pointLights         = WriteLights(FIF, GetPointLightOffset(),         uploadedPointLights,               Objects::MAX_POINT_LIGHT_COUNT);
             shadowedPointLights = WriteLights(FIF, GetShadowedPointLightOffset(), std::span(inShadowedPointLights), Objects::MAX_SHADOWED_POINT_LIGHT_COUNT);
@@ -113,7 +113,7 @@ namespace Renderer::Buffers
                 inShadowedSpotLights[i] = inSpotLights[i];
             }
 
-            const auto uploadedSpotLights = (inSpotLights.size() - shadowedSpotLights.size() <= 0) ? std::span<Objects::SpotLight>{} : std::span(inSpotLights.begin() + shadowedSpotLights.size(), inSpotLights.end());
+            const auto uploadedSpotLights = (inSpotLights.size() <= inShadowedSpotLights.size()) ? std::span<Objects::SpotLight>{} : std::span(inSpotLights.begin() + inShadowedSpotLights.size(), inSpotLights.end());
 
             spotLights         = WriteLights(FIF, GetSpotLightOffset(),         uploadedSpotLights,               Objects::MAX_SPOT_LIGHT_COUNT);
             shadowedSpotLights = WriteLights(FIF, GetShadowedSpotLightOffset(), std::span(inShadowedSpotLights), Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT);

@@ -22,11 +22,18 @@
 
 namespace Renderer::Objects
 {
-    constexpr u32 MAX_DIR_LIGHT_COUNT            = 1;
+    constexpr u32 MAX_DIR_LIGHT_COUNT = 1;
+
     constexpr u32 MAX_POINT_LIGHT_COUNT          = 16;
     constexpr u32 MAX_SHADOWED_POINT_LIGHT_COUNT = 4;
+
     constexpr u32 MAX_SPOT_LIGHT_COUNT           = 16;
     constexpr u32 MAX_SHADOWED_SPOT_LIGHT_COUNT  = 4;
+
+    constexpr u32 MAX_TOTAL_POINT_LIGHT_COUNT = MAX_SHADOWED_POINT_LIGHT_COUNT + MAX_POINT_LIGHT_COUNT;
+    constexpr u32 MAX_TOTAL_SPOT_LIGHT_COUNT  = MAX_SHADOWED_SPOT_LIGHT_COUNT  + MAX_SPOT_LIGHT_COUNT;
+
+    constexpr u32 MAX_LIGHT_COUNT = MAX_DIR_LIGHT_COUNT + MAX_TOTAL_POINT_LIGHT_COUNT + MAX_TOTAL_SPOT_LIGHT_COUNT;
 
     constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS   = {512,  512};
     constexpr glm::vec2  POINT_LIGHT_SHADOW_PLANES = {1.0f, 25.0f};
@@ -67,12 +74,12 @@ namespace Renderer::Objects
                 Objects::POINT_LIGHT_SHADOW_PLANES.y
             );
 
-            matrices[0] = projection * glm::lookAt(position, position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
-            matrices[1] = projection * glm::lookAt(position, position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
-            matrices[2] = projection * glm::lookAt(position, position + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f));
-            matrices[3] = projection * glm::lookAt(position, position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f));
-            matrices[4] = projection * glm::lookAt(position, position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
-            matrices[5] = projection * glm::lookAt(position, position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+            matrices[0] = projection * glm::lookAtRH(position, position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+            matrices[1] = projection * glm::lookAtRH(position, position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+            matrices[2] = projection * glm::lookAtRH(position, position + glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f));
+            matrices[3] = projection * glm::lookAtRH(position, position + glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f));
+            matrices[4] = projection * glm::lookAtRH(position, position + glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
+            matrices[5] = projection * glm::lookAtRH(position, position + glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f));
         }
         
         glm::vec3 position    = {0.0f, 0.0f, 0.0f};

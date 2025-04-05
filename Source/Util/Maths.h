@@ -24,13 +24,8 @@ namespace Maths
 {
     glm::mat4 CreateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
     glm::mat4 CreateProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane);
+    glm::mat4 CreateInfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
     glm::mat3 CreateNormalMatrix(const glm::mat4& transform);
-
-    template<typename T>
-    constexpr T Lerp(T a, T b, T factor)
-    {
-        return a + factor * (b - a);
-    }
 
     constexpr f32 Halton(usize index, usize base)
     {

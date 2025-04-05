@@ -44,6 +44,21 @@ namespace Maths
         return projection;
     }
 
+    glm::mat4 CreateInfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane)
+    {
+        const auto tanHalfFovY = std::tan(FOV / 2.0f);
+
+        auto projection = glm::zero<glm::mat4>();
+
+        projection[0][0] =  1.0f / (aspectRatio * tanHalfFovY);
+        projection[1][1] = -1.0f / tanHalfFovY; // Flip Y axis for vulkan
+        projection[2][2] =  0.0f;
+        projection[2][3] = -1.0f;
+        projection[3][2] =  nearPlane;
+
+        return projection;
+    }
+
     glm::mat3 CreateNormalMatrix(const glm::mat4& transform)
     {
         // https://www.shadertoy.com/view/3s33zj

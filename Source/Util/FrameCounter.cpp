@@ -20,7 +20,6 @@
 
 namespace Util
 {
-    // Alias for chrono
     namespace chrono = std::chrono;
 
     void FrameCounter::Reset()
@@ -51,7 +50,7 @@ namespace Util
         {
             m_startTime  = m_endTime;
             FPS          = m_currentFPS;
-            avgFrameTime = static_cast<f32>(1000.0 / FPS);
+            avgFrameTime = static_cast<f32>(1000.0 / static_cast<f64>(FPS));
             m_currentFPS = 0.0f;
         }
         else

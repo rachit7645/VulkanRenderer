@@ -121,6 +121,9 @@ namespace Renderer
 
         // Scene objects
         std::vector<Renderer::RenderObject> m_renderObjects;
+        Objects::DirLight                   m_sun;
+        std::vector<Objects::PointLight>    m_pointLights;
+        std::vector<Objects::SpotLight>     m_spotLights;
         Objects::FreeCamera                 m_camera;
 
         // Frame index
@@ -132,10 +135,6 @@ namespace Renderer
         bool m_isSwapchainOk = true;
 
         Scene m_scene = {};
-
-        Objects::DirLight                  m_sun;
-        std::array<Objects::PointLight, 2> m_pointLights;
-        std::array<Objects::SpotLight,  2> m_spotLights;
 
         std::string m_hdrMap;
 
