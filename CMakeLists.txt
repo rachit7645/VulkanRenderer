@@ -52,6 +52,7 @@ add_executable(VulkanRenderer
 	Source/Engine/Window.cpp
 	Source/Engine/Inputs.cpp
     Source/Engine/Scene.cpp
+    Source/Engine/Config.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
@@ -290,3 +291,6 @@ install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
 # Copy other directories
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX    DESTINATION ${INSTALL_DIR}/Assets)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/Scenes DESTINATION ${INSTALL_DIR}/Assets)
+
+# Copy misc files
+install(FILES ${CMAKE_SOURCE_DIR}/Assets/Config.json DESTINATION ${INSTALL_DIR}/Assets)

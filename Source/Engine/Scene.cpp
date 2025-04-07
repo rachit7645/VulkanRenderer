@@ -25,7 +25,7 @@ namespace Engine
 {
     Scene::Scene
     (
-        const std::string_view name,
+        const Engine::Config& config,
         const Vk::Context& context,
         Vk::MegaSet& megaSet,
         Models::ModelManager& modelManager
@@ -35,9 +35,9 @@ namespace Engine
         {
             simdjson::ondemand::parser parser;
 
-            Logger::Info("Loading scene! [Scene={}]\n", name);
+            Logger::Info("Loading scene! [Scene={}]\n", config.scene);
 
-            const auto path = Files::GetAssetPath("Scenes/", name.data() + std::string(".json"));
+            const auto path = Files::GetAssetPath("Scenes/", config.scene + ".json");
             const auto json = simdjson::padded_string::load(path);
 
             JSON::CheckError(json, "Failed to load json file!");
@@ -112,6 +112,9 @@ namespace Engine
 
             // Camera
             JSON::CheckError(document["Camera"]["FreeCamera"].get<Renderer::Objects::FreeCamera>(camera), "Failed to load free camera!");
+
+            // HDR Map
+            JSON::CheckError(document["IBL"].get_string(hdrMap), "Failed to load IBL!");
         }
         catch (const std::exception& e)
         {

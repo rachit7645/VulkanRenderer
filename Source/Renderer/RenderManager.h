@@ -57,7 +57,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        RenderManager();
+        explicit RenderManager(const Engine::Config& config);
         ~RenderManager();
 
         // No copying
@@ -132,8 +132,6 @@ namespace Renderer
         bool m_isSwapchainOk = true;
 
         Renderer::Scene m_sceneData = {};
-
-        std::string m_hdrMap;
 
         Util::DeletionQueue m_deletionQueue = {};
     };

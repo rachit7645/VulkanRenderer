@@ -17,6 +17,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include "Config.h"
 #include "Renderer/RenderObject.h"
 #include "Renderer/Objects/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
@@ -30,7 +31,7 @@ namespace Engine
     public:
         Scene
         (
-            const std::string_view name,
+            const Engine::Config& config,
             const Vk::Context& context,
             Vk::MegaSet& megaSet,
             Models::ModelManager& modelManager
@@ -43,6 +44,7 @@ namespace Engine
         std::vector<Renderer::Objects::PointLight> pointLights;
         std::vector<Renderer::Objects::SpotLight>  spotLights;
         Renderer::Objects::FreeCamera              camera;
+        std::string                                hdrMap;
     };
 }
 

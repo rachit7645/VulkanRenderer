@@ -25,7 +25,7 @@
 
 namespace Renderer
 {
-    RenderManager::RenderManager()
+    RenderManager::RenderManager(const Engine::Config& config)
         : m_context(m_window.handle),
           m_cmdBufferAllocator(m_context.device, m_context.queueFamilies),
           m_swapchain(m_window.size, m_context, m_cmdBufferAllocator),
@@ -50,7 +50,7 @@ namespace Renderer
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator),
           m_lightsBuffer(m_context.device, m_context.allocator),
-          m_scene("Default", m_context, m_megaSet, m_modelManager)
+          m_scene(config, m_context, m_megaSet, m_modelManager)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
@@ -93,7 +93,7 @@ namespace Renderer
         m_iblMaps.Generate
         (
             m_cmdBufferAllocator,
-            "industrial_sunset_puresky_4k.hdr",
+            m_scene.hdrMap,
             m_context,
             m_formatHelper,
             m_modelManager.geometryBuffer,
@@ -287,9 +287,9 @@ namespace Renderer
         {
             if (ImGui::BeginMenu("IBL"))
             {
-                ImGui::InputText("HDR Map Path", &m_hdrMap);
+                ImGui::InputText("HDR Map Path", &m_scene.hdrMap);
 
-                if (ImGui::Button("Load") && !m_hdrMap.empty())
+                if (ImGui::Button("Load") && !m_scene.hdrMap.empty())
                 {
                     // TODO: Figure out a better way to wait for resources to be available
                     Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
@@ -297,7 +297,7 @@ namespace Renderer
                     m_iblMaps.Generate
                     (
                         m_cmdBufferAllocator,
-                        m_hdrMap,
+                        m_scene.hdrMap,
                         m_context,
                         m_formatHelper,
                         m_modelManager.geometryBuffer,
@@ -306,6 +306,8 @@ namespace Renderer
                     );
 
                     m_taaPass.ResetHistory();
+
+                    m_scene.hdrMap.clear();
                 }
 
                 ImGui::EndMenu();

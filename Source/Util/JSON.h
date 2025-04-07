@@ -20,6 +20,7 @@
 #include <simdjson.h>
 
 #include "Renderer/Objects/Lights.h"
+#include "Renderer/Objects/FreeCamera.h"
 #include "Log.h"
 
 namespace JSON

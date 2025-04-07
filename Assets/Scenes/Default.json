@@ -71,5 +71,6 @@
             "Sensitivity" : 0.0001,
             "Zoom"        : 0.000045
         }
-    }
+    },
+    "IBL" : "industrial_sunset_puresky_4k.hdr"
 }

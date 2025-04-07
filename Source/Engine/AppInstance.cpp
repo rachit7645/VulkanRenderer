@@ -21,6 +21,7 @@
 namespace Engine
 {
     AppInstance::AppInstance()
+        : m_renderer(m_config)
     {
         Logger::Info("{}\n", "App instance initialised!");
     }
