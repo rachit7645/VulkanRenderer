@@ -49,6 +49,7 @@
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
+#include "Engine/Scene.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer
@@ -120,11 +121,7 @@ namespace Renderer
         Buffers::LightsBuffer   m_lightsBuffer;
 
         // Scene objects
-        std::vector<Renderer::RenderObject> m_renderObjects;
-        Objects::DirLight                   m_sun;
-        std::vector<Objects::PointLight>    m_pointLights;
-        std::vector<Objects::SpotLight>     m_spotLights;
-        Objects::FreeCamera                 m_camera;
+        Engine::Scene m_scene;
 
         // Frame index
         usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
@@ -134,7 +131,7 @@ namespace Renderer
 
         bool m_isSwapchainOk = true;
 
-        Scene m_scene = {};
+        Renderer::Scene m_sceneData = {};
 
         std::string m_hdrMap;
 

@@ -56,7 +56,7 @@ namespace Vk
             VmaAllocator allocator
         );
 
-        void Clear(VmaAllocator allocator);
+        void ClearUploads(VmaAllocator allocator);
 
         void ImGuiDisplay() const;
 

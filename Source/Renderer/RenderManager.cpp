@@ -49,7 +49,8 @@ namespace Renderer
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator),
-          m_lightsBuffer(m_context.device, m_context.allocator)
+          m_lightsBuffer(m_context.device, m_context.allocator),
+          m_scene("Default", m_context, m_megaSet, m_modelManager)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
@@ -83,117 +84,6 @@ namespace Renderer
             m_context.Destroy();
         });
 
-        m_sun =
-        {
-            .position  = {-30.0f, -30.0f,  -10.0f},
-            .color     = {0.4784f, 0.7372f, 0.7450f},
-            .intensity = {3.0f,    3.0f,    3.0f}
-        };
-
-        m_pointLights =
-        {
-            Objects::PointLight
-            {
-                .position    = {0.0f, 20.0f,  -3.0f},
-                .color       = {0.0f, 0.945f,  0.945f},
-                .intensity   = {1.0f, 7.0f,    5.0f},
-                .attenuation = {1.0f, 0.022f,  0.0019f}
-            },
-            Objects::PointLight
-            {
-                .position    = {10.0f, 15.0f, -3.0f},
-                .color       = {0.0f,  0.031f, 1.0f},
-                .intensity   = {1.0f,  6.0f,   10.0f},
-                .attenuation = {1.0f,  0.027f, 0.0028f}
-            }
-        };
-
-        m_spotLights =
-        {
-            Objects::SpotLight
-            {
-                .position    = {25.0f, 4.0f,  6.0f},
-                .color       = {1.0f,  0.0f,   0.0f},
-                .intensity   = {15.0f, 1.0f,   1.0f},
-                .attenuation = {1.0f,  0.007f, 0.0002f},
-                .direction   = {-1.0f, 0.0f,  -0.3f},
-                .cutOff      = {glm::radians(10.0f), glm::radians(30.0f)}
-            },
-            Objects::SpotLight
-            {
-                .position    = {7.0f,  2.0f,  -2.0f},
-                .color       = {0.941f, 0.0f,   1.0f},
-                .intensity   = {10.0f,  10.0f,  10.0f},
-                .attenuation = {1.0f,   0.022f, 0.0019f},
-                .direction   = {-1.0f,  0.3f,  -0.1f},
-                .cutOff      = {glm::radians(10.0f), glm::radians(50.0f)}
-            }
-        };
-
-        // Object Set #1
-        m_renderObjects =
-        {
-            Renderer::RenderObject
-            {
-                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Sponza/glTF/SponzaC.gltf"),
-                .position = glm::vec3(0.0f, 0.0f, 0.0f),
-                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
-                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
-            },
-            Renderer::RenderObject
-            {
-                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Cottage/CottageC.gltf"),
-                .position = glm::vec3(50.0f, 0.0f, 0.0f),
-                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
-                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
-            },
-            Renderer::RenderObject
-            {
-                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "EnvTest/glTF-IBL/EnvironmentTestC.gltf"),
-                .position = glm::vec3(-50.0f, 0.0f, 0.0f),
-                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
-                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
-            },
-            Renderer::RenderObject
-            {
-                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Mario/MarioC.gltf"),
-                .position = glm::vec3(50.0f, 0.0f, 12.0f),
-                .rotation = glm::vec3(-std::numbers::pi / 2.0f, 0.0f, std::numbers::pi / 2.0f + 0.9f),
-                .scale    = glm::vec3(22.0f, 22.0f, 22.0f)
-            }
-        };
-
-        // Object Set #2
-        /*m_renderObjects =
-        {
-            Renderer::RenderObject
-            {
-                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Main/SponzaMainC.gltf"),
-                .position = glm::vec3(0.0f, 0.0f, 0.0f),
-                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
-                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
-            },
-            Renderer::RenderObject
-            {
-                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Sponza_Curtains/SponzaCurtainsC.gltf"),
-                .position = glm::vec3(0.0f, 0.0f, 0.0f),
-                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
-                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
-            }
-        };*/
-
-        // Object Set #3
-        /*m_renderObjects =
-        {
-            Renderer::RenderObject
-            {
-                .modelID  = m_modelManager.AddModel(m_context, m_megaSet, "Bistro/BistroC.gltf"),
-                .position = glm::vec3(0.0f, 0.0f, 0.0f),
-                .rotation = glm::vec3(0.0f, 0.0f, 0.0f),
-                .scale    = glm::vec3(1.0f, 1.0f, 1.0f)
-            }
-        };*/
-
         // ImGui Yoy
         InitImGui();
 
@@ -211,7 +101,7 @@ namespace Renderer
             m_modelManager.textureManager
         );
 
-        m_accelerationStructure.BuildBottomLevelAS(m_context, m_cmdBufferAllocator, m_modelManager, m_renderObjects);
+        m_accelerationStructure.BuildBottomLevelAS(m_context, m_cmdBufferAllocator, m_modelManager, m_scene.renderObjects);
 
         m_megaSet.Update(m_context.device);
 
@@ -265,7 +155,7 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
-            m_scene,
+            m_sceneData,
             m_context.device,
             m_cmdBufferAllocator,
             m_framebufferManager,
@@ -312,7 +202,7 @@ namespace Renderer
             m_framebufferManager,
             m_sceneBuffer,
             m_accelerationStructure,
-            m_renderObjects
+            m_scene.renderObjects
         );
 
         m_lightingPass.Render
@@ -385,7 +275,7 @@ namespace Renderer
     void RenderManager::Update()
     {
         m_frameCounter.Update();
-        m_camera.Update(m_frameCounter.frameDelta);
+        m_scene.Update(m_frameCounter);
 
         Engine::Inputs::Get().ImGuiDisplay();
 
@@ -471,109 +361,14 @@ namespace Renderer
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("Render Objects"))
-            {
-                for (usize i = 0; i < m_renderObjects.size(); ++i)
-                {
-                    if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
-                    {
-                        auto& renderObject = m_renderObjects[i];
-
-                        ImGui::Text("ModelID: %llu", renderObject.modelID);
-
-                        ImGui::Separator();
-
-                        ImGui::DragFloat3("Position", &renderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
-                        ImGui::DragFloat3("Rotation", &renderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
-                        ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,                     0.0f, 0.0f, "%.2f");
-
-                        ImGui::TreePop();
-                    }
-
-                    ImGui::Separator();
-                }
-
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Lights"))
-            {
-                if (ImGui::BeginMenu("Directional"))
-                {
-                    if (ImGui::TreeNode("Sun"))
-                    {
-                        ImGui::DragFloat3("Position",  &m_sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
-                        ImGui::ColorEdit3("Color",     &m_sun.color[0]);
-                        ImGui::DragFloat3("Intensity", &m_sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
-
-                        ImGui::TreePop();
-                    }
-
-                    ImGui::EndMenu();
-                }
-
-                ImGui::Separator();
-
-                if (ImGui::BeginMenu("Point"))
-                {
-                    for (usize i = 0; i < m_pointLights.size(); ++i)
-                    {
-                        if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
-                        {
-                            auto& light = m_pointLights[i];
-
-                            ImGui::DragFloat3("Position",    &light.position[0],    1.0f, 0.0f, 0.0f, "%.2f");
-                            ImGui::ColorEdit3("Color",       &light.color[0]);
-                            ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f, 0.0f, 0.0f, "%.2f");
-                            ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f, 0.0f, 0.0f, "%.4f");
-
-                            ImGui::TreePop();
-                        }
-
-                        ImGui::Separator();
-                    }
-
-                    ImGui::EndMenu();
-                }
-
-                ImGui::Separator();
-
-                if (ImGui::BeginMenu("Spot"))
-                {
-                    for (usize i = 0; i < m_spotLights.size(); ++i)
-                    {
-                        if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
-                        {
-                            auto& light = m_spotLights[i];
-
-                            ImGui::DragFloat3("Position",    &light.position[0],    1.0f,   0.0f, 0.0f, "%.2f");
-                            ImGui::ColorEdit3("Color",       &light.color[0]);
-                            ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f,   0.0f, 0.0f, "%.2f");
-                            ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f,   0.0f, 1.0f, "%.4f");
-                            ImGui::DragFloat3("Direction",   &light.direction[0],   0.05f, -1.0f, 1.0f, "%.2f");
-
-                            ImGui::DragFloat2("Cut Off", &light.cutOff[0], glm::radians(1.0f), 0.0f, std::numbers::pi, "%.2f");
-
-                            ImGui::TreePop();
-                        }
-
-                        ImGui::Separator();
-                    }
-
-                    ImGui::EndMenu();
-                }
-
-                ImGui::EndMenu();
-            }
-
             ImGui::EndMainMenuBar();
         }
 
-        m_scene.previousMatrices = m_scene.currentMatrices;
+        m_sceneData.previousMatrices = m_sceneData.currentMatrices;
 
         const auto projection = Maths::CreateInfiniteProjectionReverseZ
         (
-            m_camera.FOV,
+            m_scene.camera.FOV,
             static_cast<f32>(m_swapchain.extent.width) /
             static_cast<f32>(m_swapchain.extent.height),
             Renderer::NEAR_PLANE
@@ -588,9 +383,9 @@ namespace Renderer
         jitteredProjection[2][0] += jitter.x;
         jitteredProjection[2][1] += jitter.y;
 
-        const auto view = m_camera.GetViewMatrix();
+        const auto view = m_scene.camera.GetViewMatrix();
 
-        m_scene.currentMatrices  =
+        m_sceneData.currentMatrices  =
         {
             .projection         = projection,
             .inverseProjection  = glm::inverse(jitteredProjection),
@@ -600,24 +395,24 @@ namespace Renderer
             .normalView         = Maths::CreateNormalMatrix(view)
         };
 
-        m_scene.cameraPosition = m_camera.position;
-        m_scene.nearPlane      = Renderer::NEAR_PLANE;
-        m_scene.farPlane       = Renderer::FAR_PLANE;
+        m_sceneData.cameraPosition = m_scene.camera.position;
+        m_sceneData.nearPlane      = Renderer::NEAR_PLANE;
+        m_sceneData.farPlane       = Renderer::FAR_PLANE;
 
         const auto lightsBuffer = m_lightsBuffer.buffers[m_currentFIF].deviceAddress;
 
-        m_scene.commonLight         = lightsBuffer + 0;
-        m_scene.dirLights           = lightsBuffer + m_lightsBuffer.GetDirLightOffset();
-        m_scene.pointLights         = lightsBuffer + m_lightsBuffer.GetPointLightOffset();
-        m_scene.shadowedPointLights = lightsBuffer + m_lightsBuffer.GetShadowedPointLightOffset();
-        m_scene.spotLights          = lightsBuffer + m_lightsBuffer.GetSpotLightOffset();
-        m_scene.shadowedSpotLights  = lightsBuffer + m_lightsBuffer.GetShadowedSpotLightOffset();
+        m_sceneData.commonLight         = lightsBuffer + 0;
+        m_sceneData.dirLights           = lightsBuffer + m_lightsBuffer.GetDirLightOffset();
+        m_sceneData.pointLights         = lightsBuffer + m_lightsBuffer.GetPointLightOffset();
+        m_sceneData.shadowedPointLights = lightsBuffer + m_lightsBuffer.GetShadowedPointLightOffset();
+        m_sceneData.spotLights          = lightsBuffer + m_lightsBuffer.GetSpotLightOffset();
+        m_sceneData.shadowedSpotLights  = lightsBuffer + m_lightsBuffer.GetShadowedSpotLightOffset();
 
-        m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_sun, 1}, m_pointLights, m_spotLights);
-        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_scene);
+        m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_scene.sun, 1}, m_scene.pointLights, m_scene.spotLights);
+        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_sceneData);
 
-        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);
-        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_renderObjects);
+        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
+        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
     }
 
     void RenderManager::WaitForTimeline()
@@ -792,7 +587,7 @@ namespace Renderer
                 break;
 
             case SDL_SCANCODE_F2:
-                m_camera.isEnabled = !m_camera.isEnabled;
+                m_scene.camera.isEnabled = !m_scene.camera.isEnabled;
                 break;
 
             default:

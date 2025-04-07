@@ -58,14 +58,11 @@ namespace Engine::Files
     /// @returns std::string_view of file name from original path
     [[nodiscard]] constexpr std::string_view GetName(const std::string_view fileName)
     {
-        usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);
+        const auto lastSlashPosition = fileName.find_last_of("/\\");
 
-        if (lastSlash != std::string_view::npos)
-        {
-            return fileName.substr(lastSlash + 1);
-        }
-
-        return fileName.data();
+        return (lastSlashPosition == std::string_view::npos)
+            ? fileName.data()
+            : fileName.substr(lastSlashPosition + 1);
     }
 }
 

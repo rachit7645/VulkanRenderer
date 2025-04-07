@@ -25,8 +25,17 @@ namespace Renderer::Objects
     class FreeCamera : public Camera
     {
     public:
-        FreeCamera();
-        FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
+        FreeCamera() = default;
+
+        FreeCamera
+        (
+            const glm::vec3& position,
+            const glm::vec3& rotation,
+            f32 FOV,
+            f32 speed,
+            f32 sensitivity,
+            f32 zoom
+        );
 
         void Update(f32 frameDelta) override;
     protected:
@@ -38,9 +47,9 @@ namespace Renderer::Objects
         void Zoom(f32 frameDelta);
 
         // Settings
-        f32 speed       = 0.000015f;
-        f32 sensitivity = 0.0001f;
-        f32 zoom        = 0.000045f;
+        f32 m_speed       = 0.000015f;
+        f32 m_sensitivity = 0.0001f;
+        f32 m_zoom        = 0.000045f;
     };
 }
 

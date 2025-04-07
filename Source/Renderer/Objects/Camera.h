@@ -25,6 +25,7 @@ namespace Renderer::Objects
     class Camera
     {
     public:
+        Camera() = default;
         Camera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
         virtual ~Camera() = default;
 

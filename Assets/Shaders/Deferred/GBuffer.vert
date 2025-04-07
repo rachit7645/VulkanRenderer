@@ -25,8 +25,8 @@
 
 layout(location = 0) out      vec4 currentPosition;
 layout(location = 1) out      vec2 fragTexCoords;
-layout(location = 2) out flat uint fragDrawID;
-layout(location = 3) out      mat3 fragTBNMatrix;
+layout(location = 2) out      mat3 fragTBNMatrix;
+layout(location = 5) out flat uint fragDrawID;
 
 void main()
 {

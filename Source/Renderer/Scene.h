@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef GPU_SCENE_H
+#define GPU_SCENE_H
 
 #include <vulkan/vulkan.h>
 

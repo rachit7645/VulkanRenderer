@@ -160,7 +160,7 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
-    void GeometryBuffer::Clear(VmaAllocator allocator)
+    void GeometryBuffer::ClearUploads(VmaAllocator allocator)
     {
         m_deletionQueue.FlushQueue();
 

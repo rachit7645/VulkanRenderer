@@ -51,6 +51,7 @@ add_executable(VulkanRenderer
 	Source/Engine/AppInstance.cpp
 	Source/Engine/Window.cpp
 	Source/Engine/Inputs.cpp
+    Source/Engine/Scene.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
@@ -269,6 +270,7 @@ target_link_libraries(VulkanRenderer
 	SDL3::SDL3
 	fmt::fmt
 	fastgltf::fastgltf
+    simdjson::simdjson
 	GPUOpen::VulkanMemoryAllocator
     KTX::ktx
 	imgui
@@ -286,4 +288,5 @@ install(
 install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
 
 # Copy other directories
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX    DESTINATION ${INSTALL_DIR}/Assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/Scenes DESTINATION ${INSTALL_DIR}/Assets)

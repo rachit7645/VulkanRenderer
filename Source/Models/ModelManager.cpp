@@ -118,7 +118,7 @@ namespace Models
 
         // Clean
         {
-            geometryBuffer.Clear(context.allocator);
+            geometryBuffer.ClearUploads(context.allocator);
             textureManager.ClearUploads(context.allocator);
 
             vkDestroyFence(context.device, transferFence, nullptr);

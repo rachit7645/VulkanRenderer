@@ -209,6 +209,7 @@ namespace Renderer::AO::XeGTAO
         );
 
         constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<XE_GTAO_HILBERT_LEVEL>();
+
         hilbertLUT = textureManager.AddTexture
         (
             megaSet,
