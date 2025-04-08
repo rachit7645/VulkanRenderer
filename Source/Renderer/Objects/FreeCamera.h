@@ -38,8 +38,7 @@ namespace Renderer::Objects
         );
 
         void Update(f32 frameDelta) override;
-    protected:
-        void ImGuiDisplay() override;
+        void ImGuiDisplay()         override;
     private:
         void CheckInputs(f32 frameDelta);
         void Move(f32 frameDelta);

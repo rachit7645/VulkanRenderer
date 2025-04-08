@@ -50,7 +50,7 @@ namespace Renderer
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator),
           m_lightsBuffer(m_context.device, m_context.allocator),
-          m_scene(config, m_context, m_megaSet, m_modelManager)
+          m_scene(config, m_context, m_formatHelper, m_cmdBufferAllocator, m_modelManager, m_megaSet)
     {
         m_deletionQueue.PushDeletor([&] ()
         {
@@ -89,17 +89,6 @@ namespace Renderer
 
         m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
         m_modelManager.Update(m_context, m_cmdBufferAllocator);
-
-        m_iblMaps.Generate
-        (
-            m_cmdBufferAllocator,
-            m_scene.hdrMap,
-            m_context,
-            m_formatHelper,
-            m_modelManager.geometryBuffer,
-            m_megaSet,
-            m_modelManager.textureManager
-        );
 
         m_accelerationStructure.BuildBottomLevelAS(m_context, m_cmdBufferAllocator, m_modelManager, m_scene.renderObjects);
 
@@ -213,7 +202,7 @@ namespace Renderer
             m_cmdBufferAllocator,
             m_framebufferManager,
             m_megaSet,
-            m_iblMaps,
+            m_scene.iblMaps,
             m_sceneBuffer
         );
 
@@ -226,7 +215,7 @@ namespace Renderer
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
-            m_iblMaps,
+            m_scene.iblMaps,
             m_megaSet
         );
 
@@ -275,7 +264,16 @@ namespace Renderer
     void RenderManager::Update()
     {
         m_frameCounter.Update();
-        m_scene.Update(m_frameCounter);
+
+        m_scene.Update
+        (
+            m_frameCounter,
+            m_context,
+            m_formatHelper,
+            m_cmdBufferAllocator,
+            m_modelManager,
+            m_megaSet
+        );
 
         Engine::Inputs::Get().ImGuiDisplay();
 
@@ -285,34 +283,6 @@ namespace Renderer
 
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("IBL"))
-            {
-                ImGui::InputText("HDR Map Path", &m_scene.hdrMap);
-
-                if (ImGui::Button("Load") && !m_scene.hdrMap.empty())
-                {
-                    // TODO: Figure out a better way to wait for resources to be available
-                    Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
-
-                    m_iblMaps.Generate
-                    (
-                        m_cmdBufferAllocator,
-                        m_scene.hdrMap,
-                        m_context,
-                        m_formatHelper,
-                        m_modelManager.geometryBuffer,
-                        m_megaSet,
-                        m_modelManager.textureManager
-                    );
-
-                    m_taaPass.ResetHistory();
-
-                    m_scene.hdrMap.clear();
-                }
-
-                ImGui::EndMenu();
-            }
-
             if (ImGui::BeginMenu("Memory"))
             {
                 std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets = {};

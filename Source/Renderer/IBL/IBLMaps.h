@@ -22,6 +22,7 @@
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/CommandBufferAllocator.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer::IBL
 {
@@ -30,13 +31,12 @@ namespace Renderer::IBL
     public:
         void Generate
         (
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const std::string_view hdrMap,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
         );
 
         std::optional<u32> brdfLutID    = std::nullopt;
@@ -51,10 +51,9 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::Buffer& matrixBuffer,
+            Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
             u32 hdrMapID
         );
 
@@ -63,10 +62,9 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::Buffer& matrixBuffer,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
         );
 
         void CreatePreFilterMap
@@ -74,10 +72,9 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::Buffer& matrixBuffer,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
         );
 
         void CreateBRDFLUT
@@ -85,8 +82,8 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::TextureManager& textureManager,
+            Vk::MegaSet& megaSet
         );
 
         Util::DeletionQueue m_deletionQueue;

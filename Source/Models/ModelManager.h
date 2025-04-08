@@ -37,6 +37,9 @@ namespace Models
         [[nodiscard]] const Model& GetModel(usize modelID) const;
 
         void Update(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
+        void Update(const Vk::Context& context, const Vk::CommandBuffer& cmdBuffer);
+
+        void ClearUploads(VmaAllocator allocator);
 
         void ImGuiDisplay();
 

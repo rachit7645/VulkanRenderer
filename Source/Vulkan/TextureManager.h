@@ -81,6 +81,8 @@ namespace Vk
 
         void ImGuiDisplay();
 
+        [[nodiscard]] bool HasPendingUploads() const;
+
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         std::unordered_map<u32, TextureInfo> textureMap;

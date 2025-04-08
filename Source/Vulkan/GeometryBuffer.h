@@ -60,6 +60,8 @@ namespace Vk
 
         void ImGuiDisplay() const;
 
+        [[nodiscard]] bool HasPendingUploads() const;
+
         Vk::Buffer indexBuffer;
         Vk::Buffer positionBuffer;
         Vk::Buffer vertexBuffer;

@@ -21,6 +21,7 @@
 #include "Renderer/RenderObject.h"
 #include "Renderer/Objects/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
+#include "Renderer/IBL/IBLMaps.h"
 #include "Models/ModelManager.h"
 #include "Util/FrameCounter.h"
 
@@ -33,18 +34,30 @@ namespace Engine
         (
             const Engine::Config& config,
             const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Models::ModelManager& modelManager
+            const Vk::FormatHelper& formatHelper,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
         );
 
-        void Update(const Util::FrameCounter& frameCounter);
+        void Update
+        (
+            const Util::FrameCounter& frameCounter,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
+        );
 
         std::vector<Renderer::RenderObject>        renderObjects;
         Renderer::Objects::DirLight                sun;
         std::vector<Renderer::Objects::PointLight> pointLights;
         std::vector<Renderer::Objects::SpotLight>  spotLights;
         Renderer::Objects::FreeCamera              camera;
-        std::string                                hdrMap;
+        Renderer::IBL::IBLMaps                     iblMaps;
+    private:
+        std::string m_hdrMap;
     };
 }
 

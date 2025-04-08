@@ -186,7 +186,7 @@ namespace Vk
 
     void TextureManager::Update(const Vk::CommandBuffer& cmdBuffer)
     {
-        if (m_pendingUploads.empty())
+        if (!HasPendingUploads())
         {
             return;
         }
@@ -305,6 +305,11 @@ namespace Vk
 
             ImGui::EndMainMenuBar();
         }
+    }
+
+    bool TextureManager::HasPendingUploads() const
+    {
+        return !m_pendingUploads.empty();
     }
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)

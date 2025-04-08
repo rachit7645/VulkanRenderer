@@ -50,8 +50,6 @@ namespace Renderer::Objects
 
         right = glm::normalize(glm::cross(front, Renderer::WORLD_UP));
         up    = glm::normalize(glm::cross(right, front));
-
-        ImGuiDisplay();
     }
 
     void FreeCamera::CheckInputs(f32 frameDelta)
@@ -137,19 +135,14 @@ namespace Renderer::Objects
     {
         Camera::ImGuiDisplay();
 
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::BeginMenu("Camera"))
         {
-            if (ImGui::BeginMenu("Camera"))
-            {
-                // Camera Settings
-                ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.7f");
-                ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
-                ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.7f");
+            // Camera Settings
+            ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.7f");
+            ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
+            ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.7f");
 
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
+            ImGui::EndMenu();
         }
     }
 

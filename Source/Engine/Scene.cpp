@@ -20,6 +20,8 @@
 
 #include "Util/Files.h"
 #include "Util/JSON.h"
+#include "Vulkan/Util.h"
+#include "Externals/ImGui.h"
 
 namespace Engine
 {
@@ -27,8 +29,10 @@ namespace Engine
     (
         const Engine::Config& config,
         const Vk::Context& context,
-        Vk::MegaSet& megaSet,
-        Models::ModelManager& modelManager
+        const Vk::FormatHelper& formatHelper,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        Models::ModelManager& modelManager,
+        Vk::MegaSet& megaSet
     )
     {
         try
@@ -114,7 +118,19 @@ namespace Engine
             JSON::CheckError(document["Camera"]["FreeCamera"].get<Renderer::Objects::FreeCamera>(camera), "Failed to load free camera!");
 
             // HDR Map
-            JSON::CheckError(document["IBL"].get_string(hdrMap), "Failed to load IBL!");
+            JSON::CheckError(document["IBL"].get_string(m_hdrMap), "Failed to load IBL!");
+
+            iblMaps.Generate
+            (
+                m_hdrMap,
+                context,
+                formatHelper,
+                cmdBufferAllocator,
+                modelManager,
+                megaSet
+            );
+
+            m_hdrMap.clear();
         }
         catch (const std::exception& e)
         {
@@ -122,7 +138,15 @@ namespace Engine
         }
     }
 
-    void Scene::Update(const Util::FrameCounter& frameCounter)
+    void Scene::Update
+    (
+        const Util::FrameCounter& frameCounter,
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        Models::ModelManager& modelManager,
+        Vk::MegaSet& megaSet
+    )
     {
         camera.Update(frameCounter.frameDelta);
 
@@ -154,6 +178,8 @@ namespace Engine
 
                     ImGui::EndMenu();
                 }
+
+                ImGui::Separator();
 
                 if (ImGui::BeginMenu("Lights"))
                 {
@@ -220,6 +246,37 @@ namespace Engine
                         }
 
                         ImGui::EndMenu();
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+
+                camera.ImGuiDisplay();
+
+                ImGui::Separator();
+
+                if (ImGui::BeginMenu("IBL"))
+                {
+                    ImGui::InputText("HDR Map Path", &m_hdrMap);
+
+                    if (ImGui::Button("Load") && !m_hdrMap.empty())
+                    {
+                        // TODO: Figure out a better way to wait for resources to be available
+                        Vk::CheckResult(vkDeviceWaitIdle(context.device), "Device failed to idle!");
+
+                        iblMaps.Generate
+                        (
+                            m_hdrMap,
+                            context,
+                            formatHelper,
+                            cmdBufferAllocator,
+                            modelManager,
+                            megaSet
+                        );
+
+                        m_hdrMap.clear();
                     }
 
                     ImGui::EndMenu();

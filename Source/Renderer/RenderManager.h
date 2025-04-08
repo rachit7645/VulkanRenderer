@@ -95,8 +95,6 @@ namespace Renderer
         Vk::AccelerationStructure m_accelerationStructure;
         Models::ModelManager      m_modelManager;
 
-        IBL::IBLMaps m_iblMaps;
-
         // Render Passes
         PostProcess::RenderPass m_postProcessPass;
         Depth::RenderPass       m_depthPass;

@@ -37,6 +37,7 @@ namespace Renderer::Objects
 
         // Each subclass MUST define this method
         virtual void Update(f32 frameDelta) = 0;
+        virtual void ImGuiDisplay();
 
         [[nodiscard]] glm::mat4 GetViewMatrix() const;
 
@@ -51,8 +52,6 @@ namespace Renderer::Objects
         glm::vec3 right = glm::normalize(glm::cross(front, up));
 
         bool isEnabled = true;
-    protected:
-        virtual void ImGuiDisplay();
     };
 }
 

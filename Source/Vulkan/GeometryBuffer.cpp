@@ -93,6 +93,11 @@ namespace Vk
         VmaAllocator allocator
     )
     {
+        if (!HasPendingUploads())
+        {
+            return;
+        }
+
         Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
         ResizeBuffers(cmdBuffer, device, allocator);
@@ -539,6 +544,12 @@ namespace Vk
 
             ImGui::EndMainMenuBar();
         }
+    }
+
+    bool GeometryBuffer::HasPendingUploads() const
+    {
+        return !m_pendingIndexUploads.empty()  || !m_pendingPositionUploads.empty() ||
+               !m_pendingVertexUploads.empty() || m_cubeStagingBuffer.has_value();
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator)

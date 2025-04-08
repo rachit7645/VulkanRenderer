@@ -53,13 +53,17 @@ namespace Models
 
     void ModelManager::Update(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
+        if (!geometryBuffer.HasPendingUploads() && !textureManager.HasPendingUploads())
+        {
+            return;
+        }
+
         const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            geometryBuffer.Update(cmdBuffer, context.device, context.allocator);
-            textureManager.Update(cmdBuffer);
+            Update(context, cmdBuffer);
         cmdBuffer.EndRecording();
 
         VkFence transferFence = VK_NULL_HANDLE;
@@ -118,12 +122,28 @@ namespace Models
 
         // Clean
         {
-            geometryBuffer.ClearUploads(context.allocator);
-            textureManager.ClearUploads(context.allocator);
+            ClearUploads(context.allocator);
 
             vkDestroyFence(context.device, transferFence, nullptr);
             cmdBufferAllocator.FreeGlobalCommandBuffer(cmdBuffer);
         }
+    }
+
+    void ModelManager::Update(const Vk::Context& context, const Vk::CommandBuffer& cmdBuffer)
+    {
+        if (!geometryBuffer.HasPendingUploads() && !textureManager.HasPendingUploads())
+        {
+            return;
+        }
+
+        geometryBuffer.Update(cmdBuffer, context.device, context.allocator);
+        textureManager.Update(cmdBuffer);
+    }
+
+    void ModelManager::ClearUploads(VmaAllocator allocator)
+    {
+        geometryBuffer.ClearUploads(allocator);
+        textureManager.ClearUploads(allocator);
     }
 
     void ModelManager::ImGuiDisplay()
