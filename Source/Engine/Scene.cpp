@@ -20,6 +20,7 @@
 
 #include "Util/Files.h"
 #include "Util/JSON.h"
+#include "Util/Log.h"
 #include "Vulkan/Util.h"
 #include "Externals/ImGui.h"
 

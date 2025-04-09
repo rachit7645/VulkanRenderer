@@ -34,13 +34,6 @@ namespace Renderer::DearImGui
             Vk::TextureManager& textureManager
         );
 
-        void SetupBackend
-        (
-            const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         void Render

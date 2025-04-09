@@ -62,6 +62,7 @@ add_executable(VulkanRenderer
     Source/Util/SIMD.cpp
     Source/Util/AABB.cpp
     Source/Util/Plane.cpp
+    Source/Util/JSON.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp

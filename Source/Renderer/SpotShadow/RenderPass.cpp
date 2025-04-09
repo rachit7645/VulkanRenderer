@@ -97,6 +97,11 @@ namespace Renderer::SpotShadow
         Culling::Dispatch& cullingDispatch
     )
     {
+        if (lightsBuffer.shadowedSpotLights.empty())
+        {
+            return;
+        }
+
         const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);

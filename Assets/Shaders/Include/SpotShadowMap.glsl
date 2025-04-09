@@ -34,25 +34,21 @@ float CalculateSpotShadow
     vec4 lightSpacePos = light.matrix * vec4(fragPosition, 1.0f);
 
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-    projCoords      = projCoords * 0.5f + 0.5f;
+         projCoords = projCoords * 0.5f + 0.5f;
 
     float currentDepth = projCoords.z;
 
-    float shadow = 1.0f;
-
-    if (currentDepth < -1.0f || currentDepth > 1.0f)
+    if (currentDepth < 0.0f || currentDepth > 1.0f)
     {
-        return shadow;
+        return 0.0f;
     }
 
     // Calculate slope-scaled bias
-    float cosTheta = clamp(dot(normal, normalize(light.position)), 0.0f, 1.0f);
+    float cosTheta = clamp(dot(normal, normalize(light.position - fragPosition)), 0.0f, 1.0f);
     float bias     = MIN_SPOT_SHADOW_BIAS * TanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, MAX_SPOT_SHADOW_BIAS);
 
-    shadow = texture(sampler2DArrayShadow(spotShadowMap, shadowSampler), vec4(projCoords.xy, lightIndex, currentDepth - bias));
-
-    return shadow;
+    return texture(sampler2DArrayShadow(spotShadowMap, shadowSampler), vec4(projCoords.xy, lightIndex, currentDepth - bias));
 }
 
 #endif

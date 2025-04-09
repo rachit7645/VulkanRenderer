@@ -60,7 +60,7 @@ namespace Renderer::Objects
     {
         ShadowedPointLight() = default;
 
-        ShadowedPointLight(const PointLight& pointLight)
+        explicit ShadowedPointLight(const PointLight& pointLight)
             : position(pointLight.position),
               color(pointLight.color),
               intensity(pointLight.intensity),
@@ -103,7 +103,7 @@ namespace Renderer::Objects
     {
         ShadowedSpotLight() = default;
 
-        ShadowedSpotLight(const SpotLight& spotLight)
+        explicit ShadowedSpotLight(const SpotLight& spotLight)
             : position(spotLight.position),
               color(spotLight.color),
               intensity(spotLight.intensity),

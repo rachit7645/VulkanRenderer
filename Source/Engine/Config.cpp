@@ -19,6 +19,7 @@
 #include <simdjson.h>
 
 #include "Util/JSON.h"
+#include "Util/Log.h"
 
 namespace Engine
 {

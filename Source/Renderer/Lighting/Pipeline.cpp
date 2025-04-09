@@ -146,7 +146,7 @@ namespace Renderer::Lighting
                 .flags                   = 0,
                 .magFilter               = VK_FILTER_LINEAR,
                 .minFilter               = VK_FILTER_LINEAR,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
                 .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
                 .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,

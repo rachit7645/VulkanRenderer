@@ -606,12 +606,38 @@ namespace Renderer
         ImGui::StyleColorsDark();
 
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
-        m_imGuiPass.SetupBackend(m_context, m_megaSet, m_modelManager.textureManager);
+
+        auto& io = ImGui::GetIO();
+
+        io.BackendRendererName = "Rachit_DearImGui_Backend_Vulkan";
+        io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset;
+        io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+
+        // Load font
+        {
+            // Font data
+            u8* pixels = nullptr;
+            s32 width  = 0;
+            s32 height = 0;
+
+            io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+
+            const auto fontID = m_modelManager.textureManager.AddTexture
+            (
+                m_megaSet,
+                m_context.device,
+                m_context.allocator,
+                "DearImGuiFont",
+                {pixels, width * (height * 4ull)},
+                {width, height},
+                VK_FORMAT_R8G8B8A8_UNORM
+            );
+
+            io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
+        }
 
         m_deletionQueue.PushDeletor([&] ()
         {
-            ImGui::GetIO().BackendRendererUserData = nullptr;
-
             ImGui_ImplSDL3_Shutdown();
             ImGui::DestroyContext();
         });

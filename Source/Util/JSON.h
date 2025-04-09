@@ -21,17 +21,10 @@
 
 #include "Renderer/Objects/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
-#include "Log.h"
 
 namespace JSON
 {
-    inline void CheckError(simdjson::error_code result, const std::string_view message)
-    {
-        if (result != simdjson::error_code::SUCCESS)
-        {
-            Logger::Error("{} [Error={}]\n", message, simdjson::error_message(result));
-        }
-    }
+    void CheckError(simdjson::error_code result, const std::string_view message);
 
     template<typename T>
     void CheckError(const simdjson::simdjson_result<T>& result, const std::string_view message)

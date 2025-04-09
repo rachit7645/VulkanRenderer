@@ -33,44 +33,6 @@ namespace Renderer::DearImGui
         Logger::Info("{}\n", "Created imgui pass!");
     }
 
-    void RenderPass::SetupBackend
-    (
-        const Vk::Context& context,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        auto& io = ImGui::GetIO();
-
-        io.BackendRendererUserData = this;
-        io.BackendRendererName     = "Rachit_DearImGui_Backend_Vulkan";
-        io.BackendFlags           |= ImGuiBackendFlags_RendererHasVtxOffset;
-        io.ConfigFlags            |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
-
-        // Load font
-        {
-            // Font data
-            u8* pixels = nullptr;
-            s32 width  = 0;
-            s32 height = 0;
-
-            io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-            const auto fontID = textureManager.AddTexture
-            (
-                megaSet,
-                context.device,
-                context.allocator,
-                "DearImGuiFont",
-                {pixels, width * (height * 4ull)},
-                {width, height},
-                VK_FORMAT_R8G8B8A8_UNORM
-            );
-
-            io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
-        }
-    }
-
     void RenderPass::Render
     (
         usize FIF,

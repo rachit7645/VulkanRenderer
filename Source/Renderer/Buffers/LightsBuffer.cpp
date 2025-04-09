@@ -95,7 +95,7 @@ namespace Renderer::Buffers
 
             for (usize i = 0; i < inShadowedPointLights.size(); ++i)
             {
-                inShadowedPointLights[i] = inPointLights[i];
+                inShadowedPointLights[i] = Objects::ShadowedPointLight(inPointLights[i]);
             }
 
             const auto uploadedPointLights = (inPointLights.size() <= inShadowedPointLights.size()) ? std::span<Objects::PointLight>{} : std::span(inPointLights.begin() + inShadowedPointLights.size(), inPointLights.end());
@@ -110,7 +110,7 @@ namespace Renderer::Buffers
 
             for (usize i = 0; i < inShadowedSpotLights.size(); ++i)
             {
-                inShadowedSpotLights[i] = inSpotLights[i];
+                inShadowedSpotLights[i] = Objects::ShadowedSpotLight(inSpotLights[i]);
             }
 
             const auto uploadedSpotLights = (inSpotLights.size() <= inShadowedSpotLights.size()) ? std::span<Objects::SpotLight>{} : std::span(inSpotLights.begin() + inShadowedSpotLights.size(), inSpotLights.end());
