@@ -112,11 +112,23 @@ namespace Renderer
         BeginFrame();
         Update();
 
+        const auto cmdBuffer = m_cmdBufferAllocator.AllocateCommandBuffer(m_currentFIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        m_accelerationStructure.BuildTopLevelAS
+        (
+            m_currentFIF,
+            cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_scene.renderObjects
+        );
+
         m_pointShadowPass.Render
         (
             m_currentFIF,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -129,8 +141,7 @@ namespace Renderer
         m_spotShadowPass.Render
         (
             m_currentFIF,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -144,9 +155,8 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
+            cmdBuffer,
             m_sceneData,
-            m_context.device,
-            m_cmdBufferAllocator,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
@@ -159,8 +169,7 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.geometryBuffer,
@@ -173,8 +182,7 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
             m_megaSet,
             m_sceneBuffer
@@ -184,47 +192,41 @@ namespace Renderer
         (
             m_currentFIF,
             m_frameIndex,
-            m_context.device,
-            m_context.allocator,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_megaSet,
             m_framebufferManager,
             m_sceneBuffer,
-            m_accelerationStructure,
-            m_scene.renderObjects
+            m_accelerationStructure
         );
 
         m_lightingPass.Render
         (
             m_currentFIF,
             m_frameIndex,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_scene.iblMaps,
-            m_sceneBuffer
+            m_sceneBuffer,
+            m_scene.iblMaps
         );
 
         m_skyboxPass.Render
         (
             m_currentFIF,
             m_frameIndex,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
+            m_megaSet,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
-            m_scene.iblMaps,
-            m_megaSet
+            m_scene.iblMaps
         );
 
         m_taaPass.Render
         (
             m_currentFIF,
             m_frameIndex,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
             m_megaSet
         );
@@ -232,8 +234,7 @@ namespace Renderer
         m_bloomPass.Render
         (
             m_currentFIF,
-            m_context.device,
-            m_cmdBufferAllocator,
+            cmdBuffer,
             m_framebufferManager,
             m_megaSet
         );
@@ -241,21 +242,23 @@ namespace Renderer
         m_postProcessPass.Render
         (
             m_currentFIF,
-            m_context.device,
-            m_cmdBufferAllocator,
-            m_swapchain,
+            cmdBuffer,
+            m_framebufferManager,
             m_megaSet,
-            m_framebufferManager
+            m_swapchain
         );
 
         m_imGuiPass.Render
         (
             m_currentFIF,
-            m_cmdBufferAllocator,
-            m_context,
-            m_swapchain,
-            m_megaSet
+            m_context.device,
+            m_context.allocator,
+            cmdBuffer,
+            m_megaSet,
+            m_swapchain
         );
+
+        cmdBuffer.EndRecording();
 
         SubmitQueue();
         EndFrame();
@@ -268,6 +271,7 @@ namespace Renderer
         m_scene.Update
         (
             m_frameCounter,
+            m_window.inputs,
             m_context,
             m_formatHelper,
             m_cmdBufferAllocator,
@@ -275,7 +279,7 @@ namespace Renderer
             m_megaSet
         );
 
-        Engine::Inputs::Get().ImGuiDisplay();
+        m_window.inputs.ImGuiDisplay();
 
         m_modelManager.ImGuiDisplay();
         m_framebufferManager.ImGuiDisplay();
@@ -349,7 +353,7 @@ namespace Renderer
         auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
         jitter     -= glm::vec2(0.5f);
         jitter     /= glm::vec2(m_swapchain.extent.width, m_swapchain.extent.height);
-        
+
         auto jitteredProjection = projection;
 
         jitteredProjection[2][0] += jitter.x;
@@ -369,7 +373,7 @@ namespace Renderer
 
         m_sceneData.cameraPosition = m_scene.camera.position;
         m_sceneData.nearPlane      = Renderer::NEAR_PLANE;
-        m_sceneData.farPlane       = Renderer::FAR_PLANE;
+        m_sceneData.farPlane       = Renderer::FAR_PLANE; // There isn't actually a far plane right now lol
 
         const auto lightsBuffer = m_lightsBuffer.buffers[m_currentFIF].deviceAddress;
 
@@ -523,8 +527,6 @@ namespace Renderer
 
     bool RenderManager::HandleEvents()
     {
-        auto& inputs = Engine::Inputs::Get();
-
         SDL_Event event;
         while ((m_isSwapchainOk ? SDL_PollEvent(&event) : SDL_WaitEvent(&event)))
         {
@@ -568,25 +570,29 @@ namespace Renderer
                 break;
 
             case SDL_EVENT_MOUSE_MOTION:
-                inputs.SetMousePosition(glm::vec2(event.motion.xrel, event.motion.yrel));
+                m_window.inputs.SetMousePosition(glm::vec2(event.motion.xrel, event.motion.yrel));
                 break;
 
             case SDL_EVENT_MOUSE_WHEEL:
-                inputs.SetMouseScroll(glm::vec2(event.wheel.x, event.wheel.y));
+                m_window.inputs.SetMouseScroll(glm::vec2(event.wheel.x, event.wheel.y));
                 break;
 
             case SDL_EVENT_GAMEPAD_ADDED:
-                if (inputs.GetGamepad() == nullptr)
+                if (m_window.inputs.GetGamepad() == nullptr)
                 {
-                    inputs.FindGamepad();
+                    m_window.inputs.FindGamepad();
                 }
                 break;
 
             case SDL_EVENT_GAMEPAD_REMOVED:
-                if (inputs.GetGamepad() != nullptr && event.gdevice.which == inputs.GetGamepadID())
+                if (m_window.inputs.GetGamepad() != nullptr && event.gdevice.which == m_window.inputs.GetGamepadID())
                 {
-                    SDL_CloseGamepad(inputs.GetGamepad());
-                    inputs.FindGamepad();
+                    if (const auto gamepad = m_window.inputs.GetGamepad(); gamepad != nullptr)
+                    {
+                        SDL_CloseGamepad(gamepad);
+                    }
+
+                    m_window.inputs.FindGamepad();
                 }
                 break;
 

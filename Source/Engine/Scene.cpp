@@ -142,6 +142,7 @@ namespace Engine
     void Scene::Update
     (
         const Util::FrameCounter& frameCounter,
+        Engine::Inputs& inputs,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Vk::CommandBufferAllocator& cmdBufferAllocator,
@@ -149,7 +150,7 @@ namespace Engine
         Vk::MegaSet& megaSet
     )
     {
-        camera.Update(frameCounter.frameDelta);
+        camera.Update(frameCounter.frameDelta, inputs);
 
         if (ImGui::BeginMainMenuBar())
         {

@@ -36,11 +36,11 @@ namespace Renderer::Objects
     {
     }
 
-    void FreeCamera::Update(f32 frameDelta)
+    void FreeCamera::Update(f32 frameDelta, Engine::Inputs& inputs)
     {
         if (isEnabled == true)
         {
-            CheckInputs(frameDelta);
+            CheckInputs(frameDelta, inputs);
         }
 
         front.x = std::cos(rotation.y) * std::cos(rotation.x);
@@ -52,17 +52,15 @@ namespace Renderer::Objects
         up    = glm::normalize(glm::cross(right, front));
     }
 
-    void FreeCamera::CheckInputs(f32 frameDelta)
+    void FreeCamera::CheckInputs(f32 frameDelta, Engine::Inputs& inputs)
     {
-        Move(frameDelta);
-        Rotate(frameDelta);
-        Zoom(frameDelta);
+        Move(frameDelta, inputs);
+        Rotate(frameDelta, inputs);
+        Zoom(frameDelta, inputs);
     }
 
-    void FreeCamera::Move(f32 frameDelta)
+    void FreeCamera::Move(f32 frameDelta, Engine::Inputs& inputs)
     {
-        const auto& inputs = Engine::Inputs::Get();
-
         const f32 velocity = m_speed * frameDelta;
 
         // Forward
@@ -94,10 +92,8 @@ namespace Renderer::Objects
         position += lStick.x * right * velocity;
     }
 
-    void FreeCamera::Rotate(f32 frameDelta)
+    void FreeCamera::Rotate(f32 frameDelta, Engine::Inputs& inputs)
     {
-        auto& inputs = Engine::Inputs::Get();
-
         const auto speed = m_sensitivity * frameDelta;
 
         // Avoids freaking out
@@ -119,10 +115,8 @@ namespace Renderer::Objects
         rotation.x = glm::clamp(rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
     }
 
-    void FreeCamera::Zoom(f32 frameDelta)
+    void FreeCamera::Zoom(f32 frameDelta, Engine::Inputs& inputs)
     {
-        auto& inputs = Engine::Inputs::Get();
-
         // Stops things from going haywire
         if (inputs.WasMouseScrolled())
         {

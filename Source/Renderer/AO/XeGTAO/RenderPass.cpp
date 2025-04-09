@@ -228,8 +228,7 @@ namespace Renderer::AO::XeGTAO
     (
         usize FIF,
         usize frameIndex,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Buffers::SceneBuffer& sceneBuffer
@@ -249,10 +248,6 @@ namespace Renderer::AO::XeGTAO
 
             ImGui::EndMainMenuBar();
         }
-
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(cmdBuffer, fmt::format("XeGTAOPass/FIF{}", FIF), glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
 
@@ -282,8 +277,6 @@ namespace Renderer::AO::XeGTAO
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::PreFilterDepth

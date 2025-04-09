@@ -41,8 +41,7 @@ namespace Renderer::SpotShadow
         void Render
         (
             usize FIF,
-            VkDevice device,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,

@@ -36,20 +36,18 @@ namespace Renderer::DearImGui
     void RenderPass::Render
     (
         usize FIF,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
-        const Vk::Context& context,
-        const Vk::Swapchain& swapchain,
-        const Vk::MegaSet& megaSet
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::MegaSet& megaSet,
+        const Vk::Swapchain& swapchain
     )
     {
         m_deletionQueues[FIF].FlushQueue();
 
         ImGui::Render();
+
         const auto drawData = ImGui::GetDrawData();
-
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(cmdBuffer, fmt::format("ImGuiPass/FIF{}", FIF), glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
 
@@ -58,11 +56,12 @@ namespace Renderer::DearImGui
             RenderGui
             (
                 FIF,
-                drawData,
+                device,
+                allocator,
                 cmdBuffer,
-                context,
+                megaSet,
                 swapchain,
-                megaSet
+                drawData
             );
         }
 
@@ -87,18 +86,17 @@ namespace Renderer::DearImGui
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::RenderGui
     (
         usize FIF,
-        const ImDrawData* drawData,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
-        const Vk::Context& context,
+        const Vk::MegaSet& megaSet,
         const Vk::Swapchain& swapchain,
-        const Vk::MegaSet& megaSet
+        const ImDrawData* drawData
     )
     {
         const auto displaySize      = glm::vec2(drawData->DisplaySize.x,      drawData->DisplaySize.y);
@@ -113,11 +111,12 @@ namespace Renderer::DearImGui
         UploadToBuffers
         (
             FIF,
-            drawData,
+            device,
+            allocator,
             cmdBuffer,
-            context,
             currentVertexBuffer,
-            currentIndexBuffer
+            currentIndexBuffer,
+            drawData
         );
 
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
@@ -254,11 +253,12 @@ namespace Renderer::DearImGui
     void RenderPass::UploadToBuffers
     (
         usize FIF,
-        const ImDrawData* drawData,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
-        const Vk::Context& context,
         Vk::Buffer& vertexBuffer,
-        Vk::Buffer& indexBuffer
+        Vk::Buffer& indexBuffer,
+        const ImDrawData* drawData
     )
     {
         // Create or resize the vertex/index buffers
@@ -267,16 +267,16 @@ namespace Renderer::DearImGui
 
         if (vertexBuffer.requestedSize < vertexSize)
         {
-            Vk::SetDebugName(context.device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
+            Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, vertexBuffer] () mutable
+            m_deletionQueues[FIF].PushDeletor([allocator, vertexBuffer] () mutable
             {
                 vertexBuffer.Destroy(allocator);
             });
 
             vertexBuffer = Vk::Buffer
             (
-                context.allocator,
+                allocator,
                 vertexSize,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -284,23 +284,23 @@ namespace Renderer::DearImGui
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            vertexBuffer.GetDeviceAddress(context.device);
+            vertexBuffer.GetDeviceAddress(device);
 
-            Vk::SetDebugName(context.device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
+            Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
         }
 
         if (indexBuffer.requestedSize < indexSize)
         {
-            Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
+            Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, indexBuffer] () mutable
+            m_deletionQueues[FIF].PushDeletor([allocator, indexBuffer] () mutable
             {
                 indexBuffer.Destroy(allocator);
             });
 
             indexBuffer = Vk::Buffer
             (
-                context.allocator,
+                allocator,
                 indexSize,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -308,7 +308,7 @@ namespace Renderer::DearImGui
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
+            Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
         }
 
         auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.allocationInfo.pMappedData);
@@ -348,7 +348,7 @@ namespace Renderer::DearImGui
         if (!(vertexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                context.allocator,
+                allocator,
                 vertexBuffer.allocation,
                 0,
                 vertexSize),
@@ -359,7 +359,7 @@ namespace Renderer::DearImGui
         if (!(indexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                context.allocator,
+                allocator,
                 indexBuffer.allocation,
                 0,
                 indexSize),

@@ -17,15 +17,10 @@
 #ifndef RENDER_MANAGER_H
 #define RENDER_MANAGER_H
 
-#include <vulkan/vulkan.h>
-
-#include "RenderObject.h"
-#include "Objects/FreeCamera.h"
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
 #include "Buffers/LightsBuffer.h"
-#include "IBL/IBLMaps.h"
 #include "PostProcess/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"

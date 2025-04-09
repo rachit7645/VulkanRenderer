@@ -20,21 +20,18 @@
 
 namespace Engine
 {
-    Inputs::Inputs()
+    Inputs::Inputs(bool enableJoyConFixes)
         : m_keys(SDL_GetKeyboardState(nullptr))
     {
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH,            "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED,   "0");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS,          "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
-    }
-
-    Inputs& Inputs::Get()
-    {
-        static Inputs inputs;
-        return inputs;
+        if (enableJoyConFixes)
+        {
+            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH,            "1");
+            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED,   "0");
+            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
+            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS,          "1");
+            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
+            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
+        }
     }
 
     void Inputs::SetMousePosition(const glm::vec2& position)
@@ -209,13 +206,5 @@ namespace Engine
     void Inputs::Destroy()
     {
         SDL_CloseGamepad(m_gamepad);
-
-        m_gamepad = nullptr;
-
-        m_mousePosition = {};
-        m_mouseScroll   = {};
-
-        m_wasMouseMoved    = false;
-        m_wasMouseScrolled = false;
     }
 }

@@ -78,18 +78,13 @@ namespace Renderer::Lighting
     (
         usize FIF,
         usize frameIndex,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const IBL::IBLMaps& iblMaps,
-        const Buffers::SceneBuffer& sceneBuffer
+        const Buffers::SceneBuffer& sceneBuffer,
+        const IBL::IBLMaps& iblMaps
     )
     {
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
         Vk::BeginLabel(cmdBuffer, fmt::format("LightingPass/FIF{}", FIF), glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
@@ -209,8 +204,6 @@ namespace Renderer::Lighting
         vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::Destroy(VkDevice device)

@@ -42,14 +42,13 @@ namespace Renderer::Skybox
         void Render
         (
             usize FIF,
-            usize frameIndex,
-            VkDevice device,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+        usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
-            const IBL::IBLMaps& iblMaps,
-            const Vk::MegaSet& megaSet
+            const IBL::IBLMaps& iblMaps
         );
 
         Skybox::Pipeline pipeline;

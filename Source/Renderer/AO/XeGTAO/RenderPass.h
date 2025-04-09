@@ -44,9 +44,8 @@ namespace Renderer::AO::XeGTAO
         void Render
         (
             usize FIF,
-            usize frameIndex,
-            VkDevice device,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+        usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Buffers::SceneBuffer& sceneBuffer
@@ -71,7 +70,7 @@ namespace Renderer::AO::XeGTAO
         void Occlusion
         (
             usize FIF,
-            usize frameIndex,
+        usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,

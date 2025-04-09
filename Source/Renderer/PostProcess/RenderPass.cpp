@@ -38,11 +38,10 @@ namespace Renderer::PostProcess
     void RenderPass::Render
     (
         usize FIF,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
-        const Vk::Swapchain& swapchain,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::FramebufferManager& framebufferManager
+        const Vk::Swapchain& swapchain
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -56,12 +55,8 @@ namespace Renderer::PostProcess
             ImGui::EndMainMenuBar();
         }
 
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
         const auto& currentImage     = swapchain.images[swapchain.imageIndex];
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(cmdBuffer, fmt::format("PostProcessPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
@@ -170,8 +165,6 @@ namespace Renderer::PostProcess
         vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::Destroy(VkDevice device)

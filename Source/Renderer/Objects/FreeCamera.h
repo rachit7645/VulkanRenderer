@@ -18,6 +18,7 @@
 #define FREE_CAMERA_H
 
 #include "Camera.h"
+#include "Engine/Inputs.h"
 #include "Externals/GLM.h"
 
 namespace Renderer::Objects
@@ -37,13 +38,13 @@ namespace Renderer::Objects
             f32 zoom
         );
 
-        void Update(f32 frameDelta) override;
-        void ImGuiDisplay()         override;
+        void Update(f32 frameDelta, Engine::Inputs& inputs) override;
+        void ImGuiDisplay() override;
     private:
-        void CheckInputs(f32 frameDelta);
-        void Move(f32 frameDelta);
-        void Rotate(f32 frameDelta);
-        void Zoom(f32 frameDelta);
+        void CheckInputs(f32 frameDelta, Engine::Inputs& inputs);
+        void Move(f32 frameDelta, Engine::Inputs& inputs);
+        void Rotate(f32 frameDelta, Engine::Inputs& inputs);
+        void Zoom(f32 frameDelta, Engine::Inputs& inputs);
 
         // Settings
         f32 m_speed       = 0.000015f;

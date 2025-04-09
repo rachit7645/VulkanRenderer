@@ -39,19 +39,14 @@ namespace Renderer::Skybox
     (
         usize FIF,
         usize frameIndex,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
-        const IBL::IBLMaps& iblMaps,
-        const Vk::MegaSet& megaSet
+        const IBL::IBLMaps& iblMaps
     )
     {
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
         Vk::BeginLabel(cmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
         const usize currentDepthIndex = frameIndex % Depth::DEPTH_HISTORY_SIZE;
@@ -198,8 +193,6 @@ namespace Renderer::Skybox
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::Destroy(VkDevice device)

@@ -76,29 +76,13 @@ namespace Renderer::ShadowRT
     (
         usize FIF,
         usize frameIndex,
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        Vk::AccelerationStructure& accelerationStructure,
-        const std::span<const Renderer::RenderObject> renderObjects
+        const Vk::AccelerationStructure& accelerationStructure
     )
     {
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        accelerationStructure.BuildTopLevelAS
-        (
-            FIF,
-            cmdBuffer,
-            device,
-            allocator,
-            renderObjects
-        );
-
         Vk::BeginLabel(cmdBuffer, fmt::format("ShadowRTPass/FIF{}", FIF), glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
 
         const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
@@ -176,8 +160,6 @@ namespace Renderer::ShadowRT
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)

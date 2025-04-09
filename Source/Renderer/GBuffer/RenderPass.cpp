@@ -151,8 +151,7 @@ namespace Renderer::GBuffer
     (
         usize FIF,
         usize frameIndex,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -161,10 +160,6 @@ namespace Renderer::GBuffer
         const Buffers::IndirectBuffer& indirectBuffer
     )
     {
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
         Vk::BeginLabel(cmdBuffer, fmt::format("GBufferPass/FIF{}", FIF), glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
         const usize currentDepthIndex  = frameIndex % Depth::DEPTH_HISTORY_SIZE;
@@ -425,8 +420,6 @@ namespace Renderer::GBuffer
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::Destroy(VkDevice device)

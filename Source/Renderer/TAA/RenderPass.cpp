@@ -118,16 +118,11 @@ namespace Renderer::TAA
     (
         usize FIF,
         usize frameIndex,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
     )
     {
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
         Vk::BeginLabel(cmdBuffer, fmt::format("TAAPass/FIF{}", FIF), glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
 
         if (ImGui::BeginMainMenuBar())
@@ -394,8 +389,6 @@ namespace Renderer::TAA
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::ResetHistory()

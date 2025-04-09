@@ -27,7 +27,8 @@ namespace Engine
     class Inputs
     {
     public:
-        static Inputs& Get();
+        Inputs() = default;
+        explicit Inputs(bool enableJoyConFixes);
 
         void SetMousePosition(const glm::vec2& position);
         void SetMouseScroll(const glm::vec2& scroll);
@@ -50,8 +51,6 @@ namespace Engine
 
         void ImGuiDisplay();
         void Destroy();
-    private:
-        Inputs();
 
         // Dead zone must be between 0.0f and 1.0f
         [[nodiscard]] glm::vec2 GetNormalisedAxisDirection

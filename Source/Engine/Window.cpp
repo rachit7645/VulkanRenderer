@@ -65,11 +65,13 @@ namespace Engine
         {
             Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
         }
+
+        inputs = Inputs(true);
     }
 
     Window::~Window()
     {
-        Inputs::Get().Destroy();
+        inputs.Destroy();
 
         SDL_DestroyWindow(handle);
         SDL_Quit();

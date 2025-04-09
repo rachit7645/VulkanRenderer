@@ -86,8 +86,7 @@ namespace Renderer::SpotShadow
     void RenderPass::Render
     (
         usize FIF,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -101,10 +100,6 @@ namespace Renderer::SpotShadow
         {
             return;
         }
-
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(cmdBuffer, fmt::format("SpotShadowPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
 
@@ -253,8 +248,6 @@ namespace Renderer::SpotShadow
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::Destroy(VkDevice device)

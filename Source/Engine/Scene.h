@@ -43,6 +43,7 @@ namespace Engine
         void Update
         (
             const Util::FrameCounter& frameCounter,
+            Engine::Inputs& inputs,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             Vk::CommandBufferAllocator& cmdBufferAllocator,

@@ -18,7 +18,6 @@
 #define DEPTH_PASS_H
 
 #include "Pipeline.h"
-#include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
@@ -45,10 +44,9 @@ namespace Renderer::Depth
         void Render
         (
             usize FIF,
-            usize frameIndex,
-            const Scene& scene,
-            VkDevice device,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+        usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Renderer::Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,

@@ -40,11 +40,10 @@ namespace Renderer::PostProcess
         void Render
         (
             usize FIF,
-            VkDevice device,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
-            const Vk::Swapchain& swapchain,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::FramebufferManager& framebufferManager
+            const Vk::Swapchain& swapchain
         );
 
         PostProcess::Pipeline pipeline;

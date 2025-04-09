@@ -44,15 +44,12 @@ namespace Renderer::ShadowRT
         void Render
         (
             usize FIF,
-            usize frameIndex,
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+        usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::MegaSet& megaSet,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
-            Vk::AccelerationStructure& accelerationStructure,
-            const std::span<const Renderer::RenderObject> renderObjects
+            const Vk::AccelerationStructure& accelerationStructure
         );
 
         ShadowRT::Pipeline pipeline;

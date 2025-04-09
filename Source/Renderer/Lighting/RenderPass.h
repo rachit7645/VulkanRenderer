@@ -22,7 +22,6 @@
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
 
@@ -45,13 +44,12 @@ namespace Renderer::Lighting
         void Render
         (
             usize FIF,
-            usize frameIndex,
-            VkDevice device,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+        usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const IBL::IBLMaps& iblMaps,
-            const Buffers::SceneBuffer& sceneBuffer
+            const Buffers::SceneBuffer& sceneBuffer,
+            const IBL::IBLMaps& iblMaps
         );
 
         Lighting::Pipeline pipeline;

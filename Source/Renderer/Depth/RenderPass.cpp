@@ -75,9 +75,8 @@ namespace Renderer::Depth
     (
         usize FIF,
         usize frameIndex,
-        const Scene& scene,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Renderer::Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -86,10 +85,6 @@ namespace Renderer::Depth
         Culling::Dispatch& cullingDispatch
     )
     {
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
         cullingDispatch.ComputeDispatch
         (
             FIF,
@@ -211,8 +206,6 @@ namespace Renderer::Depth
         vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::Destroy(VkDevice device)

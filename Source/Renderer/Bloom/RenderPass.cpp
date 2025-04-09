@@ -82,8 +82,7 @@ namespace Renderer::Bloom
     void RenderPass::Render
     (
         usize FIF,
-        VkDevice device,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
     )
@@ -99,10 +98,6 @@ namespace Renderer::Bloom
 
             ImGui::EndMainMenuBar();
         }
-
-        const auto cmdBuffer = cmdBufferAllocator.AllocateCommandBuffer(FIF, device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         Vk::BeginLabel(cmdBuffer, fmt::format("BloomPass/FIF{}", FIF), {0.6796f, 0.4538f, 0.1518f, 1.0f});
 
@@ -121,8 +116,6 @@ namespace Renderer::Bloom
         );
 
         Vk::EndLabel(cmdBuffer);
-
-        cmdBuffer.EndRecording();
     }
 
     void RenderPass::RenderDownSamples
