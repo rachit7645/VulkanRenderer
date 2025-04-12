@@ -18,17 +18,18 @@
 #define POINT_SHADOW_PUSH_CONSTANT
 
 #include "Mesh.glsl"
+#include "DrawCall.glsl"
 #include "Scene.glsl"
 #include "Vertex.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    SceneBuffer       Scene;
-    MeshBuffer        Meshes;
-    VisibleMeshBuffer VisibleMeshes;
-    PositionBuffer    Positions;
-    uint              LightIndex;
-    uint              FaceIndex;
+    SceneBuffer     Scene;
+    MeshBuffer      Meshes;
+    MeshIndexBuffer MeshIndices;
+    PositionBuffer  Positions;
+    uint            LightIndex;
+    uint            FaceIndex;
 } Constants;
 
 #endif

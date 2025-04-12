@@ -27,7 +27,7 @@ namespace Renderer::GBuffer
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
+        VkDeviceAddress meshIndices;
         VkDeviceAddress positions;
         VkDeviceAddress vertices;
         u32             textureSamplerIndex;

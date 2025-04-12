@@ -27,7 +27,7 @@ namespace Renderer::PointShadow
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;;
+        VkDeviceAddress meshIndices;;
         VkDeviceAddress positions;
         u32             lightIndex;
         u32             faceIndex;

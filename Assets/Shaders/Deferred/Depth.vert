@@ -24,7 +24,7 @@
 
 void main()
 {
-    uint meshIndex = Constants.VisibleMeshes.indices[gl_DrawID];
+    uint meshIndex = Constants.MeshIndices.indices[gl_DrawID];
     Mesh mesh      = Constants.Meshes.meshes[meshIndex];
     vec3 position  = Constants.Positions.positions[gl_VertexIndex];
 

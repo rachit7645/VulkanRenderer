@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef SHADOW_PUSH_CONSTANT
-#define SHADOW_PUSH_CONSTANT
+#ifndef IBL_SHARED_GLSL
+#define IBL_SHARED_GLSL
 
-#include "Mesh.glsl"
-#include "DrawCall.glsl"
-#include "Vertex.glsl"
-#include "Scene.glsl"
-
-layout(push_constant, scalar) uniform ConstantsBuffer
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
 {
-    SceneBuffer     Scene;
-    MeshBuffer      Meshes;
-    MeshIndexBuffer MeshIndices;
-    PositionBuffer  Positions;
-    uint            CurrentIndex;
-} Constants;
+    vec3 positions[];
+};
+
+layout(buffer_reference, scalar) readonly buffer MatrixBuffer
+{
+    mat4 matrices[];
+};
 
 #endif

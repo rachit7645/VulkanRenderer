@@ -201,7 +201,7 @@ namespace Renderer::PointShadow
                 {
                     .scene         = sceneBuffer.buffers[FIF].deviceAddress,
                     .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-                    .visibleMeshes = meshBuffer.visibilityBuffer.deviceAddress,
+                    .meshIndices = indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.deviceAddress,
                     .positions     = geometryBuffer.positionBuffer.deviceAddress,
                     .lightIndex    = static_cast<u32>(i),
                     .faceIndex     = static_cast<u32>(face)
@@ -220,11 +220,11 @@ namespace Renderer::PointShadow
                 vkCmdDrawIndexedIndirectCount
                 (
                     cmdBuffer.handle,
-                    indirectBuffer.culledDrawCallBuffer.handle,
+                    indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
                     sizeof(u32),
-                    indirectBuffer.culledDrawCallBuffer.handle,
+                    indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCount,
+                    indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 

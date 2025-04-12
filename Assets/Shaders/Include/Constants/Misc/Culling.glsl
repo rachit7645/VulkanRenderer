@@ -24,11 +24,11 @@
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    MeshBuffer        Meshes;
-    VisibleMeshBuffer VisibleMeshes;
-    DrawBuffer        DrawCalls;
-    CulledDrawBuffer  CulledDrawCalls;
-    FrustumBuffer     Frustum;
+    MeshBuffer      Meshes;
+    DrawCallBuffer  DrawCalls;
+    DrawCallBuffer  CulledDrawCalls;
+    MeshIndexBuffer CulledMeshIndices;
+    FrustumBuffer   Frustum;
 } Constants;
 
 #endif

@@ -8,16 +8,16 @@
         }
     ],
     "Sun": {
-        "Position"  : [-30.0,  -30.0,  -10.0 ],
-        "Color"     : [ 0.4784, 0.7372, 0.745],
-        "Intensity" : [ 3.0,    3.0,    3.0  ]
+        "Position"  : [4.0,    -20.0,  3.0  ],
+        "Color"     : [0.4784, 0.7372, 0.745],
+        "Intensity" : [15.0,   10.0,   10.0 ]
     },
     "PointLights": [],
     "SpotLights" : [],
     "Camera" : {
         "FreeCamera" : {
-            "Position"    : [0.0, 2.0,   0.0],
-            "Rotation"    : [0.0, 180.0, 0.0],
+            "Position"    : [-18.5, 4.2,  1.1],
+            "Rotation"    : [ 1.71, 31.9, 0.0],
             "FOV"         : 80.0,
             "Speed"       : 0.000015,
             "Sensitivity" : 0.0001,

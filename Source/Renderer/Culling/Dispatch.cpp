@@ -48,11 +48,11 @@ namespace Renderer::Culling
 
         pipeline.pushConstant =
         {
-            .meshes          = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .visibleMeshes   = meshBuffer.visibilityBuffer.deviceAddress,
-            .drawCalls       = indirectBuffer.drawCallBuffers[FIF].deviceAddress,
-            .culledDrawCalls = indirectBuffer.culledDrawCallBuffer.deviceAddress,
-            .frustum         = frustumBuffer.buffers[FIF].deviceAddress
+            .meshes            = meshBuffer.meshBuffers[FIF].deviceAddress,
+            .drawCalls         = indirectBuffer.drawCallBuffers[FIF].drawCallBuffer.deviceAddress,
+            .culledDrawCalls   = indirectBuffer.culledDrawCallBuffer.drawCallBuffer.deviceAddress,
+            .culledMeshIndices = indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .frustum           = frustumBuffer.buffers[FIF].deviceAddress
         };
 
         pipeline.PushConstants
@@ -64,58 +64,26 @@ namespace Renderer::Culling
             &pipeline.pushConstant
         );
 
-        indirectBuffer.culledDrawCallBuffer.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-            VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            0,
-            sizeof(u32)
-        );
-
-        // Reset draw count
-        vkCmdFillBuffer
-        (
-            cmdBuffer.handle,
-            indirectBuffer.culledDrawCallBuffer.handle,
-            0,
-            sizeof(u32),
-            0
-        );
-
-        indirectBuffer.culledDrawCallBuffer.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            0,
-            sizeof(u32)
-        );
-
-        indirectBuffer.culledDrawCallBuffer.Barrier
+        indirectBuffer.culledDrawCallBuffer.drawCallBuffer.Barrier
         (
             cmdBuffer,
             VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
             VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
             VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            sizeof(u32),
-            sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.writtenDrawCount
+            0,
+            sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.drawCallBuffers[FIF].writtenDrawCount
         );
 
         vkCmdDispatch
         (
             cmdBuffer.handle,
-            (indirectBuffer.writtenDrawCount / WORKGROUP_SIZE) + 1,
+            (indirectBuffer.drawCallBuffers[FIF].writtenDrawCount / WORKGROUP_SIZE) + 1,
             1,
             1
         );
 
-        indirectBuffer.culledDrawCallBuffer.Barrier
+        indirectBuffer.culledDrawCallBuffer.drawCallBuffer.Barrier
         (
             cmdBuffer,
             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
@@ -123,10 +91,10 @@ namespace Renderer::Culling
             VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
             VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
             0,
-            sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.writtenDrawCount
+            sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * indirectBuffer.drawCallBuffers[FIF].writtenDrawCount
         );
 
-        meshBuffer.visibilityBuffer.Barrier
+        indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.Barrier
         (
             cmdBuffer,
             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
@@ -134,7 +102,7 @@ namespace Renderer::Culling
             VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
             VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
             0,
-            sizeof(u32) * indirectBuffer.writtenDrawCount
+            sizeof(u32) * indirectBuffer.drawCallBuffers[FIF].writtenDrawCount
         );
 
         Vk::EndLabel(cmdBuffer);

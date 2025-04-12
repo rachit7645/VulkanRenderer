@@ -17,15 +17,7 @@
 #ifndef PREFILER_PUSH_CONSTANT
 #define PREFILER_PUSH_CONSTANT
 
-layout(buffer_reference, scalar) readonly buffer VertexBuffer
-{
-    vec3 positions[];
-};
-
-layout(buffer_reference, scalar) readonly buffer MatrixBuffer
-{
-    mat4 matrices[];
-};
+#include "Shared.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {

@@ -15,7 +15,7 @@
 * Transparent / Translucent Meshes
 * Async Compute
 * Async Model Loading
-* RT Global Illumination
+* Some form of Global Illumination
 * Fog
 * Volumetric Lighting
 * Wait for frames in flight before framebuffer recreation

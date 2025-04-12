@@ -25,6 +25,38 @@
 
 layout(local_size_x = 64) in;
 
+bool IsVisible(Mesh mesh);
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+
+    if (index >= Constants.DrawCalls.count)
+    {
+        return;
+    }
+
+    if (index == 0)
+    {
+        Constants.CulledDrawCalls.count = 0;
+    }
+
+    memoryBarrierBuffer();
+    barrier();
+
+    Mesh mesh = Constants.Meshes.meshes[index];
+
+    if (!IsVisible(mesh))
+    {
+        return;
+    }
+
+    uint drawIndex = atomicAdd(Constants.CulledDrawCalls.count, 1);
+
+    Constants.CulledDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
+    Constants.CulledMeshIndices.indices[drawIndex] = index;
+}
+
 bool IsVisible(Mesh mesh)
 {
     AABB    aabb    = TransformAABB(mesh.aabb, mesh.transform);
@@ -51,26 +83,4 @@ bool IsVisible(Mesh mesh)
     }
 
     return true;
-}
-
-void main()
-{
-    uint index = gl_GlobalInvocationID.x;
-
-    if (index >= Constants.DrawCalls.count)
-    {
-        return;
-    }
-
-    Mesh mesh = Constants.Meshes.meshes[index];
-
-    if (!IsVisible(mesh))
-    {
-        return;
-    }
-
-    uint drawIndex = atomicAdd(Constants.CulledDrawCalls.count, 1);
-
-    Constants.CulledDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
-    Constants.VisibleMeshes.indices[drawIndex]     = index;
 }

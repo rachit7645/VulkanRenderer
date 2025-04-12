@@ -183,7 +183,8 @@ vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 aabbMin, v
     if (maUnit > 1.0f)
     {
         return pClip + (vClip / maUnit);
-    } else
+    }
+    else
     {
         return historyColor;
     }

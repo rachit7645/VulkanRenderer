@@ -27,7 +27,7 @@ namespace Renderer::SpotShadow
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
+        VkDeviceAddress meshIndices;
         VkDeviceAddress positions;
         u32             currentIndex;
     };

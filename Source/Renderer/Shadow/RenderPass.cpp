@@ -234,7 +234,7 @@ namespace Renderer::Shadow
             pipeline.pushConstant =
             {
                 .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-                .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+                .meshIndices = meshBuffer.visibleMeshBuffer.deviceAddress,
                 .positions     = geometryBuffer.positionBuffer.deviceAddress,
                 .cascades      = cascadeBuffer.buffers[FIF].deviceAddress,
                 .offset        = static_cast<u32>(0 * Shadow::CASCADE_COUNT + i)

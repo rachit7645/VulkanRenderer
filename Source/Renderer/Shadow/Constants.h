@@ -26,7 +26,7 @@ namespace Renderer::Shadow
     struct __attribute__((packed)) PushConstant
     {
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
+        VkDeviceAddress meshIndices;
         VkDeviceAddress positions;
         VkDeviceAddress cascades;
         u32             offset;

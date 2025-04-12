@@ -24,9 +24,9 @@ namespace Renderer::Culling
     struct PushConstant
     {
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
         VkDeviceAddress drawCalls;
         VkDeviceAddress culledDrawCalls;
+        VkDeviceAddress culledMeshIndices;
         VkDeviceAddress frustum;
     };
 }
