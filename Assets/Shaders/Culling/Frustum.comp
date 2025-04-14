@@ -20,12 +20,9 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Misc/Culling.glsl"
-#include "Constants.glsl"
+#include "Constants/Culling/Frustum.glsl"
 
 layout(local_size_x = 64) in;
-
-bool IsVisible(Mesh mesh);
 
 void main()
 {
@@ -46,7 +43,7 @@ void main()
 
     Mesh mesh = Constants.Meshes.meshes[index];
 
-    if (!IsVisible(mesh))
+    if (!IsVisible(mesh, Constants.Frustum))
     {
         return;
     }
@@ -55,32 +52,4 @@ void main()
 
     Constants.CulledDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
     Constants.CulledMeshIndices.indices[drawIndex] = index;
-}
-
-bool IsVisible(Mesh mesh)
-{
-    AABB    aabb    = TransformAABB(mesh.aabb, mesh.transform);
-    vec3[8] corners = GetAABBCorners(aabb);
-
-    for (uint i = 0; i < 6; ++i)
-    {
-        Plane plane = Constants.Frustum.planes[i];
-
-        uint outside = 0;
-
-        for (uint j = 0; j < 8; ++j)
-        {
-            if ((dot(plane.normal, corners[j]) + plane.dist) < 0.0f)
-            {
-                ++outside;
-            }
-        }
-
-        if (outside == 8)
-        {
-            return false;
-        }
-    }
-
-    return true;
 }

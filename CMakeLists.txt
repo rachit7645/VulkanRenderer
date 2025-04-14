@@ -109,7 +109,8 @@ add_executable(VulkanRenderer
 	Source/Renderer/PostProcess/Pipeline.cpp
 	Source/Renderer/PostProcess/RenderPass.cpp
     # Depth Pass Sources
-    Source/Renderer/Depth/Pipeline.cpp
+    Source/Renderer/Depth/Depth/Pipeline.cpp
+    Source/Renderer/Depth/HiZ/Pipeline.cpp
     Source/Renderer/Depth/RenderPass.cpp
     # ImGui Pass Sources
     Source/Renderer/ImGui/Pipeline.cpp
@@ -134,7 +135,9 @@ add_executable(VulkanRenderer
     Source/Renderer/SpotShadow/Pipeline.cpp
     Source/Renderer/SpotShadow/RenderPass.cpp
     # Culling Dispatch Sources
-    Source/Renderer/Culling/Pipeline.cpp
+    Source/Renderer/Culling/Frustum/Pipeline.cpp
+    Source/Renderer/Culling/Visibility/Pipeline.cpp
+    Source/Renderer/Culling/Occlusion/Pipeline.cpp
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
     # GBuffer Pass Sources

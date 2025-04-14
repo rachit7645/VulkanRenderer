@@ -40,13 +40,14 @@ bool  XeGTAO_DepthWriteCheck(uint modulo);
 
 void main()
 {
-    vec2 viewportPixelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), 0));
+    vec2 depthTexelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), 0));
 
     // MIP 0
-    ivec2 baseCoord  = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 pixelCoord = baseCoord * 2;
+    ivec2 baseCoord   = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 pixelCoord  = 2 * baseCoord;
+    vec2  pixelCenter = vec2(pixelCoord) + vec2(0.5f);
 
-    vec4 depths4 = textureGatherOffset(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), pixelCoord * viewportPixelSize, ivec2(1, 1));
+    vec4 depths4 = textureGatherOffset(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), pixelCenter * depthTexelSize, ivec2(1, 1));
 
     float depth0 = depths4.w;
     float depth1 = depths4.z;

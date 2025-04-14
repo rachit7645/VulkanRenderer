@@ -43,7 +43,6 @@ file(GLOB SHADER_SOURCES
     Misc/PostProcess.frag
     Misc/TAA.frag
     Misc/Trongle.vert
-    Misc/Culling.comp
     ImGui/ImGui.vert
     ImGui/ImGui.frag
     IBL/BRDF.frag
@@ -68,9 +67,13 @@ file(GLOB SHADER_SOURCES
     Deferred/GBuffer.frag
     Deferred/GBuffer.vert
     Deferred/Lighting.frag
+    Deferred/HiZ.comp
     AO/XeGTAO/DepthPreFilter.comp
     AO/XeGTAO/Denoise.comp
     AO/XeGTAO/XeGTAO.comp
+    Culling/Frustum.comp
+    Culling/Visibility.comp
+    Culling/Occlusion.comp
 )
 
 # Shader headers

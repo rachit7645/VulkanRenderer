@@ -14,21 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef CULLING_PIPELINE_H
-#define CULLING_PIPELINE_H
+#ifndef OCCLUSION_CULLING_CONSTANTS_H
+#define OCCLUSION_CULLING_CONSTANTS_H
 
-#include "Constants.h"
-#include "Vulkan/Pipeline.h"
-#include "Vulkan/FormatHelper.h"
+#include <vulkan/vulkan.h>
 
-namespace Renderer::Culling
+#include "Util/Util.h"
+
+namespace Renderer::Culling::Occlusion
 {
-    class Pipeline : public Vk::Pipeline
+    struct PushConstant
     {
-    public:
-        Pipeline(const Vk::Context& context);
+        VkDeviceAddress scene;
+        VkDeviceAddress meshes;
+        VkDeviceAddress frustum;
 
-        Culling::PushConstant pushConstant = {};
+        VkDeviceAddress drawCalls;
+        VkDeviceAddress newlyVisibleDrawCalls;
+        VkDeviceAddress newlyVisibleMeshIndices;
+        VkDeviceAddress totalVisibleDrawCalls;
+        VkDeviceAddress totalVisibleMeshIndices;
+
+        VkDeviceAddress previouslyVisible;
+
+        u32 hiZDepthIndex;
+        u32 samplerIndex;
     };
 }
 

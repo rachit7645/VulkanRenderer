@@ -25,9 +25,12 @@ namespace Renderer::Depth
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager
+        Vk::FramebufferManager& framebufferManager,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper)
+        : depthPipeline(context, formatHelper),
+          hiZPipeline(context, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -85,7 +88,7 @@ namespace Renderer::Depth
         Culling::Dispatch& cullingDispatch
     )
     {
-        cullingDispatch.ComputeDispatch
+        cullingDispatch.DispatchFrustumCulling
         (
             FIF,
             scene.currentMatrices.projection * scene.currentMatrices.view,
@@ -152,7 +155,7 @@ namespace Renderer::Depth
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        depthPipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -174,20 +177,20 @@ namespace Renderer::Depth
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        depthPipeline.pushConstant =
         {
             .scene         = sceneBuffer.buffers[FIF].deviceAddress,
             .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .meshIndices = indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
             .positions     = geometryBuffer.positionBuffer.deviceAddress
         };
 
-        pipeline.PushConstants
+        depthPipeline.PushConstants
         (
            cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT,
            0, sizeof(Depth::PushConstant),
-           &pipeline.pushConstant
+           &depthPipeline.pushConstant
         );
 
         geometryBuffer.Bind(cmdBuffer);
@@ -195,9 +198,9 @@ namespace Renderer::Depth
         vkCmdDrawIndexedIndirectCount
         (
             cmdBuffer.handle,
-            indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             sizeof(u32),
-            indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             0,
             indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)
@@ -212,6 +215,7 @@ namespace Renderer::Depth
     {
         Logger::Debug("{}\n", "Destroying depth pass!");
 
-        pipeline.Destroy(device);
+        depthPipeline.Destroy(device);
+        hiZPipeline.Destroy(device);
     }
 }

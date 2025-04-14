@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef CULLING_CONSTANTS_H
-#define CULLING_CONSTANTS_H
+#ifndef HI_Z_PIPELINE_H
+#define HI_Z_PIPELINE_H
 
-#include <vulkan/vulkan.h>
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/TextureManager.h"
 
-namespace Renderer::Culling
+namespace Renderer::Depth::HiZ
 {
-    struct PushConstant
+    class Pipeline : public Vk::Pipeline
     {
-        VkDeviceAddress meshes;
-        VkDeviceAddress drawCalls;
-        VkDeviceAddress culledDrawCalls;
-        VkDeviceAddress culledMeshIndices;
-        VkDeviceAddress frustum;
+    public:
+        Pipeline
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
+        HiZ::PushConstant pushConstant = {};
+
+        u32 samplerIndex = 0;
     };
 }
 

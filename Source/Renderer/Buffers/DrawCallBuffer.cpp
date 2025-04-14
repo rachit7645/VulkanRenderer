@@ -84,7 +84,7 @@ namespace Renderer::Buffers
 
         std::vector<VkDrawIndexedIndirectCommand> drawCalls = {};
 
-        for (const auto& renderObject : renderObjects)
+        for (u32 drawCallID = 0; const auto& renderObject : renderObjects)
         {
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
@@ -93,8 +93,10 @@ namespace Renderer::Buffers
                     .instanceCount = 1,
                     .firstIndex    = mesh.indexInfo.offset,
                     .vertexOffset  = static_cast<s32>(mesh.vertexInfo.offset),
-                    .firstInstance = 0
+                    .firstInstance = drawCallID
                 });
+
+                ++drawCallID;
             }
         }
 

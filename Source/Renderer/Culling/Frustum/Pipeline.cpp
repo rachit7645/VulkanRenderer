@@ -18,17 +18,17 @@
 #include "Vulkan/Builders/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
-namespace Renderer::Culling
+namespace Renderer::Culling::Frustum
 {
     Pipeline::Pipeline(const Vk::Context& context)
     {
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("Misc/Culling.comp", VK_SHADER_STAGE_COMPUTE_BIT)
-            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::PushConstant))
+            .AttachShader("Culling/Frustum.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Frustum::PushConstant))
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "CullingPipeline");
-        Vk::SetDebugName(context.device, layout, "CullingPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "FrustumCullingPipeline");
+        Vk::SetDebugName(context.device, layout, "FrustumCullingPipelineLayout");
     }
 }

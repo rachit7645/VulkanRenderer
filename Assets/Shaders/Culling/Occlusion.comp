@@ -1,0 +1,136 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Constants/Culling/Occlusion.glsl"
+#include "MegaSet.glsl"
+
+layout(local_size_x = 64) in;
+
+bool IsOccluded(vec3[8] corners);
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+
+    if (index >= Constants.DrawCalls.count)
+    {
+        return;
+    }
+
+    if (index == 0)
+    {
+        Constants.DrawCalls.count = 0;
+    }
+
+    memoryBarrierBuffer();
+    barrier();
+
+    Mesh mesh = Constants.Meshes.meshes[index];
+
+    AABB    aabb    = TransformAABB(mesh.aabb, mesh.transform);
+    vec3[8] corners = GetAABBCorners(aabb);
+
+    if (!IsVisible(corners, Constants.Frustum))
+    {
+        return;
+    }
+
+    if (IsOccluded(corners))
+    {
+        return;
+    }
+
+    bool wasVisible = Constants.PreviouslyVisible.visibility[index] == 1;
+
+    if (!wasVisible)
+    {
+        uint drawIndex = atomicAdd(Constants.NewlyVisibleDrawCalls.count, 1);
+
+        Constants.NewlyVisibleDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
+        Constants.NewlyVisibleMeshIndices.indices[drawIndex] = index;
+    }
+
+    uint drawIndex = atomicAdd(Constants.TotalVisibleDrawCalls.count, 1);
+
+    Constants.TotalVisibleDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
+    Constants.TotalVisibleMeshIndices.indices[drawIndex] = index;
+}
+
+bool IsOccluded(vec3[8] corners)
+{
+    float minDepth         = 1.0f;
+    vec4  closestPointView = vec4(0.0f);
+
+    for (uint i = 0; i < 8; ++i)
+    {
+        vec4 viewPosition = Constants.Scene.currentMatrices.view * vec4(corners[i], 1.0f);
+
+        float viewDepth = -viewPosition.z; // Reverse-Z & RH: closer => more positive
+
+        if (viewDepth < minDepth)
+        {
+            minDepth         = viewDepth;
+            closestPointView = viewPosition;
+        }
+    }
+
+    minDepth -= 0.00001f;
+
+    vec4 ndcDepth = Constants.Scene.currentMatrices.jitteredProjection * closestPointView;
+
+    float aabbNearestDepth = ndcDepth.z / ndcDepth.w;
+
+    vec2 screenMin = vec2(1.0f);
+    vec2 screenMax = vec2(0.0f);
+
+    for (uint i = 0; i < 8; ++i)
+    {
+        vec4 clipPosition   = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * vec4(corners[i], 1.0f);
+        vec3 ndcPosition    = clipPosition.xyz / clipPosition.w;
+        vec2 screenPosition = ndcPosition.xy * 0.5f + 0.5f;
+
+        screenMin = min(screenMin, screenPosition);
+        screenMax = max(screenMax, screenPosition);
+    }
+
+    screenMin = clamp(screenMin, 0.0f, 1.0f);
+    screenMax = clamp(screenMax, 0.0f, 1.0f);
+
+    if (any(greaterThanEqual(screenMin, screenMax)))
+    {
+        return true;
+    }
+
+    vec2 depthSize = vec2(textureSize(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]), 0));
+
+    vec2 texelMin = screenMin * depthSize;
+    vec2 texelMax = screenMax * depthSize;
+
+    float maxDimension = max(texelMax.x - texelMin.x, texelMax.y - texelMin.y);
+    uint  mipLevels    = textureQueryLevels(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]));
+    float mipLevel     = clamp(log2(maxDimension), 0.0f, float(mipLevels - 1));
+
+    vec2  samplePosition = (screenMin + screenMax) * 0.5;
+    float hiZDepth       = textureLod(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]), samplePosition, mipLevel).r;
+
+    return hiZDepth > aabbNearestDepth;
+}

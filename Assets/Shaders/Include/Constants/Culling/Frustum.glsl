@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef FRUSTUM_GLSL
-#define FRUSTUM_GLSL
+#ifndef FRUSTUM_CULL_PUSH_CONSTANT
+#define FRUSTUM_CULL_PUSH_CONSTANT
 
-struct Plane
-{
-    vec3  normal;
-    float dist;
-};
+#include "Mesh.glsl"
+#include "DrawCall.glsl"
+#include "Culling.glsl"
 
-layout(buffer_reference, scalar) readonly buffer FrustumBuffer
+layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    Plane planes[6];
-};
+    MeshBuffer      Meshes;
+    DrawCallBuffer  DrawCalls;
+    DrawCallBuffer  CulledDrawCalls;
+    MeshIndexBuffer CulledMeshIndices;
+    FrustumBuffer   Frustum;
+} Constants;
 
 #endif

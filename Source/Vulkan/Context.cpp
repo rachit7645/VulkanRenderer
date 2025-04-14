@@ -348,6 +348,8 @@ namespace Vk
         const bool hasImageCubeArray    = featureSet.features.imageCubeArray;
         const bool hasDepthClamp        = featureSet.features.depthClamp;
         const bool hasInt64             = featureSet.features.shaderInt64;
+        const bool hasFirstInstance     = featureSet.features.drawIndirectFirstInstance;
+        const bool indexU32             = featureSet.features.fullDrawIndexUint32;
 
         // Vulkan 1.1 features
         const bool hasRequiredMultiViewCount = vk11Properties->maxMultiviewViewCount >= 6;
@@ -367,6 +369,7 @@ namespace Vk
         const bool hasUpdateUnusedWhilePending       = vk12Features->descriptorBindingUpdateUnusedWhilePending;
         const bool hasDrawIndirectCount              = vk12Features->drawIndirectCount;
         const bool hasTimelineSemaphore              = vk12Features->timelineSemaphore;
+        const bool hasSamplerMinMax                  = vk12Features->samplerFilterMinmax;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
@@ -375,7 +378,7 @@ namespace Vk
 
         const bool required   = areQueuesValid && hasExtensions;
         const bool standard   = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
-                                hasImageCubeArray && hasDepthClamp && hasInt64;
+                                hasImageCubeArray && hasDepthClamp && hasInt64 && hasFirstInstance && indexU32;
         const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
                                 hasRTPipeline && hasRTCulling && hasRTMaintenance
                                 #ifdef ENGINE_DEBUG
@@ -386,7 +389,7 @@ namespace Vk
         const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                                 hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                                 hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
-                                hasDrawIndirectCount && hasTimelineSemaphore;
+                                hasDrawIndirectCount && hasTimelineSemaphore && hasSamplerMinMax;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
         return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
@@ -470,6 +473,7 @@ namespace Vk
         vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
         vk12Features.drawIndirectCount                            = VK_TRUE;
         vk12Features.timelineSemaphore                            = VK_TRUE;
+        vk12Features.samplerFilterMinmax                          = VK_TRUE;
 
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -479,14 +483,16 @@ namespace Vk
         vk13Features.maintenance4     = VK_TRUE;
 
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
-        deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext                         = &vk13Features;
-        deviceFeatures.features.samplerAnisotropy    = VK_TRUE;
-        deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
-        deviceFeatures.features.textureCompressionBC = VK_TRUE;
-        deviceFeatures.features.imageCubeArray       = VK_TRUE;
-        deviceFeatures.features.depthClamp           = VK_TRUE;
-        deviceFeatures.features.shaderInt64          = VK_TRUE;
+        deviceFeatures.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext                              = &vk13Features;
+        deviceFeatures.features.samplerAnisotropy         = VK_TRUE;
+        deviceFeatures.features.multiDrawIndirect         = VK_TRUE;
+        deviceFeatures.features.textureCompressionBC      = VK_TRUE;
+        deviceFeatures.features.imageCubeArray            = VK_TRUE;
+        deviceFeatures.features.depthClamp                = VK_TRUE;
+        deviceFeatures.features.shaderInt64               = VK_TRUE;
+        deviceFeatures.features.drawIndirectFirstInstance = VK_TRUE;
+        deviceFeatures.features.fullDrawIndexUint32       = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

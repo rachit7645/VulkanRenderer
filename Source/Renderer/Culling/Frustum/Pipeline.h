@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef FRUSTUM_CULL_PUSH_CONSTANT
-#define FRUSTUM_CULL_PUSH_CONSTANT
+#ifndef FRUSTUM_CULLING_PIPELINE_H
+#define FRUSTUM_CULLING_PIPELINE_H
 
-#include "Mesh.glsl"
-#include "Vertex.glsl"
-#include "DrawCall.glsl"
-#include "Frustum.glsl"
+#include "Constants.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
 
-layout(push_constant, scalar) uniform ConstantsBuffer
+namespace Renderer::Culling::Frustum
 {
-    MeshBuffer      Meshes;
-    DrawCallBuffer  DrawCalls;
-    DrawCallBuffer  CulledDrawCalls;
-    MeshIndexBuffer CulledMeshIndices;
-    FrustumBuffer   Frustum;
-} Constants;
+    class Pipeline : public Vk::Pipeline
+    {
+    public:
+        Pipeline(const Vk::Context& context);
+
+        Frustum::PushConstant pushConstant = {};
+    };
+}
 
 #endif

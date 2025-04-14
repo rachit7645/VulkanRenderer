@@ -43,7 +43,13 @@ namespace Renderer::Buffers
 
         std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> drawCallBuffers;
 
-        DrawCallBuffer culledDrawCallBuffer;
+        DrawCallBuffer frustumCulledDrawCallBuffer;
+
+        DrawCallBuffer occlusionCulledPreviouslyVisibleDrawCallBuffer;
+        DrawCallBuffer occlusionCulledNewlyVisibleDrawCallBuffer;
+        DrawCallBuffer occlusionCulledTotalVisibleDrawCallBuffer;
+
+        Vk::Buffer visibilityBuffer;
     };
 }
 

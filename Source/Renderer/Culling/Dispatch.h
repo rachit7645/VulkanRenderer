@@ -17,8 +17,10 @@
 #ifndef CULLING_DISPATCH_H
 #define CULLING_DISPATCH_H
 
-#include "Pipeline.h"
 #include "FrustumBuffer.h"
+#include "Frustum/Pipeline.h"
+#include "Visibility/Pipeline.h"
+#include "Occlusion/Pipeline.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 
@@ -27,11 +29,16 @@ namespace Renderer::Culling
     class Dispatch
     {
     public:
-        explicit Dispatch(const Vk::Context& context);
+        Dispatch
+        (
+            const Vk::Context& context,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        void ComputeDispatch
+        void DispatchFrustumCulling
         (
             usize FIF,
             const glm::mat4& projectionView,
@@ -40,7 +47,9 @@ namespace Renderer::Culling
             const Buffers::IndirectBuffer& indirectBuffer
         );
 
-        Culling::Pipeline pipeline;
+        Frustum::Pipeline    frustumPipeline;
+        Visibility::Pipeline visibilityPipeline;
+        Occlusion::Pipeline  occlusionPipeline;
 
         Culling::FrustumBuffer frustumBuffer;
     };
