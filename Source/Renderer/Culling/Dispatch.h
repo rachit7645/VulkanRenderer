@@ -21,8 +21,10 @@
 #include "Frustum/Pipeline.h"
 #include "Visibility/Pipeline.h"
 #include "Occlusion/Pipeline.h"
+#include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
+#include "Vulkan/FramebufferManager.h"
 
 namespace Renderer::Culling
 {
@@ -43,6 +45,18 @@ namespace Renderer::Culling
             usize FIF,
             const glm::mat4& projectionView,
             const Vk::CommandBuffer& cmdBuffer,
+            const Buffers::MeshBuffer& meshBuffer,
+            const Buffers::IndirectBuffer& indirectBuffer
+        );
+
+        void DispatchOcclusionCulling
+        (
+            usize FIF,
+            const glm::mat4& projectionView,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
+            const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer
         );

@@ -29,7 +29,7 @@ namespace Renderer::Buffers
     class IndirectBuffer
     {
     public:
-        IndirectBuffer(VkDevice device, VmaAllocator allocator);
+        IndirectBuffer(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
 
         void WriteDrawCalls
         (

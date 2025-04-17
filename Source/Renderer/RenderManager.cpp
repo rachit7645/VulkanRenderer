@@ -47,7 +47,7 @@ namespace Renderer
           m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context, m_megaSet, m_modelManager.textureManager),
           m_meshBuffer(m_context.device, m_context.allocator),
-          m_indirectBuffer(m_context.device, m_context.allocator),
+          m_indirectBuffer(m_context, m_cmdBufferAllocator),
           m_sceneBuffer(m_context.device, m_context.allocator),
           m_lightsBuffer(m_context.device, m_context.allocator),
           m_scene(config, m_context, m_formatHelper, m_cmdBufferAllocator, m_modelManager, m_megaSet)
@@ -156,11 +156,12 @@ namespace Renderer
             m_currentFIF,
             m_frameIndex,
             cmdBuffer,
-            m_sceneData,
             m_framebufferManager,
+            m_megaSet,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
+            m_sceneData,
             m_indirectBuffer,
             m_cullingDispatch
         );

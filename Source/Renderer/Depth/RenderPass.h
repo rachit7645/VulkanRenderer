@@ -49,17 +49,32 @@ namespace Renderer::Depth
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
-            const Renderer::Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
+            const Renderer::Scene& scene,
             const Buffers::IndirectBuffer& indirectBuffer,
             Culling::Dispatch& cullingDispatch
         );
 
         Depth::Pipeline depthPipeline;
         HiZ::Pipeline   hiZPipeline;
+    private:
+        void RenderDepth
+        (
+            usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Framebuffer& framebuffer,
+            const Vk::FramebufferView& framebufferView,
+            const Vk::GeometryBuffer& geometryBuffer,
+            const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::MeshBuffer& meshBuffer,
+            const Buffers::DrawCallBuffer& drawCallBuffer,
+            u32 maxDrawCount,
+            VkAttachmentLoadOp loadOp
+        );
     };
 }
 

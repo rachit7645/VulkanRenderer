@@ -17,6 +17,8 @@
 #ifndef AABB_GLSL
 #define AABB_GLSL
 
+#include "Constants.glsl"
+
 struct AABB
 {
     vec3 AABBmin;
@@ -46,12 +48,10 @@ AABB TransformAABB(AABB aabb, mat4 transform)
 
     AABB newAABB;
 
-    vec4 firstCorner = transform * vec4(corners[0], 1.0);
+    newAABB.AABBmin = vec3( FLOAT_MAX);
+    newAABB.AABBmax = vec3(-FLOAT_MAX);
 
-    newAABB.AABBmin = firstCorner.xyz;
-    newAABB.AABBmax = firstCorner.xyz;
-
-    for (uint i = 1; i < 8; ++i)
+    for (uint i = 0; i < 8; ++i)
     {
         vec4 transformedCorner = transform * vec4(corners[i], 1.0f);
 

@@ -52,7 +52,7 @@ namespace Renderer::GBuffer
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
+            Buffers::IndirectBuffer& indirectBuffer
         );
 
         GBuffer::Pipeline pipeline;

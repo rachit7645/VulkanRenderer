@@ -43,7 +43,7 @@ void main()
     vec2  depthTexelSize = 1.0f / vec2(depthSize);
 
     // MIP 1
-    float depthMip1 = texture(sampler2D(Textures[Constants.DepthIndex], Samplers[Constants.SamplerIndex]), pixelCenter * depthTexelSize).r;
+    float depthMip1 = textureLod(sampler2D(Textures[Constants.DepthIndex], Samplers[Constants.SamplerIndex]), pixelCenter * depthTexelSize, 0).r;
     imageStore(Images[Constants.OutDepthMip1Index], baseCoord, vec4(depthMip1, 0.0f, 0.0f, 0.0f));
     g_ScratchDepths[lID.x][lID.y] = depthMip1;
 

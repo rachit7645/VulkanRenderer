@@ -157,7 +157,7 @@ namespace Renderer::GBuffer
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Buffers::IndirectBuffer& indirectBuffer
+        Buffers::IndirectBuffer& indirectBuffer
     )
     {
         Vk::BeginLabel(cmdBuffer, fmt::format("GBufferPass/FIF{}", FIF), glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
@@ -330,8 +330,8 @@ namespace Renderer::GBuffer
         pipeline.pushConstant =
         {
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .meshIndices       = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .meshes              = meshBuffer.buffers[FIF].deviceAddress,
+            .meshIndices         = indirectBuffer.occlusionCulledTotalVisibleDrawCallBuffer.meshIndexBuffer.deviceAddress,
             .positions           = geometryBuffer.positionBuffer.deviceAddress,
             .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
             .textureSamplerIndex = pipeline.textureSamplerIndex,
@@ -355,9 +355,9 @@ namespace Renderer::GBuffer
         vkCmdDrawIndexedIndirectCount
         (
             cmdBuffer.handle,
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.occlusionCulledTotalVisibleDrawCallBuffer.drawCallBuffer.handle,
             sizeof(u32),
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.occlusionCulledTotalVisibleDrawCallBuffer.drawCallBuffer.handle,
             0,
             indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)
@@ -420,6 +420,11 @@ namespace Renderer::GBuffer
         );
 
         Vk::EndLabel(cmdBuffer);
+
+        const auto temp = indirectBuffer.occlusionCulledPreviouslyVisibleDrawCallBuffer;
+
+        indirectBuffer.occlusionCulledPreviouslyVisibleDrawCallBuffer = indirectBuffer.occlusionCulledTotalVisibleDrawCallBuffer;
+        indirectBuffer.occlusionCulledTotalVisibleDrawCallBuffer      = temp;
     }
 
     void RenderPass::Destroy(VkDevice device)

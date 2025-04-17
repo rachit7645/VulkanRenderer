@@ -33,6 +33,8 @@ void main()
         return;
     }
 
+    Constants.PreviouslyVisible.visibility[index] = 0;
+
     uint currentDrawCallID = Constants.DrawCalls.drawCalls[index].firstInstance;
 
     for (uint i = 0; i < Constants.PreviousDrawCalls.count; ++i)
@@ -45,6 +47,4 @@ void main()
             return;
         }
     }
-
-    Constants.PreviouslyVisible.visibility[index] = 0;
 }

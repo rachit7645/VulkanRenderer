@@ -186,7 +186,7 @@ namespace Renderer::Skybox
             {
                 .aspectMask     = depthAttachment.image.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = depthAttachment.image.mipLevels,
+                .levelCount     = 1,
                 .baseArrayLayer = static_cast<u32>(currentDepthIndex),
                 .layerCount     = 1
             }

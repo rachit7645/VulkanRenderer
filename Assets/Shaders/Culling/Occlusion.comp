@@ -19,6 +19,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
+#extension GL_EXT_debug_printf         : enable
 
 #include "Constants/Culling/Occlusion.glsl"
 #include "MegaSet.glsl"
@@ -38,7 +39,8 @@ void main()
 
     if (index == 0)
     {
-        Constants.DrawCalls.count = 0;
+        Constants.NewlyVisibleDrawCalls.count = 0;
+        Constants.TotalVisibleDrawCalls.count = 0;
     }
 
     memoryBarrierBuffer();
@@ -75,62 +77,58 @@ void main()
     Constants.TotalVisibleMeshIndices.indices[drawIndex] = index;
 }
 
-bool IsOccluded(vec3[8] corners)
+bool IsOccluded(vec3 corners[8])
 {
-    float minDepth         = 1.0f;
-    vec4  closestPointView = vec4(0.0f);
+    mat4 projectionView = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view;
+
+    vec2  screenMin = vec2(1.0f, 1.0f);
+    vec2  screenMax = vec2(0.0f, 0.0f);
+    float maxDepth  = 0.0f;
 
     for (uint i = 0; i < 8; ++i)
     {
-        vec4 viewPosition = Constants.Scene.currentMatrices.view * vec4(corners[i], 1.0f);
+        vec4 clipSpaceCorner = projectionView * vec4(corners[i], 1.0f);
 
-        float viewDepth = -viewPosition.z; // Reverse-Z & RH: closer => more positive
-
-        if (viewDepth < minDepth)
+        if (clipSpaceCorner.w <= 0.0f)
         {
-            minDepth         = viewDepth;
-            closestPointView = viewPosition;
+            continue;
         }
-    }
 
-    minDepth -= 0.00001f;
+        vec3 ndcCorner = clipSpaceCorner.xyz / clipSpaceCorner.w;
 
-    vec4 ndcDepth = Constants.Scene.currentMatrices.jitteredProjection * closestPointView;
+        vec2  screenSpaceCorner = ndcCorner.xy * 0.5f + 0.5f;
+        float cornerDepth       = ndcCorner.z;
 
-    float aabbNearestDepth = ndcDepth.z / ndcDepth.w;
-
-    vec2 screenMin = vec2(1.0f);
-    vec2 screenMax = vec2(0.0f);
-
-    for (uint i = 0; i < 8; ++i)
-    {
-        vec4 clipPosition   = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * vec4(corners[i], 1.0f);
-        vec3 ndcPosition    = clipPosition.xyz / clipPosition.w;
-        vec2 screenPosition = ndcPosition.xy * 0.5f + 0.5f;
-
-        screenMin = min(screenMin, screenPosition);
-        screenMax = max(screenMax, screenPosition);
+        screenMin = min(screenMin, screenSpaceCorner);
+        screenMax = max(screenMax, screenSpaceCorner);
+        maxDepth  = max(maxDepth,  cornerDepth);
     }
 
     screenMin = clamp(screenMin, 0.0f, 1.0f);
     screenMax = clamp(screenMax, 0.0f, 1.0f);
+    maxDepth  = clamp(maxDepth,  0.0f, 1.0f);
 
-    if (any(greaterThanEqual(screenMin, screenMax)))
+    if (any(greaterThan(screenMin, screenMax)))
     {
-        return true;
+        return false;
     }
 
-    vec2 depthSize = vec2(textureSize(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]), 0));
+    if (all(equal(screenMin, screenMax)))
+    {
+        return false;
+    }
 
-    vec2 texelMin = screenMin * depthSize;
-    vec2 texelMax = screenMax * depthSize;
+    vec2 hiZBufferSize = vec2(textureSize(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]), 0));
+
+    vec2 texelMin = screenMin * hiZBufferSize;
+    vec2 texelMax = screenMax * hiZBufferSize;
 
     float maxDimension = max(texelMax.x - texelMin.x, texelMax.y - texelMin.y);
     uint  mipLevels    = textureQueryLevels(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]));
     float mipLevel     = clamp(log2(maxDimension), 0.0f, float(mipLevels - 1));
 
-    vec2  samplePosition = (screenMin + screenMax) * 0.5;
-    float hiZDepth       = textureLod(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]), samplePosition, mipLevel).r;
+    vec2  centerSamplePosition = (screenMin + screenMax) * 0.5f;
+    float centerHiZDepth       = textureLod(sampler2D(Textures[Constants.HiZDepthIndex], Samplers[Constants.SamplerIndex]), centerSamplePosition, mipLevel).r;
 
-    return hiZDepth > aabbNearestDepth;
+    return centerHiZDepth > maxDepth;
 }

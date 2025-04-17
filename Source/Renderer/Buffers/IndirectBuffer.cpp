@@ -19,48 +19,179 @@
 #include "MeshBuffer.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "Vulkan/ImmediateSubmit.h"
 
 namespace Renderer::Buffers
 {
-    IndirectBuffer::IndirectBuffer(VkDevice device, VmaAllocator allocator)
+    IndirectBuffer::IndirectBuffer(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
         for (usize i = 0; i < drawCallBuffers.size(); ++i)
         {
-            drawCallBuffers[i] = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::CPUToGPU);
+            drawCallBuffers[i] = DrawCallBuffer(context.device, context.allocator, DrawCallBuffer::Type::CPUToGPU);
 
-            Vk::SetDebugName(device, drawCallBuffers[i].drawCallBuffer.handle,  fmt::format("IndirectBuffer/DrawCallBuffer/DrawCalls/{}",   i));
-            Vk::SetDebugName(device, drawCallBuffers[i].meshIndexBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/MeshIndices/{}", i));
+            const u32 zero = 0;
+
+            std::memcpy(drawCallBuffers[i].drawCallBuffer.allocationInfo.pMappedData, &zero, sizeof(u32));
+
+            if (!(drawCallBuffers[i].drawCallBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                Vk::CheckResult(vmaFlushAllocation(
+                    context.allocator,
+                    drawCallBuffers[i].drawCallBuffer.allocation,
+                    0,
+                    sizeof(u32)),
+                    "Failed to flush allocation!"
+                );
+            }
+
+            Vk::SetDebugName(context.device, drawCallBuffers[i].drawCallBuffer.handle,  fmt::format("IndirectBuffer/DrawCallBuffer/DrawCalls/{}",   i));
+            Vk::SetDebugName(context.device, drawCallBuffers[i].meshIndexBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/MeshIndices/{}", i));
         }
 
-        frustumCulledDrawCallBuffer = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
+        frustumCulledDrawCallBuffer = DrawCallBuffer(context.device, context.allocator, DrawCallBuffer::Type::GPUOnly);
 
-        occlusionCulledPreviouslyVisibleDrawCallBuffer = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
-        occlusionCulledNewlyVisibleDrawCallBuffer      = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
-        occlusionCulledTotalVisibleDrawCallBuffer      = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
+        occlusionCulledPreviouslyVisibleDrawCallBuffer = DrawCallBuffer(context.device, context.allocator, DrawCallBuffer::Type::GPUOnly);
+        occlusionCulledNewlyVisibleDrawCallBuffer      = DrawCallBuffer(context.device, context.allocator, DrawCallBuffer::Type::GPUOnly);
+        occlusionCulledTotalVisibleDrawCallBuffer      = DrawCallBuffer(context.device, context.allocator, DrawCallBuffer::Type::GPUOnly);
 
         visibilityBuffer = Vk::Buffer
         (
-            allocator,
+            context.allocator,
             sizeof(u32) * MAX_MESH_COUNT,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/FrustumCulled/DrawCalls");
-        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/MeshIndices");
+        visibilityBuffer.GetDeviceAddress(context.device);
 
-        Vk::SetDebugName(device, occlusionCulledPreviouslyVisibleDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/OcclusionCulled/PreviouslyVisible/DrawCalls");
-        Vk::SetDebugName(device, occlusionCulledPreviouslyVisibleDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/OcclusionCulled/PreviouslyVisible/MeshIndices");
+        Vk::ImmediateSubmit
+        (
+            context.device,
+            context.graphicsQueue,
+            cmdBufferAllocator,
+            [&] (const Vk::CommandBuffer& cmdBuffer)
+            {
+                // Zero out initial draw counts
 
-        Vk::SetDebugName(device, occlusionCulledNewlyVisibleDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/OcclusionCulled/NewlyVisible/DrawCalls");
-        Vk::SetDebugName(device, occlusionCulledNewlyVisibleDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/OcclusionCulled/NewlyVisible/MeshIndices");
+                vkCmdFillBuffer
+                (
+                    cmdBuffer.handle,
+                    frustumCulledDrawCallBuffer.drawCallBuffer.handle,
+                    0,
+                    sizeof(u32),
+                    0
+                );
 
-        Vk::SetDebugName(device, occlusionCulledTotalVisibleDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/OcclusionCulled/TotalVisible/DrawCalls");
-        Vk::SetDebugName(device, occlusionCulledTotalVisibleDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/OcclusionCulled/TotalVisible/MeshIndices");
+                frustumCulledDrawCallBuffer.drawCallBuffer.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                    0,
+                    sizeof(u32)
+                );
 
-        Vk::SetDebugName(device, visibilityBuffer.handle, "IndirectBuffer/MeshVisibilityLUT");
+                vkCmdFillBuffer
+                (
+                    cmdBuffer.handle,
+                    occlusionCulledPreviouslyVisibleDrawCallBuffer.drawCallBuffer.handle,
+                    0,
+                    sizeof(u32),
+                    0
+                );
+
+                occlusionCulledPreviouslyVisibleDrawCallBuffer.drawCallBuffer.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                    VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                    0,
+                    sizeof(u32)
+                );
+
+                vkCmdFillBuffer
+                (
+                    cmdBuffer.handle,
+                    occlusionCulledNewlyVisibleDrawCallBuffer.drawCallBuffer.handle,
+                    0,
+                    sizeof(u32),
+                    0
+                );
+
+                occlusionCulledNewlyVisibleDrawCallBuffer.drawCallBuffer.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                    0,
+                    sizeof(u32)
+                );
+
+                vkCmdFillBuffer
+                (
+                    cmdBuffer.handle,
+                    occlusionCulledTotalVisibleDrawCallBuffer.drawCallBuffer.handle,
+                    0,
+                    sizeof(u32),
+                    0
+                );
+
+                occlusionCulledTotalVisibleDrawCallBuffer.drawCallBuffer.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                    0,
+                    sizeof(u32)
+                );
+
+                // Mark all draws as not previously visible
+
+                vkCmdFillBuffer
+                (
+                    cmdBuffer.handle,
+                    visibilityBuffer.handle,
+                    0,
+                    VK_WHOLE_SIZE,
+                    0
+                );
+
+                occlusionCulledTotalVisibleDrawCallBuffer.drawCallBuffer.Barrier
+                (
+                    cmdBuffer,
+                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                    0,
+                    VK_WHOLE_SIZE
+                );
+            }
+        );
+
+        Vk::SetDebugName(context.device, frustumCulledDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/FrustumCulled/DrawCalls");
+        Vk::SetDebugName(context.device, frustumCulledDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/MeshIndices");
+
+        Vk::SetDebugName(context.device, occlusionCulledPreviouslyVisibleDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/OcclusionCulled/PreviouslyVisibleOrTotalVisible/0/DrawCalls");
+        Vk::SetDebugName(context.device, occlusionCulledPreviouslyVisibleDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/OcclusionCulled/PreviouslyVisibleOrTotalVisible/0/MeshIndices");
+
+        Vk::SetDebugName(context.device, occlusionCulledNewlyVisibleDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/OcclusionCulled/NewlyVisible/DrawCalls");
+        Vk::SetDebugName(context.device, occlusionCulledNewlyVisibleDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/OcclusionCulled/NewlyVisible/MeshIndices");
+
+        Vk::SetDebugName(context.device, occlusionCulledTotalVisibleDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/OcclusionCulled/PreviouslyVisibleOrTotalVisible/1/DrawCalls");
+        Vk::SetDebugName(context.device, occlusionCulledTotalVisibleDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/OcclusionCulled/PreviouslyVisibleOrTotalVisible/1/MeshIndices");
+
+        Vk::SetDebugName(context.device, visibilityBuffer.handle, "IndirectBuffer/MeshVisibilityLUT");
     }
 
     void IndirectBuffer::WriteDrawCalls

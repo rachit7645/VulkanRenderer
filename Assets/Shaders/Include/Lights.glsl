@@ -66,36 +66,36 @@ struct ShadowedSpotLight
     mat4 matrix;
 };
 
-layout(buffer_reference, scalar) readonly buffer CommonLightBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer CommonLightBuffer
 {
     vec2 pointLightShadowPlanes;
 };
 
-layout(buffer_reference, scalar) readonly buffer DirLightBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer DirLightBuffer
 {
     uint     count;
     DirLight lights[];
 };
 
-layout(buffer_reference, scalar) readonly buffer PointLightBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer PointLightBuffer
 {
     uint       count;
     PointLight lights[];
 };
 
-layout(buffer_reference, scalar) readonly buffer ShadowedPointLightBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer ShadowedPointLightBuffer
 {
     uint               count;
     ShadowedPointLight lights[];
 };
 
-layout(buffer_reference, scalar) readonly buffer SpotLightBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer SpotLightBuffer
 {
     uint      count;
     SpotLight lights[];
 };
 
-layout(buffer_reference, scalar) readonly buffer ShadowedSpotLightBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer ShadowedSpotLightBuffer
 {
     uint              count;
     ShadowedSpotLight lights[];

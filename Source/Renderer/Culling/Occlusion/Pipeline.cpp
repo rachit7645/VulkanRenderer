@@ -29,8 +29,9 @@ namespace Renderer::Culling::Occlusion
     {
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("Culling/Visibility.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("Culling/Occlusion.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Occlusion::PushConstant))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         samplerIndex = textureManager.AddSampler
