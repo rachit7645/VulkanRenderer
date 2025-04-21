@@ -25,9 +25,9 @@ namespace Renderer::Buffers
 {
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < meshBuffers.size(); ++i)
+        for (usize i = 0; i < buffers.size(); ++i)
         {
-            meshBuffers[i] = Vk::Buffer
+            buffers[i] = Vk::Buffer
             (
                 allocator,
                 MAX_MESH_COUNT * sizeof(Renderer::Mesh),
@@ -37,9 +37,9 @@ namespace Renderer::Buffers
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            meshBuffers[i].GetDeviceAddress(device);
+            buffers[i].GetDeviceAddress(device);
 
-            Vk::SetDebugName(device, meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
+            Vk::SetDebugName(device, buffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
     }
 
@@ -78,16 +78,16 @@ namespace Renderer::Buffers
 
         std::memcpy
         (
-            meshBuffers[FIF].allocationInfo.pMappedData,
+            buffers[FIF].allocationInfo.pMappedData,
             meshes.data(),
             sizeof(Renderer::Mesh) * meshes.size()
         );
 
-        if (!(meshBuffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
                 allocator,
-                meshBuffers[FIF].allocation,
+                buffers[FIF].allocation,
                 0,
                 sizeof(Renderer::Mesh) * meshes.size()),
                 "Failed to flush allocation!"
@@ -97,7 +97,7 @@ namespace Renderer::Buffers
 
     void MeshBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : meshBuffers)
+        for (auto& buffer : buffers)
         {
             buffer.Destroy(allocator);
         }

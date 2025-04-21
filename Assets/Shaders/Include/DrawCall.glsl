@@ -26,13 +26,13 @@ struct DrawCall
     uint firstInstance;
 };
 
-layout(buffer_reference, scalar) readonly buffer DrawCallBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer DrawCallBuffer
 {
     uint     count;
     DrawCall drawCalls[];
 };
 
-layout(buffer_reference, scalar) readonly buffer MeshIndexBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer MeshIndexBuffer
 {
     uint indices[];
 };

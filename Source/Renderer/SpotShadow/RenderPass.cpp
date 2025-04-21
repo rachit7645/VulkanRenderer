@@ -125,7 +125,7 @@ namespace Renderer::SpotShadow
 
         for (usize i = 0; i < lightsBuffer.shadowedSpotLights.size(); ++i)
         {
-            cullingDispatch.ComputeDispatch
+            cullingDispatch.DispatchFrustumCulling
             (
                 FIF,
                 lightsBuffer.shadowedSpotLights[i].matrix,
@@ -196,8 +196,8 @@ namespace Renderer::SpotShadow
             pipeline.pushConstant =
             {
                 .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-                .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-                .meshIndices = indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+                .meshes        = meshBuffer.buffers[FIF].deviceAddress,
+                .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
                 .positions     = geometryBuffer.positionBuffer.deviceAddress,
                 .currentIndex  = static_cast<u32>(i)
             };
@@ -216,9 +216,9 @@ namespace Renderer::SpotShadow
             vkCmdDrawIndexedIndirectCount
             (
                 cmdBuffer.handle,
-                indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+                indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
                 sizeof(u32),
-                indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+                indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
                 0,
                 indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
                 sizeof(VkDrawIndexedIndirectCommand)

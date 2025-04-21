@@ -43,7 +43,7 @@ file(GLOB SHADER_SOURCES
     Misc/PostProcess.frag
     Misc/TAA.frag
     Misc/Trongle.vert
-    Misc/Culling.comp
+    Culling/Frustum.comp
     ImGui/ImGui.vert
     ImGui/ImGui.frag
     IBL/BRDF.frag

@@ -20,7 +20,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Misc/Culling.glsl"
+#include "Constants/Culling/Frustum.glsl"
 #include "Constants.glsl"
 
 layout(local_size_x = 64) in;

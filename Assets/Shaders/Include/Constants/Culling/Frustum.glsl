@@ -18,9 +18,8 @@
 #define FRUSTUM_CULL_PUSH_CONSTANT
 
 #include "Mesh.glsl"
-#include "Vertex.glsl"
 #include "DrawCall.glsl"
-#include "Frustum.glsl"
+#include "Culling.glsl"
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {

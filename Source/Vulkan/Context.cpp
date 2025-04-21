@@ -348,6 +348,7 @@ namespace Vk
         const bool hasImageCubeArray    = featureSet.features.imageCubeArray;
         const bool hasDepthClamp        = featureSet.features.depthClamp;
         const bool hasInt64             = featureSet.features.shaderInt64;
+        const bool indexU32             = featureSet.features.fullDrawIndexUint32;
 
         // Vulkan 1.1 features
         const bool hasRequiredMultiViewCount = vk11Properties->maxMultiviewViewCount >= 6;
@@ -375,7 +376,7 @@ namespace Vk
 
         const bool required   = areQueuesValid && hasExtensions;
         const bool standard   = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
-                                hasImageCubeArray && hasDepthClamp && hasInt64;
+                                hasImageCubeArray && hasDepthClamp && hasInt64 && indexU32;
         const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
                                 hasRTPipeline && hasRTCulling && hasRTMaintenance
                                 #ifdef ENGINE_DEBUG
@@ -479,14 +480,15 @@ namespace Vk
         vk13Features.maintenance4     = VK_TRUE;
 
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
-        deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext                         = &vk13Features;
-        deviceFeatures.features.samplerAnisotropy    = VK_TRUE;
-        deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
-        deviceFeatures.features.textureCompressionBC = VK_TRUE;
-        deviceFeatures.features.imageCubeArray       = VK_TRUE;
-        deviceFeatures.features.depthClamp           = VK_TRUE;
-        deviceFeatures.features.shaderInt64          = VK_TRUE;
+        deviceFeatures.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext                              = &vk13Features;
+        deviceFeatures.features.samplerAnisotropy         = VK_TRUE;
+        deviceFeatures.features.multiDrawIndirect         = VK_TRUE;
+        deviceFeatures.features.textureCompressionBC      = VK_TRUE;
+        deviceFeatures.features.imageCubeArray            = VK_TRUE;
+        deviceFeatures.features.depthClamp                = VK_TRUE;
+        deviceFeatures.features.shaderInt64               = VK_TRUE;
+        deviceFeatures.features.fullDrawIndexUint32       = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

@@ -32,10 +32,10 @@ namespace Renderer::Buffers
             Vk::SetDebugName(device, drawCallBuffers[i].meshIndexBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/MeshIndices/{}", i));
         }
 
-        culledDrawCallBuffer = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
+        frustumCulledDrawCallBuffer = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
 
-        Vk::SetDebugName(device, culledDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/CulledDrawCalls");
-        Vk::SetDebugName(device, culledDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/CulledMeshIndices");
+        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/FrustumCulled/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/MeshIndices");
     }
 
     void IndirectBuffer::WriteDrawCalls
@@ -56,6 +56,6 @@ namespace Renderer::Buffers
             buffer.Destroy(allocator);
         }
 
-        culledDrawCallBuffer.Destroy(allocator);
+        frustumCulledDrawCallBuffer.Destroy(allocator);
     }
 }

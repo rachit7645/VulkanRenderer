@@ -156,11 +156,12 @@ namespace Renderer
             m_currentFIF,
             m_frameIndex,
             cmdBuffer,
-            m_sceneData,
             m_framebufferManager,
+            m_megaSet,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
+            m_sceneData,
             m_indirectBuffer,
             m_cullingDispatch
         );

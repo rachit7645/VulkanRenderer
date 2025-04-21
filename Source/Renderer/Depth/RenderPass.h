@@ -44,13 +44,14 @@ namespace Renderer::Depth
         void Render
         (
             usize FIF,
-        usize frameIndex,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
-            const Renderer::Scene& scene,
             const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
+            const Renderer::Scene& scene,
             const Buffers::IndirectBuffer& indirectBuffer,
             Culling::Dispatch& cullingDispatch
         );

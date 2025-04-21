@@ -76,16 +76,17 @@ namespace Renderer::Depth
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
-        const Renderer::Scene& scene,
         const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
+        const Renderer::Scene& scene,
         const Buffers::IndirectBuffer& indirectBuffer,
         Culling::Dispatch& cullingDispatch
     )
     {
-        cullingDispatch.ComputeDispatch
+        cullingDispatch.DispatchFrustumCulling
         (
             FIF,
             scene.currentMatrices.projection * scene.currentMatrices.view,
@@ -176,10 +177,10 @@ namespace Renderer::Depth
 
         pipeline.pushConstant =
         {
-            .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .meshIndices = indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-            .positions     = geometryBuffer.positionBuffer.deviceAddress
+            .scene       = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes      = meshBuffer.buffers[FIF].deviceAddress,
+            .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .positions   = geometryBuffer.positionBuffer.deviceAddress
         };
 
         pipeline.PushConstants
@@ -195,9 +196,9 @@ namespace Renderer::Depth
         vkCmdDrawIndexedIndirectCount
         (
             cmdBuffer.handle,
-            indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             sizeof(u32),
-            indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             0,
             indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)

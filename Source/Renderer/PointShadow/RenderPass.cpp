@@ -131,7 +131,7 @@ namespace Renderer::PointShadow
             {
                 Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", face), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
 
-                cullingDispatch.ComputeDispatch
+                cullingDispatch.DispatchFrustumCulling
                 (
                     FIF,
                     lightsBuffer.shadowedPointLights[i].matrices[face],
@@ -200,8 +200,8 @@ namespace Renderer::PointShadow
                 pipeline.pushConstant =
                 {
                     .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-                    .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-                    .meshIndices = indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+                    .meshes        = meshBuffer.buffers[FIF].deviceAddress,
+                    .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
                     .positions     = geometryBuffer.positionBuffer.deviceAddress,
                     .lightIndex    = static_cast<u32>(i),
                     .faceIndex     = static_cast<u32>(face)
@@ -220,9 +220,9 @@ namespace Renderer::PointShadow
                 vkCmdDrawIndexedIndirectCount
                 (
                     cmdBuffer.handle,
-                    indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+                    indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
                     sizeof(u32),
-                    indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+                    indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
                     0,
                     indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)

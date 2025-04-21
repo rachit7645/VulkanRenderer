@@ -330,8 +330,8 @@ namespace Renderer::GBuffer
         pipeline.pushConstant =
         {
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .meshIndices       = indirectBuffer.culledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .meshes              = meshBuffer.buffers[FIF].deviceAddress,
+            .meshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
             .positions           = geometryBuffer.positionBuffer.deviceAddress,
             .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
             .textureSamplerIndex = pipeline.textureSamplerIndex,
@@ -355,9 +355,9 @@ namespace Renderer::GBuffer
         vkCmdDrawIndexedIndirectCount
         (
             cmdBuffer.handle,
-            indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             sizeof(u32),
-            indirectBuffer.culledDrawCallBuffer.drawCallBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             0,
             indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)

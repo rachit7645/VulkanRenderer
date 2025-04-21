@@ -24,36 +24,28 @@ namespace Renderer::Culling
 {
     FrustumBuffer::FrustumBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < buffers.size(); ++i)
-        {
-            buffers[i] = Vk::Buffer
-            (
-                allocator,
-                6 * sizeof(Maths::Plane),
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-                VMA_MEMORY_USAGE_AUTO
-            );
+        buffer = Vk::Buffer
+        (
+            allocator,
+            6 * sizeof(Maths::Plane),
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
 
-            buffers[i].GetDeviceAddress(device);
+        buffer.GetDeviceAddress(device);
 
-            Vk::SetDebugName(device, buffers[i].handle, fmt::format("FrustumBuffer/{}", i));
-        }
+        Vk::SetDebugName(device, buffer.handle, "FrustumBuffer");
     }
 
-    void FrustumBuffer::LoadPlanes
-    (
-        usize FIF,
-        const Vk::CommandBuffer& cmdBuffer,
-        const glm::mat4& projectionView
-    )
+    void FrustumBuffer::LoadPlanes(const Vk::CommandBuffer& cmdBuffer, const glm::mat4& projectionView)
     {
         const auto planes = Maths::ExtractFrustumPlanes(projectionView);
 
         const VkDeviceSize size = planes.size() * sizeof(Maths::Plane);
 
-        buffers[FIF].Barrier
+        buffer.Barrier
         (
             cmdBuffer,
             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
@@ -67,13 +59,13 @@ namespace Renderer::Culling
         vkCmdUpdateBuffer
         (
             cmdBuffer.handle,
-            buffers[FIF].handle,
+            buffer.handle,
             0,
             size,
             planes.data()
         );
 
-        buffers[FIF].Barrier
+        buffer.Barrier
         (
             cmdBuffer,
             VK_PIPELINE_STAGE_2_TRANSFER_BIT,
@@ -87,9 +79,6 @@ namespace Renderer::Culling
 
     void FrustumBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : buffers)
-        {
-            buffer.Destroy(allocator);
-        }
+        buffer.Destroy(allocator);
     }
 }
