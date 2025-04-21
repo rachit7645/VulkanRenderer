@@ -1,0 +1,86 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Constants/Culling/Frustum.glsl"
+#include "Constants.glsl"
+
+layout(local_size_x = 64) in;
+
+bool IsVisible(Mesh mesh);
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+
+    if (index >= Constants.DrawCalls.count)
+    {
+        return;
+    }
+
+    if (index == 0)
+    {
+        Constants.CulledDrawCalls.count = 0;
+    }
+
+    memoryBarrierBuffer();
+    barrier();
+
+    Mesh mesh = Constants.Meshes.meshes[index];
+
+    if (!IsVisible(mesh))
+    {
+        return;
+    }
+
+    uint drawIndex = atomicAdd(Constants.CulledDrawCalls.count, 1);
+
+    Constants.CulledDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
+    Constants.CulledMeshIndices.indices[drawIndex] = index;
+}
+
+bool IsVisible(Mesh mesh)
+{
+    AABB    aabb    = TransformAABB(mesh.aabb, mesh.transform);
+    vec3[8] corners = GetAABBCorners(aabb);
+
+    for (uint i = 0; i < 6; ++i)
+    {
+        Plane plane = Constants.Frustum.planes[i];
+
+        uint outside = 0;
+
+        for (uint j = 0; j < 8; ++j)
+        {
+            if ((dot(plane.normal, corners[j]) + plane.dist) < 0.0f)
+            {
+                ++outside;
+            }
+        }
+
+        if (outside == 8)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}

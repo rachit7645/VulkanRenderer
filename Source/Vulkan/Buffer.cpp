@@ -151,7 +151,7 @@ namespace Vk
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
     }
 
-    void Buffer::Destroy(VmaAllocator allocator) const
+    void Buffer::Destroy(VmaAllocator allocator)
     {
         if (handle == VK_NULL_HANDLE)
         {
@@ -166,5 +166,12 @@ namespace Vk
         );
 
         vmaDestroyBuffer(allocator, handle, allocation);
+
+        handle           = VK_NULL_HANDLE;
+        allocation       = {};
+        deviceAddress    = 0;
+        requestedSize    = 0;
+        allocationInfo   = {};
+        memoryProperties = {};
     }
 }

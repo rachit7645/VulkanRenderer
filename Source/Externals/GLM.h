@@ -60,6 +60,9 @@ namespace glm
     vec4 fastgltf_cast(const fastgltf::math::nvec4& vector);
     mat4 fastgltf_cast(const fastgltf::math::fmat4x4& matrix);
     quat fastgltf_cast(const fastgltf::math::fquat& quat);
+
+    // GLM to Vulkan conversion
+    VkTransformMatrixKHR vk_cast(const mat4& matrix);
 }
 
 #endif

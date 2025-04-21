@@ -52,6 +52,7 @@ namespace Renderer::Shadow
             "ShadowCascades",
             Vk::FramebufferType::Depth,
             Vk::ImageType::Single2D,
+            false,
             Vk::FramebufferSize{
                 .width       = SHADOW_DIMENSIONS.x,
                 .height      = SHADOW_DIMENSIONS.y,
@@ -233,7 +234,7 @@ namespace Renderer::Shadow
             pipeline.pushConstant =
             {
                 .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-                .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
+                .meshIndices = meshBuffer.visibleMeshBuffer.deviceAddress,
                 .positions     = geometryBuffer.positionBuffer.deviceAddress,
                 .cascades      = cascadeBuffer.buffers[FIF].deviceAddress,
                 .offset        = static_cast<u32>(0 * Shadow::CASCADE_COUNT + i)
@@ -256,7 +257,7 @@ namespace Renderer::Shadow
                 sizeof(u32),
                 indirectBuffer.culledDrawCallBuffer.handle,
                 0,
-                indirectBuffer.writtenDrawCount,
+                indirectBuffer.writtenDrawCallCounts[FIF],
                 sizeof(VkDrawIndexedIndirectCommand)
             );
 
@@ -294,8 +295,8 @@ namespace Renderer::Shadow
         std::array<Shadow::Cascade, CASCADE_COUNT> cascades      = {};
 		std::array<f32,             CASCADE_COUNT> cascadeSplits = {};
 
-		const f32 nearClip  = Renderer::PLANES.x;
-		const f32 farClip   = Renderer::PLANES.y;
+		const f32 nearClip  = Renderer::NEAR_PLANE;
+		const f32 farClip   = Renderer::FAR_PLANE;
 		const f32 clipRange = farClip - nearClip;
 
 		const f32 minZ = nearClip;
@@ -334,7 +335,7 @@ namespace Renderer::Shadow
 			};
 
 			// Project frustum corners into world space
-			const glm::mat4 invCam = glm::inverse(glm::perspective(camera.FOV, aspectRatio, nearClip, farClip) * camera.GetViewMatrix());
+			const glm::mat4 invCam = glm::inverse(glm::perspectiveRH_ZO(camera.FOV, aspectRatio, nearClip, farClip) * camera.GetViewMatrix());
 			for (u32 j = 0; j < 8; j++)
 			{
 				const glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);

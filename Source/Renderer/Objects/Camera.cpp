@@ -34,24 +34,23 @@ namespace Renderer::Objects
 
     void Camera::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::BeginMenu("Camera"))
         {
-            if (ImGui::BeginMenu("Camera"))
-            {
-                // Camera Data
-                ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                ImGui::DragFloat3("Rotation", &rotation[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                ImGui::DragFloat ("FOV",      &FOV,         1.0f, 0.0f, 0.0f, "%.1f");
+            // Camera Data
+            ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.2f");
+            ImGui::DragFloat3("Rotation", &rotation[0], 1.0f, 0.0f, 0.0f, "%.2f");
+            ImGui::DragFloat ("FOV",      &FOV,         1.0f, 0.0f, 0.0f, "%.2f");
 
-                // Camera lookat data
-                ImGui::DragFloat3("Front", &front[0], 1.0f, 0.0f, 0.0f, "%.1f");
-                ImGui::DragFloat3("Up",    &up[0],    1.0f, 0.0f, 0.0f, "%.1f");
-                ImGui::DragFloat3("Right", &right[0], 1.0f, 0.0f, 0.0f, "%.1f");
+            ImGui::Separator();
 
-                ImGui::EndMenu();
-            }
+            // Camera lookat data
+            ImGui::DragFloat3("Front", &front[0], 1.0f, 0.0f, 0.0f, "%.2f");
+            ImGui::DragFloat3("Up",    &up[0],    1.0f, 0.0f, 0.0f, "%.2f");
+            ImGui::DragFloat3("Right", &right[0], 1.0f, 0.0f, 0.0f, "%.2f");
 
-            ImGui::EndMainMenuBar();
+            ImGui::Separator();
+
+            ImGui::EndMenu();
         }
     }
 }

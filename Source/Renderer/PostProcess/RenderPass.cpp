@@ -32,27 +32,16 @@ namespace Renderer::PostProcess
     )
         : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("SwapchainPass/FIF{}", i));
-        }
-
-        Logger::Info("{}\n", "Created swapchain pass!");
+        Logger::Info("{}\n", "Created post process pass!");
     }
 
     void RenderPass::Render
     (
         usize FIF,
-        Vk::Swapchain& swapchain,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::FramebufferManager& framebufferManager
+        const Vk::Swapchain& swapchain
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -66,19 +55,15 @@ namespace Renderer::PostProcess
             ImGui::EndMainMenuBar();
         }
 
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
         const auto& currentImage     = swapchain.images[swapchain.imageIndex];
 
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("SwapchainPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("PostProcessPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
         currentImage.Barrier
         (
-            currentCmdBuffer,
-            VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_NONE,
             VK_ACCESS_2_NONE,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -104,12 +89,7 @@ namespace Renderer::PostProcess
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const VkRenderingInfo renderInfo =
@@ -129,9 +109,9 @@ namespace Renderer::PostProcess
             .pStencilAttachment   = nullptr
         };
 
-        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -143,7 +123,7 @@ namespace Renderer::PostProcess
             .maxDepth = 1.0f
         };
 
-        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
         const VkRect2D scissor =
         {
@@ -151,52 +131,45 @@ namespace Renderer::PostProcess
             .extent = swapchain.extent
         };
 
-        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         pipeline.pushConstant =
         {
             .samplerIndex  = pipeline.samplerIndex,
-            .imageIndex    = framebufferManager.GetFramebufferView("SceneColorView").descriptorIndex,
-            .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").descriptorIndex,
+            .imageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageIndex,
+            .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
             .bloomStrength = m_bloomStrength
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             0, sizeof(PostProcess::PushConstant),
             reinterpret_cast<void*>(&pipeline.pushConstant)
         );
 
         // Mega set
-        std::array descriptorSets = {megaSet.descriptorSet.handle};
-        pipeline.BindDescriptors(currentCmdBuffer, 0, descriptorSets);
+        const std::array descriptorSets = {megaSet.descriptorSet};
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
-            currentCmdBuffer.handle,
+            cmdBuffer.handle,
             3,
             1,
             0,
             0
         );
 
-        vkCmdEndRendering(currentCmdBuffer.handle);
+        vkCmdEndRendering(cmdBuffer.handle);
 
-        Vk::EndLabel(currentCmdBuffer);
-
-        currentCmdBuffer.EndRecording();
+        Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying swapchain pass!");
-
-        for (auto&& cmdBuffer : cmdBuffers)
-        {
-            cmdBuffer.Free(device, cmdPool);
-        }
 
         pipeline.Destroy(device);
     }

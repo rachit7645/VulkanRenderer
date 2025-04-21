@@ -32,7 +32,7 @@ namespace Vk
         cubeBuffer = Vk::Buffer
         (
             allocator,
-            36 * sizeof(glm::vec3),
+            36 * sizeof(Models::Position),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
@@ -55,7 +55,7 @@ namespace Vk
     (
         VmaAllocator allocator,
         const std::span<const Models::Index> indices,
-        const std::span<const glm::vec3> positions,
+        const std::span<const Models::Position> positions,
         const std::span<const Models::Vertex> vertices
     )
     {
@@ -93,6 +93,11 @@ namespace Vk
         VmaAllocator allocator
     )
     {
+        if (!HasPendingUploads())
+        {
+            return;
+        }
+
         Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
         ResizeBuffers(cmdBuffer, device, allocator);
@@ -118,7 +123,7 @@ namespace Vk
             cmdBuffer,
             positionBuffer,
             m_pendingPositionUploads,
-            sizeof(glm::vec3),
+            sizeof(Models::Position),
             VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
             VK_ACCESS_2_SHADER_STORAGE_READ_BIT
         );
@@ -160,21 +165,21 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
-    void GeometryBuffer::Clear(VmaAllocator allocator)
+    void GeometryBuffer::ClearUploads(VmaAllocator allocator)
     {
         m_deletionQueue.FlushQueue();
 
-        for (const auto& buffer : m_pendingIndexUploads | std::views::values)
+        for (auto& buffer : m_pendingIndexUploads | std::views::values)
         {
             buffer.Destroy(allocator);
         }
 
-        for (const auto& buffer : m_pendingPositionUploads | std::views::values)
+        for (auto& buffer : m_pendingPositionUploads | std::views::values)
         {
             buffer.Destroy(allocator);
         }
 
-        for (const auto& buffer : m_pendingVertexUploads | std::views::values)
+        for (auto& buffer : m_pendingVertexUploads | std::views::values)
         {
             buffer.Destroy(allocator);
         }
@@ -313,8 +318,9 @@ namespace Vk
                 pendingCount += count;
             }
 
-            const Vk::Buffer oldBuffer = buffer;
-            const usize      newSize   = static_cast<usize>(static_cast<f64>(count) * BUFFER_GROWTH_FACTOR) * elementSize;
+            auto oldBuffer = buffer;
+
+            const auto newSize = static_cast<usize>(static_cast<f64>(count) * BUFFER_GROWTH_FACTOR) * elementSize;
 
             buffer = Vk::Buffer
             (
@@ -350,7 +356,7 @@ namespace Vk
                 vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
             }
 
-            m_deletionQueue.PushDeletor([oldBuffer, allocator] ()
+            m_deletionQueue.PushDeletor([oldBuffer, allocator] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
@@ -373,7 +379,9 @@ namespace Vk
             sizeof(Models::Index),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             indexBuffer
         );
 
@@ -383,11 +391,12 @@ namespace Vk
             allocator,
             positionCount,
             m_pendingPositionUploads,
-            sizeof(glm::vec3),
+            sizeof(Models::Position),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             positionBuffer
         );
 
@@ -401,10 +410,12 @@ namespace Vk
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             vertexBuffer
         );
 
+        indexBuffer.GetDeviceAddress(device);
         positionBuffer.GetDeviceAddress(device);
         vertexBuffer.GetDeviceAddress(device);
 
@@ -514,8 +525,8 @@ namespace Vk
                 (
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionCount,
-                    positionCount * sizeof(glm::vec3),
-                    positionBuffer.allocationInfo.size - (positionCount * sizeof(glm::vec3)),
+                    positionCount * sizeof(Models::Position),
+                    positionBuffer.allocationInfo.size - (positionCount * sizeof(Models::Position)),
                     positionBuffer.allocationInfo.size
                 );
 
@@ -535,7 +546,13 @@ namespace Vk
         }
     }
 
-    void GeometryBuffer::Destroy(VmaAllocator allocator) const
+    bool GeometryBuffer::HasPendingUploads() const
+    {
+        return !m_pendingIndexUploads.empty()  || !m_pendingPositionUploads.empty() ||
+               !m_pendingVertexUploads.empty() || m_cubeStagingBuffer.has_value();
+    }
+
+    void GeometryBuffer::Destroy(VmaAllocator allocator)
     {
         indexBuffer.Destroy(allocator);
         positionBuffer.Destroy(allocator);

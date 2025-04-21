@@ -14,29 +14,33 @@
  * limitations under the License.
  */
 
-#include <numbers>
-
 #include "FreeCamera.h"
 #include "Renderer/RenderConstants.h"
 #include "Engine/Inputs.h"
 
 namespace Renderer::Objects
 {
-    FreeCamera::FreeCamera()
-        : FreeCamera(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, std::numbers::pi, 0.0f), Renderer::DEFAULT_FOV)
+    FreeCamera::FreeCamera
+    (
+        const glm::vec3& position,
+        const glm::vec3& rotation,
+        f32 FOV,
+        f32 speed,
+        f32 sensitivity,
+        f32 zoom
+    )
+        : Camera(position, rotation, FOV),
+          m_speed(speed),
+          m_sensitivity(sensitivity),
+          m_zoom(zoom)
     {
     }
 
-    FreeCamera::FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV)
-        : Camera(position, rotation, FOV)
-    {
-    }
-
-    void FreeCamera::Update(f32 frameDelta)
+    void FreeCamera::Update(f32 frameDelta, Engine::Inputs& inputs)
     {
         if (isEnabled == true)
         {
-            CheckInputs(frameDelta);
+            CheckInputs(frameDelta, inputs);
         }
 
         front.x = std::cos(rotation.y) * std::cos(rotation.x);
@@ -46,22 +50,18 @@ namespace Renderer::Objects
 
         right = glm::normalize(glm::cross(front, Renderer::WORLD_UP));
         up    = glm::normalize(glm::cross(right, front));
-
-        ImGuiDisplay();
     }
 
-    void FreeCamera::CheckInputs(f32 frameDelta)
+    void FreeCamera::CheckInputs(f32 frameDelta, Engine::Inputs& inputs)
     {
-        Move(frameDelta);
-        Rotate(frameDelta);
-        Zoom(frameDelta);
+        Move(frameDelta, inputs);
+        Rotate(frameDelta, inputs);
+        Zoom(frameDelta, inputs);
     }
 
-    void FreeCamera::Move(f32 frameDelta)
+    void FreeCamera::Move(f32 frameDelta, Engine::Inputs& inputs)
     {
-        const auto& inputs = Engine::Inputs::Get();
-
-        const f32 velocity = speed * frameDelta;
+        const f32 velocity = m_speed * frameDelta;
 
         // Forward
         if (inputs.IsKeyPressed(SDL_SCANCODE_W))
@@ -92,11 +92,9 @@ namespace Renderer::Objects
         position += lStick.x * right * velocity;
     }
 
-    void FreeCamera::Rotate(f32 frameDelta)
+    void FreeCamera::Rotate(f32 frameDelta, Engine::Inputs& inputs)
     {
-        auto& inputs = Engine::Inputs::Get();
-
-        const auto speed = sensitivity * frameDelta;
+        const auto speed = m_sensitivity * frameDelta;
 
         // Avoids freaking out
         if (inputs.WasMouseMoved())
@@ -117,14 +115,12 @@ namespace Renderer::Objects
         rotation.x = glm::clamp(rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
     }
 
-    void FreeCamera::Zoom(f32 frameDelta)
+    void FreeCamera::Zoom(f32 frameDelta, Engine::Inputs& inputs)
     {
-        auto& inputs = Engine::Inputs::Get();
-
         // Stops things from going haywire
         if (inputs.WasMouseScrolled())
         {
-            FOV -= inputs.GetMouseScroll().y * zoom * frameDelta;
+            FOV -= inputs.GetMouseScroll().y * m_zoom * frameDelta;
             FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }
@@ -133,19 +129,14 @@ namespace Renderer::Objects
     {
         Camera::ImGuiDisplay();
 
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::BeginMenu("Camera"))
         {
-            if (ImGui::BeginMenu("Camera"))
-            {
-                // Camera Settings
-                ImGui::DragFloat("Speed",       &speed,       1.0f, 0.0f, 0.0f, "%.7f");
-                ImGui::DragFloat("Sensitivity", &sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
-                ImGui::DragFloat("Zoom",        &zoom,        1.0f, 0.0f, 0.0f, "%.7f");
+            // Camera Settings
+            ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.7f");
+            ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
+            ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.7f");
 
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
+            ImGui::EndMenu();
         }
     }
 

@@ -24,11 +24,11 @@ namespace Renderer::Culling
     {
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("Culling.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("Culling/Frustum.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::PushConstant))
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ComputePipeline");
-        Vk::SetDebugName(context.device, layout, "ComputePipelineLayout");
+        Vk::SetDebugName(context.device, handle, "CullingPipeline");
+        Vk::SetDebugName(context.device, layout, "CullingPipelineLayout");
     }
 }

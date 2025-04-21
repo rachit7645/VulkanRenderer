@@ -19,12 +19,13 @@
 
 #include <unordered_set>
 #include <unordered_map>
-#include <map>
 
 #include "Image.h"
 #include "ImageView.h"
 #include "FormatHelper.h"
 #include "MegaSet.h"
+#include "CommandBufferAllocator.h"
+#include "Util/Enum.h"
 
 namespace Vk
 {
@@ -32,19 +33,33 @@ namespace Vk
 
     enum class FramebufferType : u8
     {
-        ColorR,
+        // Special Color Formats
+        ColorR_Unorm8,
+        ColorRG_SFloat,
+        ColorRGBA_UNorm8,
+        ColorBGR_SFloat_10_11_11,
+        // Regular Color Formats
         ColorLDR,
         ColorHDR,
-        Depth,
-        DepthStencil
+        ColorHDR_WithAlpha,
+        // Regular Depth Formats
+        Depth
     };
 
-    enum class ImageType : u8
+    enum class FramebufferImageType : u8
     {
         Single2D,
         Array2D,
         Cube,
         ArrayCube
+    };
+
+    enum class FramebufferUsage : u8
+    {
+        None                = 0,
+        Sampled             = 1U << 0,
+        Storage             = 1U << 1,
+        TransferDestination = 1U << 2
     };
 
     struct FramebufferSize
@@ -54,7 +69,7 @@ namespace Vk
         u32 mipLevels   = 0;
         u32 arrayLayers = 0;
 
-        bool Matches(const Vk::Image& image) const
+        [[nodiscard]] bool Matches(const Vk::Image& image) const
         {
             if (image.handle == VK_NULL_HANDLE)
             {
@@ -78,22 +93,32 @@ namespace Vk
 
     struct FramebufferView
     {
-        std::string         framebuffer     = {};
-        u32                 descriptorIndex = 0;
-        ImageType           type            = ImageType::Single2D;
-        FramebufferViewSize size            = {};
-        Vk::ImageView       view            = {};
+        std::string          framebuffer       = {};
+        u32                  sampledImageIndex = 0;
+        u32                  storageImageIndex = 0;
+        FramebufferImageType type              = FramebufferImageType::Single2D;
+        FramebufferViewSize  size              = {};
+        Vk::ImageView        view              = {};
     };
 
-    using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&, FramebufferManager&)>;
+    struct FramebufferInitialState
+    {
+        VkPipelineStageFlags2 dstStageMask  = VK_PIPELINE_STAGE_2_NONE;
+        VkAccessFlags2        dstAccessMask = VK_ACCESS_2_NONE;
+        VkImageLayout         initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    };
+
+    using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&)>;
     using FramebufferSizeData       = std::variant<std::monostate, FramebufferSize, FramebufferResizeCallback>;
 
     struct Framebuffer
     {
-        FramebufferType     type      = FramebufferType::ColorLDR;
-        FramebufferSizeData sizeData  = {};
-        ImageType           imageType = ImageType::Single2D;
-        Vk::Image           image     = {};
+        FramebufferType         type         = FramebufferType::ColorLDR;
+        FramebufferImageType    imageType    = FramebufferImageType::Single2D;
+        FramebufferUsage        usage        = FramebufferUsage::None;
+        FramebufferSizeData     sizeData     = {};
+        FramebufferInitialState initialState = {};
+        Vk::Image               image        = {};
     };
 
     class FramebufferManager
@@ -103,15 +128,17 @@ namespace Vk
         (
             const std::string_view name,
             FramebufferType type,
-            ImageType imageType,
-            const FramebufferSizeData& sizeData
+            FramebufferImageType imageType,
+            FramebufferUsage usage,
+            const FramebufferSizeData& sizeData,
+            const FramebufferInitialState& initialState
         );
 
         void AddFramebufferView
         (
             const std::string_view framebufferName,
             const std::string_view name,
-            ImageType imageType,
+            FramebufferImageType imageType,
             const FramebufferViewSize& size
         );
 
@@ -119,6 +146,7 @@ namespace Vk
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Vk::MegaSet& megaSet,
             VkExtent2D swapchainExtent
         );
@@ -128,21 +156,39 @@ namespace Vk
         [[nodiscard]] FramebufferView& GetFramebufferView(const std::string_view name);
         [[nodiscard]] const FramebufferView& GetFramebufferView(const std::string_view name) const;
 
-        void DeleteFramebufferViews(const std::string_view framebufferName, VkDevice device);
+        void DeleteFramebufferViews
+        (
+            const std::string_view framebufferName,
+            VkDevice device,
+            Vk::MegaSet& megaSet
+        );
 
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
-
-        VkExtent2D swapchainExtent;
     private:
-        bool IsViewable(ImageType imageType);
-
         FramebufferSize GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData);
 
-        std::unordered_map<std::string, Framebuffer> m_framebuffers;
-        std::map<std::string, FramebufferView>       m_framebufferViews;
+        template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
+        void AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage);
 
-        std::unordered_set<std::string> m_fixedFramebuffers;
+        void AllocateDescriptors
+        (
+            Vk::MegaSet& megaSet,
+            Vk::FramebufferView& framebufferView,
+            Vk::FramebufferUsage usage
+        );
+
+        void FreeDescriptors
+        (
+            Vk::MegaSet& megaSet,
+            const Vk::FramebufferView& framebufferView,
+            Vk::FramebufferUsage usage
+        );
+
+        std::unordered_map<std::string, Framebuffer>     m_framebuffers;
+        std::unordered_map<std::string, FramebufferView> m_framebufferViews;
+
+        std::unordered_set<std::string> m_fixedSizeFramebuffers;
     };
 }
 

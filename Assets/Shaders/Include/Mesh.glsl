@@ -33,9 +33,4 @@ layout(buffer_reference, scalar) readonly buffer MeshBuffer
     Mesh meshes[];
 };
 
-layout(buffer_reference, scalar) readonly buffer VisibleMeshBuffer
-{
-    uint indices[];
-};
-
 #endif

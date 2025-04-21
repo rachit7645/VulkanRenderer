@@ -65,8 +65,12 @@ namespace Vk
 
         for (auto&& extension : availableExtensions)
         {
+            // Logger::Debug("{}\n", extension.extensionName);
+
             _requiredExtensions.erase(extension.extensionName);
         }
+
+        // Logger::Debug("{}\n", " ");
 
         return _requiredExtensions.empty();
     }

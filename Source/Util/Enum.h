@@ -39,4 +39,18 @@ constexpr T operator&(T lhs, T rhs) requires (std::is_enum_v<T>)
     );
 }
 
+template<typename T>
+constexpr T& operator|=(T& lhs, T rhs) requires (std::is_enum_v<T>)
+{
+    lhs = lhs | rhs;
+    return lhs;
+}
+
+template<typename T>
+constexpr T& operator&=(T& lhs, T rhs) requires (std::is_enum_v<T>)
+{
+    lhs = lhs & rhs;
+    return lhs;
+}
+
 #endif

@@ -19,11 +19,11 @@
 
 namespace Renderer::Depth
 {
-    struct __attribute__((packed)) PushConstant
+    struct PushConstant
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
+        VkDeviceAddress meshIndices;
         VkDeviceAddress positions;
     };
 }

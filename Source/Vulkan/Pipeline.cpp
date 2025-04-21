@@ -60,7 +60,7 @@ namespace Vk
         );
     }
 
-    void Pipeline::LoadPushConstants
+    void Pipeline::PushConstants
     (
         const Vk::CommandBuffer& cmdBuffer,
         VkShaderStageFlags stages,

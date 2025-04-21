@@ -49,8 +49,8 @@ namespace Renderer::Lighting
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("Lighting.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Lighting.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Misc/Trongle.vert",      VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/Lighting.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -70,7 +70,7 @@ namespace Renderer::Lighting
             )
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
-            .AddDescriptorLayout(megaSet.descriptorSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "LightingPipeline");
@@ -146,7 +146,7 @@ namespace Renderer::Lighting
                 .flags                   = 0,
                 .magFilter               = VK_FILTER_LINEAR,
                 .minFilter               = VK_FILTER_LINEAR,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
                 .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
                 .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,

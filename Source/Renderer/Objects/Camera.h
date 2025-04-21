@@ -19,12 +19,14 @@
 
 #include "Externals/GLM.h"
 #include "Renderer/RenderConstants.h"
+#include "Engine/Inputs.h"
 
 namespace Renderer::Objects
 {
     class Camera
     {
     public:
+        Camera() = default;
         Camera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
         virtual ~Camera() = default;
 
@@ -35,7 +37,8 @@ namespace Renderer::Objects
         Camera& operator=(Camera&& other) noexcept = default;
 
         // Each subclass MUST define this method
-        virtual void Update(f32 frameDelta) = 0;
+        virtual void Update(f32 frameDelta, Engine::Inputs& inputs) = 0;
+        virtual void ImGuiDisplay();
 
         [[nodiscard]] glm::mat4 GetViewMatrix() const;
 
@@ -50,8 +53,6 @@ namespace Renderer::Objects
         glm::vec3 right = glm::normalize(glm::cross(front, up));
 
         bool isEnabled = true;
-    protected:
-        virtual void ImGuiDisplay();
     };
 }
 

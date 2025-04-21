@@ -19,8 +19,8 @@
 
 #include <SDL3/SDL.h>
 
+#include "Inputs.h"
 #include "Externals/GLM.h"
-#include "Vulkan/Swapchain.h"
 
 namespace Engine
 {
@@ -38,13 +38,11 @@ namespace Engine
         Window(Window&& other)            = default;
         Window& operator=(Window&& other) = default;
 
-        // SDL window handle
         SDL_Window* handle = nullptr;
-        // Window size
+
+        Inputs inputs;
+
         glm::ivec2 size = {1600, 900};
-    private:
-        // SDL event
-        SDL_Event m_event = {};
     };
 }
 

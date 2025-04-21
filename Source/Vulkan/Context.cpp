@@ -16,7 +16,6 @@
 
 #include "Context.h"
 
-#include <map>
 #include <unordered_map>
 #include <array>
 #include <vector>
@@ -33,12 +32,6 @@
 
 namespace Vk
 {
-    // Required validation layers
-    #ifdef ENGINE_ENABLE_VALIDATION
-    constexpr std::array VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
-    #endif
-
-    // Required instance extensions
     constexpr std::array REQUIRED_INSTANCE_EXTENSIONS =
     {
         VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME,
@@ -48,12 +41,15 @@ namespace Vk
         #endif
     };
 
-    // Required device extensions
     constexpr std::array REQUIRED_DEVICE_EXTENSIONS =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
         VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME,
         #ifdef ENGINE_DEBUG
         VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
         #endif
@@ -70,7 +66,6 @@ namespace Vk
         PickPhysicalDevice();
         CreateLogicalDevice();
 
-        CreateCommandPool();
         CreateAllocator();
 
         AddDebugNames();
@@ -91,29 +86,20 @@ namespace Vk
             .apiVersion         = VULKAN_API_VERSION
         };
 
-        auto extensions = Vk::LoadInstanceExtensions(REQUIRED_INSTANCE_EXTENSIONS);
-
-        #ifdef ENGINE_ENABLE_VALIDATION
-        m_layers = Vk::ValidationLayers(VALIDATION_LAYERS);
-        #endif
+        const auto extensions = Vk::LoadInstanceExtensions(REQUIRED_INSTANCE_EXTENSIONS);
 
         const VkInstanceCreateInfo createInfo =
         {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            #ifdef ENGINE_ENABLE_VALIDATION
-            .pNext                   = &m_layers.messengerInfo,
+            #ifdef ENGINE_DEBUG
+            .pNext                   = &m_debugCallback.messengerInfo,
             #else
             .pNext                   = nullptr,
             #endif
             .flags                   = 0,
             .pApplicationInfo        = &appInfo,
-            #ifdef ENGINE_ENABLE_VALIDATION
-            .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
-            .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
-            #else
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
-            #endif
             .enabledExtensionCount   = static_cast<u32>(extensions.size()),
             .ppEnabledExtensionNames = extensions.data(),
         };
@@ -129,8 +115,8 @@ namespace Vk
 
         volkLoadInstanceOnly(instance);
 
-        #ifdef ENGINE_ENABLE_VALIDATION
-        m_layers.SetupMessenger(instance);
+        #ifdef ENGINE_DEBUG
+        m_debugCallback.SetupMessenger(instance);
         #endif
     }
 
@@ -178,17 +164,57 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto properties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
-        auto features   = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
-        auto scores     = std::map<usize, VkPhysicalDevice>{};
+        auto properties           = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
+        auto vk11Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
+        auto vk12Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
+        auto rtPipelineProperties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
+
+        auto features = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
+        auto scores   = std::unordered_map<VkPhysicalDevice, usize>{};
 
         for (const auto& currentDevice : devices)
         {
+            VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtPipelinePropertySet = {};
+            rtPipelinePropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+            rtPipelinePropertySet.pNext = nullptr;
+
+            VkPhysicalDeviceVulkan12Properties vk12PropertySet = {};
+            vk12PropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
+            vk12PropertySet.pNext = &rtPipelinePropertySet;
+
+            VkPhysicalDeviceVulkan11Properties vk11PropertySet = {};
+            vk11PropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES;
+            vk11PropertySet.pNext = &vk12PropertySet;
+
             VkPhysicalDeviceProperties2 propertySet = {};
             propertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+            propertySet.pNext = &vk11PropertySet;
+
+            #ifdef ENGINE_DEBUG
+            VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR shaderRelaxedExtendedInstructionFeatures = {};
+            shaderRelaxedExtendedInstructionFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+            shaderRelaxedExtendedInstructionFeatures.pNext = nullptr;
+            #endif
+
+            VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
+            rayTracingMaintenance1Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+            #ifdef ENGINE_DEBUG
+            rayTracingMaintenance1Features.pNext = &shaderRelaxedExtendedInstructionFeatures;
+            #else
+            rayTracingMaintenance1Features.pNext = nullptr;
+            #endif
+
+            VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
+            rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+            rayTracingPipelineFeatures.pNext = &rayTracingMaintenance1Features;
+
+            VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
+            accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+            accelerationStructureFeatures.pNext = &rayTracingPipelineFeatures;
 
             VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenanceFeatures = {};
             swapchainMaintenanceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
+            swapchainMaintenanceFeatures.pNext = &accelerationStructureFeatures;
 
             VkPhysicalDeviceVulkan11Features vk11Features = {};
             vk11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
@@ -210,21 +236,37 @@ namespace Vk
             vkGetPhysicalDeviceFeatures2(currentDevice, &featureSet);
 
             properties.emplace(currentDevice, propertySet);
-            features.emplace(currentDevice, featureSet);
+            vk11Properties.emplace(currentDevice, vk11PropertySet);
+            vk12Properties.emplace(currentDevice, vk12PropertySet);
+            rtPipelineProperties.emplace(currentDevice, rtPipelinePropertySet);
 
-            scores.emplace(CalculateScore(currentDevice, propertySet, featureSet), currentDevice);
+            features.emplace(currentDevice, featureSet);
+            scores.emplace(currentDevice, CalculateScore(currentDevice, propertySet, featureSet));
         }
 
-        // Best GPU => Highest score
-        const auto [highestScore, bestDevice] = *scores.crbegin();
+        VkPhysicalDevice bestDevice   = VK_NULL_HANDLE;
+        usize            highestScore = 0;
+
+        for (const auto& [device, score] : scores)
+        {
+            if (score > highestScore)
+            {
+                highestScore = score;
+                bestDevice   = device;
+            }
+        }
+
         // Score = 0 => Required features not supported
         if (highestScore == 0)
         {
             Logger::VulkanError("Failed to find any suitable physical device!");
         }
 
-        physicalDevice       = bestDevice;
-        physicalDeviceLimits = properties[physicalDevice].properties.limits;
+        physicalDevice                             = bestDevice;
+        physicalDeviceLimits                       = properties[physicalDevice].properties.limits;
+        physicalDeviceRayTracingPipelineProperties = rtPipelineProperties[physicalDevice];
+        physicalDeviceVulkan11Properties           = vk11Properties[physicalDevice];
+        physicalDeviceVulkan12Properties           = vk12Properties[physicalDevice];
 
         Logger::Info
         (
@@ -244,10 +286,19 @@ namespace Vk
     {
         const auto queues = QueueFamilyIndices(phyDevice, surface);
 
-        const auto vk13Features                 = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
-        const auto vk12Features                 = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
-        const auto vk11Features                 = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
-        const auto swapchainMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
+        const auto vk11Properties = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Properties>(propertySet.pNext);
+
+        const auto vk11Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
+        const auto vk12Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
+        const auto vk13Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
+        const auto swapchainMaintenanceFeatures  = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
+        const auto accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureSet.pNext);
+        const auto rayTracingPipelineFeatures    = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureSet.pNext);
+        const auto rayTracingMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(featureSet.pNext);
+
+        #ifdef ENGINE_DEBUG
+        const auto shaderRelaxedExtendedInstructionFeatures = Vk::FindStructureInChain<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(featureSet.pNext);
+        #endif
 
         // Score parts
         const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
@@ -259,6 +310,15 @@ namespace Vk
         // Need extensions to calculate these
         bool isSwapChainAdequate     = false;
         bool hasSwapchainMaintenance = false;
+        bool hasAS                   = false;
+        bool hasASUpdateAfterBind    = false;
+        bool hasRTPipeline           = false;
+        bool hasRTCulling            = false;
+        bool hasRTMaintenance        = false;
+
+        #ifdef ENGINE_DEBUG
+        bool hasShaderRelaxedExtendedInstruction = false;
+        #endif
 
         if (hasExtensions)
         {
@@ -266,30 +326,48 @@ namespace Vk
 
             isSwapChainAdequate     = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
             hasSwapchainMaintenance = swapchainMaintenanceFeatures->swapchainMaintenance1;
+
+            hasAS                = accelerationStructureFeatures->accelerationStructure;
+            hasASUpdateAfterBind = accelerationStructureFeatures->descriptorBindingAccelerationStructureUpdateAfterBind;
+
+            hasRTPipeline = rayTracingPipelineFeatures->rayTracingPipeline;
+            hasRTCulling  = rayTracingPipelineFeatures->rayTraversalPrimitiveCulling;
+
+            hasRTMaintenance = rayTracingMaintenanceFeatures->rayTracingMaintenance1;
+
+            #ifdef ENGINE_DEBUG
+            hasShaderRelaxedExtendedInstruction = shaderRelaxedExtendedInstructionFeatures->shaderRelaxedExtendedInstruction;
+            #endif
         }
 
         // Standard features
+        const bool hasPushConstantSize  = propertySet.properties.limits.maxPushConstantsSize >= 128;
         const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
-        const bool hasWireframe         = featureSet.features.fillModeNonSolid;
         const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
         const bool hasBC                = featureSet.features.textureCompressionBC;
         const bool hasImageCubeArray    = featureSet.features.imageCubeArray;
         const bool hasDepthClamp        = featureSet.features.depthClamp;
+        const bool hasInt64             = featureSet.features.shaderInt64;
+        const bool indexU32             = featureSet.features.fullDrawIndexUint32;
 
         // Vulkan 1.1 features
-        const bool hasShaderDrawParameters = vk11Features->shaderDrawParameters;
-        const bool hasMultiView            = vk11Features->multiview;
+        const bool hasRequiredMultiViewCount = vk11Properties->maxMultiviewViewCount >= 6;
+        const bool hasShaderDrawParameters   = vk11Features->shaderDrawParameters;
+        const bool hasMultiView              = vk11Features->multiview;
 
         // Vulkan 1.2 features
-        const bool hasBDA                         = vk12Features->bufferDeviceAddress;
-        const bool hasScalarLayout                = vk12Features->scalarBlockLayout;
-        const bool hasDescriptorIndexing          = vk12Features->descriptorIndexing;
-        const bool hasNonUniformIndexing          = vk12Features->shaderSampledImageArrayNonUniformIndexing;
-        const bool hasRuntimeDescriptorArray      = vk12Features->runtimeDescriptorArray;
-        const bool hasPartiallyBoundDescriptors   = vk12Features->descriptorBindingPartiallyBound;
-        const bool hasSampledImageUpdateAfterBind = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
-        const bool hasUpdateUnusedWhilePending    = vk12Features->descriptorBindingUpdateUnusedWhilePending;
-        const bool hasDrawIndirectCount           = vk12Features->drawIndirectCount;
+        const bool hasBDA                            = vk12Features->bufferDeviceAddress;
+        const bool hasScalarLayout                   = vk12Features->scalarBlockLayout;
+        const bool hasDescriptorIndexing             = vk12Features->descriptorIndexing;
+        const bool hasSampledImageNonUniformIndexing = vk12Features->shaderSampledImageArrayNonUniformIndexing;
+        const bool hasStorageImageNonUniformIndexing = vk12Features->shaderStorageImageArrayNonUniformIndexing;
+        const bool hasRuntimeDescriptorArray         = vk12Features->runtimeDescriptorArray;
+        const bool hasPartiallyBoundDescriptors      = vk12Features->descriptorBindingPartiallyBound;
+        const bool hasSampledImageUpdateAfterBind    = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
+        const bool hasStorageImageUpdateAfterBind    = vk12Features->descriptorBindingStorageImageUpdateAfterBind;
+        const bool hasUpdateUnusedWhilePending       = vk12Features->descriptorBindingUpdateUnusedWhilePending;
+        const bool hasDrawIndirectCount              = vk12Features->drawIndirectCount;
+        const bool hasTimelineSemaphore              = vk12Features->timelineSemaphore;
 
         // Vulkan 1.3 features
         const bool hasSync2        = vk13Features->synchronization2;
@@ -297,12 +375,19 @@ namespace Vk
         const bool hasMaintenance4 = vk13Features->maintenance4;
 
         const bool required   = areQueuesValid && hasExtensions;
-        const bool standard   = hasAnisotropy && hasWireframe && hasMultiDrawIndirect && hasBC && hasImageCubeArray && hasDepthClamp;
-        const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance;
-        const bool vk11       = hasShaderDrawParameters && hasMultiView;
-        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasNonUniformIndexing &&
-                                hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
-                                hasSampledImageUpdateAfterBind && hasUpdateUnusedWhilePending && hasDrawIndirectCount;
+        const bool standard   = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
+                                hasImageCubeArray && hasDepthClamp && hasInt64 && indexU32;
+        const bool extensions = isSwapChainAdequate && hasSwapchainMaintenance && hasAS && hasASUpdateAfterBind &&
+                                hasRTPipeline && hasRTCulling && hasRTMaintenance
+                                #ifdef ENGINE_DEBUG
+                                && hasShaderRelaxedExtendedInstruction
+                                #endif
+                                ;
+        const bool vk11       = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView;
+        const bool vk12       = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
+                                hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
+                                hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
+                                hasDrawIndirectCount && hasTimelineSemaphore;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
         return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
@@ -331,20 +416,45 @@ namespace Vk
             });
         }
 
-        // Swapchain Maintenance
+        #ifdef ENGINE_DEBUG
+        VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR shaderRelaxedExtendedInstructionFeatures = {};
+        shaderRelaxedExtendedInstructionFeatures.sType                            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+        shaderRelaxedExtendedInstructionFeatures.pNext                            = nullptr;
+        shaderRelaxedExtendedInstructionFeatures.shaderRelaxedExtendedInstruction = VK_TRUE;
+        #endif
+
+        VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
+        rayTracingMaintenance1Features.sType                  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+        #ifdef ENGINE_DEBUG
+        rayTracingMaintenance1Features.pNext                  = &shaderRelaxedExtendedInstructionFeatures;
+        #else
+        rayTracingMaintenance1Features.pNext                  = nullptr;
+        #endif
+        rayTracingMaintenance1Features.rayTracingMaintenance1 = VK_TRUE;
+
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
+        rayTracingPipelineFeatures.sType                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+        rayTracingPipelineFeatures.pNext                        = &rayTracingMaintenance1Features;
+        rayTracingPipelineFeatures.rayTracingPipeline           = VK_TRUE;
+        rayTracingPipelineFeatures.rayTraversalPrimitiveCulling = VK_TRUE;
+
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
+        accelerationStructureFeatures.sType                                                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+        accelerationStructureFeatures.pNext                                                 = &rayTracingPipelineFeatures;
+        accelerationStructureFeatures.accelerationStructure                                 = VK_TRUE;
+        accelerationStructureFeatures.descriptorBindingAccelerationStructureUpdateAfterBind = VK_TRUE;
+
         VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenanceFeatures = {};
         swapchainMaintenanceFeatures.sType                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
-        swapchainMaintenanceFeatures.pNext                 = nullptr;
+        swapchainMaintenanceFeatures.pNext                 = &accelerationStructureFeatures;
         swapchainMaintenanceFeatures.swapchainMaintenance1 = VK_TRUE;
 
-        // Add required Vulkan 1.1 features here
         VkPhysicalDeviceVulkan11Features vk11Features = {};
         vk11Features.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
         vk11Features.pNext                = &swapchainMaintenanceFeatures;
         vk11Features.shaderDrawParameters = VK_TRUE;
         vk11Features.multiview            = VK_TRUE;
 
-        // Add required Vulkan 1.2 features here
         VkPhysicalDeviceVulkan12Features vk12Features = {};
         vk12Features.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         vk12Features.pNext                                        = &vk11Features;
@@ -352,14 +462,16 @@ namespace Vk
         vk12Features.scalarBlockLayout                            = VK_TRUE;
         vk12Features.descriptorIndexing                           = VK_TRUE;
         vk12Features.shaderSampledImageArrayNonUniformIndexing    = VK_TRUE;
+        vk12Features.shaderStorageImageArrayNonUniformIndexing    = VK_TRUE;
         vk12Features.runtimeDescriptorArray                       = VK_TRUE;
         vk12Features.descriptorBindingVariableDescriptorCount     = VK_TRUE;
         vk12Features.descriptorBindingPartiallyBound              = VK_TRUE;
         vk12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+        vk12Features.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
         vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
         vk12Features.drawIndirectCount                            = VK_TRUE;
+        vk12Features.timelineSemaphore                            = VK_TRUE;
 
-        // Add required Vulkan 1.3 features here
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
         vk13Features.pNext            = &vk12Features;
@@ -367,16 +479,16 @@ namespace Vk
         vk13Features.dynamicRendering = VK_TRUE;
         vk13Features.maintenance4     = VK_TRUE;
 
-        // Add required features here
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
-        deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext                         = &vk13Features;
-        deviceFeatures.features.samplerAnisotropy    = VK_TRUE;
-        deviceFeatures.features.fillModeNonSolid     = VK_TRUE;
-        deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
-        deviceFeatures.features.textureCompressionBC = VK_TRUE;
-        deviceFeatures.features.imageCubeArray       = VK_TRUE;
-        deviceFeatures.features.depthClamp           = VK_TRUE;
+        deviceFeatures.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext                              = &vk13Features;
+        deviceFeatures.features.samplerAnisotropy         = VK_TRUE;
+        deviceFeatures.features.multiDrawIndirect         = VK_TRUE;
+        deviceFeatures.features.textureCompressionBC      = VK_TRUE;
+        deviceFeatures.features.imageCubeArray            = VK_TRUE;
+        deviceFeatures.features.depthClamp                = VK_TRUE;
+        deviceFeatures.features.shaderInt64               = VK_TRUE;
+        deviceFeatures.features.fullDrawIndexUint32       = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {
@@ -385,13 +497,8 @@ namespace Vk
             .flags                   = 0,
             .queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size()),
             .pQueueCreateInfos       = queueCreateInfos.data(),
-            #ifdef ENGINE_ENABLE_VALIDATION
-            .enabledLayerCount       = static_cast<u32>(VALIDATION_LAYERS.size()),
-            .ppEnabledLayerNames     = VALIDATION_LAYERS.data(),
-            #else
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
-            #endif
             .enabledExtensionCount   = static_cast<u32>(REQUIRED_DEVICE_EXTENSIONS.size()),
             .ppEnabledExtensionNames = REQUIRED_DEVICE_EXTENSIONS.data(),
             .pEnabledFeatures        = nullptr
@@ -416,33 +523,6 @@ namespace Vk
             0,
             &graphicsQueue
         );
-    }
-
-    void Context::CreateCommandPool()
-    {
-        const VkCommandPoolCreateInfo createInfo =
-        {
-            .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext            = nullptr,
-            .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = queueFamilies.graphicsFamily.value_or(0)
-        };
-
-        Vk::CheckResult(vkCreateCommandPool(
-            device,
-            &createInfo,
-            nullptr,
-            &commandPool),
-            "Failed to create command pool!"
-        );
-
-        Logger::Info("Created command pool! [handle={}]\n", std::bit_cast<void*>(commandPool));
-
-        m_deletionQueue.PushDeletor([this] ()
-        {
-            Vk::CheckResult(vkResetCommandPool(device, commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT), "Failed to reset command pool!");
-            vkDestroyCommandPool(device, commandPool, nullptr);
-        });
     }
 
     void Context::CreateAllocator()
@@ -515,7 +595,6 @@ namespace Vk
         Vk::SetDebugName(device, device,         "Device");
         Vk::SetDebugName(device, surface,        "SDL3Surface");
         Vk::SetDebugName(device, graphicsQueue,  "GraphicsQueue");
-        Vk::SetDebugName(device, commandPool,    "GlobalCommandPool");
     }
 
     void Context::Destroy()
@@ -524,8 +603,8 @@ namespace Vk
 
         vkDestroyDevice(device, nullptr);
 
-        #ifdef ENGINE_ENABLE_VALIDATION
-        m_layers.Destroy(instance);
+        #ifdef ENGINE_DEBUG
+        m_debugCallback.Destroy(instance);
         #endif
 
         vkDestroyInstance(instance, nullptr);

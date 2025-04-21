@@ -37,7 +37,7 @@ namespace Engine
 
         void Run();
     private:
-        // Renderer
+        Engine::Config          m_config;
         Renderer::RenderManager m_renderer;
     };
 }

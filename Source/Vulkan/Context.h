@@ -20,7 +20,7 @@
 #include <vulkan/vulkan.h>
 #include <SDL3/SDL.h>
 
-#include "ValidationLayers.h"
+#include "DebugCallback.h"
 #include "QueueFamilyIndices.h"
 #include "Util/Util.h"
 #include "Util/DeletionQueue.h"
@@ -38,8 +38,11 @@ namespace Vk
         VkInstance instance = VK_NULL_HANDLE;
 
         // Physical device
-        VkPhysicalDevice       physicalDevice       = VK_NULL_HANDLE;
-        VkPhysicalDeviceLimits physicalDeviceLimits = {};
+        VkPhysicalDevice                                physicalDevice                             = VK_NULL_HANDLE;
+        VkPhysicalDeviceLimits                          physicalDeviceLimits                       = {};
+        VkPhysicalDeviceVulkan11Properties              physicalDeviceVulkan11Properties           = {};
+        VkPhysicalDeviceVulkan12Properties              physicalDeviceVulkan12Properties           = {};
+        VkPhysicalDeviceRayTracingPipelinePropertiesKHR physicalDeviceRayTracingPipelineProperties = {};
         // Logical device
         VkDevice device = VK_NULL_HANDLE;
 
@@ -49,9 +52,6 @@ namespace Vk
         // Queues
         Vk::QueueFamilyIndices queueFamilies;
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
-
-        // Pools
-        VkCommandPool commandPool = VK_NULL_HANDLE;
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
@@ -69,14 +69,13 @@ namespace Vk
             const VkPhysicalDeviceFeatures2& featureSet
         );
 
-        void CreateCommandPool();
         void CreateAllocator();
 
         void AddDebugNames();
 
-        #ifdef ENGINE_ENABLE_VALIDATION
-        // Vulkan validation layers
-        Vk::ValidationLayers m_layers;
+        #ifdef ENGINE_DEBUG
+        // Vulkan debug callback
+        Vk::DebugCallback m_debugCallback;
         #endif
 
         // Deletion queue

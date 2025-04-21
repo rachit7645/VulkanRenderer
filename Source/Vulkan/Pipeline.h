@@ -22,7 +22,6 @@
 #include "Context.h"
 #include "Util/Util.h"
 #include "CommandBuffer.h"
-#include "DescriptorSet.h"
 
 namespace Vk
 {
@@ -43,7 +42,7 @@ namespace Vk
             const std::span<const VkDescriptorSet> descriptors
         ) const;
 
-        void LoadPushConstants
+        void PushConstants
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkShaderStageFlags stages,

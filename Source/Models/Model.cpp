@@ -193,10 +193,10 @@ namespace Models
     {
         for (const auto& primitive : mesh.primitives)
         {
-            std::vector<Index>     indices   = {};
-            std::vector<glm::vec3> positions = {};
-            std::vector<Vertex>    vertices  = {};
-            Material               material  = {};
+            std::vector<Index>    indices   = {};
+            std::vector<Position> positions = {};
+            std::vector<Vertex>   vertices  = {};
+            Material              material  = {};
 
             if (primitive.type != fastgltf::PrimitiveType::Triangles)
             {
@@ -292,6 +292,8 @@ namespace Models
                 );
 
                 positions.resize(positionAccessor.count);
+
+                static_assert(std::is_same_v<Position, glm::vec3>, "Position does not match glTF position data!");
 
                 fastgltf::copyFromAccessor<glm::vec3>(asset, positionAccessor, positions.data());
             }

@@ -56,6 +56,18 @@ namespace Vk::Builders
         );
 
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
+
+        [[nodiscard]] PipelineBuilder& AttachShaderGroup
+        (
+            VkRayTracingShaderGroupTypeKHR groupType,
+            u32 generalShader,
+            u32 closestHitShader,
+            u32 anyHitShader,
+            u32 intersectionShader
+        );
+
+        [[nodiscard]] PipelineBuilder& SetMaxRayRecursionDepth(u32 maxRayRecursionDepth);
+
         [[nodiscard]] PipelineBuilder& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
 
         [[nodiscard]] PipelineBuilder& SetVertexInputState
@@ -105,29 +117,32 @@ namespace Vk::Builders
     private:
         VkPipelineBindPoint m_pipelineType = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-        VkPipelineRenderingCreateInfo m_renderingCreateInfo;
+        VkPipelineRenderingCreateInfo m_renderingCreateInfo{};
         std::vector<VkFormat>         m_renderingColorFormats;
 
-        std::vector<Vk::ShaderModule>                m_shaderModules;
-        std::vector<VkPipelineShaderStageCreateInfo> m_shaderStageCreateInfos;
+        std::vector<Vk::ShaderModule>                     m_shaderModules;
+        std::vector<VkPipelineShaderStageCreateInfo>      m_shaderStageCreateInfos;
+        std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
+
+        u32 m_maxRayRecursionDepth;
 
         std::vector<VkDynamicState>      m_dynamicStates;
-        VkPipelineDynamicStateCreateInfo m_dynamicStateInfo;
+        VkPipelineDynamicStateCreateInfo m_dynamicStateInfo{};
 
-        VkPipelineViewportStateCreateInfo m_viewportInfo;
+        VkPipelineViewportStateCreateInfo m_viewportInfo{};
 
-        VkPipelineVertexInputStateCreateInfo           m_vertexInputInfo;
+        VkPipelineVertexInputStateCreateInfo           m_vertexInputInfo{};
         std::vector<VkVertexInputBindingDescription>   m_vertexInputBindings;
         std::vector<VkVertexInputAttributeDescription> m_vertexAttribDescriptions;
 
-        VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo;
-        VkPipelineRasterizationStateCreateInfo m_rasterizationInfo;
-        VkPipelineMultisampleStateCreateInfo   m_msaaStateInfo;
+        VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo{};
+        VkPipelineRasterizationStateCreateInfo m_rasterizationInfo{};
+        VkPipelineMultisampleStateCreateInfo   m_msaaStateInfo{};
 
-        VkPipelineDepthStencilStateCreateInfo m_depthStencilInfo;
+        VkPipelineDepthStencilStateCreateInfo m_depthStencilInfo{};
 
         std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendStates;
-        VkPipelineColorBlendStateCreateInfo              m_colorBlendInfo;
+        VkPipelineColorBlendStateCreateInfo              m_colorBlendInfo{};
 
         std::vector<VkPushConstantRange>   m_pushConstantRanges;
         std::vector<VkDescriptorSetLayout> m_descriptorLayouts;

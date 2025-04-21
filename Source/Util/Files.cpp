@@ -36,7 +36,7 @@ namespace Engine::Files
         return filesystem::path(path).parent_path().string();
     }
 
-    usize GetFileSize(const std::string_view path)
+    usize GetSize(const std::string_view path)
     {
         // This should always work
         static_assert(sizeof(usize) >= sizeof(std::uintmax_t), "How???");
@@ -54,7 +54,7 @@ namespace Engine::Files
         }
 
         std::vector<u8> binary = {};
-        binary.resize(GetFileSize(path));
+        binary.resize(GetSize(path));
 
         bin.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
 
@@ -69,5 +69,10 @@ namespace Engine::Files
     std::string GetExtension(const std::string_view fileName)
     {
         return filesystem::path(fileName).extension().string();
+    }
+
+    bool Exists(const std::string_view fileName)
+    {
+        return filesystem::exists(filesystem::path(fileName));
     }
 }

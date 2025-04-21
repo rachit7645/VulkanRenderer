@@ -14,26 +14,41 @@
  * limitations under the License.
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef GPU_SCENE_H
+#define GPU_SCENE_H
 
-#include "Objects/Lights.h"
+#include <vulkan/vulkan.h>
+
 #include "Externals/GLM.h"
-#include "Vulkan/Util.h"
+#include "Util/Plane.h"
 
 namespace Renderer
 {
+    struct SceneMatrices
+    {
+        glm::mat4 projection         = {};
+        glm::mat4 inverseProjection  = {};
+        glm::mat4 jitteredProjection = {};
+        glm::mat4 view               = {};
+        glm::mat4 inverseView        = {};
+        glm::mat3 normalView         = {};
+    };
+
     struct Scene
     {
-        glm::mat4       projection        = {};
-        glm::mat4       inverseProjection = {};
-        glm::mat4       view              = {};
-        glm::mat4       inverseView       = {};
-        glm::mat3       normalView        = {};
-        glm::vec3       cameraPos         = {};
-        VkDeviceAddress dirLights         = 0;
-        VkDeviceAddress pointLights       = 0;
-        VkDeviceAddress spotLights        = 0;
+        SceneMatrices currentMatrices  = {};
+        SceneMatrices previousMatrices = {};
+        glm::vec3     cameraPosition   = {};
+
+        f32 nearPlane = 0.0f;
+        f32 farPlane  = 0.0f;
+
+        VkDeviceAddress commonLight         = 0;
+        VkDeviceAddress dirLights           = 0;
+        VkDeviceAddress pointLights         = 0;
+        VkDeviceAddress shadowedPointLights = 0;
+        VkDeviceAddress spotLights          = 0;
+        VkDeviceAddress shadowedSpotLights  = 0;
     };
 }
 

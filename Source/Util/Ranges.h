@@ -44,16 +44,6 @@ namespace Util
 
         return result;
     }
-
-    template <usize N, typename T>
-    auto ToArray(const std::vector<T>& vector) -> std::array<T, N>
-    {
-        std::array<T, N> array = {};
-
-        std::move(vector.begin(), vector.end(), array.begin());
-
-        return array;
-    }
 }
 
 #endif

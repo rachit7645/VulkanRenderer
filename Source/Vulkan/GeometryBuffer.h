@@ -39,13 +39,13 @@ namespace Vk
         explicit GeometryBuffer(VkDevice device, VmaAllocator allocator);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
-        void Destroy(VmaAllocator allocator) const;
+        void Destroy(VmaAllocator allocator);
 
         std::array<Info, 3> SetupUploads
         (
             VmaAllocator allocator,
             const std::span<const Models::Index> indices,
-            const std::span<const glm::vec3> positions,
+            const std::span<const Models::Position> positions,
             const std::span<const Models::Vertex> vertices
         );
 
@@ -56,9 +56,11 @@ namespace Vk
             VmaAllocator allocator
         );
 
-        void Clear(VmaAllocator allocator);
+        void ClearUploads(VmaAllocator allocator);
 
         void ImGuiDisplay() const;
+
+        [[nodiscard]] bool HasPendingUploads() const;
 
         Vk::Buffer indexBuffer;
         Vk::Buffer positionBuffer;

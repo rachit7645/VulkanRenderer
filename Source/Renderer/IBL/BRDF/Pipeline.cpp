@@ -26,13 +26,13 @@ namespace Renderer::IBL::BRDF
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.rgFloatFormat};
+        std::array colorFormats = {formatHelper.rgSFloatFormat};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("BRDF.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("BRDF.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/BRDF.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)

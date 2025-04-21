@@ -18,7 +18,6 @@
 #define VK_SWAPCHAIN_H
 
 #include <vector>
-#include <memory>
 
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
@@ -28,20 +27,21 @@
 #include "ImageView.h"
 #include "Context.h"
 #include "Constants.h"
+#include "CommandBufferAllocator.h"
 
 namespace Vk
 {
     class Swapchain
     {
     public:
-        Swapchain(const glm::ivec2& size, const Vk::Context& context);
+        Swapchain(const glm::ivec2& size, const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
 
         bool IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context);
-        void RecreateSwapChain(const Vk::Context& context);
+        void RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
 
         void Destroy(VkDevice device);
 
-        VkResult Present(VkQueue queue, usize FIF);
+        VkResult Present(VkDevice device, VkQueue queue);
         VkResult AcquireSwapChainImage(VkDevice device, usize FIF);
 
         VkSwapchainKHR handle = VK_NULL_HANDLE;
@@ -53,11 +53,14 @@ namespace Vk
         u32                        imageIndex  = 0;
 
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
-        std::array<VkSemaphore, FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
+
+        std::vector<VkSemaphore> renderFinishedSemaphores = {};
+        std::vector<VkFence>     presentFences            = {};
     private:
-        void CreateSwapChain(const Vk::Context& context);
+        void CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
         void DestroySwapchain(VkDevice device);
 
+        void CreateStaticSyncObjects(VkDevice device);
         void CreateSyncObjects(VkDevice device);
 
         [[nodiscard]] VkSurfaceFormat2KHR ChooseSurfaceFormat() const;

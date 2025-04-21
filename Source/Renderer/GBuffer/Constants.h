@@ -19,7 +19,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Vulkan/Util.h"
+#include "Util/Util.h"
 
 namespace Renderer::GBuffer
 {
@@ -27,10 +27,12 @@ namespace Renderer::GBuffer
     {
         VkDeviceAddress scene;
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
+        VkDeviceAddress meshIndices;
         VkDeviceAddress positions;
         VkDeviceAddress vertices;
         u32             textureSamplerIndex;
+        u32             depthSamplerIndex;
+        u32             previousDepthIndex;
     };
 }
 

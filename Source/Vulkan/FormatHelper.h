@@ -26,18 +26,21 @@ namespace Vk
     public:
         explicit FormatHelper(VkPhysicalDevice physicalDevice);
 
-        VkFormat textureFormat            = VK_FORMAT_UNDEFINED;
-        VkFormat textureFormatSRGB        = VK_FORMAT_UNDEFINED;
-        VkFormat textureFormatBC7         = VK_FORMAT_UNDEFINED;
-        VkFormat textureFormatBC7SRGB     = VK_FORMAT_UNDEFINED;
-        VkFormat textureFormatHDR         = VK_FORMAT_UNDEFINED;
-        VkFormat colorAttachmentFormatLDR = VK_FORMAT_UNDEFINED;
-        VkFormat colorAttachmentFormatHDR = VK_FORMAT_UNDEFINED;
-        VkFormat depthFormat              = VK_FORMAT_UNDEFINED;
-        VkFormat depthStencilFormat       = VK_FORMAT_UNDEFINED;
-        VkFormat rFormat                  = VK_FORMAT_UNDEFINED;
-        VkFormat rgFormat                 = VK_FORMAT_UNDEFINED;
-        VkFormat rgFloatFormat            = VK_FORMAT_UNDEFINED;
+        VkFormat textureFormatBC7     = VK_FORMAT_UNDEFINED;
+        VkFormat textureFormatBC7SRGB = VK_FORMAT_UNDEFINED;
+        VkFormat textureFormatHDR     = VK_FORMAT_UNDEFINED;
+
+        VkFormat colorAttachmentFormatLDR          = VK_FORMAT_UNDEFINED;
+        VkFormat colorAttachmentFormatHDR          = VK_FORMAT_UNDEFINED;
+        VkFormat colorAttachmentFormatHDRWithAlpha = VK_FORMAT_UNDEFINED;
+
+        VkFormat depthFormat = VK_FORMAT_UNDEFINED;
+
+        VkFormat r8UnormFormat    = VK_FORMAT_UNDEFINED;
+        VkFormat rUint16Format    = VK_FORMAT_UNDEFINED;
+        VkFormat rgSFloatFormat   = VK_FORMAT_UNDEFINED;
+        VkFormat rgba8UnormFormat = VK_FORMAT_UNDEFINED;
+        VkFormat b10g11r11SFloat  = VK_FORMAT_UNDEFINED;
     private:
         VkFormat FindSupportedFormat
         (

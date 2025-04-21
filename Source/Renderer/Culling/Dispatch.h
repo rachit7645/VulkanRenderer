@@ -17,8 +17,9 @@
 #ifndef CULLING_DISPATCH_H
 #define CULLING_DISPATCH_H
 
+#include "FrustumBuffer.h"
 #include "Pipeline.h"
-#include "Vulkan/Constants.h"
+#include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 
@@ -29,9 +30,9 @@ namespace Renderer::Culling
     public:
         explicit Dispatch(const Vk::Context& context);
 
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
-        void ComputeDispatch
+        void DispatchFrustumCulling
         (
             usize FIF,
             const glm::mat4& projectionView,
@@ -40,7 +41,8 @@ namespace Renderer::Culling
             const Buffers::IndirectBuffer& indirectBuffer
         );
 
-        Culling::Pipeline pipeline;
+        Culling::Pipeline      frustumPipeline;
+        Culling::FrustumBuffer frustumBuffer;
     };
 }
 

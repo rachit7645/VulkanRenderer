@@ -42,23 +42,6 @@ namespace Vk
         );
     }
 
-    CommandBuffer::CommandBuffer(VkCommandBuffer handle, VkCommandBufferLevel level)
-        : handle(handle),
-          level(level)
-    {
-    }
-
-    void CommandBuffer::Free(VkDevice device, VkCommandPool cmdPool)
-    {
-        vkFreeCommandBuffers
-        (
-            device,
-            cmdPool,
-            1,
-            &handle
-        );
-    }
-
     void CommandBuffer::BeginRecording(VkCommandBufferUsageFlags usageFlags) const
     {
         const VkCommandBufferBeginInfo beginInfo =
@@ -80,72 +63,5 @@ namespace Vk
     void CommandBuffer::Reset(VkCommandBufferResetFlags resetFlags) const
     {
         Vk::CheckResult(vkResetCommandBuffer(handle, resetFlags), "Failed to reset command buffer!");
-    }
-
-    std::vector<CommandBuffer> CommandBuffer::Allocate
-    (
-        u32 count,
-        VkDevice device,
-        VkCommandPool cmdPool,
-        VkCommandBufferLevel level
-    )
-    {
-        std::vector<VkCommandBuffer> _cmdBuffers = {};
-        _cmdBuffers.resize(count, VK_NULL_HANDLE);
-
-        const VkCommandBufferAllocateInfo allocInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .commandPool        = cmdPool,
-            .level              = level,
-            .commandBufferCount = count
-        };
-
-        Vk::CheckResult(vkAllocateCommandBuffers(
-            device,
-            &allocInfo,
-            _cmdBuffers.data()),
-            "Failed to allocate command buffers!"
-        );
-
-        std::vector<Vk::CommandBuffer> cmdBuffers = {};
-        cmdBuffers.reserve(count);
-
-        std::ranges::transform
-        (
-            _cmdBuffers,
-            std::back_inserter(cmdBuffers),
-            [level] (VkCommandBuffer cmdBuffer)
-            {
-                return Vk::CommandBuffer(cmdBuffer, level);
-            }
-        );
-
-        return cmdBuffers;
-    }
-
-    void CommandBuffer::Free(VkDevice device, VkCommandPool cmdPool, const std::span<const CommandBuffer> cmdBuffers)
-    {
-        std::vector<VkCommandBuffer> _cmdBuffers = {};
-        _cmdBuffers.reserve(cmdBuffers.size());
-
-        std::ranges::transform
-        (
-            cmdBuffers,
-            std::back_inserter(_cmdBuffers),
-            [] (const Vk::CommandBuffer& cmdBuffer)
-            {
-                return cmdBuffer.handle;
-            }
-        );
-
-        vkFreeCommandBuffers
-        (
-            device,
-            cmdPool,
-            _cmdBuffers.size(),
-            _cmdBuffers.data()
-        );
     }
 }

@@ -23,12 +23,12 @@
 
 namespace Renderer::SpotShadow
 {
-    struct __attribute__((packed)) PushConstant
+    struct PushConstant
     {
+        VkDeviceAddress scene;
         VkDeviceAddress meshes;
-        VkDeviceAddress visibleMeshes;
+        VkDeviceAddress meshIndices;
         VkDeviceAddress positions;
-        VkDeviceAddress spotShadows;
         u32             currentIndex;
     };
 }

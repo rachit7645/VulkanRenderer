@@ -37,21 +37,21 @@ namespace Renderer::Skybox
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
+        usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
-            const IBL::IBLMaps& iblMaps,
-            const Vk::MegaSet& megaSet
+            const IBL::IBLMaps& iblMaps
         );
 
         Skybox::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     };
 }
 

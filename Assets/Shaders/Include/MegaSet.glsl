@@ -17,11 +17,16 @@
 #ifndef MEGASET_GLSL
 #define MEGASET_GLSL
 
-// Mega set
-layout(set = 0, binding = 0) uniform sampler          Samplers[];
+#extension GL_EXT_nonuniform_qualifier : enable
+
+layout(set = 0, binding = 0) uniform sampler Samplers[];
+
 layout(set = 0, binding = 1) uniform texture2D        Textures[];
+layout(set = 0, binding = 1) uniform utexture2D       UTextures[];
 layout(set = 0, binding = 1) uniform textureCube      Cubemaps[];
 layout(set = 0, binding = 1) uniform texture2DArray   TextureArrays[];
 layout(set = 0, binding = 1) uniform textureCubeArray CubemapArrays[];
+
+layout(set = 0, binding = 2) uniform writeonly image2D Images[];
 
 #endif

@@ -24,7 +24,6 @@
 #include "Util/Util.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
-#include "Externals/VMA.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer::Buffers
@@ -46,9 +45,7 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> meshBuffers;
-
-        Vk::Buffer visibleMeshBuffer;
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
     };
 }
 

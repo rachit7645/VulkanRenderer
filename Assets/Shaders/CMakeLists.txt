@@ -17,7 +17,7 @@ project(Shaders)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-set(SHADERS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/Bin/Assets/Shaders)
+set(SHADERS_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/Bin/Assets/Shaders)
 
 # Get glsl compiler
 find_package(Vulkan REQUIRED COMPONENTS glslangValidator)
@@ -35,51 +35,42 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
     list(APPEND SHADER_FLAGS -gVS)
 endif()
 
-# Debug Without Validation config
-if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    list(APPEND SHADER_FLAGS -gVS)
-endif()
-
 # Includes
 set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
 
 # Shader files
 file(GLOB SHADER_SOURCES
-    PostProcess.vert
-    PostProcess.frag
-    Depth.vert
-    Depth.frag
-    ImGui.vert
-    ImGui.frag
-    BRDF.frag
-    BRDF.vert
-    Converter.vert
-    Converter.frag
-    Skybox.frag
-    Skybox.vert
-    Convolution.frag
-    Convolution.vert
-    PreFilter.vert
-    PreFilter.frag
-    DownSample.vert
-    DownSample.frag
-    UpSample.frag
-    UpSample.vert
-    Shadow.frag
-    Shadow.vert
-    PointShadow.frag
-    PointShadow.vert
-    SpotShadow.frag
-    SpotShadow.vert
-    Culling.comp
-    GBuffer.frag
-    GBuffer.vert
-    Lighting.frag
-    Lighting.vert
-    SSAO.vert
-    SSAO.frag
-    SSAOBlur.vert
-    SSAOBlur.frag
+    Misc/PostProcess.frag
+    Misc/TAA.frag
+    Misc/Trongle.vert
+    Culling/Frustum.comp
+    ImGui/ImGui.vert
+    ImGui/ImGui.frag
+    IBL/BRDF.frag
+    IBL/Converter.vert
+    IBL/Converter.frag
+    IBL/Convolution.frag
+    IBL/Convolution.vert
+    IBL/PreFilter.vert
+    IBL/PreFilter.frag
+    Skybox/Skybox.frag
+    Skybox/Skybox.vert
+    Bloom/DownSample.frag
+    Bloom/UpSample.frag
+    Shadows/PointShadow.frag
+    Shadows/PointShadow.vert
+    Shadows/SpotShadow.frag
+    Shadows/SpotShadow.vert
+    Shadows/Shadow.rgen
+    Shadows/Shadow.rmiss
+    Deferred/Depth.vert
+    Deferred/Depth.frag
+    Deferred/GBuffer.frag
+    Deferred/GBuffer.vert
+    Deferred/Lighting.frag
+    AO/XeGTAO/DepthPreFilter.comp
+    AO/XeGTAO/Denoise.comp
+    AO/XeGTAO/XeGTAO.comp
 )
 
 # Shader headers
@@ -93,14 +84,14 @@ set_property(GLOBAL PROPERTY CMAKE_CONFIGURE_DEPENDS ${SHADER_HEADERS})
 
 # For each shader to be compiled
 foreach(Shader ${SHADER_SOURCES})
-    # Get file name
-    get_filename_component(FILE_NAME ${Shader} NAME)
-    # Set resulting spir-v file name
-    set(SPIRV "${SPIRV_BINARY_DIR}/${FILE_NAME}.spv")
-    # Compile shader
+    # Extract relative path within the project
+    file(RELATIVE_PATH REL_PATH ${SHADER_SOURCE_DIR} ${Shader})
+    get_filename_component(SPIRV_DIR "${SPIRV_BINARY_DIR}/${REL_PATH}" DIRECTORY)
+    set(SPIRV "${SPIRV_BINARY_DIR}/${REL_PATH}.spv")
+    # Ensure the necessary directory structure is created
     add_custom_command(
         OUTPUT ${SPIRV}
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_BINARY_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_DIR}"
         COMMAND ${GLSL_COMPILER} ${Shader} ${SHADER_FLAGS} ${SHADER_INCLUDES} -o ${SPIRV}
         DEPENDS ${Shader} ${SHADER_HEADERS}
         COMMENT "Building GLSL shader ${Shader}"
@@ -112,5 +103,10 @@ endforeach(Shader)
 # Create custom shaders target
 add_custom_target(Shaders ALL DEPENDS ${SPIRV_BINARY_FILES})
 
-# Install
-install(FILES ${SPIRV_BINARY_FILES} DESTINATION ${SHADERS_INSTALL_DIR})
+foreach(SPIRV_FILE ${SPIRV_BINARY_FILES})
+    # Extract relative path for proper installation structure
+    file(RELATIVE_PATH REL_PATH ${SPIRV_BINARY_DIR} ${SPIRV_FILE})
+    get_filename_component(SPIRV_INSTALL_DIR "${SHADERS_INSTALL_DIR}/${REL_PATH}" DIRECTORY)
+    # Install
+    install(FILES ${SPIRV_FILE} DESTINATION ${SPIRV_INSTALL_DIR})
+endforeach()

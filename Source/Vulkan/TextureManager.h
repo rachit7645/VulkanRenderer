@@ -31,7 +31,6 @@ namespace Vk
     public:
         struct TextureInfo
         {
-            usize       pathHash;
             std::string name;
             Vk::Texture texture;
         };
@@ -73,12 +72,16 @@ namespace Vk
         );
 
         void Update(const Vk::CommandBuffer& cmdBuffer);
-        void Clear(VmaAllocator allocator);
+        void ClearUploads(VmaAllocator allocator);
 
         [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
+        void DestroyTexture(VkDevice device, VmaAllocator allocator, u32 id);
+
         void ImGuiDisplay();
+
+        [[nodiscard]] bool HasPendingUploads() const;
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
@@ -86,6 +89,8 @@ namespace Vk
         std::unordered_map<u32, Vk::Sampler> samplerMap;
     private:
         Vk::FormatHelper m_formatHelper;
+
+        std::unordered_map<usize, u32> m_nameHashToTextureIDMap;
 
         std::vector<std::pair<Vk::Texture, Texture::Upload>> m_pendingUploads;
     };

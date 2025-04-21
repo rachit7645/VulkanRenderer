@@ -29,47 +29,44 @@ namespace Renderer::Depth
     )
         : pipeline(context, formatHelper)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("DepthPass/FIF{}", i));
-        }
-
         framebufferManager.AddFramebuffer
         (
             "SceneDepth",
             Vk::FramebufferType::Depth,
-            Vk::ImageType::Single2D,
-            [] (const VkExtent2D& extent, UNUSED Vk::FramebufferManager& framebufferManager) -> Vk::FramebufferSize
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled,
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
                 {
                     .width       = extent.width,
                     .height      = extent.height,
                     .mipLevels   = 1,
-                    .arrayLayers = 1
+                    .arrayLayers = DEPTH_HISTORY_SIZE
                 };
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
-        framebufferManager.AddFramebufferView
-        (
-            "SceneDepth",
-            "SceneDepthView",
-            Vk::ImageType::Single2D,
-            Vk::FramebufferViewSize{
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            }
-        );
+        for (usize i = 0; i < DEPTH_HISTORY_SIZE; ++i)
+        {
+            framebufferManager.AddFramebufferView
+            (
+                "SceneDepth",
+                fmt::format("SceneDepthView/{}", i),
+                Vk::FramebufferImageType::Single2D,
+                Vk::FramebufferViewSize{
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = static_cast<u32>(i),
+                    .layerCount     = 1
+                }
+            );
+        }
 
         Logger::Info("{}\n", "Created depth pass!");
     }
@@ -77,37 +74,37 @@ namespace Renderer::Depth
     void RenderPass::Render
     (
         usize FIF,
-        const Scene& scene,
+        usize frameIndex,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
+        const Renderer::Scene& scene,
         const Buffers::IndirectBuffer& indirectBuffer,
         Culling::Dispatch& cullingDispatch
     )
     {
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
-
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        cullingDispatch.ComputeDispatch
+        cullingDispatch.DispatchFrustumCulling
         (
             FIF,
-            scene.projection * scene.view,
-            currentCmdBuffer,
+            scene.currentMatrices.projection * scene.currentMatrices.view,
+            cmdBuffer,
             meshBuffer,
             indirectBuffer
         );
 
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
-        const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
+        const usize currentIndex = frameIndex % DEPTH_HISTORY_SIZE;
+
+        const auto& depthAttachment     = framebufferManager.GetFramebuffer("SceneDepth");
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", currentIndex));
 
         depthAttachment.image.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
             VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
@@ -118,8 +115,8 @@ namespace Renderer::Depth
                 .aspectMask     = depthAttachment.image.aspect,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthAttachment.image.arrayLayers
+                .baseArrayLayer = static_cast<u32>(currentIndex),
+                .layerCount     = 1
             }
         );
 
@@ -154,9 +151,9 @@ namespace Renderer::Depth
             .pStencilAttachment   = nullptr
         };
 
-        vkCmdBeginRendering(currentCmdBuffer.handle, &renderInfo);
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(currentCmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -168,7 +165,7 @@ namespace Renderer::Depth
             .maxDepth = 1.0f
         };
 
-        vkCmdSetViewportWithCount(currentCmdBuffer.handle, 1, &viewport);
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
         const VkRect2D scissor =
         {
@@ -176,49 +173,45 @@ namespace Renderer::Depth
             .extent = {depthAttachment.image.width, depthAttachment.image.height}
         };
 
-        vkCmdSetScissorWithCount(currentCmdBuffer.handle, 1, &scissor);
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         pipeline.pushConstant =
         {
-            .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes        = meshBuffer.meshBuffers[FIF].deviceAddress,
-            .visibleMeshes = meshBuffer.visibleMeshBuffer.deviceAddress,
-            .positions     = geometryBuffer.positionBuffer.deviceAddress,
+            .scene       = sceneBuffer.buffers[FIF].deviceAddress,
+            .meshes      = meshBuffer.buffers[FIF].deviceAddress,
+            .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .positions   = geometryBuffer.positionBuffer.deviceAddress
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
-           currentCmdBuffer,
+           cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT,
            0, sizeof(Depth::PushConstant),
-           reinterpret_cast<void*>(&pipeline.pushConstant)
+           &pipeline.pushConstant
         );
 
-        geometryBuffer.Bind(currentCmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
         vkCmdDrawIndexedIndirectCount
         (
-            currentCmdBuffer.handle,
-            indirectBuffer.culledDrawCallBuffer.handle,
+            cmdBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             sizeof(u32),
-            indirectBuffer.culledDrawCallBuffer.handle,
+            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
             0,
-            indirectBuffer.writtenDrawCount,
+            indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
             sizeof(VkDrawIndexedIndirectCommand)
         );
 
-        vkCmdEndRendering(currentCmdBuffer.handle);
+        vkCmdEndRendering(cmdBuffer.handle);
 
-        Vk::EndLabel(currentCmdBuffer);
-
-        currentCmdBuffer.EndRecording();
+        Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::Destroy(VkDevice device, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device)
     {
         Logger::Debug("{}\n", "Destroying depth pass!");
-
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
 
         pipeline.Destroy(device);
     }

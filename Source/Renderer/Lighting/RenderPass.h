@@ -21,15 +21,9 @@
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Buffers/IndirectBuffer.h"
-#include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
-#include "Renderer/Shadow/CascadeBuffer.h"
-#include "Renderer/PointShadow/PointShadowBuffer.h"
-#include "Renderer/SpotShadow/SpotShadowBuffer.h"
 
 namespace Renderer::Lighting
 {
@@ -45,23 +39,20 @@ namespace Renderer::Lighting
             Vk::TextureManager& textureManager
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
+        usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const IBL::IBLMaps& iblMaps,
             const Buffers::SceneBuffer& sceneBuffer,
-            const Shadow::CascadeBuffer& cascadeBuffer,
-            const PointShadow::PointShadowBuffer& pointShadowBuffer,
-            const SpotShadow::SpotShadowBuffer& spotShadowBuffer
+            const IBL::IBLMaps& iblMaps
         );
 
         Lighting::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     };
 }
 

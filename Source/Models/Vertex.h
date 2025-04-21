@@ -26,10 +26,11 @@ namespace Models
     {
         glm::vec3 normal;
         glm::vec2 uv0;
-        glm::vec3 tangent;
+        glm::vec4 tangent;
     };
 
-    using Index = u32;
+    using Position = glm::vec3;
+    using Index    = u32;
 }
 
 #endif

@@ -22,30 +22,20 @@ namespace Vk
 {
     FormatHelper::FormatHelper(VkPhysicalDevice physicalDevice)
     {
-        textureFormat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R8G8B8A8_UNORM},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
-        textureFormatSRGB = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R8G8B8A8_SRGB},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
         textureFormatBC7 = FindSupportedFormat
         (
             physicalDevice,
             std::array{VK_FORMAT_BC7_UNORM_BLOCK},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+        );
+
+        textureFormatBC7SRGB = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_BC7_SRGB_BLOCK},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
@@ -58,16 +48,6 @@ namespace Vk
             std::array{VK_FORMAT_R16G16B16A16_SFLOAT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT |
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
-        textureFormatBC7SRGB = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_BC7_SRGB_BLOCK},
-            VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
@@ -95,6 +75,22 @@ namespace Vk
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT
+        );
+
+        colorAttachmentFormatHDRWithAlpha = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array
+            {
+                VK_FORMAT_R16G16B16A16_SFLOAT,
+                VK_FORMAT_R32G32B32A32_SFLOAT,
+                VK_FORMAT_R64G64B64A64_SFLOAT
+            },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
@@ -112,68 +108,64 @@ namespace Vk
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
 
-        depthStencilFormat = FindSupportedFormat
+        r8UnormFormat = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R8_UNORM},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
+        );
+
+        rUint16Format = FindSupportedFormat
         (
             physicalDevice,
             std::array
             {
-                VK_FORMAT_D24_UNORM_S8_UINT,
-                VK_FORMAT_D16_UNORM_S8_UINT,
-                VK_FORMAT_D32_SFLOAT_S8_UINT
+                VK_FORMAT_R16_UINT,
+                VK_FORMAT_R16_SINT
             },
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
 
-        rFormat = FindSupportedFormat
+        rgSFloatFormat = FindSupportedFormat
         (
             physicalDevice,
             std::array
             {
-                VK_FORMAT_R16_UNORM,
-                VK_FORMAT_R8_UNORM,
-                VK_FORMAT_R16_SFLOAT,
-                VK_FORMAT_R16_SNORM,
-                VK_FORMAT_R8_SNORM,
-                VK_FORMAT_R32_SFLOAT,
+                VK_FORMAT_R16G16_SFLOAT,
+                VK_FORMAT_R32G32_SFLOAT
             },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+        );
+
+        rgba8UnormFormat = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R8G8B8A8_UNORM},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
-        rgFormat = FindSupportedFormat
+        b10g11r11SFloat = FindSupportedFormat
         (
             physicalDevice,
-            std::array
-            {
-                VK_FORMAT_R16G16_UNORM,
-                VK_FORMAT_R8G8_UNORM,
-                VK_FORMAT_R16G16_SFLOAT,
-                VK_FORMAT_R16G16_SNORM,
-                VK_FORMAT_R8G8_SNORM,
-                VK_FORMAT_R32G32_SFLOAT,
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
-        rgFloatFormat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array
-            {
-                VK_FORMAT_R16G16_SFLOAT,
-                VK_FORMAT_R32G32_SFLOAT,
-                VK_FORMAT_B10G11R11_UFLOAT_PACK32
-            },
+            std::array{VK_FORMAT_B10G11R11_UFLOAT_PACK32},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |

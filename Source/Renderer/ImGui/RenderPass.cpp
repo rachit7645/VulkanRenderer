@@ -30,90 +30,38 @@ namespace Renderer::DearImGui
     )
         : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
-        for (usize i = 0; i < cmdBuffers.size(); ++i)
-        {
-            cmdBuffers[i] = Vk::CommandBuffer
-            (
-                context.device,
-                context.commandPool,
-                VK_COMMAND_BUFFER_LEVEL_PRIMARY
-            );
-
-            Vk::SetDebugName(context.device, cmdBuffers[i].handle, fmt::format("ImGuiPass/FIF{}", i));
-        }
-
         Logger::Info("{}\n", "Created imgui pass!");
-    }
-
-    void RenderPass::SetupBackend
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        auto& io = ImGui::GetIO();
-
-        io.BackendRendererUserData = this;
-        io.BackendRendererName     = "Rachit_DearImGui_Backend_Vulkan";
-        io.BackendFlags           |= ImGuiBackendFlags_RendererHasVtxOffset;
-        io.ConfigFlags            |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
-
-        // Load font
-        {
-            // Font data
-            u8* pixels = nullptr;
-            s32 width  = 0;
-            s32 height = 0;
-
-            io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-            const auto fontID = textureManager.AddTexture
-            (
-                megaSet,
-                context.device,
-                context.allocator,
-                "DearImGuiFont",
-                {pixels, width * (height * 4ull)},
-                {width, height},
-                formatHelper.textureFormat
-            );
-
-            io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
-        }
     }
 
     void RenderPass::Render
     (
         usize FIF,
-        const Vk::Context& context,
-        const Vk::Swapchain& swapchain,
-        const Vk::MegaSet& megaSet
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::MegaSet& megaSet,
+        const Vk::Swapchain& swapchain
     )
     {
         m_deletionQueues[FIF].FlushQueue();
 
         ImGui::Render();
+
         const auto drawData = ImGui::GetDrawData();
 
-        const auto& currentCmdBuffer = cmdBuffers[FIF];
-
-        currentCmdBuffer.Reset(0);
-        currentCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        Vk::BeginLabel(currentCmdBuffer, fmt::format("ImGuiPass/FIF{}", FIF), glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, fmt::format("ImGuiPass/FIF{}", FIF), glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
 
         if (drawData->TotalVtxCount > 0)
         {
             RenderGui
             (
                 FIF,
-                drawData,
-                currentCmdBuffer,
-                context,
+                device,
+                allocator,
+                cmdBuffer,
+                megaSet,
                 swapchain,
-                megaSet
+                drawData
             );
         }
 
@@ -121,7 +69,7 @@ namespace Renderer::DearImGui
 
         currentImage.Barrier
         (
-            currentCmdBuffer,
+            cmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
@@ -137,19 +85,18 @@ namespace Renderer::DearImGui
             }
         );
 
-        Vk::EndLabel(currentCmdBuffer);
-
-        currentCmdBuffer.EndRecording();
+        Vk::EndLabel(cmdBuffer);
     }
 
     void RenderPass::RenderGui
     (
         usize FIF,
-        const ImDrawData* drawData,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
-        const Vk::Context& context,
+        const Vk::MegaSet& megaSet,
         const Vk::Swapchain& swapchain,
-        const Vk::MegaSet& megaSet
+        const ImDrawData* drawData
     )
     {
         const auto displaySize      = glm::vec2(drawData->DisplaySize.x,      drawData->DisplaySize.y);
@@ -164,11 +111,12 @@ namespace Renderer::DearImGui
         UploadToBuffers
         (
             FIF,
-            drawData,
+            device,
+            allocator,
             cmdBuffer,
-            context,
             currentVertexBuffer,
-            currentIndexBuffer
+            currentIndexBuffer,
+            drawData
         );
 
         const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
@@ -233,7 +181,7 @@ namespace Renderer::DearImGui
         pipeline.pushConstant.translate    = glm::vec2(-1.0f) - (displayPos * pipeline.pushConstant.scale);
         pipeline.pushConstant.samplerIndex = pipeline.samplerIndex;
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -242,7 +190,7 @@ namespace Renderer::DearImGui
             &pipeline.pushConstant
         );
 
-        std::array descriptorSets = {megaSet.descriptorSet.handle};
+        std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         s32 globalVertexOffset = 0;
@@ -252,8 +200,8 @@ namespace Renderer::DearImGui
         {
             for (const auto& cmd : drawList->CmdBuffer)
             {
-                auto clipMin = glm::vec2((glm::vec2(cmd.ClipRect.x, cmd.ClipRect.y) - displayPos) * framebufferScale);
-                auto clipMax = glm::vec2((glm::vec2(cmd.ClipRect.z, cmd.ClipRect.w) - displayPos) * framebufferScale);
+                auto clipMin = (glm::vec2(cmd.ClipRect.x, cmd.ClipRect.y) - displayPos) * framebufferScale;
+                auto clipMax = (glm::vec2(cmd.ClipRect.z, cmd.ClipRect.w) - displayPos) * framebufferScale;
 
                 if (clipMin.x < 0.0f) { clipMin.x = 0.0f; }
                 if (clipMin.y < 0.0f) { clipMin.y = 0.0f; }
@@ -275,7 +223,7 @@ namespace Renderer::DearImGui
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
                 pipeline.pushConstant.textureIndex = cmd.GetTexID();
-                pipeline.LoadPushConstants
+                pipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -305,11 +253,12 @@ namespace Renderer::DearImGui
     void RenderPass::UploadToBuffers
     (
         usize FIF,
-        const ImDrawData* drawData,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
-        const Vk::Context& context,
         Vk::Buffer& vertexBuffer,
-        Vk::Buffer& indexBuffer
+        Vk::Buffer& indexBuffer,
+        const ImDrawData* drawData
     )
     {
         // Create or resize the vertex/index buffers
@@ -318,16 +267,16 @@ namespace Renderer::DearImGui
 
         if (vertexBuffer.requestedSize < vertexSize)
         {
-            Vk::SetDebugName(context.device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
+            Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, vertexBuffer] ()
+            m_deletionQueues[FIF].PushDeletor([allocator, vertexBuffer] () mutable
             {
                 vertexBuffer.Destroy(allocator);
             });
 
             vertexBuffer = Vk::Buffer
             (
-                context.allocator,
+                allocator,
                 vertexSize,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -335,23 +284,23 @@ namespace Renderer::DearImGui
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            vertexBuffer.GetDeviceAddress(context.device);
+            vertexBuffer.GetDeviceAddress(device);
 
-            Vk::SetDebugName(context.device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
+            Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
         }
 
         if (indexBuffer.requestedSize < indexSize)
         {
-            Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
+            Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator = context.allocator, indexBuffer] ()
+            m_deletionQueues[FIF].PushDeletor([allocator, indexBuffer] () mutable
             {
                 indexBuffer.Destroy(allocator);
             });
 
             indexBuffer = Vk::Buffer
             (
-                context.allocator,
+                allocator,
                 indexSize,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -359,7 +308,7 @@ namespace Renderer::DearImGui
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
+            Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
         }
 
         auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.allocationInfo.pMappedData);
@@ -399,7 +348,7 @@ namespace Renderer::DearImGui
         if (!(vertexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                context.allocator,
+                allocator,
                 vertexBuffer.allocation,
                 0,
                 vertexSize),
@@ -410,7 +359,7 @@ namespace Renderer::DearImGui
         if (!(indexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                context.allocator,
+                allocator,
                 indexBuffer.allocation,
                 0,
                 indexSize),
@@ -419,20 +368,18 @@ namespace Renderer::DearImGui
         }
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool)
+    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
         Logger::Debug("{}\n", "Destroying ImGui pass!");
 
-        Vk::CommandBuffer::Free(device, cmdPool, cmdBuffers);
-
         pipeline.Destroy(device);
 
-        for (const auto& buffer : m_vertexBuffers)
+        for (auto& buffer : m_vertexBuffers)
         {
             buffer.Destroy(allocator);
         }
 
-        for (const auto& buffer : m_indexBuffers)
+        for (auto& buffer : m_indexBuffers)
         {
             buffer.Destroy(allocator);
         }

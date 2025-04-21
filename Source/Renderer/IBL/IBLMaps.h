@@ -21,33 +21,28 @@
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
+#include "Vulkan/CommandBufferAllocator.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer::IBL
 {
     class IBLMaps
     {
     public:
-        IBLMaps
-        (
-            const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
         void Generate
         (
+            const std::string_view hdrMap,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::CommandBufferAllocator& cmdBufferAllocator,
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
         );
 
-        u32 hdrMapID     = 0;
-        u32 brdfLutID    = 0;
-        u32 skyboxID     = 0;
-        u32 irradianceID = 0;
-        u32 preFilterID  = 0;
+        std::optional<u32> brdfLutID    = std::nullopt;
+        std::optional<u32> skyboxID     = std::nullopt;
+        std::optional<u32> irradianceID = std::nullopt;
+        std::optional<u32> preFilterID  = std::nullopt;
     private:
         Vk::Buffer SetupMatrixBuffer(const Vk::Context& context);
 
@@ -56,10 +51,10 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::Buffer& matrixBuffer,
+            Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            u32 hdrMapID
         );
 
         void CreateIrradianceMap
@@ -67,10 +62,9 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::Buffer& matrixBuffer,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
         );
 
         void CreatePreFilterMap
@@ -78,10 +72,9 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::Buffer& matrixBuffer,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet
         );
 
         void CreateBRDFLUT
@@ -89,8 +82,8 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::TextureManager& textureManager,
+            Vk::MegaSet& megaSet
         );
 
         Util::DeletionQueue m_deletionQueue;

@@ -51,6 +51,8 @@ add_executable(VulkanRenderer
 	Source/Engine/AppInstance.cpp
 	Source/Engine/Window.cpp
 	Source/Engine/Inputs.cpp
+    Source/Engine/Scene.cpp
+    Source/Engine/Config.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
@@ -60,9 +62,10 @@ add_executable(VulkanRenderer
     Source/Util/SIMD.cpp
     Source/Util/AABB.cpp
     Source/Util/Plane.cpp
+    Source/Util/JSON.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
-	Source/Vulkan/ValidationLayers.cpp
+	Source/Vulkan/DebugCallback.cpp
 	Source/Vulkan/Context.cpp
 	Source/Vulkan/QueueFamilyIndices.cpp
 	Source/Vulkan/SwapchainInfo.cpp
@@ -83,6 +86,12 @@ add_executable(VulkanRenderer
     Source/Vulkan/DebugUtils.cpp
     Source/Vulkan/FormatHelper.cpp
     Source/Vulkan/FramebufferManager.cpp
+    Source/Vulkan/AccelerationStructure.cpp
+    Source/Vulkan/ShaderBindingTable.cpp
+    Source/Vulkan/DescriptorAllocator.cpp
+    Source/Vulkan/CommandBufferAllocator.cpp
+    Source/Vulkan/ImmediateSubmit.cpp
+    Source/Vulkan/Timeline.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources
@@ -95,6 +104,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Buffers/MeshBuffer.cpp
     Source/Renderer/Buffers/SceneBuffer.cpp
     Source/Renderer/Buffers/LightsBuffer.cpp
+    Source/Renderer/Buffers/DrawCallBuffer.cpp
 	# Post Process Pass Sources
 	Source/Renderer/PostProcess/Pipeline.cpp
 	Source/Renderer/PostProcess/RenderPass.cpp
@@ -117,32 +127,33 @@ add_executable(VulkanRenderer
     Source/Renderer/Bloom/RenderPass.cpp
     Source/Renderer/Bloom/DownSample/Pipeline.cpp
     Source/Renderer/Bloom/UpSample/Pipeline.cpp
-    # Shadow Pass Sources
-    Source/Renderer/Shadow/Pipeline.cpp
-    Source/Renderer/Shadow/RenderPass.cpp
-    Source/Renderer/Shadow/CascadeBuffer.cpp
     # Point Shadow Pass Sources
     Source/Renderer/PointShadow/Pipeline.cpp
     Source/Renderer/PointShadow/RenderPass.cpp
-    Source/Renderer/PointShadow/PointShadowBuffer.cpp
     # Point Shadow Pass Sources
     Source/Renderer/SpotShadow/Pipeline.cpp
     Source/Renderer/SpotShadow/RenderPass.cpp
-    Source/Renderer/SpotShadow/SpotShadowBuffer.cpp
     # Culling Dispatch Sources
     Source/Renderer/Culling/Pipeline.cpp
     Source/Renderer/Culling/Dispatch.cpp
+    Source/Renderer/Culling/FrustumBuffer.cpp
     # GBuffer Pass Sources
     Source/Renderer/GBuffer/Pipeline.cpp
     Source/Renderer/GBuffer/RenderPass.cpp
     # Lighting Pass Sources
     Source/Renderer/Lighting/Pipeline.cpp
     Source/Renderer/Lighting/RenderPass.cpp
-    # SSAO Pass Sources
-    Source/Renderer/SSAO/Occlusion/Pipeline.cpp
-    Source/Renderer/SSAO/Blur/Pipeline.cpp
-    Source/Renderer/SSAO/RenderPass.cpp
-    Source/Renderer/SSAO/SampleBuffer.cpp
+    # XeGTAO Pass Sources
+    Source/Renderer/AO/XeGTAO/RenderPass.cpp
+    Source/Renderer/AO/XeGTAO/DepthPreFilter/Pipeline.cpp
+    Source/Renderer/AO/XeGTAO/Occlusion/Pipeline.cpp
+    Source/Renderer/AO/XeGTAO/Denoise/Pipeline.cpp
+    # Shadow RT sources
+    Source/Renderer/ShadowRT/Pipeline.cpp
+    Source/Renderer/ShadowRT/RenderPass.cpp
+    # TAA Sources
+    Source/Renderer/TAA/Pipeline.cpp
+    Source/Renderer/TAA/RenderPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp
@@ -217,6 +228,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
 	<numbers>
 	<deque>
     <variant>
+    <list>
+    <queue>
     # C STL Headers
     <cstdint>
     <cstddef>
@@ -234,24 +247,20 @@ target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
 # Enable CPU vectorisation (SSE or better)
-target_compile_options(VulkanRenderer PRIVATE -march=native -msse2 -mavx -mavx2 -mf16c)
+target_compile_options(VulkanRenderer PRIVATE -msse2 -mavx -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Engine Debug Mode
 	target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
-    # Enable validation layers
-    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_ENABLE_VALIDATION)
 	# Enable debug output
 	target_compile_options(VulkanRenderer PRIVATE -g)
 endif()
 
-# Debug Without Validation config
-if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    # Engine Debug Mode
-    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
-    # Enable debug output
-    target_compile_options(VulkanRenderer PRIVATE -g)
+# Release config
+if (CMAKE_BUILD_TYPE STREQUAL Release)
+    # Release Mode
+    target_compile_definitions(VulkanRenderer PRIVATE NDEBUG)
 endif()
 
 # Add shader dependency
@@ -264,6 +273,7 @@ target_link_libraries(VulkanRenderer
 	SDL3::SDL3
 	fmt::fmt
 	fastgltf::fastgltf
+    simdjson::simdjson
 	GPUOpen::VulkanMemoryAllocator
     KTX::ktx
 	imgui
@@ -281,4 +291,8 @@ install(
 install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
 
 # Copy other directories
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX DESTINATION ${INSTALL_DIR}/Assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX    DESTINATION ${INSTALL_DIR}/Assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/Scenes DESTINATION ${INSTALL_DIR}/Assets)
+
+# Copy misc files
+install(FILES ${CMAKE_SOURCE_DIR}/Assets/Config.json DESTINATION ${INSTALL_DIR}/Assets)

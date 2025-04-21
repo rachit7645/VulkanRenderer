@@ -23,11 +23,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
-option(VOLK_PULL_IN_VULKAN OFF)
-option(VOLK_INSTALL        ON)
+set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in VOLK" FORCE)
+set(VOLK_INSTALL        OFF CACHE BOOL "Enable volk installation"          FORCE)
 
 # Libraries with CMake support
-add_subdirectory(vma/)
+add_subdirectory(VMA/)
 add_subdirectory(volk/)
 
 # ImGui source files
@@ -36,9 +36,9 @@ add_library(imgui STATIC
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
 	imgui/imgui_widgets.cpp
-	# imgui/imgui_demo.cpp
 	imgui/backends/imgui_impl_sdl3.cpp
 	imgui/misc/cpp/imgui_stdlib.cpp
+    # imgui/imgui_demo.cpp
 )
 
 # ImGui precompiled headers
@@ -62,18 +62,12 @@ target_compile_options(imgui PRIVATE -w)
 # -O3 optimisations
 target_compile_options(imgui PRIVATE -O3)
 # Enable CPU vectorisation (SSE or better)
-target_compile_options(imgui PRIVATE -march=native)
+target_compile_options(imgui PRIVATE -msse2 -mavx -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Enable debug output
 	target_compile_options(imgui PRIVATE -g)
-endif()
-
-# Debug Without Validation config
-if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    # Enable debug output
-    target_compile_options(imgui PRIVATE -g)
 endif()
 
 # Link libraries

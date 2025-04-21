@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MODELMANAGER_H
-#define MODELMANAGER_H
+#ifndef MODEL_MANAGER_H
+#define MODEL_MANAGER_H
 
 #include <unordered_map>
 
 #include "Model.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
+#include "Vulkan/CommandBufferAllocator.h"
 #include "Util/Util.h"
 
 namespace Models
@@ -35,7 +36,10 @@ namespace Models
         [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);
         [[nodiscard]] const Model& GetModel(usize modelID) const;
 
-        void Update(const Vk::Context& context);
+        void Update(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
+        void Update(const Vk::Context& context, const Vk::CommandBuffer& cmdBuffer);
+
+        void ClearUploads(VmaAllocator allocator);
 
         void ImGuiDisplay();
 

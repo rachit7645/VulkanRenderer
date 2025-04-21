@@ -17,11 +17,11 @@
 #ifndef INDIRECT_BUFFER_H
 #define INDIRECT_BUFFER_H
 
+#include "DrawCallBuffer.h"
 #include "Renderer/RenderObject.h"
 #include "Util/Util.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
-#include "Externals/VMA.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer::Buffers
@@ -41,10 +41,9 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        u32 writtenDrawCount = 0;
+        std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> drawCallBuffers;
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> drawCallBuffers;
-        Vk::Buffer                                   culledDrawCallBuffer;
+        DrawCallBuffer frustumCulledDrawCallBuffer;
     };
 }
 

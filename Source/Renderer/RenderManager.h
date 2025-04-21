@@ -17,34 +17,34 @@
 #ifndef RENDER_MANAGER_H
 #define RENDER_MANAGER_H
 
-#include <vulkan/vulkan.h>
-
-#include "RenderObject.h"
-#include "Objects/FreeCamera.h"
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
 #include "Buffers/LightsBuffer.h"
-#include "IBL/IBLMaps.h"
 #include "PostProcess/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
 #include "Skybox/RenderPass.h"
 #include "Bloom/RenderPass.h"
-#include "Shadow/RenderPass.h"
 #include "PointShadow/RenderPass.h"
 #include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "SSAO/RenderPass.h"
+#include "AO/XeGTAO/RenderPass.h"
+#include "ShadowRT/RenderPass.h"
+#include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/FramebufferManager.h"
+#include "Vulkan/AccelerationStructure.h"
+#include "Vulkan/CommandBufferAllocator.h"
+#include "Vulkan/Timeline.h"
 #include "Util/Util.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
+#include "Engine/Scene.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer
@@ -52,7 +52,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        RenderManager();
+        explicit RenderManager(const Engine::Config& config);
         ~RenderManager();
 
         // No copying
@@ -66,7 +66,7 @@ namespace Renderer
         void Render();
         [[nodiscard]] bool HandleEvents();
     private:
-        void WaitForFences();
+        void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
         void Update();
@@ -75,20 +75,20 @@ namespace Renderer
         void Resize();
 
         void InitImGui();
-        void CreateSyncObjects();
 
         // Object handles
-        Engine::Window m_window;
-        Vk::Context    m_context;
-        Vk::Swapchain  m_swapchain;
+        Engine::Window             m_window;
+        Vk::Context                m_context;
+        Vk::CommandBufferAllocator m_cmdBufferAllocator;
+        Vk::Swapchain              m_swapchain;
+        Vk::Timeline               m_timeline;
 
         Vk::FormatHelper m_formatHelper;
 
-        Vk::MegaSet            m_megaSet;
-        Vk::FramebufferManager m_framebufferManager;
-        Models::ModelManager   m_modelManager;
-
-        IBL::IBLMaps m_iblMaps;
+        Vk::MegaSet               m_megaSet;
+        Vk::FramebufferManager    m_framebufferManager;
+        Vk::AccelerationStructure m_accelerationStructure;
+        Models::ModelManager      m_modelManager;
 
         // Render Passes
         PostProcess::RenderPass m_postProcessPass;
@@ -96,13 +96,16 @@ namespace Renderer
         DearImGui::RenderPass   m_imGuiPass;
         Skybox::RenderPass      m_skyboxPass;
         Bloom::RenderPass       m_bloomPass;
-        Shadow::RenderPass      m_shadowPass;
         PointShadow::RenderPass m_pointShadowPass;
         SpotShadow::RenderPass  m_spotShadowPass;
         GBuffer::RenderPass     m_gBufferPass;
         Lighting::RenderPass    m_lightingPass;
-        SSAO::RenderPass        m_ssaoPass;
-        Culling::Dispatch       m_cullingDispatch;
+        AO::XeGTAO::RenderPass  m_xegtaoPass;
+        ShadowRT::RenderPass    m_shadowRTPass;
+        TAA::RenderPass         m_taaPass;
+
+        // Dispatches
+        Culling::Dispatch m_cullingDispatch;
 
         // Buffers
         Buffers::MeshBuffer     m_meshBuffer;
@@ -111,24 +114,17 @@ namespace Renderer
         Buffers::LightsBuffer   m_lightsBuffer;
 
         // Scene objects
-        std::vector<Renderer::RenderObject> m_renderObjects;
-        Objects::FreeCamera                 m_camera;
-
-        // Sync objects
-        std::array<VkFence, Vk::FRAMES_IN_FLIGHT> inFlightFences = {};
+        Engine::Scene m_scene;
 
         // Frame index
         usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
+        usize m_frameIndex = 0;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
 
         bool m_isSwapchainOk = true;
 
-        Scene m_scene = {};
-
-        Objects::DirLight                  m_sun;
-        std::array<Objects::PointLight, 2> m_pointLights;
-        std::array<Objects::SpotLight,  2> m_spotLights;
+        Renderer::Scene m_sceneData = {};
 
         Util::DeletionQueue m_deletionQueue = {};
     };

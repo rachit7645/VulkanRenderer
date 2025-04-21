@@ -49,6 +49,11 @@ namespace Util
         volatile u8* crash = nullptr;
         *crash = 69;
     }
+
+    constexpr usize Align(usize value, usize alignment)
+    {
+        return (value + (alignment - 1)) & ~(alignment - 1);
+    }
 }
 
 #endif

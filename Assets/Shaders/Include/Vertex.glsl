@@ -21,7 +21,7 @@ struct Vertex
 {
     vec3 normal;
     vec2 uv0;
-    vec3 tangent;
+    vec4 tangent;
 };
 
 layout(buffer_reference, scalar) readonly buffer VertexBuffer

@@ -1,0 +1,75 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460 core
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_EXT_ray_tracing          : enable
+
+#include "Constants/Shadows/ShadowRT.glsl"
+#include "MegaSet.glsl"
+#include "Packing.glsl"
+#include "Constants.glsl"
+#include "Math.glsl"
+
+layout(location = 0) rayPayloadEXT float shadowAmount;
+
+void main()
+{
+    vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
+    vec2 uv          = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
+
+    vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
+    vec3 normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
+
+    float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv).r;
+    vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
+
+    vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
+
+    float cosTheta = clamp(dot(normal, direction), 0.0f, 1.0f);
+    float bias     = RT_SHADOW_MIN_BIAS * TanArcCos(cosTheta);
+    bias           = clamp(bias, 0.0f, RT_SHADOW_MAX_BIAS);
+
+    vec3 origin = worldPosition + normal * bias;
+
+    uint  rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
+    uint  cullMask = 0xFF;
+    float tmin     = 0.001f;
+    float tmax     = Constants.Scene.farPlane;
+
+    // Assume that ray hits something, i.e, the point is in shadow
+    shadowAmount = 1.0f;
+
+    traceRayEXT
+    (
+        accelerationStructureEXT(Constants.TLAS),
+        rayFlags,
+        cullMask,
+        0,
+        0,
+        0,
+        origin,
+        tmin,
+        direction,
+        tmax,
+        0
+    );
+
+    imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f - shadowAmount, 0.0f, 0.0f, 0.0f));
+}

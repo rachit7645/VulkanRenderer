@@ -19,16 +19,13 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Vulkan/Util.h"
+#include "Util/Util.h"
 
 namespace Renderer::Lighting
 {
     struct PushConstant
     {
         VkDeviceAddress scene;
-        VkDeviceAddress cascades;
-        VkDeviceAddress pointShadows;
-        VkDeviceAddress spotShadows;
 
         u32 gBufferSamplerIndex;
         u32 iblSamplerIndex;

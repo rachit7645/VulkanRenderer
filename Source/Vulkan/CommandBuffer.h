@@ -17,10 +17,7 @@
 #ifndef COMMAND_BUFFER_H
 #define COMMAND_BUFFER_H
 
-#include <memory>
 #include <vulkan/vulkan.h>
-
-#include "Context.h"
 
 namespace Vk
 {
@@ -29,24 +26,11 @@ namespace Vk
     public:
         CommandBuffer() = default;
         CommandBuffer(VkDevice device, VkCommandPool cmdPool, VkCommandBufferLevel level);
-        CommandBuffer(VkCommandBuffer handle, VkCommandBufferLevel level);
-
-        void Free(VkDevice device, VkCommandPool cmdPool);
 
         void BeginRecording(VkCommandBufferUsageFlags usageFlags) const;
         void EndRecording() const;
 
         void Reset(VkCommandBufferResetFlags resetFlags) const;
-
-        static std::vector<CommandBuffer> Allocate
-        (
-            u32 count,
-            VkDevice device,
-            VkCommandPool cmdPool,
-            VkCommandBufferLevel level
-        );
-
-        static void Free(VkDevice device, VkCommandPool cmdPool, const std::span<const CommandBuffer> cmdBuffers);
 
         VkCommandBuffer      handle = VK_NULL_HANDLE;
         VkCommandBufferLevel level  = VK_COMMAND_BUFFER_LEVEL_PRIMARY;

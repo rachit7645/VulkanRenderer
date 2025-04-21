@@ -34,46 +34,40 @@ namespace Renderer::DearImGui
             Vk::TextureManager& textureManager
         );
 
-        void SetupBackend
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
-        void Destroy(VkDevice device, VmaAllocator allocator, VkCommandPool cmdPool);
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         void Render
         (
             usize FIF,
-            const Vk::Context& context,
-            const Vk::Swapchain& swapchain,
-            const Vk::MegaSet& megaSet
+            VkDevice device,
+            VmaAllocator allocator,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::MegaSet& megaSet,
+            const Vk::Swapchain& swapchain
         );
 
         DearImGui::Pipeline pipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
         void RenderGui
         (
             usize FIF,
-            const ImDrawData* drawData,
+            VkDevice device,
+            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
+            const Vk::MegaSet& megaSet,
             const Vk::Swapchain& swapchain,
-            const Vk::MegaSet& megaSet
+            const ImDrawData* drawData
         );
 
         void UploadToBuffers
         (
             usize FIF,
-            const ImDrawData* drawData,
+            VkDevice device,
+            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
             Vk::Buffer& vertexBuffer,
-            Vk::Buffer& indexBuffer
+            Vk::Buffer& indexBuffer,
+            const ImDrawData* drawData
         );
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_vertexBuffers;

@@ -17,10 +17,36 @@
 #ifndef MATH_GLSL
 #define MATH_GLSL
 
+// I'm too damn lazy to replace all calls to saturate
+// Fuck you Microsoft
+#define saturate(x) (clamp(x, 0.0f, 1.0f))
+
 float TanArcCos(float x)
 {
     // tan(acos(x)) = sqrt(1 - x^2) / x
-    return sqrt(1.0f - (x * x)) / x;
+
+    float numerator   = max(1.0f - (x * x), 0.0f);
+    float denominator = max(x, 0.00001f);
+
+    return sqrt(numerator) / denominator;
+}
+
+float max3(vec3 x)
+{
+    return max(x.r, max(x.g, x.b));
+}
+
+float rcp(float x)
+{
+    return 1.0f / x;
+}
+
+float pow5(float x)
+{
+    float x2 = x * x;
+    float x5 = x * (x2 * x2);
+
+    return x5;
 }
 
 #endif

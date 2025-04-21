@@ -28,71 +28,83 @@
 
 namespace Renderer::IBL
 {
-    constexpr auto HDR_MAP = "industrial_sunset_puresky_4k.hdr";
-
     constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
     constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
     constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
-    constexpr usize PREFILTER_MIPMAP_LEVELS = 5;    // TODO: Make this a non-const property
+    constexpr usize PREFILTER_MIPMAP_LEVELS = 5;
     constexpr usize PREFILTER_SAMPLE_COUNT  = 512;
-
-    IBLMaps::IBLMaps
-    (
-        const Vk::Context& context,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        // HDRi Environment Maps are always flipped for some reason idk why
-        stbi_set_flip_vertically_on_load(true);
-
-        hdrMapID = textureManager.AddTexture
-        (
-            megaSet,
-            context.device,
-            context.allocator,
-            Engine::Files::GetAssetPath("GFX/IBL/", HDR_MAP)
-        );
-
-        stbi_set_flip_vertically_on_load(false);
-    }
 
     void IBLMaps::Generate
     (
+        const std::string_view hdrMap,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Vk::GeometryBuffer& geometryBuffer,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        Models::ModelManager& modelManager,
+        Vk::MegaSet& megaSet
     )
     {
-        auto cmdBuffer = Vk::CommandBuffer
-        (
-            context.device,
-            context.commandPool,
-            VK_COMMAND_BUFFER_LEVEL_PRIMARY
-        );
+        const auto hdrMapAssetPath = Engine::Files::GetAssetPath("GFX/IBL/", hdrMap);
+
+        if (!Engine::Files::Exists(hdrMapAssetPath))
+        {
+            return;
+        }
+
+        const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         const auto matrixBuffer = SetupMatrixBuffer(context);
-
-        megaSet.Update(context.device);
 
         Vk::BeginLabel(context.graphicsQueue, "IBLMaps::Generate", {0.9215f, 0.8470f, 0.0274f, 1.0f});
 
         cmdBuffer.Reset(0);
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
+        if (skyboxID.has_value())
+        {
+            modelManager.textureManager.DestroyTexture(context.device, context.allocator, skyboxID.value());
+            skyboxID = std::nullopt;
+        }
+
+        if (irradianceID.has_value())
+        {
+            modelManager.textureManager.DestroyTexture(context.device, context.allocator, irradianceID.value());
+            irradianceID = std::nullopt;
+        }
+
+        if (preFilterID.has_value())
+        {
+            modelManager.textureManager.DestroyTexture(context.device, context.allocator, preFilterID.value());
+            preFilterID = std::nullopt;
+        }
+
+        // HDRi Environment Maps are always flipped for some reason idk why
+        stbi_set_flip_vertically_on_load(true);
+
+        const auto hdrMapID = modelManager.textureManager.AddTexture
+        (
+            megaSet,
+            context.device,
+            context.allocator,
+            hdrMapAssetPath
+        );
+
+        stbi_set_flip_vertically_on_load(false);
+
+        modelManager.Update(context, cmdBuffer);
+        megaSet.Update(context.device);
+
         CreateCubeMap
         (
             cmdBuffer,
             context,
             formatHelper,
-            geometryBuffer,
             matrixBuffer,
+            modelManager,
             megaSet,
-            textureManager
+            hdrMapID
         );
 
         CreateIrradianceMap
@@ -100,10 +112,9 @@ namespace Renderer::IBL
             cmdBuffer,
             context,
             formatHelper,
-            geometryBuffer,
             matrixBuffer,
-            megaSet,
-            textureManager
+            modelManager,
+            megaSet
         );
 
         CreatePreFilterMap
@@ -111,20 +122,22 @@ namespace Renderer::IBL
             cmdBuffer,
             context,
             formatHelper,
-            geometryBuffer,
             matrixBuffer,
-            megaSet,
-            textureManager
+            modelManager,
+            megaSet
         );
 
-        CreateBRDFLUT
-        (
-            cmdBuffer,
-            context,
-            formatHelper,
-            megaSet,
-            textureManager
-        );
+        if (!brdfLutID.has_value())
+        {
+            CreateBRDFLUT
+            (
+                cmdBuffer,
+                context,
+                formatHelper,
+                modelManager.textureManager,
+                megaSet
+            );
+        }
 
         cmdBuffer.EndRecording();
 
@@ -188,7 +201,10 @@ namespace Renderer::IBL
 
             m_deletionQueue.FlushQueue();
 
-            cmdBuffer.Free(context.device, context.commandPool);
+            cmdBufferAllocator.FreeGlobalCommandBuffer(cmdBuffer);
+
+            modelManager.ClearUploads(context.allocator);
+            modelManager.textureManager.DestroyTexture(context.device, context.allocator, hdrMapID);
         }
 
         megaSet.Update(context.device);
@@ -196,7 +212,7 @@ namespace Renderer::IBL
 
     Vk::Buffer IBLMaps::SetupMatrixBuffer(const Vk::Context& context)
     {
-        const auto projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+        const auto projection = glm::perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
         const std::array matrices =
         {
@@ -242,7 +258,7 @@ namespace Renderer::IBL
             );
         }
 
-        m_deletionQueue.PushDeletor([context, matrixBuffer]
+        m_deletionQueue.PushDeletor([context, matrixBuffer] () mutable
         {
             matrixBuffer.Destroy(context.allocator);
         });
@@ -255,13 +271,13 @@ namespace Renderer::IBL
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Vk::GeometryBuffer& geometryBuffer,
         const Vk::Buffer& matrixBuffer,
+        Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        u32 hdrMapID
     )
     {
-        auto pipeline = Converter::Pipeline(context, formatHelper, megaSet, textureManager);
+        auto pipeline = Converter::Pipeline(context, formatHelper, megaSet, modelManager.textureManager);
 
         Vk::BeginLabel(cmdBuffer, "Equirectangular To Cubemap Conversion", {0.2588f, 0.5294f, 0.9607f, 1.0f});
 
@@ -332,12 +348,7 @@ namespace Renderer::IBL
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const VkRenderingInfo renderInfo =
@@ -383,13 +394,13 @@ namespace Renderer::IBL
 
         pipeline.pushConstant =
         {
-            .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+            .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
             .textureIndex = hdrMapID
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -399,7 +410,7 @@ namespace Renderer::IBL
         );
 
         // Mega set
-        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
@@ -454,7 +465,7 @@ namespace Renderer::IBL
             }
         );
 
-        skyboxID = textureManager.AddTexture(megaSet, context.device, "Skybox", {skybox, skyboxView});
+        skyboxID = modelManager.textureManager.AddTexture(megaSet, context.device, "Skybox", {skybox, skyboxView});
         megaSet.Update(context.device);
 
         m_deletionQueue.PushDeletor([context, renderView, pipeline] () mutable
@@ -469,13 +480,12 @@ namespace Renderer::IBL
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Vk::GeometryBuffer& geometryBuffer,
         const Vk::Buffer& matrixBuffer,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Models::ModelManager& modelManager,
+        Vk::MegaSet& megaSet
     )
     {
-        auto pipeline = Convolution::Pipeline(context, formatHelper, megaSet, textureManager);
+        auto pipeline = Convolution::Pipeline(context, formatHelper, megaSet, modelManager.textureManager);
 
         Vk::BeginLabel(cmdBuffer, "Irradiance Map Generation", {0.2988f, 0.2294f, 0.6607f, 1.0f});
 
@@ -546,12 +556,7 @@ namespace Renderer::IBL
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const VkRenderingInfo renderInfo =
@@ -597,13 +602,13 @@ namespace Renderer::IBL
 
         pipeline.pushConstant =
         {
-            .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+            .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .envMapIndex  = skyboxID
+            .envMapIndex  = skyboxID.value()
         };
 
-        pipeline.LoadPushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -613,7 +618,7 @@ namespace Renderer::IBL
         );
 
         // Mega set
-        const std::array descriptorSets = {megaSet.descriptorSet.handle};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
@@ -647,7 +652,7 @@ namespace Renderer::IBL
 
         Vk::EndLabel(cmdBuffer);
 
-        irradianceID = textureManager.AddTexture(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
+        irradianceID = modelManager.textureManager.AddTexture(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
 
         m_deletionQueue.PushDeletor([context, pipeline] () mutable
         {
@@ -660,13 +665,12 @@ namespace Renderer::IBL
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Vk::GeometryBuffer& geometryBuffer,
         const Vk::Buffer& matrixBuffer,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Models::ModelManager& modelManager,
+        Vk::MegaSet& megaSet
     )
     {
-        auto pipeline = PreFilter::Pipeline(context, formatHelper, megaSet, textureManager);
+        auto pipeline = PreFilter::Pipeline(context, formatHelper, megaSet, modelManager.textureManager);
 
         Vk::BeginLabel(cmdBuffer, "PreFilter Map Generation", {0.2928f, 0.4794f, 0.6607f, 1.0f});
 
@@ -749,12 +753,7 @@ namespace Renderer::IBL
                 .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                 .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
                 .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue         = {{{
-                    Renderer::CLEAR_COLOR.r,
-                    Renderer::CLEAR_COLOR.g,
-                    Renderer::CLEAR_COLOR.b,
-                    Renderer::CLEAR_COLOR.a
-                }}}
+                .clearValue         = {}
             };
 
             const VkRenderingInfo renderInfo =
@@ -800,15 +799,15 @@ namespace Renderer::IBL
 
             pipeline.pushConstant =
             {
-                .positions    = geometryBuffer.cubeBuffer.deviceAddress,
+                .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .matrices     = matrixBuffer.deviceAddress,
                 .samplerIndex = pipeline.samplerIndex,
-                .envMapIndex  = skyboxID,
+                .envMapIndex  = skyboxID.value(),
                 .roughness    = roughness,
                 .sampleCount  = sampleCount
             };
 
-            pipeline.LoadPushConstants
+            pipeline.PushConstants
             (
                 cmdBuffer,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -818,7 +817,7 @@ namespace Renderer::IBL
             );
 
             // Mega set
-            const std::array descriptorSets = {megaSet.descriptorSet.handle};
+            const std::array descriptorSets = {megaSet.descriptorSet};
             pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
@@ -870,7 +869,7 @@ namespace Renderer::IBL
             }
         );
 
-        preFilterID = textureManager.AddTexture(megaSet, context.device, "PreFilter", {preFilter, preFilterView});
+        preFilterID = modelManager.textureManager.AddTexture(megaSet, context.device, "PreFilter", {preFilter, preFilterView});
 
         m_deletionQueue.PushDeletor([context, preFilterViews, pipeline] () mutable
         {
@@ -888,8 +887,8 @@ namespace Renderer::IBL
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Vk::TextureManager& textureManager,
+        Vk::MegaSet& megaSet
     )
     {
         auto pipeline = BRDF::Pipeline(context, formatHelper);
@@ -904,7 +903,7 @@ namespace Renderer::IBL
                 .pNext                 = nullptr,
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.rgFloatFormat,
+                .format                = formatHelper.rgSFloatFormat,
                 .extent                = {BRDF_LUT_SIZE.x, BRDF_LUT_SIZE.y, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,
@@ -963,12 +962,7 @@ namespace Renderer::IBL
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {{{
-                Renderer::CLEAR_COLOR.r,
-                Renderer::CLEAR_COLOR.g,
-                Renderer::CLEAR_COLOR.b,
-                Renderer::CLEAR_COLOR.a
-            }}}
+            .clearValue         = {}
         };
 
         const VkRenderingInfo renderInfo =

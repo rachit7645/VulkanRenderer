@@ -48,8 +48,8 @@ namespace Renderer::IBL::Convolution
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
-            .AttachShader("Convolution.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Convolution.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("IBL/Convolution.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/Convolution.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -69,7 +69,7 @@ namespace Renderer::IBL::Convolution
             )
             .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Convolution::PushConstant))
-            .AddDescriptorLayout(megaSet.descriptorSet.layout)
+            .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
         Vk::SetDebugName(context.device, handle, "ConvolutionPipeline");

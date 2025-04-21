@@ -35,22 +35,28 @@ namespace Maths
 
     glm::mat4 CreateProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane)
     {
-        // Since we force a depth range of [0, 1], we don't need to convert to that range
-        auto projection = glm::perspective(FOV, aspectRatio, nearPlane, farPlane);
+        // Since we force a depth range of [0, 1], we don't need to convert to it
+        auto projection = glm::perspectiveRH_ZO(FOV, aspectRatio, farPlane, nearPlane);
 
         // Flip Y axis for vulkan
         projection[1][1] *= -1;
 
-        // https://tomhultonharrop.com/mathematics/graphics/2023/08/06/reverse-z.html
-        constexpr auto reverseZ = glm::mat4
-        (
-            1.0f, 0.0f,  0.0f, 0.0f,
-            0.0f, 1.0f,  0.0f, 0.0f,
-            0.0f, 0.0f, -1.0f, 0.0f,
-            0.0f, 0.0f,  1.0f, 1.0f
-        );
+        return projection;
+    }
 
-        return reverseZ * projection;
+    glm::mat4 CreateInfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane)
+    {
+        const auto tanHalfFovY = std::tan(FOV / 2.0f);
+
+        auto projection = glm::zero<glm::mat4>();
+
+        projection[0][0] =  1.0f / (aspectRatio * tanHalfFovY);
+        projection[1][1] = -1.0f / tanHalfFovY; // Flip Y axis for vulkan
+        projection[2][2] =  0.0f;
+        projection[2][3] = -1.0f;
+        projection[3][2] =  nearPlane;
+
+        return projection;
     }
 
     glm::mat3 CreateNormalMatrix(const glm::mat4& transform)

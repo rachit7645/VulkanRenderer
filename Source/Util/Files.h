@@ -36,7 +36,7 @@ namespace Engine::Files
     /// @brief Get file size from path
     /// @param path Path of file
     /// @returns Size (in bytes)
-    [[nodiscard]] usize GetFileSize(const std::string_view path);
+    [[nodiscard]] usize GetSize(const std::string_view path);
     /// @brief Read file data as binary
     /// @param path Path of file
     /// @returns std::vector of binary data
@@ -49,19 +49,20 @@ namespace Engine::Files
     /// @param fileName Name of file
     /// @returns std::string of extension
     [[nodiscard]] std::string GetExtension(const std::string_view fileName);
+    /// @brief Check whether if the file exists or not
+    /// @param fileName Name of file
+    /// @returns Does the file exist or not
+    [[nodiscard]] bool Exists(const std::string_view fileName);
     /// @brief Get file name from path (constexpr version)
     /// @param path Path of file
     /// @returns std::string_view of file name from original path
     [[nodiscard]] constexpr std::string_view GetName(const std::string_view fileName)
     {
-        usize lastSlash = fileName.find_last_of(std::filesystem::path::preferred_separator);
+        const auto lastSlashPosition = fileName.find_last_of("/\\");
 
-        if (lastSlash != std::string_view::npos)
-        {
-            return fileName.substr(lastSlash + 1);
-        }
-
-        return fileName.data();
+        return (lastSlashPosition == std::string_view::npos)
+            ? fileName.data()
+            : fileName.substr(lastSlashPosition + 1);
     }
 }
 

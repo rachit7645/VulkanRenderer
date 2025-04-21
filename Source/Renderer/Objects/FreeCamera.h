@@ -18,6 +18,7 @@
 #define FREE_CAMERA_H
 
 #include "Camera.h"
+#include "Engine/Inputs.h"
 #include "Externals/GLM.h"
 
 namespace Renderer::Objects
@@ -25,22 +26,30 @@ namespace Renderer::Objects
     class FreeCamera : public Camera
     {
     public:
-        FreeCamera();
-        FreeCamera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
+        FreeCamera() = default;
 
-        void Update(f32 frameDelta) override;
-    protected:
+        FreeCamera
+        (
+            const glm::vec3& position,
+            const glm::vec3& rotation,
+            f32 FOV,
+            f32 speed,
+            f32 sensitivity,
+            f32 zoom
+        );
+
+        void Update(f32 frameDelta, Engine::Inputs& inputs) override;
         void ImGuiDisplay() override;
     private:
-        void CheckInputs(f32 frameDelta);
-        void Move(f32 frameDelta);
-        void Rotate(f32 frameDelta);
-        void Zoom(f32 frameDelta);
+        void CheckInputs(f32 frameDelta, Engine::Inputs& inputs);
+        void Move(f32 frameDelta, Engine::Inputs& inputs);
+        void Rotate(f32 frameDelta, Engine::Inputs& inputs);
+        void Zoom(f32 frameDelta, Engine::Inputs& inputs);
 
         // Settings
-        f32 speed       = 0.000015f;
-        f32 sensitivity = 0.0001f;
-        f32 zoom        = 0.000045f;
+        f32 m_speed       = 0.000015f;
+        f32 m_sensitivity = 0.0001f;
+        f32 m_zoom        = 0.000045f;
     };
 }
 

@@ -39,16 +39,15 @@ namespace Renderer::Bloom
         void Render
         (
             usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet
         );
 
-        void Destroy(VkDevice device, VkCommandPool cmdPool);
+        void Destroy(VkDevice device);
 
         DownSample::Pipeline downsamplePipeline;
         UpSample::Pipeline   upsamplePipeline;
-
-        std::array<Vk::CommandBuffer, Vk::FRAMES_IN_FLIGHT> cmdBuffers;
     private:
         void RenderDownSamples
         (

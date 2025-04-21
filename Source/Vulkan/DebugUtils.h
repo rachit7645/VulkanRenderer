@@ -23,7 +23,6 @@
 
 #include "Util.h"
 #include "CommandBuffer.h"
-#include "Externals/GLM.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -149,6 +148,12 @@ namespace Vk
     struct VulkanObjectType<VkShaderModule>
     {
         static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_SHADER_MODULE;
+    };
+
+    template <>
+    struct VulkanObjectType<VkAccelerationStructureKHR>
+    {
+        static constexpr VkObjectType ObjectType = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
     };
 
     template<typename T>

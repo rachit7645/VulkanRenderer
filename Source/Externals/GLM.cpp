@@ -16,6 +16,8 @@
 
 #include "GLM.h"
 
+#include "Util/Util.h"
+
 namespace glm
 {
     vec3 fastgltf_cast(const fastgltf::math::nvec3& vector)
@@ -43,5 +45,20 @@ namespace glm
     {
         // glm uses wxyz layout by default
         return {quat.w(), quat.x(), quat.y(), quat.z()};
+    }
+
+    VkTransformMatrixKHR vk_cast(const mat4& matrix)
+    {
+        VkTransformMatrixKHR vkTransform = {};
+
+        for (usize row = 0; row < 3; ++row)
+        {
+            for (usize col = 0; col < 4; ++col)
+            {
+                vkTransform.matrix[row][col] = matrix[col][row];
+            }
+        }
+
+        return vkTransform;
     }
 }

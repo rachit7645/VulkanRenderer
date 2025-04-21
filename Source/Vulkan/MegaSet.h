@@ -19,8 +19,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include "DescriptorSet.h"
 #include "DescriptorWriter.h"
+#include "DescriptorAllocator.h"
 #include "Sampler.h"
 #include "ImageView.h"
 
@@ -31,27 +31,37 @@ namespace Vk
     public:
         enum DescriptorBinding : u32
         {
-            SAMPLER_BINDING        = 0,
-            SAMPLED_IMAGES_BINDING = 1,
-            BINDINGS_COUNT
+            MEGA_SET_SAMPLER_BINDING        = 0,
+            MEGA_SET_SAMPLED_IMAGES_BINDING = 1,
+            MEGA_SET_STORAGE_IMAGES_BINDING = 2,
+            MEGA_SET_BINDINGS_COUNT
         };
 
-        MegaSet(VkDevice device, const VkPhysicalDeviceLimits& deviceLimits);
+        explicit MegaSet(const Vk::Context& context);
 
         [[nodiscard]] u32 WriteSampler(const Vk::Sampler& sampler);
-        [[nodiscard]] u32 WriteImage(const Vk::ImageView& imageView, VkImageLayout layout);
+        [[nodiscard]] u32 WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout);
+        [[nodiscard]] u32 WriteStorageImage(const Vk::ImageView& imageView);
+
+        void FreeSampler(u32 id);
+        void FreeSampledImage(u32 id);
+        void FreeStorageImage(u32 id);
 
         void Update(VkDevice device);
 
+        void ImGuiDisplay();
+
         void Destroy(VkDevice device);
 
-        Vk::DescriptorSet descriptorSet;
+        VkDescriptorSet       descriptorSet    = VK_NULL_HANDLE;
+        VkDescriptorSetLayout descriptorLayout = VK_NULL_HANDLE;
     private:
         VkDescriptorPool     m_descriptorPool = VK_NULL_HANDLE;
         Vk::DescriptorWriter m_writer         = {};
 
-        u32 m_samplerID = 0;
-        u32 m_imageID   = 0;
+        Vk::DescriptorAllocator m_samplerAllocator      = {};
+        Vk::DescriptorAllocator m_sampledImageAllocator = {};
+        Vk::DescriptorAllocator m_storageImageAllocator = {};
     };
 }
 
