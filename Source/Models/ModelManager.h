@@ -30,7 +30,7 @@ namespace Models
     class ModelManager
     {
     public:
-        ModelManager(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
+        ModelManager(VkDevice device, VmaAllocator allocator);
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);

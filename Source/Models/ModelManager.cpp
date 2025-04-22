@@ -21,9 +21,8 @@
 
 namespace Models
 {
-    ModelManager::ModelManager(const Vk::Context& context, const Vk::FormatHelper& formatHelper)
-        : geometryBuffer(context.device, context.allocator),
-          textureManager(formatHelper)
+    ModelManager::ModelManager(VkDevice device, VmaAllocator allocator)
+        : geometryBuffer(device, allocator)
     {
     }
 
@@ -59,8 +58,6 @@ namespace Models
         }
 
         const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             Update(context, cmdBuffer);
@@ -118,8 +115,6 @@ namespace Models
             );
         }
 
-        Vk::EndLabel(context.graphicsQueue);
-
         // Clean
         {
             ClearUploads(context.allocator);
@@ -136,8 +131,12 @@ namespace Models
             return;
         }
 
+        Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
+
         geometryBuffer.Update(cmdBuffer, context.device, context.allocator);
         textureManager.Update(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void ModelManager::ClearUploads(VmaAllocator allocator)

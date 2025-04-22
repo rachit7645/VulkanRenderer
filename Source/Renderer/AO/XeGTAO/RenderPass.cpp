@@ -216,9 +216,10 @@ namespace Renderer::AO::XeGTAO
             context.device,
             context.allocator,
             "XeGTAO/HilbertLUT",
-            {reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data()), HILBERT_SEQUENCE.size() * sizeof(u16)},
-            {XE_GTAO_HILBERT_WIDTH, XE_GTAO_HILBERT_WIDTH},
-            formatHelper.rUint16Format
+            formatHelper.rUint16Format,
+            HILBERT_SEQUENCE.data(),
+            XE_GTAO_HILBERT_WIDTH,
+            XE_GTAO_HILBERT_WIDTH
         );
 
         Logger::Info("{}\n", "Created XeGTAO pass!");

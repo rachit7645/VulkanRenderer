@@ -70,6 +70,7 @@ namespace Renderer
         void AcquireSwapchainImage();
         void BeginFrame();
         void Update();
+        void ImGuiDisplay();
         void EndFrame();
         void SubmitQueue();
         void Resize();
@@ -117,7 +118,7 @@ namespace Renderer
         Engine::Scene m_scene;
 
         // Frame index
-        usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
+        usize m_currentFIF = 0;
         usize m_frameIndex = 0;
         // Frame counter
         Util::FrameCounter m_frameCounter = {};

@@ -32,7 +32,7 @@ namespace Renderer
           m_timeline(m_context.device),
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
-          m_modelManager(m_context, m_formatHelper),
+          m_modelManager(m_context.device, m_context.allocator),
           m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_depthPass(m_context, m_formatHelper, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
@@ -89,10 +89,9 @@ namespace Renderer
 
         m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
         m_modelManager.Update(m_context, m_cmdBufferAllocator);
+        m_megaSet.Update(m_context.device);
 
         m_accelerationStructure.BuildBottomLevelAS(m_context, m_cmdBufferAllocator, m_modelManager, m_scene.renderObjects);
-
-        m_megaSet.Update(m_context.device);
 
         m_frameCounter.Reset();
     }
@@ -280,8 +279,62 @@ namespace Renderer
             m_megaSet
         );
 
-        m_window.inputs.ImGuiDisplay();
+        ImGuiDisplay();
 
+        m_sceneData.previousMatrices = m_sceneData.currentMatrices;
+
+        const auto projection = Maths::CreateInfiniteProjectionReverseZ
+        (
+            m_scene.camera.FOV,
+            static_cast<f32>(m_swapchain.extent.width) /
+            static_cast<f32>(m_swapchain.extent.height),
+            Renderer::NEAR_PLANE
+        );
+
+        auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
+        jitter     -= glm::vec2(0.5f);
+        jitter     /= glm::vec2(m_swapchain.extent.width, m_swapchain.extent.height);
+
+        auto jitteredProjection = projection;
+
+        jitteredProjection[2][0] += jitter.x;
+        jitteredProjection[2][1] += jitter.y;
+
+        const auto view = m_scene.camera.GetViewMatrix();
+
+        m_sceneData.currentMatrices  =
+        {
+            .projection         = projection,
+            .inverseProjection  = glm::inverse(jitteredProjection),
+            .jitteredProjection = jitteredProjection,
+            .view               = view,
+            .inverseView        = glm::inverse(view),
+            .normalView         = Maths::CreateNormalMatrix(view)
+        };
+
+        m_sceneData.cameraPosition = m_scene.camera.position;
+        m_sceneData.nearPlane      = Renderer::NEAR_PLANE;
+        m_sceneData.farPlane       = Renderer::FAR_PLANE; // There isn't actually a far plane right now lol
+
+        const auto lightsBuffer = m_lightsBuffer.buffers[m_currentFIF].deviceAddress;
+
+        m_sceneData.commonLight         = lightsBuffer + 0;
+        m_sceneData.dirLights           = lightsBuffer + m_lightsBuffer.GetDirLightOffset();
+        m_sceneData.pointLights         = lightsBuffer + m_lightsBuffer.GetPointLightOffset();
+        m_sceneData.shadowedPointLights = lightsBuffer + m_lightsBuffer.GetShadowedPointLightOffset();
+        m_sceneData.spotLights          = lightsBuffer + m_lightsBuffer.GetSpotLightOffset();
+        m_sceneData.shadowedSpotLights  = lightsBuffer + m_lightsBuffer.GetShadowedSpotLightOffset();
+
+        m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_scene.sun, 1}, m_scene.pointLights, m_scene.spotLights);
+        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_sceneData);
+
+        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
+        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
+    }
+
+    void RenderManager::ImGuiDisplay()
+    {
+        m_window.inputs.ImGuiDisplay();
         m_modelManager.ImGuiDisplay();
         m_framebufferManager.ImGuiDisplay();
         m_megaSet.ImGuiDisplay();
@@ -340,56 +393,6 @@ namespace Renderer
 
             ImGui::EndMainMenuBar();
         }
-
-        m_sceneData.previousMatrices = m_sceneData.currentMatrices;
-
-        const auto projection = Maths::CreateInfiniteProjectionReverseZ
-        (
-            m_scene.camera.FOV,
-            static_cast<f32>(m_swapchain.extent.width) /
-            static_cast<f32>(m_swapchain.extent.height),
-            Renderer::NEAR_PLANE
-        );
-
-        auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
-        jitter     -= glm::vec2(0.5f);
-        jitter     /= glm::vec2(m_swapchain.extent.width, m_swapchain.extent.height);
-
-        auto jitteredProjection = projection;
-
-        jitteredProjection[2][0] += jitter.x;
-        jitteredProjection[2][1] += jitter.y;
-
-        const auto view = m_scene.camera.GetViewMatrix();
-
-        m_sceneData.currentMatrices  =
-        {
-            .projection         = projection,
-            .inverseProjection  = glm::inverse(jitteredProjection),
-            .jitteredProjection = jitteredProjection,
-            .view               = view,
-            .inverseView        = glm::inverse(view),
-            .normalView         = Maths::CreateNormalMatrix(view)
-        };
-
-        m_sceneData.cameraPosition = m_scene.camera.position;
-        m_sceneData.nearPlane      = Renderer::NEAR_PLANE;
-        m_sceneData.farPlane       = Renderer::FAR_PLANE; // There isn't actually a far plane right now lol
-
-        const auto lightsBuffer = m_lightsBuffer.buffers[m_currentFIF].deviceAddress;
-
-        m_sceneData.commonLight         = lightsBuffer + 0;
-        m_sceneData.dirLights           = lightsBuffer + m_lightsBuffer.GetDirLightOffset();
-        m_sceneData.pointLights         = lightsBuffer + m_lightsBuffer.GetPointLightOffset();
-        m_sceneData.shadowedPointLights = lightsBuffer + m_lightsBuffer.GetShadowedPointLightOffset();
-        m_sceneData.spotLights          = lightsBuffer + m_lightsBuffer.GetSpotLightOffset();
-        m_sceneData.shadowedSpotLights  = lightsBuffer + m_lightsBuffer.GetShadowedSpotLightOffset();
-
-        m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_scene.sun, 1}, m_scene.pointLights, m_scene.spotLights);
-        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_sceneData);
-
-        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
-        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
     }
 
     void RenderManager::WaitForTimeline()
@@ -399,8 +402,6 @@ namespace Renderer
         {
             m_timeline.WaitForStage(m_frameIndex - Vk::FRAMES_IN_FLIGHT, Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED, m_context.device);
         }
-
-        m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
     }
 
     void RenderManager::AcquireSwapchainImage()
@@ -447,6 +448,7 @@ namespace Renderer
         Vk::EndLabel(m_context.graphicsQueue);
 
         ++m_frameIndex;
+        m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
     }
 
     void RenderManager::SubmitQueue()
@@ -635,9 +637,10 @@ namespace Renderer
                 m_context.device,
                 m_context.allocator,
                 "DearImGuiFont",
-                {pixels, width * (height * 4ull)},
-                {width, height},
-                VK_FORMAT_R8G8B8A8_UNORM
+                VK_FORMAT_R8G8B8A8_UNORM,
+                pixels,
+                width,
+                height
             );
 
             io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));

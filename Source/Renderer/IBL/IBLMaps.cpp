@@ -141,6 +141,8 @@ namespace Renderer::IBL
 
         cmdBuffer.EndRecording();
 
+        megaSet.Update(context.device);
+
         VkFence renderFence = VK_NULL_HANDLE;
 
         // Submit
@@ -206,8 +208,6 @@ namespace Renderer::IBL
             modelManager.ClearUploads(context.allocator);
             modelManager.textureManager.DestroyTexture(context.device, context.allocator, hdrMapID);
         }
-
-        megaSet.Update(context.device);
     }
 
     Vk::Buffer IBLMaps::SetupMatrixBuffer(const Vk::Context& context)
@@ -239,13 +239,6 @@ namespace Renderer::IBL
         matrixBuffer.GetDeviceAddress(context.device);
 
         Vk::SetDebugName(context.device, matrixBuffer.handle, "IBLMaps/MatrixBuffer");
-
-        std::memcpy
-        (
-            matrixBuffer.allocationInfo.pMappedData,
-            matrices.data(),
-            matrices.size() * sizeof(glm::mat4)
-        );
 
         if (!(matrixBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {

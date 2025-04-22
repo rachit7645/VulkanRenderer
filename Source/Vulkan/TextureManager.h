@@ -18,10 +18,9 @@
 #define TEXTURE_MANAGER_H
 
 #include "Texture.h"
-#include "DescriptorWriter.h"
+#include "ImageUploader.h"
 #include "Sampler.h"
 #include "MegaSet.h"
-#include "FormatHelper.h"
 #include "Util/Util.h"
 
 namespace Vk
@@ -34,8 +33,6 @@ namespace Vk
             std::string name;
             Vk::Texture texture;
         };
-
-        explicit TextureManager(const Vk::FormatHelper& formatHelper);
 
         [[nodiscard]] u32 AddTexture
         (
@@ -51,9 +48,10 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             const std::string_view name,
-            const std::span<const u8> data,
-            const glm::uvec2 size,
-            VkFormat format
+            VkFormat format,
+            const void* data,
+            u32 width,
+            u32 height
         );
 
         [[nodiscard]] u32 AddTexture
@@ -88,11 +86,9 @@ namespace Vk
         std::unordered_map<u32, TextureInfo> textureMap;
         std::unordered_map<u32, Vk::Sampler> samplerMap;
     private:
-        Vk::FormatHelper m_formatHelper;
+        Vk::ImageUploader m_imageUploader;
 
         std::unordered_map<usize, u32> m_nameHashToTextureIDMap;
-
-        std::vector<std::pair<Vk::Texture, Texture::Upload>> m_pendingUploads;
     };
 }
 

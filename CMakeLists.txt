@@ -92,6 +92,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/CommandBufferAllocator.cpp
     Source/Vulkan/ImmediateSubmit.cpp
     Source/Vulkan/Timeline.cpp
+    Source/Vulkan/ImageUploader.cpp
 	# Vulkan Builders
 	Source/Vulkan/Builders/PipelineBuilder.cpp
 	# Renderer sources

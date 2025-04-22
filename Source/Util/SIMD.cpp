@@ -38,7 +38,7 @@ namespace Util
             const __m128  src = _mm_loadu_ps(source + i);
             const __m128i dst = _mm_cvtps_ph(src, _MM_FROUND_TO_NEAREST_INT);
 
-            _mm_storeu_si64(destination + i, dst);
+            _mm_storeu_si64(reinterpret_cast<void*>(destination + i), dst);
         }
 
         for (; i < end; ++i)
