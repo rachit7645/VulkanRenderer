@@ -43,7 +43,8 @@ namespace Renderer::DearImGui
             VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::MegaSet& megaSet,
-            const Vk::Swapchain& swapchain
+            const Vk::Swapchain& swapchain,
+            Util::DeletionQueue& deletionQueue
         );
 
         DearImGui::Pipeline pipeline;
@@ -56,6 +57,7 @@ namespace Renderer::DearImGui
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::MegaSet& megaSet,
             const Vk::Swapchain& swapchain,
+            Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 
@@ -67,13 +69,12 @@ namespace Renderer::DearImGui
             const Vk::CommandBuffer& cmdBuffer,
             Vk::Buffer& vertexBuffer,
             Vk::Buffer& indexBuffer,
+            Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_vertexBuffers;
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_indexBuffers;
-
-        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues;
     };
 }
 

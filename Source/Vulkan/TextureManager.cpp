@@ -26,9 +26,10 @@ namespace Vk
 {
     u32 TextureManager::AddTexture
     (
-        Vk::MegaSet& megaSet,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
     {
@@ -41,7 +42,7 @@ namespace Vk
 
         Vk::Texture texture = {};
 
-        texture.image = m_imageUploader.LoadImageFromFile(allocator, path);
+        texture.image = m_imageUploader.LoadImageFromFile(allocator, deletionQueue, path);
 
         texture.imageView = Vk::ImageView
         (
@@ -75,9 +76,10 @@ namespace Vk
 
     u32 TextureManager::AddTexture
     (
-        Vk::MegaSet& megaSet,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue,
         const std::string_view name,
         VkFormat format,
         const void* data,
@@ -97,6 +99,7 @@ namespace Vk
         texture.image = m_imageUploader.LoadImageFromMemory
         (
             allocator,
+            deletionQueue,
             format,
             data,
             width,
@@ -184,11 +187,6 @@ namespace Vk
         m_imageUploader.FlushUploads(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void TextureManager::ClearUploads(VmaAllocator allocator)
-    {
-        m_imageUploader.ClearUploads(allocator);
     }
 
     const Texture& TextureManager::GetTexture(u32 id) const
@@ -308,7 +306,6 @@ namespace Vk
         samplerMap.clear();
 
         m_nameHashToTextureIDMap.clear();
-        m_imageUploader.ClearUploads(allocator);
 
         Logger::Info("{}\n", "Destroyed texture manager!");
     }

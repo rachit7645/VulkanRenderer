@@ -33,23 +33,27 @@ namespace Engine
         Scene
         (
             const Engine::Config& config,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
         );
 
         void Update
         (
+            const Vk::CommandBuffer& cmdBuffer,
             const Util::FrameCounter& frameCounter,
             Engine::Inputs& inputs,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
         );
+
+        void Destroy(VkDevice device);
 
         std::vector<Renderer::RenderObject>        renderObjects;
         Renderer::Objects::DirLight                sun;

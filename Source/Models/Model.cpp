@@ -38,10 +38,12 @@ namespace Models
 
     Model::Model
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
     {
@@ -95,10 +97,12 @@ namespace Models
 
         ProcessScenes
         (
-            context,
+            device,
+            allocator,
             megaSet,
             geometryBuffer,
             textureManager,
+            deletionQueue,
             assetDirectory,
             asset.get()
         );
@@ -106,10 +110,12 @@ namespace Models
 
     void Model::ProcessScenes
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue,
         const std::string& directory,
         const fastgltf::Asset& asset
     )
@@ -120,10 +126,12 @@ namespace Models
             {
                 ProcessNode
                 (
-                    context,
+                    device,
+                    allocator,
                     megaSet,
                     geometryBuffer,
                     textureManager,
+                    deletionQueue,
                     directory,
                     asset,
                     nodeIndex,
@@ -135,10 +143,12 @@ namespace Models
 
     void Model::ProcessNode
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue,
         const std::string& directory,
         const fastgltf::Asset& asset,
         usize nodeIndex,
@@ -152,10 +162,12 @@ namespace Models
         {
             LoadMesh
             (
-                context,
+                device,
+                allocator,
                 megaSet,
                 geometryBuffer,
                 textureManager,
+                deletionQueue,
                 directory,
                 asset,
                 asset.meshes[node.meshIndex.value()],
@@ -167,10 +179,12 @@ namespace Models
         {
             ProcessNode
             (
-                context,
+                device,
+                allocator,
                 megaSet,
                 geometryBuffer,
                 textureManager,
+                deletionQueue,
                 directory,
                 asset,
                 child,
@@ -181,10 +195,12 @@ namespace Models
 
     void Model::LoadMesh
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue,
         const std::string& directory,
         const fastgltf::Asset& asset,
         const fastgltf::Mesh& mesh,
@@ -382,9 +398,11 @@ namespace Models
 
                     material.albedo = LoadTexture
                     (
-                        context,
+                        device,
+                        allocator,
                         megaSet,
                         textureManager,
+                        deletionQueue,
                         directory,
                         asset,
                         baseColorTexture->textureIndex
@@ -394,9 +412,10 @@ namespace Models
                 {
                     material.albedo = textureManager.AddTexture
                     (
+                        device,
+                        allocator,
                         megaSet,
-                        context.device,
-                        context.allocator,
+                        deletionQueue,
                         Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO)
                     );
                 }
@@ -418,9 +437,11 @@ namespace Models
 
                     material.normal = LoadTexture
                     (
-                        context,
+                        device,
+                        allocator,
                         megaSet,
                         textureManager,
+                        deletionQueue,
                         directory,
                         asset,
                         mat.normalTexture->textureIndex
@@ -430,9 +451,10 @@ namespace Models
                 {
                     material.normal = textureManager.AddTexture
                     (
+                        device,
+                        allocator,
                         megaSet,
-                        context.device,
-                        context.allocator,
+                        deletionQueue,
                         Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
                     );
                 }
@@ -456,9 +478,11 @@ namespace Models
 
                     material.aoRghMtl = LoadTexture
                     (
-                        context,
+                        device,
+                        allocator,
                         megaSet,
                         textureManager,
+                        deletionQueue,
                         directory,
                         asset,
                         metallicRoughnessTexture->textureIndex
@@ -468,9 +492,10 @@ namespace Models
                 {
                     material.aoRghMtl = textureManager.AddTexture
                     (
+                        device,
+                        allocator,
                         megaSet,
-                        context.device,
-                        context.allocator,
+                        deletionQueue,
                         Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL)
                     );
                 }
@@ -478,10 +503,11 @@ namespace Models
 
             const auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUploads
             (
-                context.allocator,
+                allocator,
                 indices,
                 positions,
-                vertices
+                vertices,
+                deletionQueue
             );
 
             const auto aabb = Maths::AABB(positions);
@@ -548,9 +574,11 @@ namespace Models
 
     u32 Model::LoadTexture
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue,
         const std::string& directory,
         const fastgltf::Asset& asset,
         usize textureIndex
@@ -578,9 +606,10 @@ namespace Models
 
         return textureManager.AddTexture
         (
+            device,
+            allocator,
             megaSet,
-            context.device,
-            context.allocator,
+            deletionQueue,
             (directory + "/") + filePath.uri.c_str()
         );
     }

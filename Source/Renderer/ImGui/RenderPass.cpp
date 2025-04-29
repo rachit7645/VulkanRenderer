@@ -40,11 +40,10 @@ namespace Renderer::DearImGui
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
-        const Vk::Swapchain& swapchain
+        const Vk::Swapchain& swapchain,
+        Util::DeletionQueue& deletionQueue
     )
     {
-        m_deletionQueues[FIF].FlushQueue();
-
         ImGui::Render();
 
         const auto drawData = ImGui::GetDrawData();
@@ -61,6 +60,7 @@ namespace Renderer::DearImGui
                 cmdBuffer,
                 megaSet,
                 swapchain,
+                deletionQueue,
                 drawData
             );
         }
@@ -96,6 +96,7 @@ namespace Renderer::DearImGui
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
         const Vk::Swapchain& swapchain,
+        Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
     {
@@ -116,6 +117,7 @@ namespace Renderer::DearImGui
             cmdBuffer,
             currentVertexBuffer,
             currentIndexBuffer,
+            deletionQueue,
             drawData
         );
 
@@ -161,7 +163,7 @@ namespace Renderer::DearImGui
             cmdBuffer.handle,
             currentIndexBuffer.handle,
             0,
-            sizeof(ImDrawIdx) == 2 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32
+            sizeof(ImDrawIdx) == sizeof(u16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32
         );
 
         const VkViewport viewport =
@@ -190,7 +192,7 @@ namespace Renderer::DearImGui
             &pipeline.pushConstant
         );
 
-        std::array descriptorSets = {megaSet.descriptorSet};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         s32 globalVertexOffset = 0;
@@ -203,13 +205,9 @@ namespace Renderer::DearImGui
                 auto clipMin = (glm::vec2(cmd.ClipRect.x, cmd.ClipRect.y) - displayPos) * framebufferScale;
                 auto clipMax = (glm::vec2(cmd.ClipRect.z, cmd.ClipRect.w) - displayPos) * framebufferScale;
 
-                if (clipMin.x < 0.0f) { clipMin.x = 0.0f; }
-                if (clipMin.y < 0.0f) { clipMin.y = 0.0f; }
+                clipMin = glm::clamp(clipMin, glm::zero<glm::vec2>(), resolution);
 
-                if (clipMax.x > resolution.x) { clipMax.x = resolution.x; }
-                if (clipMax.y > resolution.y) { clipMax.y = resolution.y; }
-
-                if (clipMax.x <= clipMin.x || clipMax.y <= clipMin.y)
+                if (glm::any(glm::lessThanEqual(clipMax, clipMin)))
                 {
                     continue;
                 }
@@ -223,6 +221,7 @@ namespace Renderer::DearImGui
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
                 pipeline.pushConstant.textureIndex = cmd.GetTexID();
+
                 pipeline.PushConstants
                 (
                     cmdBuffer,
@@ -258,6 +257,7 @@ namespace Renderer::DearImGui
         const Vk::CommandBuffer& cmdBuffer,
         Vk::Buffer& vertexBuffer,
         Vk::Buffer& indexBuffer,
+        Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
     {
@@ -269,7 +269,7 @@ namespace Renderer::DearImGui
         {
             Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator, vertexBuffer] () mutable
+            deletionQueue.PushDeletor([allocator, vertexBuffer] () mutable
             {
                 vertexBuffer.Destroy(allocator);
             });
@@ -293,7 +293,7 @@ namespace Renderer::DearImGui
         {
             Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 
-            m_deletionQueues[FIF].PushDeletor([allocator, indexBuffer] () mutable
+            deletionQueue.PushDeletor([allocator, indexBuffer] () mutable
             {
                 indexBuffer.Destroy(allocator);
             });

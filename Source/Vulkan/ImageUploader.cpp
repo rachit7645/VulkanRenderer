@@ -26,7 +26,12 @@
 
 namespace Vk
 {
-    Vk::Image ImageUploader::LoadImageFromFile(VmaAllocator allocator, const std::string_view path)
+    Vk::Image ImageUploader::LoadImageFromFile
+    (
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view path
+    )
     {
         Vk::Buffer                      buffer      = {};
         std::vector<VkBufferImageCopy2> copyRegions = {};
@@ -200,21 +205,27 @@ namespace Vk
 
         m_pendingUploads.emplace_back(image, buffer, copyRegions);
 
+        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        {
+            buffer.Destroy(allocator);
+        });
+
         return image;
     }
 
     Vk::Image ImageUploader::LoadImageFromMemory
     (
         VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
         VkFormat format,
         const void* data,
         u32 width,
         u32 height
     )
     {
-        const VkDeviceSize dataSize = width * height * vkuFormatTexelSize(format);
+        const VkDeviceSize dataSize = width * height * static_cast<VkDeviceSize>(vkuFormatTexelSize(format));
         
-        const auto stagingBuffer = Vk::Buffer
+        auto buffer = Vk::Buffer
         (
             allocator,
             dataSize,
@@ -224,7 +235,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocationInfo.pMappedData, data, dataSize);
+        std::memcpy(buffer.allocationInfo.pMappedData, data, dataSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 
@@ -267,7 +278,12 @@ namespace Vk
             VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        m_pendingUploads.emplace_back(image, stagingBuffer, std::move(copyRegions));
+        m_pendingUploads.emplace_back(image, buffer, std::move(copyRegions));
+
+        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        {
+            buffer.Destroy(allocator);
+        });
 
         return image;
     }
@@ -355,7 +371,7 @@ namespace Vk
                     .pNext               = nullptr,
                     .srcStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT,
                     .srcAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask        = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstStageMask        = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                     .dstAccessMask       = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                     .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -386,14 +402,6 @@ namespace Vk
             };
 
             vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
-        }
-    }
-
-    void ImageUploader::ClearUploads(VmaAllocator allocator)
-    {
-        for (auto& upload : m_pendingUploads)
-        {
-            upload.buffer.Destroy(allocator);
         }
 
         m_pendingUploads.clear();

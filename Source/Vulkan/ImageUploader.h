@@ -27,18 +27,17 @@ namespace Vk
     class ImageUploader
     {
     public:
-        struct Upload
-        {
-            Vk::Image                       image;
-            Vk::Buffer                      buffer;
-            std::vector<VkBufferImageCopy2> copyRegions;
-        };
-
-        Vk::Image LoadImageFromFile(VmaAllocator allocator, const std::string_view path);
+        Vk::Image LoadImageFromFile
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view path
+        );
 
         Vk::Image LoadImageFromMemory
         (
             VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
             VkFormat format,
             const void* data,
             u32 width,
@@ -46,10 +45,16 @@ namespace Vk
         );
 
         void FlushUploads(const Vk::CommandBuffer& cmdBuffer);
-        void ClearUploads(VmaAllocator allocator);
 
-        bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads() const;
     private:
+        struct Upload
+        {
+            Vk::Image                       image;
+            Vk::Buffer                      buffer;
+            std::vector<VkBufferImageCopy2> copyRegions;
+        };
+
         std::vector<Upload> m_pendingUploads;
     };
 }

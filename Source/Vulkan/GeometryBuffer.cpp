@@ -56,7 +56,8 @@ namespace Vk
         VmaAllocator allocator,
         const std::span<const Models::Index> indices,
         const std::span<const Models::Position> positions,
-        const std::span<const Models::Vertex> vertices
+        const std::span<const Models::Vertex> vertices,
+        Util::DeletionQueue& deletionQueue
     )
     {
         const auto indexInfo = SetupUpload
@@ -64,7 +65,8 @@ namespace Vk
             allocator,
             indices,
             indexCount,
-            m_pendingIndexUploads
+            m_pendingIndexUploads,
+            deletionQueue
         );
 
         const auto positionInfo = SetupUpload
@@ -72,7 +74,8 @@ namespace Vk
             allocator,
             positions,
             positionCount,
-            m_pendingPositionUploads
+            m_pendingPositionUploads,
+            deletionQueue
         );
 
         const auto vertexInfo = SetupUpload
@@ -80,7 +83,8 @@ namespace Vk
             allocator,
             vertices,
             vertexCount,
-            m_pendingVertexUploads
+            m_pendingVertexUploads,
+            deletionQueue
         );
 
         return {indexInfo, positionInfo, vertexInfo};
@@ -90,7 +94,8 @@ namespace Vk
     (
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
-        VmaAllocator allocator
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (!HasPendingUploads())
@@ -100,7 +105,7 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
-        ResizeBuffers(cmdBuffer, device, allocator);
+        ResizeBuffers(cmdBuffer, device, allocator, deletionQueue);
 
         Vk::BeginLabel(cmdBuffer, "Index Transfer", {0.8901f, 0.0549f, 0.3607f, 1.0f});
 
@@ -110,8 +115,8 @@ namespace Vk
             indexBuffer,
             m_pendingIndexUploads,
             sizeof(Models::Index),
-            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-            VK_ACCESS_2_INDEX_READ_BIT
+            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+            VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -124,8 +129,8 @@ namespace Vk
             positionBuffer,
             m_pendingPositionUploads,
             sizeof(Models::Position),
-            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+            VK_ACCESS_2_SHADER_READ_BIT
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -144,17 +149,16 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
-        if (m_cubeStagingBuffer.has_value())
+        if (m_pendingCubeUpload.has_value())
         {
             Vk::BeginLabel(cmdBuffer, "Cube Transfer", {0.5117f, 0.0749f, 0.3901f, 1.0f});
 
-            UploadToBuffer
+            FlushUploads
             (
                 cmdBuffer,
-                m_cubeStagingBuffer.value(),
                 cubeBuffer,
-                0,
-                36 * sizeof(glm::vec3),
+                std::span(&m_pendingCubeUpload.value(), 1),
+                sizeof(f32),
                 VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 VK_ACCESS_2_SHADER_STORAGE_READ_BIT
             );
@@ -163,31 +167,15 @@ namespace Vk
         }
 
         Vk::EndLabel(cmdBuffer);
-    }
 
-    void GeometryBuffer::ClearUploads(VmaAllocator allocator)
-    {
-        m_deletionQueue.FlushQueue();
-
-        for (auto& buffer : m_pendingIndexUploads | std::views::values)
+        if (m_pendingCubeUpload.has_value())
         {
-            buffer.Destroy(allocator);
-        }
+            deletionQueue.PushDeletor([allocator, buffer = m_pendingCubeUpload->buffer] () mutable
+            {
+                buffer.Destroy(allocator);
+            });
 
-        for (auto& buffer : m_pendingPositionUploads | std::views::values)
-        {
-            buffer.Destroy(allocator);
-        }
-
-        for (auto& buffer : m_pendingVertexUploads | std::views::values)
-        {
-            buffer.Destroy(allocator);
-        }
-
-        if (m_cubeStagingBuffer.has_value())
-        {
-            m_cubeStagingBuffer->Destroy(allocator);
-            m_cubeStagingBuffer = std::nullopt;
+            m_pendingCubeUpload = std::nullopt;
         }
 
         m_pendingIndexUploads.clear();
@@ -197,56 +185,54 @@ namespace Vk
 
     void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
     {
-        constexpr f32 SKYBOX_SIZE = 1.0f;
-
-        constexpr std::array SKYBOX_VERTICES =
+        constexpr std::array CUBE_VERTICES =
         {
-            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
-            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
-            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
 
-            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
-            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
-            -SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
-            -SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
-            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
 
-             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
-             SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
-             SKYBOX_SIZE,  SKYBOX_SIZE,  SKYBOX_SIZE,
-             SKYBOX_SIZE,  SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
 
-            -SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
-            -SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
-             SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
-             SKYBOX_SIZE,  SKYBOX_SIZE, SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
-            -SKYBOX_SIZE, -SKYBOX_SIZE, SKYBOX_SIZE,
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
 
-            -SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
-             SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
-            -SKYBOX_SIZE, SKYBOX_SIZE,  SKYBOX_SIZE,
-            -SKYBOX_SIZE, SKYBOX_SIZE, -SKYBOX_SIZE,
+            -1.0f,  1.0f, -1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
 
-            -SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE, -SKYBOX_SIZE,
-            -SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE,
-             SKYBOX_SIZE, -SKYBOX_SIZE,  SKYBOX_SIZE
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+             1.0f, -1.0f,  1.0f
         };
 
-        constexpr usize VERTICES_SIZE = SKYBOX_VERTICES.size() * sizeof(f32);
+        constexpr VkDeviceSize VERTICES_SIZE = CUBE_VERTICES.size() * sizeof(f32);
 
-        m_cubeStagingBuffer = Vk::Buffer
+        auto cubeStagingBuffer = Vk::Buffer
         (
             allocator,
             VERTICES_SIZE,
@@ -256,7 +242,16 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(m_cubeStagingBuffer->allocationInfo.pMappedData, SKYBOX_VERTICES.data(), VERTICES_SIZE);
+        std::memcpy(cubeStagingBuffer.allocationInfo.pMappedData, CUBE_VERTICES.data(), VERTICES_SIZE);
+
+        m_pendingCubeUpload = GeometryBuffer::Upload
+        {
+            .info = GeometryBuffer::Info{
+                .offset = 0,
+                .count  = CUBE_VERTICES.size()
+            },
+            .buffer = cubeStagingBuffer
+        };
     }
 
     template<typename T>
@@ -265,7 +260,8 @@ namespace Vk
         VmaAllocator allocator,
         const std::span<const T> data,
         u32& offset,
-        std::vector<Upload>& uploads
+        std::vector<Upload>& uploads,
+        Util::DeletionQueue& deletionQueue
     )
     {
         const auto stagingBuffer = Vk::Buffer
@@ -290,18 +286,27 @@ namespace Vk
 
         offset += data.size();
 
+        deletionQueue.PushDeletor([allocator, buffer = stagingBuffer] () mutable
+        {
+            buffer.Destroy(allocator);
+        });
+
         return info;
     }
 
     void GeometryBuffer::ResizeBuffer
     (
         const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
         VmaAllocator allocator,
         u32 count,
-        const std::span<const Upload> uploads,
         usize elementSize,
+        const std::span<const Upload> uploads,
         VkBufferUsageFlags usage,
-        Vk::Buffer& buffer
+        VkPipelineStageFlags2 srcStageMask,
+        VkAccessFlags2 srcAccessMask,
+        Vk::Buffer& buffer,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (count == 0)
@@ -313,10 +318,18 @@ namespace Vk
         {
             u32 pendingCount = 0;
 
-            for (const auto [_, count] : uploads | std::views::keys)
+            for (const auto& upload : uploads)
             {
-                pendingCount += count;
+                pendingCount += upload.info.count;
             }
+
+            if (pendingCount > count)
+            {
+                Logger::Error("{}\n", "Pending count exceeds total count!");
+            }
+
+            const u32          oldCount = count - pendingCount;
+            const VkDeviceSize oldSize  = oldCount * elementSize;
 
             auto oldBuffer = buffer;
 
@@ -332,15 +345,28 @@ namespace Vk
                 VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
             );
 
-            if (oldBuffer.handle != VK_NULL_HANDLE && (count - pendingCount) > 0)
+            buffer.GetDeviceAddress(device);
+
+            if (oldBuffer.handle != VK_NULL_HANDLE && oldCount > 0)
             {
+                oldBuffer.Barrier
+                (
+                    cmdBuffer,
+                    srcStageMask,
+                    srcAccessMask,
+                    VK_PIPELINE_STAGE_2_COPY_BIT,
+                    VK_ACCESS_2_TRANSFER_READ_BIT,
+                    0,
+                    oldSize
+                );
+
                 const VkBufferCopy2 copyRegion =
                 {
                     .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
                     .pNext     = nullptr,
                     .srcOffset = 0,
                     .dstOffset = 0,
-                    .size      = (count - pendingCount) * elementSize
+                    .size      = oldSize
                 };
 
                 const VkCopyBufferInfo2 copyInfo =
@@ -356,9 +382,9 @@ namespace Vk
                 vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
             }
 
-            m_deletionQueue.PushDeletor([oldBuffer, allocator] () mutable
+            deletionQueue.PushDeletor([allocator, buffer = oldBuffer] () mutable
             {
-                oldBuffer.Destroy(allocator);
+                buffer.Destroy(allocator);
             });
         }
     }
@@ -367,57 +393,65 @@ namespace Vk
     (
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
-        VmaAllocator allocator
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue
     )
     {
         ResizeBuffer
         (
             cmdBuffer,
+            device,
             allocator,
             indexCount,
-            m_pendingIndexUploads,
             sizeof(Models::Index),
+            m_pendingIndexUploads,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-            indexBuffer
+            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+            VK_ACCESS_2_INDEX_READ_BIT,
+            indexBuffer,
+            deletionQueue
         );
 
         ResizeBuffer
         (
             cmdBuffer,
+            device,
             allocator,
             positionCount,
-            m_pendingPositionUploads,
             sizeof(Models::Position),
+            m_pendingPositionUploads,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-            positionBuffer
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+            positionBuffer,
+            deletionQueue
         );
 
         ResizeBuffer
         (
             cmdBuffer,
+            device,
             allocator,
             vertexCount,
-            m_pendingVertexUploads,
             sizeof(Models::Vertex),
+            m_pendingVertexUploads,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-            vertexBuffer
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+            vertexBuffer,
+            deletionQueue
         );
-
-        indexBuffer.GetDeviceAddress(device);
-        positionBuffer.GetDeviceAddress(device);
-        vertexBuffer.GetDeviceAddress(device);
 
         Vk::SetDebugName(device, indexBuffer.handle,    "GeometryBuffer/IndexBuffer");
         Vk::SetDebugName(device, positionBuffer.handle, "GeometryBuffer/PositionBuffer");
@@ -428,79 +462,76 @@ namespace Vk
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Buffer& destination,
-        const std::vector<Upload>& uploads,
+        const std::span<const Upload> uploads,
         usize elementSize,
         VkPipelineStageFlags2 dstStageMask,
         VkAccessFlags2 dstAccessMask
     )
     {
-        for (const auto& [info, stagingBuffer] : uploads)
+        // Copy
         {
-            UploadToBuffer
-            (
-                cmdBuffer,
-                stagingBuffer,
-                destination,
-                info.offset * elementSize,
-                info.count * elementSize,
-                dstStageMask,
-                dstAccessMask
-            );
-        }
-    }
+            for (const auto& [info, stagingBuffer] : uploads)
+            {
+                const VkBufferCopy2 copyRegion =
+                {
+                    .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                    .pNext     = nullptr,
+                    .srcOffset = 0,
+                    .dstOffset = info.offset * elementSize,
+                    .size      = info.count  * elementSize
+                };
 
-    void GeometryBuffer::UploadToBuffer
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        const Vk::Buffer& source,
-        const Vk::Buffer& destination,
-        VkDeviceSize offsetBytes,
-        VkDeviceSize sizeBytes,
-        VkPipelineStageFlags2 dstStageMask,
-        VkAccessFlags2 dstAccessMask
-    )
-    {
-        if ((sizeBytes + offsetBytes) > destination.requestedSize)
-        {
-            Logger::Error
-            (
-                "Not enough space in destination buffer! [Required={}] [Available={}]\n",
-                sizeBytes,
-                destination.requestedSize - offsetBytes
-            );
+                const VkCopyBufferInfo2 copyInfo =
+                {
+                    .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                    .pNext       = nullptr,
+                    .srcBuffer   = stagingBuffer.handle,
+                    .dstBuffer   = destination.handle,
+                    .regionCount = 1,
+                    .pRegions    = &copyRegion
+                };
+
+                vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+            }
         }
 
-        const VkBufferCopy2 copyRegion =
+        // Barriers
         {
-            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-            .pNext     = nullptr,
-            .srcOffset = 0,
-            .dstOffset = offsetBytes,
-            .size      = sizeBytes
-        };
+            std::vector<VkBufferMemoryBarrier2> copyToDstBarriers = {};
+            copyToDstBarriers.reserve(uploads.size());
 
-        const VkCopyBufferInfo2 copyInfo =
-        {
-            .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-            .pNext       = nullptr,
-            .srcBuffer   = source.handle,
-            .dstBuffer   = destination.handle,
-            .regionCount = 1,
-            .pRegions    = &copyRegion
-        };
+            for (const auto& [info, stagingBuffer] : uploads)
+            {
+                copyToDstBarriers.emplace_back(VkBufferMemoryBarrier2{
+                    .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+                    .pNext               = nullptr,
+                    .srcStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask        = dstStageMask,
+                    .dstAccessMask       = dstAccessMask,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .buffer              = destination.handle,
+                    .offset              = info.offset * elementSize,
+                    .size                = info.count  * elementSize
+                });
+            }
 
-        vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+            const VkDependencyInfo dependencyInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .pNext                    = nullptr,
+                .dependencyFlags          = 0,
+                .memoryBarrierCount       = 0,
+                .pMemoryBarriers          = nullptr,
+                .bufferMemoryBarrierCount = static_cast<u32>(copyToDstBarriers.size()),
+                .pBufferMemoryBarriers    = copyToDstBarriers.data(),
+                .imageMemoryBarrierCount  = 0,
+                .pImageMemoryBarriers     = nullptr
+            };
 
-        destination.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            dstStageMask,
-            dstAccessMask,
-            offsetBytes,
-            sizeBytes
-        );
+            vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+        }
     }
 
     void GeometryBuffer::ImGuiDisplay() const
@@ -549,7 +580,7 @@ namespace Vk
     bool GeometryBuffer::HasPendingUploads() const
     {
         return !m_pendingIndexUploads.empty()  || !m_pendingPositionUploads.empty() ||
-               !m_pendingVertexUploads.empty() || m_cubeStagingBuffer.has_value();
+               !m_pendingVertexUploads.empty() || m_pendingCubeUpload.has_value();
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator)
@@ -558,5 +589,14 @@ namespace Vk
         positionBuffer.Destroy(allocator);
         vertexBuffer.Destroy(allocator);
         cubeBuffer.Destroy(allocator);
+
+        if (m_pendingCubeUpload.has_value())
+        {
+            m_pendingCubeUpload = std::nullopt;
+        }
+
+        m_pendingIndexUploads.clear();
+        m_pendingPositionUploads.clear();
+        m_pendingVertexUploads.clear();
     }
 }

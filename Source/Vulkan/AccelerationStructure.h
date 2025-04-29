@@ -21,7 +21,7 @@
 #include "CommandBuffer.h"
 #include "Context.h"
 #include "Buffer.h"
-#include "CommandBufferAllocator.h"
+#include "Timeline.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"
 
@@ -39,10 +39,22 @@ namespace Vk
 
         void BuildBottomLevelAS
         (
-            const Vk::Context& context,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+            usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator,
             const Models::ModelManager& modelManager,
-            const std::span<const Renderer::RenderObject> renderObjects
+            const std::span<const Renderer::RenderObject> renderObjects,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        void TryCompactBottomLevelAS
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator,
+            const Vk::Timeline& timeline,
+            Util::DeletionQueue& deletionQueue
         );
 
         void BuildTopLevelAS
@@ -51,7 +63,8 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
-            const std::span<const Renderer::RenderObject> renderObjects
+            const std::span<const Renderer::RenderObject> renderObjects,
+            Util::DeletionQueue& deletionQueue
         );
 
         void Destroy(VkDevice device, VmaAllocator allocator);
@@ -62,7 +75,8 @@ namespace Vk
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_instanceBuffers;
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_scratchBuffers;
 
-        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues;
+        VkQueryPool m_compactionQueryPool        = VK_NULL_HANDLE;
+        usize       m_initialBLASBuildFrameIndex = 0;
     };
 }
 

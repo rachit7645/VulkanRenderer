@@ -17,11 +17,14 @@
 #ifndef IBL_MAPS_H
 #define IBL_MAPS_H
 
+#include "Convolution/Pipeline.h"
+#include "BRDF/Pipeline.h"
+#include "Converter/Pipeline.h"
+#include "PreFilter/Pipeline.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/CommandBufferAllocator.h"
 #include "Models/ModelManager.h"
 
 namespace Renderer::IBL
@@ -31,20 +34,23 @@ namespace Renderer::IBL
     public:
         void Generate
         (
-            const std::string_view hdrMap,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view hdrMap
         );
+
+        void Destroy(VkDevice device);
 
         std::optional<u32> brdfLutID    = std::nullopt;
         std::optional<u32> skyboxID     = std::nullopt;
         std::optional<u32> irradianceID = std::nullopt;
         std::optional<u32> preFilterID  = std::nullopt;
     private:
-        Vk::Buffer SetupMatrixBuffer(const Vk::Context& context);
+        Vk::Buffer SetupMatrixBuffer(const Vk::Context& context, Util::DeletionQueue& deletionQueue);
 
         void CreateCubeMap
         (
@@ -54,6 +60,7 @@ namespace Renderer::IBL
             const Vk::Buffer& matrixBuffer,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue,
             u32 hdrMapID
         );
 
@@ -74,7 +81,8 @@ namespace Renderer::IBL
             const Vk::FormatHelper& formatHelper,
             const Vk::Buffer& matrixBuffer,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
         );
 
         void CreateBRDFLUT
@@ -86,7 +94,10 @@ namespace Renderer::IBL
             Vk::MegaSet& megaSet
         );
 
-        Util::DeletionQueue m_deletionQueue;
+        std::optional<Converter::Pipeline>   m_converterPipeline   = std::nullopt;
+        std::optional<Convolution::Pipeline> m_convolutionPipeline = std::nullopt;
+        std::optional<PreFilter::Pipeline>   m_preFilterPipeline   = std::nullopt;
+        std::optional<BRDF::Pipeline>        m_brdfLutPipeline     = std::nullopt;
     };
 }
 

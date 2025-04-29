@@ -46,17 +46,17 @@ namespace Vk
             VmaAllocator allocator,
             const std::span<const Models::Index> indices,
             const std::span<const Models::Position> positions,
-            const std::span<const Models::Vertex> vertices
+            const std::span<const Models::Vertex> vertices,
+            Util::DeletionQueue& deletionQueue
         );
 
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
-            VmaAllocator allocator
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue
         );
-
-        void ClearUploads(VmaAllocator allocator);
 
         void ImGuiDisplay() const;
 
@@ -72,7 +72,11 @@ namespace Vk
         u32 positionCount = 0;
         u32 vertexCount   = 0;
     private:
-        using Upload = std::pair<GeometryBuffer::Info, Vk::Buffer>;
+        struct Upload
+        {
+            GeometryBuffer::Info info;
+            Vk::Buffer           buffer;
+        };
 
         void SetupCubeUpload(VmaAllocator allocator);
 
@@ -82,44 +86,39 @@ namespace Vk
             VmaAllocator allocator,
             const std::span<const T> data,
             u32& offset,
-            std::vector<Upload>& uploads
+            std::vector<Upload>& uploads,
+            Util::DeletionQueue& deletionQueue
         );
 
         void ResizeBuffer
         (
             const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
             VmaAllocator allocator,
             u32 count,
-            const std::span<const Upload> uploads,
             usize elementSize,
+            const std::span<const Upload> uploads,
             VkBufferUsageFlags usage,
-            Vk::Buffer& buffer
+            VkPipelineStageFlags2 srcStageMask,
+            VkAccessFlags2 srcAccessMask,
+            Vk::Buffer& buffer,
+            Util::DeletionQueue& deletionQueue
         );
 
         void ResizeBuffers
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
-            VmaAllocator allocator
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue
         );
 
         void FlushUploads
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Buffer& destination,
-            const std::vector<Upload>& uploads,
+            const std::span<const Upload> uploads,
             usize elementSize,
-            VkPipelineStageFlags2 dstStageMask,
-            VkAccessFlags2 dstAccessMask
-        );
-
-        void UploadToBuffer
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Buffer& source,
-            const Vk::Buffer& destination,
-            VkDeviceSize offsetBytes,
-            VkDeviceSize sizeBytes,
             VkPipelineStageFlags2 dstStageMask,
             VkAccessFlags2 dstAccessMask
         );
@@ -128,9 +127,7 @@ namespace Vk
         std::vector<Upload> m_pendingPositionUploads;
         std::vector<Upload> m_pendingVertexUploads;
 
-        std::optional<Vk::Buffer> m_cubeStagingBuffer;
-
-        Util::DeletionQueue m_deletionQueue;
+        std::optional<Upload> m_pendingCubeUpload;
     };
 }
 

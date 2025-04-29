@@ -16,9 +16,8 @@
 
 #include "RenderPass.h"
 
-#include <Renderer/RenderConstants.h>
-#include <Renderer/Depth/RenderPass.h>
-
+#include "Renderer/Depth/RenderPass.h"
+#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Maths.h"
@@ -36,7 +35,6 @@ namespace Renderer::AO::XeGTAO
     RenderPass::RenderPass
     (
         const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
         Vk::FramebufferManager& framebufferManager,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
@@ -208,20 +206,6 @@ namespace Renderer::AO::XeGTAO
             }
         );
 
-        constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<XE_GTAO_HILBERT_LEVEL>();
-
-        hilbertLUT = textureManager.AddTexture
-        (
-            megaSet,
-            context.device,
-            context.allocator,
-            "XeGTAO/HilbertLUT",
-            formatHelper.rUint16Format,
-            HILBERT_SEQUENCE.data(),
-            XE_GTAO_HILBERT_WIDTH,
-            XE_GTAO_HILBERT_WIDTH
-        );
-
         Logger::Info("{}\n", "Created XeGTAO pass!");
     }
 
@@ -230,9 +214,14 @@ namespace Renderer::AO::XeGTAO
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::FormatHelper& formatHelper,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet,
-        const Buffers::SceneBuffer& sceneBuffer
+        const Buffers::SceneBuffer& sceneBuffer,
+        Vk::MegaSet& megaSet,
+        Models::ModelManager& modelManager,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -251,6 +240,27 @@ namespace Renderer::AO::XeGTAO
         }
 
         Vk::BeginLabel(cmdBuffer, fmt::format("XeGTAOPass/FIF{}", FIF), glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
+
+        if (!hilbertLUT.has_value())
+        {
+            constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<XE_GTAO_HILBERT_LEVEL>();
+
+            hilbertLUT = modelManager.textureManager.AddTexture
+            (
+                device,
+                allocator,
+                megaSet,
+                deletionQueue,
+                "XeGTAO/HilbertLUT",
+                formatHelper.rUint16Format,
+                HILBERT_SEQUENCE.data(),
+                XE_GTAO_HILBERT_WIDTH,
+                XE_GTAO_HILBERT_WIDTH
+            );
+
+            modelManager.Update(cmdBuffer, device, allocator, deletionQueue);
+            megaSet.Update(device);
+        }
 
         PreFilterDepth
         (
@@ -420,7 +430,7 @@ namespace Renderer::AO::XeGTAO
         {
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .samplerIndex        = occlusionPipeline.samplerIndex,
-            .hilbertLUTIndex     = hilbertLUT,
+            .hilbertLUTIndex     = hilbertLUT.value(),
             .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
             .viewSpaceDepthIndex = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView").sampledImageIndex,
             .outWorkingEdges     = framebufferManager.GetFramebufferView("XeGTAO/EdgesView").storageImageIndex,

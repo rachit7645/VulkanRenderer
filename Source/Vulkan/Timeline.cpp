@@ -144,7 +144,7 @@ namespace Vk
         return (frameIndex + 1) * TimelineStage::TIMELINE_STAGE_COUNT + timelineStage;
     }
 
-    void Timeline::WaitForStage(usize frameIndex, TimelineStage timelineStage, VkDevice device)
+    void Timeline::WaitForStage(usize frameIndex, TimelineStage timelineStage, VkDevice device) const
     {
         const u64 value = GetTimelineValue(frameIndex, timelineStage);
 
@@ -164,6 +164,21 @@ namespace Vk
             std::numeric_limits<u64>::max()),
             "Failed to wait for semaphore!"
         );
+    }
+
+    bool Timeline::IsAtOrPastState(usize frameIndex, TimelineStage timelineStage, VkDevice device) const
+    {
+        const u64 value = GetTimelineValue(frameIndex, timelineStage);
+
+        u64 currentValue = 0;
+        Vk::CheckResult(vkGetSemaphoreCounterValue(
+            device,
+            semaphore,
+            &currentValue),
+            "Failed to get semaphore counter value!"
+        );
+
+        return currentValue >= value;
     }
 
     void Timeline::Destroy(VkDevice device)

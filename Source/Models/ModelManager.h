@@ -33,13 +33,24 @@ namespace Models
         ModelManager(VkDevice device, VmaAllocator allocator);
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        [[nodiscard]] usize AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path);
+        [[nodiscard]] usize AddModel
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view path
+        );
+
         [[nodiscard]] const Model& GetModel(usize modelID) const;
 
-        void Update(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
-        void Update(const Vk::Context& context, const Vk::CommandBuffer& cmdBuffer);
-
-        void ClearUploads(VmaAllocator allocator);
+        void Update
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue
+        );
 
         void ImGuiDisplay();
 

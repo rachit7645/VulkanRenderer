@@ -67,22 +67,12 @@ namespace Vk
             &handle,
             &allocation,
             &allocationInfo),
-            "Failed to create vertex buffer!"
+            "Failed to create buffer!"
         );
 
         vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
 
         Logger::Debug("Created buffer! [handle={}]\n", std::bit_cast<void*>(handle));
-    }
-
-    void Buffer::Map(VmaAllocator allocator)
-    {
-        vmaMapMemory(allocator, allocation, &allocationInfo.pMappedData);
-    }
-
-    void Buffer::Unmap(VmaAllocator allocator)
-    {
-        vmaUnmapMemory(allocator, allocation);
     }
 
     void Buffer::GetDeviceAddress(VkDevice device)
@@ -120,6 +110,11 @@ namespace Vk
         VkDeviceSize size
     ) const
     {
+        if (handle == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
         const VkBufferMemoryBarrier2 barrier =
         {
             .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,

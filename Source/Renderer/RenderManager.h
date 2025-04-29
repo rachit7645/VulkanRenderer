@@ -69,13 +69,25 @@ namespace Renderer
         void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
-        void Update();
+        void Update(const Vk::CommandBuffer& cmdBuffer);
         void ImGuiDisplay();
         void EndFrame();
         void SubmitQueue();
         void Resize();
 
         void InitImGui();
+
+        Engine::Config m_config;
+
+        // Frame index
+        usize m_currentFIF = 0;
+        usize m_frameIndex = 0;
+
+        // Frame counter
+        Util::FrameCounter m_frameCounter = {};
+
+        Util::DeletionQueue m_globalDeletionQueue = {};
+        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues = {};
 
         // Object handles
         Engine::Window             m_window;
@@ -115,19 +127,11 @@ namespace Renderer
         Buffers::LightsBuffer   m_lightsBuffer;
 
         // Scene objects
-        Engine::Scene m_scene;
-
-        // Frame index
-        usize m_currentFIF = 0;
-        usize m_frameIndex = 0;
-        // Frame counter
-        Util::FrameCounter m_frameCounter = {};
+        std::optional<Engine::Scene> m_scene = std::nullopt;
 
         bool m_isSwapchainOk = true;
 
         Renderer::Scene m_sceneData = {};
-
-        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

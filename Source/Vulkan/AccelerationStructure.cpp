@@ -18,17 +18,19 @@
 
 #include "DebugUtils.h"
 #include "Util.h"
-#include "ImmediateSubmit.h"
 #include "Util/Maths.h"
 
 namespace Vk
 {
     void AccelerationStructure::BuildBottomLevelAS
     (
-        const Vk::Context& context,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        usize frameIndex,
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator,
         const Models::ModelManager& modelManager,
-        const std::span<const Renderer::RenderObject> renderObjects
+        const std::span<const Renderer::RenderObject> renderObjects,
+        Util::DeletionQueue& deletionQueue
     )
     {
         std::vector<VkTransformMatrixKHR> transforms = {};
@@ -41,45 +43,53 @@ namespace Vk
             }
         }
 
-        auto stagingBuffer = Vk::Buffer
+        const VkDeviceSize transformsSize = transforms.size() * sizeof(VkTransformMatrixKHR);
+
+        auto transformBuffer = Vk::Buffer
         (
-            context.allocator,
-            transforms.size() * sizeof(VkTransformMatrixKHR),
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            allocator,
+            transformsSize,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
+        transformBuffer.GetDeviceAddress(device);
+
         std::memcpy
         (
-            stagingBuffer.allocationInfo.pMappedData,
+            transformBuffer.allocationInfo.pMappedData,
             transforms.data(),
-            transforms.size() * sizeof(VkTransformMatrixKHR)
+            transformsSize
         );
 
-        if (!(stagingBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if (!(transformBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                context.allocator,
-                stagingBuffer.allocation,
+                allocator,
+                transformBuffer.allocation,
                 0,
-                transforms.size() * sizeof(VkTransformMatrixKHR)),
+                transformsSize),
                 "Failed to flush allocation!"
             );
         }
 
-        auto transformBuffer = Vk::Buffer
+        transformBuffer.Barrier
         (
-            context.allocator,
-            transforms.size() * sizeof(VkTransformMatrixKHR),
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_HOST_BIT,
+            VK_ACCESS_2_HOST_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+            VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
             0,
-            VMA_MEMORY_USAGE_AUTO
+            transformsSize
         );
 
-        transformBuffer.GetDeviceAddress(context.device);
+        deletionQueue.PushDeletor([allocator, buffer = transformBuffer] () mutable
+        {
+            buffer.Destroy(allocator);
+        });
 
         std::vector<VkAccelerationStructureKHR>                            blases         = {};
         std::vector<Vk::Buffer>                                            buffers        = {};
@@ -91,7 +101,7 @@ namespace Vk
 
         usize lastOffset = 0;
 
-        for (const auto & renderObject : renderObjects)
+        for (const auto& renderObject : renderObjects)
         {
             const auto& meshes = modelManager.GetModel(renderObject.modelID).meshes;
 
@@ -109,8 +119,8 @@ namespace Vk
                         .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
                         .pNext         = nullptr,
                         .vertexFormat  = VK_FORMAT_R32G32B32_SFLOAT,
-                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.positionBuffer.deviceAddress + meshes[j].positionInfo.offset * sizeof(glm::vec3)},
-                        .vertexStride  = sizeof(glm::vec3),
+                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.positionBuffer.deviceAddress + meshes[j].positionInfo.offset * sizeof(Models::Position)},
+                        .vertexStride  = sizeof(Models::Position),
                         .maxVertex     = meshes[j].positionInfo.count - 1,
                         .indexType     = VK_INDEX_TYPE_UINT32,
                         .indexData     = modelManager.geometryBuffer.indexBuffer.deviceAddress + meshes[j].indexInfo.offset * sizeof(Models::Index),
@@ -154,7 +164,7 @@ namespace Vk
 
             vkGetAccelerationStructureBuildSizesKHR
             (
-                context.device,
+                device,
                 VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
                 &blasBuildInfo,
                 counts.data(),
@@ -163,9 +173,9 @@ namespace Vk
 
             const auto buffer = Vk::Buffer
             (
-                context.allocator,
+                allocator,
                 blasBuildSizes.accelerationStructureSize,
-                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,
+                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 0,
                 VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
@@ -185,7 +195,7 @@ namespace Vk
 
             VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
             Vk::CheckResult(vkCreateAccelerationStructureKHR(
-                context.device,
+                device,
                 &blasCreateInfo,
                 nullptr,
                 &blas),
@@ -194,7 +204,7 @@ namespace Vk
 
             auto scratchBuffer = Vk::Buffer
             (
-                context.allocator,
+                allocator,
                 blasBuildSizes.buildScratchSize,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -202,7 +212,7 @@ namespace Vk
                 VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
             );
 
-            scratchBuffer.GetDeviceAddress(context.device);
+            scratchBuffer.GetDeviceAddress(device);
 
             blasBuildInfo.dstAccelerationStructure = blas;
             blasBuildInfo.scratchData              = {.deviceAddress = scratchBuffer.deviceAddress};
@@ -211,6 +221,27 @@ namespace Vk
             buffers.emplace_back(buffer);
             scratchBuffers.emplace_back(scratchBuffer);
             blasBuildInfos.emplace_back(blasBuildInfo);
+
+            deletionQueue.PushDeletor([allocator, buffer = scratchBuffer] () mutable
+            {
+                buffer.Destroy(allocator);
+            });
+        }
+
+        vkCmdBuildAccelerationStructuresKHR
+        (
+            cmdBuffer.handle,
+            blasBuildInfos.size(),
+            blasBuildInfos.data(),
+            pRangeInfos.data()
+        );
+
+        if (m_compactionQueryPool != VK_NULL_HANDLE)
+        {
+            deletionQueue.PushDeletor([device, queryPool = m_compactionQueryPool] ()
+            {
+                vkDestroyQueryPool(device, queryPool, nullptr);
+            });
         }
 
         const VkQueryPoolCreateInfo queryPoolInfo =
@@ -223,186 +254,172 @@ namespace Vk
             .pipelineStatistics = 0
         };
 
-        VkQueryPool queryPool = VK_NULL_HANDLE;
         Vk::CheckResult(vkCreateQueryPool(
-            context.device,
+            device,
             &queryPoolInfo,
             nullptr,
-            &queryPool),
+            &m_compactionQueryPool),
             "Failed to create query pool!"
         );
 
-        Vk::ImmediateSubmit
+        vkCmdResetQueryPool
         (
-            context.device,
-            context.graphicsQueue,
-            cmdBufferAllocator,
-            [&] (const Vk::CommandBuffer& cmdBuffer)
-            {
-                const VkBufferCopy2 transformCopyRegion =
-                {
-                    .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                    .pNext     = nullptr,
-                    .srcOffset = 0,
-                    .dstOffset = 0,
-                    .size      = transforms.size() * sizeof(VkTransformMatrixKHR),
-                };
-
-                const VkCopyBufferInfo2 transformCopyInfo =
-                {
-                    .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-                    .pNext       = nullptr,
-                    .srcBuffer   = stagingBuffer.handle,
-                    .dstBuffer   = transformBuffer.handle,
-                    .regionCount = 1,
-                    .pRegions    = &transformCopyRegion
-                };
-
-                vkCmdCopyBuffer2(cmdBuffer.handle, &transformCopyInfo);
-
-                transformBuffer.Barrier
-                (
-                    cmdBuffer,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-                    VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_2_SHADER_READ_BIT,
-                    0,
-                    transforms.size() * sizeof(VkTransformMatrixKHR)
-                );
-
-                vkCmdBuildAccelerationStructuresKHR
-                (
-                    cmdBuffer.handle,
-                    blasBuildInfos.size(),
-                    blasBuildInfos.data(),
-                    pRangeInfos.data()
-                );
-
-                vkCmdResetQueryPool
-                (
-                    cmdBuffer.handle,
-                    queryPool,
-                    0,
-                    queryPoolInfo.queryCount
-                );
-
-                vkCmdWriteAccelerationStructuresPropertiesKHR
-                (
-                    cmdBuffer.handle,
-                    blases.size(),
-                    blases.data(),
-                    VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR,
-                    queryPool,
-                    0
-                );
-            }
+            cmdBuffer.handle,
+            m_compactionQueryPool,
+            0,
+            queryPoolInfo.queryCount
         );
 
-        Vk::ImmediateSubmit
+        vkCmdWriteAccelerationStructuresPropertiesKHR
         (
-            context.device,
-            context.graphicsQueue,
-            cmdBufferAllocator,
-            [&] (const Vk::CommandBuffer& cmdBuffer)
-            {
-                std::vector<VkDeviceSize> compactedSizes = {};
-                compactedSizes.resize(blases.size());
-
-                Vk::CheckResult(vkGetQueryPoolResults(
-                    context.device,
-                    queryPool,
-                    0,
-                    compactedSizes.size(),
-                    sizeof(VkDeviceSize) * compactedSizes.size(),
-                    compactedSizes.data(),
-                    sizeof(VkDeviceSize),
-                    VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_64_BIT),
-                    "Failed to retrieve BLAS compacted size!"
-                );
-
-                bottomLevelASes.resize(blases.size());
-
-                for (usize i = 0; i < blases.size(); ++i)
-                {
-                    bottomLevelASes[i].buffer = Vk::Buffer
-                    (
-                        context.allocator,
-                        compactedSizes[i],
-                        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        0,
-                        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-                    );
-
-                    const VkAccelerationStructureCreateInfoKHR compactedBlasCreateInfo =
-                    {
-                        .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
-                        .pNext         = nullptr,
-                        .createFlags   = 0,
-                        .buffer        = bottomLevelASes[i].buffer.handle,
-                        .offset        = 0,
-                        .size          = bottomLevelASes[i].buffer.requestedSize,
-                        .type          = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-                        .deviceAddress = 0
-                    };
-
-                    Vk::CheckResult(vkCreateAccelerationStructureKHR(
-                        context.device,
-                        &compactedBlasCreateInfo,
-                        nullptr,
-                        &bottomLevelASes[i].as),
-                        "Failed to create BLAS!"
-                    );
-
-                    const VkCopyAccelerationStructureInfoKHR copyInfo =
-                    {
-                        .sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR,
-                        .pNext = nullptr,
-                        .src   = blases[i],
-                        .dst   = bottomLevelASes[i].as,
-                        .mode  = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR
-                    };
-
-                    vkCmdCopyAccelerationStructureKHR(cmdBuffer.handle, &copyInfo);
-                }
-            }
+            cmdBuffer.handle,
+            blases.size(),
+            blases.data(),
+            VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR,
+            m_compactionQueryPool,
+            0
         );
 
-        stagingBuffer.Destroy(context.allocator);
-        transformBuffer.Destroy(context.allocator);
-
-        for (const auto as : blases)
+        for (usize i = 0; i < blases.size(); ++i)
         {
-            vkDestroyAccelerationStructureKHR(context.device, as, nullptr);
-        }
+            auto& blas = bottomLevelASes.emplace_back(blases[i], buffers[i], 0);
 
-        for (auto& buffer : buffers)
-        {
-            buffer.Destroy(context.allocator);
-        }
-
-        for (auto& buffer : scratchBuffers)
-        {
-            buffer.Destroy(context.allocator);
-        }
-
-        vkDestroyQueryPool(context.device, queryPool, nullptr);
-
-        for (usize i = 0; i < bottomLevelASes.size(); ++i)
-        {
             const VkAccelerationStructureDeviceAddressInfoKHR blasDAInfo =
             {
                 .sType                  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
                 .pNext                  = nullptr,
-                .accelerationStructure  = bottomLevelASes[i].as
+                .accelerationStructure  = blas.as
             };
 
-            bottomLevelASes[i].deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(context.device, &blasDAInfo);
+            blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
 
-            Vk::SetDebugName(context.device, bottomLevelASes[i].as,            fmt::format("BLAS/{}",       i));
-            Vk::SetDebugName(context.device, bottomLevelASes[i].buffer.handle, fmt::format("BLASBuffer/{}", i));
+            Vk::SetDebugName(device, blas.as,            fmt::format("BLAS/{}",       i));
+            Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/{}", i));
         }
+
+        m_initialBLASBuildFrameIndex = frameIndex;
+    }
+
+    void AccelerationStructure::TryCompactBottomLevelAS
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::Timeline& timeline,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        if (m_compactionQueryPool == VK_NULL_HANDLE)
+        {
+            return;
+        }
+
+        // Wait Vk::FRAMES_IN_FLIGHT frames before trying to retrieve query results (Thanks Darian and devsh!)
+        const bool isQueryReady = timeline.IsAtOrPastState
+        (
+            m_initialBLASBuildFrameIndex + Vk::FRAMES_IN_FLIGHT,
+            Vk::Timeline::TimelineStage::TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED,
+            device
+        );
+
+        if (!isQueryReady)
+        {
+            return;
+        }
+
+        std::vector<VkDeviceSize> compactedSizes = {};
+        compactedSizes.resize(bottomLevelASes.size());
+
+        const auto result = vkGetQueryPoolResults
+        (
+            device,
+            m_compactionQueryPool,
+            0,
+            compactedSizes.size(),
+            sizeof(VkDeviceSize) * compactedSizes.size(),
+            compactedSizes.data(),
+            sizeof(VkDeviceSize),
+            VK_QUERY_RESULT_64_BIT
+        );
+
+        if (result == VK_NOT_READY)
+        {
+            return;
+        }
+
+        Vk::CheckResult(result, "Failed to retrieve BLAS compacted sizes!");
+
+        for (usize i = 0; i < bottomLevelASes.size(); ++i)
+        {
+            auto& blas = bottomLevelASes[i];
+
+            auto oldBLAS   = blas.as;
+            auto oldBuffer = blas.buffer;
+
+            deletionQueue.PushDeletor([device, allocator, oldBLAS, oldBuffer] () mutable
+            {
+                vkDestroyAccelerationStructureKHR(device, oldBLAS, nullptr);
+
+                oldBuffer.Destroy(allocator);
+            });
+
+            blas.buffer = Vk::Buffer
+            (
+                allocator,
+                compactedSizes[i],
+                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                0,
+                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+            );
+
+            const VkAccelerationStructureCreateInfoKHR compactedBlasCreateInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+                .pNext         = nullptr,
+                .createFlags   = 0,
+                .buffer        = blas.buffer.handle,
+                .offset        = 0,
+                .size          = blas.buffer.requestedSize,
+                .type          = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+                .deviceAddress = 0
+            };
+
+            Vk::CheckResult(vkCreateAccelerationStructureKHR(
+                device,
+                &compactedBlasCreateInfo,
+                nullptr,
+                &blas.as),
+                "Failed to create BLAS!"
+            );
+
+            const VkCopyAccelerationStructureInfoKHR copyInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR,
+                .pNext = nullptr,
+                .src   = oldBLAS,
+                .dst   = blas.as,
+                .mode  = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR
+            };
+
+            vkCmdCopyAccelerationStructureKHR(cmdBuffer.handle, &copyInfo);
+
+            const VkAccelerationStructureDeviceAddressInfoKHR blasDAInfo =
+            {
+                .sType                  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
+                .pNext                  = nullptr,
+                .accelerationStructure  = blas.as
+            };
+
+            blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
+
+            Vk::SetDebugName(device, blas.as,            fmt::format("BLAS/Compacted/{}",       i));
+            Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/Compacted/{}", i));
+        }
+
+        vkDestroyQueryPool(device, m_compactionQueryPool, nullptr);
+
+        m_compactionQueryPool = VK_NULL_HANDLE;
     }
 
     void AccelerationStructure::BuildTopLevelAS
@@ -411,12 +428,11 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
-        const std::span<const Renderer::RenderObject> renderObjects
+        const std::span<const Renderer::RenderObject> renderObjects,
+        Util::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, fmt::format("TLASBuild/FIF{}", FIF), {0.2117f, 0.8136f, 0.7313f, 1.0f});
-
-        m_deletionQueues[FIF].FlushQueue();
 
         std::vector<VkAccelerationStructureInstanceKHR> instances = {};
         instances.reserve(renderObjects.size());
@@ -441,7 +457,7 @@ namespace Vk
 
         if (m_instanceBuffers[FIF].requestedSize < instancesSize)
         {
-            m_deletionQueues[FIF].PushDeletor([allocator, oldBuffer = m_instanceBuffers[FIF]] () mutable
+            deletionQueue.PushDeletor([allocator, oldBuffer = m_instanceBuffers[FIF]] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
@@ -541,7 +557,7 @@ namespace Vk
 
         if (topLevelASes[FIF].buffer.requestedSize < tlasBuildSizes.accelerationStructureSize)
         {
-            m_deletionQueues[FIF].PushDeletor([allocator, oldBuffer = topLevelASes[FIF].buffer] () mutable
+            deletionQueue.PushDeletor([allocator, oldBuffer = topLevelASes[FIF].buffer] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
@@ -579,7 +595,7 @@ namespace Vk
 
         if (m_scratchBuffers[FIF].requestedSize < tlasBuildSizes.buildScratchSize)
         {
-            m_deletionQueues[FIF].PushDeletor([allocator, oldBuffer = m_scratchBuffers[FIF]] () mutable
+            deletionQueue.PushDeletor([allocator, oldBuffer = m_scratchBuffers[FIF]] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
@@ -624,7 +640,7 @@ namespace Vk
         Vk::SetDebugName(device, m_instanceBuffers[FIF].handle,   fmt::format("TLASInstanceBuffer/{}", FIF));
         Vk::SetDebugName(device, m_scratchBuffers[FIF].handle,    fmt::format("TLASScratchBuffer/{}",  FIF));
 
-        m_deletionQueues[FIF].PushDeletor([device, as = topLevelASes[FIF].as] () mutable
+        deletionQueue.PushDeletor([device, as = topLevelASes[FIF].as] () mutable
         {
             vkDestroyAccelerationStructureKHR(device, as, nullptr);
         });
@@ -634,11 +650,6 @@ namespace Vk
 
     void AccelerationStructure::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& deletionQueue : m_deletionQueues)
-        {
-            deletionQueue.FlushQueue();
-        }
-
         for (auto& blas : bottomLevelASes)
         {
             blas.buffer.Destroy(allocator);
@@ -659,6 +670,11 @@ namespace Vk
         for (auto& tlas : topLevelASes)
         {
             tlas.buffer.Destroy(allocator);
+        }
+
+        if (m_compactionQueryPool != VK_NULL_HANDLE)
+        {
+            vkDestroyQueryPool(device, m_compactionQueryPool, nullptr);
         }
     }
 }

@@ -21,10 +21,6 @@
 #include "Util/Log.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
-#include "Convolution/Pipeline.h"
-#include "BRDF/Pipeline.h"
-#include "Converter/Pipeline.h"
-#include "PreFilter/Pipeline.h"
 
 namespace Renderer::IBL
 {
@@ -38,12 +34,13 @@ namespace Renderer::IBL
 
     void IBLMaps::Generate
     (
-        const std::string_view hdrMap,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view hdrMap
     )
     {
         const auto hdrMapAssetPath = Engine::Files::GetAssetPath("GFX/IBL/", hdrMap);
@@ -53,30 +50,37 @@ namespace Renderer::IBL
             return;
         }
 
-        const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto matrixBuffer = SetupMatrixBuffer(context, deletionQueue);
 
-        const auto matrixBuffer = SetupMatrixBuffer(context);
-
-        Vk::BeginLabel(context.graphicsQueue, "IBLMaps::Generate", {0.9215f, 0.8470f, 0.0274f, 1.0f});
-
-        cmdBuffer.Reset(0);
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        Vk::BeginLabel(cmdBuffer, "IBL Map Generation", {0.9215f, 0.8470f, 0.0274f, 1.0f});
 
         if (skyboxID.has_value())
         {
-            modelManager.textureManager.DestroyTexture(context.device, context.allocator, skyboxID.value());
+            deletionQueue.PushDeletor([&modelManager, device = context.device, allocator = context.allocator, id = skyboxID.value()]
+            {
+                modelManager.textureManager.DestroyTexture(device, allocator, id);
+            });
+            
             skyboxID = std::nullopt;
         }
 
         if (irradianceID.has_value())
         {
-            modelManager.textureManager.DestroyTexture(context.device, context.allocator, irradianceID.value());
+            deletionQueue.PushDeletor([&modelManager, device = context.device, allocator = context.allocator, id = irradianceID.value()]
+            {
+                modelManager.textureManager.DestroyTexture(device, allocator, id);
+            });
+
             irradianceID = std::nullopt;
         }
 
         if (preFilterID.has_value())
         {
-            modelManager.textureManager.DestroyTexture(context.device, context.allocator, preFilterID.value());
+            deletionQueue.PushDeletor([&modelManager, device = context.device, allocator = context.allocator, id = preFilterID.value()]
+            {
+                modelManager.textureManager.DestroyTexture(device, allocator, id);
+            });
+
             preFilterID = std::nullopt;
         }
 
@@ -85,15 +89,16 @@ namespace Renderer::IBL
 
         const auto hdrMapID = modelManager.textureManager.AddTexture
         (
-            megaSet,
             context.device,
             context.allocator,
+            megaSet,
+            deletionQueue,
             hdrMapAssetPath
         );
 
         stbi_set_flip_vertically_on_load(false);
 
-        modelManager.Update(context, cmdBuffer);
+        modelManager.Update(cmdBuffer, context.device, context.allocator, deletionQueue);
         megaSet.Update(context.device);
 
         CreateCubeMap
@@ -104,8 +109,11 @@ namespace Renderer::IBL
             matrixBuffer,
             modelManager,
             megaSet,
+            deletionQueue,
             hdrMapID
         );
+
+        megaSet.Update(context.device);
 
         CreateIrradianceMap
         (
@@ -124,7 +132,8 @@ namespace Renderer::IBL
             formatHelper,
             matrixBuffer,
             modelManager,
-            megaSet
+            megaSet,
+            deletionQueue
         );
 
         if (!brdfLutID.has_value())
@@ -139,78 +148,12 @@ namespace Renderer::IBL
             );
         }
 
-        cmdBuffer.EndRecording();
-
         megaSet.Update(context.device);
 
-        VkFence renderFence = VK_NULL_HANDLE;
-
-        // Submit
-        {
-            const VkFenceCreateInfo fenceCreateInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0
-            };
-
-            vkCreateFence(context.device, &fenceCreateInfo, nullptr, &renderFence);
-
-            VkCommandBufferSubmitInfo cmdBufferInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = cmdBuffer.handle,
-                .deviceMask    = 0
-            };
-
-            const VkSubmitInfo2 submitInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-                .pNext                    = nullptr,
-                .flags                    = 0,
-                .waitSemaphoreInfoCount   = 0,
-                .pWaitSemaphoreInfos      = nullptr,
-                .commandBufferInfoCount   = 1,
-                .pCommandBufferInfos      = &cmdBufferInfo,
-                .signalSemaphoreInfoCount = 0,
-                .pSignalSemaphoreInfos    = nullptr
-            };
-
-            Vk::CheckResult(vkQueueSubmit2(
-                context.graphicsQueue,
-                1,
-                &submitInfo,
-                renderFence),
-                "Failed to submit IBL command buffer!"
-            );
-
-            Vk::CheckResult(vkWaitForFences(
-                context.device,
-                1,
-                &renderFence,
-                VK_TRUE,
-                std::numeric_limits<u64>::max()),
-                "Error while waiting for IBL generation!"
-            );
-        }
-
-        Vk::EndLabel(context.graphicsQueue);
-
-        // Clean
-        {
-            vkDestroyFence(context.device, renderFence, nullptr);
-
-            m_deletionQueue.FlushQueue();
-
-            cmdBufferAllocator.FreeGlobalCommandBuffer(cmdBuffer);
-
-            modelManager.ClearUploads(context.allocator);
-            modelManager.textureManager.DestroyTexture(context.device, context.allocator, hdrMapID);
-        }
+        Vk::EndLabel(cmdBuffer);
     }
 
-    Vk::Buffer IBLMaps::SetupMatrixBuffer(const Vk::Context& context)
+    Vk::Buffer IBLMaps::SetupMatrixBuffer(const Vk::Context& context, Util::DeletionQueue& deletionQueue)
     {
         const auto projection = glm::perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
@@ -251,9 +194,9 @@ namespace Renderer::IBL
             );
         }
 
-        m_deletionQueue.PushDeletor([context, matrixBuffer] () mutable
+        deletionQueue.PushDeletor([allocator = context.allocator, matrixBuffer] () mutable
         {
-            matrixBuffer.Destroy(context.allocator);
+            matrixBuffer.Destroy(allocator);
         });
 
         return matrixBuffer;
@@ -267,10 +210,20 @@ namespace Renderer::IBL
         const Vk::Buffer& matrixBuffer,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue,
         u32 hdrMapID
     )
     {
-        auto pipeline = Converter::Pipeline(context, formatHelper, megaSet, modelManager.textureManager);
+        if (!m_converterPipeline.has_value())
+        {
+            m_converterPipeline = Converter::Pipeline
+            (
+                context,
+                formatHelper,
+                megaSet,
+                modelManager.textureManager
+            );
+        }
 
         Vk::BeginLabel(cmdBuffer, "Equirectangular To Cubemap Conversion", {0.2588f, 0.5294f, 0.9607f, 1.0f});
 
@@ -363,7 +316,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_converterPipeline->Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -385,26 +338,26 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        m_converterPipeline->pushConstant =
         {
             .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
-            .samplerIndex = pipeline.samplerIndex,
+            .samplerIndex = m_converterPipeline->samplerIndex,
             .textureIndex = hdrMapID
         };
 
-        pipeline.PushConstants
+        m_converterPipeline->PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
             sizeof(Converter::PushConstant),
-            &pipeline.pushConstant
+            &m_converterPipeline->pushConstant
         );
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_converterPipeline->BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -459,12 +412,10 @@ namespace Renderer::IBL
         );
 
         skyboxID = modelManager.textureManager.AddTexture(megaSet, context.device, "Skybox", {skybox, skyboxView});
-        megaSet.Update(context.device);
 
-        m_deletionQueue.PushDeletor([context, renderView, pipeline] () mutable
+        deletionQueue.PushDeletor([device = context.device, renderView] () mutable
         {
-            renderView.Destroy(context.device);
-            pipeline.Destroy(context.device);
+            renderView.Destroy(device);
         });
     }
 
@@ -478,7 +429,16 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet
     )
     {
-        auto pipeline = Convolution::Pipeline(context, formatHelper, megaSet, modelManager.textureManager);
+        if (!m_convolutionPipeline.has_value())
+        {
+            m_convolutionPipeline = Convolution::Pipeline
+            (
+                context,
+                formatHelper,
+                megaSet,
+                modelManager.textureManager
+            );
+        }
 
         Vk::BeginLabel(cmdBuffer, "Irradiance Map Generation", {0.2988f, 0.2294f, 0.6607f, 1.0f});
 
@@ -571,7 +531,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_convolutionPipeline->Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -593,26 +553,26 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        m_convolutionPipeline->pushConstant =
         {
             .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = matrixBuffer.deviceAddress,
-            .samplerIndex = pipeline.samplerIndex,
+            .samplerIndex = m_convolutionPipeline->samplerIndex,
             .envMapIndex  = skyboxID.value()
         };
 
-        pipeline.PushConstants
+        m_convolutionPipeline->PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
             sizeof(Convolution::PushConstant),
-            &pipeline.pushConstant
+            &m_convolutionPipeline->pushConstant
         );
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_convolutionPipeline->BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -646,11 +606,6 @@ namespace Renderer::IBL
         Vk::EndLabel(cmdBuffer);
 
         irradianceID = modelManager.textureManager.AddTexture(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
-
-        m_deletionQueue.PushDeletor([context, pipeline] () mutable
-        {
-            pipeline.Destroy(context.device);
-        });
     }
 
     void IBLMaps::CreatePreFilterMap
@@ -660,10 +615,20 @@ namespace Renderer::IBL
         const Vk::FormatHelper& formatHelper,
         const Vk::Buffer& matrixBuffer,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
     )
     {
-        auto pipeline = PreFilter::Pipeline(context, formatHelper, megaSet, modelManager.textureManager);
+        if (!m_preFilterPipeline.has_value())
+        {
+            m_preFilterPipeline = PreFilter::Pipeline
+            (
+                context,
+                formatHelper,
+                megaSet,
+                modelManager.textureManager
+            );
+        }
 
         Vk::BeginLabel(cmdBuffer, "PreFilter Map Generation", {0.2928f, 0.4794f, 0.6607f, 1.0f});
 
@@ -768,7 +733,7 @@ namespace Renderer::IBL
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            pipeline.Bind(cmdBuffer);
+            m_preFilterPipeline->Bind(cmdBuffer);
 
             const VkViewport viewport =
             {
@@ -790,28 +755,28 @@ namespace Renderer::IBL
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            pipeline.pushConstant =
+            m_preFilterPipeline->pushConstant =
             {
                 .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .matrices     = matrixBuffer.deviceAddress,
-                .samplerIndex = pipeline.samplerIndex,
+                .samplerIndex = m_preFilterPipeline->samplerIndex,
                 .envMapIndex  = skyboxID.value(),
                 .roughness    = roughness,
                 .sampleCount  = sampleCount
             };
 
-            pipeline.PushConstants
+            m_preFilterPipeline->PushConstants
             (
                 cmdBuffer,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 0,
                 sizeof(PreFilter::PushConstant),
-                &pipeline.pushConstant
+                &m_preFilterPipeline->pushConstant
             );
 
             // Mega set
             const std::array descriptorSets = {megaSet.descriptorSet};
-            pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            m_preFilterPipeline->BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
             (
@@ -864,14 +829,12 @@ namespace Renderer::IBL
 
         preFilterID = modelManager.textureManager.AddTexture(megaSet, context.device, "PreFilter", {preFilter, preFilterView});
 
-        m_deletionQueue.PushDeletor([context, preFilterViews, pipeline] () mutable
+        deletionQueue.PushDeletor([device = context.device, preFilterViews] () mutable
         {
             for (auto& view : preFilterViews)
             {
-                view.Destroy(context.device);
+                view.Destroy(device);
             }
-
-            pipeline.Destroy(context.device);
         });
     }
 
@@ -884,7 +847,10 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet
     )
     {
-        auto pipeline = BRDF::Pipeline(context, formatHelper);
+        if (!m_brdfLutPipeline.has_value())
+        {
+            m_brdfLutPipeline = BRDF::Pipeline(context, formatHelper);
+        }
 
         Vk::BeginLabel(cmdBuffer, "BRDF LUT Generation", {0.9215f, 0.0274f, 0.8588f, 1.0f});
 
@@ -977,7 +943,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_brdfLutPipeline->Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -1031,10 +997,32 @@ namespace Renderer::IBL
         Vk::EndLabel(cmdBuffer);
 
         brdfLutID = textureManager.AddTexture(megaSet, context.device, "BRDF_LUT", {brdfLut, brdfLutView});
+    }
 
-        m_deletionQueue.PushDeletor([context, pipeline] () mutable
+    void IBLMaps::Destroy(VkDevice device)
+    {
+        if (m_converterPipeline.has_value())
         {
-            pipeline.Destroy(context.device);
-        });
+            m_converterPipeline->Destroy(device);
+            m_converterPipeline = std::nullopt;
+        }
+
+        if (m_convolutionPipeline.has_value())
+        {
+            m_convolutionPipeline->Destroy(device);
+            m_convolutionPipeline = std::nullopt;
+        }
+
+        if (m_preFilterPipeline.has_value())
+        {
+            m_preFilterPipeline->Destroy(device);
+            m_preFilterPipeline = std::nullopt;
+        }
+
+        if (m_brdfLutPipeline.has_value())
+        {
+            m_brdfLutPipeline->Destroy(device);
+            m_brdfLutPipeline = std::nullopt;
+        }
     }
 }

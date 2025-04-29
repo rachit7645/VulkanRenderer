@@ -36,17 +36,19 @@ namespace Vk
 
         [[nodiscard]] u32 AddTexture
         (
-            Vk::MegaSet& megaSet,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
         [[nodiscard]] u32 AddTexture
         (
-            Vk::MegaSet& megaSet,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue,
             const std::string_view name,
             VkFormat format,
             const void* data,
@@ -70,7 +72,6 @@ namespace Vk
         );
 
         void Update(const Vk::CommandBuffer& cmdBuffer);
-        void ClearUploads(VmaAllocator allocator);
 
         [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;

@@ -26,6 +26,7 @@
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer::AO::XeGTAO
 {
@@ -35,7 +36,6 @@ namespace Renderer::AO::XeGTAO
         RenderPass
         (
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
             Vk::FramebufferManager& framebufferManager,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
@@ -44,11 +44,16 @@ namespace Renderer::AO::XeGTAO
         void Render
         (
             usize FIF,
-        usize frameIndex,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator,
+            const Vk::FormatHelper& formatHelper,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet,
-            const Buffers::SceneBuffer& sceneBuffer
+            const Buffers::SceneBuffer& sceneBuffer,
+            Vk::MegaSet& megaSet,
+            Models::ModelManager& modelManager,
+            Util::DeletionQueue& deletionQueue
         );
 
         void Destroy(VkDevice device);
@@ -57,7 +62,7 @@ namespace Renderer::AO::XeGTAO
         Occlusion::Pipeline      occlusionPipeline;
         Denoise::Pipeline        denoisePipeline;
 
-        u32 hilbertLUT = 0;
+       std::optional<u32> hilbertLUT = std::nullopt;
     private:
         void PreFilterDepth
         (

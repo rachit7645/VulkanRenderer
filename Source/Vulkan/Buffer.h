@@ -40,8 +40,6 @@ namespace Vk
             VmaMemoryUsage memoryUsage
         );
 
-        void Map(VmaAllocator allocator);
-        void Unmap(VmaAllocator allocator);
         void GetDeviceAddress(VkDevice device);
 
         void Barrier

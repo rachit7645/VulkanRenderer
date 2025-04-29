@@ -29,11 +29,12 @@ namespace Engine
     Scene::Scene
     (
         const Engine::Config& config,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
     )
     {
         try
@@ -65,7 +66,7 @@ namespace Engine
 
                     JSON::CheckError(model, "Failed to load model path!");
 
-                    renderObject.modelID = modelManager.AddModel(context, megaSet, model.value());
+                    renderObject.modelID = modelManager.AddModel(context.device, context.allocator, megaSet, deletionQueue, model.value());
 
                     JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
                     JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");
@@ -123,12 +124,13 @@ namespace Engine
 
             iblMaps.Generate
             (
-                m_hdrMap,
+                cmdBuffer,
                 context,
                 formatHelper,
-                cmdBufferAllocator,
                 modelManager,
-                megaSet
+                megaSet,
+                deletionQueue,
+                m_hdrMap
             );
 
             m_hdrMap.clear();
@@ -141,13 +143,14 @@ namespace Engine
 
     void Scene::Update
     (
+        const Vk::CommandBuffer& cmdBuffer,
         const Util::FrameCounter& frameCounter,
         Engine::Inputs& inputs,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
     )
     {
         camera.Update(frameCounter.frameDelta, inputs);
@@ -265,17 +268,15 @@ namespace Engine
 
                     if (ImGui::Button("Load") && !m_hdrMap.empty())
                     {
-                        // TODO: Figure out a better way to wait for resources to be available
-                        Vk::CheckResult(vkDeviceWaitIdle(context.device), "Device failed to idle!");
-
                         iblMaps.Generate
                         (
-                            m_hdrMap,
+                            cmdBuffer,
                             context,
                             formatHelper,
-                            cmdBufferAllocator,
                             modelManager,
-                            megaSet
+                            megaSet,
+                            deletionQueue,
+                            m_hdrMap
                         );
 
                         m_hdrMap.clear();
@@ -289,5 +290,10 @@ namespace Engine
             
             ImGui::EndMainMenuBar();
         }
+    }
+
+    void Scene::Destroy(VkDevice device)
+    {
+        iblMaps.Destroy(device);
     }
 }

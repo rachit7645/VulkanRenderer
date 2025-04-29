@@ -22,11 +22,13 @@
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
 #include "Util/Maths.h"
+#include "Vulkan/ImmediateSubmit.h"
 
 namespace Renderer
 {
     RenderManager::RenderManager(const Engine::Config& config)
-        : m_context(m_window.handle),
+        : m_config(config),
+          m_context(m_window.handle),
           m_cmdBufferAllocator(m_context.device, m_context.queueFamilies),
           m_swapchain(m_window.size, m_context, m_cmdBufferAllocator),
           m_timeline(m_context.device),
@@ -42,18 +44,18 @@ namespace Renderer
           m_spotShadowPass(m_context, m_formatHelper, m_framebufferManager),
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_xegtaoPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_xegtaoPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowRTPass(m_context, m_cmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator),
-          m_lightsBuffer(m_context.device, m_context.allocator),
-          m_scene(config, m_context, m_formatHelper, m_cmdBufferAllocator, m_modelManager, m_megaSet)
+          m_lightsBuffer(m_context.device, m_context.allocator)
     {
-        m_deletionQueue.PushDeletor([&] ()
+        m_globalDeletionQueue.PushDeletor([&] ()
         {
+            m_scene->Destroy(m_context.device);
             m_lightsBuffer.Destroy(m_context.allocator);
             m_sceneBuffer.Destroy(m_context.allocator);
             m_indirectBuffer.Destroy(m_context.allocator);
@@ -88,10 +90,6 @@ namespace Renderer
         InitImGui();
 
         m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
-        m_modelManager.Update(m_context, m_cmdBufferAllocator);
-        m_megaSet.Update(m_context.device);
-
-        m_accelerationStructure.BuildBottomLevelAS(m_context, m_cmdBufferAllocator, m_modelManager, m_scene.renderObjects);
 
         m_frameCounter.Reset();
     }
@@ -109,11 +107,56 @@ namespace Renderer
         AcquireSwapchainImage();
 
         BeginFrame();
-        Update();
 
         const auto cmdBuffer = m_cmdBufferAllocator.AllocateCommandBuffer(m_currentFIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        if (!m_scene.has_value())
+        {
+            m_scene = Engine::Scene
+            (
+                m_config,
+                cmdBuffer,
+                m_context,
+                m_formatHelper,
+                m_modelManager,
+                m_megaSet,
+                m_deletionQueues[m_currentFIF]
+            );
+
+            m_modelManager.Update
+            (
+                cmdBuffer,
+                m_context.device,
+                m_context.allocator,
+                m_deletionQueues[m_currentFIF]
+            );
+
+            m_megaSet.Update(m_context.device);
+
+            m_accelerationStructure.BuildBottomLevelAS
+            (
+                m_frameIndex,
+                cmdBuffer,
+                m_context.device,
+                m_context.allocator,
+                m_modelManager,
+                m_scene->renderObjects,
+                m_deletionQueues[m_currentFIF]
+            );
+        }
+
+        Update(cmdBuffer);
+
+        m_accelerationStructure.TryCompactBottomLevelAS
+        (
+            cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_timeline,
+            m_deletionQueues[m_currentFIF]
+        );
 
         m_accelerationStructure.BuildTopLevelAS
         (
@@ -121,7 +164,8 @@ namespace Renderer
             cmdBuffer,
             m_context.device,
             m_context.allocator,
-            m_scene.renderObjects
+            m_scene->renderObjects,
+            m_deletionQueues[m_currentFIF]
         );
 
         m_pointShadowPass.Render
@@ -156,7 +200,6 @@ namespace Renderer
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
-            m_megaSet,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
@@ -183,9 +226,14 @@ namespace Renderer
             m_currentFIF,
             m_frameIndex,
             cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_formatHelper,
             m_framebufferManager,
+            m_sceneBuffer,
             m_megaSet,
-            m_sceneBuffer
+            m_modelManager,
+            m_deletionQueues[m_currentFIF]
         );
 
         m_shadowRTPass.Render
@@ -207,7 +255,7 @@ namespace Renderer
             m_framebufferManager,
             m_megaSet,
             m_sceneBuffer,
-            m_scene.iblMaps
+            m_scene->iblMaps
         );
 
         m_skyboxPass.Render
@@ -219,7 +267,7 @@ namespace Renderer
             m_megaSet,
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
-            m_scene.iblMaps
+            m_scene->iblMaps
         );
 
         m_taaPass.Render
@@ -255,7 +303,8 @@ namespace Renderer
             m_context.allocator,
             cmdBuffer,
             m_megaSet,
-            m_swapchain
+            m_swapchain,
+            m_deletionQueues[m_currentFIF]
         );
 
         cmdBuffer.EndRecording();
@@ -264,19 +313,20 @@ namespace Renderer
         EndFrame();
     }
 
-    void RenderManager::Update()
+    void RenderManager::Update(const Vk::CommandBuffer& cmdBuffer)
     {
         m_frameCounter.Update();
 
-        m_scene.Update
+        m_scene->Update
         (
+            cmdBuffer,
             m_frameCounter,
             m_window.inputs,
             m_context,
             m_formatHelper,
-            m_cmdBufferAllocator,
             m_modelManager,
-            m_megaSet
+            m_megaSet,
+            m_deletionQueues[m_currentFIF]
         );
 
         ImGuiDisplay();
@@ -285,7 +335,7 @@ namespace Renderer
 
         const auto projection = Maths::CreateInfiniteProjectionReverseZ
         (
-            m_scene.camera.FOV,
+            m_scene->camera.FOV,
             static_cast<f32>(m_swapchain.extent.width) /
             static_cast<f32>(m_swapchain.extent.height),
             Renderer::NEAR_PLANE
@@ -300,7 +350,7 @@ namespace Renderer
         jitteredProjection[2][0] += jitter.x;
         jitteredProjection[2][1] += jitter.y;
 
-        const auto view = m_scene.camera.GetViewMatrix();
+        const auto view = m_scene->camera.GetViewMatrix();
 
         m_sceneData.currentMatrices  =
         {
@@ -312,7 +362,7 @@ namespace Renderer
             .normalView         = Maths::CreateNormalMatrix(view)
         };
 
-        m_sceneData.cameraPosition = m_scene.camera.position;
+        m_sceneData.cameraPosition = m_scene->camera.position;
         m_sceneData.nearPlane      = Renderer::NEAR_PLANE;
         m_sceneData.farPlane       = Renderer::FAR_PLANE; // There isn't actually a far plane right now lol
 
@@ -325,11 +375,18 @@ namespace Renderer
         m_sceneData.spotLights          = lightsBuffer + m_lightsBuffer.GetSpotLightOffset();
         m_sceneData.shadowedSpotLights  = lightsBuffer + m_lightsBuffer.GetShadowedSpotLightOffset();
 
-        m_lightsBuffer.WriteLights(m_currentFIF, m_context.allocator, {&m_scene.sun, 1}, m_scene.pointLights, m_scene.spotLights);
-        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_sceneData);
+        m_lightsBuffer.WriteLights
+        (
+            m_currentFIF,
+            m_context.allocator,
+            {&m_scene->sun, 1},
+            m_scene->pointLights,
+            m_scene->spotLights
+        );
 
-        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
-        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_scene.renderObjects);
+        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_sceneData);
+        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_scene->renderObjects);
+        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_scene->renderObjects);
     }
 
     void RenderManager::ImGuiDisplay()
@@ -423,6 +480,8 @@ namespace Renderer
     void RenderManager::BeginFrame()
     {
         Vk::BeginLabel(m_context.graphicsQueue, "Graphics Queue", {0.1137f, 0.7176f, 0.7490, 1.0f});
+
+        m_deletionQueues[m_currentFIF].FlushQueue();
 
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
@@ -564,7 +623,7 @@ namespace Renderer
                 break;
 
             case SDL_SCANCODE_F2:
-                m_scene.camera.isEnabled = !m_scene.camera.isEnabled;
+                m_scene->camera.isEnabled = !m_scene->camera.isEnabled;
                 break;
 
             default:
@@ -622,31 +681,41 @@ namespace Renderer
         io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset;
         io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
-        // Load font
-        {
-            // Font data
-            u8* pixels = nullptr;
-            s32 width  = 0;
-            s32 height = 0;
+        Vk::ImmediateSubmit
+        (
+            m_context.device,
+            m_context.graphicsQueue,
+            m_cmdBufferAllocator,
+            [&] (const Vk::CommandBuffer& cmdBuffer)
+            {
+                // Font data
+                u8* pixels = nullptr;
+                s32 width  = 0;
+                s32 height = 0;
 
-            io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+                io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-            const auto fontID = m_modelManager.textureManager.AddTexture
-            (
-                m_megaSet,
-                m_context.device,
-                m_context.allocator,
-                "DearImGuiFont",
-                VK_FORMAT_R8G8B8A8_UNORM,
-                pixels,
-                width,
-                height
-            );
+                const auto fontID = m_modelManager.textureManager.AddTexture
+                (
+                    m_context.device,
+                    m_context.allocator,
+                    m_megaSet,
+                    m_deletionQueues[m_currentFIF],
+                    "DearImGuiFont",
+                    VK_FORMAT_R8G8B8A8_UNORM,
+                    pixels,
+                    width,
+                    height
+                );
 
-            io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
-        }
+                io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
 
-        m_deletionQueue.PushDeletor([&] ()
+                m_modelManager.Update(cmdBuffer, m_context.device, m_context.allocator, m_deletionQueues[m_currentFIF]);
+                m_megaSet.Update(m_context.device);
+            }
+        );
+
+        m_globalDeletionQueue.PushDeletor([&] ()
         {
             ImGui_ImplSDL3_Shutdown();
             ImGui::DestroyContext();
@@ -657,6 +726,11 @@ namespace Renderer
     {
         Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
 
-        m_deletionQueue.FlushQueue();
+        for (auto& deletionQueue : m_deletionQueues)
+        {
+            deletionQueue.FlushQueue();
+        }
+
+        m_globalDeletionQueue.FlushQueue();
     }
 }
