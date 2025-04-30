@@ -56,30 +56,42 @@ namespace Renderer::IBL
 
         if (skyboxID.has_value())
         {
-            deletionQueue.PushDeletor([&modelManager, device = context.device, allocator = context.allocator, id = skyboxID.value()]
-            {
-                modelManager.textureManager.DestroyTexture(device, allocator, id);
-            });
+            modelManager.textureManager.DestroyTexture
+            (
+                skyboxID.value(),
+                context.device,
+                context.allocator,
+                megaSet,
+                deletionQueue
+            );
             
             skyboxID = std::nullopt;
         }
 
         if (irradianceID.has_value())
         {
-            deletionQueue.PushDeletor([&modelManager, device = context.device, allocator = context.allocator, id = irradianceID.value()]
-            {
-                modelManager.textureManager.DestroyTexture(device, allocator, id);
-            });
+            modelManager.textureManager.DestroyTexture
+            (
+                irradianceID.value(),
+                context.device,
+                context.allocator,
+                megaSet,
+                deletionQueue
+            );
 
             irradianceID = std::nullopt;
         }
 
         if (preFilterID.has_value())
         {
-            deletionQueue.PushDeletor([&modelManager, device = context.device, allocator = context.allocator, id = preFilterID.value()]
-            {
-                modelManager.textureManager.DestroyTexture(device, allocator, id);
-            });
+            modelManager.textureManager.DestroyTexture
+            (
+                preFilterID.value(),
+                context.device,
+                context.allocator,
+                megaSet,
+                deletionQueue
+            );
 
             preFilterID = std::nullopt;
         }
@@ -98,7 +110,14 @@ namespace Renderer::IBL
 
         stbi_set_flip_vertically_on_load(false);
 
-        modelManager.Update(cmdBuffer, context.device, context.allocator, deletionQueue);
+        modelManager.Update
+        (
+            cmdBuffer,
+            context.device,
+            context.allocator,
+            deletionQueue
+        );
+
         megaSet.Update(context.device);
 
         CreateCubeMap
@@ -111,6 +130,15 @@ namespace Renderer::IBL
             megaSet,
             deletionQueue,
             hdrMapID
+        );
+
+        modelManager.textureManager.DestroyTexture
+        (
+            hdrMapID,
+            context.device,
+            context.allocator,
+            megaSet,
+            deletionQueue
         );
 
         megaSet.Update(context.device);

@@ -213,7 +213,14 @@ namespace Vk
         return iter->second;
     }
 
-    void TextureManager::DestroyTexture(VkDevice device, VmaAllocator allocator, u32 id)
+    void TextureManager::DestroyTexture
+    (
+        u32 id,
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
     {
         const auto iter = textureMap.find(id);
 
@@ -234,7 +241,12 @@ namespace Vk
             }
         }
 
-        iter->second.texture.Destroy(device, allocator);
+        deletionQueue.PushDeletor([&megaSet, device, allocator, id, texture = iter->second.texture] () mutable
+        {
+            texture.Destroy(device, allocator);
+            megaSet.FreeSampledImage(id);
+        });
+
         textureMap.erase(iter);
     }
 

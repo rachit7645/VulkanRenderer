@@ -89,7 +89,14 @@ namespace Renderer
         // ImGui Yoy
         InitImGui();
 
-        m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
+        m_framebufferManager.Update
+        (
+            m_context,
+            m_formatHelper,
+            m_cmdBufferAllocator,
+            m_megaSet,
+            m_swapchain.extent
+        );
 
         m_frameCounter.Reset();
     }

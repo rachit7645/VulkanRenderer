@@ -76,7 +76,14 @@ namespace Vk
         [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
 
-        void DestroyTexture(VkDevice device, VmaAllocator allocator, u32 id);
+        void DestroyTexture
+        (
+            u32 id,
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
 
         void ImGuiDisplay();
 
