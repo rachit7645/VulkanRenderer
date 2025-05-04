@@ -262,13 +262,7 @@ namespace Renderer::AO::XeGTAO
             megaSet.Update(device);
         }
 
-        PreFilterDepth
-        (
-            frameIndex,
-            cmdBuffer,
-            framebufferManager,
-            megaSet
-        );
+        PreFilterDepth(cmdBuffer, framebufferManager, megaSet);
 
         Occlusion
         (
@@ -292,7 +286,6 @@ namespace Renderer::AO::XeGTAO
 
     void RenderPass::PreFilterDepth
     (
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
@@ -325,7 +318,7 @@ namespace Renderer::AO::XeGTAO
         depthPreFilterPipeline.pushConstant =
         {
             .depthSamplerIndex = depthPreFilterPipeline.samplerIndex,
-            .sceneDepthIndex   = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
+            .sceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
             .outDepthMip0Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip0").storageImageIndex,
             .outDepthMip1Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip1").storageImageIndex,
             .outDepthMip2Index = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView/Mip2").storageImageIndex,

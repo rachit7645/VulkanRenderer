@@ -42,7 +42,6 @@ namespace Renderer::Skybox
         void Render
         (
             usize FIF,
-        usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,

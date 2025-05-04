@@ -77,7 +77,6 @@ namespace Renderer::Lighting
     void RenderPass::Render
     (
         usize FIF,
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
@@ -171,7 +170,7 @@ namespace Renderer::Lighting
             .shadowSamplerIndex  = pipeline.shadowSamplerIndex,
             .gAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
             .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex     = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
+            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
             .irradianceIndex     = iblMaps.irradianceID.value(),
             .preFilterIndex      = iblMaps.preFilterID.value(),
             .brdfLutIndex        = iblMaps.brdfLutID.value(),

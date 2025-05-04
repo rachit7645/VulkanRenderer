@@ -27,8 +27,6 @@
 
 namespace Renderer::Depth
 {
-    constexpr usize DEPTH_HISTORY_SIZE = 2;
-
     class RenderPass
     {
     public:

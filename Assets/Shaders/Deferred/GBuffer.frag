@@ -24,10 +24,11 @@
 #include "Packing.glsl"
 #include "MegaSet.glsl"
 
-layout(location = 0) in      vec4 currentPosition;
-layout(location = 1) in      vec2 fragTexCoords;
-layout(location = 2) in      mat3 fragTBNMatrix;
-layout(location = 5) in flat uint fragDrawID;
+layout(location = 0) in      vec4 fragCurrentPosition;
+layout(location = 1) in      vec4 fragPreviousPosition;
+layout(location = 2) in      vec2 fragTexCoords;
+layout(location = 3) in      mat3 fragTBNMatrix;
+layout(location = 6) in flat uint fragDrawID;
 
 layout(location = 0) out vec3 gAlbedo;
 layout(location = 1) out vec4 gNormal_Rgh_Mtl;
@@ -35,7 +36,7 @@ layout(location = 2) out vec2 motionVectors;
 
 void main()
 {
-    Mesh mesh = Constants.Meshes.meshes[fragDrawID];
+    Mesh mesh = Constants.CurrentMeshes.meshes[fragDrawID];
 
     vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
     albedo.rgb  *= mesh.material.albedoFactor.rgb;
@@ -55,14 +56,8 @@ void main()
     gNormal_Rgh_Mtl.b  = aoRghMtl.g;
     gNormal_Rgh_Mtl.a  = aoRghMtl.b;
 
-    ivec2 depthSize = textureSize(sampler2D(Textures[Constants.PreviousDepthIndex], Samplers[Constants.DepthSamplerIndex]), 0);
-    vec2  screenUV  = (vec2(gl_FragCoord.xy) + 0.5f) / vec2(depthSize);
-
-    float previousDepth       = texture(sampler2D(Textures[Constants.PreviousDepthIndex], Samplers[Constants.DepthSamplerIndex]), screenUV).r;
-    vec4  reprojectedPosition = GetClipPosition(Constants.Scene.previousMatrices, screenUV, previousDepth);
-
-    vec2 current  = (currentPosition.xy / currentPosition.w) * 0.5f + 0.5f;
-    vec2 previous = reprojectedPosition.xy * 0.5f + 0.5f;
+    vec2 current  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
+    vec2 previous = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;
 
     motionVectors = current - previous;
 }

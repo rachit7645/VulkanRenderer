@@ -318,7 +318,7 @@ namespace Vk
         const bool isQueryReady = timeline.IsAtOrPastState
         (
             m_initialBLASBuildFrameIndex + Vk::FRAMES_IN_FLIGHT,
-            Vk::Timeline::TimelineStage::TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED,
+            Vk::Timeline::TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED,
             device
         );
 

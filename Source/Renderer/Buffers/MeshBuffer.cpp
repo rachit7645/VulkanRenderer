@@ -16,18 +16,21 @@
 
 #include "MeshBuffer.h"
 
+#include <csignal>
+
 #include "Renderer/Mesh.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 #include "Util/Log.h"
+#include "Util/Random.h"
 
 namespace Renderer::Buffers
 {
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < buffers.size(); ++i)
+        for (usize i = 0; i < m_buffers.size(); ++i)
         {
-            buffers[i] = Vk::Buffer
+            m_buffers[i] = Vk::Buffer
             (
                 allocator,
                 MAX_MESH_COUNT * sizeof(Renderer::Mesh),
@@ -37,15 +40,15 @@ namespace Renderer::Buffers
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            buffers[i].GetDeviceAddress(device);
+            m_buffers[i].GetDeviceAddress(device);
 
-            Vk::SetDebugName(device, buffers[i].handle, fmt::format("MeshBuffer/{}", i));
+            Vk::SetDebugName(device, m_buffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
     }
 
     void MeshBuffer::LoadMeshes
     (
-        usize FIF,
+        usize frameIndex,
         VmaAllocator allocator,
         const Models::ModelManager& modelManager,
         const std::vector<Renderer::RenderObject>& renderObjects
@@ -76,28 +79,42 @@ namespace Renderer::Buffers
             }
         }
 
+        const auto& buffer = GetCurrentBuffer(frameIndex);
+
+        const VkDeviceSize meshCopySize =  meshes.size() * sizeof(Renderer::Mesh);
+
         std::memcpy
         (
-            buffers[FIF].allocationInfo.pMappedData,
+            buffer.allocationInfo.pMappedData,
             meshes.data(),
-            sizeof(Renderer::Mesh) * meshes.size()
+            meshCopySize
         );
 
-        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if (!(buffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
                 allocator,
-                buffers[FIF].allocation,
+                buffer.allocation,
                 0,
-                sizeof(Renderer::Mesh) * meshes.size()),
+                meshCopySize),
                 "Failed to flush allocation!"
             );
         }
     }
 
+    const Vk::Buffer& MeshBuffer::GetCurrentBuffer(usize frameIndex) const
+    {
+        return m_buffers[frameIndex % m_buffers.size()];
+    }
+
+    const Vk::Buffer& MeshBuffer::GetPreviousBuffer(usize frameIndex) const
+    {
+        return m_buffers[(frameIndex + m_buffers.size() - 1) % m_buffers.size()];
+    }
+
     void MeshBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : buffers)
+        for (auto& buffer : m_buffers)
         {
             buffer.Destroy(allocator);
         }

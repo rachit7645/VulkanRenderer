@@ -17,9 +17,6 @@
 #include "RenderPass.h"
 
 #include "Util/Log.h"
-#include "Util/Maths.h"
-#include "Util/Ranges.h"
-#include "Renderer/RenderConstants.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
@@ -162,13 +159,10 @@ namespace Renderer::GBuffer
     {
         Vk::BeginLabel(cmdBuffer, fmt::format("GBufferPass/FIF{}", FIF), glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
-        const usize currentDepthIndex  = frameIndex % Depth::DEPTH_HISTORY_SIZE;
-        const usize previousDepthIndex = (frameIndex + Depth::DEPTH_HISTORY_SIZE - 1) % Depth::DEPTH_HISTORY_SIZE;
-
         const auto& gAlbedoView         = framebufferManager.GetFramebufferView("GAlbedoView");
         const auto& gNormalView         = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View");
         const auto& motionVectorsView   = framebufferManager.GetFramebufferView("MotionVectorsView");
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", currentDepthIndex));
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& gAlbedo         = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
         const auto& gNormal         = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
@@ -330,13 +324,12 @@ namespace Renderer::GBuffer
         pipeline.pushConstant =
         {
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes              = meshBuffer.buffers[FIF].deviceAddress,
+            .currentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+            .previousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
             .meshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
             .positions           = geometryBuffer.positionBuffer.deviceAddress,
             .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
-            .textureSamplerIndex = pipeline.textureSamplerIndex,
-            .depthSamplerIndex   = pipeline.depthSamplerIndex,
-            .previousDepthIndex  = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", previousDepthIndex)).sampledImageIndex
+            .textureSamplerIndex = pipeline.textureSamplerIndex
         };
 
         pipeline.PushConstants

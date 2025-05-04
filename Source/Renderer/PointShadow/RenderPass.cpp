@@ -86,6 +86,7 @@ namespace Renderer::PointShadow
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -134,6 +135,7 @@ namespace Renderer::PointShadow
                 cullingDispatch.DispatchFrustumCulling
                 (
                     FIF,
+                    frameIndex,
                     lightsBuffer.shadowedPointLights[i].matrices[face],
                     cmdBuffer,
                     meshBuffer,
@@ -200,7 +202,7 @@ namespace Renderer::PointShadow
                 pipeline.pushConstant =
                 {
                     .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-                    .meshes        = meshBuffer.buffers[FIF].deviceAddress,
+                    .meshes        = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
                     .positions     = geometryBuffer.positionBuffer.deviceAddress,
                     .lightIndex    = static_cast<u32>(i),

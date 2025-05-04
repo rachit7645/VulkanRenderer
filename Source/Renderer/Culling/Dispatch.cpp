@@ -34,6 +34,7 @@ namespace Renderer::Culling
     void Dispatch::DispatchFrustumCulling
     (
         usize FIF,
+        usize frameIndex,
         const glm::mat4& projectionView,
         const Vk::CommandBuffer& cmdBuffer,
         const Buffers::MeshBuffer& meshBuffer,
@@ -48,7 +49,7 @@ namespace Renderer::Culling
 
         frustumPipeline.pushConstant =
         {
-            .meshes            = meshBuffer.buffers[FIF].deviceAddress,
+            .meshes            = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .drawCalls         = indirectBuffer.drawCallBuffers[FIF].drawCallBuffer.deviceAddress,
             .culledDrawCalls   = indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.deviceAddress,
             .culledMeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,

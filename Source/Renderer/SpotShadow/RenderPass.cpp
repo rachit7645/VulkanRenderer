@@ -86,6 +86,7 @@ namespace Renderer::SpotShadow
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
@@ -128,6 +129,7 @@ namespace Renderer::SpotShadow
             cullingDispatch.DispatchFrustumCulling
             (
                 FIF,
+                frameIndex,
                 lightsBuffer.shadowedSpotLights[i].matrix,
                 cmdBuffer,
                 meshBuffer,
@@ -196,7 +198,7 @@ namespace Renderer::SpotShadow
             pipeline.pushConstant =
             {
                 .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-                .meshes        = meshBuffer.buffers[FIF].deviceAddress,
+                .meshes        = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                 .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
                 .positions     = geometryBuffer.positionBuffer.deviceAddress,
                 .currentIndex  = static_cast<u32>(i)

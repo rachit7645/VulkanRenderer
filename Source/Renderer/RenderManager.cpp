@@ -178,6 +178,7 @@ namespace Renderer
         m_pointShadowPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
@@ -191,6 +192,7 @@ namespace Renderer
         m_spotShadowPass.Render
         (
             m_currentFIF,
+            m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
             m_modelManager.geometryBuffer,
@@ -246,7 +248,6 @@ namespace Renderer
         m_shadowRTPass.Render
         (
             m_currentFIF,
-            m_frameIndex,
             cmdBuffer,
             m_megaSet,
             m_framebufferManager,
@@ -257,7 +258,6 @@ namespace Renderer
         m_lightingPass.Render
         (
             m_currentFIF,
-            m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
@@ -268,7 +268,6 @@ namespace Renderer
         m_skyboxPass.Render
         (
             m_currentFIF,
-            m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
@@ -392,8 +391,22 @@ namespace Renderer
         );
 
         m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_sceneData);
-        m_meshBuffer.LoadMeshes(m_currentFIF, m_context.allocator, m_modelManager, m_scene->renderObjects);
-        m_indirectBuffer.WriteDrawCalls(m_currentFIF, m_context.allocator, m_modelManager, m_scene->renderObjects);
+
+        m_meshBuffer.LoadMeshes
+        (
+            m_frameIndex,
+            m_context.allocator,
+            m_modelManager,
+            m_scene->renderObjects
+        );
+
+        m_indirectBuffer.WriteDrawCalls
+        (
+            m_currentFIF,
+            m_context.allocator,
+            m_modelManager,
+            m_scene->renderObjects
+        );
     }
 
     void RenderManager::ImGuiDisplay()
@@ -464,7 +477,12 @@ namespace Renderer
         // Frame indices 0 to Vk::FRAMES_IN_FLIGHT - 1 do not need to wait for anything
         if (m_frameIndex >= Vk::FRAMES_IN_FLIGHT)
         {
-            m_timeline.WaitForStage(m_frameIndex - Vk::FRAMES_IN_FLIGHT, Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED, m_context.device);
+            m_timeline.WaitForStage
+            (
+                m_frameIndex - Vk::FRAMES_IN_FLIGHT,
+                Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED,
+                m_context.device
+            );
         }
     }
 

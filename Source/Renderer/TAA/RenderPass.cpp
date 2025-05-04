@@ -327,7 +327,7 @@ namespace Renderer::TAA
             .currentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
             .historyBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
             .velocityIndex      = framebufferManager.GetFramebufferView("MotionVectorsView").sampledImageIndex,
-            .sceneDepthIndex    = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex
+            .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
         };
 
         pipeline.PushConstants
