@@ -21,7 +21,6 @@
 #include "Vulkan/DebugUtils.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
-#include "Util/Maths.h"
 #include "Vulkan/ImmediateSubmit.h"
 
 namespace Renderer
@@ -50,13 +49,11 @@ namespace Renderer
           m_cullingDispatch(m_context),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
-          m_sceneBuffer(m_context.device, m_context.allocator),
-          m_lightsBuffer(m_context.device, m_context.allocator)
+          m_sceneBuffer(m_context.device, m_context.allocator)
     {
         m_globalDeletionQueue.PushDeletor([&] ()
         {
             m_scene->Destroy(m_context.device);
-            m_lightsBuffer.Destroy(m_context.allocator);
             m_sceneBuffer.Destroy(m_context.allocator);
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
@@ -185,7 +182,6 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_lightsBuffer,
             m_cullingDispatch
         );
 
@@ -199,7 +195,6 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_lightsBuffer,
             m_cullingDispatch
         );
 
@@ -212,7 +207,6 @@ namespace Renderer
             m_modelManager.geometryBuffer,
             m_sceneBuffer,
             m_meshBuffer,
-            m_sceneData,
             m_indirectBuffer,
             m_cullingDispatch
         );
@@ -335,62 +329,14 @@ namespace Renderer
             m_deletionQueues[m_currentFIF]
         );
 
-        ImGuiDisplay();
-
-        m_sceneData.previousMatrices = m_sceneData.currentMatrices;
-
-        const auto projection = Maths::CreateInfiniteProjectionReverseZ
-        (
-            m_scene->camera.FOV,
-            static_cast<f32>(m_swapchain.extent.width) /
-            static_cast<f32>(m_swapchain.extent.height),
-            Renderer::NEAR_PLANE
-        );
-
-        auto jitter = Renderer::JITTER_SAMPLES[m_frameIndex % JITTER_SAMPLE_COUNT];
-        jitter     -= glm::vec2(0.5f);
-        jitter     /= glm::vec2(m_swapchain.extent.width, m_swapchain.extent.height);
-
-        auto jitteredProjection = projection;
-
-        jitteredProjection[2][0] += jitter.x;
-        jitteredProjection[2][1] += jitter.y;
-
-        const auto view = m_scene->camera.GetViewMatrix();
-
-        m_sceneData.currentMatrices  =
-        {
-            .projection         = projection,
-            .inverseProjection  = glm::inverse(jitteredProjection),
-            .jitteredProjection = jitteredProjection,
-            .view               = view,
-            .inverseView        = glm::inverse(view),
-            .normalView         = Maths::CreateNormalMatrix(view)
-        };
-
-        m_sceneData.cameraPosition = m_scene->camera.position;
-        m_sceneData.nearPlane      = Renderer::NEAR_PLANE;
-        m_sceneData.farPlane       = Renderer::FAR_PLANE; // There isn't actually a far plane right now lol
-
-        const auto lightsBuffer = m_lightsBuffer.buffers[m_currentFIF].deviceAddress;
-
-        m_sceneData.commonLight         = lightsBuffer + 0;
-        m_sceneData.dirLights           = lightsBuffer + m_lightsBuffer.GetDirLightOffset();
-        m_sceneData.pointLights         = lightsBuffer + m_lightsBuffer.GetPointLightOffset();
-        m_sceneData.shadowedPointLights = lightsBuffer + m_lightsBuffer.GetShadowedPointLightOffset();
-        m_sceneData.spotLights          = lightsBuffer + m_lightsBuffer.GetSpotLightOffset();
-        m_sceneData.shadowedSpotLights  = lightsBuffer + m_lightsBuffer.GetShadowedSpotLightOffset();
-
-        m_lightsBuffer.WriteLights
+        m_sceneBuffer.WriteScene
         (
             m_currentFIF,
+            m_frameIndex,
             m_context.allocator,
-            {&m_scene->sun, 1},
-            m_scene->pointLights,
-            m_scene->spotLights
+            m_swapchain.extent,
+            *m_scene
         );
-
-        m_sceneBuffer.WriteScene(m_currentFIF, m_context.allocator, m_sceneData);
 
         m_meshBuffer.LoadMeshes
         (
@@ -407,6 +353,8 @@ namespace Renderer
             m_modelManager,
             m_scene->renderObjects
         );
+
+        ImGuiDisplay();
     }
 
     void RenderManager::ImGuiDisplay()
@@ -735,7 +683,14 @@ namespace Renderer
 
                 io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
 
-                m_modelManager.Update(cmdBuffer, m_context.device, m_context.allocator, m_deletionQueues[m_currentFIF]);
+                m_modelManager.Update
+                (
+                    cmdBuffer,
+                    m_context.device,
+                    m_context.allocator,
+                    m_deletionQueues[m_currentFIF]
+                );
+
                 m_megaSet.Update(m_context.device);
             }
         );

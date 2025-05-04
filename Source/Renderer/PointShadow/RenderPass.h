@@ -50,7 +50,6 @@ namespace Renderer::PointShadow
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const Buffers::LightsBuffer& lightsBuffer,
             Culling::Dispatch& cullingDispatch
         );
 

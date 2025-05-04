@@ -93,11 +93,10 @@ namespace Renderer::PointShadow
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Buffers::LightsBuffer& lightsBuffer,
         Culling::Dispatch& cullingDispatch
     )
     {
-        if (lightsBuffer.shadowedPointLights.empty())
+        if (sceneBuffer.lightsBuffer.shadowedPointLights.empty())
         {
             return;
         }
@@ -124,7 +123,7 @@ namespace Renderer::PointShadow
             }
         );
 
-        for (usize i = 0; i < lightsBuffer.shadowedPointLights.size(); ++i)
+        for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedPointLights.size(); ++i)
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
@@ -136,7 +135,7 @@ namespace Renderer::PointShadow
                 (
                     FIF,
                     frameIndex,
-                    lightsBuffer.shadowedPointLights[i].matrices[face],
+                    sceneBuffer.lightsBuffer.shadowedPointLights[i].matrices[face],
                     cmdBuffer,
                     meshBuffer,
                     indirectBuffer

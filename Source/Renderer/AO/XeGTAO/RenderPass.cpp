@@ -274,12 +274,7 @@ namespace Renderer::AO::XeGTAO
             sceneBuffer
         );
 
-        Denoise
-        (
-            cmdBuffer,
-            framebufferManager,
-            megaSet
-        );
+        Denoise(cmdBuffer, framebufferManager, megaSet);
 
         Vk::EndLabel(cmdBuffer);
     }

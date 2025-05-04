@@ -16,12 +16,15 @@
 
 #include "SceneBuffer.h"
 
+#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Util/Maths.h"
 
 namespace Renderer::Buffers
 {
     SceneBuffer::SceneBuffer(VkDevice device, VmaAllocator allocator)
+        : lightsBuffer(device, allocator)
     {
         for (usize i = 0; i < buffers.size(); ++i)
         {
@@ -41,12 +44,72 @@ namespace Renderer::Buffers
         }
     }
 
-    void SceneBuffer::WriteScene(usize FIF, VmaAllocator allocator, const Renderer::Scene& scene)
+    void SceneBuffer::WriteScene
+    (
+        usize FIF,
+        usize frameIndex,
+        VmaAllocator allocator,
+        VkExtent2D swapchainExtent,
+        const Engine::Scene& scene
+    )
     {
+        lightsBuffer.WriteLights
+        (
+            FIF,
+            allocator,
+            {&scene.sun, 1},
+            scene.pointLights,
+            scene.spotLights
+        );
+        
+        gpuScene.previousMatrices = gpuScene.currentMatrices;
+
+        const auto projection = Maths::CreateInfiniteProjectionReverseZ
+        (
+            scene.camera.FOV,
+            static_cast<f32>(swapchainExtent.width) /
+            static_cast<f32>(swapchainExtent.height),
+            Renderer::NEAR_PLANE
+        );
+
+        auto jitter = Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT];
+        jitter     -= glm::vec2(0.5f);
+        jitter     /= glm::vec2(swapchainExtent.width, swapchainExtent.height);
+
+        auto jitteredProjection = projection;
+
+        jitteredProjection[2][0] += jitter.x;
+        jitteredProjection[2][1] += jitter.y;
+
+        const auto view = scene.camera.GetViewMatrix();
+
+        gpuScene.currentMatrices  =
+        {
+            .projection         = projection,
+            .inverseProjection  = glm::inverse(jitteredProjection),
+            .jitteredProjection = jitteredProjection,
+            .view               = view,
+            .inverseView        = glm::inverse(view),
+            .normalView         = Maths::CreateNormalMatrix(view)
+        };
+
+        gpuScene.cameraPosition = scene.camera.position;
+        gpuScene.nearPlane      = Renderer::NEAR_PLANE;
+        gpuScene.farPlane       = Renderer::FAR_PLANE; // There isn't actually a far plane right now lol
+
+        const auto lightsBufferAddress = lightsBuffer.buffers[FIF].deviceAddress;
+
+        gpuScene.commonLight         = lightsBufferAddress + 0;
+        gpuScene.dirLights           = lightsBufferAddress + lightsBuffer.GetDirLightOffset();
+        gpuScene.pointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
+        gpuScene.shadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
+        gpuScene.spotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();
+        gpuScene.shadowedSpotLights  = lightsBufferAddress + lightsBuffer.GetShadowedSpotLightOffset();
+        
         std::memcpy
         (
             buffers[FIF].allocationInfo.pMappedData,
-            &scene,
+            &gpuScene,
             sizeof(Renderer::Scene)
         );
 
@@ -64,6 +127,8 @@ namespace Renderer::Buffers
 
     void SceneBuffer::Destroy(VmaAllocator allocator)
     {
+        lightsBuffer.Destroy(allocator);
+
         for (auto& buffer : buffers)
         {
             buffer.Destroy(allocator);

@@ -77,16 +77,18 @@ namespace Renderer::Depth
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Renderer::Scene& scene,
         const Buffers::IndirectBuffer& indirectBuffer,
         Culling::Dispatch& cullingDispatch
     )
     {
+        const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
+        const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
+
         cullingDispatch.DispatchFrustumCulling
         (
             FIF,
             frameIndex,
-            scene.currentMatrices.projection * scene.currentMatrices.view,
+            projectionView,
             cmdBuffer,
             meshBuffer,
             indirectBuffer

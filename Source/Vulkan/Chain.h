@@ -88,7 +88,7 @@ namespace Vk
     template<typename T>
     const T* FindStructureInChain(const void* pNext)
     {
-        for (auto current = static_cast<const VkBaseOutStructure*>(pNext); current != nullptr; current = current->pNext)
+        for (auto current = static_cast<const VkBaseInStructure*>(pNext); current != nullptr; current = current->pNext)
         {
             if (current->sType == VulkanStructType<T>::sType)
             {

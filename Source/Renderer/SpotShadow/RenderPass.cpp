@@ -93,11 +93,10 @@ namespace Renderer::SpotShadow
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Buffers::LightsBuffer& lightsBuffer,
         Culling::Dispatch& cullingDispatch
     )
     {
-        if (lightsBuffer.shadowedSpotLights.empty())
+        if (sceneBuffer.lightsBuffer.shadowedSpotLights.empty())
         {
             return;
         }
@@ -124,13 +123,13 @@ namespace Renderer::SpotShadow
             }
         );
 
-        for (usize i = 0; i < lightsBuffer.shadowedSpotLights.size(); ++i)
+        for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedSpotLights.size(); ++i)
         {
             cullingDispatch.DispatchFrustumCulling
             (
                 FIF,
                 frameIndex,
-                lightsBuffer.shadowedSpotLights[i].matrix,
+                sceneBuffer.lightsBuffer.shadowedSpotLights[i].matrix,
                 cmdBuffer,
                 meshBuffer,
                 indirectBuffer

@@ -17,9 +17,11 @@
 #ifndef SCENE_BUFFER_H
 #define SCENE_BUFFER_H
 
+#include "LightsBuffer.h"
 #include "Renderer/Scene.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
+#include "Engine/Scene.h"
 
 namespace Renderer::Buffers
 {
@@ -28,9 +30,20 @@ namespace Renderer::Buffers
     public:
         SceneBuffer(VkDevice device, VmaAllocator allocator);
 
-        void WriteScene(usize FIF, VmaAllocator allocator, const Renderer::Scene& scene);
+        void WriteScene
+        (
+            usize FIF,
+            usize frameIndex,
+            VmaAllocator allocator,
+            VkExtent2D swapchainExtent,
+            const Engine::Scene& scene
+        );
 
         void Destroy(VmaAllocator allocator);
+
+        Renderer::Scene gpuScene = {};
+
+        Buffers::LightsBuffer lightsBuffer;
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
     };

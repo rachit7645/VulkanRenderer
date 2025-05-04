@@ -20,7 +20,6 @@
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
-#include "Buffers/LightsBuffer.h"
 #include "PostProcess/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
@@ -124,14 +123,11 @@ namespace Renderer
         Buffers::MeshBuffer     m_meshBuffer;
         Buffers::IndirectBuffer m_indirectBuffer;
         Buffers::SceneBuffer    m_sceneBuffer;
-        Buffers::LightsBuffer   m_lightsBuffer;
 
         // Scene objects
         std::optional<Engine::Scene> m_scene = std::nullopt;
 
         bool m_isSwapchainOk = true;
-
-        Renderer::Scene m_sceneData = {};
     };
 }
 
