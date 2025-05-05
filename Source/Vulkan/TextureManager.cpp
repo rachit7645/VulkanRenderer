@@ -49,13 +49,12 @@ namespace Vk
             device,
             texture.image,
             VK_IMAGE_VIEW_TYPE_2D,
-            texture.image.format,
             {
                 .aspectMask     = texture.image.aspect,
                 .baseMipLevel   = 0,
                 .levelCount     = texture.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = texture.image.arrayLayers
             }
         );
 
@@ -111,13 +110,12 @@ namespace Vk
             device,
             texture.image,
             VK_IMAGE_VIEW_TYPE_2D,
-            texture.image.format,
             {
                 .aspectMask     = texture.image.aspect,
                 .baseMipLevel   = 0,
                 .levelCount     = texture.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = texture.image.arrayLayers
             }
         );
 

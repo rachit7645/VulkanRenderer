@@ -25,7 +25,7 @@
 
 layout(location = 0) out      vec4 fragCurrentPosition;
 layout(location = 1) out      vec4 fragPreviousPosition;
-layout(location = 2) out      vec2 fragTexCoords;
+layout(location = 2) out      vec2 fragUV0;
 layout(location = 3) out      mat3 fragTBNMatrix;
 layout(location = 6) out flat uint fragDrawID;
 
@@ -48,7 +48,7 @@ void main()
                            Constants.Scene.previousMatrices.view *
                            previousMesh.transform * vec4(position, 1.0f);
 
-    fragTexCoords = vertex.uv0;
+    fragUV0 = vertex.uv0;
     fragDrawID    = meshIndex;
 
     vec3 N = normalize(currentMesh.normalMatrix * vertex.normal);

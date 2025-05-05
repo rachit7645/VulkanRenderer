@@ -28,7 +28,6 @@ namespace Vk
         VkDevice device,
         const Vk::Image& image,
         VkImageViewType viewType,
-        VkFormat format,
         const VkImageSubresourceRange& subresourceRange
     )
     {
@@ -39,7 +38,7 @@ namespace Vk
             .flags            = 0,
             .image            = image.handle,
             .viewType         = viewType,
-            .format           = format,
+            .format           = image.format,
             .components       = {
                 .r = VK_COMPONENT_SWIZZLE_IDENTITY,
                 .g = VK_COMPONENT_SWIZZLE_IDENTITY,

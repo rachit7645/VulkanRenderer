@@ -32,7 +32,6 @@ namespace Vk
             VkDevice device,
             const Vk::Image& image,
             VkImageViewType viewType,
-            VkFormat format,
             const VkImageSubresourceRange& subresourceRange
         );
 

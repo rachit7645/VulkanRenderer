@@ -26,7 +26,7 @@
 
 layout(location = 0) in      vec4 fragCurrentPosition;
 layout(location = 1) in      vec4 fragPreviousPosition;
-layout(location = 2) in      vec2 fragTexCoords;
+layout(location = 2) in      vec2 fragUV0;
 layout(location = 3) in      mat3 fragTBNMatrix;
 layout(location = 6) in flat uint fragDrawID;
 
@@ -38,16 +38,16 @@ void main()
 {
     Mesh mesh = Constants.CurrentMeshes.meshes[fragDrawID];
 
-    vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragTexCoords);
+    vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0);
     albedo.rgb  *= mesh.material.albedoFactor.rgb;
 
     // Ignoring alpha component for now
     gAlbedo = albedo.rgb;
 
-    vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
+    vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);
 
-    vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtl], Samplers[Constants.TextureSamplerIndex]), fragTexCoords).rgb;
+    vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtl], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
     aoRghMtl.g   *= mesh.material.roughnessFactor;
     aoRghMtl.b   *= mesh.material.metallicFactor;
 

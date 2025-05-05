@@ -548,8 +548,6 @@ namespace Renderer
             "Failed to wait for fences!"
         );
 
-        m_timeline.WaitForStage(m_frameIndex - 1, Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED, m_context.device);
-
         m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
 
         m_taaPass.ResetHistory();

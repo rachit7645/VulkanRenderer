@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SOURCELOCATION_H
-#define SOURCELOCATION_H
+#ifndef SOURCE_LOCATION_H
+#define SOURCE_LOCATION_H
 
 #include <string_view>
 #include <source_location>

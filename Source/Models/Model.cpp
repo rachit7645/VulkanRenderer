@@ -25,6 +25,7 @@
 #include "Util/Enum.h"
 #include "Util/Util.h"
 #include "Util/Maths.h"
+#include "Util/Visitor.h"
 
 namespace Models
 {
@@ -591,8 +592,14 @@ namespace Models
             Logger::Error("Image index not found! [textureIndex={}]\n", textureIndex);
         }
 
-        const auto& image    = asset.images[texture.basisuImageIndex.value()];
-        const auto& filePath = std::get<fastgltf::sources::URI>(image.data); // TODO: Replace with visitor
+        const auto& image = asset.images[texture.basisuImageIndex.value()];
+
+        if (!std::holds_alternative<fastgltf::sources::URI>(image.data))
+        {
+            Logger::Error("Unsupported format! [Texture Index={}] [Image Index={}]\n", textureIndex, texture.basisuImageIndex.value());
+        }
+
+        const auto& filePath = std::get<fastgltf::sources::URI>(image.data);
 
         if (filePath.fileByteOffset != 0)
         {

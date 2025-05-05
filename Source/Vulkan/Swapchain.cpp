@@ -237,13 +237,12 @@ namespace Vk
                 context.device,
                 images[i],
                 VK_IMAGE_VIEW_TYPE_2D,
-                imageFormat,
                 {
                     .aspectMask     = images[i].aspect,
                     .baseMipLevel   = 0,
                     .levelCount     = images[i].mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1
+                    .layerCount     = images[i].mipLevels
                 }
             );
 

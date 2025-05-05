@@ -301,7 +301,6 @@ namespace Renderer::IBL
             context.device,
             skybox,
             VK_IMAGE_VIEW_TYPE_CUBE,
-            skybox.format,
             {
                 .aspectMask     = skybox.aspect,
                 .baseMipLevel   = 0,
@@ -429,7 +428,6 @@ namespace Renderer::IBL
             context.device,
             skybox,
             VK_IMAGE_VIEW_TYPE_CUBE,
-            skybox.format,
             {
                 .aspectMask     = skybox.aspect,
                 .baseMipLevel   = 0,
@@ -516,11 +514,10 @@ namespace Renderer::IBL
             context.device,
             irradiance,
             VK_IMAGE_VIEW_TYPE_CUBE,
-            irradiance.format,
             {
                 .aspectMask     = irradiance.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = 1,
+                .levelCount     = irradiance.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = irradiance.arrayLayers
             }
@@ -718,7 +715,6 @@ namespace Renderer::IBL
                 context.device,
                 preFilter,
                 VK_IMAGE_VIEW_TYPE_CUBE,
-                preFilter.format,
                 {
                     .aspectMask     = preFilter.aspect,
                     .baseMipLevel   = static_cast<u32>(mip),
@@ -845,7 +841,6 @@ namespace Renderer::IBL
             context.device,
             preFilter,
             VK_IMAGE_VIEW_TYPE_CUBE,
-            preFilter.format,
             {
                 .aspectMask     = preFilter.aspect,
                 .baseMipLevel   = 0,
@@ -910,13 +905,12 @@ namespace Renderer::IBL
             context.device,
             brdfLut,
             VK_IMAGE_VIEW_TYPE_2D,
-            brdfLut.format,
             {
-                brdfLut.aspect,
-                0,
-                brdfLut.mipLevels,
-                0,
-                1
+                .aspectMask     = brdfLut.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = brdfLut.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = brdfLut.arrayLayers
             }
         );
 
@@ -934,7 +928,7 @@ namespace Renderer::IBL
                 0,
                 brdfLut.mipLevels,
                 0,
-                1
+                brdfLut.arrayLayers
             }
         );
 

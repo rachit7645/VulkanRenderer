@@ -19,6 +19,7 @@
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
 #include "Util/Log.h"
+#include "Util/Visitor.h"
 
 namespace Vk
 {
@@ -295,13 +296,12 @@ namespace Vk
                 device,
                 framebuffer.image,
                 viewType,
-                framebuffer.image.format,
                 {
-                    framebuffer.image.aspect,
-                    framebufferView.size.baseMipLevel,
-                    framebufferView.size.levelCount,
-                    framebufferView.size.baseArrayLayer,
-                    framebufferView.size.layerCount
+                    .aspectMask     = framebuffer.image.aspect,
+                    .baseMipLevel   = framebufferView.size.baseMipLevel,
+                    .levelCount     = framebufferView.size.levelCount,
+                    .baseArrayLayer = framebufferView.size.baseArrayLayer,
+                    .layerCount     = framebufferView.size.layerCount
                 }
             );
 
@@ -422,24 +422,24 @@ namespace Vk
 
     FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue)
     {
-        // TODO: Replace with visitor pattern
-
-        if (std::holds_alternative<FramebufferSize>(sizeData))
-        {
-            return std::get<FramebufferSize>(sizeData);
-        }
-
-        if (std::holds_alternative<FramebufferResizeCallbackWithExtent>(sizeData))
-        {
-            return std::get<FramebufferResizeCallbackWithExtent>(sizeData)(m_extent);
-        }
-
-        if (std::holds_alternative<FramebufferResizeCallbackWithExtentAndDeletionQueue>(sizeData))
-        {
-            return std::get<FramebufferResizeCallbackWithExtentAndDeletionQueue>(sizeData)(m_extent, deletionQueue);
-        }
-
-        Logger::Error("{}\n", "Invalid framebuffer size!");
+        return std::visit(Util::Visitor{
+            [] (std::monostate) -> Vk::FramebufferSize
+            {
+                Logger::Error("{}\n", "Invalid framebuffer size!");
+            },
+            [] (const FramebufferSize& size) -> Vk::FramebufferSize
+            {
+                return size;
+            },
+            [this] (const FramebufferResizeCallbackWithExtent& Callback) -> Vk::FramebufferSize
+            {
+                return Callback(m_extent);
+            },
+            [this, &deletionQueue] (const FramebufferResizeCallbackWithExtentAndDeletionQueue& Callback) -> Vk::FramebufferSize
+            {
+                return Callback(m_extent, deletionQueue);
+            }
+        }, sizeData);
     }
 
     template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
