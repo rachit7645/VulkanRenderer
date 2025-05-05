@@ -394,23 +394,66 @@ namespace Vk
     {
         const auto& formats = m_swapChainInfo.formats;
 
-        for (const auto& availableFormat : formats)
+        constexpr std::array PREFERRED_FORMATS =
         {
-            if (availableFormat.surfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
-                availableFormat.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
-            {
-                Logger::Debug
-                (
-                    "Choosing surface format! [Format={}] [ColorSpace={}]\n",
-                    string_VkFormat(availableFormat.surfaceFormat.format),
-                    string_VkColorSpaceKHR(availableFormat.surfaceFormat.colorSpace)
-                );
+            VK_FORMAT_R8G8B8A8_SRGB,
+            VK_FORMAT_B8G8R8A8_SRGB,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_B8G8R8A8_UNORM
+        };
 
-                return availableFormat;
+        // Really, there's no way this is gonna happen lol
+        [[unlikely]] if (formats.empty())
+        {
+            Logger::Error("{}\n", "No surface formats found!");
+        }
+
+        // Check preferred formats first
+        for (const auto format : PREFERRED_FORMATS)
+        {
+            for (const auto& format2 : formats)
+            {
+                const auto& surfaceFormat = format2.surfaceFormat;
+
+                if (surfaceFormat.format == format &&
+                    surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                {
+                    Logger::Debug
+                    (
+                        "Choosing surface format! [Format={}] [ColorSpace={}]\n",
+                        string_VkFormat(surfaceFormat.format),
+                        string_VkColorSpaceKHR(surfaceFormat.colorSpace)
+                    );
+
+                    return format2;
+                }
             }
         }
 
-        // By default, return the first format available (probably rgba or something)
+        // Fallback #1 -> Any format with VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+        for (const auto& format2 : formats)
+        {
+            if (format2.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                Logger::Debug
+                (
+                    "Choosing surface format! [Fallback #1] [Format={}] [ColorSpace={}]\n",
+                    string_VkFormat(format2.surfaceFormat.format),
+                    string_VkColorSpaceKHR(format2.surfaceFormat.colorSpace)
+                );
+
+                return format2;
+            }
+        }
+
+        // Fallback #2 -> Return first available format (probably won't work)
+        Logger::Debug
+        (
+            "Choosing surface format! [Fallback #2] [Format={}] [ColorSpace={}]\n",
+            string_VkFormat(formats[0].surfaceFormat.format),
+            string_VkColorSpaceKHR(formats[0].surfaceFormat.colorSpace)
+        );
+
         return formats[0];
     }
 
@@ -418,23 +461,24 @@ namespace Vk
     {
         const auto& presentModes = m_swapChainInfo.presentModes;
 
-        for (const auto presentMode : presentModes)
-        {
-            // Mailbox my beloved
-            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-            {
-                Logger::Debug
-                (
-                    "Choosing presentation mode! [PresentMode={}]\n",
-                    string_VkPresentModeKHR(presentMode)
-                );
+        // FIFO is guaranteed to be supported (Lame)
+        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
-                return presentMode;
+        for (const auto availablePresentMode : presentModes)
+        {
+            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+                presentMode = availablePresentMode;
             }
         }
 
-        // FIFO is guaranteed to be supported (Lame)
-        return VK_PRESENT_MODE_FIFO_KHR;
+        Logger::Debug
+        (
+            "Choosing presentation mode! [PresentMode={}]\n",
+            string_VkPresentModeKHR(presentMode)
+        );
+
+        return presentMode;
     }
 
     VkExtent2D Swapchain::ChooseSwapExtent(const glm::ivec2& size) const
@@ -457,7 +501,7 @@ namespace Vk
         const auto minSize = glm::ivec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
         const auto maxSize = glm::ivec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
 
-        auto actualExtent = glm::clamp(size, minSize, maxSize);
+        const auto actualExtent = glm::clamp(size, minSize, maxSize);
 
         Logger::Debug("Choosing swap extent! [X={}] [Y={}]\n", actualExtent.x, actualExtent.y);
 

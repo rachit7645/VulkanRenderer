@@ -86,15 +86,6 @@ namespace Renderer
         // ImGui Yoy
         InitImGui();
 
-        m_framebufferManager.Update
-        (
-            m_context,
-            m_formatHelper,
-            m_cmdBufferAllocator,
-            m_megaSet,
-            m_swapchain.extent
-        );
-
         m_frameCounter.Reset();
     }
 
@@ -316,6 +307,17 @@ namespace Renderer
     void RenderManager::Update(const Vk::CommandBuffer& cmdBuffer)
     {
         m_frameCounter.Update();
+
+        m_framebufferManager.Update
+        (
+            cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_formatHelper,
+            m_swapchain.extent,
+            m_megaSet,
+            m_deletionQueues[m_currentFIF]
+        );
 
         m_scene->Update
         (
@@ -549,9 +551,6 @@ namespace Renderer
         m_timeline.WaitForStage(m_frameIndex - 1, Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED, m_context.device);
 
         m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
-
-        m_framebufferManager.Update(m_context, m_formatHelper, m_cmdBufferAllocator, m_megaSet, m_swapchain.extent);
-        m_megaSet.Update(m_context.device);
 
         m_taaPass.ResetHistory();
 

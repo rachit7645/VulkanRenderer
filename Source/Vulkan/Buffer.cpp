@@ -35,7 +35,6 @@ namespace Vk
     )
         : requestedSize(size)
     {
-        // TODO: Use flags2 once RenderDoc supports it
         const VkBufferCreateInfo createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,

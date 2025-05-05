@@ -66,17 +66,26 @@ namespace Vk
 
     void FramebufferManager::Update
     (
-        const Vk::Context& context,
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::FormatHelper& formatHelper,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const VkExtent2D& extent,
         Vk::MegaSet& megaSet,
-        VkExtent2D swapchainExtent
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (m_framebuffers.empty())
         {
             return;
         }
+
+        if (extent.width == m_extent.width && extent.height == m_extent.height)
+        {
+            return;
+        }
+
+        m_extent = extent;
 
         std::unordered_set<std::string>    updatedFramebuffers;
         std::vector<VkImageMemoryBarrier2> barriers;
@@ -95,14 +104,17 @@ namespace Vk
                 continue;
             }
 
-            const auto size = GetFramebufferSize(swapchainExtent, framebuffer.sizeData);
+            const auto size = GetFramebufferSize(framebuffer.sizeData, deletionQueue);
 
             if (size.Matches(framebuffer.image))
             {
                 continue;
             }
 
-            framebuffer.image.Destroy(context.allocator);
+            deletionQueue.PushDeletor([allocator, image = framebuffer.image] () mutable
+            {
+                image.Destroy(allocator);
+            });
 
             VkImageCreateInfo createInfo = {};
             {
@@ -205,9 +217,9 @@ namespace Vk
             AddUsage<FramebufferUsage::Storage,             VK_IMAGE_USAGE_STORAGE_BIT     >(framebuffer.usage, createInfo.usage);
             AddUsage<FramebufferUsage::TransferDestination, VK_IMAGE_USAGE_TRANSFER_DST_BIT>(framebuffer.usage, createInfo.usage);
 
-            framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
+            framebuffer.image = Vk::Image(allocator, createInfo, aspect);
 
-            Vk::SetDebugName(context.device, framebuffer.image.handle, name);
+            Vk::SetDebugName(device, framebuffer.image.handle, name);
 
             if (isFixedSize)
             {
@@ -247,9 +259,18 @@ namespace Vk
 
             const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
 
-            FreeDescriptors(megaSet, framebufferView, framebuffer.usage);
+            FreeDescriptors
+            (
+                framebufferView,
+                framebuffer.usage,
+                megaSet,
+                deletionQueue
+            );
 
-            framebufferView.view.Destroy(context.device);
+            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            {
+                view.Destroy(device);
+            });
 
             VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
 
@@ -271,7 +292,7 @@ namespace Vk
 
             framebufferView.view = Vk::ImageView
             (
-                context.device,
+                device,
                 framebuffer.image,
                 viewType,
                 framebuffer.image.format,
@@ -286,37 +307,28 @@ namespace Vk
 
             AllocateDescriptors(megaSet, framebufferView, framebuffer.usage);
 
-            Vk::SetDebugName(context.device, framebufferView.view.handle, name);
+            Vk::SetDebugName(device, framebufferView.view.handle, name);
         }
 
         if (!barriers.empty())
         {
-            Vk::ImmediateSubmit
-            (
-                context.device,
-                context.graphicsQueue,
-                cmdBufferAllocator,
-                [&] (const Vk::CommandBuffer cmdBuffer)
-                {
-                    const VkDependencyInfo dependencyInfo =
-                    {
-                        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                        .pNext                    = nullptr,
-                        .dependencyFlags          = 0,
-                        .memoryBarrierCount       = 0,
-                        .pMemoryBarriers          = nullptr,
-                        .bufferMemoryBarrierCount = 0,
-                        .pBufferMemoryBarriers    = nullptr,
-                        .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
-                        .pImageMemoryBarriers     = barriers.data()
-                    };
+            const VkDependencyInfo dependencyInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .pNext                    = nullptr,
+                .dependencyFlags          = 0,
+                .memoryBarrierCount       = 0,
+                .pMemoryBarriers          = nullptr,
+                .bufferMemoryBarrierCount = 0,
+                .pBufferMemoryBarriers    = nullptr,
+                .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
+                .pImageMemoryBarriers     = barriers.data()
+            };
 
-                    vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
-                }
-            );
+            vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
         }
 
-        megaSet.Update(context.device);
+        megaSet.Update(device);
     }
 
     Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name)
@@ -371,7 +383,8 @@ namespace Vk
     (
         const std::string_view framebufferName,
         VkDevice device,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (!m_framebuffers.contains(framebufferName.data()))
@@ -387,9 +400,18 @@ namespace Vk
 
             if (framebufferView.framebuffer == framebufferName)
             {
-                FreeDescriptors(megaSet, framebufferView, framebuffer.usage);
+                FreeDescriptors
+                (
+                    framebufferView,
+                    framebuffer.usage,
+                    megaSet,
+                    deletionQueue
+                );
 
-                framebufferView.view.Destroy(device);
+                deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+                {
+                    view.Destroy(device);
+                });
 
                 return true;
             }
@@ -398,16 +420,23 @@ namespace Vk
         });
     }
 
-    FramebufferSize FramebufferManager::GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData)
+    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue)
     {
+        // TODO: Replace with visitor pattern
+
         if (std::holds_alternative<FramebufferSize>(sizeData))
         {
             return std::get<FramebufferSize>(sizeData);
         }
 
-        if (std::holds_alternative<FramebufferResizeCallback>(sizeData))
+        if (std::holds_alternative<FramebufferResizeCallbackWithExtent>(sizeData))
         {
-            return std::get<FramebufferResizeCallback>(sizeData)(extent);
+            return std::get<FramebufferResizeCallbackWithExtent>(sizeData)(m_extent);
+        }
+
+        if (std::holds_alternative<FramebufferResizeCallbackWithExtentAndDeletionQueue>(sizeData))
+        {
+            return std::get<FramebufferResizeCallbackWithExtentAndDeletionQueue>(sizeData)(m_extent, deletionQueue);
         }
 
         Logger::Error("{}\n", "Invalid framebuffer size!");
@@ -442,21 +471,28 @@ namespace Vk
 
     void FramebufferManager::FreeDescriptors
     (
-        Vk::MegaSet& megaSet,
         const Vk::FramebufferView& framebufferView,
-        Vk::FramebufferUsage usage
+        Vk::FramebufferUsage usage,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (framebufferView.view.handle != VK_NULL_HANDLE)
         {
             if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
             {
-                megaSet.FreeSampledImage(framebufferView.sampledImageIndex);
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageIndex]
+                {
+                    megaSet.FreeSampledImage(id);
+                });
             }
 
             if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
             {
-                megaSet.FreeStorageImage(framebufferView.storageImageIndex);
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageIndex]
+                {
+                    megaSet.FreeStorageImage(id);
+                });
             }
         }
     }
@@ -473,7 +509,7 @@ namespace Vk
                     m_framebufferViews.end()
                 );
                 
-                auto CustomOrderedSort = [](const std::string& a, const std::string& b)
+                auto CustomOrderedSort = [] (const std::string& a, const std::string& b)
                 {
                     usize i = 0;
                     usize j = 0;

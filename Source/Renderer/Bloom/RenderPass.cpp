@@ -39,9 +39,15 @@ namespace Renderer::Bloom
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Array2D,
             Vk::FramebufferUsage::Sampled,
-            [device = context.device, &framebufferManager, &megaSet] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [device = context.device, &framebufferManager, &megaSet] (const VkExtent2D& extent, Util::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
             {
-                framebufferManager.DeleteFramebufferViews("Bloom", device, megaSet);
+                framebufferManager.DeleteFramebufferViews
+                (
+                    "Bloom",
+                    device,
+                    megaSet,
+                    deletionQueue
+                );
 
                 const auto size = Vk::FramebufferSize
                 {
