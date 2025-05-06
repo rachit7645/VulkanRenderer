@@ -25,7 +25,6 @@
 #include "Util/Enum.h"
 #include "Util/Util.h"
 #include "Util/Maths.h"
-#include "Util/Visitor.h"
 
 namespace Models
 {
@@ -210,11 +209,6 @@ namespace Models
     {
         for (const auto& primitive : mesh.primitives)
         {
-            std::vector<Index>    indices   = {};
-            std::vector<Position> positions = {};
-            std::vector<Vertex>   vertices  = {};
-            Material              material  = {};
-
             if (primitive.type != fastgltf::PrimitiveType::Triangles)
             {
                 Logger::Warning
@@ -224,6 +218,11 @@ namespace Models
                 );
             }
 
+            Vk::GeometryBuffer::Info indexInfo    = {};
+            Vk::GeometryBuffer::Info positionInfo = {};
+            Vk::GeometryBuffer::Info vertexInfo   = {};
+            Maths::AABB              aabb         = {};
+
             // Indices
             {
                 if (!primitive.indicesAccessor.has_value())
@@ -232,7 +231,6 @@ namespace Models
                 }
 
                 const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
-                indices.reserve(indicesAccessor.count);
 
                 if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
                 {
@@ -243,49 +241,57 @@ namespace Models
                     );
                 }
 
+                const auto [writePointer, info] = geometryBuffer.GetWritePointer<Models::Index>
+                (
+                    allocator,
+                    indicesAccessor.count,
+                    deletionQueue
+                );
+
+                indexInfo = info;
+
                 // Assume indices are u32s
                 switch (indicesAccessor.componentType)
                 {
                 case fastgltf::ComponentType::Byte:
                 {
-                    fastgltf::iterateAccessor<s8>(asset, indicesAccessor, [&] (s8 index)
+                    fastgltf::iterateAccessorWithIndex<s8>(asset, indicesAccessor, [&] (s8 index, usize i)
                     {
-                        indices.push_back(static_cast<Index>(index));
+                        writePointer[i] = static_cast<Index>(static_cast<u8>(index));
                     });
                     break;
                 }
 
                 case fastgltf::ComponentType::UnsignedByte:
                 {
-                    fastgltf::iterateAccessor<u8>(asset, indicesAccessor, [&] (u8 index)
+                    fastgltf::iterateAccessorWithIndex<u8>(asset, indicesAccessor, [&] (u8 index, usize i)
                     {
-                        indices.push_back(static_cast<Index>(index));
+                        writePointer[i] = static_cast<Index>(index);
                     });
                     break;
                 }
 
                 case fastgltf::ComponentType::Short:
                 {
-                    fastgltf::iterateAccessor<s16>(asset, indicesAccessor, [&] (s16 index)
+                    fastgltf::iterateAccessorWithIndex<s16>(asset, indicesAccessor, [&] (s16 index, usize i)
                     {
-                        indices.push_back(static_cast<Index>(index));
+                        writePointer[i] = static_cast<Index>(index);
                     });
                     break;
                 }
 
                 case fastgltf::ComponentType::UnsignedShort:
                 {
-                    fastgltf::iterateAccessor<u16>(asset, indicesAccessor, [&] (u16 index)
+                    fastgltf::iterateAccessorWithIndex<u16>(asset, indicesAccessor, [&] (u16 index, usize i)
                     {
-                        indices.push_back(static_cast<Index>(index));
+                        writePointer[i] = static_cast<Index>(index);
                     });
                     break;
                 }
 
                 case fastgltf::ComponentType::UnsignedInt:
                 {
-                    indices.resize(indicesAccessor.count);
-                    fastgltf::copyFromAccessor<u32>(asset, indicesAccessor, indices.data());
+                    fastgltf::copyFromAccessor<Models::Index>(asset, indicesAccessor, writePointer);
                     break;
                 }
 
@@ -308,14 +314,25 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                positions.resize(positionAccessor.count);
+                const auto [writePointer, info] = geometryBuffer.GetWritePointer<Models::Position>
+                (
+                    allocator,
+                    positionAccessor.count,
+                    deletionQueue
+                );
 
-                static_assert(std::is_same_v<Position, glm::vec3>, "Position does not match glTF position data!");
+                positionInfo = info;
 
-                fastgltf::copyFromAccessor<glm::vec3>(asset, positionAccessor, positions.data());
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&] (const Models::Position& position, usize index)
+                {
+                    aabb.min = glm::min(aabb.min, position);
+                    aabb.max = glm::max(aabb.max, position);
+
+                    writePointer[index] = position;
+                });
             }
 
-            // Normals
+            // Vertex
             {
                 const auto& normalAccessor = GetAccessor
                 (
@@ -325,18 +342,6 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                vertices.reserve(normalAccessor.count);
-
-                fastgltf::iterateAccessor<glm::vec3>(asset, normalAccessor, [&] (const glm::vec3& normal)
-                {
-                    Vertex vertex = {};
-                    vertex.normal = normal;
-                    vertices.emplace_back(vertex);
-                });
-            }
-
-            // UVs
-            {
                 const auto& uvAccessor = GetAccessor
                 (
                     asset,
@@ -345,32 +350,45 @@ namespace Models
                     fastgltf::AccessorType::Vec2
                 );
 
-                fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uvAccessor, [&] (const glm::vec2& uv, usize index)
-                {
-                    vertices[index].uv0 = uv;
-                });
-            }
-
-            // Tangent
-            {
-               const auto& tangentAccessor = GetAccessor
-               (
+                const auto& tangentAccessor = GetAccessor
+                (
                     asset,
                     primitive,
                     "TANGENT",
                     fastgltf::AccessorType::Vec4
                 );
 
-               fastgltf::iterateAccessorWithIndex<glm::vec4>(asset, tangentAccessor, [&] (const glm::vec4& tangent, usize index)
-               {
-                   vertices[index].tangent = tangent;
-               });
+                if (normalAccessor.count != uvAccessor.count || normalAccessor.count != tangentAccessor.count)
+                {
+                    Logger::Error("{}\n", "Invalid primitive!");
+                }
+
+                const auto [writePointer, info] = geometryBuffer.GetWritePointer<Models::Vertex>
+                (
+                    allocator,
+                    normalAccessor.count,
+                    deletionQueue
+                );
+
+                vertexInfo = info;
+
+                for (usize i = 0; i < normalAccessor.count; ++i)
+                {
+                    writePointer[i] = Models::Vertex
+                    {
+                        .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
+                        .uv0     = fastgltf::getAccessorElement<glm::vec2>(asset, uvAccessor,      i),
+                        .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i),
+                    };
+                }
             }
 
             if (!primitive.materialIndex.has_value())
             {
                 Logger::Error("{}\n", "No material in primitive!");
             }
+
+            Material material = {};
 
             const auto& mat = asset.materials[primitive.materialIndex.value()];
 
@@ -501,17 +519,6 @@ namespace Models
                     );
                 }
             }
-
-            const auto [indexInfo, positionInfo, vertexInfo] = geometryBuffer.SetupUploads
-            (
-                allocator,
-                indices,
-                positions,
-                vertices,
-                deletionQueue
-            );
-
-            const auto aabb = Maths::AABB(positions);
 
             meshes.emplace_back
             (

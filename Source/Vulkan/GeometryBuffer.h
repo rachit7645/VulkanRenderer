@@ -41,12 +41,11 @@ namespace Vk
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator);
 
-        std::array<Info, 3> SetupUploads
+        template<typename T>
+        std::pair<T*, GeometryBuffer::Info> GetWritePointer
         (
             VmaAllocator allocator,
-            const std::span<const Models::Index> indices,
-            const std::span<const Models::Position> positions,
-            const std::span<const Models::Vertex> vertices,
+            usize count,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -81,12 +80,12 @@ namespace Vk
         void SetupCubeUpload(VmaAllocator allocator);
 
         template<typename T>
-        GeometryBuffer::Info SetupUpload
+        std::pair<T*, GeometryBuffer::Info> SetupUpload
         (
             VmaAllocator allocator,
-            const std::span<const T> data,
+            usize count,
             u32& offset,
-            std::vector<Upload>& uploads,
+            std::vector<GeometryBuffer::Upload>& uploads,
             Util::DeletionQueue& deletionQueue
         );
 

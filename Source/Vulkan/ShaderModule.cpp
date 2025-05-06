@@ -60,6 +60,7 @@ namespace Vk
     void ShaderModule::Destroy(VkDevice device) const
     {
         Logger::Debug("Destroying shader module [handle={}]\n", std::bit_cast<void*>(handle));
+
         vkDestroyShaderModule(device, handle, nullptr);
     }
 }

@@ -41,53 +41,74 @@ namespace Vk
 
         cubeBuffer.GetDeviceAddress(device);
 
-        Vk::SetDebugName(device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
-
         SetupCubeUpload(allocator);
+
+        Vk::SetDebugName(device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
-        vkCmdBindIndexBuffer(cmdBuffer.handle, indexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer
+        (
+            cmdBuffer.handle,
+            indexBuffer.handle,
+            0,
+            VK_INDEX_TYPE_UINT32
+        );
     }
 
-    std::array<GeometryBuffer::Info, 3> GeometryBuffer::SetupUploads
+    template <>
+    std::pair<Models::Index*, GeometryBuffer::Info> GeometryBuffer::GetWritePointer
     (
         VmaAllocator allocator,
-        const std::span<const Models::Index> indices,
-        const std::span<const Models::Position> positions,
-        const std::span<const Models::Vertex> vertices,
+        usize count,
         Util::DeletionQueue& deletionQueue
     )
     {
-        const auto indexInfo = SetupUpload
+        return SetupUpload<Models::Index>
         (
-            allocator,
-            indices,
-            indexCount,
-            m_pendingIndexUploads,
-            deletionQueue
-        );
+           allocator,
+           count,
+           indexCount,
+           m_pendingIndexUploads,
+           deletionQueue
+       );
+    }
 
-        const auto positionInfo = SetupUpload
+    template <>
+    std::pair<Models::Position*, GeometryBuffer::Info> GeometryBuffer::GetWritePointer
+    (
+        VmaAllocator allocator,
+        usize count,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        return SetupUpload<Models::Position>
         (
-            allocator,
-            positions,
-            positionCount,
-            m_pendingPositionUploads,
-            deletionQueue
-        );
+           allocator,
+           count,
+           positionCount,
+           m_pendingPositionUploads,
+           deletionQueue
+       );
+    }
 
-        const auto vertexInfo = SetupUpload
+    template <>
+    std::pair<Models::Vertex*, GeometryBuffer::Info> GeometryBuffer::GetWritePointer
+    (
+        VmaAllocator allocator,
+        usize count,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        return SetupUpload<Models::Vertex>
         (
             allocator,
-            vertices,
+            count,
             vertexCount,
             m_pendingVertexUploads,
             deletionQueue
         );
-
-        return {indexInfo, positionInfo, vertexInfo};
     }
 
     void GeometryBuffer::Update
@@ -255,43 +276,41 @@ namespace Vk
     }
 
     template<typename T>
-    GeometryBuffer::Info GeometryBuffer::SetupUpload
+    std::pair<T*, GeometryBuffer::Info> GeometryBuffer::SetupUpload
     (
         VmaAllocator allocator,
-        const std::span<const T> data,
+        usize count,
         u32& offset,
-        std::vector<Upload>& uploads,
+        std::vector<GeometryBuffer::Upload>& uploads,
         Util::DeletionQueue& deletionQueue
     )
     {
         const auto stagingBuffer = Vk::Buffer
         (
             allocator,
-            data.size_bytes(),
+            count * sizeof(T),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(stagingBuffer.allocationInfo.pMappedData, data.data(), data.size_bytes());
-
         const GeometryBuffer::Info info =
         {
             .offset = offset,
-            .count  = static_cast<u32>(data.size())
+            .count  = static_cast<u32>(count)
         };
 
         uploads.emplace_back(info, stagingBuffer);
 
-        offset += data.size();
+        offset += count;
 
         deletionQueue.PushDeletor([allocator, buffer = stagingBuffer] () mutable
         {
             buffer.Destroy(allocator);
         });
 
-        return info;
+        return {static_cast<T*>(stagingBuffer.allocationInfo.pMappedData), info};
     }
 
     void GeometryBuffer::ResizeBuffer

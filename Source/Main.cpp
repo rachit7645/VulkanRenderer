@@ -19,7 +19,7 @@
 #include "Util/Util.h"
 #include "Engine/AppInstance.h"
 
-int main(UNUSED int argc, UNUSED char** argv)
+int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
 {
     #ifdef ENGINE_DEBUG
     // Set stderr to line buffering mode (does this even work on windows lol)

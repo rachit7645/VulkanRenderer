@@ -59,9 +59,9 @@ namespace Vk
     VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback::Callback
     (
         VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-        UNUSED VkDebugUtilsMessageTypeFlagsEXT type,
+        ENGINE_UNUSED VkDebugUtilsMessageTypeFlagsEXT type,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        UNUSED void* pUserData
+        ENGINE_UNUSED void* pUserData
     )
     {
         switch (severity)

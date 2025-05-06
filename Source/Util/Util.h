@@ -19,7 +19,7 @@
 
 #include <cstdint>
 
-#define UNUSED [[maybe_unused]]
+#define ENGINE_UNUSED [[maybe_unused]]
 
 // Signed integer types
 using s8  = std::int8_t;
