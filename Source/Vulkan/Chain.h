@@ -82,7 +82,7 @@ namespace Vk
             }
         }
 
-        Logger::VulkanError("Failed to find structure in chain! [pNext={}]", pNext);
+        Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
     }
 
     template<typename T>
@@ -96,7 +96,7 @@ namespace Vk
             }
         }
 
-        Logger::VulkanError("Failed to find structure in chain! [pNext={}]", pNext);
+        Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
     }
 }
 

@@ -34,7 +34,7 @@ namespace Renderer
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
           m_modelManager(m_context.device, m_context.allocator),
-          m_postProcessPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
+          m_postProcessPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_depthPass(m_context, m_formatHelper, m_framebufferManager),
           m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
           m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
@@ -283,9 +283,10 @@ namespace Renderer
             m_currentFIF,
             cmdBuffer,
             m_framebufferManager,
-            m_megaSet,
-            m_swapchain
+            m_megaSet
         );
+
+        m_swapchain.Blit(cmdBuffer, m_framebufferManager.GetFramebuffer("FinalColor").image);
 
         m_imGuiPass.Render
         (

@@ -203,7 +203,7 @@ namespace Vk
         }
 
         // No format was suitable, exit
-        Logger::VulkanError
+        Logger::Error
         (
             "No valid formats found! [physicalDevice={}] [tiling={}] [features={}]\n",
             std::bit_cast<void*>(physicalDevice),

@@ -259,7 +259,7 @@ namespace Vk
         // Score = 0 => Required features not supported
         if (highestScore == 0)
         {
-            Logger::VulkanError("Failed to find any suitable physical device!");
+            Logger::Error("Failed to find any suitable physical device!");
         }
 
         physicalDevice                             = bestDevice;

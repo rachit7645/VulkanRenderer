@@ -216,6 +216,7 @@ namespace Vk
             // Add new usages here
             AddUsage<FramebufferUsage::Sampled,             VK_IMAGE_USAGE_SAMPLED_BIT     >(framebuffer.usage, createInfo.usage);
             AddUsage<FramebufferUsage::Storage,             VK_IMAGE_USAGE_STORAGE_BIT     >(framebuffer.usage, createInfo.usage);
+            AddUsage<FramebufferUsage::TransferSource,      VK_IMAGE_USAGE_TRANSFER_SRC_BIT>(framebuffer.usage, createInfo.usage);
             AddUsage<FramebufferUsage::TransferDestination, VK_IMAGE_USAGE_TRANSFER_DST_BIT>(framebuffer.usage, createInfo.usage);
 
             framebuffer.image = Vk::Image(allocator, createInfo, aspect);

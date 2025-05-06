@@ -25,20 +25,14 @@ namespace Renderer::PostProcess
     Pipeline::Pipeline
     (
         const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
         Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        VkFormat colorFormat
+        Vk::TextureManager& textureManager
     )
-    {
-        CreatePipeline(context, megaSet, colorFormat);
-        CreatePipelineData(context.device, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat)
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {colorFormat};
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatLDR};
 
         std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
@@ -67,16 +61,10 @@ namespace Renderer::PostProcess
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "SwapchainPipeline");
-        Vk::SetDebugName(context.device, layout, "SwapchainPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager)
-    {
         samplerIndex = textureManager.AddSampler
         (
             megaSet,
-            device,
+            context.device,
             {
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
@@ -99,8 +87,10 @@ namespace Renderer::PostProcess
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "SwapchainPipeline/Sampler");
+        megaSet.Update(context.device);
 
-        megaSet.Update(device);
+        Vk::SetDebugName(context.device, handle,                                         "SwapchainPipeline");
+        Vk::SetDebugName(context.device, layout,                                         "SwapchainPipelineLayout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "SwapchainPipeline/Sampler");
     }
 }

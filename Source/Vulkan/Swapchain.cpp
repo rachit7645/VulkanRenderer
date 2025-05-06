@@ -119,6 +119,106 @@ namespace Vk
         );
     }
 
+    void Swapchain::Blit(const Vk::CommandBuffer& cmdBuffer, const Vk::Image& finalColor)
+    {
+        const auto& swapchainImage = images[imageIndex];
+
+        swapchainImage.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            VK_ACCESS_2_NONE,
+            VK_PIPELINE_STAGE_2_BLIT_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            {
+                .aspectMask     = swapchainImage.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        );
+
+        const VkImageBlit2 blitRegion =
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+            .pNext = nullptr,
+            .srcSubresource = {
+                .aspectMask     = finalColor.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.arrayLayers
+            },
+            .srcOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(finalColor.width), static_cast<s32>(finalColor.height), 1}
+            },
+            .dstSubresource = {
+                .aspectMask     = swapchainImage.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            },
+            .dstOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(swapchainImage.width), static_cast<s32>(swapchainImage.height), 1}
+            }
+        };
+
+        const VkBlitImageInfo2 blitImageInfo =
+        {
+            .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+            .pNext          = nullptr,
+            .srcImage       = finalColor.handle,
+            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .dstImage       = swapchainImage.handle,
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = 1,
+            .pRegions       = &blitRegion,
+            .filter         = VK_FILTER_LINEAR
+        };
+
+        vkCmdBlitImage2(cmdBuffer.handle, &blitImageInfo);
+
+        finalColor.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_BLIT_BIT,
+            VK_ACCESS_2_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            {
+                .aspectMask     = finalColor.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.arrayLayers
+            }
+        );
+
+        swapchainImage.Barrier
+        (
+            cmdBuffer,
+            VK_PIPELINE_STAGE_2_BLIT_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            {
+                .aspectMask     = swapchainImage.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        );
+    }
+
     void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
         const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
@@ -159,7 +259,7 @@ namespace Vk
             .imageColorSpace       = surfaceFormat.surfaceFormat.colorSpace,
             .imageExtent           = extent,
             .imageArrayLayers      = 1,
-            .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices   = nullptr,
@@ -195,7 +295,7 @@ namespace Vk
 
         if (imageCount == 0)
         {
-            Logger::VulkanError
+            Logger::Error
             (
                 "Failed to get any swapchain images! [handle={}] [device={}]\n",
                 std::bit_cast<void*>(handle),

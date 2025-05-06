@@ -21,7 +21,7 @@
 
 namespace Renderer::Buffers
 {
-    struct LightsBufferGLSL
+    struct GPULights
     {
         glm::vec2                   pointLightShadowPlanes                                       = {};
         u32                         dirLightCount                                                = 0;
@@ -43,7 +43,7 @@ namespace Renderer::Buffers
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                sizeof(LightsBufferGLSL),
+                sizeof(GPULights),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -89,6 +89,7 @@ namespace Renderer::Buffers
     {
         dirLights = WriteLights(FIF, GetDirLightOffset(), inDirLights, Objects::MAX_DIR_LIGHT_COUNT);
 
+        // Point Lights
         {
             std::vector<Objects::ShadowedPointLight> inShadowedPointLights;
             inShadowedPointLights.resize(std::min<usize>(inPointLights.size(), Objects::MAX_SHADOWED_POINT_LIGHT_COUNT));
@@ -104,6 +105,7 @@ namespace Renderer::Buffers
             shadowedPointLights = WriteLights(FIF, GetShadowedPointLightOffset(), std::span(inShadowedPointLights), Objects::MAX_SHADOWED_POINT_LIGHT_COUNT);
         }
 
+        // Spot Lights
         {
             std::vector<Objects::ShadowedSpotLight> inShadowedSpotLights;
             inShadowedSpotLights.resize(std::min<usize>(inSpotLights.size(), Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT));
@@ -132,7 +134,13 @@ namespace Renderer::Buffers
     }
 
     template <typename T>
-    std::vector<std::remove_const_t<T>> LightsBuffer::WriteLights(usize FIF, VkDeviceSize offset, const std::span<T> lights, u32 maxLightCount)
+    std::vector<std::remove_const_t<T>> LightsBuffer::WriteLights
+    (
+        usize FIF,
+        VkDeviceSize offset,
+        const std::span<T> lights,
+        u32 maxLightCount
+    )
     {
         const VkDeviceSize requiredSize   = lights.size_bytes();
         const VkDeviceSize maxAllowedSize = maxLightCount * sizeof(T);
@@ -164,27 +172,27 @@ namespace Renderer::Buffers
 
     VkDeviceSize LightsBuffer::GetDirLightOffset()
     {
-        return offsetof(LightsBufferGLSL, dirLightCount);
+        return offsetof(GPULights, dirLightCount);
     }
 
     VkDeviceSize LightsBuffer::GetPointLightOffset()
     {
-        return offsetof(LightsBufferGLSL, pointLightCount);
+        return offsetof(GPULights, pointLightCount);
     }
 
     VkDeviceSize LightsBuffer::GetShadowedPointLightOffset()
     {
-        return offsetof(LightsBufferGLSL, shadowedPointLightCount);
+        return offsetof(GPULights, shadowedPointLightCount);
     }
 
     VkDeviceSize LightsBuffer::GetSpotLightOffset()
     {
-        return offsetof(LightsBufferGLSL, spotLightCount);
+        return offsetof(GPULights, spotLightCount);
     }
 
     VkDeviceSize LightsBuffer::GetShadowedSpotLightOffset()
     {
-        return offsetof(LightsBufferGLSL, shadowedSpotLightCount);
+        return offsetof(GPULights, shadowedSpotLightCount);
     }
 
     void LightsBuffer::Destroy(VmaAllocator allocator)

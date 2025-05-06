@@ -16,16 +16,20 @@
 
 #include "MeshBuffer.h"
 
-#include <csignal>
-
-#include "Renderer/Mesh.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 #include "Util/Log.h"
-#include "Util/Random.h"
 
 namespace Renderer::Buffers
 {
+    struct GPUMesh
+    {
+        glm::mat4        transform    = glm::identity<glm::mat4>();
+        glm::mat3        normalMatrix = glm::identity<glm::mat4>();
+        Models::Material material     = {};
+        Maths::AABB      aabb         = {};
+    };
+
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
         for (usize i = 0; i < m_buffers.size(); ++i)
@@ -33,7 +37,7 @@ namespace Renderer::Buffers
             m_buffers[i] = Vk::Buffer
             (
                 allocator,
-                MAX_MESH_COUNT * sizeof(Renderer::Mesh),
+                MAX_MESH_COUNT * sizeof(GPUMesh),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -54,7 +58,7 @@ namespace Renderer::Buffers
         const std::vector<Renderer::RenderObject>& renderObjects
     )
     {
-        std::vector<Renderer::Mesh> meshes = {};
+        std::vector<GPUMesh> meshes = {};
 
         for (const auto& renderObject : renderObjects)
         {
@@ -81,7 +85,7 @@ namespace Renderer::Buffers
 
         const auto& buffer = GetCurrentBuffer(frameIndex);
 
-        const VkDeviceSize meshCopySize =  meshes.size() * sizeof(Renderer::Mesh);
+        const VkDeviceSize meshCopySize =  meshes.size() * sizeof(GPUMesh);
 
         std::memcpy
         (

@@ -35,7 +35,7 @@ namespace Vk
 
         if (queueFamilyCount == 0)
         {
-            Logger::VulkanError("Failed to find any queue families! [device={}]\n", std::bit_cast<void*>(device));
+            Logger::Error("Failed to find any queue families! [device={}]\n", std::bit_cast<void*>(device));
         }
 
         VkQueueFamilyProperties2 emptyQueue = {};

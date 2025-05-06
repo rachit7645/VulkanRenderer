@@ -38,12 +38,12 @@ namespace Vk
 
         void Destroy(VmaAllocator allocator);
 
-        Vk::Buffer buffer;
-
         VkStridedDeviceAddressRegionKHR raygenRegion   = {};
         VkStridedDeviceAddressRegionKHR missRegion     = {};
         VkStridedDeviceAddressRegionKHR hitRegion      = {};
         VkStridedDeviceAddressRegionKHR callableRegion = {};
+    private:
+        Vk::Buffer m_buffer;
     };
 }
 

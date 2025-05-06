@@ -18,7 +18,6 @@
 #define SCENE_BUFFER_H
 
 #include "LightsBuffer.h"
-#include "Renderer/Scene.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
 #include "Engine/Scene.h"
@@ -28,6 +27,33 @@ namespace Renderer::Buffers
     class SceneBuffer
     {
     public:
+        struct GPUScene
+        {
+            struct SceneMatrices
+            {
+                glm::mat4 projection         = {};
+                glm::mat4 inverseProjection  = {};
+                glm::mat4 jitteredProjection = {};
+                glm::mat4 view               = {};
+                glm::mat4 inverseView        = {};
+                glm::mat3 normalView         = {};
+            };
+
+            SceneMatrices currentMatrices  = {};
+            SceneMatrices previousMatrices = {};
+            glm::vec3     cameraPosition   = {};
+
+            f32 nearPlane = 0.0f;
+            f32 farPlane  = 0.0f;
+
+            VkDeviceAddress commonLight         = 0;
+            VkDeviceAddress dirLights           = 0;
+            VkDeviceAddress pointLights         = 0;
+            VkDeviceAddress shadowedPointLights = 0;
+            VkDeviceAddress spotLights          = 0;
+            VkDeviceAddress shadowedSpotLights  = 0;
+        };
+
         SceneBuffer(VkDevice device, VmaAllocator allocator);
 
         void WriteScene
@@ -41,7 +67,7 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        Renderer::Scene gpuScene = {};
+        SceneBuffer::GPUScene gpuScene = {};
 
         Buffers::LightsBuffer lightsBuffer;
 

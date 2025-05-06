@@ -65,9 +65,9 @@ namespace Renderer::DearImGui
             );
         }
 
-        auto& currentImage = swapchain.images[swapchain.imageIndex];
+        auto& swapchainImage = swapchain.images[swapchain.imageIndex];
 
-        currentImage.Barrier
+        swapchainImage.Barrier
         (
             cmdBuffer,
             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -77,11 +77,11 @@ namespace Renderer::DearImGui
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             {
-                .aspectMask     = currentImage.aspect,
+                .aspectMask     = swapchainImage.aspect,
                 .baseMipLevel   = 0,
-                .levelCount     = currentImage.mipLevels,
+                .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = swapchainImage.arrayLayers
             }
         );
 

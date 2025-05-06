@@ -20,7 +20,6 @@
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
 
 namespace Renderer::TAA

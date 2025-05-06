@@ -30,15 +30,21 @@ namespace Util
     {
         std::array<std::vector<T>, GroupSize> result;
 
-        // We need the remainder to handle cases where the elements aren't exactly in 'GroupSize' chunks
-        usize groupSize = originalVector.size() / GroupSize;
-        usize remainder = originalVector.size() % GroupSize;
+        const usize groupSize = originalVector.size() / GroupSize;
+        const usize remainder = originalVector.size() % GroupSize;
 
         for (usize i = 0, start = 0, end = 0; i < GroupSize; ++i)
         {
             // Adjust the end index according to the remainder
             end = start + groupSize + (i < remainder ? 1 : 0);
-            result[i].insert(result[i].end(), originalVector.begin() + start, originalVector.begin() + end);
+
+            result[i].insert
+            (
+                result[i].end(),
+                originalVector.begin() + start,
+                originalVector.begin() + end
+            );
+
             start = end;
         }
 

@@ -54,7 +54,13 @@ namespace Renderer::Buffers
         std::vector<Objects::ShadowedSpotLight>  shadowedSpotLights;
     private:
         template <typename T>
-        [[nodiscard]] std::vector<std::remove_const_t<T>> WriteLights(usize FIF, VkDeviceSize offset, const std::span<T> lights, u32 maxLightCount);
+        [[nodiscard]] std::vector<std::remove_const_t<T>> WriteLights
+        (
+            usize FIF,
+            VkDeviceSize offset,
+            const std::span<T> lights,
+            u32 maxLightCount
+        );
     };
 }
 

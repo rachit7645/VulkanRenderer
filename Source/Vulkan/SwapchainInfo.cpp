@@ -59,7 +59,7 @@ namespace Vk
 
         if (presentModeCount == 0)
         {
-            Logger::VulkanError
+            Logger::Error
             (
                 "Failed to find any presentation modes! [device={}] [surface={}]\n",
                 std::bit_cast<void*>(device),
@@ -90,7 +90,7 @@ namespace Vk
 
         if (formatCount == 0)
         {
-            Logger::VulkanError
+            Logger::Error
             (
                 "Failed to find any surface formats! [device={}] [surface={}]\n",
                 std::bit_cast<void*>(device),

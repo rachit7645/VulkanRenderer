@@ -56,7 +56,8 @@ namespace Vk
         None                = 0,
         Sampled             = 1U << 0,
         Storage             = 1U << 1,
-        TransferDestination = 1U << 2
+        TransferSource      = 1U << 2,
+        TransferDestination = 1U << 3
     };
 
     struct FramebufferSize

@@ -24,10 +24,6 @@ namespace Util
     {
         using Ts::operator()...;
     };
-
-    // Deduction guide
-    template<typename... Ts>
-    Visitor(Ts...) -> Visitor<Ts...>;
 }
 
 #endif
