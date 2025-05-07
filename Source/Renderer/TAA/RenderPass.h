@@ -40,8 +40,7 @@ namespace Renderer::TAA
 
         void Render
         (
-            usize FIF,
-        usize frameIndex,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet

@@ -157,7 +157,7 @@ namespace Renderer::GBuffer
         const Buffers::IndirectBuffer& indirectBuffer
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("GBufferPass/FIF{}", FIF), glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "GBufferPass", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
         const auto& gAlbedoView         = framebufferManager.GetFramebufferView("GAlbedoView");
         const auto& gNormalView         = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View");

@@ -116,14 +116,13 @@ namespace Renderer::TAA
 
     void RenderPass::Render
     (
-        usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("TAAPass/FIF{}", FIF), glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "TAAPass", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
 
         if (ImGui::BeginMainMenuBar())
         {

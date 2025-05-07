@@ -74,7 +74,6 @@ namespace Renderer::PostProcess
 
     void RenderPass::Render
     (
-        usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
@@ -94,7 +93,7 @@ namespace Renderer::PostProcess
         const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
         const auto& finalColor     = framebufferManager.GetFramebuffer(finalColorView.framebuffer);
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("PostProcessPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "PostProcessPass", glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
         finalColor.image.Barrier
         (

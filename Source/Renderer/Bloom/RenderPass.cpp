@@ -87,7 +87,6 @@ namespace Renderer::Bloom
 
     void RenderPass::Render
     (
-        usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet
@@ -105,7 +104,7 @@ namespace Renderer::Bloom
             ImGui::EndMainMenuBar();
         }
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("BloomPass/FIF{}", FIF), {0.6796f, 0.4538f, 0.1518f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "BloomPass", {0.6796f, 0.4538f, 0.1518f, 1.0f});
 
         RenderDownSamples
         (

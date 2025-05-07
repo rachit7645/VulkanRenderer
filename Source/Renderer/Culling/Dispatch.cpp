@@ -41,7 +41,7 @@ namespace Renderer::Culling
         const Buffers::IndirectBuffer& indirectBuffer
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("FrustumCullingDispatch/FIF{}", FIF), glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "FrustumCullingDispatch", glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
 
         frustumBuffer.LoadPlanes(cmdBuffer, projectionView);
 

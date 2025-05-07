@@ -120,15 +120,18 @@ namespace Vk
         );
     }
 
-    void Swapchain::Blit(const Vk::CommandBuffer& cmdBuffer, const Vk::Image& finalColor)
+    void Swapchain::Blit(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager)
     {
+        const auto& finalColor     = framebufferManager.GetFramebuffer("FinalColor");
         const auto& swapchainImage = images[imageIndex];
+
+        Vk::BeginLabel(cmdBuffer, "Swapchain::Blit", glm::vec4(0.4098f, 0.2843f, 0.7529f, 1.0f));
 
         Vk::BarrierWriter barrierWriter = {};
 
         barrierWriter
         .WriteImageBarrier(
-            finalColor,
+            finalColor.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -137,9 +140,9 @@ namespace Vk
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = finalColor.mipLevels,
+                .levelCount     = finalColor.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = finalColor.arrayLayers
+                .layerCount     = finalColor.image.arrayLayers
             }
         )
         .WriteImageBarrier(
@@ -164,14 +167,14 @@ namespace Vk
             .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
             .pNext = nullptr,
             .srcSubresource = {
-                .aspectMask     = finalColor.aspect,
+                .aspectMask     = finalColor.image.aspect,
                 .mipLevel       = 0,
                 .baseArrayLayer = 0,
-                .layerCount     = finalColor.arrayLayers
+                .layerCount     = finalColor.image.arrayLayers
             },
             .srcOffsets = {
                 {0, 0, 0},
-                {static_cast<s32>(finalColor.width), static_cast<s32>(finalColor.height), 1}
+                {static_cast<s32>(finalColor.image.width), static_cast<s32>(finalColor.image.height), 1}
             },
             .dstSubresource = {
                 .aspectMask     = swapchainImage.aspect,
@@ -189,7 +192,7 @@ namespace Vk
         {
             .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
             .pNext          = nullptr,
-            .srcImage       = finalColor.handle,
+            .srcImage       = finalColor.image.handle,
             .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             .dstImage       = swapchainImage.handle,
             .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -202,7 +205,7 @@ namespace Vk
 
         barrierWriter
         .WriteImageBarrier(
-            finalColor,
+            finalColor.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
@@ -211,9 +214,9 @@ namespace Vk
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = finalColor.mipLevels,
+                .levelCount     = finalColor.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = finalColor.arrayLayers
+                .layerCount     = finalColor.image.arrayLayers
             }
         )
         .WriteImageBarrier(
@@ -232,6 +235,8 @@ namespace Vk
             }
         )
         .Execute(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)

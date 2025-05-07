@@ -101,7 +101,7 @@ namespace Renderer::PointShadow
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("PointShadowPass/FIF{}", FIF), glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "PointShadowPass", glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("PointShadowMap");
 

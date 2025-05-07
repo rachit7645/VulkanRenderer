@@ -103,7 +103,7 @@ namespace Renderer
 
         BeginFrame();
 
-        const auto cmdBuffer = m_cmdBufferAllocator.AllocateCommandBuffer(m_currentFIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto cmdBuffer = m_cmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
@@ -117,7 +117,7 @@ namespace Renderer
                 m_formatHelper,
                 m_modelManager,
                 m_megaSet,
-                m_deletionQueues[m_currentFIF]
+                m_deletionQueues[m_FIF]
             );
 
             m_modelManager.Update
@@ -125,7 +125,7 @@ namespace Renderer
                 cmdBuffer,
                 m_context.device,
                 m_context.allocator,
-                m_deletionQueues[m_currentFIF]
+                m_deletionQueues[m_FIF]
             );
 
             m_megaSet.Update(m_context.device);
@@ -138,7 +138,7 @@ namespace Renderer
                 m_context.allocator,
                 m_modelManager,
                 m_scene->renderObjects,
-                m_deletionQueues[m_currentFIF]
+                m_deletionQueues[m_FIF]
             );
         }
 
@@ -150,22 +150,22 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_timeline,
-            m_deletionQueues[m_currentFIF]
+            m_deletionQueues[m_FIF]
         );
 
         m_accelerationStructure.BuildTopLevelAS
         (
-            m_currentFIF,
+            m_FIF,
             cmdBuffer,
             m_context.device,
             m_context.allocator,
             m_scene->renderObjects,
-            m_deletionQueues[m_currentFIF]
+            m_deletionQueues[m_FIF]
         );
 
         m_pointShadowPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
@@ -178,7 +178,7 @@ namespace Renderer
 
         m_spotShadowPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
@@ -191,7 +191,7 @@ namespace Renderer
 
         m_depthPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
@@ -204,7 +204,7 @@ namespace Renderer
 
         m_gBufferPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
@@ -217,7 +217,7 @@ namespace Renderer
 
         m_xegtaoPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             m_frameIndex,
             cmdBuffer,
             m_context.device,
@@ -227,12 +227,12 @@ namespace Renderer
             m_sceneBuffer,
             m_megaSet,
             m_modelManager,
-            m_deletionQueues[m_currentFIF]
+            m_deletionQueues[m_FIF]
         );
 
         m_shadowRTPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             cmdBuffer,
             m_megaSet,
             m_framebufferManager,
@@ -242,7 +242,7 @@ namespace Renderer
 
         m_lightingPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
@@ -252,7 +252,7 @@ namespace Renderer
 
         m_skyboxPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
@@ -263,7 +263,6 @@ namespace Renderer
 
         m_taaPass.Render
         (
-            m_currentFIF,
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
@@ -272,7 +271,6 @@ namespace Renderer
 
         m_bloomPass.Render
         (
-            m_currentFIF,
             cmdBuffer,
             m_framebufferManager,
             m_megaSet
@@ -280,29 +278,75 @@ namespace Renderer
 
         m_postProcessPass.Render
         (
-            m_currentFIF,
             cmdBuffer,
             m_framebufferManager,
             m_megaSet
         );
 
-        m_swapchain.Blit(cmdBuffer, m_framebufferManager.GetFramebuffer("FinalColor").image);
+        m_swapchain.Blit(cmdBuffer, m_framebufferManager);
 
         m_imGuiPass.Render
         (
-            m_currentFIF,
+            m_FIF,
             m_context.device,
             m_context.allocator,
             cmdBuffer,
             m_megaSet,
             m_swapchain,
-            m_deletionQueues[m_currentFIF]
+            m_deletionQueues[m_FIF]
         );
 
         cmdBuffer.EndRecording();
 
         SubmitQueue();
         EndFrame();
+    }
+
+    void RenderManager::WaitForTimeline()
+    {
+        Vk::BeginLabel(m_context.graphicsQueue, "Graphics Queue", {0.1137f, 0.7176f, 0.7490, 1.0f});
+
+        // Frame indices 0 to Vk::FRAMES_IN_FLIGHT - 1 do not need to wait for anything
+        if (m_frameIndex >= Vk::FRAMES_IN_FLIGHT)
+        {
+            m_timeline.WaitForStage
+            (
+                m_frameIndex - Vk::FRAMES_IN_FLIGHT,
+                Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED,
+                m_context.device
+            );
+        }
+    }
+
+    void RenderManager::AcquireSwapchainImage()
+    {
+        const auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_FIF);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            m_isSwapchainOk = false;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            Vk::CheckResult(result, "Failed to acquire swapchain image!");
+        }
+
+        m_timeline.AcquireImageToTimeline
+        (
+            m_frameIndex,
+            m_context.graphicsQueue,
+            m_swapchain.imageAvailableSemaphores[m_FIF]
+        );
+    }
+
+    void RenderManager::BeginFrame()
+    {
+        m_deletionQueues[m_FIF].FlushQueue();
+
+        ImGui_ImplSDL3_NewFrame();
+        ImGui::NewFrame();
+
+        m_cmdBufferAllocator.ResetPool(m_FIF, m_context.device);
     }
 
     void RenderManager::Update(const Vk::CommandBuffer& cmdBuffer)
@@ -317,7 +361,7 @@ namespace Renderer
             m_formatHelper,
             m_swapchain.extent,
             m_megaSet,
-            m_deletionQueues[m_currentFIF]
+            m_deletionQueues[m_FIF]
         );
 
         m_scene->Update
@@ -329,12 +373,12 @@ namespace Renderer
             m_formatHelper,
             m_modelManager,
             m_megaSet,
-            m_deletionQueues[m_currentFIF]
+            m_deletionQueues[m_FIF]
         );
 
         m_sceneBuffer.WriteScene
         (
-            m_currentFIF,
+            m_FIF,
             m_frameIndex,
             m_context.allocator,
             m_swapchain.extent,
@@ -351,7 +395,7 @@ namespace Renderer
 
         m_indirectBuffer.WriteDrawCalls
         (
-            m_currentFIF,
+            m_FIF,
             m_context.allocator,
             m_modelManager,
             m_scene->renderObjects
@@ -423,69 +467,6 @@ namespace Renderer
         }
     }
 
-    void RenderManager::WaitForTimeline()
-    {
-        // Frame indices 0 to Vk::FRAMES_IN_FLIGHT - 1 do not need to wait for anything
-        if (m_frameIndex >= Vk::FRAMES_IN_FLIGHT)
-        {
-            m_timeline.WaitForStage
-            (
-                m_frameIndex - Vk::FRAMES_IN_FLIGHT,
-                Vk::Timeline::TIMELINE_STAGE_RENDER_FINISHED,
-                m_context.device
-            );
-        }
-    }
-
-    void RenderManager::AcquireSwapchainImage()
-    {
-        const auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_currentFIF);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            m_isSwapchainOk = false;
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-        {
-            Vk::CheckResult(result, "Failed to acquire swapchain image!");
-        }
-
-        m_timeline.AcquireImageToTimeline(m_frameIndex, m_context.graphicsQueue, m_swapchain.imageAvailableSemaphores[m_currentFIF]);
-    }
-
-    void RenderManager::BeginFrame()
-    {
-        Vk::BeginLabel(m_context.graphicsQueue, "Graphics Queue", {0.1137f, 0.7176f, 0.7490, 1.0f});
-
-        m_deletionQueues[m_currentFIF].FlushQueue();
-
-        ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
-
-        m_cmdBufferAllocator.ResetPool(m_currentFIF, m_context.device);
-    }
-
-    void RenderManager::EndFrame()
-    {
-        m_timeline.TimelineToRenderFinished(m_frameIndex, m_context.graphicsQueue, m_swapchain.renderFinishedSemaphores[m_swapchain.imageIndex]);
-
-        const auto result = m_swapchain.Present(m_context.device, m_context.graphicsQueue);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            m_isSwapchainOk = false;
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-        {
-            Vk::CheckResult(result, "Failed to present swapchain image to queue!");
-        }
-
-        Vk::EndLabel(m_context.graphicsQueue);
-
-        ++m_frameIndex;
-        m_currentFIF = (m_currentFIF + 1) % Vk::FRAMES_IN_FLIGHT;
-    }
-
     void RenderManager::SubmitQueue()
     {
         const VkSemaphoreSubmitInfo waitSemaphoreInfo =
@@ -508,7 +489,7 @@ namespace Renderer
             .deviceIndex = 0
         };
 
-        const auto cmdBufferInfos = m_cmdBufferAllocator.GetGraphicsQueueSubmits(m_currentFIF);
+        const auto cmdBufferInfos = m_cmdBufferAllocator.GetGraphicsQueueSubmits(m_FIF);
 
         const VkSubmitInfo2 submitInfo =
         {
@@ -532,35 +513,36 @@ namespace Renderer
         );
     }
 
-    void RenderManager::Resize()
+    void RenderManager::EndFrame()
     {
-        if (!m_swapchain.IsSurfaceValid(m_window.size, m_context))
-        {
-            m_isSwapchainOk = false;
-            return;
-        }
-
-        Vk::CheckResult(vkWaitForFences(
-            m_context.device,
-            m_swapchain.presentFences.size(),
-            m_swapchain.presentFences.data(),
-            VK_TRUE,
-            std::numeric_limits<u64>::max()),
-            "Failed to wait for fences!"
+        m_timeline.TimelineToRenderFinished
+        (
+            m_frameIndex,
+            m_context.graphicsQueue,
+            m_swapchain.renderFinishedSemaphores[m_swapchain.imageIndex]
         );
 
-        m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
+        const auto result = m_swapchain.Present(m_context.device, m_context.graphicsQueue);
 
-        m_taaPass.ResetHistory();
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            m_isSwapchainOk = false;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            Vk::CheckResult(result, "Failed to present swapchain image to queue!");
+        }
 
-        m_isSwapchainOk = true;
+        Vk::EndLabel(m_context.graphicsQueue);
 
-        Render();
+        ++m_frameIndex;
+        m_FIF = (m_FIF + 1) % Vk::FRAMES_IN_FLIGHT;
     }
 
     bool RenderManager::HandleEvents()
     {
-        SDL_Event event;
+        SDL_Event event = {};
+
         while ((m_isSwapchainOk ? SDL_PollEvent(&event) : SDL_WaitEvent(&event)))
         {
             ImGui_ImplSDL3_ProcessEvent(&event);
@@ -586,19 +568,19 @@ namespace Renderer
             case SDL_EVENT_KEY_DOWN:
                 switch (event.key.scancode)
                 {
-            case SDL_SCANCODE_F1:
-                if (!SDL_SetWindowRelativeMouseMode(m_window.handle, !SDL_GetWindowRelativeMouseMode(m_window.handle)))
-                {
-                    Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
-                }
-                break;
+                case SDL_SCANCODE_F1:
+                    if (!SDL_SetWindowRelativeMouseMode(m_window.handle, !SDL_GetWindowRelativeMouseMode(m_window.handle)))
+                    {
+                        Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
+                    }
+                    break;
 
-            case SDL_SCANCODE_F2:
-                m_scene->camera.isEnabled = !m_scene->camera.isEnabled;
-                break;
+                case SDL_SCANCODE_F2:
+                    m_scene->camera.isEnabled = !m_scene->camera.isEnabled;
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
                 }
                 break;
 
@@ -637,6 +619,32 @@ namespace Renderer
         return false;
     }
 
+    void RenderManager::Resize()
+    {
+        if (!m_swapchain.IsSurfaceValid(m_window.size, m_context))
+        {
+            m_isSwapchainOk = false;
+            return;
+        }
+
+        Vk::CheckResult(vkWaitForFences(
+            m_context.device,
+            m_swapchain.presentFences.size(),
+            m_swapchain.presentFences.data(),
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fences!"
+        );
+
+        m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
+
+        m_taaPass.ResetHistory();
+
+        m_isSwapchainOk = true;
+
+        Render();
+    }
+
     void RenderManager::InitImGui()
     {
         Logger::Info("Initializing Dear ImGui [version = {}]\n", ImGui::GetVersion());
@@ -671,7 +679,7 @@ namespace Renderer
                     m_context.device,
                     m_context.allocator,
                     m_megaSet,
-                    m_deletionQueues[m_currentFIF],
+                    m_deletionQueues[m_FIF],
                     "DearImGuiFont",
                     VK_FORMAT_R8G8B8A8_UNORM,
                     pixels,
@@ -686,7 +694,7 @@ namespace Renderer
                     cmdBuffer,
                     m_context.device,
                     m_context.allocator,
-                    m_deletionQueues[m_currentFIF]
+                    m_deletionQueues[m_FIF]
                 );
 
                 m_megaSet.Update(m_context.device);

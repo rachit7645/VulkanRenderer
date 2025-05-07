@@ -239,7 +239,7 @@ namespace Renderer::AO::XeGTAO
             ImGui::EndMainMenuBar();
         }
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("XeGTAOPass/FIF{}", FIF), glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "XeGTAOPass", glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
 
         if (!hilbertLUT.has_value())
         {

@@ -435,7 +435,7 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("TLASBuild/FIF{}", FIF), {0.2117f, 0.8136f, 0.7313f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "TLASBuild", {0.2117f, 0.8136f, 0.7313f, 1.0f});
 
         std::vector<VkAccelerationStructureInstanceKHR> instances = {};
         instances.reserve(renderObjects.size());

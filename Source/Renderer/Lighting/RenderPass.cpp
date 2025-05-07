@@ -84,7 +84,7 @@ namespace Renderer::Lighting
         const IBL::IBLMaps& iblMaps
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("LightingPass/FIF{}", FIF), glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "LightingPass", glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);

@@ -94,7 +94,7 @@ namespace Renderer::Depth
             indirectBuffer
         );
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "DepthPass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
         const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);

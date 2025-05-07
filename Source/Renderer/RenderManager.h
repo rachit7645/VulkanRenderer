@@ -70,8 +70,8 @@ namespace Renderer
         void BeginFrame();
         void Update(const Vk::CommandBuffer& cmdBuffer);
         void ImGuiDisplay();
-        void EndFrame();
         void SubmitQueue();
+        void EndFrame();
         void Resize();
 
         void InitImGui();
@@ -79,14 +79,14 @@ namespace Renderer
         Engine::Config m_config;
 
         // Frame index
-        usize m_currentFIF = 0;
+        usize m_FIF        = 0;
         usize m_frameIndex = 0;
 
         // Frame counter
         Util::FrameCounter m_frameCounter = {};
 
-        Util::DeletionQueue m_globalDeletionQueue = {};
-        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues = {};
+        Util::DeletionQueue                                   m_globalDeletionQueue = {};
+        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues      = {};
 
         // Object handles
         Engine::Window             m_window;
