@@ -23,6 +23,7 @@
 #include "DescriptorAllocator.h"
 #include "Sampler.h"
 #include "ImageView.h"
+#include "Context.h"
 
 namespace Vk
 {

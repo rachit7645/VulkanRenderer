@@ -15,7 +15,7 @@
  */
 
 #include "Pipeline.h"
-#include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::DearImGui
@@ -43,7 +43,7 @@ namespace Renderer::DearImGui
 
         const std::array COLOR_FORMATS = {colorFormat};
 
-        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, COLOR_FORMATS, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("ImGui/ImGui.vert", VK_SHADER_STAGE_VERTEX_BIT)

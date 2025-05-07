@@ -16,7 +16,7 @@
 
 #include "Pipeline.h"
 
-#include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 
@@ -28,7 +28,7 @@ namespace Renderer::IBL::BRDF
 
         std::array colorFormats = {formatHelper.rgSFloatFormat};
 
-        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)

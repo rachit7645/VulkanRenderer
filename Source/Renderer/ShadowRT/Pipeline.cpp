@@ -15,7 +15,7 @@
  */
 
 #include "Pipeline.h"
-#include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::ShadowRT
@@ -27,7 +27,7 @@ namespace Renderer::ShadowRT
         Vk::TextureManager& textureManager
     )
     {
-        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
             .AttachShader("Shadows/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
             .AttachShader("Shadows/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)

@@ -17,7 +17,7 @@
 #ifndef VK_IMAGE_H
 #define VK_IMAGE_H
 
-#include "Buffer.h"
+#include "Barrier.h"
 #include "CommandBuffer.h"
 #include "Util/Util.h"
 
@@ -47,17 +47,7 @@ namespace Vk
 
         bool operator==(const Image& rhs) const;
 
-        void Barrier
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            VkPipelineStageFlags2 srcStageMask,
-            VkAccessFlags2 srcAccessMask,
-            VkPipelineStageFlags2 dstStageMask,
-            VkAccessFlags2 dstAccessMask,
-            VkImageLayout oldLayout,
-            VkImageLayout newLayout,
-            const VkImageSubresourceRange& subresourceRange
-        ) const;
+        void Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::ImageBarrier& barrier) const;
 
         void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer) const;
 
@@ -72,8 +62,8 @@ namespace Vk
         u32 width       = 0;
         u32 height      = 0;
         u32 depth       = 0;
-        u32 mipLevels   = 1;
-        u32 arrayLayers = 1;
+        u32 mipLevels   = 0;
+        u32 arrayLayers = 0;
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;

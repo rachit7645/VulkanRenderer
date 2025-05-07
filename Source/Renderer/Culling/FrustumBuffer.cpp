@@ -46,12 +46,14 @@ namespace Renderer::Culling
         buffer.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            0,
-            sizeof(Maths::Frustum)
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .offset        = 0,
+                .size          = sizeof(Maths::Frustum)
+            }
         );
 
         vkCmdUpdateBuffer
@@ -66,12 +68,14 @@ namespace Renderer::Culling
         buffer.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-            0,
-            sizeof(Maths::Frustum)
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .offset        = 0,
+                .size          = sizeof(Maths::Frustum)
+            }
         );
     }
 

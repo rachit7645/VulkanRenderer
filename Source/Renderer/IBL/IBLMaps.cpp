@@ -281,18 +281,17 @@ namespace Renderer::IBL
         skybox.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_NONE,
-            VK_ACCESS_2_NONE,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                skybox.aspect,
-                0,
-                skybox.mipLevels,
-                0,
-                skybox.arrayLayers
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = skybox.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = skybox.arrayLayers
             }
         );
 
@@ -402,18 +401,17 @@ namespace Renderer::IBL
         skybox.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            {
-                skybox.aspect,
-                0,
-                skybox.mipLevels,
-                0,
-                skybox.arrayLayers
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = skybox.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = skybox.arrayLayers
             }
         );
 
@@ -437,7 +435,16 @@ namespace Renderer::IBL
             }
         );
 
-        skyboxID = modelManager.textureManager.AddTexture(megaSet, context.device, "Skybox", {skybox, skyboxView});
+        skyboxID = modelManager.textureManager.AddTexture
+        (
+            megaSet,
+            context.device,
+            "Skybox",
+            Vk::Texture{
+                .image     = skybox,
+                .imageView = skyboxView
+            }
+        );
 
         deletionQueue.PushDeletor([device = context.device, renderView] () mutable
         {
@@ -494,18 +501,17 @@ namespace Renderer::IBL
         irradiance.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_NONE,
-            VK_ACCESS_2_NONE,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                irradiance.aspect,
-                0,
-                1,
-                0,
-                irradiance.arrayLayers
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = irradiance.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = irradiance.arrayLayers
             }
         );
 
@@ -613,24 +619,32 @@ namespace Renderer::IBL
         irradiance.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                irradiance.aspect,
-                0,
-                1,
-                0,
-                irradiance.arrayLayers
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = irradiance.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = irradiance.arrayLayers
             }
         );
 
         Vk::EndLabel(cmdBuffer);
 
-        irradianceID = modelManager.textureManager.AddTexture(megaSet, context.device, "Irradiance", {irradiance, irradianceView});
+        irradianceID = modelManager.textureManager.AddTexture
+        (
+            megaSet,
+            context.device,
+            "Irradiance",
+            Vk::Texture{
+                .image     = irradiance,
+                .imageView = irradianceView
+            }
+        );
     }
 
     void IBLMaps::CreatePreFilterMap
@@ -683,18 +697,17 @@ namespace Renderer::IBL
         preFilter.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_NONE,
-            VK_ACCESS_2_NONE,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                preFilter.aspect,
-                0,
-                preFilter.mipLevels,
-                0,
-                preFilter.arrayLayers
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = preFilter.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = preFilter.arrayLayers
             }
         );
 
@@ -819,18 +832,17 @@ namespace Renderer::IBL
         preFilter.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                preFilter.aspect,
-                0,
-                preFilter.mipLevels,
-                0,
-                preFilter.arrayLayers
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = preFilter.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = preFilter.arrayLayers
             }
         );
 
@@ -850,7 +862,16 @@ namespace Renderer::IBL
             }
         );
 
-        preFilterID = modelManager.textureManager.AddTexture(megaSet, context.device, "PreFilter", {preFilter, preFilterView});
+        preFilterID = modelManager.textureManager.AddTexture
+        (
+            megaSet,
+            context.device,
+            "PreFilter",
+            Vk::Texture{
+                .image     = preFilter,
+                .imageView = preFilterView
+            }
+        );
 
         deletionQueue.PushDeletor([device = context.device, preFilterViews] () mutable
         {
@@ -917,18 +938,17 @@ namespace Renderer::IBL
         brdfLut.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_NONE,
-            VK_ACCESS_2_NONE,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                brdfLut.aspect,
-                0,
-                brdfLut.mipLevels,
-                0,
-                brdfLut.arrayLayers
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = brdfLut.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = brdfLut.arrayLayers
             }
         );
 
@@ -1001,24 +1021,32 @@ namespace Renderer::IBL
         brdfLut.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = brdfLut.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = 1,
+                .levelCount     = brdfLut.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = brdfLut.arrayLayers
             }
         );
 
         Vk::EndLabel(cmdBuffer);
 
-        brdfLutID = textureManager.AddTexture(megaSet, context.device, "BRDF_LUT", {brdfLut, brdfLutView});
+        brdfLutID = textureManager.AddTexture
+        (
+            megaSet,
+            context.device,
+            "BRDF_LUT",
+            Vk::Texture{
+                .image     = brdfLut,
+                .imageView = brdfLutView
+            }
+        );
     }
 
     void IBLMaps::Destroy(VkDevice device)

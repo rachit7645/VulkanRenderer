@@ -17,6 +17,7 @@
 #include "RenderPass.h"
 
 #include "Vulkan/DebugUtils.h"
+#include "Vulkan/BarrierWriter.h"
 #include "Util/Log.h"
 
 namespace Renderer::DearImGui
@@ -70,14 +71,13 @@ namespace Renderer::DearImGui
         swapchainImage.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-            VK_ACCESS_2_NONE,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            {
-                .aspectMask     = swapchainImage.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
+                .dstAccessMask  = VK_ACCESS_2_NONE,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                 .baseMipLevel   = 0,
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
@@ -323,47 +323,47 @@ namespace Renderer::DearImGui
             indexDestination  += drawList->IdxBuffer.Size;
         }
 
-        vertexBuffer.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_HOST_BIT,
-            VK_ACCESS_2_HOST_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-            0,
-            vertexSize
-        );
+        Vk::BarrierWriter{}
+        .WriteBufferBarrier(
+            vertexBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .offset        = 0,
+                .size          = vertexSize
+            }
+        )
+        .WriteBufferBarrier(
+            indexBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+                .dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT,
+                .offset        = 0,
+                .size          = indexSize
+            }
+        )
+        .Execute(cmdBuffer);
 
-        indexBuffer.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_HOST_BIT,
-            VK_ACCESS_2_HOST_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-            VK_ACCESS_2_INDEX_READ_BIT,
-            0,
-            indexSize
-        );
+        const bool needsManualFlushing = !(vertexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) ||
+                                         !(indexBuffer.memoryProperties  & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        if (!(vertexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if (needsManualFlushing)
         {
-            Vk::CheckResult(vmaFlushAllocation(
-                allocator,
-                vertexBuffer.allocation,
-                0,
-                vertexSize),
-                "Failed to flush allocation!"
-            );
-        }
+            const std::array<VmaAllocation, 2> allocations = {vertexBuffer.allocation, indexBuffer.allocation};
+            const std::array<VkDeviceSize,  2> offsets     = {0, 0};
+            const std::array<VkDeviceSize,  2> sizes       = {vertexSize, indexSize};
 
-        if (!(indexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
-        {
-            Vk::CheckResult(vmaFlushAllocation(
+            Vk::CheckResult(vmaFlushAllocations(
                 allocator,
-                indexBuffer.allocation,
-                0,
-                indexSize),
-                "Failed to flush allocation!"
+                allocations.size(),
+                allocations.data(),
+                offsets.data(),
+                sizes.data()),
+                "Failed to flush allocations!"
             );
         }
     }

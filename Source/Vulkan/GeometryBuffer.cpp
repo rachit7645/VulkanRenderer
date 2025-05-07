@@ -16,11 +16,10 @@
 
 #include "GeometryBuffer.h"
 
-#include <volk/volk.h>
-
 #include "Util/Log.h"
-#include "Models/Model.h"
 #include "DebugUtils.h"
+#include "Models/Model.h"
+#include "Models/Vertex.h"
 #include "Renderer/RenderConstants.h"
 
 namespace Vk
@@ -69,7 +68,7 @@ namespace Vk
         (
            allocator,
            count,
-           indexCount,
+           m_indexCount,
            m_pendingIndexUploads,
            deletionQueue
        );
@@ -87,7 +86,7 @@ namespace Vk
         (
            allocator,
            count,
-           positionCount,
+           m_positionCount,
            m_pendingPositionUploads,
            deletionQueue
        );
@@ -105,7 +104,7 @@ namespace Vk
         (
             allocator,
             count,
-            vertexCount,
+            m_vertexCount,
             m_pendingVertexUploads,
             deletionQueue
         );
@@ -371,12 +370,14 @@ namespace Vk
                 oldBuffer.Barrier
                 (
                     cmdBuffer,
-                    srcStageMask,
-                    srcAccessMask,
-                    VK_PIPELINE_STAGE_2_COPY_BIT,
-                    VK_ACCESS_2_TRANSFER_READ_BIT,
-                    0,
-                    oldSize
+                    Vk::BufferBarrier{
+                        .srcStageMask  = srcStageMask,
+                        .srcAccessMask = srcAccessMask,
+                        .dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
+                        .offset        = 0,
+                        .size          = oldSize
+                    }
                 );
 
                 const VkBufferCopy2 copyRegion =
@@ -421,7 +422,7 @@ namespace Vk
             cmdBuffer,
             device,
             allocator,
-            indexCount,
+            m_indexCount,
             sizeof(Models::Index),
             m_pendingIndexUploads,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
@@ -440,7 +441,7 @@ namespace Vk
             cmdBuffer,
             device,
             allocator,
-            positionCount,
+            m_positionCount,
             sizeof(Models::Position),
             m_pendingPositionUploads,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
@@ -459,7 +460,7 @@ namespace Vk
             cmdBuffer,
             device,
             allocator,
-            vertexCount,
+            m_vertexCount,
             sizeof(Models::Vertex),
             m_pendingVertexUploads,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
@@ -516,40 +517,23 @@ namespace Vk
 
         // Barriers
         {
-            std::vector<VkBufferMemoryBarrier2> copyToDstBarriers = {};
-            copyToDstBarriers.reserve(uploads.size());
-
-            for (const auto& [info, stagingBuffer] : uploads)
+            for (const auto& [info, _] : uploads)
             {
-                copyToDstBarriers.emplace_back(VkBufferMemoryBarrier2{
-                    .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-                    .pNext               = nullptr,
-                    .srcStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask        = dstStageMask,
-                    .dstAccessMask       = dstAccessMask,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .buffer              = destination.handle,
-                    .offset              = info.offset * elementSize,
-                    .size                = info.count  * elementSize
-                });
+                m_barrierWriter.WriteBufferBarrier
+                (
+                    destination,
+                    Vk::BufferBarrier{
+                        .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask  = dstStageMask,
+                        .dstAccessMask = dstAccessMask,
+                        .offset        = info.offset * elementSize,
+                        .size          = info.count  * elementSize
+                    }
+                );
             }
 
-            const VkDependencyInfo dependencyInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                .pNext                    = nullptr,
-                .dependencyFlags          = 0,
-                .memoryBarrierCount       = 0,
-                .pMemoryBarriers          = nullptr,
-                .bufferMemoryBarrierCount = static_cast<u32>(copyToDstBarriers.size()),
-                .pBufferMemoryBarriers    = copyToDstBarriers.data(),
-                .imageMemoryBarrierCount  = 0,
-                .pImageMemoryBarriers     = nullptr
-            };
-
-            vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+            m_barrierWriter.Execute(cmdBuffer);
         }
     }
 
@@ -565,27 +549,27 @@ namespace Vk
                 ImGui::Text
                 (
                     "Index Buffer    | %u | %llu/%llu/%llu",
-                    indexCount,
-                    indexCount * sizeof(Models::Index),
-                    indexBuffer.allocationInfo.size - (indexCount * sizeof(Models::Index)),
+                    m_indexCount,
+                    m_indexCount * sizeof(Models::Index),
+                    indexBuffer.allocationInfo.size - (m_indexCount * sizeof(Models::Index)),
                     indexBuffer.allocationInfo.size
                 );
 
                 ImGui::Text
                 (
                     "Position Buffer | %u | %llu/%llu/%llu",
-                    positionCount,
-                    positionCount * sizeof(Models::Position),
-                    positionBuffer.allocationInfo.size - (positionCount * sizeof(Models::Position)),
+                    m_positionCount,
+                    m_positionCount * sizeof(Models::Position),
+                    positionBuffer.allocationInfo.size - (m_positionCount * sizeof(Models::Position)),
                     positionBuffer.allocationInfo.size
                 );
 
                 ImGui::Text
                 (
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
-                    vertexCount,
-                    vertexCount * sizeof(Models::Vertex),
-                    vertexBuffer.allocationInfo.size - (vertexCount * sizeof(Models::Vertex)),
+                    m_vertexCount,
+                    m_vertexCount * sizeof(Models::Vertex),
+                    vertexBuffer.allocationInfo.size - (m_vertexCount * sizeof(Models::Vertex)),
                     vertexBuffer.allocationInfo.size
                 );
 

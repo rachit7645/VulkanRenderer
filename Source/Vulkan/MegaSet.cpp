@@ -233,7 +233,6 @@ namespace Vk
     void MegaSet::Update(VkDevice device)
     {
         m_writer.Update(device);
-        m_writer.Clear();
     }
 
     void MegaSet::ImGuiDisplay()

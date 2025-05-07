@@ -297,47 +297,27 @@ namespace Vk
 
         // Undefined -> Transfer Destination
         {
-            std::vector<VkImageMemoryBarrier2> undefinedToTransferDestinationBarriers;
-            undefinedToTransferDestinationBarriers.reserve(m_pendingUploads.size());
-
             for (const auto& upload : m_pendingUploads)
             {
-                undefinedToTransferDestinationBarriers.emplace_back(VkImageMemoryBarrier2{
-                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                    .pNext               = nullptr,
-                    .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
-                    .srcAccessMask       = VK_ACCESS_2_NONE,
-                    .dstStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .dstAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                    .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image               = upload.image.handle,
-                    .subresourceRange    = {
-                        .aspectMask     = upload.image.aspect,
+                m_barrierWriter.WriteImageBarrier
+                (
+                    upload.image,
+                    Vk::ImageBarrier{
+                        .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                        .srcAccessMask  = VK_ACCESS_2_NONE,
+                        .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                        .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                        .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         .baseMipLevel   = 0,
                         .levelCount     = upload.image.mipLevels,
                         .baseArrayLayer = 0,
                         .layerCount     = upload.image.arrayLayers
                     }
-                });
+                );
             }
 
-            const VkDependencyInfo dependencyInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                .pNext                    = nullptr,
-                .dependencyFlags          = 0,
-                .memoryBarrierCount       = 0,
-                .pMemoryBarriers          = nullptr,
-                .bufferMemoryBarrierCount = 0,
-                .pBufferMemoryBarriers    = nullptr,
-                .imageMemoryBarrierCount  = static_cast<u32>(undefinedToTransferDestinationBarriers.size()),
-                .pImageMemoryBarriers     = undefinedToTransferDestinationBarriers.data()
-            };
-
-            vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+            m_barrierWriter.Execute(cmdBuffer);
         }
 
         // Buffer to Image Copy
@@ -361,47 +341,27 @@ namespace Vk
 
         // Transfer Destination -> Shader Read Only
         {
-            std::vector<VkImageMemoryBarrier2> transferDestinationToShaderReadOnlyBarriers;
-            transferDestinationToShaderReadOnlyBarriers.reserve(m_pendingUploads.size());
-
             for (const auto& upload : m_pendingUploads)
             {
-                transferDestinationToShaderReadOnlyBarriers.emplace_back(VkImageMemoryBarrier2{
-                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                    .pNext               = nullptr,
-                    .srcStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask        = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                    .dstAccessMask       = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                    .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image               = upload.image.handle,
-                    .subresourceRange    = {
-                        .aspectMask     = upload.image.aspect,
+                m_barrierWriter.WriteImageBarrier
+                (
+                    upload.image,
+                    Vk::ImageBarrier{
+                        .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                        .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                        .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                        .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                         .baseMipLevel   = 0,
                         .levelCount     = upload.image.mipLevels,
                         .baseArrayLayer = 0,
                         .layerCount     = upload.image.arrayLayers
                     }
-                });
+                );
             }
 
-            const VkDependencyInfo dependencyInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                .pNext                    = nullptr,
-                .dependencyFlags          = 0,
-                .memoryBarrierCount       = 0,
-                .pMemoryBarriers          = nullptr,
-                .bufferMemoryBarrierCount = 0,
-                .pBufferMemoryBarriers    = nullptr,
-                .imageMemoryBarrierCount  = static_cast<u32>(transferDestinationToShaderReadOnlyBarriers.size()),
-                .pImageMemoryBarriers     = transferDestinationToShaderReadOnlyBarriers.data()
-            };
-
-            vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+            m_barrierWriter.Execute(cmdBuffer);
         }
 
         m_pendingUploads.clear();

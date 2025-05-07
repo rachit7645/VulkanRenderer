@@ -177,12 +177,14 @@ namespace Vk
                 m_buffer.Barrier
                 (
                     cmdBuffer,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-                    VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,
-                    0,
-                    sbtSize
+                    Vk::BufferBarrier{
+                        .srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask  = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                        .dstAccessMask = VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,
+                        .offset        = 0,
+                        .size          = sbtSize
+                    }
                 );
             }
         );

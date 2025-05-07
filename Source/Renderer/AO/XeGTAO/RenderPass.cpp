@@ -293,14 +293,13 @@ namespace Renderer::AO::XeGTAO
         depthMipChain.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_GENERAL,
-            {
-                .aspectMask     = depthMipChain.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
                 .baseMipLevel   = 0,
                 .levelCount     = depthMipChain.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -343,14 +342,13 @@ namespace Renderer::AO::XeGTAO
         depthMipChain.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = depthMipChain.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = depthMipChain.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -376,41 +374,40 @@ namespace Renderer::AO::XeGTAO
         const auto& workingAO = framebufferManager.GetFramebuffer("XeGTAO/WorkingAO");
         const auto& outEdges  = framebufferManager.GetFramebuffer("XeGTAO/Edges");
 
-        workingAO.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_GENERAL,
-            {
-                .aspectMask     = workingAO.image.aspect,
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier(
+            workingAO.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
                 .baseMipLevel   = 0,
                 .levelCount     = workingAO.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
-        );
-
-        outEdges.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_GENERAL,
-            {
-                .aspectMask     = outEdges.image.aspect,
+        )
+        .WriteImageBarrier(
+            outEdges.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
                 .baseMipLevel   = 0,
                 .levelCount     = outEdges.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = outEdges.image.arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         occlusionPipeline.Bind(cmdBuffer);
 
@@ -446,41 +443,38 @@ namespace Renderer::AO::XeGTAO
             1
         );
 
-        workingAO.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = workingAO.image.aspect,
+        barrierWriter
+        .WriteImageBarrier(
+            workingAO.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = workingAO.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
-        );
-
-        outEdges.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = outEdges.image.aspect,
+        )
+        .WriteImageBarrier(
+            outEdges.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = outEdges.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = outEdges.image.arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -516,14 +510,13 @@ namespace Renderer::AO::XeGTAO
             currentFramebuffer.image.Barrier
             (
                cmdBuffer,
-               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-               VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-               VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-               VK_IMAGE_LAYOUT_GENERAL,
-               {
-                   .aspectMask     = currentFramebuffer.image.aspect,
+               Vk::ImageBarrier{
+                   .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                   .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                   .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                   .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                   .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                   .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
                    .baseMipLevel   = 0,
                    .levelCount     = currentFramebuffer.image.mipLevels,
                    .baseArrayLayer = finalApply ? 0 : currentIndex,
@@ -559,14 +552,13 @@ namespace Renderer::AO::XeGTAO
             currentFramebuffer.image.Barrier
             (
                cmdBuffer,
-               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-               VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-               VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-               VK_IMAGE_LAYOUT_GENERAL,
-               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-               {
-                   .aspectMask     = currentFramebuffer.image.aspect,
+               Vk::ImageBarrier{
+                   .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                   .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                   .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                   .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                   .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                   .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                    .baseMipLevel   = 0,
                    .levelCount     = currentFramebuffer.image.mipLevels,
                    .baseArrayLayer = finalApply ? 0 : currentIndex,

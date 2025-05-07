@@ -147,14 +147,13 @@ namespace Renderer::TAA
             history.image.Barrier
             (
                 cmdBuffer,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_PIPELINE_STAGE_2_CLEAR_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                {
-                    .aspectMask     = history.image.aspect,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .baseMipLevel   = 0,
                     .levelCount     = history.image.mipLevels,
                     .baseArrayLayer = 0,
@@ -186,14 +185,13 @@ namespace Renderer::TAA
             history.image.Barrier
             (
                 cmdBuffer,
-                VK_PIPELINE_STAGE_2_CLEAR_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                {
-                    .aspectMask     = history.image.aspect,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .baseMipLevel   = 0,
                     .levelCount     = history.image.mipLevels,
                     .baseArrayLayer = 0,
@@ -213,41 +211,40 @@ namespace Renderer::TAA
         const auto& resolved = framebufferManager.GetFramebuffer(resolvedView.framebuffer);
         const auto& history  = framebufferManager.GetFramebuffer(historyView.framebuffer);
 
-        resolved.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = resolved.image.aspect,
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier(
+            resolved.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = resolved.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = resolved.image.arrayLayers
             }
-        );
-
-        history.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = history.image.aspect,
+        )
+        .WriteImageBarrier(
+            history.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = history.image.mipLevels,
                 .baseArrayLayer = static_cast<u32>(currentIndex),
                 .layerCount     = 1
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         const VkRenderingAttachmentInfo resolvedInfo =
         {
@@ -326,7 +323,7 @@ namespace Renderer::TAA
             .linearSamplerIndex = pipeline.linearSamplerIndex,
             .currentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
             .historyBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
-            .velocityIndex      = framebufferManager.GetFramebufferView("MotionVectorsView").sampledImageIndex,
+            .velocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageIndex,
             .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
         };
 
@@ -352,41 +349,38 @@ namespace Renderer::TAA
 
         vkCmdEndRendering(cmdBuffer.handle);
 
-        resolved.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = resolved.image.aspect,
+        barrierWriter
+        .WriteImageBarrier(
+            resolved.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = resolved.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = resolved.image.arrayLayers
             }
-        );
-
-        history.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = history.image.aspect,
+        )
+        .WriteImageBarrier(
+            history.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = history.image.mipLevels,
                 .baseArrayLayer = static_cast<u32>(currentIndex),
                 .layerCount     = 1
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }

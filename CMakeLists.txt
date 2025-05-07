@@ -93,8 +93,8 @@ add_executable(VulkanRenderer
     Source/Vulkan/ImmediateSubmit.cpp
     Source/Vulkan/Timeline.cpp
     Source/Vulkan/ImageUploader.cpp
-	# Vulkan Builders
-	Source/Vulkan/Builders/PipelineBuilder.cpp
+    Source/Vulkan/PipelineBuilder.cpp
+    Source/Vulkan/BarrierWriter.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     # Object sources

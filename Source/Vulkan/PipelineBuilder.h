@@ -22,10 +22,10 @@
 #include <span>
 #include <vulkan/vulkan.h>
 
-#include "Vulkan/Context.h"
-#include "Vulkan/ShaderModule.h"
+#include "Context.h"
+#include "ShaderModule.h"
 
-namespace Vk::Builders
+namespace Vk
 {
     class PipelineBuilder
     {

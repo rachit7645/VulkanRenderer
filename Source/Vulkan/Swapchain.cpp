@@ -18,8 +18,9 @@
 
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
-#include "Util/Log.h"
 #include "Util.h"
+#include "BarrierWriter.h"
+#include "Util/Log.h"
 
 namespace Vk
 {
@@ -123,23 +124,40 @@ namespace Vk
     {
         const auto& swapchainImage = images[imageIndex];
 
-        swapchainImage.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-            VK_ACCESS_2_NONE,
-            VK_PIPELINE_STAGE_2_BLIT_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            {
-                .aspectMask     = swapchainImage.aspect,
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = swapchainImage.arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         const VkImageBlit2 blitRegion =
         {
@@ -182,41 +200,38 @@ namespace Vk
 
         vkCmdBlitImage2(cmdBuffer.handle, &blitImageInfo);
 
-        finalColor.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_BLIT_BIT,
-            VK_ACCESS_2_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = finalColor.aspect,
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = finalColor.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = finalColor.arrayLayers
             }
-        );
-
-        swapchainImage.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_BLIT_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = swapchainImage.aspect,
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = swapchainImage.arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
     }
 
     void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
@@ -358,48 +373,29 @@ namespace Vk
             cmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                std::vector<VkImageMemoryBarrier2> barriers = {};
-                barriers.reserve(images.size());
+                Vk::BarrierWriter barrierWriter = {};
 
-                for (auto&& image : images)
+                for (const auto& image : images)
                 {
-                    barriers.push_back(VkImageMemoryBarrier2
-                    {
-                        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                        .pNext               = nullptr,
-                        .srcStageMask        = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-                        .srcAccessMask       = VK_ACCESS_2_NONE,
-                        .dstStageMask        = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-                        .dstAccessMask       = VK_ACCESS_2_NONE,
-                        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                        .newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image               = image.handle,
-                        .subresourceRange    = {
-                            .aspectMask     = image.aspect,
+                    barrierWriter.WriteImageBarrier
+                    (
+                        image,
+                        Vk::ImageBarrier{
+                            .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                            .srcAccessMask  = VK_ACCESS_2_NONE,
+                            .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                            .dstAccessMask  = VK_ACCESS_2_NONE,
+                            .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                            .newLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                             .baseMipLevel   = 0,
                             .levelCount     = image.mipLevels,
                             .baseArrayLayer = 0,
-                            .layerCount     = 1
+                            .layerCount     = image.arrayLayers
                         }
-                    });
+                    );
                 }
 
-                const VkDependencyInfo dependencyInfo =
-                {
-                    .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                    .pNext                    = nullptr,
-                    .dependencyFlags          = 0,
-                    .memoryBarrierCount       = 0,
-                    .pMemoryBarriers          = nullptr,
-                    .bufferMemoryBarrierCount = 0,
-                    .pBufferMemoryBarriers    = nullptr,
-                    .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
-                    .pImageMemoryBarriers     = barriers.data()
-                };
-
-                vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+                barrierWriter.Execute(cmdBuffer);
             }
         );
 

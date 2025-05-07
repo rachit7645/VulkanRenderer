@@ -15,7 +15,7 @@
  */
 
 #include "Pipeline.h"
-#include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::AO::XeGTAO::DepthPreFilter
@@ -27,7 +27,7 @@ namespace Renderer::AO::XeGTAO::DepthPreFilter
         Vk::TextureManager& textureManager
     )
     {
-        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/XeGTAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::PushConstant))

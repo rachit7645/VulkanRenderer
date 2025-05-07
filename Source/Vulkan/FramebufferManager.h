@@ -24,6 +24,7 @@
 #include "ImageView.h"
 #include "FormatHelper.h"
 #include "MegaSet.h"
+#include "BarrierWriter.h"
 #include "Util/Enum.h"
 
 namespace Vk
@@ -201,6 +202,8 @@ namespace Vk
         std::unordered_set<std::string> m_fixedSizeFramebuffers;
 
         VkExtent2D m_extent = {};
+
+        Vk::BarrierWriter m_barrierWriter       = {};
     };
 }
 

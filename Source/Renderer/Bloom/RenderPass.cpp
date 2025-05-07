@@ -145,18 +145,17 @@ namespace Renderer::Bloom
             bloomBuffer.image.Barrier
             (
                 cmdBuffer,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                {
-                    .aspectMask     = bloomBuffer.image.aspect,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .baseMipLevel   = mip,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1
+                    .layerCount     = bloomBuffer.image.arrayLayers
                 }
             );
 
@@ -250,18 +249,17 @@ namespace Renderer::Bloom
             bloomBuffer.image.Barrier
             (
                 cmdBuffer,
-                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                {
-                    .aspectMask     = bloomBuffer.image.aspect,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .baseMipLevel   = mip,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1
+                    .layerCount     = bloomBuffer.image.arrayLayers
                 }
             );
 
@@ -295,18 +293,17 @@ namespace Renderer::Bloom
             bloomBuffer.image.Barrier
             (
                 cmdBuffer,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                {
-                    .aspectMask     = bloomBuffer.image.aspect,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .baseMipLevel   = mip - 1,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1
+                    .layerCount     = bloomBuffer.image.arrayLayers
                 }
             );
 
@@ -403,18 +400,17 @@ namespace Renderer::Bloom
             bloomBuffer.image.Barrier
             (
                 cmdBuffer,
-                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                {
-                    .aspectMask     = bloomBuffer.image.aspect,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .baseMipLevel   = mip - 1,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1
+                    .layerCount     = bloomBuffer.image.arrayLayers
                 }
             );
 

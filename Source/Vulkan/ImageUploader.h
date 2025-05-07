@@ -21,6 +21,8 @@
 
 #include "Image.h"
 #include "Buffer.h"
+#include "BarrierWriter.h"
+#include "Util/DeletionQueue.h"
 
 namespace Vk
 {
@@ -56,6 +58,8 @@ namespace Vk
         };
 
         std::vector<Upload> m_pendingUploads;
+
+        Vk::BarrierWriter m_barrierWriter;
     };
 }
 

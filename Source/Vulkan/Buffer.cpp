@@ -98,35 +98,26 @@ namespace Vk
         );
     }
 
-    void Buffer::Barrier
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        VkPipelineStageFlags2 srcStageMask,
-        VkAccessFlags2 srcAccessMask,
-        VkPipelineStageFlags2 dstStageMask,
-        VkAccessFlags2 dstAccessMask,
-        VkDeviceSize offset,
-        VkDeviceSize size
-    ) const
+    void Buffer::Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::BufferBarrier& barrier) const
     {
         if (handle == VK_NULL_HANDLE)
         {
             return;
         }
 
-        const VkBufferMemoryBarrier2 barrier =
+        const VkBufferMemoryBarrier2 bufferBarrier =
         {
             .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
             .pNext               = nullptr,
-            .srcStageMask        = srcStageMask,
-            .srcAccessMask       = srcAccessMask,
-            .dstStageMask        = dstStageMask,
-            .dstAccessMask       = dstAccessMask,
+            .srcStageMask        = barrier.srcStageMask,
+            .srcAccessMask       = barrier.srcAccessMask,
+            .dstStageMask        = barrier.dstStageMask,
+            .dstAccessMask       = barrier.dstAccessMask,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .buffer              = handle,
-            .offset              = offset,
-            .size                = size
+            .offset              = barrier.offset,
+            .size                = barrier.size
         };
 
         const VkDependencyInfo dependencyInfo =
@@ -137,7 +128,7 @@ namespace Vk
             .memoryBarrierCount       = 0,
             .pMemoryBarriers          = nullptr,
             .bufferMemoryBarrierCount = 1,
-            .pBufferMemoryBarriers    = &barrier,
+            .pBufferMemoryBarriers    = &bufferBarrier,
             .imageMemoryBarrierCount  = 0,
             .pImageMemoryBarriers     = nullptr
         };

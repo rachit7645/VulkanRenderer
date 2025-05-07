@@ -90,14 +90,13 @@ namespace Renderer::ShadowRT
         shadowMap.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_GENERAL,
-            {
-                .aspectMask     = shadowMap.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -143,14 +142,13 @@ namespace Renderer::ShadowRT
         shadowMap.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = shadowMap.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,

@@ -15,7 +15,7 @@
  */
 
 #include "Pipeline.h"
-#include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::SpotShadow
@@ -24,7 +24,7 @@ namespace Renderer::SpotShadow
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Shadows/SpotShadow.vert", VK_SHADER_STAGE_VERTEX_BIT)

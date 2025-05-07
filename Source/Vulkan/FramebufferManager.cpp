@@ -17,7 +17,6 @@
 #include "FramebufferManager.h"
 
 #include "DebugUtils.h"
-#include "ImmediateSubmit.h"
 #include "Util/Log.h"
 #include "Util/Visitor.h"
 
@@ -81,15 +80,17 @@ namespace Vk
             return;
         }
 
+        // TODO: Figure out a better way
         if (extent.width == m_extent.width && extent.height == m_extent.height)
         {
             return;
         }
 
+        Vk::BeginLabel(cmdBuffer, "FramebufferManager::Update", {0.6421f, 0.1234f, 0.0316f, 1.0f});
+
         m_extent = extent;
 
-        std::unordered_set<std::string>    updatedFramebuffers;
-        std::vector<VkImageMemoryBarrier2> barriers;
+        std::unordered_set<std::string> updatedFramebuffers = {};
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
@@ -230,26 +231,22 @@ namespace Vk
 
             updatedFramebuffers.insert(name);
 
-            barriers.push_back(VkImageMemoryBarrier2{
-                .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                .pNext               = nullptr,
-                .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = framebuffer.initialState.dstStageMask,
-                .dstAccessMask       = framebuffer.initialState.dstAccessMask,
-                .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout           = framebuffer.initialState.initialLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image               = framebuffer.image.handle,
-                .subresourceRange    = {
-                    .aspectMask     = framebuffer.image.aspect,
+            m_barrierWriter.WriteImageBarrier
+            (
+                framebuffer.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = framebuffer.initialState.dstStageMask,
+                    .dstAccessMask  = framebuffer.initialState.dstAccessMask,
+                    .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .newLayout      = framebuffer.initialState.initialLayout,
                     .baseMipLevel   = 0,
                     .levelCount     = framebuffer.image.mipLevels,
                     .baseArrayLayer = 0,
                     .layerCount     = framebuffer.image.arrayLayers
                 }
-            });
+            );
         }
 
         for (auto& [name, framebufferView] : m_framebufferViews)
@@ -311,25 +308,11 @@ namespace Vk
             Vk::SetDebugName(device, framebufferView.view.handle, name);
         }
 
-        if (!barriers.empty())
-        {
-            const VkDependencyInfo dependencyInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                .pNext                    = nullptr,
-                .dependencyFlags          = 0,
-                .memoryBarrierCount       = 0,
-                .pMemoryBarriers          = nullptr,
-                .bufferMemoryBarrierCount = 0,
-                .pBufferMemoryBarriers    = nullptr,
-                .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
-                .pImageMemoryBarriers     = barriers.data()
-            };
-
-            vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
-        }
+        m_barrierWriter.Execute(cmdBuffer);
 
         megaSet.Update(device);
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name)

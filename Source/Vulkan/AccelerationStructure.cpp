@@ -18,6 +18,7 @@
 
 #include "DebugUtils.h"
 #include "Util.h"
+#include "Models/Vertex.h"
 #include "Util/Maths.h"
 
 namespace Vk
@@ -78,12 +79,14 @@ namespace Vk
         transformBuffer.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_HOST_BIT,
-            VK_ACCESS_2_HOST_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-            VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
-            0,
-            transformsSize
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                .dstAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+                .offset        = 0,
+                .size          = transformsSize
+            }
         );
 
         deletionQueue.PushDeletor([allocator, buffer = transformBuffer] () mutable
@@ -496,12 +499,14 @@ namespace Vk
         m_instanceBuffers[FIF].Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_HOST_BIT,
-            VK_ACCESS_2_HOST_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-            VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
-            0,
-            instancesSize
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                .dstAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+                .offset        = 0,
+                .size          = instancesSize
+            }
         );
 
         const VkAccelerationStructureGeometryKHR geometry =

@@ -17,10 +17,10 @@
 #include "Image.h"
 
 #include <vulkan/vk_enum_string_helper.h>
-#include <volk/volk.h>
 
 #include "Util.h"
 #include "Util/Log.h"
+#include "Vulkan/BarrierWriter.h"
 
 namespace Vk
 {
@@ -118,32 +118,28 @@ namespace Vk
                aspect == rhs.aspect;
     }
 
-    void Image::Barrier
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        VkPipelineStageFlags2 srcStageMask,
-        VkAccessFlags2 srcAccessMask,
-        VkPipelineStageFlags2 dstStageMask,
-        VkAccessFlags2 dstAccessMask,
-        VkImageLayout oldLayout,
-        VkImageLayout newLayout,
-        const VkImageSubresourceRange& subresourceRange
-    ) const
+    void Image::Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::ImageBarrier& barrier) const
     {
-        const VkImageMemoryBarrier2 barrier =
+        const VkImageMemoryBarrier2 imageBarrier =
         {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext               = nullptr,
-            .srcStageMask        = srcStageMask,
-            .srcAccessMask       = srcAccessMask,
-            .dstStageMask        = dstStageMask,
-            .dstAccessMask       = dstAccessMask,
-            .oldLayout           = oldLayout,
-            .newLayout           = newLayout,
+            .srcStageMask        = barrier.srcStageMask,
+            .srcAccessMask       = barrier.srcAccessMask,
+            .dstStageMask        = barrier.dstStageMask,
+            .dstAccessMask       = barrier.dstAccessMask,
+            .oldLayout           = barrier.oldLayout,
+            .newLayout           = barrier.newLayout,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image               = handle,
-            .subresourceRange    = subresourceRange
+            .subresourceRange    = {
+                .aspectMask     = aspect,
+                .baseMipLevel   = barrier.baseMipLevel,
+                .levelCount     = barrier.levelCount,
+                .baseArrayLayer = barrier.baseArrayLayer,
+                .layerCount     = barrier.layerCount,
+            }
         };
 
         const VkDependencyInfo dependencyInfo =
@@ -156,7 +152,7 @@ namespace Vk
             .bufferMemoryBarrierCount = 0,
             .pBufferMemoryBarriers    = nullptr,
             .imageMemoryBarrierCount  = 1,
-            .pImageMemoryBarriers     = &barrier
+            .pImageMemoryBarriers     = &imageBarrier
         };
 
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
@@ -169,14 +165,13 @@ namespace Vk
             Barrier
             (
                 cmdBuffer,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_SHADER_READ_BIT,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                {
-                    .aspectMask     = aspect,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .baseMipLevel   = 0,
                     .levelCount     = mipLevels,
                     .baseArrayLayer = 0,
@@ -197,14 +192,13 @@ namespace Vk
                 Barrier
                 (
                     cmdBuffer,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_READ_BIT,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    {
-                        .aspectMask     = aspect,
+                    Vk::ImageBarrier{
+                        .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                        .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                        .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                        .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                         .baseMipLevel   = j - 1,
                         .levelCount     = 1,
                         .baseArrayLayer = i,
@@ -259,43 +253,38 @@ namespace Vk
         }
 
         // Level 0 to Level (mipLevels - 1)
-        Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = aspect,
+        Vk::BarrierWriter{}
+        .WriteImageBarrier(
+            *this,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = mipLevels - 1,
                 .baseArrayLayer = 0,
                 .layerCount     = arrayLayers
             }
-        );
-
-
-        // Final mip level
-        Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = aspect,
+        )
+        .WriteImageBarrier(
+            *this,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = mipLevels - 1,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
                 .layerCount     = arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
     }
 
     void Image::Destroy(VmaAllocator allocator) const

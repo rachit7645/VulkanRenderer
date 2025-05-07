@@ -16,8 +16,7 @@
 
 #include "Pipeline.h"
 
-#include "Models/Vertex.h"
-#include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Util.h"
 
@@ -46,7 +45,7 @@ namespace Renderer::GBuffer
 
         const std::array colorFormats = {formatHelper.b10g11r11SFloat, formatHelper.rgba8UnormFormat, formatHelper.rgSFloatFormat};
 
-        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Deferred/GBuffer.vert", VK_SHADER_STAGE_VERTEX_BIT)

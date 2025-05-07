@@ -99,14 +99,13 @@ namespace Renderer::PostProcess
         finalColor.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = finalColor.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = finalColor.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -200,24 +199,6 @@ namespace Renderer::PostProcess
         );
 
         vkCmdEndRendering(cmdBuffer.handle);
-
-        finalColor.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_BLIT_BIT,
-            VK_ACCESS_2_TRANSFER_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            {
-                .aspectMask     = finalColor.image.aspect,
-                .baseMipLevel   = 0,
-                .levelCount     = finalColor.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = finalColor.image.arrayLayers
-            }
-        );
 
         Vk::EndLabel(cmdBuffer);
     }

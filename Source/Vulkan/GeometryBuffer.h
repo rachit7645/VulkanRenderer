@@ -21,9 +21,10 @@
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"
-#include "Models/Vertex.h"
-#include "Util/Util.h"
 #include "CommandBuffer.h"
+#include "BarrierWriter.h"
+#include "Util/Util.h"
+#include "Util/DeletionQueue.h"
 
 namespace Vk
 {
@@ -66,10 +67,6 @@ namespace Vk
         Vk::Buffer vertexBuffer;
 
         Vk::Buffer cubeBuffer;
-
-        u32 indexCount    = 0;
-        u32 positionCount = 0;
-        u32 vertexCount   = 0;
     private:
         struct Upload
         {
@@ -122,11 +119,17 @@ namespace Vk
             VkAccessFlags2 dstAccessMask
         );
 
+        u32 m_indexCount    = 0;
+        u32 m_positionCount = 0;
+        u32 m_vertexCount   = 0;
+
         std::vector<Upload> m_pendingIndexUploads;
         std::vector<Upload> m_pendingPositionUploads;
         std::vector<Upload> m_pendingVertexUploads;
 
         std::optional<Upload> m_pendingCubeUpload;
+
+        Vk::BarrierWriter m_barrierWriter = {};
     };
 }
 
