@@ -25,9 +25,9 @@ namespace Models
 {
     struct Mesh
     {
-        Vk::GeometryBuffer::Info indexInfo    = {};
-        Vk::GeometryBuffer::Info positionInfo = {};
-        Vk::GeometryBuffer::Info vertexInfo   = {};
+        Vk::GeometryInfo indexInfo    = {};
+        Vk::GeometryInfo positionInfo = {};
+        Vk::GeometryInfo vertexInfo   = {};
 
         Material material = {};
 

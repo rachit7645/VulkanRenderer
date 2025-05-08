@@ -218,10 +218,10 @@ namespace Models
                 );
             }
 
-            Vk::GeometryBuffer::Info indexInfo    = {};
-            Vk::GeometryBuffer::Info positionInfo = {};
-            Vk::GeometryBuffer::Info vertexInfo   = {};
-            Maths::AABB              aabb         = {};
+            Vk::GeometryInfo indexInfo    = {};
+            Vk::GeometryInfo positionInfo = {};
+            Vk::GeometryInfo vertexInfo   = {};
+            Maths::AABB      aabb         = {};
 
             // Indices
             {
@@ -241,7 +241,7 @@ namespace Models
                     );
                 }
 
-                const auto [writePointer, info] = geometryBuffer.GetWritePointer<Models::Index>
+                const auto [writePointer, info] = geometryBuffer.indexBuffer.GetWriteHandle
                 (
                     allocator,
                     indicesAccessor.count,
@@ -314,7 +314,7 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                const auto [writePointer, info] = geometryBuffer.GetWritePointer<Models::Position>
+                const auto [writePointer, info] = geometryBuffer.positionBuffer.GetWriteHandle
                 (
                     allocator,
                     positionAccessor.count,
@@ -363,7 +363,7 @@ namespace Models
                     Logger::Error("{}\n", "Invalid primitive!");
                 }
 
-                const auto [writePointer, info] = geometryBuffer.GetWritePointer<Models::Vertex>
+                const auto [writePointer, info] = geometryBuffer.vertexBuffer.GetWriteHandle
                 (
                     allocator,
                     normalAccessor.count,

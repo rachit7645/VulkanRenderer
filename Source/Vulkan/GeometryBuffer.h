@@ -23,6 +23,7 @@
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "BarrierWriter.h"
+#include "VertexBuffer.h"
 #include "Util/Util.h"
 #include "Util/DeletionQueue.h"
 
@@ -31,24 +32,10 @@ namespace Vk
     class GeometryBuffer
     {
     public:
-        struct Info
-        {
-            u32 offset = 0;
-            u32 count  = 0;
-        };
-
-        explicit GeometryBuffer(VkDevice device, VmaAllocator allocator);
+        GeometryBuffer(VkDevice device, VmaAllocator allocator);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator);
-
-        template<typename T>
-        std::pair<T*, GeometryBuffer::Info> GetWritePointer
-        (
-            VmaAllocator allocator,
-            usize count,
-            Util::DeletionQueue& deletionQueue
-        );
 
         void Update
         (
@@ -62,74 +49,15 @@ namespace Vk
 
         [[nodiscard]] bool HasPendingUploads() const;
 
-        Vk::Buffer indexBuffer;
-        Vk::Buffer positionBuffer;
-        Vk::Buffer vertexBuffer;
+        Vk::VertexBuffer<Models::Index>    indexBuffer;
+        Vk::VertexBuffer<Models::Position> positionBuffer;
+        Vk::VertexBuffer<Models::Vertex>   vertexBuffer;
 
         Vk::Buffer cubeBuffer;
     private:
-        struct Upload
-        {
-            GeometryBuffer::Info info;
-            Vk::Buffer           buffer;
-        };
-
         void SetupCubeUpload(VmaAllocator allocator);
 
-        template<typename T>
-        std::pair<T*, GeometryBuffer::Info> SetupUpload
-        (
-            VmaAllocator allocator,
-            usize count,
-            u32& offset,
-            std::vector<GeometryBuffer::Upload>& uploads,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        void ResizeBuffer
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
-            u32 count,
-            usize elementSize,
-            const std::span<const Upload> uploads,
-            VkBufferUsageFlags usage,
-            VkPipelineStageFlags2 srcStageMask,
-            VkAccessFlags2 srcAccessMask,
-            Vk::Buffer& buffer,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        void ResizeBuffers
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        void FlushUploads
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Buffer& destination,
-            const std::span<const Upload> uploads,
-            usize elementSize,
-            VkPipelineStageFlags2 dstStageMask,
-            VkAccessFlags2 dstAccessMask
-        );
-
-        u32 m_indexCount    = 0;
-        u32 m_positionCount = 0;
-        u32 m_vertexCount   = 0;
-
-        std::vector<Upload> m_pendingIndexUploads;
-        std::vector<Upload> m_pendingPositionUploads;
-        std::vector<Upload> m_pendingVertexUploads;
-
-        std::optional<Upload> m_pendingCubeUpload;
-
-        Vk::BarrierWriter m_barrierWriter = {};
+        std::optional<Vk::Buffer> m_pendingCubeUpload;
     };
 }
 

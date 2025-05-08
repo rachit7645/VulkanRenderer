@@ -199,12 +199,12 @@ namespace Renderer::PointShadow
 
                 pipeline.pushConstant =
                 {
-                    .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-                    .meshes        = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                    .scene       = sceneBuffer.buffers[FIF].deviceAddress,
+                    .meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-                    .positions     = geometryBuffer.positionBuffer.deviceAddress,
-                    .lightIndex    = static_cast<u32>(i),
-                    .faceIndex     = static_cast<u32>(face)
+                    .positions   = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                    .lightIndex  = static_cast<u32>(i),
+                    .faceIndex   = static_cast<u32>(face)
                 };
 
                 pipeline.PushConstants

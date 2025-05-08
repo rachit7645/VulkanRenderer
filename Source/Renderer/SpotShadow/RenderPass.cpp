@@ -195,7 +195,7 @@ namespace Renderer::SpotShadow
                 .scene         = sceneBuffer.buffers[FIF].deviceAddress,
                 .meshes        = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                 .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-                .positions     = geometryBuffer.positionBuffer.deviceAddress,
+                .positions     = geometryBuffer.positionBuffer.buffer.deviceAddress,
                 .currentIndex  = static_cast<u32>(i)
             };
 

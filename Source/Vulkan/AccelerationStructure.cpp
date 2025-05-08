@@ -122,11 +122,11 @@ namespace Vk
                         .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
                         .pNext         = nullptr,
                         .vertexFormat  = VK_FORMAT_R32G32B32_SFLOAT,
-                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.positionBuffer.deviceAddress + meshes[j].positionInfo.offset * sizeof(Models::Position)},
+                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress + meshes[j].positionInfo.offset * sizeof(Models::Position)},
                         .vertexStride  = sizeof(Models::Position),
                         .maxVertex     = meshes[j].positionInfo.count - 1,
                         .indexType     = VK_INDEX_TYPE_UINT32,
-                        .indexData     = modelManager.geometryBuffer.indexBuffer.deviceAddress + meshes[j].indexInfo.offset * sizeof(Models::Index),
+                        .indexData     = modelManager.geometryBuffer.indexBuffer.buffer.deviceAddress + meshes[j].indexInfo.offset * sizeof(Models::Index),
                         .transformData = {.deviceAddress = transformBuffer.deviceAddress + (lastOffset + j) * sizeof(VkTransformMatrixKHR)}
                     }},
                     .flags        = VK_GEOMETRY_OPAQUE_BIT_KHR

@@ -323,8 +323,8 @@ namespace Renderer::GBuffer
             .currentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .previousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
             .meshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-            .positions           = geometryBuffer.positionBuffer.deviceAddress,
-            .vertices            = geometryBuffer.vertexBuffer.deviceAddress,
+            .positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
+            .vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
             .textureSamplerIndex = pipeline.textureSamplerIndex
         };
 

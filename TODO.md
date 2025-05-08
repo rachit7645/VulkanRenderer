@@ -19,5 +19,4 @@
 * Fog
 * Volumetric Lighting
 * VBGTAO
-* Geometry Buffer Rework
 * Move IBL Maps to Framebuffer Manager 

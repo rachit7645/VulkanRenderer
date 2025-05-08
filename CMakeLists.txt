@@ -95,6 +95,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/ImageUploader.cpp
     Source/Vulkan/PipelineBuilder.cpp
     Source/Vulkan/BarrierWriter.cpp
+    Source/Vulkan/VertexBuffer.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     # Object sources
