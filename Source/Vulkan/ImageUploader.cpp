@@ -16,8 +16,6 @@
 
 #include "ImageUploader.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-
 #include <stb/stb_image.h>
 #include <vulkan/utility/vk_format_utils.h>
 
@@ -45,16 +43,15 @@ namespace Vk
 
         if (extension == ".hdr")
         {
-            s32 _width    = 0;
-            s32 _height   = 0;
-            s32 _channels = 0;
+            s32 _width  = 0;
+            s32 _height = 0;
 
             const f32* data = stbi_loadf
             (
                 path.data(),
                 &_width,
                 &_height,
-                &_channels,
+                nullptr,
                 STBI_rgb_alpha
             );
 
@@ -67,7 +64,7 @@ namespace Vk
             height = _height;
 
             const usize        elemCount = width * height * STBI_rgb_alpha;
-            const VkDeviceSize dataSize = elemCount * sizeof(f16);
+            const VkDeviceSize dataSize  = elemCount * sizeof(f16);
 
             buffer = Vk::Buffer
             (
@@ -79,7 +76,7 @@ namespace Vk
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Util::ConvertF32ToF16(data, std::bit_cast<f16*>(buffer.allocationInfo.pMappedData), elemCount);
+            Util::ConvertF32ToF16(data, static_cast<f16*>(buffer.allocationInfo.pMappedData), elemCount);
 
             stbi_image_free(std::bit_cast<void*>(data));
 
@@ -278,7 +275,7 @@ namespace Vk
             VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        m_pendingUploads.emplace_back(image, buffer, std::move(copyRegions));
+        m_pendingUploads.emplace_back(image, buffer, copyRegions);
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
         {

@@ -315,6 +315,16 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
+    bool FramebufferManager::DoesFramebufferExist(const std::string_view name)
+    {
+        return m_framebuffers.contains(name.data());
+    }
+
+    bool FramebufferManager::DoesFramebufferViewExist(const std::string_view name)
+    {
+        return m_framebufferViews.contains(name.data());
+    }
+
     Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name)
     {
         const auto iter = m_framebuffers.find(name.data());

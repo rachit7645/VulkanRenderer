@@ -34,6 +34,7 @@ namespace Engine
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Renderer::IBL::Generator& iblGenerator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -122,16 +123,21 @@ namespace Engine
             // HDR Map
             JSON::CheckError(document["IBL"].get_string(m_hdrMap), "Failed to load IBL!");
 
-            iblMaps.Generate
-            (
-                cmdBuffer,
-                context,
-                formatHelper,
-                modelManager,
-                megaSet,
-                deletionQueue,
-                m_hdrMap
-            );
+            const auto hdrMapAssetPath = Engine::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
+
+            if (Engine::Files::Exists(hdrMapAssetPath))
+            {
+                iblMaps = iblGenerator.Generate
+                (
+                    cmdBuffer,
+                    context,
+                    formatHelper,
+                    modelManager,
+                    megaSet,
+                    deletionQueue,
+                    hdrMapAssetPath
+                );
+            }
 
             m_hdrMap.clear();
         }
@@ -150,6 +156,7 @@ namespace Engine
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Renderer::IBL::Generator& iblGenerator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -268,16 +275,29 @@ namespace Engine
 
                     if (ImGui::Button("Load") && !m_hdrMap.empty())
                     {
-                        iblMaps.Generate
-                        (
-                            cmdBuffer,
-                            context,
-                            formatHelper,
-                            modelManager,
-                            megaSet,
-                            deletionQueue,
-                            m_hdrMap
-                        );
+                        const auto hdrMapAssetPath = Engine::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
+
+                        if (Engine::Files::Exists(hdrMapAssetPath))
+                        {
+                            iblMaps.Destroy
+                            (
+                                context,
+                                modelManager.textureManager,
+                                megaSet,
+                                deletionQueue
+                            );
+
+                            iblMaps = iblGenerator.Generate
+                            (
+                                cmdBuffer,
+                                context,
+                                formatHelper,
+                                modelManager,
+                                megaSet,
+                                deletionQueue,
+                                hdrMapAssetPath
+                            );
+                        }
 
                         m_hdrMap.clear();
                     }
@@ -292,8 +312,20 @@ namespace Engine
         }
     }
 
-    void Scene::Destroy(VkDevice device)
+    void Scene::Destroy
+    (
+        const Vk::Context& context,
+        Vk::TextureManager& textureManager,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
     {
-        iblMaps.Destroy(device);
+        iblMaps.Destroy
+        (
+            context,
+            textureManager,
+            megaSet,
+            deletionQueue
+        );
     }
 }

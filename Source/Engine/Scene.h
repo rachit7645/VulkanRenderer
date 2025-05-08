@@ -22,6 +22,7 @@
 #include "Renderer/Objects/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
 #include "Renderer/IBL/IBLMaps.h"
+#include "Renderer/IBL/Generator.h"
 #include "Models/ModelManager.h"
 #include "Util/FrameCounter.h"
 
@@ -38,6 +39,7 @@ namespace Engine
             const Vk::FormatHelper& formatHelper,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Renderer::IBL::Generator& iblGenerator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -50,10 +52,17 @@ namespace Engine
             const Vk::FormatHelper& formatHelper,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Renderer::IBL::Generator& iblGenerator,
             Util::DeletionQueue& deletionQueue
         );
 
-        void Destroy(VkDevice device);
+        void Destroy
+        (
+            const Vk::Context& context,
+            Vk::TextureManager& textureManager,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
 
         std::vector<Renderer::RenderObject>        renderObjects;
         Renderer::Objects::DirLight                sun;

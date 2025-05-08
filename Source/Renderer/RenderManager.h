@@ -33,6 +33,7 @@
 #include "ShadowRT/RenderPass.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
+#include "IBL/Generator.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -118,6 +119,9 @@ namespace Renderer
 
         // Dispatches
         Culling::Dispatch m_cullingDispatch;
+
+        // Generators
+        IBL::Generator m_iblGenerator;
 
         // Buffers
         Buffers::MeshBuffer     m_meshBuffer;

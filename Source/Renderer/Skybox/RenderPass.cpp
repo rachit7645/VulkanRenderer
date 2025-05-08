@@ -128,7 +128,7 @@ namespace Renderer::Skybox
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .scene        = sceneBuffer.buffers[FIF].deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .cubemapIndex = iblMaps.skyboxID.value()
+            .cubemapIndex = iblMaps.skyboxID
         };
 
         pipeline.PushConstants

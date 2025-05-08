@@ -160,8 +160,12 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
+        [[nodiscard]] bool DoesFramebufferExist(const std::string_view name);
+        [[nodiscard]] bool DoesFramebufferViewExist(const std::string_view name);
+
         [[nodiscard]] Framebuffer& GetFramebuffer(const std::string_view name);
         [[nodiscard]] const Framebuffer& GetFramebuffer(const std::string_view name) const;
+
         [[nodiscard]] FramebufferView& GetFramebufferView(const std::string_view name);
         [[nodiscard]] const FramebufferView& GetFramebufferView(const std::string_view name) const;
 

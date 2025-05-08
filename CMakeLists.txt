@@ -121,6 +121,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Skybox/RenderPass.cpp
     # IBL Sources
     Source/Renderer/IBL/IBLMaps.cpp
+    Source/Renderer/IBL/Generator.cpp
     Source/Renderer/IBL/BRDF/Pipeline.cpp
     Source/Renderer/IBL/Converter/Pipeline.cpp
     Source/Renderer/IBL/Convolution/Pipeline.cpp
@@ -162,6 +163,7 @@ add_executable(VulkanRenderer
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp
+    Source/Externals/STB.cpp
 )
 
 # Precompiled Headers

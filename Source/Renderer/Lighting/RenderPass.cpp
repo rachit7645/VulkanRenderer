@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Util/Log.h"
-#include "Util/Maths.h"
 #include "Util/Ranges.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Depth/RenderPass.h"
@@ -170,9 +169,9 @@ namespace Renderer::Lighting
             .gAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
             .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
             .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .irradianceIndex     = iblMaps.irradianceID.value(),
-            .preFilterIndex      = iblMaps.preFilterID.value(),
-            .brdfLutIndex        = iblMaps.brdfLutID.value(),
+            .irradianceIndex     = iblMaps.irradianceMapID,
+            .preFilterIndex      = iblMaps.preFilterMapID,
+            .brdfLutIndex        = iblMaps.brdfLutID,
             .shadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
             .pointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
             .spotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
