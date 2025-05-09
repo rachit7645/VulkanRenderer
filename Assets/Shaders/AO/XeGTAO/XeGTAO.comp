@@ -48,11 +48,11 @@ void  XeGTAO_OutputWorkingTerm(ivec2 pixelCoord, float visibility);
 
 void main()
 {
-    const float effectRadius            = XE_GTAO_DEFAULT_RADIUS * XE_GTAO_DEFAULT_RADIUS_MULTIPLIER;
-    const float sampleDistributionPower = XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER;
-    const float falloffRange            = XE_GTAO_DEFAULT_FALLOFF_RANGE * effectRadius;
+    const float effectRadius            = GTAO_DEFAULT_RADIUS * GTAO_DEFAULT_RADIUS_MULTIPLIER;
+    const float sampleDistributionPower = GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER;
+    const float falloffRange            = GTAO_DEFAULT_FALLOFF_RANGE * effectRadius;
 
-    const float falloffFrom = effectRadius * (1.0f - XE_GTAO_DEFAULT_FALLOFF_RANGE);
+    const float falloffFrom = effectRadius * (1.0f - GTAO_DEFAULT_FALLOFF_RANGE);
 
     // Fadeout precompute optimisation
     const float falloffMul = -1.0f / falloffRange;
@@ -153,8 +153,10 @@ void main()
 
             float sampleOffsetLength = length(sampleOffset);
 
+            uint mipLevels = textureQueryLevels(sampler2D(Textures[Constants.ViewSpaceDepthIndex], Samplers[Constants.SamplerIndex]));
+
             // note: when sampling, using point_point_point or point_point_linear sampler works, but linear_linear_linear will cause unwanted interpolation between neighbouring depth values on the same MIP level!
-            float mipLevel = clamp(log2(sampleOffsetLength) - XE_GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, float(XE_GTAO_DEPTH_MIP_LEVELS));
+            float mipLevel = clamp(log2(sampleOffsetLength) - GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, float(mipLevels));
 
             vec2  sampleScreenPos0 = uv + sampleOffset;
             float SZ0              = textureLod(sampler2D(Textures[Constants.ViewSpaceDepthIndex], Samplers[Constants.SamplerIndex]), sampleScreenPos0, mipLevel).x;
@@ -204,7 +206,7 @@ vec2 SpatioTemporalNoise(ivec2 pixelCoord)
 {
     // Hilbert curve driving R2 (see https://www.shadertoy.com/view/3tB3z3)
     // load from lookup texture...
-    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.SamplerIndex]), pixelCoord % int(XE_GTAO_HILBERT_WIDTH), 0).x);
+    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.SamplerIndex]), pixelCoord % int(GTAO_HILBERT_WIDTH), 0).x);
          index += 288 * Constants.TemporalIndex; // why 288? tried out a few and that's the best so far (with XE_HILBERT_LEVEL 6U) - but there's probably better :)
 
     // R2 sequence - see http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
@@ -271,7 +273,7 @@ float XeGTAO_FastArcCos(float inX)
 
 void XeGTAO_OutputWorkingTerm(ivec2 pixelCoord, float visibility)
 {
-    visibility = saturate(visibility / float(XE_GTAO_OCCLUSION_TERM_SCALE));
+    visibility = saturate(visibility / float(GTAO_OCCLUSION_TERM_SCALE));
 
     imageStore(Images[Constants.OutWorkingAOIndex], pixelCoord, vec4(visibility + (0.5f / 255.0f), 0.0f, 0.0f, 0.0f));
 }

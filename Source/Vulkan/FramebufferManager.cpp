@@ -145,8 +145,15 @@ namespace Vk
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
-            case FramebufferType::ColorRG_SFloat:
-                createInfo.format = formatHelper.rgSFloatFormat;
+            case FramebufferType::ColorR_SFloat16:
+                createInfo.format = formatHelper.rSFloat16Format;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorRG_SFloat16:
+                createInfo.format = formatHelper.rgSFloat16Format;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;

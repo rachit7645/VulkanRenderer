@@ -866,7 +866,7 @@ namespace Renderer::IBL
                 .pNext                 = nullptr,
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.rgSFloatFormat,
+                .format                = formatHelper.rgSFloat16Format,
                 .extent                = {BRDF_LUT_SIZE.x, BRDF_LUT_SIZE.y, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,

@@ -67,7 +67,7 @@ const float TAA_JITTER_SAMPLES             = 64;
 const int   GAUSSIAN_FILTER_SIZE                           = 2; // p = 2 * r + 1
 const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0.24477, 0.38774, 0.24477, 0.06136);
 
-// XeGTAO Constants
+// GTAO Constants
 
 // Setting | Slices | Steps
 // Low     | 1      | 2
@@ -77,18 +77,18 @@ const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0
 const uint XE_GTAO_SLICE_COUNT = 2;
 const uint XE_GTAO_STEPS       = 2;
 
-const float XE_GTAO_DEFAULT_RADIUS                     = 0.5f;
-const float XE_GTAO_DEFAULT_RADIUS_MULTIPLIER          = 1.457f;
-const float XE_GTAO_DEFAULT_FALLOFF_RANGE              = 0.615f;
-const float XE_GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER  = 2.0f;
-const float XE_GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET  = 3.30f;
-const float XE_GTAO_OCCLUSION_TERM_SCALE               = 1.5f;
+const float GTAO_DEPTH_RANGE_SCALE_FACTOR             = 0.75f;
+const float GTAO_DEFAULT_RADIUS                       = 0.5f;
+const float GTAO_DEFAULT_RADIUS_MULTIPLIER            = 1.457f;
+const float GTAO_DEFAULT_FALLOFF_RANGE             = 0.615f;
+const float GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER = 2.0f;
+const float GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET = 3.30f;
+const float GTAO_OCCLUSION_TERM_SCALE              = 1.5f;
 
-const float XE_GTAO_LEAK_THRESHOLD = 2.5f;
-const float XE_GTAO_LEAK_STRENGTH  = 0.5f;
+const float GTAO_LEAK_THRESHOLD = 2.5f;
+const float GTAO_LEAK_STRENGTH  = 0.5f;
 
-const uint  XE_GTAO_DEPTH_MIP_LEVELS  = 5;
-const uint  XE_GTAO_HILBERT_LEVEL     = 6;
-const uint  XE_GTAO_HILBERT_WIDTH     = 1u << XE_GTAO_HILBERT_LEVEL;
-const float XE_GTAO_DENOISE_BLUR_BETA = 1.2f;
+const uint  GTAO_HILBERT_LEVEL     = 6;
+const uint  GTAO_HILBERT_WIDTH     = 1u << GTAO_HILBERT_LEVEL;
+const float GTAO_DENOISE_BLUR_BETA = 1.2f;
 #endif

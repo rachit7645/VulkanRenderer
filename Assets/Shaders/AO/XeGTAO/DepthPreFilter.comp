@@ -36,10 +36,11 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 shared float g_ScratchDepths[8][8];
 
 float XeGTAO_DepthMipFilter(float depth0, float depth1, float depth2, float depth3);
-bool  XeGTAO_DepthWriteCheck(uint modulo);
 
 void main()
 {
+    uvec2 lID = gl_LocalInvocationID.xy;
+
     vec2 depthTexelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.DepthSamplerIndex]), 0));
 
     // MIP 0
@@ -62,50 +63,50 @@ void main()
     // MIP 1
     float dm1 = XeGTAO_DepthMipFilter(depth0, depth1, depth2, depth3);
     imageStore(Images[Constants.OutDepthMip1Index], baseCoord, vec4(dm1, 0.0f, 0.0f, 0.0f));
-    g_ScratchDepths[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = dm1;
+    g_ScratchDepths[lID.x][lID.y] = dm1;
 
     memoryBarrierShared();
     barrier();
 
     // MIP 2
-    if (XeGTAO_DepthWriteCheck(2))
+    if (all(equal(lID % uvec2(2), uvec2(0))))
     {
-        float inTL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 0];
-        float inTR = g_ScratchDepths[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 0];
-        float inBL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 1];
-        float inBR = g_ScratchDepths[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 1];
+        float inTL = g_ScratchDepths[lID.x + 0][lID.y + 0];
+        float inTR = g_ScratchDepths[lID.x + 1][lID.y + 0];
+        float inBL = g_ScratchDepths[lID.x + 0][lID.y + 1];
+        float inBR = g_ScratchDepths[lID.x + 1][lID.y + 1];
 
         float dm2 = XeGTAO_DepthMipFilter(inTL, inTR, inBL, inBR);
         imageStore(Images[Constants.OutDepthMip2Index], baseCoord / 2, vec4(dm2, 0.0f, 0.0f, 0.0f));
-        g_ScratchDepths[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = dm2;
+        g_ScratchDepths[lID.x][lID.y] = dm2;
     }
 
     memoryBarrierShared();
     barrier();
 
     // MIP 3
-    if (XeGTAO_DepthWriteCheck(4))
+    if (all(equal(lID % uvec2(4), uvec2(0))))
     {
-        float inTL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 0];
-        float inTR = g_ScratchDepths[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 0];
-        float inBL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 2];
-        float inBR = g_ScratchDepths[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 2];
+        float inTL = g_ScratchDepths[lID.x + 0][lID.y + 0];
+        float inTR = g_ScratchDepths[lID.x + 2][lID.y + 0];
+        float inBL = g_ScratchDepths[lID.x + 0][lID.y + 2];
+        float inBR = g_ScratchDepths[lID.x + 2][lID.y + 2];
 
         float dm3 = XeGTAO_DepthMipFilter(inTL, inTR, inBL, inBR);
         imageStore(Images[Constants.OutDepthMip3Index], baseCoord / 4, vec4(dm3, 0.0f, 0.0f, 0.0f));
-        g_ScratchDepths[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = dm3;
+        g_ScratchDepths[lID.x][lID.y] = dm3;
     }
 
     memoryBarrierShared();
     barrier();
 
     // MIP 4
-    if (XeGTAO_DepthWriteCheck(8))
+    if (all(equal(lID % uvec2(8), uvec2(0))))
     {
-        float inTL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 0];
-        float inTR = g_ScratchDepths[gl_LocalInvocationID.x + 4][gl_LocalInvocationID.y + 0];
-        float inBL = g_ScratchDepths[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 4];
-        float inBR = g_ScratchDepths[gl_LocalInvocationID.x + 4][gl_LocalInvocationID.y + 4];
+        float inTL = g_ScratchDepths[lID.x + 0][lID.y + 0];
+        float inTR = g_ScratchDepths[lID.x + 4][lID.y + 0];
+        float inBL = g_ScratchDepths[lID.x + 0][lID.y + 4];
+        float inBR = g_ScratchDepths[lID.x + 4][lID.y + 4];
 
         float dm4 = XeGTAO_DepthMipFilter(inTL, inTR, inBL, inBR);
         imageStore(Images[Constants.OutDepthMip4Index], baseCoord / 8, vec4(dm4, 0.0f, 0.0f, 0.0f));
@@ -117,15 +118,13 @@ float XeGTAO_DepthMipFilter(float depth0, float depth1, float depth2, float dept
 {
     float minDepth = min(min(depth0, depth1), min(depth2, depth3));
 
-    const float depthRangeScaleFactor = 0.75f; // found empirically :) (Rachit's Note: I guess I'll trust you)
+    const float effectRadius = GTAO_DEPTH_RANGE_SCALE_FACTOR * GTAO_DEFAULT_RADIUS * GTAO_DEFAULT_RADIUS_MULTIPLIER;
+    const float falloffRange = GTAO_DEFAULT_FALLOFF_RANGE * effectRadius;
 
-    float effectRadius = depthRangeScaleFactor * XE_GTAO_DEFAULT_RADIUS * XE_GTAO_DEFAULT_RADIUS_MULTIPLIER;
-    float falloffRange = XE_GTAO_DEFAULT_FALLOFF_RANGE * effectRadius;
+    const float falloffFrom = effectRadius * (1.0f - GTAO_DEFAULT_FALLOFF_RANGE);
 
-    float falloffFrom = effectRadius * (1.0f - XE_GTAO_DEFAULT_FALLOFF_RANGE);
-
-    float falloffMul = -1.0f / falloffRange;
-    float falloffAdd = falloffFrom / (falloffRange) + 1.0f;
+    const float falloffMul = -1.0f / falloffRange;
+    const float falloffAdd = falloffFrom / (falloffRange) + 1.0f;
 
     float weight0 = saturate((depth0 - minDepth) * falloffMul + falloffAdd);
     float weight1 = saturate((depth1 - minDepth) * falloffMul + falloffAdd);
@@ -135,9 +134,4 @@ float XeGTAO_DepthMipFilter(float depth0, float depth1, float depth2, float dept
     float weightSum = weight0 + weight1 + weight2 + weight3;
 
     return (weight0 * depth0 + weight1 * depth1 + weight2 * depth2 + weight3 * depth3) / weightSum;
-}
-
-bool XeGTAO_DepthWriteCheck(uint modulo)
-{
-    return all(equal(gl_LocalInvocationID.xy % uvec2(modulo), uvec2(0)));
 }

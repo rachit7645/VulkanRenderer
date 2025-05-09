@@ -16,6 +16,8 @@
 
 #include "RenderManager.h"
 
+#include <utility>
+
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
 #include "Vulkan/DebugUtils.h"
@@ -25,8 +27,8 @@
 
 namespace Renderer
 {
-    RenderManager::RenderManager(const Engine::Config& config)
-        : m_config(config),
+    RenderManager::RenderManager(Engine::Config config)
+        : m_config(std::move(config)),
           m_context(m_window.handle),
           m_cmdBufferAllocator(m_context.device, m_context.queueFamilies),
           m_swapchain(m_window.size, m_context, m_cmdBufferAllocator),
@@ -101,7 +103,6 @@ namespace Renderer
         }
 
         AcquireSwapchainImage();
-
         BeginFrame();
 
         const auto cmdBuffer = m_cmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);

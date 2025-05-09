@@ -82,7 +82,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebuffer
         (
             "GMotionVectors",
-            Vk::FramebufferType::ColorRG_SFloat,
+            Vk::FramebufferType::ColorRG_SFloat16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize

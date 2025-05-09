@@ -52,7 +52,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        explicit RenderManager(const Engine::Config& config);
+        explicit RenderManager(Engine::Config config);
         ~RenderManager();
 
         // No copying

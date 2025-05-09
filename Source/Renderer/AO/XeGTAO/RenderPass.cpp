@@ -46,7 +46,7 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/DepthMipChain",
-            Vk::FramebufferType::Depth,
+            Vk::FramebufferType::ColorR_SFloat16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize

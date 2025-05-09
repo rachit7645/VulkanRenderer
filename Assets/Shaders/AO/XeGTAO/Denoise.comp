@@ -42,7 +42,7 @@ void main()
     vec2  viewportPixelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.SourceEdgesIndex], Samplers[Constants.SamplerIndex]), 0));
     ivec2 pixelCoordBase    = ivec2(gl_GlobalInvocationID.xy) * ivec2(2, 1);
 
-    float blurAmount = (Constants.FinalApply == 1) ? XE_GTAO_DENOISE_BLUR_BETA : XE_GTAO_DENOISE_BLUR_BETA / 5.0f;
+    float blurAmount = (Constants.FinalApply == 1) ? GTAO_DENOISE_BLUR_BETA : GTAO_DENOISE_BLUR_BETA / 5.0f;
     float diagWeight = 0.85f * 0.5f; // Rachit's Note: Magic constants, YAY
 
     // gather edge and visibility quads, used later
@@ -82,7 +82,7 @@ void main()
         // Allow some small amount of AO leaking from neighbours if there are 3 or 4 edges; this reduces both spatial and temporal aliasing
         // Rachit's Note: Moved to Constants.glsl
 
-        float edginess    = (saturate(4.0f - XE_GTAO_LEAK_THRESHOLD - dot(edgesC_LRTB[side], vec4(1.0f))) / (4.0f - XE_GTAO_LEAK_THRESHOLD)) * XE_GTAO_LEAK_STRENGTH;
+        float edginess    = (saturate(4.0f - GTAO_LEAK_THRESHOLD - dot(edgesC_LRTB[side], vec4(1.0f))) / (4.0f - GTAO_LEAK_THRESHOLD)) * GTAO_LEAK_STRENGTH;
         edgesC_LRTB[side] = saturate(edgesC_LRTB[side] + edginess);
 
         // for diagonals; used by first and second pass
@@ -145,7 +145,7 @@ void XeGTAO_AddSample(float ssaoValue, float edgeValue, inout float sum, inout f
 
 void XeGTAO_Output(ivec2 pixelCoord, float outputValue)
 {
-    outputValue *= (Constants.FinalApply == 1) ? XE_GTAO_OCCLUSION_TERM_SCALE : 1.0f;
+    outputValue *= (Constants.FinalApply == 1) ? GTAO_OCCLUSION_TERM_SCALE : 1.0f;
 
     imageStore(Images[Constants.OutAOIndex], pixelCoord, vec4(outputValue + (0.5f / 255.0f), 0.0f, 0.0f, 0.0f));
 }

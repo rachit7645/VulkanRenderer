@@ -47,7 +47,6 @@ namespace Vk
             physicalDevice,
             std::array{VK_FORMAT_R16G16B16A16_SFLOAT},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT |
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
@@ -59,6 +58,7 @@ namespace Vk
             std::array{VK_FORMAT_R8G8B8A8_UNORM},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
@@ -74,9 +74,9 @@ namespace Vk
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
         colorAttachmentFormatHDRWithAlpha = FindSupportedFormat
@@ -90,6 +90,7 @@ namespace Vk
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
@@ -108,8 +109,7 @@ namespace Vk
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
         r8UnormFormat = FindSupportedFormat
@@ -133,23 +133,28 @@ namespace Vk
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
-        rgSFloatFormat = FindSupportedFormat
+        rSFloat16Format = FindSupportedFormat
         (
             physicalDevice,
-            std::array
-            {
-                VK_FORMAT_R16G16_SFLOAT,
-                VK_FORMAT_R32G32_SFLOAT
-            },
+            std::array{VK_FORMAT_R16_SFLOAT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
+        );
+
+        rgSFloat16Format = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R16G16_SFLOAT},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
         rgba8UnormFormat = FindSupportedFormat
@@ -158,8 +163,7 @@ namespace Vk
             std::array{VK_FORMAT_R8G8B8A8_UNORM},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
         b10g11r11SFloat = FindSupportedFormat
@@ -168,8 +172,7 @@ namespace Vk
             std::array{VK_FORMAT_B10G11R11_UFLOAT_PACK32},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
     }
 
