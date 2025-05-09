@@ -74,13 +74,22 @@ const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0
 // Medium  | 2      | 2
 // High    | 3      | 3
 // Ultra   | 9      | 3
-const uint XE_GTAO_SLICE_COUNT = 2;
-const uint XE_GTAO_STEPS       = 2;
+const uint GTAO_SLICE_COUNT  = 2;
+const uint GTAO_SAMPLE_COUNT = 2;
 
-const float GTAO_DEPTH_RANGE_SCALE_FACTOR             = 0.75f;
-const float GTAO_DEFAULT_RADIUS                       = 0.5f;
-const float GTAO_DEFAULT_RADIUS_MULTIPLIER            = 1.457f;
+const float GTAO_DEPTH_RANGE_SCALE_FACTOR          = 0.75f;
+const float GTAO_DEFAULT_RADIUS                    = 0.5f;
+const float GTAO_DEFAULT_RADIUS_MULTIPLIER         = 1.457f;
 const float GTAO_DEFAULT_FALLOFF_RANGE             = 0.615f;
+
+const float GTAO_EFFECT_RADIUS = GTAO_DEPTH_RANGE_SCALE_FACTOR * GTAO_DEFAULT_RADIUS * GTAO_DEFAULT_RADIUS_MULTIPLIER;
+const float GTAO_FALLOFF_RANGE = GTAO_DEFAULT_FALLOFF_RANGE * GTAO_EFFECT_RADIUS;
+
+const float GTAO_FALLOFF_FROM = GTAO_EFFECT_RADIUS * (1.0f - GTAO_DEFAULT_FALLOFF_RANGE);
+
+const float GTAO_FALLOFF_MUL = -1.0f / GTAO_FALLOFF_RANGE;
+const float GTAO_FALLOFF_ADD = GTAO_FALLOFF_FROM / (GTAO_FALLOFF_RANGE) + 1.0f;
+
 const float GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER = 2.0f;
 const float GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET = 3.30f;
 const float GTAO_OCCLUSION_TERM_SCALE              = 1.5f;

@@ -1,0 +1,206 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// https://ar5iv.labs.arxiv.org/html/2301.11376
+// Reference implementation: https://github.com/JMS55/bevy/blob/gtao/crates/bevy_pbr/src/ssao/ssao.wgsl
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Constants/AO/VBGTAO/VBGTAO.glsl"
+#include "Math.glsl"
+#include "Constants.glsl"
+#include "MegaSet.glsl"
+#include "Packing.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+vec2  LoadNoise(ivec2 pixelCoord);
+float CalculateNeighboringDepthDifferences(vec2 uv, ivec2 pixelCoord);
+vec3  LoadViewSpaceNormal(vec2 uv);
+vec3  ReconstructViewSpacePosition(vec2 uv, float depth);
+vec3  LoadAndReconstructViewSpacePosition(vec2 uv, float mipLevel);
+uint  UpdateSectors(float minHorizon, float maxHorizon, float samplesPerSlice, uint bitmask);
+void  ProcessSample(vec3 deltaPosition, vec3 viewVector, float samplingDirection, vec2 N, float samplesPerSlice, inout uint bitmask);
+
+void main()
+{
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+    vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 texelSize    = 1.0f / viewportSize;
+    vec2 pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
+    vec2 uv           = pixelCenter * texelSize;
+
+    float depthMipLevels = float(textureQueryLevels(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex])));
+
+    float depth  = CalculateNeighboringDepthDifferences(uv, pixelCoord);
+          depth += 0.00001f; // Add a small value to avoid depth precision issues
+
+    vec3 position = ReconstructViewSpacePosition(uv, depth);
+    vec3 normal   = LoadViewSpaceNormal(uv);
+    vec2 noise    = LoadNoise(pixelCoord);
+
+    vec3  viewVector  = normalize(-position);
+    float sampleScale = (-0.5f * GTAO_EFFECT_RADIUS * Constants.Scene.currentMatrices.projection[0][0]) / position.z;
+
+    float visibility          = 0.0f;
+    uint  occludedSampleCount = 0u;
+
+    for (uint slice = 0; slice < GTAO_SLICE_COUNT; ++slice)
+    {
+        float sliceK = (slice + noise.x) / GTAO_SLICE_COUNT;
+
+        float phi    = sliceK * PI;
+        float cosPhi = cos(phi);
+        float sinPhi = sin(phi);
+
+        vec3  direction             = vec3(cosPhi, sinPhi, 0.0f);
+        vec3  orthoDirection        = direction - (dot(direction, viewVector) * viewVector);
+        vec3  axis                  = cross(direction, viewVector);
+        vec3  projectedNormal       = normal - axis * dot(normal, axis);
+        float projectedNormalLength = length(projectedNormal);
+
+        float signNorm = sign(dot(orthoDirection, projectedNormal));
+        float cosNorm  = saturate(dot(projectedNormal, viewVector) / projectedNormalLength);
+        vec2  N        = vec2((HALF_PI - signNorm * FastArcCos(cosNorm)) * (1.0f / PI));
+
+        uint bitmask = 0u;
+
+        vec2 sampleMul = vec2(cosPhi, -sinPhi) * sampleScale;
+
+        for (uint sampleIndex = 0; sampleIndex < GTAO_SAMPLE_COUNT; ++sampleIndex)
+        {
+            float sampleNoise = (slice + sampleIndex * GTAO_SAMPLE_COUNT) * 0.6180339887498948482f;
+                  sampleNoise = fract(noise.y + sampleNoise);
+
+            float s  = (sampleIndex + sampleNoise) / GTAO_SAMPLE_COUNT;
+                  s *= s;
+
+            vec2 sampleOffset = s * sampleMul;
+
+            float sampleMipLevel  = clamp(log2(length(sampleOffset * viewportSize)) - GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, depthMipLevels);
+            vec3  samplePosition0 = LoadAndReconstructViewSpacePosition(uv + sampleOffset, sampleMipLevel);
+            vec3  samplePosition1 = LoadAndReconstructViewSpacePosition(uv - sampleOffset, sampleMipLevel);
+
+            vec3 sampleDifference0 = samplePosition0 - position;
+            vec3 sampleDifference1 = samplePosition1 - position;
+
+            ProcessSample(sampleDifference0, viewVector, -1.0, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
+            ProcessSample(sampleDifference1, viewVector,  1.0, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
+        }
+
+        occludedSampleCount += bitCount(bitmask);
+    }
+
+    visibility = 1.0f - float(occludedSampleCount) / (GTAO_SLICE_COUNT * 2.0f * GTAO_SAMPLE_COUNT);
+
+    // Amplify occlusion
+    visibility = pow(max(visibility, 0.0f), Constants.FinalValuePower);
+
+    // Disallow total occlusion
+    visibility = clamp(visibility, 0.03f, 1.0f);
+
+    imageStore(Images[Constants.OutNoisyAOIndex], pixelCoord, vec4(visibility, 0.0f, 0.0f, 0.0f));
+}
+
+vec2 LoadNoise(ivec2 pixelCoord)
+{
+    // Hilbert curve driving R2 (see https://www.shadertoy.com/view/3tB3z3)
+    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.PointSamplerIndex]), pixelCoord % int(GTAO_HILBERT_WIDTH), 0).x);
+         index += 288 * Constants.TemporalIndex;
+
+    // R2 sequence - see http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+    return vec2(fract(0.5f + float(index) * vec2(0.75487766624669276005f, 0.5698402909980532659114f)));
+}
+
+float CalculateNeighboringDepthDifferences(vec2 uv, ivec2 pixelCoord)
+{
+    vec4 depthsUpperLeft   = textureGather      (sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), uv             );
+    vec4 depthsBottomRight = textureGatherOffset(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), uv, ivec2(1, 1));
+    
+    float depthCenter = depthsUpperLeft.y;
+    float depthLeft   = depthsUpperLeft.x;
+    float depthTop    = depthsUpperLeft.z;
+    float depthBottom = depthsBottomRight.x;
+    float depthRight  = depthsBottomRight.z;
+
+    vec4 edgeInfo = vec4(depthLeft, depthRight, depthTop, depthBottom) - depthCenter;
+
+    float slopeLeftRight = (edgeInfo.y - edgeInfo.x) * 0.5f;
+    float slopeTopBottom = (edgeInfo.w - edgeInfo.z) * 0.5f;
+    
+    vec4 edgeInfoSlopeAdjusted = edgeInfo + vec4(slopeLeftRight, -slopeLeftRight, slopeTopBottom, -slopeTopBottom);
+    edgeInfo = min(abs(edgeInfo), abs(edgeInfoSlopeAdjusted));
+    
+    float bias  = 0.25f;
+    float scale = depthCenter * 0.011f;
+    edgeInfo = saturate((1.0f + bias) - edgeInfo / scale);
+
+    imageStore(Images[Constants.OutDepthDifferencesIndex], pixelCoord, uvec4(packUnorm4x8(edgeInfo), 0u, 0u, 0u));
+    
+    return depthCenter;
+}
+
+vec3 LoadViewSpaceNormal(vec2 uv)
+{
+    vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
+
+    vec3 normal = UnpackNormal(gNormal_Rgh_Mtl.rg);
+         normal = Constants.Scene.currentMatrices.normalView * normal;
+         normal = normalize(normal);
+
+    return normal;
+}
+
+vec3 ReconstructViewSpacePosition(vec2 uv, float depth)
+{
+    return GetViewPosition(Constants.Scene.currentMatrices, uv, depth);
+}
+
+vec3 LoadAndReconstructViewSpacePosition(vec2 uv, float mipLevel)
+{
+    float depth = textureLod(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.LinearSamplerIndex]), uv, mipLevel).r;
+
+    return ReconstructViewSpacePosition(uv, depth);
+}
+
+uint UpdateSectors(float minHorizon, float maxHorizon, float samplesPerSlice, uint bitmask)
+{
+    int startHorizon = int(minHorizon * samplesPerSlice);
+    int angleHorizon = int(ceil((maxHorizon - minHorizon) * samplesPerSlice));
+
+    return bitfieldInsert(bitmask, uint(0xFFFFFFFF), startHorizon, angleHorizon);
+}
+
+void ProcessSample(vec3 deltaPosition, vec3 viewVector, float samplingDirection, vec2 N, float samplesPerSlice, inout uint bitmask)
+{
+    vec3 deltaPositionBackFace = deltaPosition - viewVector * Constants.Thickness;
+
+    vec2 frontBackHorizon = vec2
+    (
+        FastArcCos(dot(normalize(deltaPosition),         viewVector)),
+        FastArcCos(dot(normalize(deltaPositionBackFace), viewVector))
+    );
+
+    frontBackHorizon = saturate(fma(vec2(samplingDirection), -frontBackHorizon, N));
+    frontBackHorizon = samplingDirection >= 0.0f ? frontBackHorizon.yx : frontBackHorizon.xy;
+
+    bitmask = UpdateSectors(frontBackHorizon.x, frontBackHorizon.y, samplesPerSlice, bitmask);
+}

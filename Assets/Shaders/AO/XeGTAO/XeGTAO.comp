@@ -94,9 +94,9 @@ void main()
 
     float visibility = 0.0f;
 
-    for (uint slice = 0; slice < XE_GTAO_SLICE_COUNT; ++slice)
+    for (uint slice = 0; slice < GTAO_SLICE_COUNT; ++slice)
     {
-        float sliceK = (slice + noiseSlice) / XE_GTAO_SLICE_COUNT;
+        float sliceK = (slice + noiseSlice) / GTAO_SLICE_COUNT;
 
         // lines 5, 6 from the paper
         float phi    = sliceK * PI;
@@ -136,14 +136,14 @@ void main()
 
         vec2 sampleMul = sampleScale * vec2(cosPhi, -sinPhi);
 
-        for (uint stepIndex = 0; stepIndex < XE_GTAO_STEPS; ++stepIndex)
+        for (uint stepIndex = 0; stepIndex < GTAO_SAMPLE_COUNT; ++stepIndex)
         {
             // R1 sequence (http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/)
-            float stepBaseNoise = (slice + stepIndex * XE_GTAO_STEPS) * 0.6180339887498948482; // <- this should unroll
+            float stepBaseNoise = (slice + stepIndex * GTAO_SAMPLE_COUNT) * 0.6180339887498948482; // <- this should unroll
             float stepNoise     = fract(noiseSample + stepBaseNoise);
 
             // approx line 20 from the paper, with added noise
-            float s = (stepIndex + stepNoise) / XE_GTAO_STEPS; // + 1e-6f);
+            float s = (stepIndex + stepNoise) / GTAO_SAMPLE_COUNT; // + 1e-6f);
 
             // additional distribution modifier
             s = pow(s, sampleDistributionPower);
@@ -195,7 +195,7 @@ void main()
         visibility           += localVisibility;
     }
 
-    visibility /= float(XE_GTAO_SLICE_COUNT);
+    visibility /= float(GTAO_SLICE_COUNT);
     visibility  = pow(visibility, Constants.FinalValuePower);
     visibility  = clamp(visibility, 0.03f, 1.0f); // disallow total occlusion (which wouldn't make any sense anyhow since pixel is visible but also helps with packing bent normals)
 

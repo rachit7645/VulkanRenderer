@@ -71,6 +71,9 @@ file(GLOB SHADER_SOURCES
     AO/XeGTAO/DepthPreFilter.comp
     AO/XeGTAO/Denoise.comp
     AO/XeGTAO/XeGTAO.comp
+    AO/VBGTAO/DepthPreFilter.comp
+    AO/VBGTAO/SpacialDenoise.comp
+    AO/VBGTAO/VBGTAO.comp
 )
 
 # Shader headers

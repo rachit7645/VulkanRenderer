@@ -1,0 +1,103 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Constants/AO/VBGTAO/SpacialDenoise.glsl"
+#include "Constants.glsl"
+#include "MegaSet.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main()
+{
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+    vec2 texelSize   = 1.0f / vec2(textureSize(usampler2D(UTextures[Constants.DepthDifferencesIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 pixelCenter = vec2(pixelCoord) + vec2(0.5f);
+    vec2 uv          = pixelCenter * texelSize;
+
+    uvec4 edges0 = textureGather      (usampler2D(UTextures[Constants.DepthDifferencesIndex], Samplers[Constants.PointSamplerIndex]), uv             );
+    uvec4 edges1 = textureGatherOffset(usampler2D(UTextures[Constants.DepthDifferencesIndex], Samplers[Constants.PointSamplerIndex]), uv, ivec2(2, 0));
+    uvec4 edges2 = textureGatherOffset(usampler2D(UTextures[Constants.DepthDifferencesIndex], Samplers[Constants.PointSamplerIndex]), uv, ivec2(1, 2));
+        
+    vec4 visibility0 = textureGather      (sampler2D(Textures[Constants.NoisyAOIndex], Samplers[Constants.PointSamplerIndex]), uv             );
+    vec4 visibility1 = textureGatherOffset(sampler2D(Textures[Constants.NoisyAOIndex], Samplers[Constants.PointSamplerIndex]), uv, ivec2(2, 0));
+    vec4 visibility2 = textureGatherOffset(sampler2D(Textures[Constants.NoisyAOIndex], Samplers[Constants.PointSamplerIndex]), uv, ivec2(0, 2));
+    vec4 visibility3 = textureGatherOffset(sampler2D(Textures[Constants.NoisyAOIndex], Samplers[Constants.PointSamplerIndex]), uv, ivec2(2, 2));
+
+    vec4 leftEdges   = unpackUnorm4x8(edges0.x);
+    vec4 rightEdges  = unpackUnorm4x8(edges1.x);
+    vec4 topEdges    = unpackUnorm4x8(edges0.z);
+    vec4 bottomEdges = unpackUnorm4x8(edges2.w);
+    
+    vec4 centerEdges  = unpackUnorm4x8(edges0.y);
+         centerEdges *= vec4(leftEdges.y, rightEdges.x, topEdges.w, bottomEdges.z);
+
+    const float CENTER_WEIGHT = 1.2f;
+
+    float leftWeight   = centerEdges.x;
+    float rightWeight  = centerEdges.y;
+    float topWeight    = centerEdges.z;
+    float bottomWeight = centerEdges.w;
+
+    const float EDGE_WEIGHT_FACTOR = 0.425f;
+    
+    float topLeftWeight     = EDGE_WEIGHT_FACTOR * (topWeight    * topEdges.x    + leftWeight  * leftEdges.z );
+    float topRightWeight    = EDGE_WEIGHT_FACTOR * (topWeight    * topEdges.y    + rightWeight * rightEdges.z);
+    float bottomLeftWeight  = EDGE_WEIGHT_FACTOR * (bottomWeight * bottomEdges.x + leftWeight  * leftEdges.w );
+    float bottomRightWeight = EDGE_WEIGHT_FACTOR * (bottomWeight * bottomEdges.y + rightWeight * rightEdges.w);
+
+    float centerVisibility      = visibility0.y;
+    float leftVisibility        = visibility0.x;
+    float rightVisibility       = visibility0.z;
+    float topVisibility         = visibility1.x;
+    float bottomVisibility      = visibility2.z;
+    float topLeftVisibility     = visibility0.w;
+    float topRightVisibility    = visibility1.w;
+    float bottomLeftVisibility  = visibility2.w;
+    float bottomRightVisibility = visibility3.w;
+
+    float sum = centerVisibility;
+
+    sum += leftVisibility        * leftWeight;
+    sum += rightVisibility       * rightWeight;
+    sum += topVisibility         * topWeight;
+    sum += bottomVisibility      * bottomWeight;
+    sum += topLeftVisibility     * topLeftWeight;
+    sum += topRightVisibility    * topRightWeight;
+    sum += bottomLeftVisibility  * bottomLeftWeight;
+    sum += bottomRightVisibility * bottomRightWeight;
+
+    float sumWeight = CENTER_WEIGHT;
+
+    sumWeight += leftWeight;
+    sumWeight += rightWeight;
+    sumWeight += topWeight;
+    sumWeight += bottomWeight;
+    sumWeight += topLeftWeight;
+    sumWeight += topRightWeight;
+    sumWeight += bottomLeftWeight;
+    sumWeight += bottomRightWeight;
+
+    float denoisedVisibility = sum / sumWeight;
+
+    imageStore(Images[Constants.OutAOIndex], pixelCoord, vec4(denoisedVisibility, 0.0f, 0.0f, 0.0f));
+}
