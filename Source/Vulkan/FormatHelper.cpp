@@ -136,10 +136,21 @@ namespace Vk
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
-        rSFloat16Format = FindSupportedFormat
+        rSFloat32Format = FindSupportedFormat
         (
             physicalDevice,
-            std::array{VK_FORMAT_R16_SFLOAT},
+            std::array{VK_FORMAT_R32_SFLOAT},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
+        );
+
+        rUint32Format = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R32_UINT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |

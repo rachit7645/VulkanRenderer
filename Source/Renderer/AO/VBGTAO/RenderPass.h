@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef XE_GTAO_RENDER_PASS_H
-#define XE_GTAO_RENDER_PASS_H
+#ifndef VBGTAO_RENDER_PASS_H
+#define VBGTAO_RENDER_PASS_H
 
 #include "DepthPreFilter/Pipeline.h"
 #include "Occlusion/Pipeline.h"
 #include "Denoise/Pipeline.h"
-#include "Vulkan/CommandBuffer.h"
-#include "Vulkan/Constants.h"
+#include "Vulkan/Context.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
-#include "Renderer/Buffers/SceneBuffer.h"
 #include "Models/ModelManager.h"
+#include "Renderer/Buffers/SceneBuffer.h"
 
-namespace Renderer::AO::XeGTAO
+namespace Renderer::AO::VBGTAO
 {
     class RenderPass
     {
@@ -46,8 +44,7 @@ namespace Renderer::AO::XeGTAO
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
@@ -57,10 +54,6 @@ namespace Renderer::AO::XeGTAO
         );
 
         void Destroy(VkDevice device);
-
-        DepthPreFilter::Pipeline depthPreFilterPipeline;
-        Occlusion::Pipeline      occlusionPipeline;
-        Denoise::Pipeline        denoisePipeline;
     private:
         void PreFilterDepth
         (
@@ -86,9 +79,14 @@ namespace Renderer::AO::XeGTAO
             const Vk::MegaSet& megaSet
         );
 
+        DepthPreFilter::Pipeline m_depthPreFilterPipeline;
+        Occlusion::Pipeline      m_occlusionPipeline;
+        Denoise::Pipeline        m_denoisePipeline;
+
         std::optional<u32> m_hilbertLUT = std::nullopt;
 
         f32 m_finalValuePower = 1.7f;
+        f32 m_thickness       = 0.25f;
     };
 }
 

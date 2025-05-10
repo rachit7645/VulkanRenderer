@@ -151,6 +151,11 @@ add_executable(VulkanRenderer
     Source/Renderer/AO/XeGTAO/DepthPreFilter/Pipeline.cpp
     Source/Renderer/AO/XeGTAO/Occlusion/Pipeline.cpp
     Source/Renderer/AO/XeGTAO/Denoise/Pipeline.cpp
+    # VBGTAO Pass Sources
+    Source/Renderer/AO/VBGTAO/RenderPass.cpp
+    Source/Renderer/AO/VBGTAO/DepthPreFilter/Pipeline.cpp
+    Source/Renderer/AO/VBGTAO/Occlusion/Pipeline.cpp
+    Source/Renderer/AO/VBGTAO/Denoise/Pipeline.cpp
     # Shadow RT sources
     Source/Renderer/ShadowRT/Pipeline.cpp
     Source/Renderer/ShadowRT/RenderPass.cpp

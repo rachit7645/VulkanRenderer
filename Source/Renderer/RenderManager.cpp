@@ -46,6 +46,7 @@ namespace Renderer
           m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_xegtaoPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_vbgtaoPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowRTPass(m_context, m_cmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_cullingDispatch(m_context),
@@ -64,6 +65,7 @@ namespace Renderer
             m_cullingDispatch.Destroy(m_context.device, m_context.allocator);
             m_taaPass.Destroy(m_context.device);
             m_shadowRTPass.Destroy(m_context.device, m_context.allocator);
+            m_vbgtaoPass.Destroy(m_context.device);
             m_xegtaoPass.Destroy(m_context.device);
             m_lightingPass.Destroy(m_context.device);
             m_gBufferPass.Destroy(m_context.device);

@@ -102,8 +102,8 @@ void main()
             vec3 sampleDifference0 = samplePosition0 - position;
             vec3 sampleDifference1 = samplePosition1 - position;
 
-            ProcessSample(sampleDifference0, viewVector, -1.0, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
-            ProcessSample(sampleDifference1, viewVector,  1.0, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
+            ProcessSample(sampleDifference0, viewVector, -1.0f, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
+            ProcessSample(sampleDifference1, viewVector,  1.0f, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
         }
 
         occludedSampleCount += bitCount(bitmask);

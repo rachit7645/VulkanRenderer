@@ -46,7 +46,7 @@ namespace Renderer::AO::XeGTAO
         framebufferManager.AddFramebuffer
         (
             "XeGTAO/DepthMipChain",
-            Vk::FramebufferType::ColorR_SFloat16,
+            Vk::FramebufferType::ColorR_SFloat32,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
@@ -241,11 +241,11 @@ namespace Renderer::AO::XeGTAO
 
         Vk::BeginLabel(cmdBuffer, "XeGTAOPass", glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
 
-        if (!hilbertLUT.has_value())
+        if (!m_hilbertLUT.has_value())
         {
             constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<XE_GTAO_HILBERT_LEVEL>();
 
-            hilbertLUT = modelManager.textureManager.AddTexture
+            m_hilbertLUT = modelManager.textureManager.AddTexture
             (
                 device,
                 allocator,
@@ -415,7 +415,7 @@ namespace Renderer::AO::XeGTAO
         {
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .samplerIndex        = occlusionPipeline.samplerIndex,
-            .hilbertLUTIndex     = hilbertLUT.value(),
+            .hilbertLUTIndex     = m_hilbertLUT.value(),
             .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
             .viewSpaceDepthIndex = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView").sampledImageIndex,
             .outWorkingEdges     = framebufferManager.GetFramebufferView("XeGTAO/EdgesView").storageImageIndex,
