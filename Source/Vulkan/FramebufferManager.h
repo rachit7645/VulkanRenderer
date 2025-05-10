@@ -58,10 +58,11 @@ namespace Vk
     enum class FramebufferUsage : u8
     {
         None                = 0,
-        Sampled             = 1U << 0,
-        Storage             = 1U << 1,
-        TransferSource      = 1U << 2,
-        TransferDestination = 1U << 3
+        Attachment          = 1U << 0,
+        Sampled             = 1U << 1,
+        Storage             = 1U << 2,
+        TransferSource      = 1U << 3,
+        TransferDestination = 1U << 4
     };
 
     struct FramebufferSize

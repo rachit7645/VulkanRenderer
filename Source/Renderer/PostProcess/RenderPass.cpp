@@ -38,7 +38,7 @@ namespace Renderer::PostProcess
             "FinalColor",
             Vk::FramebufferType::ColorLDR,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return

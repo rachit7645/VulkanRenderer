@@ -70,7 +70,8 @@ namespace Vk
             {
                 VK_FORMAT_B10G11R11_UFLOAT_PACK32,
                 VK_FORMAT_R16G16B16A16_SFLOAT,
-                VK_FORMAT_R32G32B32A32_SFLOAT
+                VK_FORMAT_R32G32B32A32_SFLOAT,
+                VK_FORMAT_R64G64B64A64_SFLOAT
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
@@ -117,7 +118,6 @@ namespace Vk
             physicalDevice,
             std::array{VK_FORMAT_R8_UNORM},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
@@ -127,7 +127,6 @@ namespace Vk
             physicalDevice,
             std::array{VK_FORMAT_R16_UNORM},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
@@ -138,7 +137,15 @@ namespace Vk
             std::array{VK_FORMAT_R16_UINT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
+        );
+
+        rSFloat16Format = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R16_SFLOAT},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
 
@@ -147,8 +154,6 @@ namespace Vk
             physicalDevice,
             std::array{VK_FORMAT_R32_SFLOAT},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
@@ -158,8 +163,6 @@ namespace Vk
             physicalDevice,
             std::array{VK_FORMAT_R32_UINT},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
@@ -169,7 +172,6 @@ namespace Vk
             physicalDevice,
             std::array{VK_FORMAT_R16G16_SFLOAT},
             VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );

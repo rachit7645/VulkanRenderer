@@ -38,7 +38,7 @@ namespace Renderer::GBuffer
             "GAlbedo",
             Vk::FramebufferType::ColorBGR_SFloat_10_11_11,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -61,7 +61,7 @@ namespace Renderer::GBuffer
             "GNormal_Rgh_Mtl",
             Vk::FramebufferType::ColorRGBA_UNorm8,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -84,7 +84,7 @@ namespace Renderer::GBuffer
             "GMotionVectors",
             Vk::FramebufferType::ColorRG_SFloat16,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return

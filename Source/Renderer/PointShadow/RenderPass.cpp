@@ -34,7 +34,7 @@ namespace Renderer::PointShadow
             "PointShadowMap",
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::ArrayCube,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
                 .width       = Objects::POINT_SHADOW_DIMENSIONS.x,
                 .height      = Objects::POINT_SHADOW_DIMENSIONS.y,

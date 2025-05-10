@@ -34,7 +34,7 @@ namespace Renderer::Depth
             "SceneDepth",
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return

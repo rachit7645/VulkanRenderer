@@ -38,7 +38,7 @@ namespace Renderer::Bloom
             "Bloom",
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Array2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [device = context.device, &framebufferManager, &megaSet] (const VkExtent2D& extent, Util::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews

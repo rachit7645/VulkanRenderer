@@ -34,7 +34,7 @@ namespace Renderer::SpotShadow
             "SpotShadowMap",
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
                 .width       = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.x,
                 .height      = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.y,

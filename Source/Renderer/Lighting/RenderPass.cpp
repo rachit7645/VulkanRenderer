@@ -39,7 +39,7 @@ namespace Renderer::Lighting
             "SceneColor",
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return

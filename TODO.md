@@ -18,4 +18,3 @@
 * Some form of Global Illumination
 * Fog
 * Volumetric Lighting
-* VBGTAO

@@ -140,77 +140,66 @@ namespace Vk
             {
             case FramebufferType::ColorR_Unorm8:
                 createInfo.format = formatHelper.r8UnormFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // TODO: Stop forcing attachment usage
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorR_Unorm16:
                 createInfo.format = formatHelper.r16UnormFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorR_SFloat32:
                 createInfo.format = formatHelper.rSFloat32Format;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorR_Uint32:
                 createInfo.format = formatHelper.rUint32Format;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorRG_SFloat16:
                 createInfo.format = formatHelper.rgSFloat16Format;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorRGBA_UNorm8:
                 createInfo.format = formatHelper.rgba8UnormFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorBGR_SFloat_10_11_11:
                 createInfo.format = formatHelper.b10g11r11SFloat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorLDR:
                 createInfo.format = formatHelper.colorAttachmentFormatLDR;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorHDR:
                 createInfo.format = formatHelper.colorAttachmentFormatHDR;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorHDR_WithAlpha:
                 createInfo.format = formatHelper.colorAttachmentFormatHDRWithAlpha;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::Depth:
                 createInfo.format = formatHelper.depthFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
                 break;
@@ -235,7 +224,15 @@ namespace Vk
                 break;
             }
 
-            // Add new usages here
+            if (aspect == VK_IMAGE_ASPECT_COLOR_BIT)
+            {
+                AddUsage<FramebufferUsage::Attachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT>(framebuffer.usage, createInfo.usage);
+            }
+            else if (aspect == VK_IMAGE_ASPECT_DEPTH_BIT)
+            {
+                AddUsage<FramebufferUsage::Attachment, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT>(framebuffer.usage, createInfo.usage);
+            }
+
             AddUsage<FramebufferUsage::Sampled,             VK_IMAGE_USAGE_SAMPLED_BIT     >(framebuffer.usage, createInfo.usage);
             AddUsage<FramebufferUsage::Storage,             VK_IMAGE_USAGE_STORAGE_BIT     >(framebuffer.usage, createInfo.usage);
             AddUsage<FramebufferUsage::TransferSource,      VK_IMAGE_USAGE_TRANSFER_SRC_BIT>(framebuffer.usage, createInfo.usage);

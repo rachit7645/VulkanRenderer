@@ -41,7 +41,7 @@ namespace Renderer::TAA
             "ResolvedSceneColor",
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -64,7 +64,7 @@ namespace Renderer::TAA
             "TAABuffer",
             Vk::FramebufferType::ColorHDR_WithAlpha,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
