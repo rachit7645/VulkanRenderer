@@ -111,9 +111,6 @@ void main()
 
     visibility = 1.0f - float(occludedSampleCount) / (GTAO_SLICE_COUNT * 2.0f * GTAO_SAMPLE_COUNT);
 
-    // Amplify occlusion
-    visibility = pow(max(visibility, 0.0f), Constants.FinalValuePower);
-
     // Disallow total occlusion
     visibility = clamp(visibility, 0.03f, 1.0f);
 
@@ -153,7 +150,7 @@ float CalculateNeighboringDepthDifferences(vec2 uv, ivec2 pixelCoord)
     float scale = depthCenter * 0.011f;
     edgeInfo = saturate((1.0f + bias) - edgeInfo / scale);
 
-    imageStore(Images[Constants.OutDepthDifferencesIndex], pixelCoord, uvec4(packUnorm4x8(edgeInfo), 0u, 0u, 0u));
+    imageStore(UImages[Constants.OutDepthDifferencesIndex], pixelCoord, uvec4(packUnorm4x8(edgeInfo), 0u, 0u, 0u));
     
     return depthCenter;
 }
@@ -163,7 +160,7 @@ vec3 LoadViewSpaceNormal(vec2 uv)
     vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
 
     vec3 normal = UnpackNormal(gNormal_Rgh_Mtl.rg);
-         normal = Constants.Scene.currentMatrices.normalView * normal;
+         normal = mat3(Constants.Scene.currentMatrices.view) * normal;
          normal = normalize(normal);
 
     return normal;

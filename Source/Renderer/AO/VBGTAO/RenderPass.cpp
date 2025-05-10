@@ -127,7 +127,7 @@ namespace Renderer::AO::VBGTAO
         framebufferManager.AddFramebuffer
         (
             "VBGTAO/NoisyAO",
-            Vk::FramebufferType::ColorR_Unorm8,
+            Vk::FramebufferType::ColorR_Unorm16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
@@ -163,7 +163,7 @@ namespace Renderer::AO::VBGTAO
         framebufferManager.AddFramebuffer
         (
             "VBGTAO/Occlusion",
-            Vk::FramebufferType::ColorR_Unorm8,
+            Vk::FramebufferType::ColorR_Unorm16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
@@ -217,11 +217,8 @@ namespace Renderer::AO::VBGTAO
         {
             if (ImGui::BeginMenu("VBGTAO"))
             {
-                ImGui::DragFloat("Power",     &m_finalValuePower, 0.05f, 0.0f, 0.0f, "%.4f");
-                ImGui::DragFloat("Thickness", &m_thickness,       0.05f, 0.0f, 1.0f, "%.4f");
-
-                // Power must not be negative
-                m_finalValuePower = std::max(m_finalValuePower, 0.0f);
+                ImGui::DragFloat("Power",     &m_finalValuePower, 0.05f,  0.0f, 0.0f, "%.4f");
+                ImGui::DragFloat("Thickness", &m_thickness,       0.005f, 0.0f, 1.0f, "%.4f");
 
                 ImGui::EndMenu();
             }
@@ -281,8 +278,8 @@ namespace Renderer::AO::VBGTAO
     {
         Vk::BeginLabel(cmdBuffer, "Occlusion", glm::vec4(0.6098f, 0.7143f, 0.4529f, 1.0f));
 
-        const auto& noisyAO          = framebufferManager.GetFramebuffer("XeGTAO/NoisyAO");
-        const auto& depthDifferences = framebufferManager.GetFramebuffer("XeGTAO/DepthDifferences");
+        const auto& noisyAO          = framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
+        const auto& depthDifferences = framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
 
         Vk::BarrierWriter barrierWriter = {};
 
@@ -328,12 +325,11 @@ namespace Renderer::AO::VBGTAO
             .linearSamplerIndex       = m_occlusionPipeline.linearSamplerIndex,
             .hilbertLUTIndex          = m_hilbertLUT.value(),
             .gNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .preFilterDepthIndex      = framebufferManager.GetFramebufferView("XeGTAO/DepthMipChainView").sampledImageIndex,
-            .outDepthDifferencesIndex = framebufferManager.GetFramebufferView("XeGTAO/DepthDifferencesView").storageImageIndex,
-            .outNoisyAOIndex          = framebufferManager.GetFramebufferView("XeGTAO/NoisyAOView").storageImageIndex,
+            .preFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageIndex,
+            .outDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageIndex,
+            .outNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageIndex,
             .temporalIndex            = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
-            .thickness                = m_thickness,
-            .finalValuePower          = m_finalValuePower
+            .thickness                = m_thickness
         };
 
         m_occlusionPipeline.PushConstants
@@ -489,7 +485,8 @@ namespace Renderer::AO::VBGTAO
             .pointSamplerIndex     = m_denoisePipeline.pointSamplerIndex,
             .depthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageIndex,
             .noisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").sampledImageIndex,
-            .outAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageIndex
+            .outAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageIndex,
+            .finalValuePower       = m_finalValuePower
         };
 
         m_denoisePipeline.PushConstants

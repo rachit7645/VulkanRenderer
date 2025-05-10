@@ -37,7 +37,6 @@ layout(push_constant, scalar) uniform ConstantsBuffer
     uint TemporalIndex;
 
     float Thickness;
-    float FinalValuePower;
 } Constants;
 
 #endif

@@ -27,6 +27,7 @@ namespace Renderer::AO::VBGTAO::Denoise
         u32 depthDifferencesIndex;
         u32 noisyAOIndex;
         u32 outAOIndex;
+        f32 finalValuePower;
     };
 }
 

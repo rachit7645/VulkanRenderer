@@ -19,10 +19,11 @@
 
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
-    uint PointSamplerIndex;
-    uint DepthDifferencesIndex;
-    uint NoisyAOIndex;
-    uint OutAOIndex;
+    uint  PointSamplerIndex;
+    uint  DepthDifferencesIndex;
+    uint  NoisyAOIndex;
+    uint  OutAOIndex;
+    float FinalValuePower;
 } Constants;
 
 #endif

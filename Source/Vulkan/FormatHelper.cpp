@@ -122,14 +122,20 @@ namespace Vk
             VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
         );
 
+        r16UnormFormat = FindSupportedFormat
+        (
+            physicalDevice,
+            std::array{VK_FORMAT_R16_UNORM},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
+            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
+            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
+        );
+
         rUint16Format = FindSupportedFormat
         (
             physicalDevice,
-            std::array
-            {
-                VK_FORMAT_R16_UINT,
-                VK_FORMAT_R16_SINT
-            },
+            std::array{VK_FORMAT_R16_UINT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
             VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |

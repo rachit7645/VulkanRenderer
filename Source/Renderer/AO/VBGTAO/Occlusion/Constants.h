@@ -41,7 +41,6 @@ namespace Renderer::AO::VBGTAO::Occlusion
         u32 temporalIndex;
 
         f32 thickness;
-        f32 finalValuePower;
     };
 }
 

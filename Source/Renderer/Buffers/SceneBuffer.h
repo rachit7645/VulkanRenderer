@@ -36,7 +36,6 @@ namespace Renderer::Buffers
                 glm::mat4 jitteredProjection = {};
                 glm::mat4 view               = {};
                 glm::mat4 inverseView        = {};
-                glm::mat3 normalView         = {};
             };
 
             SceneMatrices currentMatrices  = {};

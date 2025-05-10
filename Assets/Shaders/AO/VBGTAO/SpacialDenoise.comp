@@ -99,5 +99,8 @@ void main()
 
     float denoisedVisibility = sum / sumWeight;
 
+    // Amplify occlusion
+    denoisedVisibility = pow(max(denoisedVisibility, 0.0f), Constants.FinalValuePower);
+
     imageStore(Images[Constants.OutAOIndex], pixelCoord, vec4(denoisedVisibility, 0.0f, 0.0f, 0.0f));
 }

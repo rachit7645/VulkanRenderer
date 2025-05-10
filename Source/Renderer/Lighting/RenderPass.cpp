@@ -175,7 +175,7 @@ namespace Renderer::Lighting
             .shadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
             .pointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
             .spotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
-            .aoIndex             = framebufferManager.GetFramebufferView("XeGTAO/OcclusionView").sampledImageIndex,
+            .aoIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageIndex,
         };
 
         pipeline.PushConstants

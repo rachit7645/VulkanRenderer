@@ -89,8 +89,7 @@ namespace Renderer::Buffers
             .inverseProjection  = glm::inverse(jitteredProjection),
             .jitteredProjection = jitteredProjection,
             .view               = view,
-            .inverseView        = glm::inverse(view),
-            .normalView         = Maths::CreateNormalMatrix(view)
+            .inverseView        = glm::inverse(view)
         };
 
         gpuScene.cameraPosition = scene.camera.position;

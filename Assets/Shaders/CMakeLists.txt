@@ -68,9 +68,6 @@ file(GLOB SHADER_SOURCES
     Deferred/GBuffer.frag
     Deferred/GBuffer.vert
     Deferred/Lighting.frag
-    AO/XeGTAO/DepthPreFilter.comp
-    AO/XeGTAO/Denoise.comp
-    AO/XeGTAO/XeGTAO.comp
     AO/VBGTAO/DepthPreFilter.comp
     AO/VBGTAO/SpacialDenoise.comp
     AO/VBGTAO/VBGTAO.comp

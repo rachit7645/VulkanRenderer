@@ -140,6 +140,13 @@ namespace Vk
             {
             case FramebufferType::ColorR_Unorm8:
                 createInfo.format = formatHelper.r8UnormFormat;
+                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // TODO: Stop forcing attachment usage
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorR_Unorm16:
+                createInfo.format = formatHelper.r16UnormFormat;
                 createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
