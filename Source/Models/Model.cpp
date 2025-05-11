@@ -49,8 +49,8 @@ namespace Models
     {
         Logger::Info("Loading model: {}\n", path);
 
-        const std::string assetPath      = Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
-        const std::string assetDirectory = Engine::Files::GetDirectory(assetPath);
+        const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
+        const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
 
         fastgltf::Parser parser(fastgltf::Extensions::KHR_texture_basisu);
 
@@ -435,7 +435,7 @@ namespace Models
                         allocator,
                         megaSet,
                         deletionQueue,
-                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO)
+                        Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO)
                     );
                 }
             }
@@ -474,7 +474,7 @@ namespace Models
                         allocator,
                         megaSet,
                         deletionQueue,
-                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
+                        Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
                     );
                 }
             }
@@ -515,7 +515,7 @@ namespace Models
                         allocator,
                         megaSet,
                         deletionQueue,
-                        Engine::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL)
+                        Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL)
                     );
                 }
             }

@@ -61,14 +61,7 @@ target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
 target_compile_options(imgui PRIVATE -w)
 # -O3 optimisations
 target_compile_options(imgui PRIVATE -O3)
-# Enable CPU vectorisation (SSE or better)
-target_compile_options(imgui PRIVATE -msse2 -mavx -mavx2 -mf16c)
-
-# Debug config
-if (CMAKE_BUILD_TYPE STREQUAL Debug)
-	# Enable debug output
-	target_compile_options(imgui PRIVATE -g)
-endif()
-
+# Enable CPU vectorisation
+target_compile_options(imgui PRIVATE -mavx2)
 # Link libraries
 target_link_libraries(imgui SDL3::SDL3)

@@ -59,7 +59,7 @@ namespace Vk
         );
 
         const auto id   = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        const auto name = Engine::Files::GetNameWithoutExtension(path);
+        const auto name = Util::Files::GetNameWithoutExtension(path);
 
         textureMap.emplace(id, TextureInfo(name, texture));
 

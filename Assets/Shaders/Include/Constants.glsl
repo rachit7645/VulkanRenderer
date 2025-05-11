@@ -19,33 +19,18 @@
 #ifndef CONSTANTS_GLSL
 #define CONSTANTS_GLSL
 
-// Config
-#define CSM_ENABLE_SMOOTH_TRANSITION 1
-#define CSM_ENABLE_PCF               1
-
 // Math constants
-const float PI      = 3.1415926535897932384626433832795;
-const float HALF_PI = 1.5707963267948966192313216916398;
+const float PI      = 3.1415926535897932384626433832795f;
+const float HALF_PI = 1.5707963267948966192313216916398f;
+const float TWO_PI  = 6.2831853071795864769252867665590f;
 
-// Float bounds
+// Float limits
 const float FLOAT_MIN = 1.175494351e-38;
 const float FLOAT_MAX = 3.402823466e+38;
-
-// Gamma correction constants
-const float GAMMA_FACTOR     = 2.2f;
-const float INV_GAMMA_FACTOR = 1.0f / GAMMA_FACTOR;
 
 // IBL Constants
 const float CONVOLUTION_SAMPLE_DELTA = 0.025f;
 const uint  BRDF_LUT_SAMPLE_COUNT    = 512u;
-const float MAX_REFLECTION_LOD       = 5.0f;
-
-// Shadow Constants
-const float SHADOW_MIN_BIAS      = 0.005f;
-const float SHADOW_MAX_BIAS      = 0.05f;
-const float SHADOW_BIAS_MODIFIER = 0.35f;
-const int   SHADOW_PCF_RANGE     = 1; // p = 2 * r + 1 for a p * p PCF filter
-const float SHADOW_BLEND_RANGE   = 25.0f;
 
 // Point Shadow Constants
 const float POINT_SHADOW_BIAS = 0.15f;
@@ -61,43 +46,34 @@ const float RT_SHADOW_MAX_BIAS = 0.005f;
 // TAA Constants
 const float TAA_DEFAULT_HISTORY_BLEND_RATE = 0.1f;
 const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
-const float TAA_JITTER_SAMPLES             = 64;
-
-// Gaussian blur constants
-const int   GAUSSIAN_FILTER_SIZE                           = 2; // p = 2 * r + 1
-const float GAUSSIAN_WEIGHTS[2 * GAUSSIAN_FILTER_SIZE + 1] = float[5](0.06136, 0.24477, 0.38774, 0.24477, 0.06136);
 
 // GTAO Constants
 
-// Setting | Slices | Steps
-// Low     | 1      | 2
-// Medium  | 2      | 2
-// High    | 3      | 3
-// Ultra   | 9      | 3
+// |---------|--------|---------|
+// | Setting | Slices | Samples |
+// |---------|--------|---------|
+// | Low     |   1    |    2    |
+// | Medium  |   2    |    2    |
+// | High    |   3    |    3    |
+// | Ultra   |   9    |    3    |
+// |---------|--------|---------|
 const uint GTAO_SLICE_COUNT  = 2;
 const uint GTAO_SAMPLE_COUNT = 2;
 
-const float GTAO_DEPTH_RANGE_SCALE_FACTOR          = 0.75f;
-const float GTAO_DEFAULT_RADIUS                    = 0.5f;
-const float GTAO_DEFAULT_RADIUS_MULTIPLIER         = 1.457f;
-const float GTAO_DEFAULT_FALLOFF_RANGE             = 0.615f;
+const float GTAO_DEPTH_RANGE_SCALE_FACTOR  = 0.75f;
+const float GTAO_DEFAULT_RADIUS            = 0.5f;
+const float GTAO_DEFAULT_RADIUS_MULTIPLIER = 1.457f;
+const float GTAO_DEFAULT_FALLOFF_RANGE     = 0.615f;
 
 const float GTAO_EFFECT_RADIUS = GTAO_DEPTH_RANGE_SCALE_FACTOR * GTAO_DEFAULT_RADIUS * GTAO_DEFAULT_RADIUS_MULTIPLIER;
 const float GTAO_FALLOFF_RANGE = GTAO_DEFAULT_FALLOFF_RANGE * GTAO_EFFECT_RADIUS;
-
-const float GTAO_FALLOFF_FROM = GTAO_EFFECT_RADIUS * (1.0f - GTAO_DEFAULT_FALLOFF_RANGE);
+const float GTAO_FALLOFF_FROM  = GTAO_EFFECT_RADIUS * (1.0f - GTAO_DEFAULT_FALLOFF_RANGE);
 
 const float GTAO_FALLOFF_MUL = -1.0f / GTAO_FALLOFF_RANGE;
 const float GTAO_FALLOFF_ADD = GTAO_FALLOFF_FROM / (GTAO_FALLOFF_RANGE) + 1.0f;
 
-const float GTAO_DEFAULT_SAMPLE_DISTRIBUTION_POWER = 2.0f;
 const float GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET = 3.30f;
-const float GTAO_OCCLUSION_TERM_SCALE              = 1.5f;
 
-const float GTAO_LEAK_THRESHOLD = 2.5f;
-const float GTAO_LEAK_STRENGTH  = 0.5f;
-
-const uint  GTAO_HILBERT_LEVEL     = 6;
-const uint  GTAO_HILBERT_WIDTH     = 1u << GTAO_HILBERT_LEVEL;
-const float GTAO_DENOISE_BLUR_BETA = 1.2f;
+const uint GTAO_HILBERT_LEVEL = 6;
+const uint GTAO_HILBERT_WIDTH = 1u << GTAO_HILBERT_LEVEL;
 #endif

@@ -44,7 +44,7 @@ namespace Engine
 
             Logger::Info("Loading scene! [Scene={}]\n", config.scene);
 
-            const auto path = Files::GetAssetPath("Scenes/", config.scene + ".json");
+            const auto path = Util::Files::GetAssetPath("Scenes/", config.scene + ".json");
             const auto json = simdjson::padded_string::load(path);
 
             JSON::CheckError(json, "Failed to load json file!");
@@ -123,9 +123,9 @@ namespace Engine
             // HDR Map
             JSON::CheckError(document["IBL"].get_string(m_hdrMap), "Failed to load IBL!");
 
-            const auto hdrMapAssetPath = Engine::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
+            const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
 
-            if (Engine::Files::Exists(hdrMapAssetPath))
+            if (Util::Files::Exists(hdrMapAssetPath))
             {
                 iblMaps = iblGenerator.Generate
                 (
@@ -275,9 +275,9 @@ namespace Engine
 
                     if (ImGui::Button("Load") && !m_hdrMap.empty())
                     {
-                        const auto hdrMapAssetPath = Engine::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
+                        const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
 
-                        if (Engine::Files::Exists(hdrMapAssetPath))
+                        if (Util::Files::Exists(hdrMapAssetPath))
                         {
                             iblMaps.Destroy
                             (

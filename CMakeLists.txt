@@ -250,8 +250,8 @@ target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
 target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
-# Enable CPU vectorisation (SSE or better)
-target_compile_options(VulkanRenderer PRIVATE -msse2 -mavx -mavx2 -mf16c)
+# Enable CPU vectorisation
+target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)

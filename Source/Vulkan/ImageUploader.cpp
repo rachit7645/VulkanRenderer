@@ -39,7 +39,7 @@ namespace Vk
         u32      height    = 0;
         u32      mipLevels = 0;
 
-        const auto extension = Engine::Files::GetExtension(path);
+        const auto extension = Util::Files::GetExtension(path);
 
         if (extension == ".hdr")
         {

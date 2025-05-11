@@ -57,7 +57,7 @@ namespace Logger
                 fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
                 Util::GetTime(),
-                Engine::Files::GetName(location.file_name()),
+                Util::Files::GetName(location.file_name()),
                 location.line(),
                 std::forward<Args>(args)...
             );

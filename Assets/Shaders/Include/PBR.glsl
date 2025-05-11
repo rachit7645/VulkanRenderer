@@ -133,7 +133,6 @@ vec3 CalculateAmbient
     vec3 irradiance,
     vec3 preFilter,
     vec2 brdf,
-    float ao,
     float NdotV
 )
 {
@@ -147,7 +146,7 @@ vec3 CalculateAmbient
     vec3 diffuse  = irradiance * albedo;
     vec3 specular = preFilter * (F * brdf.x + brdf.y);
 
-    return ao * (kD * diffuse + specular);
+    return kD * diffuse + specular;
 }
 
 #endif

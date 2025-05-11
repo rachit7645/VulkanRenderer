@@ -34,7 +34,7 @@ vec2 Hammersley(uint i, uint N)
     return vec2(float(i) / float(N), RadicalInverse_VdC(i));
 }
 
-vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, vec3 tangent, vec3 bitangent, float roughness)
+vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, vec3 T, vec3 B, float roughness)
 {
     // Using Disney squared roughness
     float a = roughness * roughness;
@@ -51,9 +51,9 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, vec3 tangent, vec3 bitangent, float ro
         cosTheta
     );
 
-    vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
+    vec3 sampleVector = T * H.x + B * H.y + N * H.z;
 
-    return normalize(sampleVec);
+    return normalize(sampleVector);
 }
 
 #endif

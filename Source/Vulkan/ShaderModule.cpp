@@ -32,8 +32,8 @@ namespace Vk
 
     ShaderModule::ShaderModule(VkDevice device, const std::string_view path)
     {
-        const auto fullPath     = Engine::Files::GetAssetPath(ASSETS_SHADERS_DIR, path) + ".spv";
-        const auto shaderBinary = Engine::Files::ReadBytes(fullPath);
+        const auto fullPath     = Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path) + ".spv";
+        const auto shaderBinary = Util::Files::ReadBytes(fullPath);
 
         const VkShaderModuleCreateInfo createInfo =
         {
@@ -52,7 +52,7 @@ namespace Vk
             fmt::format("Failed to create shader module! [Path={}]!", path)
         );
 
-        Vk::SetDebugName(device, handle, Engine::Files::GetNameWithoutExtension(path));
+        Vk::SetDebugName(device, handle, Util::Files::GetNameWithoutExtension(path));
 
         Logger::Debug("Created shader module {} [handle={}]\n", path, std::bit_cast<void*>(handle));
     }
