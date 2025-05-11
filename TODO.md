@@ -18,3 +18,4 @@
 * Some form of Global Illumination
 * Fog
 * Volumetric Lighting
+* IBL Cache

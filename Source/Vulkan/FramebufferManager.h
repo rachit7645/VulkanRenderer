@@ -34,6 +34,7 @@ namespace Vk
         // Special Color Formats
         ColorR_Unorm8,
         ColorR_Unorm16,
+        ColorR_SFloat16,
         ColorR_SFloat32,
         ColorR_Uint32,
         ColorRG_SFloat16,

@@ -41,7 +41,7 @@ namespace Renderer::PointShadow
                 .mipLevels   = 1,
                 .arrayLayers = 6 * Objects::MAX_SHADOWED_POINT_LIGHT_COUNT
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL

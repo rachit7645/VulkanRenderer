@@ -32,7 +32,7 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 vec2  LoadNoise(ivec2 pixelCoord);
-float CalculateNeighboringDepthDifferences(vec2 uv, ivec2 pixelCoord);
+float CalculateNeighboringDepthDifferences(ivec2 pixelCoord, vec2 viewportSize);
 vec3  LoadViewSpaceNormal(vec2 uv);
 vec3  ReconstructViewSpacePosition(vec2 uv, float depth);
 vec3  LoadAndReconstructViewSpacePosition(vec2 uv, float mipLevel);
@@ -50,7 +50,7 @@ void main()
 
     float depthMipLevels = float(textureQueryLevels(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex])));
 
-    float depth  = CalculateNeighboringDepthDifferences(uv, pixelCoord);
+    float depth  = CalculateNeighboringDepthDifferences(pixelCoord, viewportSize);
           depth += 0.00001f; // Add a small value to avoid depth precision issues
 
     vec3 position = ReconstructViewSpacePosition(uv, depth);
@@ -127,8 +127,10 @@ vec2 LoadNoise(ivec2 pixelCoord)
     return vec2(fract(0.5f + float(index) * vec2(0.75487766624669276005f, 0.5698402909980532659114f)));
 }
 
-float CalculateNeighboringDepthDifferences(vec2 uv, ivec2 pixelCoord)
+float CalculateNeighboringDepthDifferences(ivec2 pixelCoord, vec2 viewportSize)
 {
+    vec2 uv = vec2(pixelCoord) / viewportSize;
+
     vec4 depthsUpperLeft   = textureGather      (sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), uv             );
     vec4 depthsBottomRight = textureGatherOffset(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), uv, ivec2(1, 1));
     
