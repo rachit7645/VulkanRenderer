@@ -18,8 +18,9 @@
 
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
-#include "Util/Log.h"
 #include "Util.h"
+#include "BarrierWriter.h"
+#include "Util/Log.h"
 
 namespace Vk
 {
@@ -119,6 +120,125 @@ namespace Vk
         );
     }
 
+    void Swapchain::Blit(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager)
+    {
+        const auto& finalColor     = framebufferManager.GetFramebuffer("FinalColor");
+        const auto& swapchainImage = images[imageIndex];
+
+        Vk::BeginLabel(cmdBuffer, "Swapchain::Blit", glm::vec4(0.4098f, 0.2843f, 0.7529f, 1.0f));
+
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
+
+        const VkImageBlit2 blitRegion =
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+            .pNext = nullptr,
+            .srcSubresource = {
+                .aspectMask     = finalColor.image.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            },
+            .srcOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(finalColor.image.width), static_cast<s32>(finalColor.image.height), 1}
+            },
+            .dstSubresource = {
+                .aspectMask     = swapchainImage.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            },
+            .dstOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(swapchainImage.width), static_cast<s32>(swapchainImage.height), 1}
+            }
+        };
+
+        const VkBlitImageInfo2 blitImageInfo =
+        {
+            .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+            .pNext          = nullptr,
+            .srcImage       = finalColor.image.handle,
+            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .dstImage       = swapchainImage.handle,
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = 1,
+            .pRegions       = &blitRegion,
+            .filter         = VK_FILTER_LINEAR
+        };
+
+        vkCmdBlitImage2(cmdBuffer.handle, &blitImageInfo);
+
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
     void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
         const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
@@ -159,7 +279,7 @@ namespace Vk
             .imageColorSpace       = surfaceFormat.surfaceFormat.colorSpace,
             .imageExtent           = extent,
             .imageArrayLayers      = 1,
-            .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices   = nullptr,
@@ -195,7 +315,7 @@ namespace Vk
 
         if (imageCount == 0)
         {
-            Logger::VulkanError
+            Logger::Error
             (
                 "Failed to get any swapchain images! [handle={}] [device={}]\n",
                 std::bit_cast<void*>(handle),
@@ -237,13 +357,12 @@ namespace Vk
                 context.device,
                 images[i],
                 VK_IMAGE_VIEW_TYPE_2D,
-                imageFormat,
                 {
                     .aspectMask     = images[i].aspect,
                     .baseMipLevel   = 0,
                     .levelCount     = images[i].mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1
+                    .layerCount     = images[i].mipLevels
                 }
             );
 
@@ -259,48 +378,29 @@ namespace Vk
             cmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                std::vector<VkImageMemoryBarrier2> barriers = {};
-                barriers.reserve(images.size());
+                Vk::BarrierWriter barrierWriter = {};
 
-                for (auto&& image : images)
+                for (const auto& image : images)
                 {
-                    barriers.push_back(VkImageMemoryBarrier2
-                    {
-                        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                        .pNext               = nullptr,
-                        .srcStageMask        = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-                        .srcAccessMask       = VK_ACCESS_2_NONE,
-                        .dstStageMask        = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,
-                        .dstAccessMask       = VK_ACCESS_2_NONE,
-                        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                        .newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image               = image.handle,
-                        .subresourceRange    = {
-                            .aspectMask     = image.aspect,
+                    barrierWriter.WriteImageBarrier
+                    (
+                        image,
+                        Vk::ImageBarrier{
+                            .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                            .srcAccessMask  = VK_ACCESS_2_NONE,
+                            .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                            .dstAccessMask  = VK_ACCESS_2_NONE,
+                            .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                            .newLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                             .baseMipLevel   = 0,
                             .levelCount     = image.mipLevels,
                             .baseArrayLayer = 0,
-                            .layerCount     = 1
+                            .layerCount     = image.arrayLayers
                         }
-                    });
+                    );
                 }
 
-                const VkDependencyInfo dependencyInfo =
-                {
-                    .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                    .pNext                    = nullptr,
-                    .dependencyFlags          = 0,
-                    .memoryBarrierCount       = 0,
-                    .pMemoryBarriers          = nullptr,
-                    .bufferMemoryBarrierCount = 0,
-                    .pBufferMemoryBarriers    = nullptr,
-                    .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
-                    .pImageMemoryBarriers     = barriers.data()
-                };
-
-                vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+                barrierWriter.Execute(cmdBuffer);
             }
         );
 
@@ -394,23 +494,66 @@ namespace Vk
     {
         const auto& formats = m_swapChainInfo.formats;
 
-        for (const auto& availableFormat : formats)
+        constexpr std::array PREFERRED_FORMATS =
         {
-            if (availableFormat.surfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && // BGRA is faster or something IDK
-                availableFormat.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) // SRGB Buffer
-            {
-                Logger::Debug
-                (
-                    "Choosing surface format! [Format={}] [ColorSpace={}]\n",
-                    string_VkFormat(availableFormat.surfaceFormat.format),
-                    string_VkColorSpaceKHR(availableFormat.surfaceFormat.colorSpace)
-                );
+            VK_FORMAT_R8G8B8A8_SRGB,
+            VK_FORMAT_B8G8R8A8_SRGB,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_B8G8R8A8_UNORM
+        };
 
-                return availableFormat;
+        // Really, there's no way this is gonna happen lol
+        [[unlikely]] if (formats.empty())
+        {
+            Logger::Error("{}\n", "No surface formats found!");
+        }
+
+        // Check preferred formats first
+        for (const auto format : PREFERRED_FORMATS)
+        {
+            for (const auto& format2 : formats)
+            {
+                const auto& surfaceFormat = format2.surfaceFormat;
+
+                if (surfaceFormat.format == format &&
+                    surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                {
+                    Logger::Debug
+                    (
+                        "Choosing surface format! [Format={}] [ColorSpace={}]\n",
+                        string_VkFormat(surfaceFormat.format),
+                        string_VkColorSpaceKHR(surfaceFormat.colorSpace)
+                    );
+
+                    return format2;
+                }
             }
         }
 
-        // By default, return the first format available (probably rgba or something)
+        // Fallback #1 -> Any format with VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+        for (const auto& format2 : formats)
+        {
+            if (format2.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                Logger::Debug
+                (
+                    "Choosing surface format! [Fallback #1] [Format={}] [ColorSpace={}]\n",
+                    string_VkFormat(format2.surfaceFormat.format),
+                    string_VkColorSpaceKHR(format2.surfaceFormat.colorSpace)
+                );
+
+                return format2;
+            }
+        }
+
+        // Fallback #2 -> Return first available format (probably won't work)
+        Logger::Debug
+        (
+            "Choosing surface format! [Fallback #2] [Format={}] [ColorSpace={}]\n",
+            string_VkFormat(formats[0].surfaceFormat.format),
+            string_VkColorSpaceKHR(formats[0].surfaceFormat.colorSpace)
+        );
+
         return formats[0];
     }
 
@@ -418,23 +561,24 @@ namespace Vk
     {
         const auto& presentModes = m_swapChainInfo.presentModes;
 
-        for (const auto presentMode : presentModes)
-        {
-            // Mailbox my beloved
-            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-            {
-                Logger::Debug
-                (
-                    "Choosing presentation mode! [PresentMode={}]\n",
-                    string_VkPresentModeKHR(presentMode)
-                );
+        // FIFO is guaranteed to be supported (Lame)
+        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
-                return presentMode;
+        for (const auto availablePresentMode : presentModes)
+        {
+            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+                presentMode = availablePresentMode;
             }
         }
 
-        // FIFO is guaranteed to be supported (Lame)
-        return VK_PRESENT_MODE_FIFO_KHR;
+        Logger::Debug
+        (
+            "Choosing presentation mode! [PresentMode={}]\n",
+            string_VkPresentModeKHR(presentMode)
+        );
+
+        return presentMode;
     }
 
     VkExtent2D Swapchain::ChooseSwapExtent(const glm::ivec2& size) const
@@ -457,7 +601,7 @@ namespace Vk
         const auto minSize = glm::ivec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
         const auto maxSize = glm::ivec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
 
-        auto actualExtent = glm::clamp(size, minSize, maxSize);
+        const auto actualExtent = glm::clamp(size, minSize, maxSize);
 
         Logger::Debug("Choosing swap extent! [X={}] [Y={}]\n", actualExtent.x, actualExtent.y);
 

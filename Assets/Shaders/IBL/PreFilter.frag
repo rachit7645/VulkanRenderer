@@ -39,25 +39,25 @@ void main()
     vec3 V = R;
 
     // Tangent to World Space Sample Vector
-    vec3 up        = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
-    vec3 tangent   = normalize(cross(up, N));
-    vec3 bitangent = cross(N, tangent);
+    vec3 up = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
+    vec3 T  = normalize(cross(up, N));
+    vec3 B  = cross(N, T);
 
-    vec2 resolution = textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0);
+    vec2 resolution = vec2(textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0));
 
     vec3  prefilteredColor = vec3(0.0f);
     float totalWeight      = 0.0f;
 
-    for(uint i = 0u; i < Constants.SampleCount; ++i)
+    for (uint i = 0u; i < Constants.SampleCount; ++i)
     {
         vec2 Xi = Hammersley(i, Constants.SampleCount);
-        vec3 H  = ImportanceSampleGGX(Xi, N, tangent, bitangent, Constants.Roughness);
+        vec3 H  = ImportanceSampleGGX(Xi, N, T, B, Constants.Roughness);
         vec3 L  = normalize(2.0f * dot(V, H) * H - V);
 
         float NdotL = max(dot(N, L), 0.0f);
 
         // Avoids NaN
-        if(NdotL > 0.0f)
+        if (NdotL > 0.0f)
         {
             float NdotH = max(dot(N, H), 0.0f);
             float HdotV = max(dot(H, V), 0.0f);

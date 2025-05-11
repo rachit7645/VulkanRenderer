@@ -48,7 +48,7 @@ namespace Vk
             },
             VkDescriptorPoolSize
             {
-                .type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                .type            = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
                 .descriptorCount = maxStorageImages
             }
         };
@@ -134,7 +134,7 @@ namespace Vk
             "Failed to create mega set layout!"
         );
 
-        VkDescriptorSetAllocateInfo allocInfo =
+        const VkDescriptorSetAllocateInfo allocInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .pNext              = nullptr,
@@ -143,9 +143,10 @@ namespace Vk
             .pSetLayouts        = &descriptorLayout
         };
 
-        Vk::CheckResult
-        (
-            vkAllocateDescriptorSets(context.device, &allocInfo, &descriptorSet),
+        Vk::CheckResult(vkAllocateDescriptorSets(
+            context.device,
+            &allocInfo,
+            &descriptorSet),
             "Failed to allocate mega set"
         );
 
@@ -232,7 +233,6 @@ namespace Vk
     void MegaSet::Update(VkDevice device)
     {
         m_writer.Update(device);
-        m_writer.Clear();
     }
 
     void MegaSet::ImGuiDisplay()

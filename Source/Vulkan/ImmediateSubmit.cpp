@@ -55,7 +55,7 @@ namespace Vk
             Vk::EndLabel(cmdBuffer);
         cmdBuffer.EndRecording();
 
-        VkCommandBufferSubmitInfo cmdBufferInfo =
+        const VkCommandBufferSubmitInfo cmdBufferInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
             .pNext         = nullptr,

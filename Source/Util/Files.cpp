@@ -22,7 +22,7 @@
 
 namespace filesystem = std::filesystem;
 
-namespace Engine::Files
+namespace Util::Files
 {
     constexpr auto ASSETS_DIRECTORY = "Assets/";
 
@@ -43,6 +43,21 @@ namespace Engine::Files
         return static_cast<usize>(filesystem::file_size(path));
     }
 
+    std::string GetNameWithoutExtension(const std::string_view fileName)
+    {
+        return filesystem::path(fileName).stem().string();
+    }
+
+    std::string GetExtension(const std::string_view fileName)
+    {
+        return filesystem::path(fileName).extension().string();
+    }
+
+    bool Exists(const std::string_view fileName)
+    {
+        return filesystem::exists(filesystem::path(fileName));
+    }
+
     std::vector<u8> ReadBytes(const std::string_view path)
     {
         // Open in binary mode
@@ -59,20 +74,5 @@ namespace Engine::Files
         bin.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
 
         return binary;
-    }
-
-    std::string GetNameWithoutExtension(const std::string_view fileName)
-    {
-        return filesystem::path(fileName).stem().string();
-    }
-
-    std::string GetExtension(const std::string_view fileName)
-    {
-        return filesystem::path(fileName).extension().string();
-    }
-
-    bool Exists(const std::string_view fileName)
-    {
-        return filesystem::exists(filesystem::path(fileName));
     }
 }

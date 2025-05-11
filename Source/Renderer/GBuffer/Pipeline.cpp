@@ -16,8 +16,7 @@
 
 #include "Pipeline.h"
 
-#include "Models/Vertex.h"
-#include "Vulkan/Builders/PipelineBuilder.h"
+#include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Util.h"
 
@@ -44,9 +43,9 @@ namespace Renderer::GBuffer
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.b10g11r11SFloat, formatHelper.rgba8UnormFormat, formatHelper.rgSFloatFormat};
+        const std::array colorFormats = {formatHelper.b10g11r11SFloat, formatHelper.rgba8UnormFormat, formatHelper.rgSFloat16Format};
 
-        std::tie(handle, layout, bindPoint) = Vk::Builders::PipelineBuilder(context)
+        std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Deferred/GBuffer.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -139,35 +138,8 @@ namespace Renderer::GBuffer
             }
         );
 
-        depthSamplerIndex = textureManager.AddSampler
-        (
-            megaSet,
-            context.device,
-            {
-                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                .pNext                   = nullptr,
-                .flags                   = 0,
-                .magFilter               = VK_FILTER_NEAREST,
-                .minFilter               = VK_FILTER_NEAREST,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .mipLodBias              = 0.0f,
-                .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 0.0f,
-                .compareEnable           = VK_FALSE,
-                .compareOp               = VK_COMPARE_OP_ALWAYS,
-                .minLod                  = 0.0f,
-                .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-                .unnormalizedCoordinates = VK_FALSE
-            }
-        );
-
         megaSet.Update(context.device);
 
         Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "GBufferPipeline/TextureSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(depthSamplerIndex).handle,   "GBufferPipeline/DepthSampler");
     }
 }

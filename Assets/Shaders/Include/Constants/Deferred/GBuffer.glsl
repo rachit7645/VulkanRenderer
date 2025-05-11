@@ -25,13 +25,12 @@
 layout(push_constant, scalar) uniform ConstantsBuffer
 {
     SceneBuffer     Scene;
-    MeshBuffer      Meshes;
+    MeshBuffer      CurrentMeshes;
+    MeshBuffer      PreviousMeshes;
     MeshIndexBuffer MeshIndices;
     PositionBuffer  Positions;
     VertexBuffer    Vertices;
     uint            TextureSamplerIndex;
-    uint            DepthSamplerIndex;
-    uint            PreviousDepthIndex;
 } Constants;
 
 #endif

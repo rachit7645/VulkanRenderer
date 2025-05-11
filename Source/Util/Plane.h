@@ -24,11 +24,16 @@ namespace Maths
 {
     struct Plane
     {
-        glm::vec3 normal;
-        f32       distance;
+        glm::vec3 normal   = {};
+        f32       distance = 0.0f;
     };
 
-    std::array<Maths::Plane, 6> ExtractFrustumPlanes(const glm::mat4& projectionView);
+    struct Frustum
+    {
+        explicit Frustum(const glm::mat4& projectionView);
+
+        Plane planes[6] = {};
+    };
 }
 
 #endif

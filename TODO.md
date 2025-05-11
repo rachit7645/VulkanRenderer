@@ -18,4 +18,4 @@
 * Some form of Global Illumination
 * Fog
 * Volumetric Lighting
-* Wait for frames in flight before framebuffer recreation
+* IBL Cache

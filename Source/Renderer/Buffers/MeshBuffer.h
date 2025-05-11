@@ -37,15 +37,18 @@ namespace Renderer::Buffers
 
         void LoadMeshes
         (
-            usize FIF,
+            usize frameIndex,
             VmaAllocator allocator,
             const Models::ModelManager& modelManager,
             const std::vector<Renderer::RenderObject>& renderObjects
         );
 
-        void Destroy(VmaAllocator allocator);
+        const Vk::Buffer& GetCurrentBuffer(usize frameIndex)  const;
+        const Vk::Buffer& GetPreviousBuffer(usize frameIndex) const;
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
+        void Destroy(VmaAllocator allocator);
+    private:
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT + 1> m_buffers;
     };
 }
 

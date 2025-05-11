@@ -19,7 +19,7 @@
 
 #include <cstdint>
 
-#define UNUSED [[maybe_unused]]
+#define ENGINE_UNUSED [[maybe_unused]]
 
 // Signed integer types
 using s8  = std::int8_t;
@@ -44,12 +44,6 @@ using usize = std::size_t;
 
 namespace Util
 {
-    [[noreturn]] inline void Crash()
-    {
-        volatile u8* crash = nullptr;
-        *crash = 69;
-    }
-
     constexpr usize Align(usize value, usize alignment)
     {
         return (value + (alignment - 1)) & ~(alignment - 1);

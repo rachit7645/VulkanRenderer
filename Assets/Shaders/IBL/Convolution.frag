@@ -36,25 +36,27 @@ void main()
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
-    vec3  irradiance = vec3(0.0f);
-    float nrSamples  = 0.0f;
+    vec3 irradiance  = vec3(0.0f);
+    uint sampleCount = 0u;
 
-    for(float phi = 0.0; phi < 2.0f * PI; phi += CONVOLUTION_SAMPLE_DELTA)
+    for (float phi = 0.0; phi < TWO_PI; phi += CONVOLUTION_SAMPLE_DELTA)
     {
         float sinPhi = sin(phi);
         float cosPhi = cos(phi);
 
-        for(float theta = 0.0f; theta < 0.5f * PI; theta += CONVOLUTION_SAMPLE_DELTA)
+        for (float theta = 0.0f; theta < HALF_PI; theta += CONVOLUTION_SAMPLE_DELTA)
         {
             float sinTheta = sin(theta);
             float cosTheta = cos(theta);
 
             vec3 tangentSample = vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
             vec3 sampleVec     = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
-            irradiance        += texture(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), sampleVec).rgb * cosTheta * sinTheta;
-            nrSamples         += 1;
+
+            irradiance += texture(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), sampleVec).rgb * cosTheta * sinTheta;
+
+            ++sampleCount;
         }
     }
 
-    outColor = PI * irradiance * (1.0f / float(nrSamples));
+    outColor = PI * (irradiance / float(sampleCount));
 }

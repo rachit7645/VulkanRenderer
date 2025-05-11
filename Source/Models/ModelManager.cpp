@@ -21,19 +21,25 @@
 
 namespace Models
 {
-    ModelManager::ModelManager(const Vk::Context& context, const Vk::FormatHelper& formatHelper)
-        : geometryBuffer(context.device, context.allocator),
-          textureManager(formatHelper)
+    ModelManager::ModelManager(VkDevice device, VmaAllocator allocator)
+        : geometryBuffer(device, allocator)
     {
     }
 
-    usize ModelManager::AddModel(const Vk::Context& context, Vk::MegaSet& megaSet, const std::string_view path)
+    usize ModelManager::AddModel
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view path
+    )
     {
         usize pathHash = std::hash<std::string_view>()(path);
 
         if (!modelMap.contains(pathHash))
         {
-            modelMap.emplace(pathHash, Model(context, megaSet, geometryBuffer, textureManager, path));
+            modelMap.emplace(pathHash, Model(device, allocator, megaSet, geometryBuffer, textureManager, deletionQueue, path));
         }
 
         return pathHash;
@@ -51,99 +57,25 @@ namespace Models
         return iter->second;
     }
 
-    void ModelManager::Update(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
+    void ModelManager::Update
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue
+    )
     {
         if (!geometryBuffer.HasPendingUploads() && !textureManager.HasPendingUploads())
         {
             return;
         }
 
-        const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
-        Vk::BeginLabel(context.graphicsQueue, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
-
-        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            Update(context, cmdBuffer);
-        cmdBuffer.EndRecording();
-
-        VkFence transferFence = VK_NULL_HANDLE;
-
-        // Submit
-        {
-            const VkFenceCreateInfo fenceCreateInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0
-            };
-
-            vkCreateFence(context.device, &fenceCreateInfo, nullptr, &transferFence);
-
-            VkCommandBufferSubmitInfo cmdBufferInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                .pNext         = nullptr,
-                .commandBuffer = cmdBuffer.handle,
-                .deviceMask    = 0
-            };
-
-            const VkSubmitInfo2 submitInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-                .pNext                    = nullptr,
-                .flags                    = 0,
-                .waitSemaphoreInfoCount   = 0,
-                .pWaitSemaphoreInfos      = nullptr,
-                .commandBufferInfoCount   = 1,
-                .pCommandBufferInfos      = &cmdBufferInfo,
-                .signalSemaphoreInfoCount = 0,
-                .pSignalSemaphoreInfos    = nullptr
-            };
-
-            Vk::CheckResult(vkQueueSubmit2(
-                context.graphicsQueue,
-                1,
-                &submitInfo,
-                transferFence),
-                "Failed to submit transfer command buffers!"
-            );
-
-            Vk::CheckResult(vkWaitForFences(
-                context.device,
-                1,
-                &transferFence,
-                VK_TRUE,
-                std::numeric_limits<u64>::max()),
-                "Error while waiting for transfer!"
-            );
-        }
-
-        Vk::EndLabel(context.graphicsQueue);
-
-        // Clean
-        {
-            ClearUploads(context.allocator);
-
-            vkDestroyFence(context.device, transferFence, nullptr);
-            cmdBufferAllocator.FreeGlobalCommandBuffer(cmdBuffer);
-        }
-    }
-
-    void ModelManager::Update(const Vk::Context& context, const Vk::CommandBuffer& cmdBuffer)
-    {
-        if (!geometryBuffer.HasPendingUploads() && !textureManager.HasPendingUploads())
-        {
-            return;
-        }
-
-        geometryBuffer.Update(cmdBuffer, context.device, context.allocator);
+        geometryBuffer.Update(cmdBuffer, device, allocator, deletionQueue);
         textureManager.Update(cmdBuffer);
-    }
 
-    void ModelManager::ClearUploads(VmaAllocator allocator)
-    {
-        geometryBuffer.ClearUploads(allocator);
-        textureManager.ClearUploads(allocator);
+        Vk::EndLabel(cmdBuffer);
     }
 
     void ModelManager::ImGuiDisplay()

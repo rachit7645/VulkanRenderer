@@ -34,10 +34,12 @@ namespace Models
     public:
         Model
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
@@ -45,20 +47,24 @@ namespace Models
     private:
         void ProcessScenes
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
             const std::string& directory,
             const fastgltf::Asset& asset
         );
 
         void ProcessNode
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
             const std::string& directory,
             const fastgltf::Asset& asset,
             usize nodeIndex,
@@ -67,10 +73,12 @@ namespace Models
 
         void LoadMesh
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
             const std::string& directory,
             const fastgltf::Asset& asset,
             const fastgltf::Mesh& mesh,
@@ -89,9 +97,11 @@ namespace Models
 
         u32 LoadTexture
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
             const std::string& directory,
             const fastgltf::Asset& asset,
             usize textureIndex

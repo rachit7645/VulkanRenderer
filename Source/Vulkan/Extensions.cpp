@@ -31,7 +31,7 @@ namespace Vk
 
         if (instanceExtensions == nullptr)
         {
-            Logger::VulkanError("Failed to load extensions!: {}\n", SDL_GetError());
+            Logger::Error("Failed to load extensions!: {}\n", SDL_GetError());
         }
 
         auto extensionStrings = std::vector(instanceExtensions, instanceExtensions + extensionCount);

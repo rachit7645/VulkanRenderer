@@ -29,11 +29,13 @@ namespace Engine
     Scene::Scene
     (
         const Engine::Config& config,
+        const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Renderer::IBL::Generator& iblGenerator,
+        Util::DeletionQueue& deletionQueue
     )
     {
         try
@@ -42,7 +44,7 @@ namespace Engine
 
             Logger::Info("Loading scene! [Scene={}]\n", config.scene);
 
-            const auto path = Files::GetAssetPath("Scenes/", config.scene + ".json");
+            const auto path = Util::Files::GetAssetPath("Scenes/", config.scene + ".json");
             const auto json = simdjson::padded_string::load(path);
 
             JSON::CheckError(json, "Failed to load json file!");
@@ -65,7 +67,7 @@ namespace Engine
 
                     JSON::CheckError(model, "Failed to load model path!");
 
-                    renderObject.modelID = modelManager.AddModel(context, megaSet, model.value());
+                    renderObject.modelID = modelManager.AddModel(context.device, context.allocator, megaSet, deletionQueue, model.value());
 
                     JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
                     JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");
@@ -121,15 +123,21 @@ namespace Engine
             // HDR Map
             JSON::CheckError(document["IBL"].get_string(m_hdrMap), "Failed to load IBL!");
 
-            iblMaps.Generate
-            (
-                m_hdrMap,
-                context,
-                formatHelper,
-                cmdBufferAllocator,
-                modelManager,
-                megaSet
-            );
+            const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
+
+            if (Util::Files::Exists(hdrMapAssetPath))
+            {
+                iblMaps = iblGenerator.Generate
+                (
+                    cmdBuffer,
+                    context,
+                    formatHelper,
+                    modelManager,
+                    megaSet,
+                    deletionQueue,
+                    hdrMapAssetPath
+                );
+            }
 
             m_hdrMap.clear();
         }
@@ -141,13 +149,15 @@ namespace Engine
 
     void Scene::Update
     (
+        const Vk::CommandBuffer& cmdBuffer,
         const Util::FrameCounter& frameCounter,
         Engine::Inputs& inputs,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Renderer::IBL::Generator& iblGenerator,
+        Util::DeletionQueue& deletionQueue
     )
     {
         camera.Update(frameCounter.frameDelta, inputs);
@@ -265,18 +275,29 @@ namespace Engine
 
                     if (ImGui::Button("Load") && !m_hdrMap.empty())
                     {
-                        // TODO: Figure out a better way to wait for resources to be available
-                        Vk::CheckResult(vkDeviceWaitIdle(context.device), "Device failed to idle!");
+                        const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
 
-                        iblMaps.Generate
-                        (
-                            m_hdrMap,
-                            context,
-                            formatHelper,
-                            cmdBufferAllocator,
-                            modelManager,
-                            megaSet
-                        );
+                        if (Util::Files::Exists(hdrMapAssetPath))
+                        {
+                            iblMaps.Destroy
+                            (
+                                context,
+                                modelManager.textureManager,
+                                megaSet,
+                                deletionQueue
+                            );
+
+                            iblMaps = iblGenerator.Generate
+                            (
+                                cmdBuffer,
+                                context,
+                                formatHelper,
+                                modelManager,
+                                megaSet,
+                                deletionQueue,
+                                hdrMapAssetPath
+                            );
+                        }
 
                         m_hdrMap.clear();
                     }
@@ -289,5 +310,22 @@ namespace Engine
             
             ImGui::EndMainMenuBar();
         }
+    }
+
+    void Scene::Destroy
+    (
+        const Vk::Context& context,
+        Vk::TextureManager& textureManager,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        iblMaps.Destroy
+        (
+            context,
+            textureManager,
+            megaSet,
+            deletionQueue
+        );
     }
 }

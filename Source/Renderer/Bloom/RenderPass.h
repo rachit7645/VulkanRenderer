@@ -38,7 +38,6 @@ namespace Renderer::Bloom
 
         void Render
         (
-            usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet

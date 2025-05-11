@@ -23,29 +23,36 @@
 #include "Constants/Deferred/GBuffer.glsl"
 #include "Material.glsl"
 
-layout(location = 0) out      vec4 currentPosition;
-layout(location = 1) out      vec2 fragTexCoords;
-layout(location = 2) out      mat3 fragTBNMatrix;
-layout(location = 5) out flat uint fragDrawID;
+layout(location = 0) out      vec4 fragCurrentPosition;
+layout(location = 1) out      vec4 fragPreviousPosition;
+layout(location = 2) out      vec2 fragUV0;
+layout(location = 3) out      mat3 fragTBNMatrix;
+layout(location = 6) out flat uint fragDrawID;
 
 void main()
 {
-    uint   meshIndex = Constants.MeshIndices.indices[gl_DrawID];
-    Mesh   mesh      = Constants.Meshes.meshes[meshIndex];
-    vec3   position  = Constants.Positions.positions[gl_VertexIndex];
-    Vertex vertex    = Constants.Vertices.vertices[gl_VertexIndex];
+    uint meshIndex    = Constants.MeshIndices.indices[gl_DrawID];
+    Mesh currentMesh  = Constants.CurrentMeshes.meshes[meshIndex];
+    Mesh previousMesh = Constants.PreviousMeshes.meshes[meshIndex];
 
-    vec4 worldPosition       = mesh.transform                       * vec4(position, 1.0f);
+    vec3   position = Constants.Positions.positions[gl_VertexIndex];
+    Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
+
+    vec4 worldPosition       = currentMesh.transform                * vec4(position, 1.0f);
     vec4 currentViewPosition = Constants.Scene.currentMatrices.view * worldPosition;
 
-    currentPosition = Constants.Scene.currentMatrices.projection         * currentViewPosition;
-    gl_Position     = Constants.Scene.currentMatrices.jitteredProjection * currentViewPosition;
+    fragCurrentPosition = Constants.Scene.currentMatrices.projection         * currentViewPosition;
+    gl_Position         = Constants.Scene.currentMatrices.jitteredProjection * currentViewPosition;
 
-    fragTexCoords = vertex.uv0;
+    fragPreviousPosition = Constants.Scene.previousMatrices.projection *
+                           Constants.Scene.previousMatrices.view *
+                           previousMesh.transform * vec4(position, 1.0f);
+
+    fragUV0 = vertex.uv0;
     fragDrawID    = meshIndex;
 
-    vec3 N = normalize(mesh.normalMatrix * vertex.normal);
-    vec3 T = normalize(mesh.transform    * vec4(vertex.tangent.xyz, 0.0f)).xyz;
+    vec3 N = normalize(currentMesh.normalMatrix * vertex.normal);
+    vec3 T = normalize(currentMesh.transform    * vec4(vertex.tangent.xyz, 0.0f)).xyz;
          T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T) * vertex.tangent.w;
 

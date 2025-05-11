@@ -27,7 +27,7 @@ namespace Renderer::Culling
         buffer = Vk::Buffer
         (
             allocator,
-            6 * sizeof(Maths::Plane),
+            sizeof(Maths::Frustum),
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -41,19 +41,19 @@ namespace Renderer::Culling
 
     void FrustumBuffer::LoadPlanes(const Vk::CommandBuffer& cmdBuffer, const glm::mat4& projectionView)
     {
-        const auto planes = Maths::ExtractFrustumPlanes(projectionView);
-
-        const VkDeviceSize size = planes.size() * sizeof(Maths::Plane);
+        const auto frustum = Maths::Frustum(projectionView);
 
         buffer.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            0,
-            size
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .offset        = 0,
+                .size          = sizeof(Maths::Frustum)
+            }
         );
 
         vkCmdUpdateBuffer
@@ -61,19 +61,21 @@ namespace Renderer::Culling
             cmdBuffer.handle,
             buffer.handle,
             0,
-            size,
-            planes.data()
+            sizeof(Maths::Frustum),
+            &frustum
         );
 
         buffer.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-            0,
-            size
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .offset        = 0,
+                .size          = sizeof(Maths::Frustum)
+            }
         );
     }
 

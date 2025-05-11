@@ -92,8 +92,10 @@ add_executable(VulkanRenderer
     Source/Vulkan/CommandBufferAllocator.cpp
     Source/Vulkan/ImmediateSubmit.cpp
     Source/Vulkan/Timeline.cpp
-	# Vulkan Builders
-	Source/Vulkan/Builders/PipelineBuilder.cpp
+    Source/Vulkan/ImageUploader.cpp
+    Source/Vulkan/PipelineBuilder.cpp
+    Source/Vulkan/BarrierWriter.cpp
+    Source/Vulkan/VertexBuffer.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     # Object sources
@@ -119,6 +121,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Skybox/RenderPass.cpp
     # IBL Sources
     Source/Renderer/IBL/IBLMaps.cpp
+    Source/Renderer/IBL/Generator.cpp
     Source/Renderer/IBL/BRDF/Pipeline.cpp
     Source/Renderer/IBL/Converter/Pipeline.cpp
     Source/Renderer/IBL/Convolution/Pipeline.cpp
@@ -143,11 +146,11 @@ add_executable(VulkanRenderer
     # Lighting Pass Sources
     Source/Renderer/Lighting/Pipeline.cpp
     Source/Renderer/Lighting/RenderPass.cpp
-    # XeGTAO Pass Sources
-    Source/Renderer/AO/XeGTAO/RenderPass.cpp
-    Source/Renderer/AO/XeGTAO/DepthPreFilter/Pipeline.cpp
-    Source/Renderer/AO/XeGTAO/Occlusion/Pipeline.cpp
-    Source/Renderer/AO/XeGTAO/Denoise/Pipeline.cpp
+    # VBGTAO Pass Sources
+    Source/Renderer/AO/VBGTAO/RenderPass.cpp
+    Source/Renderer/AO/VBGTAO/DepthPreFilter/Pipeline.cpp
+    Source/Renderer/AO/VBGTAO/Occlusion/Pipeline.cpp
+    Source/Renderer/AO/VBGTAO/Denoise/Pipeline.cpp
     # Shadow RT sources
     Source/Renderer/ShadowRT/Pipeline.cpp
     Source/Renderer/ShadowRT/RenderPass.cpp
@@ -160,6 +163,7 @@ add_executable(VulkanRenderer
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp
+    Source/Externals/STB.cpp
 )
 
 # Precompiled Headers
@@ -246,8 +250,8 @@ target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
 target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
-# Enable CPU vectorisation (SSE or better)
-target_compile_options(VulkanRenderer PRIVATE -msse2 -mavx -mavx2 -mf16c)
+# Enable CPU vectorisation
+target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c)
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL Debug)

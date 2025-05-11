@@ -75,7 +75,6 @@ namespace Renderer::ShadowRT
     void RenderPass::Render
     (
         usize FIF,
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager,
@@ -83,7 +82,7 @@ namespace Renderer::ShadowRT
         const Vk::AccelerationStructure& accelerationStructure
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("ShadowRTPass/FIF{}", FIF), glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "ShadowRTPass", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
 
         const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
         const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);
@@ -91,14 +90,13 @@ namespace Renderer::ShadowRT
         shadowMap.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_GENERAL,
-            {
-                .aspectMask     = shadowMap.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -114,7 +112,7 @@ namespace Renderer::ShadowRT
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .gBufferSamplerIndex = pipeline.gBufferSamplerIndex,
             .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex     = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
+            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
             .outputImage         = shadowMapView.storageImageIndex
         };
 
@@ -144,14 +142,13 @@ namespace Renderer::ShadowRT
         shadowMap.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = shadowMap.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,

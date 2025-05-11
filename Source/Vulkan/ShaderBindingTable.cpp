@@ -30,9 +30,12 @@ namespace Vk
         u32 callableCount
     )
     {
+        const u32 shaderGroupHandleSize      = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
+        const u32 shaderGroupHandleAlignment = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment;
+        const u32 shaderGroupBaseAlignment   = context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment;
+
         const u32          handleCount = 1 + missCount + hitCount + callableCount;
-        const VkDeviceSize handleSize  = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
-        const VkDeviceSize handlesSize = handleCount * handleSize;
+        const VkDeviceSize handlesSize = handleCount * shaderGroupHandleSize;
 
         auto handlesData = std::vector<u8>(handlesSize);
 
@@ -46,20 +49,19 @@ namespace Vk
             "Failed to get ray tracing shader group handles!"
         );
 
-        const VkDeviceSize handleSizeAligned = Util::Align(handleSize,        context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment);
-        const VkDeviceSize sbtStrideAligned  = Util::Align(handleSizeAligned, context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment);
+        const VkDeviceSize handleSizeAligned = Util::Align(shaderGroupHandleSize, shaderGroupHandleAlignment);
 
-        raygenRegion.stride = sbtStrideAligned;
-        raygenRegion.size   = 1 * raygenRegion.stride;
+        raygenRegion.stride = Util::Align(handleSizeAligned, shaderGroupBaseAlignment);
+        raygenRegion.size   = raygenRegion.stride;
 
-        missRegion.stride = sbtStrideAligned;
-        missRegion.size   = missCount * missRegion.stride;
+        missRegion.stride = handleSizeAligned;
+        missRegion.size   = Util::Align(missCount * handleSizeAligned, shaderGroupBaseAlignment);
 
-        hitRegion.stride = sbtStrideAligned;
-        hitRegion.size   = hitCount * hitRegion.stride;
+        hitRegion.stride = handleSizeAligned;
+        hitRegion.size   = Util::Align(hitCount * handleSizeAligned, shaderGroupBaseAlignment);
 
-        callableRegion.stride = sbtStrideAligned;
-        callableRegion.size   = callableCount * callableRegion.stride;
+        callableRegion.stride = handleSizeAligned;
+        callableRegion.size   = Util::Align(callableCount * handleSizeAligned, shaderGroupBaseAlignment);
 
         const VkDeviceSize sbtSize = raygenRegion.size + missRegion.size + hitRegion.size + callableRegion.size;
 
@@ -76,16 +78,16 @@ namespace Vk
         const auto pMappedData = static_cast<u8*>(stagingBuffer.allocationInfo.pMappedData);
 
         const usize raygenOffset   = 0;
-        const usize missOffset     = raygenOffset + 1         * handleSize;
-        const usize hitOffset      = missOffset   + missCount * handleSize;
-        const usize callableOffset = hitOffset    + hitCount  * handleSize;
+        const usize missOffset     = raygenOffset + 1         * shaderGroupHandleSize;
+        const usize hitOffset      = missOffset   + missCount * shaderGroupHandleSize;
+        const usize callableOffset = hitOffset    + hitCount  * shaderGroupHandleSize;
 
         // Raygen
         std::memcpy
         (
             pMappedData,
             handlesData.data(),
-            handleSize
+            shaderGroupHandleSize
         );
 
         // Miss
@@ -93,9 +95,9 @@ namespace Vk
         {
             std::memcpy
             (
-                pMappedData + raygenRegion.size + i * missRegion.stride, // Base + RayGen + Current Miss (Strided)
-                handlesData.data() + missOffset + (i * handleSize),      // Base + Raygen + Current Miss
-                handleSize
+                pMappedData + raygenRegion.size + (i * missRegion.stride), // Base + RayGen + Current Miss (Strided)
+                handlesData.data() + missOffset + (i * shaderGroupHandleSize),        // Base + Raygen + Current Miss
+                shaderGroupHandleSize
             );
         }
 
@@ -104,9 +106,9 @@ namespace Vk
         {
             std::memcpy
             (
-                pMappedData + raygenRegion.size + missRegion.size + i * hitRegion.stride, // Base + RayGen + Miss + Current Hit (Strided)
-                handlesData.data() + hitOffset + (i * handleSize),                        // Base + Raygen + Miss + Current Hit
-                handleSize
+                pMappedData + raygenRegion.size + missRegion.size + (i * hitRegion.stride), // Base + RayGen + Miss + Current Hit (Strided)
+                handlesData.data() + hitOffset + (i * shaderGroupHandleSize),                          // Base + Raygen + Miss + Current Hit
+                shaderGroupHandleSize
             );
         }
 
@@ -115,9 +117,9 @@ namespace Vk
         {
             std::memcpy
             (
-                pMappedData + raygenRegion.size + missRegion.size + hitRegion.size + i * callableRegion.stride, // Base + RayGen + Miss + Hit + Current Callable (Strided)
-                handlesData.data() + callableOffset + (i * handleSize),                                         // Base + Raygen + Miss + Hit + Current Callable
-                handleSize
+                pMappedData + raygenRegion.size + missRegion.size + hitRegion.size + (i * callableRegion.stride), // Base + RayGen + Miss + Hit + Current Callable (Strided)
+                handlesData.data() + callableOffset + (i * shaderGroupHandleSize),                                           // Base + Raygen + Miss + Hit + Current Callable
+                shaderGroupHandleSize
             );
         }
 
@@ -132,12 +134,11 @@ namespace Vk
             );
         }
 
-        buffer = Vk::Buffer
+        m_buffer = Vk::Buffer
         (
             context.allocator,
             sbtSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -166,40 +167,42 @@ namespace Vk
                     .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
                     .pNext       = nullptr,
                     .srcBuffer   = stagingBuffer.handle,
-                    .dstBuffer   = buffer.handle,
+                    .dstBuffer   = m_buffer.handle,
                     .regionCount = 1,
                     .pRegions    = &copyRegion
                 };
 
                 vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
 
-                buffer.Barrier
+                m_buffer.Barrier
                 (
                     cmdBuffer,
-                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-                    VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,
-                    0,
-                    sbtSize
+                    Vk::BufferBarrier{
+                        .srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask  = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                        .dstAccessMask = VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,
+                        .offset        = 0,
+                        .size          = sbtSize
+                    }
                 );
             }
         );
 
-        buffer.GetDeviceAddress(context.device);
+        m_buffer.GetDeviceAddress(context.device);
 
-        raygenRegion.deviceAddress   = buffer.deviceAddress;
-        missRegion.deviceAddress     = buffer.deviceAddress + raygenRegion.size;
-        hitRegion.deviceAddress      = buffer.deviceAddress + raygenRegion.size + missRegion.size;
-        callableRegion.deviceAddress = buffer.deviceAddress + raygenRegion.size + missRegion.size + hitRegion.size;
+        raygenRegion.deviceAddress   = m_buffer.deviceAddress;
+        missRegion.deviceAddress     = m_buffer.deviceAddress + raygenRegion.size;
+        hitRegion.deviceAddress      = m_buffer.deviceAddress + raygenRegion.size + missRegion.size;
+        callableRegion.deviceAddress = m_buffer.deviceAddress + raygenRegion.size + missRegion.size + hitRegion.size;
 
-        Vk::SetDebugName(context.device, buffer.handle, "ShaderBindingTable/Buffer");
+        Vk::SetDebugName(context.device, m_buffer.handle, "ShaderBindingTable/Buffer");
 
         stagingBuffer.Destroy(context.allocator);
     }
 
     void ShaderBindingTable::Destroy(VmaAllocator allocator)
     {
-        buffer.Destroy(allocator);
+        m_buffer.Destroy(allocator);
     }
 }

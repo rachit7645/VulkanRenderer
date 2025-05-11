@@ -18,7 +18,7 @@
 #define POST_PROCESS_PIPELINE_H
 
 #include "Constants.h"
-#include "Vulkan/Sampler.h"
+#include "Vulkan/FormatHelper.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
@@ -32,17 +32,14 @@ namespace Renderer::PostProcess
         Pipeline
         (
             const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
-            VkFormat colorFormat
+            Vk::TextureManager& textureManager
         );
 
-        PushConstant pushConstant = {};
+        PostProcess::PushConstant pushConstant = {};
 
         u32 samplerIndex = 0;
-    private:
-        void CreatePipeline(const Vk::Context& context, const Vk::MegaSet& megaSet, VkFormat colorFormat);
-        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

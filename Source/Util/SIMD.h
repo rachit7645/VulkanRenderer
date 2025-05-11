@@ -21,13 +21,8 @@
 
 namespace Util
 {
-    // source and destination pointers must not be the same
+    // `source` and `destination` must not be the same
     // Requires AVX2
-    void ConvertF32ToF16Range(const f32* __restrict__ source, f16* __restrict__ destination, usize start, usize end);
-
-    // source and destination pointers must not be the same
-    // Requires AVX2
-    // Multithreaded
     void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count);
 }
 

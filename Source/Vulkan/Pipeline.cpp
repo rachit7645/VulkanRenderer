@@ -32,12 +32,7 @@ namespace Vk
 
     void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
-        vkCmdBindPipeline
-        (
-            cmdBuffer.handle,
-            bindPoint,
-            handle
-        );
+        vkCmdBindPipeline(cmdBuffer.handle, bindPoint, handle);
     }
 
     void Pipeline::BindDescriptors

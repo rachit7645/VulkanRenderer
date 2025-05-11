@@ -37,8 +37,12 @@ namespace Vk
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
 
         VkFormat r8UnormFormat    = VK_FORMAT_UNDEFINED;
+        VkFormat r16UnormFormat   = VK_FORMAT_UNDEFINED;
         VkFormat rUint16Format    = VK_FORMAT_UNDEFINED;
-        VkFormat rgSFloatFormat   = VK_FORMAT_UNDEFINED;
+        VkFormat rSFloat16Format  = VK_FORMAT_UNDEFINED;
+        VkFormat rSFloat32Format  = VK_FORMAT_UNDEFINED;
+        VkFormat rUint32Format    = VK_FORMAT_UNDEFINED;
+        VkFormat rgSFloat16Format = VK_FORMAT_UNDEFINED;
         VkFormat rgba8UnormFormat = VK_FORMAT_UNDEFINED;
         VkFormat b10g11r11SFloat  = VK_FORMAT_UNDEFINED;
     private:

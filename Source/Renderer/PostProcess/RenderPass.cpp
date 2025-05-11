@@ -26,22 +26,57 @@ namespace Renderer::PostProcess
     RenderPass::RenderPass
     (
         const Vk::Context& context,
-        const Vk::Swapchain& swapchain,
+        const Vk::FormatHelper& formatHelper,
+        Vk::FramebufferManager& framebufferManager,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
+        : pipeline(context, formatHelper, megaSet, textureManager)
     {
+        framebufferManager.AddFramebuffer
+        (
+            "FinalColor",
+            Vk::FramebufferType::ColorLDR,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "FinalColor",
+            "FinalColorView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
         Logger::Info("{}\n", "Created post process pass!");
     }
 
     void RenderPass::Render
     (
-        usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet,
-        const Vk::Swapchain& swapchain
+        const Vk::MegaSet& megaSet
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -55,26 +90,25 @@ namespace Renderer::PostProcess
             ImGui::EndMainMenuBar();
         }
 
-        const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
-        const auto& currentImage     = swapchain.images[swapchain.imageIndex];
+        const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
+        const auto& finalColor     = framebufferManager.GetFramebuffer(finalColorView.framebuffer);
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("PostProcessPass/FIF{}", FIF), glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "PostProcessPass", glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
-        currentImage.Barrier
+        finalColor.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_NONE,
-            VK_ACCESS_2_NONE,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = currentImage.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = currentImage.mipLevels,
+                .levelCount     = finalColor.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 1
+                .layerCount     = finalColor.image.arrayLayers
             }
         );
 
@@ -82,7 +116,7 @@ namespace Renderer::PostProcess
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = currentImageView.handle,
+            .imageView          = finalColorView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -99,7 +133,7 @@ namespace Renderer::PostProcess
             .flags                = 0,
             .renderArea           = {
                 .offset = {0, 0},
-                .extent = swapchain.extent
+                .extent = {finalColor.image.width, finalColor.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -117,8 +151,8 @@ namespace Renderer::PostProcess
         {
             .x        = 0.0f,
             .y        = 0.0f,
-            .width    = static_cast<f32>(swapchain.extent.width),
-            .height   = static_cast<f32>(swapchain.extent.height),
+            .width    = static_cast<f32>(finalColor.image.width),
+            .height   = static_cast<f32>(finalColor.image.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -128,7 +162,7 @@ namespace Renderer::PostProcess
         const VkRect2D scissor =
         {
             .offset = {0, 0},
-            .extent = swapchain.extent
+            .extent = {finalColor.image.width, finalColor.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -145,8 +179,9 @@ namespace Renderer::PostProcess
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, sizeof(PostProcess::PushConstant),
-            reinterpret_cast<void*>(&pipeline.pushConstant)
+            0,
+            sizeof(PostProcess::PushConstant),
+            &pipeline.pushConstant
         );
 
         // Mega set

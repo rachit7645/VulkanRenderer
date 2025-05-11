@@ -39,7 +39,6 @@ namespace Renderer::GBuffer
         PushConstant pushConstant = {};
 
         u32 textureSamplerIndex = 0;
-        u32 depthSamplerIndex   = 0;
     private:
         void CreatePipeline
         (

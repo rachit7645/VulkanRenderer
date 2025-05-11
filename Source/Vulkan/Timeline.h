@@ -38,9 +38,10 @@ namespace Vk
         void AcquireImageToTimeline(usize frameIndex, VkQueue queue, VkSemaphore imageAcquire);
         void TimelineToRenderFinished(usize frameIndex, VkQueue queue, VkSemaphore renderFinished);
 
-        u64 GetTimelineValue(usize frameIndex, TimelineStage timelineStage) const;
+        [[nodiscard]] u64 GetTimelineValue(usize frameIndex, TimelineStage timelineStage) const;
 
-        void WaitForStage(usize frameIndex, TimelineStage timelineStage, VkDevice device);
+        void WaitForStage(usize frameIndex, TimelineStage timelineStage, VkDevice device) const;
+        bool IsAtOrPastState(usize frameIndex, TimelineStage timelineStage, VkDevice device) const;
 
         void Destroy(VkDevice device);
 

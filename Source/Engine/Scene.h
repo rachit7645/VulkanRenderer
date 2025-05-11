@@ -22,6 +22,7 @@
 #include "Renderer/Objects/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
 #include "Renderer/IBL/IBLMaps.h"
+#include "Renderer/IBL/Generator.h"
 #include "Models/ModelManager.h"
 #include "Util/FrameCounter.h"
 
@@ -33,22 +34,34 @@ namespace Engine
         Scene
         (
             const Engine::Config& config,
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Renderer::IBL::Generator& iblGenerator,
+            Util::DeletionQueue& deletionQueue
         );
 
         void Update
         (
+            const Vk::CommandBuffer& cmdBuffer,
             const Util::FrameCounter& frameCounter,
             Engine::Inputs& inputs,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Renderer::IBL::Generator& iblGenerator,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        void Destroy
+        (
+            const Vk::Context& context,
+            Vk::TextureManager& textureManager,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
         );
 
         std::vector<Renderer::RenderObject>        renderObjects;

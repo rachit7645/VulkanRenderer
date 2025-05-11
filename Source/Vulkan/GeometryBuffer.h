@@ -21,116 +21,43 @@
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"
-#include "Models/Vertex.h"
-#include "Util/Util.h"
 #include "CommandBuffer.h"
+#include "BarrierWriter.h"
+#include "VertexBuffer.h"
+#include "Util/Util.h"
+#include "Util/DeletionQueue.h"
 
 namespace Vk
 {
     class GeometryBuffer
     {
     public:
-        struct Info
-        {
-            u32 offset = 0;
-            u32 count  = 0;
-        };
-
-        explicit GeometryBuffer(VkDevice device, VmaAllocator allocator);
+        GeometryBuffer(VkDevice device, VmaAllocator allocator);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator);
-
-        std::array<Info, 3> SetupUploads
-        (
-            VmaAllocator allocator,
-            const std::span<const Models::Index> indices,
-            const std::span<const Models::Position> positions,
-            const std::span<const Models::Vertex> vertices
-        );
 
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
-            VmaAllocator allocator
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue
         );
-
-        void ClearUploads(VmaAllocator allocator);
 
         void ImGuiDisplay() const;
 
         [[nodiscard]] bool HasPendingUploads() const;
 
-        Vk::Buffer indexBuffer;
-        Vk::Buffer positionBuffer;
-        Vk::Buffer vertexBuffer;
+        Vk::VertexBuffer<Models::Index>    indexBuffer;
+        Vk::VertexBuffer<Models::Position> positionBuffer;
+        Vk::VertexBuffer<Models::Vertex>   vertexBuffer;
 
         Vk::Buffer cubeBuffer;
-
-        u32 indexCount    = 0;
-        u32 positionCount = 0;
-        u32 vertexCount   = 0;
     private:
-        using Upload = std::pair<GeometryBuffer::Info, Vk::Buffer>;
-
         void SetupCubeUpload(VmaAllocator allocator);
 
-        template<typename T>
-        GeometryBuffer::Info SetupUpload
-        (
-            VmaAllocator allocator,
-            const std::span<const T> data,
-            u32& offset,
-            std::vector<Upload>& uploads
-        );
-
-        void ResizeBuffer
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            VmaAllocator allocator,
-            u32 count,
-            const std::span<const Upload> uploads,
-            usize elementSize,
-            VkBufferUsageFlags usage,
-            Vk::Buffer& buffer
-        );
-
-        void ResizeBuffers
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator
-        );
-
-        void FlushUploads
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Buffer& destination,
-            const std::vector<Upload>& uploads,
-            usize elementSize,
-            VkPipelineStageFlags2 dstStageMask,
-            VkAccessFlags2 dstAccessMask
-        );
-
-        void UploadToBuffer
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Buffer& source,
-            const Vk::Buffer& destination,
-            VkDeviceSize offsetBytes,
-            VkDeviceSize sizeBytes,
-            VkPipelineStageFlags2 dstStageMask,
-            VkAccessFlags2 dstAccessMask
-        );
-
-        std::vector<Upload> m_pendingIndexUploads;
-        std::vector<Upload> m_pendingPositionUploads;
-        std::vector<Upload> m_pendingVertexUploads;
-
-        std::optional<Vk::Buffer> m_cubeStagingBuffer;
-
-        Util::DeletionQueue m_deletionQueue;
+        std::optional<Vk::Buffer> m_pendingCubeUpload;
     };
 }
 

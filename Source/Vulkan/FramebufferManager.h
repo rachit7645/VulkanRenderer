@@ -24,18 +24,20 @@
 #include "ImageView.h"
 #include "FormatHelper.h"
 #include "MegaSet.h"
-#include "CommandBufferAllocator.h"
+#include "BarrierWriter.h"
 #include "Util/Enum.h"
 
 namespace Vk
 {
-    class FramebufferManager;
-
     enum class FramebufferType : u8
     {
         // Special Color Formats
         ColorR_Unorm8,
-        ColorRG_SFloat,
+        ColorR_Unorm16,
+        ColorR_SFloat16,
+        ColorR_SFloat32,
+        ColorR_Uint32,
+        ColorRG_SFloat16,
         ColorRGBA_UNorm8,
         ColorBGR_SFloat_10_11_11,
         // Regular Color Formats
@@ -57,9 +59,11 @@ namespace Vk
     enum class FramebufferUsage : u8
     {
         None                = 0,
-        Sampled             = 1U << 0,
-        Storage             = 1U << 1,
-        TransferDestination = 1U << 2
+        Attachment          = 1U << 0,
+        Sampled             = 1U << 1,
+        Storage             = 1U << 2,
+        TransferSource      = 1U << 3,
+        TransferDestination = 1U << 4
     };
 
     struct FramebufferSize
@@ -108,8 +112,16 @@ namespace Vk
         VkImageLayout         initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     };
 
-    using FramebufferResizeCallback = std::function<FramebufferSize(const VkExtent2D&)>;
-    using FramebufferSizeData       = std::variant<std::monostate, FramebufferSize, FramebufferResizeCallback>;
+    using FramebufferResizeCallbackWithExtent                 = std::function<FramebufferSize(const VkExtent2D&)>;
+    using FramebufferResizeCallbackWithExtentAndDeletionQueue = std::function<FramebufferSize(const VkExtent2D&, Util::DeletionQueue& deletionQueue)>;
+
+    using FramebufferSizeData = std::variant
+    <
+        std::monostate,
+        FramebufferSize,
+        FramebufferResizeCallbackWithExtent,
+        FramebufferResizeCallbackWithExtentAndDeletionQueue
+    >;
 
     struct Framebuffer
     {
@@ -144,15 +156,21 @@ namespace Vk
 
         void Update
         (
-            const Vk::Context& context,
+            const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator,
             const Vk::FormatHelper& formatHelper,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
+            const VkExtent2D& extent,
             Vk::MegaSet& megaSet,
-            VkExtent2D swapchainExtent
+            Util::DeletionQueue& deletionQueue
         );
+
+        [[nodiscard]] bool DoesFramebufferExist(const std::string_view name);
+        [[nodiscard]] bool DoesFramebufferViewExist(const std::string_view name);
 
         [[nodiscard]] Framebuffer& GetFramebuffer(const std::string_view name);
         [[nodiscard]] const Framebuffer& GetFramebuffer(const std::string_view name) const;
+
         [[nodiscard]] FramebufferView& GetFramebufferView(const std::string_view name);
         [[nodiscard]] const FramebufferView& GetFramebufferView(const std::string_view name) const;
 
@@ -160,13 +178,14 @@ namespace Vk
         (
             const std::string_view framebufferName,
             VkDevice device,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
         );
 
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        FramebufferSize GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData);
+        FramebufferSize GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue);
 
         template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
         void AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage);
@@ -180,15 +199,20 @@ namespace Vk
 
         void FreeDescriptors
         (
-            Vk::MegaSet& megaSet,
             const Vk::FramebufferView& framebufferView,
-            Vk::FramebufferUsage usage
+            Vk::FramebufferUsage usage,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
         );
 
         std::unordered_map<std::string, Framebuffer>     m_framebuffers;
         std::unordered_map<std::string, FramebufferView> m_framebufferViews;
 
         std::unordered_set<std::string> m_fixedSizeFramebuffers;
+
+        VkExtent2D m_extent = {};
+
+        Vk::BarrierWriter m_barrierWriter       = {};
     };
 }
 

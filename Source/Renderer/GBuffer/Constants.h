@@ -26,13 +26,12 @@ namespace Renderer::GBuffer
     struct PushConstant
     {
         VkDeviceAddress scene;
-        VkDeviceAddress meshes;
+        VkDeviceAddress currentMeshes;
+        VkDeviceAddress previousMeshes;
         VkDeviceAddress meshIndices;
         VkDeviceAddress positions;
         VkDeviceAddress vertices;
         u32             textureSamplerIndex;
-        u32             depthSamplerIndex;
-        u32             previousDepthIndex;
     };
 }
 

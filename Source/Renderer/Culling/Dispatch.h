@@ -35,6 +35,7 @@ namespace Renderer::Culling
         void DispatchFrustumCulling
         (
             usize FIF,
+            usize frameIndex,
             const glm::mat4& projectionView,
             const Vk::CommandBuffer& cmdBuffer,
             const Buffers::MeshBuffer& meshBuffer,

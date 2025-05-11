@@ -43,12 +43,16 @@ void main()
     vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
 
     float cosTheta = clamp(dot(normal, direction), 0.0f, 1.0f);
-    float bias     = RT_SHADOW_MIN_BIAS * TanArcCos(cosTheta);
+    float bias     = RT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, RT_SHADOW_MAX_BIAS);
 
     vec3 origin = worldPosition + normal * bias;
 
-    uint  rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
+    uint rayFlags = gl_RayFlagsOpaqueEXT |
+                    gl_RayFlagsTerminateOnFirstHitEXT |
+                    gl_RayFlagsSkipClosestHitShaderEXT |
+                    gl_RayFlagsCullBackFacingTrianglesEXT;
+
     uint  cullMask = 0xFF;
     float tmin     = 0.001f;
     float tmax     = Constants.Scene.farPlane;

@@ -57,7 +57,7 @@ namespace Logger
                 fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
                 Util::GetTime(),
-                Engine::Files::GetName(location.file_name()),
+                Util::Files::GetName(location.file_name()),
                 location.line(),
                 std::forward<Args>(args)...
             );
@@ -160,9 +160,9 @@ namespace Logger
         /// @param location Source location information
         explicit Debug
         (
-            UNUSED const std::string_view format,
-            UNUSED Args&&... args,
-            UNUSED const std::source_location location = std::source_location::current()
+            ENGINE_UNUSED const std::string_view format,
+            ENGINE_UNUSED Args&&... args,
+            ENGINE_UNUSED const std::source_location location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG
@@ -189,9 +189,9 @@ namespace Logger
         /// @param location Source location information
         explicit Vulkan
         (
-            UNUSED const std::string_view format,
-            UNUSED Args&&... args,
-            UNUSED const std::source_location location = std::source_location::current()
+            ENGINE_UNUSED const std::string_view format,
+            ENGINE_UNUSED Args&&... args,
+            ENGINE_UNUSED const std::source_location location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG

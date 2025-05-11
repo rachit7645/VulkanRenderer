@@ -18,46 +18,16 @@
 #define TEXTURE_H
 
 #include <vulkan/vulkan.h>
-#include <ktx.h>
 
 #include "Image.h"
 #include "ImageView.h"
-#include "Util/Util.h"
 
 namespace Vk
 {
     class Texture
     {
     public:
-        using Upload = std::pair<Vk::Buffer, std::vector<VkBufferImageCopy2>>;
-
-        Upload LoadFromFile
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            const std::string_view path
-        );
-
-        Upload LoadFromFileHDR
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            VkFormat format,
-            const std::string_view path
-        );
-
-        Upload LoadFromMemory
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            VkFormat format,
-            const std::span<const u8> data,
-            const glm::uvec2 size
-        );
-
-        void UploadToGPU(const Vk::CommandBuffer& cmdBuffer, const Upload& upload);
-
-        void Destroy(VkDevice device, VmaAllocator allocator) const;
+        void Destroy(VkDevice device, VmaAllocator allocator);
 
         bool operator==(const Texture& rhs) const;
 

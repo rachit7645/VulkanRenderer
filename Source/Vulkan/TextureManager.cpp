@@ -24,16 +24,12 @@
 
 namespace Vk
 {
-    TextureManager::TextureManager(const Vk::FormatHelper& formatHelper)
-        : m_formatHelper(formatHelper)
-    {
-    }
-
     u32 TextureManager::AddTexture
     (
-        Vk::MegaSet& megaSet,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
     {
@@ -44,56 +40,50 @@ namespace Vk
             return m_nameHashToTextureIDMap.at(pathHash);
         }
 
-        Vk::Texture     texture = {};
-        Texture::Upload upload  = {};
+        Vk::Texture texture = {};
 
-        if (Engine::Files::GetExtension(path) == ".hdr")
-        {
-            upload = texture.LoadFromFileHDR
-            (
-                device,
-                allocator,
-                m_formatHelper.textureFormatHDR,
-                path
-            );
-        }
-        else
-        {
-            upload = texture.LoadFromFile
-            (
-                device,
-                allocator,
-                path
-            );
-        }
+        texture.image = m_imageUploader.LoadImageFromFile(allocator, deletionQueue, path);
 
-        const auto id = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        textureMap.emplace
+        texture.imageView = Vk::ImageView
         (
-            id,
-            TextureInfo(
-                Engine::Files::GetNameWithoutExtension(path),
-                texture
-            )
+            device,
+            texture.image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            {
+                .aspectMask     = texture.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = texture.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = texture.image.arrayLayers
+            }
         );
+
+        const auto id   = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        const auto name = Util::Files::GetNameWithoutExtension(path);
+
+        textureMap.emplace(id, TextureInfo(name, texture));
 
         m_nameHashToTextureIDMap.emplace(pathHash, id);
 
-        m_pendingUploads.emplace_back(texture, upload);
+        Vk::SetDebugName(device, texture.image.handle,     name);
+        Vk::SetDebugName(device, texture.imageView.handle, name + "_View");
+
+        Logger::Debug("Loaded texture! [Path={}]\n", path);
 
         return id;
     }
 
     u32 TextureManager::AddTexture
     (
-        Vk::MegaSet& megaSet,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue,
         const std::string_view name,
-        const std::span<const u8> data,
-        const glm::uvec2 size,
-        VkFormat format
+        VkFormat format,
+        const void* data,
+        u32 width,
+        u32 height
     )
     {
         const usize nameHash = std::hash<std::string_view>()(name);
@@ -105,29 +95,35 @@ namespace Vk
 
         Vk::Texture texture = {};
 
-        const auto upload = texture.LoadFromMemory
+        texture.image = m_imageUploader.LoadImageFromMemory
         (
-            device,
             allocator,
+            deletionQueue,
             format,
             data,
-            size
+            width,
+            height
+        );
+
+        texture.imageView = Vk::ImageView
+        (
+            device,
+            texture.image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            {
+                .aspectMask     = texture.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = texture.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = texture.image.arrayLayers
+            }
         );
 
         const auto id = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        textureMap.emplace
-        (
-            id,
-            TextureInfo(
-                name.data(),
-                texture
-            )
-        );
+        textureMap.emplace(id, TextureInfo(name.data(), texture));
 
         m_nameHashToTextureIDMap.emplace(nameHash, id);
-
-        m_pendingUploads.emplace_back(texture, upload);
 
         Vk::SetDebugName(device, texture.image.handle,     name);
         Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
@@ -152,14 +148,7 @@ namespace Vk
 
         const auto id = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        textureMap.emplace
-        (
-            id,
-            TextureInfo(
-                name.data(),
-                texture
-            )
-        );
+        textureMap.emplace(id, TextureInfo(name.data(), texture));
 
         m_nameHashToTextureIDMap.emplace(nameHash, id);
 
@@ -193,22 +182,9 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "Texture Transfer", {0.6117f, 0.8196f, 0.0313f, 1.0f});
 
-        for (auto& [texture, upload] : m_pendingUploads)
-        {
-            texture.UploadToGPU(cmdBuffer, upload);
-        }
+        m_imageUploader.FlushUploads(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void TextureManager::ClearUploads(VmaAllocator allocator)
-    {
-        for (auto& [buffer, _] : m_pendingUploads | std::views::values)
-        {
-            buffer.Destroy(allocator);
-        }
-
-        m_pendingUploads.clear();
     }
 
     const Texture& TextureManager::GetTexture(u32 id) const
@@ -235,7 +211,14 @@ namespace Vk
         return iter->second;
     }
 
-    void TextureManager::DestroyTexture(VkDevice device, VmaAllocator allocator, u32 id)
+    void TextureManager::DestroyTexture
+    (
+        u32 id,
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
     {
         const auto iter = textureMap.find(id);
 
@@ -256,7 +239,12 @@ namespace Vk
             }
         }
 
-        iter->second.texture.Destroy(device, allocator);
+        deletionQueue.PushDeletor([&megaSet, device, allocator, id, texture = iter->second.texture] () mutable
+        {
+            texture.Destroy(device, allocator);
+            megaSet.FreeSampledImage(id);
+        });
+
         textureMap.erase(iter);
     }
 
@@ -309,7 +297,7 @@ namespace Vk
 
     bool TextureManager::HasPendingUploads() const
     {
-        return !m_pendingUploads.empty();
+        return m_imageUploader.HasPendingUploads();
     }
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
@@ -328,7 +316,6 @@ namespace Vk
         samplerMap.clear();
 
         m_nameHashToTextureIDMap.clear();
-        m_pendingUploads.clear();
 
         Logger::Info("{}\n", "Destroyed texture manager!");
     }

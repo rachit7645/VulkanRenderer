@@ -21,11 +21,11 @@
 
 namespace Util
 {
-    void ConvertF32ToF16Range(const f32* __restrict__ source, f16* __restrict__ destination, usize start, usize end)
+    void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count)
     {
-        usize i = start;
+        usize i = 0;
 
-        for (; (i + 8) < end; i += 8)
+        for (; (i + 8) < count; i += 8)
         {
             const __m256  src = _mm256_loadu_ps(source + i);
             const __m128i dst = _mm256_cvtps_ph(src, _MM_FROUND_TO_NEAREST_INT);
@@ -33,7 +33,7 @@ namespace Util
             _mm_storeu_si128(reinterpret_cast<__m128i*>(destination + i), dst);
         }
 
-        for (; (i + 4) < end; i += 4)
+        for (; (i + 4) < count; i += 4)
         {
             const __m128  src = _mm_loadu_ps(source + i);
             const __m128i dst = _mm_cvtps_ph(src, _MM_FROUND_TO_NEAREST_INT);
@@ -41,33 +41,9 @@ namespace Util
             _mm_storeu_si64(destination + i, dst);
         }
 
-        for (; i < end; ++i)
+        for (; i < count; ++i)
         {
             destination[i] = _cvtss_sh(source[i], _MM_FROUND_TO_NEAREST_INT);
-        }
-    }
-
-    void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count)
-    {
-        const usize threadCount = std::max(std::thread::hardware_concurrency(), 1u);
-
-        const usize chunkSize = count / threadCount;
-        const usize countLeft = count % threadCount;
-
-        std::vector<std::thread> threads = {};
-        threads.reserve(threadCount);
-
-        for (usize i = 0; i < threadCount; ++i)
-        {
-            const usize start = i * chunkSize;
-            const usize end   = (i == threadCount - 1) ? (start + chunkSize + countLeft) : (start + chunkSize);
-
-            threads.emplace_back(ConvertF32ToF16Range, source, destination, start, end);
-        }
-
-        for (auto& thread : threads)
-        {
-            thread.join();
         }
     }
 }

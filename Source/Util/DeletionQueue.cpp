@@ -20,9 +20,9 @@
 
 namespace Util
 {
-    void DeletionQueue::PushDeletor(std::function<void()>&& function)
+    void DeletionQueue::PushDeletor(Deletor&& deletor)
     {
-        m_deletors.push(std::move(function));
+        m_deletors.push(std::move(deletor));
     }
 
     void DeletionQueue::FlushQueue()

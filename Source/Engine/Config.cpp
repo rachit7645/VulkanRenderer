@@ -31,7 +31,7 @@ namespace Engine
 
             Logger::Info("{}\n", "Loading config!");
 
-            const auto path = Files::GetAssetPath("", "Config.json");
+            const auto path = Util::Files::GetAssetPath("", "Config.json");
             const auto json = simdjson::padded_string::load(path);
 
             JSON::CheckError(json, "Failed to load json file!");

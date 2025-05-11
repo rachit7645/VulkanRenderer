@@ -22,17 +22,16 @@ namespace Maths
     {
         if (positions.empty())
         {
-            min = max = glm::vec3(0.0f);
             return;
         }
 
         min = glm::vec3(std::numeric_limits<f32>::max());
         max = glm::vec3(std::numeric_limits<f32>::lowest());
 
-        for (const auto& vertex : positions)
+        for (const auto& position : positions)
         {
-            min = glm::min(min, vertex);
-            max = glm::max(max, vertex);
+            min = glm::min(min, position);
+            max = glm::max(max, position);
         }
     }
 

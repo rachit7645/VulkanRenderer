@@ -20,7 +20,6 @@
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
-#include "Buffers/LightsBuffer.h"
 #include "PostProcess/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
@@ -30,10 +29,11 @@
 #include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "AO/XeGTAO/RenderPass.h"
+#include "AO/VBGTAO/RenderPass.h"
 #include "ShadowRT/RenderPass.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
+#include "IBL/Generator.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -52,7 +52,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        explicit RenderManager(const Engine::Config& config);
+        explicit RenderManager(Engine::Config config);
         ~RenderManager();
 
         // No copying
@@ -69,12 +69,25 @@ namespace Renderer
         void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
-        void Update();
-        void EndFrame();
+        void Update(const Vk::CommandBuffer& cmdBuffer);
+        void ImGuiDisplay();
         void SubmitQueue();
+        void EndFrame();
         void Resize();
 
         void InitImGui();
+
+        Engine::Config m_config;
+
+        // Frame index
+        usize m_FIF        = 0;
+        usize m_frameIndex = 0;
+
+        // Frame counter
+        Util::FrameCounter m_frameCounter = {};
+
+        Util::DeletionQueue                                   m_globalDeletionQueue = {};
+        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues      = {};
 
         // Object handles
         Engine::Window             m_window;
@@ -100,33 +113,25 @@ namespace Renderer
         SpotShadow::RenderPass  m_spotShadowPass;
         GBuffer::RenderPass     m_gBufferPass;
         Lighting::RenderPass    m_lightingPass;
-        AO::XeGTAO::RenderPass  m_xegtaoPass;
+        AO::VBGTAO::RenderPass  m_vbgtaoPass;
         ShadowRT::RenderPass    m_shadowRTPass;
         TAA::RenderPass         m_taaPass;
 
         // Dispatches
         Culling::Dispatch m_cullingDispatch;
 
+        // Generators
+        IBL::Generator m_iblGenerator;
+
         // Buffers
         Buffers::MeshBuffer     m_meshBuffer;
         Buffers::IndirectBuffer m_indirectBuffer;
         Buffers::SceneBuffer    m_sceneBuffer;
-        Buffers::LightsBuffer   m_lightsBuffer;
 
         // Scene objects
-        Engine::Scene m_scene;
-
-        // Frame index
-        usize m_currentFIF = Vk::FRAMES_IN_FLIGHT - 1;
-        usize m_frameIndex = 0;
-        // Frame counter
-        Util::FrameCounter m_frameCounter = {};
+        std::optional<Engine::Scene> m_scene = std::nullopt;
 
         bool m_isSwapchainOk = true;
-
-        Renderer::Scene m_sceneData = {};
-
-        Util::DeletionQueue m_deletionQueue = {};
     };
 }
 

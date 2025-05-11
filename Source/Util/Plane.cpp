@@ -20,10 +20,8 @@
 
 namespace Maths
 {
-    std::array<Plane, 6> ExtractFrustumPlanes(const glm::mat4& projectionView)
+    Frustum::Frustum(const glm::mat4& projectionView)
     {
-        std::array<Plane, 6> planes = {};
-
         // Left
         planes[0].normal.x = projectionView[0][3] + projectionView[0][0];
         planes[0].normal.y = projectionView[1][3] + projectionView[1][0];
@@ -68,7 +66,5 @@ namespace Maths
             plane.normal   /= length;
             plane.distance /= length;
         }
-
-        return planes;
     }
 }

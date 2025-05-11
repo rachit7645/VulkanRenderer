@@ -157,7 +157,7 @@ namespace Vk
     };
 
     template<typename T>
-    void SetDebugName(UNUSED VkDevice device, UNUSED T object, UNUSED const std::string_view name)
+    void SetDebugName(ENGINE_UNUSED VkDevice device, ENGINE_UNUSED T object, ENGINE_UNUSED const std::string_view name)
     {
         #ifdef ENGINE_DEBUG
         if (object == VK_NULL_HANDLE)

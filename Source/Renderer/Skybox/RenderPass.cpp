@@ -38,7 +38,6 @@ namespace Renderer::Skybox
     void RenderPass::Render
     (
         usize FIF,
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
@@ -47,12 +46,10 @@ namespace Renderer::Skybox
         const IBL::IBLMaps& iblMaps
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("SkyboxPass/FIF{}", FIF), {0.2796f, 0.8588f, 0.3548f, 1.0f});
-
-        const usize currentDepthIndex = frameIndex % Depth::DEPTH_HISTORY_SIZE;
+        Vk::BeginLabel(cmdBuffer, "SkyboxPass", {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", currentDepthIndex));
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
         const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
@@ -131,7 +128,7 @@ namespace Renderer::Skybox
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .scene        = sceneBuffer.buffers[FIF].deviceAddress,
             .samplerIndex = pipeline.samplerIndex,
-            .cubemapIndex = iblMaps.skyboxID.value()
+            .cubemapIndex = iblMaps.skyboxID
         };
 
         pipeline.PushConstants
@@ -156,41 +153,38 @@ namespace Renderer::Skybox
 
         vkCmdEndRendering(cmdBuffer.handle);
 
-        colorAttachment.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = colorAttachment.image.aspect,
+        Vk::BarrierWriter{}
+        .WriteImageBarrier(
+            colorAttachment.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = colorAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = colorAttachment.image.arrayLayers
             }
-        );
-
-        depthAttachment.image.Barrier
-        (
-            cmdBuffer,
-            VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = depthAttachment.image.aspect,
+        )
+        .WriteImageBarrier(
+            depthAttachment.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                .srcAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
-                .baseArrayLayer = static_cast<u32>(currentDepthIndex),
-                .layerCount     = 1
+                .baseArrayLayer = 0,
+                .layerCount     = depthAttachment.image.arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }

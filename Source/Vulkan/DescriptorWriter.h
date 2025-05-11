@@ -17,7 +17,7 @@
 #ifndef DESCRIPTOR_WRITER_H
 #define DESCRIPTOR_WRITER_H
 
-#include <deque>
+#include <list>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -54,9 +54,9 @@ namespace Vk
 
         DescriptorWriter& Clear();
     private:
-        std::deque<VkDescriptorImageInfo>  imageInfos;
-        std::deque<VkDescriptorBufferInfo> bufferInfos;
-        std::vector<VkWriteDescriptorSet>  writes;
+        std::list<VkDescriptorImageInfo>  imageInfos;
+        std::list<VkDescriptorBufferInfo> bufferInfos;
+        std::vector<VkWriteDescriptorSet> writes;
     };
 }
 

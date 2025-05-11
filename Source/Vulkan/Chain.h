@@ -82,13 +82,13 @@ namespace Vk
             }
         }
 
-        Logger::VulkanError("Failed to find structure in chain! [pNext={}]", pNext);
+        Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
     }
 
     template<typename T>
     const T* FindStructureInChain(const void* pNext)
     {
-        for (auto current = static_cast<const VkBaseOutStructure*>(pNext); current != nullptr; current = current->pNext)
+        for (auto current = static_cast<const VkBaseInStructure*>(pNext); current != nullptr; current = current->pNext)
         {
             if (current->sType == VulkanStructType<T>::sType)
             {
@@ -96,7 +96,7 @@ namespace Vk
             }
         }
 
-        Logger::VulkanError("Failed to find structure in chain! [pNext={}]", pNext);
+        Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
     }
 }
 

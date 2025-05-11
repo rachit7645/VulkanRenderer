@@ -43,13 +43,13 @@ namespace Renderer::PointShadow
         void Render
         (
             usize FIF,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const Buffers::LightsBuffer& lightsBuffer,
             Culling::Dispatch& cullingDispatch
         );
 

@@ -19,74 +19,24 @@
 
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/TextureManager.h"
-#include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/CommandBufferAllocator.h"
-#include "Models/ModelManager.h"
 
 namespace Renderer::IBL
 {
-    class IBLMaps
+    struct IBLMaps
     {
-    public:
-        void Generate
+        void Destroy
         (
-            const std::string_view hdrMap,
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
-            Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
-        );
-
-        std::optional<u32> brdfLutID    = std::nullopt;
-        std::optional<u32> skyboxID     = std::nullopt;
-        std::optional<u32> irradianceID = std::nullopt;
-        std::optional<u32> preFilterID  = std::nullopt;
-    private:
-        Vk::Buffer SetupMatrixBuffer(const Vk::Context& context);
-
-        void CreateCubeMap
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::Buffer& matrixBuffer,
-            Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet,
-            u32 hdrMapID
-        );
-
-        void CreateIrradianceMap
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::Buffer& matrixBuffer,
-            Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
-        );
-
-        void CreatePreFilterMap
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::Buffer& matrixBuffer,
-            Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
-        );
-
-        void CreateBRDFLUT
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
             Vk::TextureManager& textureManager,
-            Vk::MegaSet& megaSet
-        );
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        ) const;
 
-        Util::DeletionQueue m_deletionQueue;
+        u32 skyboxID        = 0;
+        u32 irradianceMapID = 0;
+        u32 preFilterMapID  = 0;
+        u32 brdfLutID       = 0;
     };
 }
 

@@ -44,7 +44,6 @@ namespace Renderer::ShadowRT
         void Render
         (
             usize FIF,
-        usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::MegaSet& megaSet,
             const Vk::FramebufferManager& framebufferManager,

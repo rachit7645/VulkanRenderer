@@ -20,7 +20,6 @@
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
 
 namespace Renderer::TAA
@@ -41,8 +40,7 @@ namespace Renderer::TAA
 
         void Render
         (
-            usize FIF,
-        usize frameIndex,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet

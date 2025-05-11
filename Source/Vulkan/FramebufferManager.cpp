@@ -17,8 +17,8 @@
 #include "FramebufferManager.h"
 
 #include "DebugUtils.h"
-#include "ImmediateSubmit.h"
 #include "Util/Log.h"
+#include "Util/Visitor.h"
 
 namespace Vk
 {
@@ -66,11 +66,13 @@ namespace Vk
 
     void FramebufferManager::Update
     (
-        const Vk::Context& context,
+        const Vk::CommandBuffer& cmdBuffer,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::FormatHelper& formatHelper,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
+        const VkExtent2D& extent,
         Vk::MegaSet& megaSet,
-        VkExtent2D swapchainExtent
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (m_framebuffers.empty())
@@ -78,8 +80,17 @@ namespace Vk
             return;
         }
 
-        std::unordered_set<std::string>    updatedFramebuffers;
-        std::vector<VkImageMemoryBarrier2> barriers;
+        // TODO: Figure out a better way
+        if (extent.width == m_extent.width && extent.height == m_extent.height)
+        {
+            return;
+        }
+
+        Vk::BeginLabel(cmdBuffer, "FramebufferManager::Update", {0.6421f, 0.1234f, 0.0316f, 1.0f});
+
+        m_extent = extent;
+
+        std::unordered_set<std::string> updatedFramebuffers = {};
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
@@ -95,14 +106,17 @@ namespace Vk
                 continue;
             }
 
-            const auto size = GetFramebufferSize(swapchainExtent, framebuffer.sizeData);
+            const auto size = GetFramebufferSize(framebuffer.sizeData, deletionQueue);
 
             if (size.Matches(framebuffer.image))
             {
                 continue;
             }
 
-            framebuffer.image.Destroy(context.allocator);
+            deletionQueue.PushDeletor([allocator, image = framebuffer.image] () mutable
+            {
+                image.Destroy(allocator);
+            });
 
             VkImageCreateInfo createInfo = {};
             {
@@ -126,56 +140,72 @@ namespace Vk
             {
             case FramebufferType::ColorR_Unorm8:
                 createInfo.format = formatHelper.r8UnormFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
-            case FramebufferType::ColorRG_SFloat:
-                createInfo.format = formatHelper.rgSFloatFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            case FramebufferType::ColorR_Unorm16:
+                createInfo.format = formatHelper.r16UnormFormat;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorR_SFloat16:
+                createInfo.format = formatHelper.rSFloat16Format;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorR_SFloat32:
+                createInfo.format = formatHelper.rSFloat32Format;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorR_Uint32:
+                createInfo.format = formatHelper.rUint32Format;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorRG_SFloat16:
+                createInfo.format = formatHelper.rgSFloat16Format;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorRGBA_UNorm8:
                 createInfo.format = formatHelper.rgba8UnormFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorBGR_SFloat_10_11_11:
                 createInfo.format = formatHelper.b10g11r11SFloat;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorLDR:
                 createInfo.format = formatHelper.colorAttachmentFormatLDR;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorHDR:
                 createInfo.format = formatHelper.colorAttachmentFormatHDR;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorHDR_WithAlpha:
                 createInfo.format = formatHelper.colorAttachmentFormatHDRWithAlpha;
-                createInfo.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::Depth:
                 createInfo.format = formatHelper.depthFormat;
-                createInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
                 aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
                 break;
@@ -200,14 +230,23 @@ namespace Vk
                 break;
             }
 
-            // Add new usages here
+            if (aspect == VK_IMAGE_ASPECT_COLOR_BIT)
+            {
+                AddUsage<FramebufferUsage::Attachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT>(framebuffer.usage, createInfo.usage);
+            }
+            else if (aspect == VK_IMAGE_ASPECT_DEPTH_BIT)
+            {
+                AddUsage<FramebufferUsage::Attachment, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT>(framebuffer.usage, createInfo.usage);
+            }
+
             AddUsage<FramebufferUsage::Sampled,             VK_IMAGE_USAGE_SAMPLED_BIT     >(framebuffer.usage, createInfo.usage);
             AddUsage<FramebufferUsage::Storage,             VK_IMAGE_USAGE_STORAGE_BIT     >(framebuffer.usage, createInfo.usage);
+            AddUsage<FramebufferUsage::TransferSource,      VK_IMAGE_USAGE_TRANSFER_SRC_BIT>(framebuffer.usage, createInfo.usage);
             AddUsage<FramebufferUsage::TransferDestination, VK_IMAGE_USAGE_TRANSFER_DST_BIT>(framebuffer.usage, createInfo.usage);
 
-            framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
+            framebuffer.image = Vk::Image(allocator, createInfo, aspect);
 
-            Vk::SetDebugName(context.device, framebuffer.image.handle, name);
+            Vk::SetDebugName(device, framebuffer.image.handle, name);
 
             if (isFixedSize)
             {
@@ -216,26 +255,22 @@ namespace Vk
 
             updatedFramebuffers.insert(name);
 
-            barriers.push_back(VkImageMemoryBarrier2{
-                .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                .pNext               = nullptr,
-                .srcStageMask        = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = framebuffer.initialState.dstStageMask,
-                .dstAccessMask       = framebuffer.initialState.dstAccessMask,
-                .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout           = framebuffer.initialState.initialLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image               = framebuffer.image.handle,
-                .subresourceRange    = {
-                    .aspectMask     = framebuffer.image.aspect,
+            m_barrierWriter.WriteImageBarrier
+            (
+                framebuffer.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = framebuffer.initialState.dstStageMask,
+                    .dstAccessMask  = framebuffer.initialState.dstAccessMask,
+                    .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .newLayout      = framebuffer.initialState.initialLayout,
                     .baseMipLevel   = 0,
                     .levelCount     = framebuffer.image.mipLevels,
                     .baseArrayLayer = 0,
                     .layerCount     = framebuffer.image.arrayLayers
                 }
-            });
+            );
         }
 
         for (auto& [name, framebufferView] : m_framebufferViews)
@@ -247,9 +282,18 @@ namespace Vk
 
             const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
 
-            FreeDescriptors(megaSet, framebufferView, framebuffer.usage);
+            FreeDescriptors
+            (
+                framebufferView,
+                framebuffer.usage,
+                megaSet,
+                deletionQueue
+            );
 
-            framebufferView.view.Destroy(context.device);
+            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            {
+                view.Destroy(device);
+            });
 
             VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
 
@@ -271,52 +315,38 @@ namespace Vk
 
             framebufferView.view = Vk::ImageView
             (
-                context.device,
+                device,
                 framebuffer.image,
                 viewType,
-                framebuffer.image.format,
                 {
-                    framebuffer.image.aspect,
-                    framebufferView.size.baseMipLevel,
-                    framebufferView.size.levelCount,
-                    framebufferView.size.baseArrayLayer,
-                    framebufferView.size.layerCount
+                    .aspectMask     = framebuffer.image.aspect,
+                    .baseMipLevel   = framebufferView.size.baseMipLevel,
+                    .levelCount     = framebufferView.size.levelCount,
+                    .baseArrayLayer = framebufferView.size.baseArrayLayer,
+                    .layerCount     = framebufferView.size.layerCount
                 }
             );
 
             AllocateDescriptors(megaSet, framebufferView, framebuffer.usage);
 
-            Vk::SetDebugName(context.device, framebufferView.view.handle, name);
+            Vk::SetDebugName(device, framebufferView.view.handle, name);
         }
 
-        if (!barriers.empty())
-        {
-            Vk::ImmediateSubmit
-            (
-                context.device,
-                context.graphicsQueue,
-                cmdBufferAllocator,
-                [&] (const Vk::CommandBuffer cmdBuffer)
-                {
-                    const VkDependencyInfo dependencyInfo =
-                    {
-                        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                        .pNext                    = nullptr,
-                        .dependencyFlags          = 0,
-                        .memoryBarrierCount       = 0,
-                        .pMemoryBarriers          = nullptr,
-                        .bufferMemoryBarrierCount = 0,
-                        .pBufferMemoryBarriers    = nullptr,
-                        .imageMemoryBarrierCount  = static_cast<u32>(barriers.size()),
-                        .pImageMemoryBarriers     = barriers.data()
-                    };
+        m_barrierWriter.Execute(cmdBuffer);
 
-                    vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
-                }
-            );
-        }
+        megaSet.Update(device);
 
-        megaSet.Update(context.device);
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    bool FramebufferManager::DoesFramebufferExist(const std::string_view name)
+    {
+        return m_framebuffers.contains(name.data());
+    }
+
+    bool FramebufferManager::DoesFramebufferViewExist(const std::string_view name)
+    {
+        return m_framebufferViews.contains(name.data());
     }
 
     Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name)
@@ -371,7 +401,8 @@ namespace Vk
     (
         const std::string_view framebufferName,
         VkDevice device,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (!m_framebuffers.contains(framebufferName.data()))
@@ -387,9 +418,18 @@ namespace Vk
 
             if (framebufferView.framebuffer == framebufferName)
             {
-                FreeDescriptors(megaSet, framebufferView, framebuffer.usage);
+                FreeDescriptors
+                (
+                    framebufferView,
+                    framebuffer.usage,
+                    megaSet,
+                    deletionQueue
+                );
 
-                framebufferView.view.Destroy(device);
+                deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+                {
+                    view.Destroy(device);
+                });
 
                 return true;
             }
@@ -398,19 +438,26 @@ namespace Vk
         });
     }
 
-    FramebufferSize FramebufferManager::GetFramebufferSize(VkExtent2D extent, const FramebufferSizeData& sizeData)
+    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue)
     {
-        if (std::holds_alternative<FramebufferSize>(sizeData))
-        {
-            return std::get<FramebufferSize>(sizeData);
-        }
-
-        if (std::holds_alternative<FramebufferResizeCallback>(sizeData))
-        {
-            return std::get<FramebufferResizeCallback>(sizeData)(extent);
-        }
-
-        Logger::Error("{}\n", "Invalid framebuffer size!");
+        return std::visit(Util::Visitor{
+            [] (std::monostate) -> Vk::FramebufferSize
+            {
+                Logger::Error("{}\n", "Invalid framebuffer size!");
+            },
+            [] (const FramebufferSize& size) -> Vk::FramebufferSize
+            {
+                return size;
+            },
+            [this] (const FramebufferResizeCallbackWithExtent& Callback) -> Vk::FramebufferSize
+            {
+                return Callback(m_extent);
+            },
+            [this, &deletionQueue] (const FramebufferResizeCallbackWithExtentAndDeletionQueue& Callback) -> Vk::FramebufferSize
+            {
+                return Callback(m_extent, deletionQueue);
+            }
+        }, sizeData);
     }
 
     template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
@@ -442,21 +489,28 @@ namespace Vk
 
     void FramebufferManager::FreeDescriptors
     (
-        Vk::MegaSet& megaSet,
         const Vk::FramebufferView& framebufferView,
-        Vk::FramebufferUsage usage
+        Vk::FramebufferUsage usage,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (framebufferView.view.handle != VK_NULL_HANDLE)
         {
             if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
             {
-                megaSet.FreeSampledImage(framebufferView.sampledImageIndex);
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageIndex]
+                {
+                    megaSet.FreeSampledImage(id);
+                });
             }
 
             if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
             {
-                megaSet.FreeStorageImage(framebufferView.storageImageIndex);
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageIndex]
+                {
+                    megaSet.FreeStorageImage(id);
+                });
             }
         }
     }
@@ -473,7 +527,7 @@ namespace Vk
                     m_framebufferViews.end()
                 );
                 
-                auto CustomOrderedSort = [](const std::string& a, const std::string& b)
+                auto CustomOrderedSort = [] (const std::string& a, const std::string& b)
                 {
                     usize i = 0;
                     usize j = 0;

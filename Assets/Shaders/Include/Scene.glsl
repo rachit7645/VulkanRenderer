@@ -26,7 +26,6 @@ struct SceneMatrices
     mat4 jitteredProjection;
     mat4 view;
     mat4 inverseView;
-    mat3 normalView;
 };
 
 layout(buffer_reference, scalar) readonly buffer SceneBuffer

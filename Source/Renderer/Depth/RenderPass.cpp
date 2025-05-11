@@ -34,7 +34,7 @@ namespace Renderer::Depth
             "SceneDepth",
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -42,7 +42,7 @@ namespace Renderer::Depth
                     .width       = extent.width,
                     .height      = extent.height,
                     .mipLevels   = 1,
-                    .arrayLayers = DEPTH_HISTORY_SIZE
+                    .arrayLayers = 1
                 };
             },
             {
@@ -52,21 +52,18 @@ namespace Renderer::Depth
             }
         );
 
-        for (usize i = 0; i < DEPTH_HISTORY_SIZE; ++i)
-        {
-            framebufferManager.AddFramebufferView
-            (
-                "SceneDepth",
-                fmt::format("SceneDepthView/{}", i),
-                Vk::FramebufferImageType::Single2D,
-                Vk::FramebufferViewSize{
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = static_cast<u32>(i),
-                    .layerCount     = 1
-                }
-            );
-        }
+        framebufferManager.AddFramebufferView
+        (
+            "SceneDepth",
+            "SceneDepthView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
 
         Logger::Info("{}\n", "Created depth pass!");
     }
@@ -77,46 +74,45 @@ namespace Renderer::Depth
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Renderer::Scene& scene,
         const Buffers::IndirectBuffer& indirectBuffer,
         Culling::Dispatch& cullingDispatch
     )
     {
+        const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
+        const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
+
         cullingDispatch.DispatchFrustumCulling
         (
             FIF,
-            scene.currentMatrices.projection * scene.currentMatrices.view,
+            frameIndex,
+            projectionView,
             cmdBuffer,
             meshBuffer,
             indirectBuffer
         );
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("DepthPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "DepthPass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        const usize currentIndex = frameIndex % DEPTH_HISTORY_SIZE;
-
-        const auto& depthAttachment     = framebufferManager.GetFramebuffer("SceneDepth");
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", currentIndex));
+        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+        const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
 
         depthAttachment.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = depthAttachment.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+                .dstAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
-                .baseArrayLayer = static_cast<u32>(currentIndex),
-                .layerCount     = 1
+                .baseArrayLayer = 0,
+                .layerCount     = depthAttachment.image.arrayLayers
             }
         );
 
@@ -178,9 +174,9 @@ namespace Renderer::Depth
         pipeline.pushConstant =
         {
             .scene       = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes      = meshBuffer.buffers[FIF].deviceAddress,
+            .meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-            .positions   = geometryBuffer.positionBuffer.deviceAddress
+            .positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
         };
 
         pipeline.PushConstants

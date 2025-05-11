@@ -16,42 +16,49 @@
 
 #include "MeshBuffer.h"
 
-#include "Renderer/Mesh.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 #include "Util/Log.h"
 
 namespace Renderer::Buffers
 {
+    struct GPUMesh
+    {
+        glm::mat4        transform    = glm::identity<glm::mat4>();
+        glm::mat3        normalMatrix = glm::identity<glm::mat4>();
+        Models::Material material     = {};
+        Maths::AABB      aabb         = {};
+    };
+
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < buffers.size(); ++i)
+        for (usize i = 0; i < m_buffers.size(); ++i)
         {
-            buffers[i] = Vk::Buffer
+            m_buffers[i] = Vk::Buffer
             (
                 allocator,
-                MAX_MESH_COUNT * sizeof(Renderer::Mesh),
+                MAX_MESH_COUNT * sizeof(GPUMesh),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            buffers[i].GetDeviceAddress(device);
+            m_buffers[i].GetDeviceAddress(device);
 
-            Vk::SetDebugName(device, buffers[i].handle, fmt::format("MeshBuffer/{}", i));
+            Vk::SetDebugName(device, m_buffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
     }
 
     void MeshBuffer::LoadMeshes
     (
-        usize FIF,
+        usize frameIndex,
         VmaAllocator allocator,
         const Models::ModelManager& modelManager,
         const std::vector<Renderer::RenderObject>& renderObjects
     )
     {
-        std::vector<Renderer::Mesh> meshes = {};
+        std::vector<GPUMesh> meshes = {};
 
         for (const auto& renderObject : renderObjects)
         {
@@ -76,28 +83,42 @@ namespace Renderer::Buffers
             }
         }
 
+        const auto& buffer = GetCurrentBuffer(frameIndex);
+
+        const VkDeviceSize meshCopySize =  meshes.size() * sizeof(GPUMesh);
+
         std::memcpy
         (
-            buffers[FIF].allocationInfo.pMappedData,
+            buffer.allocationInfo.pMappedData,
             meshes.data(),
-            sizeof(Renderer::Mesh) * meshes.size()
+            meshCopySize
         );
 
-        if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if (!(buffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
                 allocator,
-                buffers[FIF].allocation,
+                buffer.allocation,
                 0,
-                sizeof(Renderer::Mesh) * meshes.size()),
+                meshCopySize),
                 "Failed to flush allocation!"
             );
         }
     }
 
+    const Vk::Buffer& MeshBuffer::GetCurrentBuffer(usize frameIndex) const
+    {
+        return m_buffers[frameIndex % m_buffers.size()];
+    }
+
+    const Vk::Buffer& MeshBuffer::GetPreviousBuffer(usize frameIndex) const
+    {
+        return m_buffers[(frameIndex + m_buffers.size() - 1) % m_buffers.size()];
+    }
+
     void MeshBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : buffers)
+        for (auto& buffer : m_buffers)
         {
             buffer.Destroy(allocator);
         }

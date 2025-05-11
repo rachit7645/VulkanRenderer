@@ -259,7 +259,7 @@ namespace Vk
         // Score = 0 => Required features not supported
         if (highestScore == 0)
         {
-            Logger::VulkanError("Failed to find any suitable physical device!");
+            Logger::Error("Failed to find any suitable physical device!");
         }
 
         physicalDevice                             = bestDevice;
@@ -480,15 +480,15 @@ namespace Vk
         vk13Features.maintenance4     = VK_TRUE;
 
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
-        deviceFeatures.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext                              = &vk13Features;
-        deviceFeatures.features.samplerAnisotropy         = VK_TRUE;
-        deviceFeatures.features.multiDrawIndirect         = VK_TRUE;
-        deviceFeatures.features.textureCompressionBC      = VK_TRUE;
-        deviceFeatures.features.imageCubeArray            = VK_TRUE;
-        deviceFeatures.features.depthClamp                = VK_TRUE;
-        deviceFeatures.features.shaderInt64               = VK_TRUE;
-        deviceFeatures.features.fullDrawIndexUint32       = VK_TRUE;
+        deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext                         = &vk13Features;
+        deviceFeatures.features.samplerAnisotropy    = VK_TRUE;
+        deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
+        deviceFeatures.features.textureCompressionBC = VK_TRUE;
+        deviceFeatures.features.imageCubeArray       = VK_TRUE;
+        deviceFeatures.features.depthClamp           = VK_TRUE;
+        deviceFeatures.features.shaderInt64          = VK_TRUE;
+        deviceFeatures.features.fullDrawIndexUint32  = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

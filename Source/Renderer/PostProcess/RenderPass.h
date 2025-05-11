@@ -19,7 +19,6 @@
 
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/Swapchain.h"
 #include "Vulkan/FramebufferManager.h"
 
 namespace Renderer::PostProcess
@@ -30,7 +29,8 @@ namespace Renderer::PostProcess
         RenderPass
         (
             const Vk::Context& context,
-            const Vk::Swapchain& swapchain,
+            const Vk::FormatHelper& formatHelper,
+            Vk::FramebufferManager& framebufferManager,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
         );
@@ -39,11 +39,9 @@ namespace Renderer::PostProcess
 
         void Render
         (
-            usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet,
-            const Vk::Swapchain& swapchain
+            const Vk::MegaSet& megaSet
         );
 
         PostProcess::Pipeline pipeline;

@@ -103,6 +103,8 @@ namespace Vk
             0,
             nullptr
         );
+
+        Clear();
     }
 
     DescriptorWriter& DescriptorWriter::Clear()

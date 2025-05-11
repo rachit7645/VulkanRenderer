@@ -16,9 +16,6 @@
 
 #include "RenderPass.h"
 
-#include <Util/Maths.h>
-
-#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
@@ -37,7 +34,7 @@ namespace Renderer::SpotShadow
             "SpotShadowMap",
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
                 .width       = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.x,
                 .height      = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.y,
@@ -86,49 +83,49 @@ namespace Renderer::SpotShadow
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Buffers::LightsBuffer& lightsBuffer,
         Culling::Dispatch& cullingDispatch
     )
     {
-        if (lightsBuffer.shadowedSpotLights.empty())
+        if (sceneBuffer.lightsBuffer.shadowedSpotLights.empty())
         {
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, fmt::format("SpotShadowPass/FIF{}", FIF), glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "SpotShadowPass", glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("SpotShadowMap");
 
         depthAttachment.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = depthAttachment.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+                .dstAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = depthAttachment.image.arrayLayers
+                .layerCount     = static_cast<u32>(sceneBuffer.lightsBuffer.shadowedSpotLights.size())
             }
         );
 
-        for (usize i = 0; i < lightsBuffer.shadowedSpotLights.size(); ++i)
+        for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedSpotLights.size(); ++i)
         {
             cullingDispatch.DispatchFrustumCulling
             (
                 FIF,
-                lightsBuffer.shadowedSpotLights[i].matrix,
+                frameIndex,
+                sceneBuffer.lightsBuffer.shadowedSpotLights[i].matrix,
                 cmdBuffer,
                 meshBuffer,
                 indirectBuffer
@@ -196,9 +193,9 @@ namespace Renderer::SpotShadow
             pipeline.pushConstant =
             {
                 .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-                .meshes        = meshBuffer.buffers[FIF].deviceAddress,
+                .meshes        = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                 .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-                .positions     = geometryBuffer.positionBuffer.deviceAddress,
+                .positions     = geometryBuffer.positionBuffer.buffer.deviceAddress,
                 .currentIndex  = static_cast<u32>(i)
             };
 
@@ -232,18 +229,17 @@ namespace Renderer::SpotShadow
         depthAttachment.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            {
-                .aspectMask     = depthAttachment.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                .srcAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = depthAttachment.image.arrayLayers
+                .layerCount     = static_cast<u32>(sceneBuffer.lightsBuffer.shadowedSpotLights.size())
             }
         );
 

@@ -28,13 +28,13 @@ namespace Maths
         explicit AABB(const std::span<const glm::vec3> positions);
         AABB(const glm::vec3& min, const glm::vec3& max);
 
-        glm::vec3 GetCenter() const;
-        glm::vec3 GetExtent() const;
+        [[nodiscard]] glm::vec3 GetCenter() const;
+        [[nodiscard]] glm::vec3 GetExtent() const;
 
-        AABB Transform(const glm::mat4& transform) const;
+        [[nodiscard]] AABB Transform(const glm::mat4& transform) const;
 
-        glm::vec3 min = {};
-        glm::vec3 max = {};
+        glm::vec3 min = glm::vec3(std::numeric_limits<f32>::max());
+        glm::vec3 max = glm::vec3(std::numeric_limits<f32>::lowest());
     };
 }
 

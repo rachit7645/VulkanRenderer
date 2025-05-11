@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Util/Log.h"
-#include "Util/Maths.h"
 #include "Util/Ranges.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Depth/RenderPass.h"
@@ -40,7 +39,7 @@ namespace Renderer::Lighting
             "SceneColor",
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -77,7 +76,6 @@ namespace Renderer::Lighting
     void RenderPass::Render
     (
         usize FIF,
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
@@ -85,7 +83,7 @@ namespace Renderer::Lighting
         const IBL::IBLMaps& iblMaps
     )
     {
-        Vk::BeginLabel(cmdBuffer, fmt::format("LightingPass/FIF{}", FIF), glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "LightingPass", glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
@@ -93,14 +91,13 @@ namespace Renderer::Lighting
         colorAttachment.image.Barrier
         (
             cmdBuffer,
-            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-            VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            {
-                .aspectMask     = colorAttachment.image.aspect,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
                 .levelCount     = colorAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -171,14 +168,14 @@ namespace Renderer::Lighting
             .shadowSamplerIndex  = pipeline.shadowSamplerIndex,
             .gAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
             .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex     = framebufferManager.GetFramebufferView(fmt::format("SceneDepthView/{}", frameIndex % Depth::DEPTH_HISTORY_SIZE)).sampledImageIndex,
-            .irradianceIndex     = iblMaps.irradianceID.value(),
-            .preFilterIndex      = iblMaps.preFilterID.value(),
-            .brdfLutIndex        = iblMaps.brdfLutID.value(),
+            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .irradianceIndex     = iblMaps.irradianceMapID,
+            .preFilterIndex      = iblMaps.preFilterMapID,
+            .brdfLutIndex        = iblMaps.brdfLutID,
             .shadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
             .pointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
             .spotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
-            .aoIndex             = framebufferManager.GetFramebufferView("XeGTAO/OcclusionView").sampledImageIndex,
+            .aoIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageIndex,
         };
 
         pipeline.PushConstants

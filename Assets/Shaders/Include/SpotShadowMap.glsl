@@ -45,7 +45,7 @@ float CalculateSpotShadow
 
     // Calculate slope-scaled bias
     float cosTheta = clamp(dot(normal, normalize(light.position - fragPosition)), 0.0f, 1.0f);
-    float bias     = MIN_SPOT_SHADOW_BIAS * TanArcCos(cosTheta);
+    float bias     = MIN_SPOT_SHADOW_BIAS * FastTanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, MAX_SPOT_SHADOW_BIAS);
 
     return texture(sampler2DArrayShadow(spotShadowMap, shadowSampler), vec4(projCoords.xy, lightIndex, currentDepth - bias));
