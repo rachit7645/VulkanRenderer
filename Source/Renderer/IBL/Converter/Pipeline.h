@@ -37,8 +37,6 @@ namespace Renderer::IBL::Converter
             Vk::TextureManager& textureManager
         );
 
-        Converter::PushConstant pushConstant = {};
-
         u32 samplerIndex = 0;
     private:
         void CreatePipeline

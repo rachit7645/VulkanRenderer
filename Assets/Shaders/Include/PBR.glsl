@@ -49,7 +49,7 @@ float GeometrySmith(float NdotL, float NdotV, float a)
 // Fresnel equation
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
-    return F0 + (1.0f - F0) * pow5(clamp(1.0f - cosTheta, 0.0f, 1.0f));
+    return F0 + (1.0f - F0) * pow5(saturate(1.0f - cosTheta));
 }
 
 vec3 CalculateLight
@@ -119,7 +119,7 @@ float GeometrySmith_IBL(vec3 N, vec3 V, vec3 L, float roughness)
 // Fresnel equation with injected roughness parameter
 vec3 FresnelSchlick_IBL(float cosTheta, vec3 F0, float roughness)
 {
-    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(clamp(1.0f - cosTheta, 0.0f, 1.0f));
+    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(saturate(1.0f - cosTheta));
 }
 
 vec3 CalculateAmbient

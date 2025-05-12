@@ -27,8 +27,6 @@ namespace Renderer::PointShadow
     {
     public:
         Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
-
-        PointShadow::PushConstant pushConstant = {};
     };
 }
 

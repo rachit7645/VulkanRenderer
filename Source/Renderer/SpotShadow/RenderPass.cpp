@@ -190,22 +190,20 @@ namespace Renderer::SpotShadow
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            pipeline.pushConstant =
+            const auto pushConstant = SpotShadow::PushConstant
             {
-                .scene         = sceneBuffer.buffers[FIF].deviceAddress,
-                .meshes        = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-                .positions     = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                .currentIndex  = static_cast<u32>(i)
+                .scene        = sceneBuffer.buffers[FIF].deviceAddress,
+                .meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                .meshIndices  = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+                .positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                .currentIndex = static_cast<u32>(i)
             };
 
             pipeline.PushConstants
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT,
-               0,
-               sizeof(SpotShadow::PushConstant),
-               &pipeline.pushConstant
+               pushConstant
             );
 
             geometryBuffer.Bind(cmdBuffer);

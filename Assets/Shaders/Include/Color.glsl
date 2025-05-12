@@ -18,6 +18,7 @@
 #define COLOR_GLSL
 
 #include "Constants.glsl"
+#include "Math.glsl"
 
 vec3 SRGBToLinear(vec3 srgb)
 {
@@ -68,7 +69,7 @@ vec3 YCoCgToRGB(vec3 color)
     float g = color.x + color.z;
     float b = color.x - color.y - color.z;
 
-    return clamp(vec3(r, g, b), 0.0, 1.0);
+    return saturate(vec3(r, g, b));
 }
 
 #endif

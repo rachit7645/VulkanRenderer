@@ -216,7 +216,7 @@ namespace Renderer::Bloom
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            downsamplePipeline.pushConstant =
+            const auto pushConstant = DownSample::PushConstant
             {
                 .samplerIndex  = downsamplePipeline.samplerIndex,
                 .imageIndex    = srcView.sampledImageIndex,
@@ -227,8 +227,7 @@ namespace Renderer::Bloom
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               0, sizeof(DownSample::PushConstant),
-               reinterpret_cast<void*>(&downsamplePipeline.pushConstant)
+               pushConstant
             );
 
             std::array descriptorSets = {megaSet.descriptorSet};
@@ -367,7 +366,7 @@ namespace Renderer::Bloom
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            upsamplePipeline.pushConstant =
+            const auto pushConstant = UpSample::PushConstant
             {
                 .samplerIndex  = upsamplePipeline.samplerIndex,
                 .imageIndex    = srcView.sampledImageIndex,
@@ -378,8 +377,7 @@ namespace Renderer::Bloom
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               0, sizeof(DownSample::PushConstant),
-               reinterpret_cast<void*>(&upsamplePipeline.pushConstant)
+               pushConstant
             );
 
             std::array descriptorSets = {megaSet.descriptorSet};

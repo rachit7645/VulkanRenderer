@@ -34,8 +34,6 @@ namespace Renderer::AO::VBGTAO::Occlusion
             Vk::TextureManager& textureManager
         );
 
-        Occlusion::PushConstant pushConstant = {};
-
         u32 pointSamplerIndex  = 0;
         u32 linearSamplerIndex = 0;
     };

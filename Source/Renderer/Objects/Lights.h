@@ -137,6 +137,13 @@ namespace Renderer::Objects
         glm::vec2 cutOff      = {0.0f, 0.0f};
         glm::mat4 matrix      = glm::identity<glm::mat4>();
     };
+
+    template<typename T>
+    concept IsLightType = std::is_same_v<T, Objects::DirLight          > ||
+                          std::is_same_v<T, Objects::PointLight        > ||
+                          std::is_same_v<T, Objects::ShadowedPointLight> ||
+                          std::is_same_v<T, Objects::SpotLight         > ||
+                          std::is_same_v<T, Objects::ShadowedSpotLight >  ;
 }
 
 #endif

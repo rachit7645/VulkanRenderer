@@ -37,8 +37,6 @@ namespace Renderer::IBL::PreFilter
             Vk::TextureManager& textureManager
         );
 
-        PreFilter::PushConstant pushConstant = {};
-
         u32 samplerIndex = 0;
     private:
         void CreatePipeline

@@ -34,8 +34,6 @@ namespace Renderer::AO::VBGTAO::DepthPreFilter
             Vk::TextureManager& textureManager
         );
 
-        DepthPreFilter::PushConstant pushConstant = {};
-
         u32 pointSamplerIndex = 0;
     };
 }

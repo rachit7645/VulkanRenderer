@@ -47,7 +47,7 @@ namespace Renderer::Culling
 
         frustumPipeline.Bind(cmdBuffer);
 
-        frustumPipeline.pushConstant =
+        const auto pushConstant = Culling::PushConstant
         {
             .meshes            = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .drawCalls         = indirectBuffer.drawCallBuffers[FIF].drawCallBuffer.deviceAddress,
@@ -60,9 +60,7 @@ namespace Renderer::Culling
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
-            0,
-            sizeof(Culling::PushConstant),
-            &frustumPipeline.pushConstant
+            pushConstant
         );
 
         Vk::BarrierWriter barrierWriter = {};

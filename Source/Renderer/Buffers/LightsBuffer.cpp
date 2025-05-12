@@ -87,11 +87,12 @@ namespace Renderer::Buffers
         const std::span<const Objects::SpotLight> inSpotLights
     )
     {
-        dirLights = WriteLights(FIF, GetDirLightOffset(), inDirLights, Objects::MAX_DIR_LIGHT_COUNT);
+        dirLights = WriteLights(FIF, inDirLights);
 
         // Point Lights
         {
             std::vector<Objects::ShadowedPointLight> inShadowedPointLights;
+
             inShadowedPointLights.resize(std::min<usize>(inPointLights.size(), Objects::MAX_SHADOWED_POINT_LIGHT_COUNT));
 
             for (usize i = 0; i < inShadowedPointLights.size(); ++i)
@@ -99,15 +100,20 @@ namespace Renderer::Buffers
                 inShadowedPointLights[i] = Objects::ShadowedPointLight(inPointLights[i]);
             }
 
-            const auto uploadedPointLights = (inPointLights.size() <= inShadowedPointLights.size()) ? std::span<Objects::PointLight>{} : std::span(inPointLights.begin() + inShadowedPointLights.size(), inPointLights.end());
+            const auto uploadedPointLights = (inPointLights.size() <= inShadowedPointLights.size()) ?
+                                             std::span<Objects::PointLight>{} :
+                                             std::span(inPointLights.begin() + inShadowedPointLights.size(), inPointLights.end());
 
-            pointLights         = WriteLights(FIF, GetPointLightOffset(),         uploadedPointLights,               Objects::MAX_POINT_LIGHT_COUNT);
-            shadowedPointLights = WriteLights(FIF, GetShadowedPointLightOffset(), std::span(inShadowedPointLights), Objects::MAX_SHADOWED_POINT_LIGHT_COUNT);
+            const std::span<const Objects::ShadowedPointLight> uploadedShadowedPointLights = inShadowedPointLights;
+
+            pointLights         = WriteLights(FIF, uploadedPointLights);
+            shadowedPointLights = WriteLights(FIF, uploadedShadowedPointLights);
         }
 
         // Spot Lights
         {
             std::vector<Objects::ShadowedSpotLight> inShadowedSpotLights;
+
             inShadowedSpotLights.resize(std::min<usize>(inSpotLights.size(), Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT));
 
             for (usize i = 0; i < inShadowedSpotLights.size(); ++i)
@@ -115,10 +121,14 @@ namespace Renderer::Buffers
                 inShadowedSpotLights[i] = Objects::ShadowedSpotLight(inSpotLights[i]);
             }
 
-            const auto uploadedSpotLights = (inSpotLights.size() <= inShadowedSpotLights.size()) ? std::span<Objects::SpotLight>{} : std::span(inSpotLights.begin() + inShadowedSpotLights.size(), inSpotLights.end());
+            const auto uploadedSpotLights = (inSpotLights.size() <= inShadowedSpotLights.size()) ?
+                                            std::span<Objects::SpotLight>{} :
+                                            std::span(inSpotLights.begin() + inShadowedSpotLights.size(), inSpotLights.end());
 
-            spotLights         = WriteLights(FIF, GetSpotLightOffset(),         uploadedSpotLights,               Objects::MAX_SPOT_LIGHT_COUNT);
-            shadowedSpotLights = WriteLights(FIF, GetShadowedSpotLightOffset(), std::span(inShadowedSpotLights), Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT);
+            const std::span<const Objects::ShadowedSpotLight> uploadedShadowedSpotLights = inShadowedSpotLights;
+
+            spotLights         = WriteLights(FIF, uploadedSpotLights);
+            shadowedSpotLights = WriteLights(FIF, uploadedShadowedSpotLights);
         }
 
         if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
@@ -133,26 +143,49 @@ namespace Renderer::Buffers
         }
     }
 
-    template <typename T>
-    std::vector<std::remove_const_t<T>> LightsBuffer::WriteLights
-    (
-        usize FIF,
-        VkDeviceSize offset,
-        const std::span<T> lights,
-        u32 maxLightCount
-    )
+    template <typename T> requires Objects::IsLightType<T>
+    std::vector<T> LightsBuffer::WriteLights(usize FIF, const std::span<const T> lights)
     {
+        VkDeviceSize offset        = 0;
+        u32          maxLightCount = 0;
+
+        if constexpr (std::is_same_v<T, Objects::DirLight>)
+        {
+            offset        = GetDirLightOffset();
+            maxLightCount = Objects::MAX_DIR_LIGHT_COUNT;
+        }
+        else if constexpr (std::is_same_v<T, Objects::PointLight>)
+        {
+            offset        = GetPointLightOffset();
+            maxLightCount = Objects::MAX_POINT_LIGHT_COUNT;
+        }
+        else if constexpr (std::is_same_v<T, Objects::ShadowedPointLight>)
+        {
+            offset        = GetShadowedPointLightOffset();
+            maxLightCount = Objects::MAX_SHADOWED_POINT_LIGHT_COUNT;
+        }
+        else if constexpr (std::is_same_v<T, Objects::SpotLight>)
+        {
+            offset        = GetSpotLightOffset();
+            maxLightCount = Objects::MAX_SPOT_LIGHT_COUNT;
+        }
+        else if constexpr (std::is_same_v<T, Objects::ShadowedSpotLight>)
+        {
+            offset        = GetShadowedSpotLightOffset();
+            maxLightCount = Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT;
+        }
+
         const VkDeviceSize requiredSize   = lights.size_bytes();
         const VkDeviceSize maxAllowedSize = maxLightCount * sizeof(T);
 
         const VkDeviceSize size  = std::min(requiredSize, maxAllowedSize);
         const u32          count = size / sizeof(T);
 
-        const auto pMappedData = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData) + offset;
+        const auto pointer = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData) + offset;
 
         std::memcpy
         (
-            pMappedData,
+            pointer,
             &count,
             sizeof(u32)
         );
@@ -161,13 +194,15 @@ namespace Renderer::Buffers
         {
             std::memcpy
             (
-                pMappedData + sizeof(u32),
+                pointer + sizeof(u32),
                 lights.data(),
                 size
             );
         }
 
-        return lights.empty() ? std::vector<std::remove_const_t<T>>{} : std::vector<std::remove_const_t<T>>(lights.begin(), lights.begin() + count);
+        return lights.empty() ?
+               std::vector<T>{} :
+               std::vector<T>(lights.begin(), lights.begin() + count);
     }
 
     VkDeviceSize LightsBuffer::GetDirLightOffset()

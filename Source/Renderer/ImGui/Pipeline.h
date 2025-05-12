@@ -35,8 +35,6 @@ namespace Renderer::DearImGui
             VkFormat colorFormat
         );
 
-        DearImGui::PushConstant pushConstant = {};
-
         u32 samplerIndex = 0;
     private:
         void CreatePipeline

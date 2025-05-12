@@ -36,8 +36,6 @@ namespace Renderer::Bloom::DownSample
             Vk::TextureManager& textureManager
         );
 
-        DownSample::PushConstant pushConstant = {};
-
         u32 samplerIndex = 0;
     private:
         void CreatePipeline

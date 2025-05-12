@@ -2,7 +2,6 @@
 
 * Soft RT Shadows for Directional Lights
 * RT Shadows for Point and Spot Lights
-* Try and improve TAA more
 * DLSS / FSR3
 * RTAO
 * Two-pass Occlusion culling
@@ -19,3 +18,6 @@
 * Fog
 * Volumetric Lighting
 * IBL Cache
+* Staging Pool
+* Combined Uploader
+* Profiling Builds with Tracy

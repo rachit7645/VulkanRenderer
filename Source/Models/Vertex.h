@@ -31,6 +31,11 @@ namespace Models
 
     using Position = glm::vec3;
     using Index    = u32;
+
+    template<typename T>
+    concept IsVertexType = std::is_same_v<T, Models::Index   > ||
+                           std::is_same_v<T, Models::Position> ||
+                           std::is_same_v<T, Models::Vertex  >  ;
 }
 
 #endif

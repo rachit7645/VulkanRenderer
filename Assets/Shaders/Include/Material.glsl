@@ -29,7 +29,7 @@ struct Material
     float metallicFactor;
 };
 
-// Safe version, use if geometry with bad geometry
+// Safe version, use with bad geometry
 vec3 Orthogonalize(vec3 T, vec3 N)
 {
     vec3  TPerpendicular       = T - dot(T, N) * N;
@@ -50,6 +50,7 @@ vec3 Orthogonalize(vec3 T, vec3 N)
 vec3 GetNormalFromMap(vec3 normal, mat3 TBN)
 {
     normal = normal * 2.0f - 1.0f;
+
     return normalize(TBN * normal);
 }
 

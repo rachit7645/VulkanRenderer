@@ -21,22 +21,22 @@
 
 struct AABB
 {
-    vec3 AABBmin;
-    vec3 AABBmax;
+    vec3 min;
+    vec3 max;
 };
 
 vec3[8] GetAABBCorners(AABB aabb)
 {
     const vec3 corners[8] =
     {
-        vec3(aabb.AABBmin.x, aabb.AABBmin.y, aabb.AABBmin.z),
-        vec3(aabb.AABBmin.x, aabb.AABBmin.y, aabb.AABBmax.z),
-        vec3(aabb.AABBmin.x, aabb.AABBmax.y, aabb.AABBmin.z),
-        vec3(aabb.AABBmin.x, aabb.AABBmax.y, aabb.AABBmax.z),
-        vec3(aabb.AABBmax.x, aabb.AABBmin.y, aabb.AABBmin.z),
-        vec3(aabb.AABBmax.x, aabb.AABBmin.y, aabb.AABBmax.z),
-        vec3(aabb.AABBmax.x, aabb.AABBmax.y, aabb.AABBmin.z),
-        vec3(aabb.AABBmax.x, aabb.AABBmax.y, aabb.AABBmax.z)
+        vec3(aabb.min.x, aabb.min.y, aabb.min.z),
+        vec3(aabb.min.x, aabb.min.y, aabb.max.z),
+        vec3(aabb.min.x, aabb.max.y, aabb.min.z),
+        vec3(aabb.min.x, aabb.max.y, aabb.max.z),
+        vec3(aabb.max.x, aabb.min.y, aabb.min.z),
+        vec3(aabb.max.x, aabb.min.y, aabb.max.z),
+        vec3(aabb.max.x, aabb.max.y, aabb.min.z),
+        vec3(aabb.max.x, aabb.max.y, aabb.max.z)
     };
 
     return corners;
@@ -48,15 +48,15 @@ AABB TransformAABB(AABB aabb, mat4 transform)
 
     AABB newAABB;
 
-    newAABB.AABBmin = vec3( FLOAT_MAX);
-    newAABB.AABBmax = vec3(-FLOAT_MAX);
+    newAABB.min = vec3( FLOAT_MAX);
+    newAABB.max = vec3(-FLOAT_MAX);
 
     for (uint i = 0; i < 8; ++i)
     {
         vec4 transformedCorner = transform * vec4(corners[i], 1.0f);
 
-        newAABB.AABBmin = min(newAABB.AABBmin, transformedCorner.xyz);
-        newAABB.AABBmax = max(newAABB.AABBmax, transformedCorner.xyz);
+        newAABB.min = min(newAABB.min, transformedCorner.xyz);
+        newAABB.max = max(newAABB.max, transformedCorner.xyz);
     }
 
     return newAABB;

@@ -36,8 +36,6 @@ namespace Renderer::GBuffer
             Vk::TextureManager& textureManager
         );
 
-        PushConstant pushConstant = {};
-
         u32 textureSamplerIndex = 0;
     private:
         void CreatePipeline

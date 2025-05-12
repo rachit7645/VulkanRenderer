@@ -34,8 +34,6 @@ namespace Renderer::ShadowRT
             Vk::TextureManager& textureManager
         );
 
-        ShadowRT::PushConstant pushConstant = {};
-
         u32 gBufferSamplerIndex = 0;
     };
 }

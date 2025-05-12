@@ -37,8 +37,6 @@ namespace Renderer::PostProcess
             Vk::TextureManager& textureManager
         );
 
-        PostProcess::PushConstant pushConstant = {};
-
         u32 samplerIndex = 0;
     };
 }

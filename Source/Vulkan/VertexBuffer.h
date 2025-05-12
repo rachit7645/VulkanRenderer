@@ -40,12 +40,7 @@ namespace Vk
         Vk::Buffer       buffer;
     };
 
-    template<typename T>
-    concept IsValidVertexType = std::is_same_v<T, Models::Index> ||
-                                std::is_same_v<T, Models::Position> ||
-                                std::is_same_v<T, Models::Vertex>;
-
-    template<typename T> requires IsValidVertexType<T>
+    template<typename T> requires Models::IsVertexType<T>
     class VertexBuffer
     {
     public:

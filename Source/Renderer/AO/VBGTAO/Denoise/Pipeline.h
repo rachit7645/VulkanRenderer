@@ -34,8 +34,6 @@ namespace Renderer::AO::VBGTAO::Denoise
             Vk::TextureManager& textureManager
         );
 
-        Denoise::PushConstant pushConstant = {};
-
         u32 pointSamplerIndex = 0;
     };
 }

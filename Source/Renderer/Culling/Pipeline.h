@@ -26,9 +26,7 @@ namespace Renderer::Culling
     class Pipeline : public Vk::Pipeline
     {
     public:
-        Pipeline(const Vk::Context& context);
-
-        Culling::PushConstant pushConstant = {};
+        explicit Pipeline(const Vk::Context& context);
     };
 }
 

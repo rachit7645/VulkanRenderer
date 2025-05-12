@@ -61,7 +61,7 @@ namespace Vk
         VkShaderStageFlags stages,
         u32 offset,
         u32 size,
-        void* pValues
+        const void* pValues
     ) const
     {
         vkCmdPushConstants

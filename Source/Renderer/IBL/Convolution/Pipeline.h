@@ -37,8 +37,6 @@ namespace Renderer::IBL::Convolution
             Vk::TextureManager& textureManager
         );
 
-        Convolution::PushConstant pushConstant = {};
-
         u32 samplerIndex = 0;
     private:
         void CreatePipeline

@@ -25,7 +25,7 @@ namespace Vk
     template<typename T>
     using WriteHandle = typename VertexBuffer<T>::WriteHandle;
 
-    template <typename T> requires IsValidVertexType<T>
+    template <typename T> requires Models::IsVertexType<T>
     void VertexBuffer<T>::Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, Models::Index>
     {
         vkCmdBindIndexBuffer
@@ -37,14 +37,14 @@ namespace Vk
         );
     }
 
-    template <typename T> requires IsValidVertexType<T>
+    template <typename T> requires Models::IsVertexType<T>
     void VertexBuffer<T>::Destroy(VmaAllocator allocator)
     {
         buffer.Destroy(allocator);
         m_pendingUploads.clear();
     }
 
-    template <typename T> requires Vk::IsValidVertexType<T>
+    template <typename T> requires Models::IsVertexType<T>
     typename VertexBuffer<T>::WriteHandle VertexBuffer<T>::GetWriteHandle
     (
         VmaAllocator allocator,
@@ -83,7 +83,7 @@ namespace Vk
         };
     }
 
-    template <typename T> requires IsValidVertexType<T>
+    template <typename T> requires Models::IsVertexType<T>
     void VertexBuffer<T>::FlushUploads
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -175,13 +175,13 @@ namespace Vk
         m_pendingUploads.clear();
     }
 
-    template <typename T> requires IsValidVertexType<T>
+    template <typename T> requires Models::IsVertexType<T>
     bool VertexBuffer<T>::HasPendingUploads() const
     {
         return !m_pendingUploads.empty();
     }
 
-    template <typename T> requires Vk::IsValidVertexType<T>
+    template <typename T> requires Models::IsVertexType<T>
     void VertexBuffer<T>::ResizeBuffer
     (
         const Vk::CommandBuffer& cmdBuffer,

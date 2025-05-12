@@ -36,8 +36,6 @@ namespace Renderer::Lighting
             Vk::TextureManager& textureManager
         );
 
-        Lighting::PushConstant pushConstant = {};
-
         u32 gBufferSamplerIndex = 0;
         u32 iblSamplerIndex     = 0;
         u32 shadowSamplerIndex  = 0;

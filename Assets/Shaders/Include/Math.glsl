@@ -19,7 +19,7 @@
 
 // I'm too damn lazy to replace all calls to saturate
 // Fuck you Microsoft
-#define saturate(x) (clamp(x, 0.0f, 1.0f))
+#define saturate(x) clamp(x, 0.0f, 1.0f)
 
 float max3(vec3 x)
 {
@@ -45,6 +45,16 @@ float FastTanArcCos(float x)
 
     float numerator   = max(1.0f - (x * x), 0.0f);
     float denominator = max(x, 0.00001f);
+
+    return sqrt(numerator) / denominator;
+}
+
+float UnsafeFastTanArcCos(float x)
+{
+    // tan(acos(x)) = sqrt(1 - x^2) / x
+
+    float numerator   = 1.0f - (x * x);
+    float denominator = x;
 
     return sqrt(numerator) / denominator;
 }

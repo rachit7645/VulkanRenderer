@@ -36,8 +36,6 @@ namespace Renderer::Skybox
             Vk::TextureManager& textureManager
         );
 
-        Skybox::PushConstant pushConstant = {};
-
         u32 samplerIndex = 0;
     private:
         void CreatePipeline

@@ -16,7 +16,6 @@
 
 #include "RenderPass.h"
 
-#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
@@ -123,7 +122,7 @@ namespace Renderer::Skybox
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        const auto pushConstant = Skybox::PushConstant
         {
             .positions    = geometryBuffer.cubeBuffer.deviceAddress,
             .scene        = sceneBuffer.buffers[FIF].deviceAddress,
@@ -135,8 +134,7 @@ namespace Renderer::Skybox
         (
            cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-           0, sizeof(Skybox::PushConstant),
-           reinterpret_cast<void*>(&pipeline.pushConstant)
+           pushConstant
         );
 
         std::array descriptorSets = {megaSet.descriptorSet};

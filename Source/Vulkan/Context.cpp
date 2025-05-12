@@ -136,7 +136,7 @@ namespace Vk
 
         m_deletionQueue.PushDeletor([this] ()
         {
-            vkDestroySurfaceKHR(instance, surface, nullptr);
+            SDL_Vulkan_DestroySurface(instance, surface, nullptr);
         });
     }
 

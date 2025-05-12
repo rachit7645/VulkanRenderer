@@ -266,6 +266,85 @@ namespace Renderer::AO::VBGTAO
         Vk::EndLabel(cmdBuffer);
     }
 
+    void RenderPass::PreFilterDepth
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
+
+        const auto& depthMipChain = framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
+
+        depthMipChain.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .baseMipLevel   = 0,
+                .levelCount     = depthMipChain.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = depthMipChain.image.arrayLayers
+            }
+        );
+
+        m_depthPreFilterPipeline.Bind(cmdBuffer);
+
+        const auto pushConstant = DepthPreFilter::PushConstant
+        {
+            .pointSamplerIndex = m_depthPreFilterPipeline.pointSamplerIndex,
+            .sceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .outDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageIndex,
+            .outDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageIndex,
+            .outDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageIndex,
+            .outDepthMip3Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip3").storageImageIndex,
+            .outDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageIndex,
+        };
+
+        m_depthPreFilterPipeline.PushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_COMPUTE_BIT,
+            pushConstant
+        );
+
+        const std::array descriptorSets = {megaSet.descriptorSet};
+        m_depthPreFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+        vkCmdDispatch
+        (
+            cmdBuffer.handle,
+            (depthMipChain.image.width  + 16 - 1) / 16,
+            (depthMipChain.image.height + 16 - 1) / 16,
+            1
+        );
+
+        depthMipChain.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = depthMipChain.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = depthMipChain.image.arrayLayers
+            }
+        );
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
     void RenderPass::Occlusion
     (
         usize FIF,
@@ -318,7 +397,7 @@ namespace Renderer::AO::VBGTAO
 
         m_occlusionPipeline.Bind(cmdBuffer);
 
-        m_occlusionPipeline.pushConstant =
+        const auto pushConstant = Occlusion::PushConstant
         {
             .scene                    = sceneBuffer.buffers[FIF].deviceAddress,
             .pointSamplerIndex        = m_occlusionPipeline.pointSamplerIndex,
@@ -336,8 +415,7 @@ namespace Renderer::AO::VBGTAO
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
-            0, sizeof(Occlusion::PushConstant),
-            &m_occlusionPipeline.pushConstant
+            pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
@@ -387,86 +465,6 @@ namespace Renderer::AO::VBGTAO
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::PreFilterDepth
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
-    )
-    {
-        Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
-
-        const auto& depthMipChain = framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-
-        depthMipChain.image.Barrier
-        (
-            cmdBuffer,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
-                .baseMipLevel   = 0,
-                .levelCount     = depthMipChain.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthMipChain.image.arrayLayers
-            }
-        );
-
-        m_depthPreFilterPipeline.Bind(cmdBuffer);
-
-        m_depthPreFilterPipeline.pushConstant =
-        {
-            .pointSamplerIndex = m_depthPreFilterPipeline.pointSamplerIndex,
-            .sceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .outDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageIndex,
-            .outDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageIndex,
-            .outDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageIndex,
-            .outDepthMip3Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip3").storageImageIndex,
-            .outDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageIndex,
-        };
-
-        m_depthPreFilterPipeline.PushConstants
-        (
-            cmdBuffer,
-            VK_SHADER_STAGE_COMPUTE_BIT,
-            0, sizeof(DepthPreFilter::PushConstant),
-            &m_depthPreFilterPipeline.pushConstant
-        );
-
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        m_depthPreFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
-
-        vkCmdDispatch
-        (
-            cmdBuffer.handle,
-            (depthMipChain.image.width  + 16 - 1) / 16,
-            (depthMipChain.image.height + 16 - 1) / 16,
-            1
-        );
-
-        depthMipChain.image.Barrier
-        (
-            cmdBuffer,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = depthMipChain.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthMipChain.image.arrayLayers
-            }
-        );
-
-        Vk::EndLabel(cmdBuffer);
-    }
-
     void RenderPass::Denoise
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -480,7 +478,7 @@ namespace Renderer::AO::VBGTAO
 
         m_denoisePipeline.Bind(cmdBuffer);
 
-        m_denoisePipeline.pushConstant =
+        const auto pushConstant = Denoise::PushConstant
         {
             .pointSamplerIndex     = m_denoisePipeline.pointSamplerIndex,
             .depthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageIndex,
@@ -493,9 +491,7 @@ namespace Renderer::AO::VBGTAO
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
-            0,
-            sizeof(Denoise::PushConstant),
-            &m_denoisePipeline.pushConstant
+            pushConstant
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

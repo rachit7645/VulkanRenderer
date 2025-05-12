@@ -342,7 +342,7 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        m_converterPipeline.pushConstant =
+        const auto pushConstant = Converter::PushConstant
         {
             .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = m_matrixBuffer.deviceAddress,
@@ -354,9 +354,7 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(Converter::PushConstant),
-            &m_converterPipeline.pushConstant
+            pushConstant
         );
 
         // Mega set
@@ -553,7 +551,7 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        m_convolutionPipeline.pushConstant =
+        const auto pushConstant = Convolution::PushConstant
         {
             .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .matrices     = m_matrixBuffer.deviceAddress,
@@ -565,9 +563,7 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(Convolution::PushConstant),
-            &m_convolutionPipeline.pushConstant
+            pushConstant
         );
 
         // Mega set
@@ -750,7 +746,7 @@ namespace Renderer::IBL
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            m_preFilterPipeline.pushConstant =
+            const auto pushConstant = PreFilter::PushConstant
             {
                 .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .matrices     = m_matrixBuffer.deviceAddress,
@@ -764,9 +760,7 @@ namespace Renderer::IBL
             (
                 cmdBuffer,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(PreFilter::PushConstant),
-                &m_preFilterPipeline.pushConstant
+                pushConstant
             );
 
             // Mega set

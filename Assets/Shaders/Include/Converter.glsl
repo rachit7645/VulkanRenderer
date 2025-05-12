@@ -17,6 +17,8 @@
 #ifndef CONVERTER_GLSL
 #define CONVERTER_GLSL
 
+#include "Constants.glsl"
+
 vec4 UnpackRGBA8(uint data)
 {
     const float ONE_BY_255 = 1.0f / 255.0f;
@@ -32,11 +34,10 @@ vec4 UnpackRGBA8(uint data)
 
 vec2 GetSphericalMapUV(vec3 v)
 {
-    // (1 / 2π, 1 / π)
-    const vec2 INVERSE_ATAN = vec2(0.1591f, 0.3183f);
+    const vec2 INVERSE_CONSTANTS = vec2(INVERSE_TWO_PI, INVERSE_PI);
 
     vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
-    uv     *= INVERSE_ATAN;
+    uv     *= INVERSE_CONSTANTS;
     uv     += 0.5f;
 
     return uv;

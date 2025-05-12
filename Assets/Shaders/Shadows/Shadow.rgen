@@ -42,7 +42,7 @@ void main()
 
     vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
 
-    float cosTheta = clamp(dot(normal, direction), 0.0f, 1.0f);
+    float cosTheta = saturate(dot(normal, direction));
     float bias     = RT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, RT_SHADOW_MAX_BIAS);
 

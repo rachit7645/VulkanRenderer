@@ -27,8 +27,6 @@ namespace Renderer::Depth
     {
     public:
         Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
-
-        Depth::PushConstant pushConstant = {};
     };
 }
 

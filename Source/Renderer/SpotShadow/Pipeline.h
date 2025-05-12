@@ -28,8 +28,6 @@ namespace Renderer::SpotShadow
     {
     public:
         Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
-
-        SpotShadow::PushConstant pushConstant = {};
     };
 }
 

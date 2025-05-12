@@ -36,8 +36,6 @@ namespace Renderer::TAA
             Vk::TextureManager& textureManager
         );
 
-        TAA::PushConstant pushConstant = {};
-
         u32 pointSamplerIndex  = 0;
         u32 linearSamplerIndex = 0;
     private:

@@ -39,7 +39,7 @@ layout(location = 0) in vec2 fragUV;
 layout(location = 0) out vec3 resolvedOutput;
 layout(location = 1) out vec4 historyOutput;
 
-vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 aabbMin, vec3 aabbMax);
+vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 min, vec3 max);
 vec3 ToneMap(vec3 color);
 vec3 ReverseToneMap(vec3 color);
 vec3 SampleSceneColor(vec2 fragUV);
@@ -156,7 +156,7 @@ void main()
 
     // https://hhoppe.com/supersample.pdf, section 4.1
     float currentColorFactor = clamp(1.0f / historyConfidence, TAA_MIN_HISTORY_BLEND_RATE, TAA_DEFAULT_HISTORY_BLEND_RATE);
-    vec2  clampedHistoryUV   = clamp(historyUV, 0.0f, 1.0f);
+    vec2  clampedHistoryUV   = saturate(historyUV);
 
     if (clampedHistoryUV.x != historyUV.x || clampedHistoryUV.y != historyUV.y)
     {
@@ -171,10 +171,10 @@ void main()
 }
 
 // https://github.com/playdeadgames/temporal/blob/master/Assets/Shaders/TemporalReprojection.shader
-vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 aabbMin, vec3 aabbMax)
+vec3 ClipTowardsAABBCenter(vec3 historyColor, vec3 currentColor, vec3 min, vec3 max)
 {
-    vec3  pClip  = 0.5f * (aabbMax + aabbMin);
-    vec3  eClip  = 0.5f * (aabbMax - aabbMin) + 0.00000001f;
+    vec3  pClip  = 0.5f * (max + min);
+    vec3  eClip  = 0.5f * (max - min) + 0.00000001f;
     vec3  vClip  = historyColor - pClip;
     vec3  vUnit  = vClip / eClip;
     vec3  aUnit  = abs(vUnit);
@@ -197,7 +197,7 @@ vec3 ToneMap(vec3 color)
 
 vec3 ReverseToneMap(vec3 color)
 {
-    return color * rcp(1.0 - max3(color));
+    return color * rcp(1.0f - max3(color));
 }
 
 vec3 SampleSceneColor(vec2 fragUV)

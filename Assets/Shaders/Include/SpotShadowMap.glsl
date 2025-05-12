@@ -44,7 +44,7 @@ float CalculateSpotShadow
     }
 
     // Calculate slope-scaled bias
-    float cosTheta = clamp(dot(normal, normalize(light.position - fragPosition)), 0.0f, 1.0f);
+    float cosTheta = saturate(dot(normal, normalize(light.position - fragPosition)));
     float bias     = MIN_SPOT_SHADOW_BIAS * FastTanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, MAX_SPOT_SHADOW_BIAS);
 

@@ -22,7 +22,6 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
-#include "Renderer/Buffers/LightsBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
 
