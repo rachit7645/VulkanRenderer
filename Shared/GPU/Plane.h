@@ -23,8 +23,8 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 struct Plane
 {
-    vec3 normal;
-    f32  distance;
+    GLSL_VEC3 normal;
+    f32       distance;
 };
 
 GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)

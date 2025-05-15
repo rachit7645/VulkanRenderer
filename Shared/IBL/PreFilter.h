@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef PREFILER_PUSH_CONSTANT
-#define PREFILER_PUSH_CONSTANT
+#ifndef PRE_FILER_PUSH_CONSTANT
+#define PRE_FILER_PUSH_CONSTANT
 
 #include "GLSL.h"
 

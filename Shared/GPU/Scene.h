@@ -24,18 +24,18 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 struct SceneMatrices
 {
-    mat4 projection;
-    mat4 inverseProjection;
-    mat4 jitteredProjection;
-    mat4 view;
-    mat4 inverseView;
+    GLSL_MAT4 projection;
+    GLSL_MAT4 inverseProjection;
+    GLSL_MAT4 jitteredProjection;
+    GLSL_MAT4 view;
+    GLSL_MAT4 inverseView;
 };
 
 GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
 {
     SceneMatrices currentMatrices;
     SceneMatrices previousMatrices;
-    vec3          cameraPosition;
+    GLSL_VEC3     cameraPosition;
 
     f32 nearPlane;
     f32 farPlane;

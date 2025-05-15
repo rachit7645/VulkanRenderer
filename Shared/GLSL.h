@@ -24,16 +24,14 @@
 #include "Externals/GLM.h"
 #include "Util/Types.h"
 
-// TODO: HACKY! (And pollutes main namespace)
+using GLSL_VEC2 = glm::vec2;
+using GLSL_VEC3 = glm::vec3;
+using GLSL_VEC4 = glm::vec4;
 
-using vec2 = glm::vec2;
-using vec3 = glm::vec3;
-using vec4 = glm::vec4;
+using GLSL_UVEC2 = glm::uvec2;
 
-using uvec2 = glm::uvec2;
-
-using mat3 = glm::mat3;
-using mat4 = glm::mat4;
+using GLSL_MAT3 = glm::mat3;
+using GLSL_MAT4 = glm::mat4;
 
 #define GLSL_SHADER_STORAGE_BUFFER(BufferName, ReadOnlyOrWriteOnly) struct BufferName
 
@@ -59,7 +57,17 @@ using mat4 = glm::mat4;
 #define u64 uint64_t
 #define f32 float32_t
 
-#define GLSL_SHADER_STORAGE_BUFFER(BufferName, ReadOnlyOrWriteOnly) layout(buffer_reference, scalar) ReadOnlyOrWriteOnly buffer BufferName
+#define GLSL_VEC2 vec2
+#define GLSL_VEC3 vec3
+#define GLSL_VEC4 vec4
+
+#define GLSL_UVEC2 uvec2
+
+#define GLSL_MAT3 mat3
+#define GLSL_MAT4 mat4
+
+#define GLSL_SHADER_STORAGE_BUFFER(BufferName, ReadOnlyOrWriteOnly) \
+    layout(buffer_reference, scalar) ReadOnlyOrWriteOnly buffer BufferName
 
 #define GLSL_BUFFER_POINTER(BufferType) BufferType
 

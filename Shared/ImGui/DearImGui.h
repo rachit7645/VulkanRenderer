@@ -41,10 +41,11 @@ GLSL_PUSH_CONSTANT_BEGIN
 {
     GLSL_BUFFER_POINTER(VertexBuffer) Vertices;
 
-    vec2 Scale;
-    vec2 Translate;
-    u32  SamplerIndex;
-    u32  TextureIndex;
+    GLSL_VEC2 Scale;
+    GLSL_VEC2 Translate;
+
+    u32 SamplerIndex;
+    u32 TextureIndex;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

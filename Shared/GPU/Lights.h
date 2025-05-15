@@ -46,17 +46,17 @@ constexpr glm::vec2  SPOT_LIGHT_SHADOW_PLANES     = {0.1f, 100.0f};
 
 struct DirLight
 {
-    vec3 position;
-    vec3 color;
-    vec3 intensity;
+    GLSL_VEC3 position;
+    GLSL_VEC3 color;
+    GLSL_VEC3 intensity;
 };
 
 struct PointLight
 {
-    vec3 position;
-    vec3 color;
-    vec3 intensity;
-    vec3 attenuation;
+    GLSL_VEC3 position;
+    GLSL_VEC3 color;
+    GLSL_VEC3 intensity;
+    GLSL_VEC3 attenuation;
 };
 
 struct ShadowedPointLight
@@ -68,7 +68,8 @@ struct ShadowedPointLight
         : position(pointLight.position),
           color(pointLight.color),
           intensity(pointLight.intensity),
-          attenuation(pointLight.attenuation)
+          attenuation(pointLight.attenuation),
+          matrices()
     {
         const auto projection = glm::perspectiveRH_ZO
         (
@@ -87,21 +88,21 @@ struct ShadowedPointLight
     }
     #endif
 
-    vec3 position;
-    vec3 color;
-    vec3 intensity;
-    vec3 attenuation;
-    mat4 matrices[6];
+    GLSL_VEC3 position;
+    GLSL_VEC3 color;
+    GLSL_VEC3 intensity;
+    GLSL_VEC3 attenuation;
+    GLSL_MAT4 matrices[6];
 };
 
 struct SpotLight
 {
-    vec3 position;
-    vec3 color;
-    vec3 intensity;
-    vec3 attenuation;
-    vec3 direction;
-    vec2 cutOff;
+    GLSL_VEC3 position;
+    GLSL_VEC3 color;
+    GLSL_VEC3 intensity;
+    GLSL_VEC3 attenuation;
+    GLSL_VEC3 direction;
+    GLSL_VEC2 cutOff;
 };
 
 struct ShadowedSpotLight
@@ -115,7 +116,8 @@ struct ShadowedSpotLight
           intensity(spotLight.intensity),
           attenuation(spotLight.attenuation),
           direction(spotLight.direction),
-          cutOff(spotLight.cutOff)
+          cutOff(spotLight.cutOff),
+          matrix()
     {
         const glm::mat4 projection = glm::perspectiveRH_ZO
         (
@@ -136,13 +138,13 @@ struct ShadowedSpotLight
     }
     #endif
 
-    vec3 position;
-    vec3 color;
-    vec3 intensity;
-    vec3 attenuation;
-    vec3 direction;
-    vec2 cutOff;
-    mat4 matrix;
+    GLSL_VEC3 position;
+    GLSL_VEC3 color;
+    GLSL_VEC3 intensity;
+    GLSL_VEC3 attenuation;
+    GLSL_VEC3 direction;
+    GLSL_VEC2 cutOff;
+    GLSL_MAT4 matrix;
 };
 
 #ifdef __cplusplus

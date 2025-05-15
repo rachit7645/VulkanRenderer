@@ -23,12 +23,14 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 struct Material
 {
-    u32  albedo;
-    u32  normal;
-    u32  aoRghMtl;
-    vec4 albedoFactor;
-    f32  roughnessFactor;
-    f32  metallicFactor;
+    u32 albedo;
+    u32 normal;
+    u32 aoRghMtl;
+
+    GLSL_VEC4 albedoFactor;
+
+    f32 roughnessFactor;
+    f32 metallicFactor;
 };
 
 #ifndef __cplusplus

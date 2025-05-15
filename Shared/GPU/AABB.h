@@ -23,8 +23,8 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 struct AABB
 {
-    vec3 min;
-    vec3 max;
+    GLSL_VEC3 min;
+    GLSL_VEC3 max;
 };
 
 #ifndef __cplusplus

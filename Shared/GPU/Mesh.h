@@ -25,10 +25,10 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 struct Mesh
 {
-    mat4     transform;
-    mat3     normalMatrix;
-    Material material;
-    AABB     aabb;
+    GLSL_MAT4 transform;
+    GLSL_MAT3 normalMatrix;
+    Material  material;
+    AABB      aabb;
 };
 
 #ifndef __cplusplus
