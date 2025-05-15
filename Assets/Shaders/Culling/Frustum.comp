@@ -20,8 +20,8 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Culling/Frustum.glsl"
 #include "Constants.glsl"
+#include "Culling/Frustum.h"
 
 layout(local_size_x = 64) in;
 
@@ -70,7 +70,7 @@ bool IsVisible(Mesh mesh)
 
         for (uint j = 0; j < 8; ++j)
         {
-            if ((dot(plane.normal, corners[j]) + plane.dist) < 0.0f)
+            if ((dot(plane.normal, corners[j]) + plane.distance) < 0.0f)
             {
                 ++outside;
             }

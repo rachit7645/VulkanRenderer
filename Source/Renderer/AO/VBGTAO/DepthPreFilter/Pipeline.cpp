@@ -15,6 +15,7 @@
  */
 
 #include "Pipeline.h"
+#include "AO/VBGTAO/DepthPreFilter.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
@@ -30,7 +31,7 @@ namespace Renderer::AO::VBGTAO::DepthPreFilter
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBGTAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
-            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

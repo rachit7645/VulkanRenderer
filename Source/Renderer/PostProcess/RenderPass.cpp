@@ -20,6 +20,7 @@
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
+#include "Misc/PostProcess.h"
 
 namespace Renderer::PostProcess
 {
@@ -167,12 +168,12 @@ namespace Renderer::PostProcess
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = PostProcess::PushConstant
+        const auto pushConstant = PostProcess::Constants
         {
-            .samplerIndex  = pipeline.samplerIndex,
-            .imageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageIndex,
-            .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
-            .bloomStrength = m_bloomStrength
+            .SamplerIndex  = pipeline.samplerIndex,
+            .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageIndex,
+            .BloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
+            .BloomStrength = m_bloomStrength
         };
 
         pipeline.PushConstants

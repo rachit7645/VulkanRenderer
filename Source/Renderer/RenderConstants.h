@@ -18,7 +18,7 @@
 #define RENDER_CONSTANTS_H
 
 #include "Externals/GLM.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/Maths.h"
 
 namespace Renderer

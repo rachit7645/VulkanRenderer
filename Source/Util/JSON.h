@@ -19,7 +19,7 @@
 
 #include <simdjson.h>
 
-#include "Renderer/Objects/Lights.h"
+#include "GPU/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
 
 namespace JSON
@@ -114,7 +114,7 @@ namespace simdjson
     }
 
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::DirLight& light)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, GPU::DirLight& light)
     {
         ondemand::object object;
 
@@ -142,7 +142,7 @@ namespace simdjson
     }
 
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::PointLight& light)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, GPU::PointLight& light)
     {
         ondemand::object object;
 
@@ -175,7 +175,7 @@ namespace simdjson
     }
 
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::SpotLight& light)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, GPU::SpotLight& light)
     {
         ondemand::object object;
 

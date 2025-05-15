@@ -17,7 +17,6 @@
 #ifndef DEPTH_PIPELINE_H
 #define DEPTH_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
 

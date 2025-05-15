@@ -17,7 +17,7 @@
 #ifndef DRAW_CALL_BUFFER_H
 #define DRAW_CALL_BUFFER_H
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Vulkan/Buffer.h"
 #include "Renderer/RenderObject.h"
 #include "Models/ModelManager.h"

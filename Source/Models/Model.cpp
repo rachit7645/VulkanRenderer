@@ -19,11 +19,11 @@
 #include <fastgltf/tools.hpp>
 #include <fastgltf/glm_element_traits.hpp>
 
-#include "Vertex.h"
+#include "GPU/Vertex.h"
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Util/Enum.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/Maths.h"
 
 namespace Models
@@ -221,7 +221,7 @@ namespace Models
             Vk::GeometryInfo indexInfo    = {};
             Vk::GeometryInfo positionInfo = {};
             Vk::GeometryInfo vertexInfo   = {};
-            Maths::AABB      aabb         = {};
+            GPU::AABB        aabb         = {};
 
             // Indices
             {
@@ -257,7 +257,7 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<s8>(asset, indicesAccessor, [&] (s8 index, usize i)
                     {
-                        writePointer[i] = static_cast<Index>(static_cast<u8>(index));
+                        writePointer[i] = static_cast<GPU::Index>(static_cast<u8>(index));
                     });
                     break;
                 }
@@ -266,7 +266,7 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<u8>(asset, indicesAccessor, [&] (u8 index, usize i)
                     {
-                        writePointer[i] = static_cast<Index>(index);
+                        writePointer[i] = static_cast<GPU::Index>(index);
                     });
                     break;
                 }
@@ -275,7 +275,7 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<s16>(asset, indicesAccessor, [&] (s16 index, usize i)
                     {
-                        writePointer[i] = static_cast<Index>(index);
+                        writePointer[i] = static_cast<GPU::Index>(index);
                     });
                     break;
                 }
@@ -284,14 +284,14 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<u16>(asset, indicesAccessor, [&] (u16 index, usize i)
                     {
-                        writePointer[i] = static_cast<Index>(index);
+                        writePointer[i] = static_cast<GPU::Index>(index);
                     });
                     break;
                 }
 
                 case fastgltf::ComponentType::UnsignedInt:
                 {
-                    fastgltf::copyFromAccessor<Models::Index>(asset, indicesAccessor, writePointer);
+                    fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, writePointer);
                     break;
                 }
 
@@ -323,7 +323,10 @@ namespace Models
 
                 positionInfo = info;
 
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&] (const Models::Position& position, usize index)
+                aabb.min = glm::vec3(std::numeric_limits<f32>::max());
+                aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
+
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&] (const GPU::Position& position, usize index)
                 {
                     aabb.min = glm::min(aabb.min, position);
                     aabb.max = glm::max(aabb.max, position);
@@ -374,7 +377,7 @@ namespace Models
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    writePointer[i] = Models::Vertex
+                    writePointer[i] = GPU::Vertex
                     {
                         .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
                         .uv0     = fastgltf::getAccessorElement<glm::vec2>(asset, uvAccessor,      i),
@@ -388,7 +391,7 @@ namespace Models
                 Logger::Error("{}\n", "No material in primitive!");
             }
 
-            Material material = {};
+            GPU::Material material = {};
 
             const auto& mat = asset.materials[primitive.materialIndex.value()];
 
@@ -603,7 +606,7 @@ namespace Models
 
         if (!std::holds_alternative<fastgltf::sources::URI>(image.data))
         {
-            Logger::Error("Unsupported format! [Texture Index={}] [Image Index={}]\n", textureIndex, texture.basisuImageIndex.value());
+            Logger::Error("Unsupported format! [Texture GPU::Index={}] [Image GPU::Index={}]\n", textureIndex, texture.basisuImageIndex.value());
         }
 
         const auto& filePath = std::get<fastgltf::sources::URI>(image.data);

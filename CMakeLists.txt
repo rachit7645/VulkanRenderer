@@ -60,8 +60,6 @@ add_executable(VulkanRenderer
 	Source/Util/FrameCounter.cpp
 	Source/Util/Maths.cpp
     Source/Util/SIMD.cpp
-    Source/Util/AABB.cpp
-    Source/Util/Plane.cpp
     Source/Util/JSON.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
@@ -243,7 +241,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 )
 
 # Library includes
-target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
+target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Shared/)
 # No vulkan prototypes
 target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
 # -O3 optimisations (Set to -Og when debugging)

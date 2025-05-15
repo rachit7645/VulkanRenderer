@@ -18,6 +18,7 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Shadows/SpotShadow.h"
 
 namespace Renderer::SpotShadow
 {
@@ -36,10 +37,10 @@ namespace Renderer::SpotShadow
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
-                .width       = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.x,
-                .height      = Objects::SPOT_LIGHT_SHADOW_DIMENSIONS.y,
+                .width       = GPU::SPOT_LIGHT_SHADOW_DIMENSIONS.x,
+                .height      = GPU::SPOT_LIGHT_SHADOW_DIMENSIONS.y,
                 .mipLevels   = 1,
-                .arrayLayers = Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT
+                .arrayLayers = GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT
             },
             {
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -57,11 +58,11 @@ namespace Renderer::SpotShadow
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT,
+                .layerCount     = GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT,
             }
         );
 
-        for (usize i = 0; i < Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT; ++i)
+        for (usize i = 0; i < GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT; ++i)
         {
             framebufferManager.AddFramebufferView
             (
@@ -190,13 +191,13 @@ namespace Renderer::SpotShadow
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            const auto pushConstant = SpotShadow::PushConstant
+            const auto pushConstant = SpotShadow::Constants
             {
-                .scene        = sceneBuffer.buffers[FIF].deviceAddress,
-                .meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                .meshIndices  = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-                .positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                .currentIndex = static_cast<u32>(i)
+                .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
+                .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                .MeshIndices  = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+                .Positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                .CurrentIndex = static_cast<u32>(i)
             };
 
             pipeline.PushConstants

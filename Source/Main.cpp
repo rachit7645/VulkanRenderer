@@ -16,7 +16,7 @@
 
 #include <SDL3/SDL_main.h>
 
-#include "Util/Util.h"
+#include "Util/Unused.h"
 #include "Engine/AppInstance.h"
 
 int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)

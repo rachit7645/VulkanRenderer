@@ -19,7 +19,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Renderer::ShadowRT
 {

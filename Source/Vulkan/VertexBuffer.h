@@ -22,9 +22,9 @@
 #include "Buffer.h"
 #include "BarrierWriter.h"
 #include "Externals/VMA.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/DeletionQueue.h"
-#include "Models/Vertex.h"
+#include "GPU/Vertex.h"
 
 namespace Vk
 {
@@ -40,7 +40,7 @@ namespace Vk
         Vk::Buffer       buffer;
     };
 
-    template<typename T> requires Models::IsVertexType<T>
+    template<typename T> requires GPU::IsVertexType<T>
     class VertexBuffer
     {
     public:
@@ -50,7 +50,7 @@ namespace Vk
             Vk::GeometryInfo info;
         };
 
-        void Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, Models::Index>;
+        void Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>;
         void Destroy(VmaAllocator allocator);
 
         WriteHandle GetWriteHandle

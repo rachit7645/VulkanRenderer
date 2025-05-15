@@ -18,6 +18,7 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Deferred/Depth.h"
 
 namespace Renderer::Depth
 {
@@ -171,12 +172,12 @@ namespace Renderer::Depth
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Depth::PushConstant
+        const auto pushConstant = Depth::Constants
         {
-            .scene       = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-            .positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
+            .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
+            .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+            .MeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .Positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
         };
 
         pipeline.PushConstants

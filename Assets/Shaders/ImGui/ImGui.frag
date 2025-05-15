@@ -20,9 +20,9 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/ImGui/ImGui.glsl"
 #include "Color.glsl"
 #include "MegaSet.glsl"
+#include "ImGui/DearImGui.h"
 
 layout(location = 0) in vec4 fragColor;
 layout(location = 1) in vec2 fragUV;

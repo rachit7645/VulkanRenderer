@@ -20,7 +20,7 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Shadows/PointShadow.glsl"
+#include "Shadows/PointShadow.h"
 
 layout(location = 0) out vec3 fragPosition;
 
@@ -29,5 +29,5 @@ void main()
 {
     vec4 fragPos = Constants.Meshes.meshes[Constants.MeshIndices.indices[gl_DrawID]].transform * vec4(Constants.Positions.positions[gl_VertexIndex], 1.0f);
     fragPosition = fragPos.xyz;
-    gl_Position  = Constants.Scene.shadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
+    gl_Position  = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
 }

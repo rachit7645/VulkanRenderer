@@ -22,7 +22,7 @@
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Files.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util.h"
 
 namespace Vk

@@ -18,7 +18,7 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
-#include "Util/Plane.h"
+#include "GPU/Plane.h"
 
 namespace Renderer::Culling
 {
@@ -27,7 +27,7 @@ namespace Renderer::Culling
         buffer = Vk::Buffer
         (
             allocator,
-            sizeof(Maths::Frustum),
+            sizeof(GPU::FrustumBuffer),
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -41,7 +41,7 @@ namespace Renderer::Culling
 
     void FrustumBuffer::LoadPlanes(const Vk::CommandBuffer& cmdBuffer, const glm::mat4& projectionView)
     {
-        const auto frustum = Maths::Frustum(projectionView);
+        const auto frustum = GPU::FrustumBuffer(projectionView);
 
         buffer.Barrier
         (
@@ -52,7 +52,7 @@ namespace Renderer::Culling
                 .dstStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                 .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .offset        = 0,
-                .size          = sizeof(Maths::Frustum)
+                .size          = sizeof(GPU::FrustumBuffer)
             }
         );
 
@@ -61,7 +61,7 @@ namespace Renderer::Culling
             cmdBuffer.handle,
             buffer.handle,
             0,
-            sizeof(Maths::Frustum),
+            sizeof(GPU::FrustumBuffer),
             &frustum
         );
 
@@ -74,7 +74,7 @@ namespace Renderer::Culling
                 .dstStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
                 .offset        = 0,
-                .size          = sizeof(Maths::Frustum)
+                .size          = sizeof(GPU::FrustumBuffer)
             }
         );
     }

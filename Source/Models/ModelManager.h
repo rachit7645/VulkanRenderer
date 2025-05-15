@@ -23,7 +23,7 @@
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/CommandBufferAllocator.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Models
 {

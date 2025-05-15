@@ -17,6 +17,7 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
+#include "Shadows/SpotShadow.h"
 
 namespace Renderer::SpotShadow
 {
@@ -34,7 +35,7 @@ namespace Renderer::SpotShadow
             .SetRasterizerState(VK_TRUE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
             .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(SpotShadow::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(SpotShadow::Constants))
             .Build();
 
         Vk::SetDebugName(context.device, handle, "SpotShadowPipeline");

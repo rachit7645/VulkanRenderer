@@ -18,7 +18,8 @@
 
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
+#include "Deferred/GBuffer.h"
 
 namespace Renderer::GBuffer
 {
@@ -95,7 +96,7 @@ namespace Renderer::GBuffer
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(GBuffer::PushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

@@ -17,7 +17,7 @@
 #ifndef SIMD_H
 #define SIMD_H
 
-#include "Util.h"
+#include "Types.h"
 
 namespace Util
 {

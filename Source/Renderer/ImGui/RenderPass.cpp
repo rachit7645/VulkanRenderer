@@ -19,6 +19,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Vulkan/BarrierWriter.h"
 #include "Util/Log.h"
+#include "ImGui/DearImGui.h"
 
 namespace Renderer::DearImGui
 {
@@ -178,19 +179,19 @@ namespace Renderer::DearImGui
 
         vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
-        DearImGui::PushConstant pushConstant = {};
+        DearImGui::Constants pushConstant = {};
 
-        pushConstant.vertices     = currentVertexBuffer.deviceAddress;
-        pushConstant.scale        = glm::vec2(2.0f) / displaySize;
-        pushConstant.translate    = glm::vec2(-1.0f) - (displayPos * pushConstant.scale);
-        pushConstant.samplerIndex = pipeline.samplerIndex;
+        pushConstant.Vertices     = currentVertexBuffer.deviceAddress;
+        pushConstant.Scale        = glm::vec2(2.0f) / displaySize;
+        pushConstant.Translate    = glm::vec2(-1.0f) - (displayPos * pushConstant.Scale);
+        pushConstant.SamplerIndex = pipeline.samplerIndex;
 
         pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
-            offsetof(DearImGui::PushConstant, textureIndex),
+            offsetof(DearImGui::Constants, TextureIndex),
             &pushConstant
         );
 
@@ -222,15 +223,15 @@ namespace Renderer::DearImGui
 
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-                pushConstant.textureIndex = cmd.GetTexID();
+                pushConstant.TextureIndex = cmd.GetTexID();
 
                 pipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    offsetof(PushConstant, textureIndex),
+                    offsetof(Constants, TextureIndex),
                     sizeof(u32),
-                    &pushConstant.textureIndex
+                    &pushConstant.TextureIndex
                 );
 
                 vkCmdDrawIndexed

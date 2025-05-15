@@ -20,7 +20,7 @@
 #include "Util.h"
 #include "DebugUtils.h"
 #include "Util/Log.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Vk
 {

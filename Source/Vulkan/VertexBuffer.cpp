@@ -25,8 +25,8 @@ namespace Vk
     template<typename T>
     using WriteHandle = typename VertexBuffer<T>::WriteHandle;
 
-    template <typename T> requires Models::IsVertexType<T>
-    void VertexBuffer<T>::Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, Models::Index>
+    template <typename T> requires GPU::IsVertexType<T>
+    void VertexBuffer<T>::Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>
     {
         vkCmdBindIndexBuffer
         (
@@ -37,14 +37,14 @@ namespace Vk
         );
     }
 
-    template <typename T> requires Models::IsVertexType<T>
+    template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::Destroy(VmaAllocator allocator)
     {
         buffer.Destroy(allocator);
         m_pendingUploads.clear();
     }
 
-    template <typename T> requires Models::IsVertexType<T>
+    template <typename T> requires GPU::IsVertexType<T>
     typename VertexBuffer<T>::WriteHandle VertexBuffer<T>::GetWriteHandle
     (
         VmaAllocator allocator,
@@ -83,7 +83,7 @@ namespace Vk
         };
     }
 
-    template <typename T> requires Models::IsVertexType<T>
+    template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::FlushUploads
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -137,17 +137,17 @@ namespace Vk
             VkPipelineStageFlags2 dstStageMask  = VK_PIPELINE_STAGE_2_NONE;
             VkAccessFlags2        dstAccessMask = VK_ACCESS_2_NONE;
 
-            if constexpr (std::is_same_v<T, Models::Index>)
+            if constexpr (std::is_same_v<T, GPU::Index>)
             {
                 dstStageMask  = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
                 dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT;
             }
-            else if constexpr (std::is_same_v<T, Models::Position>)
+            else if constexpr (std::is_same_v<T, GPU::Position>)
             {
                 dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
                 dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
             }
-            else if constexpr (std::is_same_v<T, Models::Vertex>)
+            else if constexpr (std::is_same_v<T, GPU::Vertex>)
             {
                 dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
                 dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
@@ -175,13 +175,13 @@ namespace Vk
         m_pendingUploads.clear();
     }
 
-    template <typename T> requires Models::IsVertexType<T>
+    template <typename T> requires GPU::IsVertexType<T>
     bool VertexBuffer<T>::HasPendingUploads() const
     {
         return !m_pendingUploads.empty();
     }
 
-    template <typename T> requires Models::IsVertexType<T>
+    template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::ResizeBuffer
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -199,7 +199,7 @@ namespace Vk
         VkPipelineStageFlags2 srcStageMask  = VK_PIPELINE_STAGE_2_NONE;
         VkAccessFlags2        srcAccessMask = VK_ACCESS_2_NONE;
 
-        if constexpr (std::is_same_v<T, Models::Index>)
+        if constexpr (std::is_same_v<T, GPU::Index>)
         {
             usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -210,7 +210,7 @@ namespace Vk
             srcStageMask  = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
             srcAccessMask = VK_ACCESS_2_INDEX_READ_BIT;
         }
-        else if constexpr (std::is_same_v<T, Models::Position>)
+        else if constexpr (std::is_same_v<T, GPU::Position>)
         {
             usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -221,7 +221,7 @@ namespace Vk
             srcStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
             srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
         }
-        else if constexpr (std::is_same_v<T, Models::Vertex>)
+        else if constexpr (std::is_same_v<T, GPU::Vertex>)
         {
             usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -310,7 +310,7 @@ namespace Vk
     }
 
     // Explicit Instantiations
-    template class Vk::VertexBuffer<Models::Index>;
-    template class Vk::VertexBuffer<Models::Position>;
-    template class Vk::VertexBuffer<Models::Vertex>;
+    template class Vk::VertexBuffer<GPU::Index>;
+    template class Vk::VertexBuffer<GPU::Position>;
+    template class Vk::VertexBuffer<GPU::Vertex>;
 }

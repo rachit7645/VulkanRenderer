@@ -19,6 +19,7 @@
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "IBL/Convolution.h"
 
 namespace Renderer::IBL::Convolution
 {
@@ -68,7 +69,7 @@ namespace Renderer::IBL::Convolution
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Convolution::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Convolution::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

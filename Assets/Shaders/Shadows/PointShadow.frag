@@ -22,14 +22,14 @@
 
 layout(location = 0) in vec3 fragPosition;
 
-#include "Constants/Shadows/PointShadow.glsl"
+#include "Shadows/PointShadow.h"
 
 void main()
 {
-    float lightDistance = length(fragPosition - Constants.Scene.shadowedPointLights.lights[Constants.LightIndex].position);
+    float lightDistance = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
 
     // Map to [0, 1] to store into depth buffer
-    lightDistance = lightDistance / Constants.Scene.commonLight.pointLightShadowPlanes.y;
+    lightDistance = lightDistance / Constants.Scene.CommonLight.pointLightShadowPlanes.y;
 
     gl_FragDepth = lightDistance;
 }

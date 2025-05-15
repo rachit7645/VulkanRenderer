@@ -21,6 +21,9 @@
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Externals/GLM.h"
+#include "IBL/Converter.h"
+#include "IBL/Convolution.h"
+#include "IBL/PreFilter.h"
 
 namespace Renderer::IBL
 {
@@ -342,12 +345,12 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Converter::PushConstant
+        const auto pushConstant = Converter::Constants
         {
-            .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-            .matrices     = m_matrixBuffer.deviceAddress,
-            .samplerIndex = m_converterPipeline.samplerIndex,
-            .textureIndex = hdrMapID
+            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Matrices     = m_matrixBuffer.deviceAddress,
+            .SamplerIndex = m_converterPipeline.samplerIndex,
+            .TextureIndex = hdrMapID
         };
 
         m_converterPipeline.PushConstants
@@ -551,12 +554,12 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Convolution::PushConstant
+        const auto pushConstant = Convolution::Constants
         {
-            .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-            .matrices     = m_matrixBuffer.deviceAddress,
-            .samplerIndex = m_convolutionPipeline.samplerIndex,
-            .envMapIndex  = skyboxID
+            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Matrices     = m_matrixBuffer.deviceAddress,
+            .SamplerIndex = m_convolutionPipeline.samplerIndex,
+            .EnvMapIndex  = skyboxID
         };
 
         m_convolutionPipeline.PushConstants
@@ -746,14 +749,14 @@ namespace Renderer::IBL
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            const auto pushConstant = PreFilter::PushConstant
+            const auto pushConstant = PreFilter::Constants
             {
-                .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-                .matrices     = m_matrixBuffer.deviceAddress,
-                .samplerIndex = m_preFilterPipeline.samplerIndex,
-                .envMapIndex  = skyboxID,
-                .roughness    = roughness,
-                .sampleCount  = sampleCount
+                .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+                .Matrices     = m_matrixBuffer.deviceAddress,
+                .SamplerIndex = m_preFilterPipeline.samplerIndex,
+                .EnvMapIndex  = skyboxID,
+                .Roughness    = roughness,
+                .SampleCount  = sampleCount
             };
 
             m_preFilterPipeline.PushConstants

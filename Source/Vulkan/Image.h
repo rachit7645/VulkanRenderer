@@ -19,7 +19,7 @@
 
 #include "Barrier.h"
 #include "CommandBuffer.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Vk
 {

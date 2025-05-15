@@ -21,7 +21,7 @@
 #include "ImageUploader.h"
 #include "Sampler.h"
 #include "MegaSet.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Vk
 {

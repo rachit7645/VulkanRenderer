@@ -19,6 +19,7 @@
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "Skybox/Skybox.h"
 
 namespace Renderer::Skybox
 {
@@ -69,7 +70,7 @@ namespace Renderer::Skybox
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Skybox::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Skybox::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

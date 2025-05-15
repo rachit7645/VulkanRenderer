@@ -16,6 +16,7 @@
 
 #include "Pipeline.h"
 
+#include "../../../../Shared/Bloom/DownSample.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
@@ -68,7 +69,7 @@ namespace Renderer::Bloom::DownSample
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

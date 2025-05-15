@@ -20,9 +20,9 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/IBL/Convolution.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
+#include "IBL/Convolution.h"
 
 layout(location = 0) in vec3 worldPos;
 

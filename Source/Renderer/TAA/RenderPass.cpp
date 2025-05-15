@@ -20,6 +20,7 @@
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 #include "Renderer/Depth/RenderPass.h"
+#include "Misc/TAA.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::TAA
@@ -316,14 +317,14 @@ namespace Renderer::TAA
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = TAA::PushConstant
+        const auto pushConstant = TAA::Constants
         {
-            .pointSamplerIndex  = pipeline.pointSamplerIndex,
-            .linearSamplerIndex = pipeline.linearSamplerIndex,
-            .currentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
-            .historyBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
-            .velocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageIndex,
-            .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
+            .PointSamplerIndex  = pipeline.pointSamplerIndex,
+            .LinearSamplerIndex = pipeline.linearSamplerIndex,
+            .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
+            .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
+            .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageIndex,
+            .SceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
         };
 
         pipeline.PushConstants

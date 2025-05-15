@@ -16,6 +16,7 @@
 
 #include "Pipeline.h"
 
+#include "Bloom/UpSample.h"
 #include "Util/Log.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
@@ -68,7 +69,7 @@ namespace Renderer::Bloom::UpSample
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UpSample::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UpSample::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

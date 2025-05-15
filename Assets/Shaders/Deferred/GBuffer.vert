@@ -20,8 +20,8 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Deferred/GBuffer.glsl"
-#include "Material.glsl"
+#include "Material.h"
+#include "Deferred/GBuffer.h"
 
 layout(location = 0) out      vec4 fragCurrentPosition;
 layout(location = 1) out      vec4 fragPreviousPosition;

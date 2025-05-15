@@ -17,7 +17,6 @@
 #ifndef LIGHTING_PIPELINE_H
 #define LIGHTING_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"

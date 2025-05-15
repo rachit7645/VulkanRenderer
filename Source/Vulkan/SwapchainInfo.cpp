@@ -19,7 +19,7 @@
 #include <volk/volk.h>
 
 #include "Util.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/Log.h"
 
 namespace Vk

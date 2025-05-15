@@ -19,7 +19,6 @@
 
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"

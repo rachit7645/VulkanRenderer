@@ -20,13 +20,13 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Deferred/Lighting.glsl"
 #include "Color.glsl"
 #include "PBR.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
 #include "PointShadowMap.glsl"
 #include "SpotShadowMap.glsl"
+#include "Deferred/Lighting.h"
 
 layout(location = 0) in vec2 fragUV;
 
@@ -52,9 +52,9 @@ void main()
 
     vec3 Lo = vec3(0.0f);
 
-    for (uint i = 0; i < Constants.Scene.dirLights.count; ++i)
+    for (uint i = 0; i < Constants.Scene.DirLights.count; ++i)
     {
-        DirLight  light     = Constants.Scene.dirLights.lights[i];
+        DirLight  light     = Constants.Scene.DirLights.lights[i];
         LightInfo lightInfo = GetLightInfo(light);
 
         float shadow = texture(sampler2D(Textures[Constants.ShadowMapIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
@@ -72,9 +72,9 @@ void main()
         ) * shadow;
     }
 
-    for (uint i = 0; i < Constants.Scene.pointLights.count; ++i)
+    for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
     {
-        PointLight light     = Constants.Scene.pointLights.lights[i];
+        PointLight light     = Constants.Scene.PointLights.lights[i];
         LightInfo  lightInfo = GetLightInfo(light, worldPosition);
 
         Lo += CalculateLight
@@ -90,16 +90,16 @@ void main()
         );
     }
 
-    for (uint i = 0; i < Constants.Scene.shadowedPointLights.count; ++i)
+    for (uint i = 0; i < Constants.Scene.ShadowedPointLights.count; ++i)
     {
-        ShadowedPointLight light     = Constants.Scene.shadowedPointLights.lights[i];
+        ShadowedPointLight light     = Constants.Scene.ShadowedPointLights.lights[i];
         LightInfo          lightInfo = GetLightInfo(light, worldPosition);
 
         float shadow = CalculatePointShadow
         (
             i,
             light,
-            Constants.Scene.commonLight.pointLightShadowPlanes,
+            Constants.Scene.CommonLight.pointLightShadowPlanes,
             worldPosition,
             Constants.Scene.cameraPosition,
             CubemapArrays[Constants.PointShadowMapIndex],
@@ -119,9 +119,9 @@ void main()
         ) * shadow;
     }
 
-    for (uint i = 0; i < Constants.Scene.spotLights.count; ++i)
+    for (uint i = 0; i < Constants.Scene.SpotLights.count; ++i)
     {
-        SpotLight light     = Constants.Scene.spotLights.lights[i];
+        SpotLight light     = Constants.Scene.SpotLights.lights[i];
         LightInfo lightInfo = GetLightInfo(light, worldPosition);
 
         Lo += CalculateLight
@@ -137,9 +137,9 @@ void main()
         );
     }
 
-    for (uint i = 0; i < Constants.Scene.shadowedSpotLights.count; ++i)
+    for (uint i = 0; i < Constants.Scene.ShadowedSpotLights.count; ++i)
     {
-        ShadowedSpotLight light     = Constants.Scene.shadowedSpotLights.lights[i];
+        ShadowedSpotLight light     = Constants.Scene.ShadowedSpotLights.lights[i];
         LightInfo         lightInfo = GetLightInfo(light, worldPosition);
 
         float shadow = CalculateSpotShadow

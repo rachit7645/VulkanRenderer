@@ -22,7 +22,6 @@
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
-#include "Constants.h"
 
 namespace Renderer::IBL::PreFilter
 {

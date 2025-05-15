@@ -19,7 +19,7 @@
 
 #include "DrawCallBuffer.h"
 #include "Renderer/RenderObject.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
 #include "Models/ModelManager.h"

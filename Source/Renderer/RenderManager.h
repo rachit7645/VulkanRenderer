@@ -41,7 +41,7 @@
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/CommandBufferAllocator.h"
 #include "Vulkan/Timeline.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Engine/Scene.h"

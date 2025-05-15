@@ -17,7 +17,6 @@
 #ifndef POINT_SHADOW_PIPELINE_H
 #define POINT_SHADOW_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
 

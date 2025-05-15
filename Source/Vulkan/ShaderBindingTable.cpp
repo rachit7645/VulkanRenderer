@@ -17,6 +17,7 @@
 #include "ShaderBindingTable.h"
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
+#include "Util/Align.h"
 
 namespace Vk
 {

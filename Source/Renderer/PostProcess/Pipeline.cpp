@@ -19,6 +19,7 @@
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "Misc/PostProcess.h"
 
 namespace Renderer::PostProcess
 {
@@ -57,7 +58,7 @@ namespace Renderer::PostProcess
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

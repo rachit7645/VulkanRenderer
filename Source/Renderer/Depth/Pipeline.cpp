@@ -17,6 +17,7 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
+#include "Deferred/Depth.h"
 
 namespace Renderer::Depth
 {
@@ -34,7 +35,7 @@ namespace Renderer::Depth
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
             .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Depth::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Depth::Constants))
             .Build();
 
         Vk::SetDebugName(context.device, handle, "DepthPipeline");

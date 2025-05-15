@@ -19,12 +19,12 @@
 
 #include "Config.h"
 #include "Renderer/RenderObject.h"
-#include "Renderer/Objects/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
 #include "Renderer/IBL/IBLMaps.h"
 #include "Renderer/IBL/Generator.h"
 #include "Models/ModelManager.h"
 #include "Util/FrameCounter.h"
+#include "GPU/Lights.h"
 
 namespace Engine
 {
@@ -64,12 +64,12 @@ namespace Engine
             Util::DeletionQueue& deletionQueue
         );
 
-        std::vector<Renderer::RenderObject>        renderObjects;
-        Renderer::Objects::DirLight                sun;
-        std::vector<Renderer::Objects::PointLight> pointLights;
-        std::vector<Renderer::Objects::SpotLight>  spotLights;
-        Renderer::Objects::FreeCamera              camera;
-        Renderer::IBL::IBLMaps                     iblMaps;
+        std::vector<Renderer::RenderObject>    renderObjects;
+        GPU::DirLight                sun;
+        std::vector<GPU::PointLight> pointLights;
+        std::vector<GPU::SpotLight>  spotLights;
+        Renderer::Objects::FreeCamera          camera;
+        Renderer::IBL::IBLMaps                 iblMaps;
     private:
         std::string m_hdrMap;
     };

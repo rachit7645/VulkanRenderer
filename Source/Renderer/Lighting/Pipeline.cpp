@@ -16,10 +16,10 @@
 
 #include "Pipeline.h"
 
-#include "Models/Vertex.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
+#include "Deferred/Lighting.h"
 
 namespace Renderer::Lighting
 {
@@ -69,7 +69,7 @@ namespace Renderer::Lighting
                 VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Lighting::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

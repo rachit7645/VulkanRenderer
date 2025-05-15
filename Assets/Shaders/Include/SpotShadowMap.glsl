@@ -19,7 +19,7 @@
 
 #include "Math.glsl"
 #include "Constants.glsl"
-#include "Lights.glsl"
+#include "Lights.h"
 
 float CalculateSpotShadow
 (

@@ -19,7 +19,7 @@
 #include <SDL3/SDL_vulkan.h>
 #include <volk/volk.h>
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/Log.h"
 
 namespace Vk

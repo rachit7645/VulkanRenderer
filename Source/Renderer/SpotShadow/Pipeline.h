@@ -17,10 +17,8 @@
 #ifndef SPOT_SHADOW_PIPELINE_H
 #define SPOT_SHADOW_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
-#include "Vulkan/MegaSet.h"
 
 namespace Renderer::SpotShadow
 {

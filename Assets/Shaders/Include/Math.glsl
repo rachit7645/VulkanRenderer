@@ -21,6 +21,7 @@
 // Fuck you Microsoft
 #define saturate(x) clamp(x, 0.0f, 1.0f)
 
+// Get max component
 float max3(vec3 x)
 {
     return max(x.r, max(x.g, x.b));
@@ -31,6 +32,8 @@ float rcp(float x)
     return 1.0f / x;
 }
 
+// x^5 in 3 multiplications
+// I assume pow(x, y) does some exp and log BS for this because it has to handle floating point values of y
 float pow5(float x)
 {
     float x2 = x * x;
@@ -39,6 +42,7 @@ float pow5(float x)
     return x5;
 }
 
+// Safe version (NaNs are scary)
 float FastTanArcCos(float x)
 {
     // tan(acos(x)) = sqrt(1 - x^2) / x

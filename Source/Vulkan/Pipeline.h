@@ -20,7 +20,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Context.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "CommandBuffer.h"
 
 namespace Vk

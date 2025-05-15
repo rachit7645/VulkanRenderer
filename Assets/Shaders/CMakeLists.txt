@@ -36,7 +36,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 endif()
 
 # Includes
-set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
+set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include -I${CMAKE_SOURCE_DIR}/Shared -I${CMAKE_SOURCE_DIR}/Shared/GPU)
 
 # Shader files
 file(GLOB SHADER_SOURCES
@@ -75,8 +75,10 @@ file(GLOB SHADER_SOURCES
 
 # Shader headers
 file(GLOB_RECURSE SHADER_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/Include/*.glsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/Include/Constants/*.glsl
+    ${SHADER_SOURCE_DIR}/Include/*.glsl
+    ${SHADER_SOURCE_DIR}/Include/Constants/*.glsl
+    ${CMAKE_SOURCE_DIR}/Shared/*.h
+    ${CMAKE_SOURCE_DIR}/Shared/Include/*.h
 )
 
 # Ensure CMake reconfigures when new includes are added

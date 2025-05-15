@@ -17,9 +17,9 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "Material.h"
+#include "GPU/Material.h"
 #include "Vulkan/GeometryBuffer.h"
-#include "Util/AABB.h"
+#include "GPU/AABB.h"
 
 namespace Models
 {
@@ -29,10 +29,10 @@ namespace Models
         Vk::GeometryInfo positionInfo = {};
         Vk::GeometryInfo vertexInfo   = {};
 
-        Material material = {};
+        GPU::Material material = {};
 
-        glm::mat4   transform = glm::identity<glm::mat4>();
-        Maths::AABB aabb      = {};
+        glm::mat4 transform = glm::identity<glm::mat4>();
+        GPU::AABB aabb      = {};
     };
 }
 

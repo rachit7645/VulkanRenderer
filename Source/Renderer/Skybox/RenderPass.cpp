@@ -19,6 +19,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
+#include "Skybox/Skybox.h"
 
 namespace Renderer::Skybox
 {
@@ -122,12 +123,12 @@ namespace Renderer::Skybox
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Skybox::PushConstant
+        const auto pushConstant = Skybox::Constants
         {
-            .positions    = geometryBuffer.cubeBuffer.deviceAddress,
-            .scene        = sceneBuffer.buffers[FIF].deviceAddress,
-            .samplerIndex = pipeline.samplerIndex,
-            .cubemapIndex = iblMaps.skyboxID
+            .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
+            .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
+            .SamplerIndex = pipeline.samplerIndex,
+            .CubemapIndex = iblMaps.skyboxID
         };
 
         pipeline.PushConstants
@@ -137,7 +138,7 @@ namespace Renderer::Skybox
            pushConstant
         );
 
-        std::array descriptorSets = {megaSet.descriptorSet};
+        const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw

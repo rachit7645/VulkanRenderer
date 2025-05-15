@@ -19,7 +19,7 @@
 #include "Util/Log.h"
 #include "DebugUtils.h"
 #include "Models/Model.h"
-#include "Models/Vertex.h"
+#include "GPU/Vertex.h"
 #include "Renderer/RenderConstants.h"
 
 namespace Vk
@@ -31,7 +31,7 @@ namespace Vk
         cubeBuffer = Vk::Buffer
         (
             allocator,
-            36 * sizeof(Models::Position),
+            36 * sizeof(GPU::Position),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
@@ -236,8 +236,8 @@ namespace Vk
                 (
                     "Index Buffer    | %u | %llu/%llu/%llu",
                     indexBuffer.count,
-                    indexBuffer.count * sizeof(Models::Index),
-                    indexBuffer.buffer.allocationInfo.size - (indexBuffer.count * sizeof(Models::Index)),
+                    indexBuffer.count * sizeof(GPU::Index),
+                    indexBuffer.buffer.allocationInfo.size - (indexBuffer.count * sizeof(GPU::Index)),
                     indexBuffer.buffer.allocationInfo.size
                 );
 
@@ -245,8 +245,8 @@ namespace Vk
                 (
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionBuffer.count,
-                    positionBuffer.count * sizeof(Models::Position),
-                    positionBuffer.buffer.allocationInfo.size - (positionBuffer.count * sizeof(Models::Position)),
+                    positionBuffer.count * sizeof(GPU::Position),
+                    positionBuffer.buffer.allocationInfo.size - (positionBuffer.count * sizeof(GPU::Position)),
                     positionBuffer.buffer.allocationInfo.size
                 );
 
@@ -254,8 +254,8 @@ namespace Vk
                 (
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexBuffer.count,
-                    vertexBuffer.count * sizeof(Models::Vertex),
-                    vertexBuffer.buffer.allocationInfo.size - (vertexBuffer.count * sizeof(Models::Vertex)),
+                    vertexBuffer.count * sizeof(GPU::Vertex),
+                    vertexBuffer.buffer.allocationInfo.size - (vertexBuffer.count * sizeof(GPU::Vertex)),
                     vertexBuffer.buffer.allocationInfo.size
                 );
 

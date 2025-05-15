@@ -22,8 +22,8 @@
 
 #include "DebugCallback.h"
 #include "QueueFamilyIndices.h"
-#include "Util/Util.h"
-#include "Util/DeletionQueue.h"
+#include "Util/Types.h"
+    #include "Util/DeletionQueue.h"
 #include "Externals/VMA.h"
 
 namespace Vk

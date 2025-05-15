@@ -17,7 +17,6 @@
 #ifndef IMGUI_PIPELINE_H
 #define IMGUI_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"

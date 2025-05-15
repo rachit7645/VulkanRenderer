@@ -16,6 +16,8 @@
 
 #include "RenderPass.h"
 
+#include "Bloom/DownSample.h"
+#include "Bloom/UpSample.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
@@ -216,11 +218,11 @@ namespace Renderer::Bloom
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            const auto pushConstant = DownSample::PushConstant
+            const auto pushConstant = DownSample::Constants
             {
-                .samplerIndex  = downsamplePipeline.samplerIndex,
-                .imageIndex    = srcView.sampledImageIndex,
-                .isFirstSample = (mip == 0) ? 1u : 0u
+                .SamplerIndex  = downsamplePipeline.samplerIndex,
+                .ImageIndex    = srcView.sampledImageIndex,
+                .IsFirstSample = (mip == 0) ? 1u : 0u
             };
 
             downsamplePipeline.PushConstants
@@ -366,11 +368,11 @@ namespace Renderer::Bloom
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            const auto pushConstant = UpSample::PushConstant
+            const auto pushConstant = UpSample::Constants
             {
-                .samplerIndex  = upsamplePipeline.samplerIndex,
-                .imageIndex    = srcView.sampledImageIndex,
-                .filterRadius  = m_filterRadius
+                .SamplerIndex  = upsamplePipeline.samplerIndex,
+                .ImageIndex    = srcView.sampledImageIndex,
+                .FilterRadius  = m_filterRadius
             };
 
             upsamplePipeline.PushConstants

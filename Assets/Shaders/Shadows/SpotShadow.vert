@@ -20,14 +20,14 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Shadows/SpotShadow.glsl"
+#include "Shadows/SpotShadow.h"
 
 void main()
 {
     uint meshIndex = Constants.MeshIndices.indices[gl_DrawID];
     Mesh mesh      = Constants.Meshes.meshes[meshIndex];
     vec3 position  = Constants.Positions.positions[gl_VertexIndex];
-    mat4 matrix    = Constants.Scene.shadowedSpotLights.lights[Constants.CurrentIndex].matrix;
+    mat4 matrix    = Constants.Scene.ShadowedSpotLights.lights[Constants.CurrentIndex].matrix;
 
     gl_Position = matrix * mesh.transform * vec4(position, 1.0f);
 }

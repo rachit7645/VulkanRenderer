@@ -21,6 +21,7 @@
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
+#include "Deferred/Lighting.h"
 
 namespace Renderer::Lighting
 {
@@ -160,22 +161,22 @@ namespace Renderer::Lighting
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Lighting::PushConstant
+        const auto pushConstant = Lighting::Constants
         {
-            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .gBufferSamplerIndex = pipeline.gBufferSamplerIndex,
-            .iblSamplerIndex     = pipeline.iblSamplerIndex,
-            .shadowSamplerIndex  = pipeline.shadowSamplerIndex,
-            .gAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
-            .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .irradianceIndex     = iblMaps.irradianceMapID,
-            .preFilterIndex      = iblMaps.preFilterMapID,
-            .brdfLutIndex        = iblMaps.brdfLutID,
-            .shadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
-            .pointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
-            .spotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
-            .aoIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageIndex,
+            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .GBufferSamplerIndex = pipeline.gBufferSamplerIndex,
+            .IBLSamplerIndex     = pipeline.iblSamplerIndex,
+            .ShadowSamplerIndex  = pipeline.shadowSamplerIndex,
+            .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
+            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .IrradianceIndex     = iblMaps.irradianceMapID,
+            .PreFilterIndex      = iblMaps.preFilterMapID,
+            .BRDFLUTIndex        = iblMaps.brdfLutID,
+            .ShadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
+            .PointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
+            .SpotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
+            .AOIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageIndex,
         };
 
         pipeline.PushConstants

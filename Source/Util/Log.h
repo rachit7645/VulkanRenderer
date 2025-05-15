@@ -25,8 +25,9 @@
 #include <fmt/color.h>
 
 #include "Time.h"
-#include "Util.h"
+#include "Types.h"
 #include "Files.h"
+#include "Unused.h"
 
 namespace Logger
 {

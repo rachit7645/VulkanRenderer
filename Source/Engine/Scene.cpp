@@ -82,7 +82,7 @@ namespace Engine
             // Lights
             {
                 // Sun
-                JSON::CheckError(document["Sun"].get<Renderer::Objects::DirLight>(sun), "Failed to load the sun light!");
+                JSON::CheckError(document["Sun"].get<GPU::DirLight>(sun), "Failed to load the sun light!");
 
                 // Point Lights
                 {
@@ -92,9 +92,9 @@ namespace Engine
 
                     for (auto light : lights)
                     {
-                        Renderer::Objects::PointLight pointLight;
+                        GPU::PointLight pointLight;
 
-                        JSON::CheckError(light.get<Renderer::Objects::PointLight>(pointLight), "Failed to load point light!");
+                        JSON::CheckError(light.get<GPU::PointLight>(pointLight), "Failed to load point light!");
 
                         pointLights.emplace_back(pointLight);
                     }
@@ -108,9 +108,9 @@ namespace Engine
 
                     for (auto light : lights)
                     {
-                        Renderer::Objects::SpotLight spotLight;
+                        GPU::SpotLight spotLight;
 
-                        JSON::CheckError(light.get<Renderer::Objects::SpotLight>(spotLight), "Failed to load spot light!");
+                        JSON::CheckError(light.get<GPU::SpotLight>(spotLight), "Failed to load spot light!");
 
                         spotLights.emplace_back(spotLight);
                     }

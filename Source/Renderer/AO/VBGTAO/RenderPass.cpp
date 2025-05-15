@@ -18,6 +18,9 @@
 
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "AO/VBGTAO/DepthPreFilter.h"
+#include "AO/VBGTAO/SpacialDenoise.h"
+#include "AO/VBGTAO/VBGTAO.h"
 
 namespace Renderer::AO::VBGTAO
 {
@@ -296,15 +299,15 @@ namespace Renderer::AO::VBGTAO
 
         m_depthPreFilterPipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = DepthPreFilter::PushConstant
+        const auto pushConstant = DepthPreFilter::Constants
         {
-            .pointSamplerIndex = m_depthPreFilterPipeline.pointSamplerIndex,
-            .sceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .outDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageIndex,
-            .outDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageIndex,
-            .outDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageIndex,
-            .outDepthMip3Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip3").storageImageIndex,
-            .outDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageIndex,
+            .PointSamplerIndex = m_depthPreFilterPipeline.pointSamplerIndex,
+            .SceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .OutDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageIndex,
+            .OutDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageIndex,
+            .OutDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageIndex,
+            .OutDepthMip3Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip3").storageImageIndex,
+            .OutDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageIndex,
         };
 
         m_depthPreFilterPipeline.PushConstants
@@ -397,18 +400,18 @@ namespace Renderer::AO::VBGTAO
 
         m_occlusionPipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = Occlusion::PushConstant
+        const auto pushConstant = Occlusion::Constants
         {
-            .scene                    = sceneBuffer.buffers[FIF].deviceAddress,
-            .pointSamplerIndex        = m_occlusionPipeline.pointSamplerIndex,
-            .linearSamplerIndex       = m_occlusionPipeline.linearSamplerIndex,
-            .hilbertLUTIndex          = m_hilbertLUT.value(),
-            .gNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .preFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageIndex,
-            .outDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageIndex,
-            .outNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageIndex,
-            .temporalIndex            = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
-            .thickness                = m_thickness
+            .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
+            .PointSamplerIndex        = m_occlusionPipeline.pointSamplerIndex,
+            .LinearSamplerIndex       = m_occlusionPipeline.linearSamplerIndex,
+            .HilbertLUTIndex          = m_hilbertLUT.value(),
+            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageIndex,
+            .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageIndex,
+            .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageIndex,
+            .TemporalIndex            = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
+            .Thickness                = m_thickness
         };
 
         m_occlusionPipeline.PushConstants
@@ -478,13 +481,13 @@ namespace Renderer::AO::VBGTAO
 
         m_denoisePipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = Denoise::PushConstant
+        const auto pushConstant = Denoise::Constants
         {
-            .pointSamplerIndex     = m_denoisePipeline.pointSamplerIndex,
-            .depthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageIndex,
-            .noisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").sampledImageIndex,
-            .outAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageIndex,
-            .finalValuePower       = m_finalValuePower
+            .PointSamplerIndex     = m_denoisePipeline.pointSamplerIndex,
+            .DepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageIndex,
+            .NoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").sampledImageIndex,
+            .OutAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageIndex,
+            .FinalValuePower       = m_finalValuePower
         };
 
         m_denoisePipeline.PushConstants

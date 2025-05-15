@@ -24,7 +24,7 @@
 #include "CommandBuffer.h"
 #include "BarrierWriter.h"
 #include "VertexBuffer.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
@@ -49,9 +49,9 @@ namespace Vk
 
         [[nodiscard]] bool HasPendingUploads() const;
 
-        Vk::VertexBuffer<Models::Index>    indexBuffer;
-        Vk::VertexBuffer<Models::Position> positionBuffer;
-        Vk::VertexBuffer<Models::Vertex>   vertexBuffer;
+        Vk::VertexBuffer<GPU::Index>    indexBuffer;
+        Vk::VertexBuffer<GPU::Position> positionBuffer;
+        Vk::VertexBuffer<GPU::Vertex>   vertexBuffer;
 
         Vk::Buffer cubeBuffer;
     private:

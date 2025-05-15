@@ -17,6 +17,7 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
+#include "AO/VBGTAO/SpacialDenoise.h"
 
 namespace Renderer::AO::VBGTAO::Denoise
 {
@@ -30,7 +31,7 @@ namespace Renderer::AO::VBGTAO::Denoise
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBGTAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
-            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

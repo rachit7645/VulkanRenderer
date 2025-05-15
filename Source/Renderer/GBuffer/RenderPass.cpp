@@ -17,9 +17,8 @@
 #include "RenderPass.h"
 
 #include "Util/Log.h"
-#include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
+#include "Deferred/GBuffer.h"
 
 namespace Renderer::GBuffer
 {
@@ -317,15 +316,15 @@ namespace Renderer::GBuffer
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = GBuffer::PushConstant
+        const auto pushConstant = GBuffer::Constants
         {
-            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .currentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .previousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-            .meshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-            .positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
-            .vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-            .textureSamplerIndex = pipeline.textureSamplerIndex
+            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+            .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
+            .MeshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
+            .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
+            .TextureSamplerIndex = pipeline.textureSamplerIndex
         };
 
         pipeline.PushConstants

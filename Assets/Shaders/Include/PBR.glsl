@@ -19,7 +19,7 @@
 #ifndef PBR_GLSL
 #define PBR_GLSL
 
-#include "Lights.glsl"
+#include "Lights.h"
 #include "Math.glsl"
 
 // Trowbridge-Reitz Normal Distribution Function

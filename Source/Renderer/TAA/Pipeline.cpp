@@ -16,10 +16,9 @@
 
 #include "Pipeline.h"
 
-#include "Models/Vertex.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Util/Util.h"
+#include "Misc/TAA.h"
 
 namespace Renderer::TAA
 {
@@ -82,7 +81,7 @@ namespace Renderer::TAA
                     VK_COLOR_COMPONENT_A_BIT
             )
             .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 

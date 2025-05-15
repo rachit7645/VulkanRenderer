@@ -17,7 +17,7 @@
 #ifndef RENDER_OBJECT_H
 #define RENDER_OBJECT_H
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Renderer
 {

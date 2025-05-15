@@ -21,11 +21,11 @@
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_ray_tracing          : enable
 
-#include "Constants/Shadows/ShadowRT.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
 #include "Constants.glsl"
 #include "Math.glsl"
+#include "Shadows/ShadowRT.h"
 
 layout(location = 0) rayPayloadEXT float shadowAmount;
 
@@ -40,7 +40,7 @@ void main()
     float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv).r;
     vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
 
-    vec3 direction = normalize(-Constants.Scene.dirLights.lights[0].position);
+    vec3 direction = normalize(-Constants.Scene.DirLights.lights[0].position);
 
     float cosTheta = saturate(dot(normal, direction));
     float bias     = RT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);

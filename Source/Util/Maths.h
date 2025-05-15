@@ -17,7 +17,7 @@
 #ifndef MATHS_H
 #define MATHS_H
 
-#include "Util.h"
+#include "Types.h"
 #include "Externals/GLM.h"
 
 namespace Maths

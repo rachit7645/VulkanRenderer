@@ -18,7 +18,7 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
-#include "Util/Plane.h"
+#include "Culling/Frustum.h"
 
 namespace Renderer::Culling
 {
@@ -47,13 +47,13 @@ namespace Renderer::Culling
 
         frustumPipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = Culling::PushConstant
+        const auto pushConstant = Culling::Constants
         {
-            .meshes            = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .drawCalls         = indirectBuffer.drawCallBuffers[FIF].drawCallBuffer.deviceAddress,
-            .culledDrawCalls   = indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.deviceAddress,
-            .culledMeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-            .frustum           = frustumBuffer.buffer.deviceAddress
+            .Meshes            = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+            .DrawCalls         = indirectBuffer.drawCallBuffers[FIF].drawCallBuffer.deviceAddress,
+            .CulledDrawCalls   = indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.deviceAddress,
+            .CulledMeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .Frustum           = frustumBuffer.buffer.deviceAddress
         };
 
         frustumPipeline.PushConstants

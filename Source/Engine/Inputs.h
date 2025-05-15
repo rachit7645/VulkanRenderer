@@ -20,7 +20,7 @@
 #include <SDL3/SDL.h>
 
 #include "Externals/GLM.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Engine
 {

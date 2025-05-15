@@ -17,7 +17,6 @@
 #ifndef UPSAMPLE_PIPELINE_H
 #define UPSAMPLE_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"

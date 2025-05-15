@@ -23,17 +23,17 @@ namespace Renderer::Buffers
 {
     struct GPULights
     {
-        glm::vec2                   pointLightShadowPlanes                                       = {};
-        u32                         dirLightCount                                                = 0;
-        Objects::DirLight           dirLights[Objects::MAX_DIR_LIGHT_COUNT]                      = {};
-        u32                         pointLightCount                                              = 0;
-        Objects::PointLight         pointLights[Objects::MAX_POINT_LIGHT_COUNT]                  = {};
-        u32                         shadowedPointLightCount                                      = 0;
-        Objects::ShadowedPointLight shadowedPointLights[Objects::MAX_SHADOWED_POINT_LIGHT_COUNT] = {};
-        u32                         spotLightCount                                               = 0;
-        Objects::SpotLight          spotLights[Objects::MAX_SPOT_LIGHT_COUNT]                    = {};
-        u32                         shadowedSpotLightCount                                       = 0;
-        Objects::ShadowedSpotLight  shadowedSpotLights[Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT]   = {};
+        glm::vec2               pointLightShadowPlanes                                   = {};
+        u32                     dirLightCount                                            = 0;
+        GPU::DirLight           dirLights[GPU::MAX_DIR_LIGHT_COUNT]                      = {};
+        u32                     pointLightCount                                          = 0;
+        GPU::PointLight         pointLights[GPU::MAX_POINT_LIGHT_COUNT]                  = {};
+        u32                     shadowedPointLightCount                                  = 0;
+        GPU::ShadowedPointLight shadowedPointLights[GPU::MAX_SHADOWED_POINT_LIGHT_COUNT] = {};
+        u32                     spotLightCount                                           = 0;
+        GPU::SpotLight          spotLights[GPU::MAX_SPOT_LIGHT_COUNT]                    = {};
+        u32                     shadowedSpotLightCount                                   = 0;
+        GPU::ShadowedSpotLight  shadowedSpotLights[GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT]   = {};
     };
 
     LightsBuffer::LightsBuffer(VkDevice device, VmaAllocator allocator)
@@ -53,7 +53,7 @@ namespace Renderer::Buffers
             const u32  count       = 0;
             const auto pMappedData = static_cast<u8*>(buffers[i].allocationInfo.pMappedData);
 
-            std::memcpy(pMappedData + 0, &Objects::POINT_LIGHT_SHADOW_PLANES, sizeof(glm::vec2));
+            std::memcpy(pMappedData + 0, &GPU::POINT_LIGHT_SHADOW_PLANES, sizeof(glm::vec2));
 
             std::memcpy(pMappedData + GetDirLightOffset(),           &count, sizeof(u32));
             std::memcpy(pMappedData + GetPointLightOffset(),         &count, sizeof(u32));
@@ -82,29 +82,29 @@ namespace Renderer::Buffers
     (
         usize FIF,
         VmaAllocator allocator,
-        const std::span<const Objects::DirLight> inDirLights,
-        const std::span<const Objects::PointLight> inPointLights,
-        const std::span<const Objects::SpotLight> inSpotLights
+        const std::span<const GPU::DirLight> inDirLights,
+        const std::span<const GPU::PointLight> inPointLights,
+        const std::span<const GPU::SpotLight> inSpotLights
     )
     {
         dirLights = WriteLights(FIF, inDirLights);
 
         // Point Lights
         {
-            std::vector<Objects::ShadowedPointLight> inShadowedPointLights;
+            std::vector<GPU::ShadowedPointLight> inShadowedPointLights;
 
-            inShadowedPointLights.resize(std::min<usize>(inPointLights.size(), Objects::MAX_SHADOWED_POINT_LIGHT_COUNT));
+            inShadowedPointLights.resize(std::min<usize>(inPointLights.size(), GPU::MAX_SHADOWED_POINT_LIGHT_COUNT));
 
             for (usize i = 0; i < inShadowedPointLights.size(); ++i)
             {
-                inShadowedPointLights[i] = Objects::ShadowedPointLight(inPointLights[i]);
+                inShadowedPointLights[i] = GPU::ShadowedPointLight(inPointLights[i]);
             }
 
             const auto uploadedPointLights = (inPointLights.size() <= inShadowedPointLights.size()) ?
-                                             std::span<Objects::PointLight>{} :
+                                             std::span<GPU::PointLight>{} :
                                              std::span(inPointLights.begin() + inShadowedPointLights.size(), inPointLights.end());
 
-            const std::span<const Objects::ShadowedPointLight> uploadedShadowedPointLights = inShadowedPointLights;
+            const std::span<const GPU::ShadowedPointLight> uploadedShadowedPointLights = inShadowedPointLights;
 
             pointLights         = WriteLights(FIF, uploadedPointLights);
             shadowedPointLights = WriteLights(FIF, uploadedShadowedPointLights);
@@ -112,20 +112,20 @@ namespace Renderer::Buffers
 
         // Spot Lights
         {
-            std::vector<Objects::ShadowedSpotLight> inShadowedSpotLights;
+            std::vector<GPU::ShadowedSpotLight> inShadowedSpotLights;
 
-            inShadowedSpotLights.resize(std::min<usize>(inSpotLights.size(), Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT));
+            inShadowedSpotLights.resize(std::min<usize>(inSpotLights.size(), GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT));
 
             for (usize i = 0; i < inShadowedSpotLights.size(); ++i)
             {
-                inShadowedSpotLights[i] = Objects::ShadowedSpotLight(inSpotLights[i]);
+                inShadowedSpotLights[i] = GPU::ShadowedSpotLight(inSpotLights[i]);
             }
 
             const auto uploadedSpotLights = (inSpotLights.size() <= inShadowedSpotLights.size()) ?
-                                            std::span<Objects::SpotLight>{} :
+                                            std::span<GPU::SpotLight>{} :
                                             std::span(inSpotLights.begin() + inShadowedSpotLights.size(), inSpotLights.end());
 
-            const std::span<const Objects::ShadowedSpotLight> uploadedShadowedSpotLights = inShadowedSpotLights;
+            const std::span<const GPU::ShadowedSpotLight> uploadedShadowedSpotLights = inShadowedSpotLights;
 
             spotLights         = WriteLights(FIF, uploadedSpotLights);
             shadowedSpotLights = WriteLights(FIF, uploadedShadowedSpotLights);
@@ -143,36 +143,36 @@ namespace Renderer::Buffers
         }
     }
 
-    template <typename T> requires Objects::IsLightType<T>
+    template <typename T> requires GPU::IsLightType<T>
     std::vector<T> LightsBuffer::WriteLights(usize FIF, const std::span<const T> lights)
     {
         VkDeviceSize offset        = 0;
         u32          maxLightCount = 0;
 
-        if constexpr (std::is_same_v<T, Objects::DirLight>)
+        if constexpr (std::is_same_v<T, GPU::DirLight>)
         {
             offset        = GetDirLightOffset();
-            maxLightCount = Objects::MAX_DIR_LIGHT_COUNT;
+            maxLightCount = GPU::MAX_DIR_LIGHT_COUNT;
         }
-        else if constexpr (std::is_same_v<T, Objects::PointLight>)
+        else if constexpr (std::is_same_v<T, GPU::PointLight>)
         {
             offset        = GetPointLightOffset();
-            maxLightCount = Objects::MAX_POINT_LIGHT_COUNT;
+            maxLightCount = GPU::MAX_POINT_LIGHT_COUNT;
         }
-        else if constexpr (std::is_same_v<T, Objects::ShadowedPointLight>)
+        else if constexpr (std::is_same_v<T, GPU::ShadowedPointLight>)
         {
             offset        = GetShadowedPointLightOffset();
-            maxLightCount = Objects::MAX_SHADOWED_POINT_LIGHT_COUNT;
+            maxLightCount = GPU::MAX_SHADOWED_POINT_LIGHT_COUNT;
         }
-        else if constexpr (std::is_same_v<T, Objects::SpotLight>)
+        else if constexpr (std::is_same_v<T, GPU::SpotLight>)
         {
             offset        = GetSpotLightOffset();
-            maxLightCount = Objects::MAX_SPOT_LIGHT_COUNT;
+            maxLightCount = GPU::MAX_SPOT_LIGHT_COUNT;
         }
-        else if constexpr (std::is_same_v<T, Objects::ShadowedSpotLight>)
+        else if constexpr (std::is_same_v<T, GPU::ShadowedSpotLight>)
         {
             offset        = GetShadowedSpotLightOffset();
-            maxLightCount = Objects::MAX_SHADOWED_SPOT_LIGHT_COUNT;
+            maxLightCount = GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT;
         }
 
         const VkDeviceSize requiredSize   = lights.size_bytes();

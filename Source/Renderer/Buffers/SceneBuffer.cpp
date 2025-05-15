@@ -31,7 +31,7 @@ namespace Renderer::Buffers
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                sizeof(SceneBuffer::GPUScene),
+                sizeof(GPU::SceneBuffer),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -98,18 +98,18 @@ namespace Renderer::Buffers
 
         const auto lightsBufferAddress = lightsBuffer.buffers[FIF].deviceAddress;
 
-        gpuScene.commonLight         = lightsBufferAddress + 0;
-        gpuScene.dirLights           = lightsBufferAddress + lightsBuffer.GetDirLightOffset();
-        gpuScene.pointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
-        gpuScene.shadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
-        gpuScene.spotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();
-        gpuScene.shadowedSpotLights  = lightsBufferAddress + lightsBuffer.GetShadowedSpotLightOffset();
+        gpuScene.CommonLight         = lightsBufferAddress + 0;
+        gpuScene.DirLights           = lightsBufferAddress + lightsBuffer.GetDirLightOffset();
+        gpuScene.PointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
+        gpuScene.ShadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
+        gpuScene.SpotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();
+        gpuScene.ShadowedSpotLights  = lightsBufferAddress + lightsBuffer.GetShadowedSpotLightOffset();
         
         std::memcpy
         (
             buffers[FIF].allocationInfo.pMappedData,
             &gpuScene,
-            sizeof(SceneBuffer::GPUScene)
+            sizeof(GPU::SceneBuffer)
         );
 
         if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
@@ -118,7 +118,7 @@ namespace Renderer::Buffers
                 allocator,
                 buffers[FIF].allocation,
                 0,
-                sizeof(SceneBuffer::GPUScene)),
+                sizeof(GPU::SceneBuffer)),
                 "Failed to flush allocation!"
             );
         }

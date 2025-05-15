@@ -17,7 +17,7 @@
 #ifndef BARRIER_H
 #define BARRIER_H
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Vk
 {
