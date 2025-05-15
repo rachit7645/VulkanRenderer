@@ -316,7 +316,7 @@ namespace Renderer::GBuffer
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = GBuffer::Constants
+        const auto constants = GBuffer::Constants
         {
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
@@ -331,7 +331,7 @@ namespace Renderer::GBuffer
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

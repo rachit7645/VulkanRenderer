@@ -106,7 +106,7 @@ namespace Renderer::ShadowRT
 
         pipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = ShadowRT::PushConstant
+        const auto constants = ShadowRT::PushConstant
         {
             .tlas                = accelerationStructure.topLevelASes[FIF].deviceAddress,
             .scene               = sceneBuffer.buffers[FIF].deviceAddress,
@@ -120,7 +120,7 @@ namespace Renderer::ShadowRT
         (
             cmdBuffer,
             VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-            pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

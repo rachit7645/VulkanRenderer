@@ -168,7 +168,7 @@ namespace Renderer::PostProcess
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = PostProcess::Constants
+        const auto constants = PostProcess::Constants
         {
             .SamplerIndex  = pipeline.samplerIndex,
             .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageIndex,
@@ -180,7 +180,7 @@ namespace Renderer::PostProcess
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            pushConstant
+            constants
         );
 
         // Mega set

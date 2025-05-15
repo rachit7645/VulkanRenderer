@@ -198,7 +198,7 @@ namespace Renderer::PointShadow
 
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-                const auto pushConstant = PointShadow::Constants
+                const auto constants = PointShadow::Constants
                 {
                     .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
@@ -212,7 +212,7 @@ namespace Renderer::PointShadow
                 (
                    cmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                   pushConstant
+                   constants
                 );
 
                 geometryBuffer.Bind(cmdBuffer);

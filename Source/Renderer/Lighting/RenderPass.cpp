@@ -161,7 +161,7 @@ namespace Renderer::Lighting
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Lighting::Constants
+        const auto constants = Lighting::Constants
         {
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .GBufferSamplerIndex = pipeline.gBufferSamplerIndex,
@@ -183,7 +183,7 @@ namespace Renderer::Lighting
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

@@ -191,7 +191,7 @@ namespace Renderer::SpotShadow
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            const auto pushConstant = SpotShadow::Constants
+            const auto constants = SpotShadow::Constants
             {
                 .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
                 .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
@@ -204,7 +204,7 @@ namespace Renderer::SpotShadow
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT,
-               pushConstant
+               constants
             );
 
             geometryBuffer.Bind(cmdBuffer);

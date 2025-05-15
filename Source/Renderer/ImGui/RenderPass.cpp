@@ -179,12 +179,12 @@ namespace Renderer::DearImGui
 
         vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
-        DearImGui::Constants pushConstant = {};
+        DearImGui::Constants constants = {};
 
-        pushConstant.Vertices     = currentVertexBuffer.deviceAddress;
-        pushConstant.Scale        = glm::vec2(2.0f) / displaySize;
-        pushConstant.Translate    = glm::vec2(-1.0f) - (displayPos * pushConstant.Scale);
-        pushConstant.SamplerIndex = pipeline.samplerIndex;
+        constants.Vertices     = currentVertexBuffer.deviceAddress;
+        constants.Scale        = glm::vec2(2.0f) / displaySize;
+        constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
+        constants.SamplerIndex = pipeline.samplerIndex;
 
         pipeline.PushConstants
         (
@@ -192,7 +192,7 @@ namespace Renderer::DearImGui
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
             offsetof(DearImGui::Constants, TextureIndex),
-            &pushConstant
+            &constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
@@ -223,7 +223,7 @@ namespace Renderer::DearImGui
 
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-                pushConstant.TextureIndex = cmd.GetTexID();
+                constants.TextureIndex = cmd.GetTexID();
 
                 pipeline.PushConstants
                 (
@@ -231,7 +231,7 @@ namespace Renderer::DearImGui
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                     offsetof(Constants, TextureIndex),
                     sizeof(u32),
-                    &pushConstant.TextureIndex
+                    &constants.TextureIndex
                 );
 
                 vkCmdDrawIndexed

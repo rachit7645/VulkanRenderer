@@ -299,7 +299,7 @@ namespace Renderer::AO::VBGTAO
 
         m_depthPreFilterPipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = DepthPreFilter::Constants
+        const auto constants = DepthPreFilter::Constants
         {
             .PointSamplerIndex = m_depthPreFilterPipeline.pointSamplerIndex,
             .SceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
@@ -314,7 +314,7 @@ namespace Renderer::AO::VBGTAO
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
-            pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
@@ -400,7 +400,7 @@ namespace Renderer::AO::VBGTAO
 
         m_occlusionPipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = Occlusion::Constants
+        const auto constants = Occlusion::Constants
         {
             .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
             .PointSamplerIndex        = m_occlusionPipeline.pointSamplerIndex,
@@ -418,7 +418,7 @@ namespace Renderer::AO::VBGTAO
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
-            pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
@@ -481,7 +481,7 @@ namespace Renderer::AO::VBGTAO
 
         m_denoisePipeline.Bind(cmdBuffer);
 
-        const auto pushConstant = Denoise::Constants
+        const auto constants = Denoise::Constants
         {
             .PointSamplerIndex     = m_denoisePipeline.pointSamplerIndex,
             .DepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageIndex,
@@ -494,7 +494,7 @@ namespace Renderer::AO::VBGTAO
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
-            pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

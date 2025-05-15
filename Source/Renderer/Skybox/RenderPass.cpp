@@ -123,7 +123,7 @@ namespace Renderer::Skybox
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Skybox::Constants
+        const auto constants = Skybox::Constants
         {
             .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
             .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
@@ -135,7 +135,7 @@ namespace Renderer::Skybox
         (
            cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-           pushConstant
+           constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

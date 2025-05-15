@@ -345,7 +345,7 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Converter::Constants
+        const auto constants = Converter::Constants
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
@@ -357,7 +357,7 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            pushConstant
+            constants
         );
 
         // Mega set
@@ -554,7 +554,7 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Convolution::Constants
+        const auto constants = Convolution::Constants
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
@@ -566,7 +566,7 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            pushConstant
+            constants
         );
 
         // Mega set
@@ -749,7 +749,7 @@ namespace Renderer::IBL
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            const auto pushConstant = PreFilter::Constants
+            const auto constants = PreFilter::Constants
             {
                 .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .Matrices     = m_matrixBuffer.deviceAddress,
@@ -763,7 +763,7 @@ namespace Renderer::IBL
             (
                 cmdBuffer,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                pushConstant
+                constants
             );
 
             // Mega set

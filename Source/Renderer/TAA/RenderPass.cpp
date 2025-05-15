@@ -317,7 +317,7 @@ namespace Renderer::TAA
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = TAA::Constants
+        const auto constants = TAA::Constants
         {
             .PointSamplerIndex  = pipeline.pointSamplerIndex,
             .LinearSamplerIndex = pipeline.linearSamplerIndex,
@@ -331,7 +331,7 @@ namespace Renderer::TAA
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};

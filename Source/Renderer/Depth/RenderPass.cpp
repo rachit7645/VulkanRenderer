@@ -172,7 +172,7 @@ namespace Renderer::Depth
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto pushConstant = Depth::Constants
+        const auto constants = Depth::Constants
         {
             .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
             .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
@@ -184,7 +184,7 @@ namespace Renderer::Depth
         (
            cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT,
-           pushConstant
+           constants
         );
 
         geometryBuffer.Bind(cmdBuffer);
