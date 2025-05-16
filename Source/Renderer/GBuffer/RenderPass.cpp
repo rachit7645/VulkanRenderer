@@ -321,7 +321,7 @@ namespace Renderer::GBuffer
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-            .MeshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .MeshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
             .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
             .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
             .TextureSamplerIndex = pipeline.textureSamplerIndex

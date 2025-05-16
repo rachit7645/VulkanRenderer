@@ -85,7 +85,7 @@ namespace Renderer::AO::VBGTAO
 
         std::optional<u32> m_hilbertLUT = std::nullopt;
 
-        f32 m_finalValuePower = 1.7f;
+        f32 m_finalValuePower = 1.3f;
         f32 m_thickness       = 0.25f;
     };
 }

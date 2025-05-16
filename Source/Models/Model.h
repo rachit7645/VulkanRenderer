@@ -53,7 +53,7 @@ namespace Models
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
             const fastgltf::Asset& asset
         );
 
@@ -65,7 +65,7 @@ namespace Models
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
             const fastgltf::Asset& asset,
             usize nodeIndex,
             glm::mat4 nodeMatrix
@@ -79,15 +79,15 @@ namespace Models
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
             const fastgltf::Asset& asset,
             const fastgltf::Mesh& mesh,
             const glm::mat4& nodeMatrix
         );
 
-        glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
+        [[nodiscard]] static glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
 
-        const fastgltf::Accessor& GetAccessor
+        [[nodiscard]] static const fastgltf::Accessor& GetAccessor
         (
             const fastgltf::Asset& asset,
             const fastgltf::Primitive& primitive,
@@ -95,14 +95,39 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        u32 LoadTexture
+        [[nodiscard]] static u32 LoadTexture
         (
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
+            const fastgltf::Asset& asset,
+            const std::optional<fastgltf::TextureInfo>& textureInfo,
+            const std::string_view defaultTexture
+        );
+
+        [[nodiscard]] static u32 LoadTexture
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view directory,
+            const fastgltf::Asset& asset,
+            const std::optional<fastgltf::NormalTextureInfo>& textureInfo
+        );
+
+        [[nodiscard]] static u32 LoadTextureInternal
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view directory,
             const fastgltf::Asset& asset,
             usize textureIndex
         );

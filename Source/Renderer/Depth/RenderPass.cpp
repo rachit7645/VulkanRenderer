@@ -176,7 +176,7 @@ namespace Renderer::Depth
         {
             .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
             .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .MeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .MeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
             .Positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
         };
 

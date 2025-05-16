@@ -43,6 +43,7 @@ file(GLOB SHADER_SOURCES
     Misc/PostProcess.frag
     Misc/TAA.frag
     Misc/Trongle.vert
+    Misc/Empty.frag
     Culling/Frustum.comp
     ImGui/ImGui.vert
     ImGui/ImGui.frag
@@ -59,12 +60,10 @@ file(GLOB SHADER_SOURCES
     Bloom/UpSample.frag
     Shadows/PointShadow.frag
     Shadows/PointShadow.vert
-    Shadows/SpotShadow.frag
     Shadows/SpotShadow.vert
     Shadows/Shadow.rgen
     Shadows/Shadow.rmiss
     Deferred/Depth.vert
-    Deferred/Depth.frag
     Deferred/GBuffer.frag
     Deferred/GBuffer.vert
     Deferred/Lighting.frag

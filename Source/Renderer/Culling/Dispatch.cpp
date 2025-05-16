@@ -52,7 +52,7 @@ namespace Renderer::Culling
             .Meshes            = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .DrawCalls         = indirectBuffer.drawCallBuffers[FIF].drawCallBuffer.deviceAddress,
             .CulledDrawCalls   = indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.deviceAddress,
-            .CulledMeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+            .CulledMeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
             .Frustum           = frustumBuffer.buffer.deviceAddress
         };
 
@@ -82,7 +82,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer,
+            *indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -115,7 +115,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer,
+            *indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,

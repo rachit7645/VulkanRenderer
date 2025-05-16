@@ -202,7 +202,7 @@ namespace Renderer::PointShadow
                 {
                     .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
+                    .MeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
                     .Positions   = geometryBuffer.positionBuffer.buffer.deviceAddress,
                     .LightIndex  = static_cast<u32>(i),
                     .FaceIndex   = static_cast<u32>(face)

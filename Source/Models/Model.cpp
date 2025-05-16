@@ -116,7 +116,7 @@ namespace Models
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
-        const std::string& directory,
+        const std::string_view directory,
         const fastgltf::Asset& asset
     )
     {
@@ -149,7 +149,7 @@ namespace Models
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
-        const std::string& directory,
+        const std::string_view directory,
         const fastgltf::Asset& asset,
         usize nodeIndex,
         glm::mat4 nodeMatrix
@@ -201,7 +201,7 @@ namespace Models
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
-        const std::string& directory,
+        const std::string_view directory,
         const fastgltf::Asset& asset,
         const fastgltf::Mesh& mesh,
         const glm::mat4& nodeMatrix
@@ -218,10 +218,11 @@ namespace Models
                 );
             }
 
-            Vk::GeometryInfo indexInfo    = {};
-            Vk::GeometryInfo positionInfo = {};
-            Vk::GeometryInfo vertexInfo   = {};
-            GPU::AABB        aabb         = {};
+            // Geometry data
+            Vk::GeometryInfo indexInfo;
+            Vk::GeometryInfo positionInfo;
+            Vk::GeometryInfo vertexInfo;
+            GPU::AABB        aabb;
 
             // Indices
             {
@@ -304,7 +305,7 @@ namespace Models
                 }
             }
 
-            // Position
+            // Positions
             {
                 const auto& positionAccessor = GetAccessor
                 (
@@ -335,7 +336,7 @@ namespace Models
                 });
             }
 
-            // Vertex
+            // Vertices
             {
                 const auto& normalAccessor = GetAccessor
                 (
@@ -406,121 +407,53 @@ namespace Models
             {
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
-                if (baseColorTexture.has_value())
-                {
-                    // TODO: Support multiple UV channels
-                    if (baseColorTexture->texCoordIndex != 0)
-                    {
-                        Logger::Warning
-                        (
-                            "Albedo uses more than one UV channel! [texCoordIndex={}]\n",
-                            baseColorTexture->texCoordIndex
-                        );
-                    }
-
-                    material.albedo = LoadTexture
-                    (
-                        device,
-                        allocator,
-                        megaSet,
-                        textureManager,
-                        deletionQueue,
-                        directory,
-                        asset,
-                        baseColorTexture->textureIndex
-                    );
-                }
-                else
-                {
-                    material.albedo = textureManager.AddTexture
-                    (
-                        device,
-                        allocator,
-                        megaSet,
-                        deletionQueue,
-                        Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_ALBEDO)
-                    );
-                }
+                material.albedo = LoadTexture
+                (
+                    device,
+                    allocator,
+                    megaSet,
+                    textureManager,
+                    deletionQueue,
+                    directory,
+                    asset,
+                    baseColorTexture,
+                    DEFAULT_ALBEDO
+                );
             }
 
             // Normal
             {
-                if (mat.normalTexture.has_value())
-                {
-                    // TODO: Support multiple UV channels
-                    if (mat.normalTexture->texCoordIndex != 0)
-                    {
-                        Logger::Warning
-                        (
-                            "Normal uses more than one UV channel! [texCoordIndex={}]\n",
-                            mat.normalTexture->texCoordIndex
-                        );
-                    }
+                const auto& normalTexture = mat.normalTexture;
 
-                    material.normal = LoadTexture
-                    (
-                        device,
-                        allocator,
-                        megaSet,
-                        textureManager,
-                        deletionQueue,
-                        directory,
-                        asset,
-                        mat.normalTexture->textureIndex
-                    );
-                }
-                else
-                {
-                    material.normal = textureManager.AddTexture
-                    (
-                        device,
-                        allocator,
-                        megaSet,
-                        deletionQueue,
-                        Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
-                    );
-                }
+                material.normal = LoadTexture
+                (
+                    device,
+                    allocator,
+                    megaSet,
+                    textureManager,
+                    deletionQueue,
+                    directory,
+                    asset,
+                    normalTexture
+                );
             }
 
             // AO + Roughness + Metallic
             {
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
-                if (metallicRoughnessTexture.has_value())
-                {
-                    // TODO: Support multiple UV channels
-                    if (metallicRoughnessTexture->texCoordIndex != 0)
-                    {
-                        Logger::Warning
-                        (
-                            "AoRghMtl uses more than one UV channel! [texCoordIndex={}]\n",
-                            metallicRoughnessTexture->texCoordIndex
-                        );
-                    }
-
-                    material.aoRghMtl = LoadTexture
-                    (
-                        device,
-                        allocator,
-                        megaSet,
-                        textureManager,
-                        deletionQueue,
-                        directory,
-                        asset,
-                        metallicRoughnessTexture->textureIndex
-                    );
-                }
-                else
-                {
-                    material.aoRghMtl = textureManager.AddTexture
-                    (
-                        device,
-                        allocator,
-                        megaSet,
-                        deletionQueue,
-                        Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_AO_RGH_MTL)
-                    );
-                }
+                material.aoRghMtl = LoadTexture
+                (
+                    device,
+                    allocator,
+                    megaSet,
+                    textureManager,
+                    deletionQueue,
+                    directory,
+                    asset,
+                    metallicRoughnessTexture,
+                    DEFAULT_AO_RGH_MTL
+                );
             }
 
             meshes.emplace_back
@@ -590,7 +523,104 @@ namespace Models
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
-        const std::string& directory,
+        const std::string_view directory,
+        const fastgltf::Asset& asset,
+        const std::optional<fastgltf::TextureInfo>& textureInfo,
+        const std::string_view defaultTexture
+    )
+    {
+        if (!textureInfo.has_value())
+        {
+            return textureManager.AddTexture
+            (
+                device,
+                allocator,
+                megaSet,
+                deletionQueue,
+                Util::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
+            );
+        }
+
+        // TODO: Support multiple UV channels
+        if (textureInfo->texCoordIndex != 0)
+        {
+            Logger::Warning
+            (
+                "Texture uses more than one UV channel! [TextureIndex={}] [TexCoordIndex={}]\n",
+                textureInfo->textureIndex,
+                textureInfo->texCoordIndex
+            );
+        }
+
+        return LoadTextureInternal
+        (
+            device,
+            allocator,
+            megaSet,
+            textureManager,
+            deletionQueue,
+            directory,
+            asset,
+            textureInfo->textureIndex
+        );
+    }
+
+    u32 Model::LoadTexture
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view directory,
+        const fastgltf::Asset& asset,
+        const std::optional<fastgltf::NormalTextureInfo>& textureInfo
+    )
+    {
+        if (!textureInfo.has_value())
+        {
+            return textureManager.AddTexture
+            (
+                device,
+                allocator,
+                megaSet,
+                deletionQueue,
+                Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
+            );
+        }
+
+        // TODO: Support multiple UV channels
+        if (textureInfo->texCoordIndex != 0)
+        {
+            Logger::Warning
+            (
+                "Normal texture uses more than one UV channel! [TextureIndex={}] [TexCoordIndex={}]\n",
+                textureInfo->textureIndex,
+                textureInfo->texCoordIndex
+            );
+        }
+
+        return LoadTextureInternal
+        (
+            device,
+            allocator,
+            megaSet,
+            textureManager,
+            deletionQueue,
+            directory,
+            asset,
+            textureInfo->textureIndex
+        );
+    }
+
+    u32 Model::LoadTextureInternal
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view directory,
         const fastgltf::Asset& asset,
         usize textureIndex
     )
@@ -599,26 +629,41 @@ namespace Models
 
         if (!texture.basisuImageIndex.has_value())
         {
-            Logger::Error("Image index not found! [textureIndex={}]\n", textureIndex);
+            Logger::Error("Image index not found! [TextureIndex={}]\n", textureIndex);
         }
 
         const auto& image = asset.images[texture.basisuImageIndex.value()];
 
         if (!std::holds_alternative<fastgltf::sources::URI>(image.data))
         {
-            Logger::Error("Unsupported format! [Texture GPU::Index={}] [Image GPU::Index={}]\n", textureIndex, texture.basisuImageIndex.value());
+            Logger::Error
+            (
+                "Unsupported format! [TextureIndex={}] [ImageIndex={}]\n",
+                textureIndex,
+                texture.basisuImageIndex.value()
+            );
         }
 
         const auto& filePath = std::get<fastgltf::sources::URI>(image.data);
 
         if (filePath.fileByteOffset != 0)
         {
-            Logger::Error("Unsupported file byte offset! [fileByteOffset={}]\n", filePath.fileByteOffset);
+            Logger::Error
+            (
+                "Unsupported file byte offset! [TextureIndex={}] [FileByteOffset={}]\n",
+                textureIndex,
+                filePath.fileByteOffset
+            );
         }
 
         if (!filePath.uri.isLocalPath())
         {
-            Logger::Error("Only local paths are supported! [UriPath={}]\n", filePath.uri.c_str());
+            Logger::Error
+            (
+                "Only local paths are supported! [TextureIndex={}] [UriPath={}]\n",
+                textureIndex,
+                filePath.uri.c_str()
+            );
         }
 
         return textureManager.AddTexture
@@ -627,7 +672,7 @@ namespace Models
             allocator,
             megaSet,
             deletionQueue,
-            (directory + "/") + filePath.uri.c_str()
+            fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
         );
     }
 }
