@@ -14,32 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef FRUSTUM_CULL_PUSH_CONSTANT
-#define FRUSTUM_CULL_PUSH_CONSTANT
+#ifndef POINT_SHADOW_PUSH_CONSTANT
+#define POINT_SHADOW_PUSH_CONSTANT
 
 #include "GLSL.h"
 #include "GPU/Mesh.h"
-#include "GPU/Plane.h"
+#include "GPU/Vertex.h"
+#include "GPU/Scene.h"
 
 #ifndef __cplusplus
 #include "DrawCall.glsl"
 #endif
 
-GLSL_NAMESPACE_BEGIN(Renderer::Culling)
+GLSL_NAMESPACE_BEGIN(Renderer::PointShadow::Opaque)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
+    GLSL_BUFFER_POINTER(SceneBuffer)     Scene;
     GLSL_BUFFER_POINTER(MeshBuffer)      Meshes;
-    GLSL_BUFFER_POINTER(DrawCallBuffer)  DrawCalls;
-    GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledOpaqueDrawCalls;
-    GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledOpaqueMeshIndices;
-    GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledOpaqueDoubleSidedDrawCalls;
-    GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledOpaqueDoubleSidedMeshIndices;
-    GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledAlphaMaskedDrawCalls;
-    GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledAlphaMaskedMeshIndices;
-    GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledAlphaMaskedDoubleSidedDrawCalls;
-    GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledAlphaMaskedDoubleSidedMeshIndices;
-    GLSL_BUFFER_POINTER(FrustumBuffer)   Frustum;
+    GLSL_BUFFER_POINTER(MeshIndexBuffer) MeshIndices;
+    GLSL_BUFFER_POINTER(PositionBuffer)  Positions;
+
+    u32 LightIndex;
+    u32 FaceIndex;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

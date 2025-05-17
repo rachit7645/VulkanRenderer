@@ -17,9 +17,9 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Shadows/SpotShadow.h"
+#include "Deferred/Depth/Opaque.h"
 
-namespace Renderer::SpotShadow
+namespace Renderer::Depth::Opaque
 {
     Pipeline::Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper)
     {
@@ -33,17 +33,17 @@ namespace Renderer::SpotShadow
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
-            .AttachShader("Shadows/SpotShadow.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Misc/Empty.frag",         VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Deferred/Depth/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/Empty.frag",             VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
-            .SetRasterizerState(VK_TRUE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(SpotShadow::Constants))
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "SpotShadowPipeline");
-        Vk::SetDebugName(context.device, layout, "SpotShadowPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "DepthPipeline");
+        Vk::SetDebugName(context.device, layout, "DepthPipelineLayout");
     }
 }

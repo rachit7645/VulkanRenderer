@@ -29,8 +29,8 @@ namespace Renderer::ShadowRT
     {
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
-            .AttachShader("Shadows/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-            .AttachShader("Shadows/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
             .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
             .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
             .SetMaxRayRecursionDepth(1)

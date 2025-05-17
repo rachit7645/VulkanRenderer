@@ -58,14 +58,21 @@ file(GLOB SHADER_SOURCES
     Skybox/Skybox.vert
     Bloom/DownSample.frag
     Bloom/UpSample.frag
-    Shadows/PointShadow.frag
-    Shadows/PointShadow.vert
-    Shadows/SpotShadow.vert
-    Shadows/Shadow.rgen
-    Shadows/Shadow.rmiss
-    Deferred/Depth.vert
-    Deferred/GBuffer.frag
-    Deferred/GBuffer.vert
+    Shadows/PointShadow/Opaque.vert
+    Shadows/PointShadow/Opaque.frag
+    Shadows/PointShadow/AlphaMasked.vert
+    Shadows/PointShadow/AlphaMasked.frag
+    Shadows/SpotShadow/Opaque.vert
+    Shadows/SpotShadow/AlphaMasked.vert
+    Shadows/SpotShadow/AlphaMasked.frag
+    Shadows/RT/Shadow.rgen
+    Shadows/RT/Shadow.rmiss
+    Deferred/Depth/Opaque.vert
+    Deferred/Depth/AlphaMasked.vert
+    Deferred/Depth/AlphaMasked.frag
+    Deferred/GBuffer/Opaque.vert
+    Deferred/GBuffer/Opaque.frag
+    Deferred/GBuffer/AlphaMasked.frag
     Deferred/Lighting.frag
     AO/VBGTAO/DepthPreFilter.comp
     AO/VBGTAO/SpacialDenoise.comp

@@ -14,18 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef SPOT_SHADOW_PIPELINE_H
-#define SPOT_SHADOW_PIPELINE_H
+#ifndef POINT_SHADOW_ALPHA_MASKED_PIPELINE_H
+#define POINT_SHADOW_ALPHA_MASKED_PIPELINE_H
 
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/TextureManager.h"
 
-namespace Renderer::SpotShadow
+namespace Renderer::PointShadow::AlphaMasked
 {
     class Pipeline : public Vk::Pipeline
     {
     public:
-        Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
+        Pipeline
+        (
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
+
+        u32 textureSamplerIndex = 0;
     };
 }
 

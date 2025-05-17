@@ -15,13 +15,11 @@
  */
 
 #include "Pipeline.h"
-
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Util/Types.h"
-#include "Deferred/GBuffer.h"
+#include "Deferred/Depth/AlphaMasked.h"
 
-namespace Renderer::GBuffer
+namespace Renderer::Depth::AlphaMasked
 {
     Pipeline::Pipeline
     (
@@ -38,64 +36,17 @@ namespace Renderer::GBuffer
             VK_DYNAMIC_STATE_CULL_MODE
         };
 
-        const std::array colorFormats =
-        {
-            formatHelper.b10g11r11SFloat,
-            formatHelper.rgba8UnormFormat,
-            formatHelper.rgSFloat16Format
-        };
-
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
-            .AttachShader("Deferred/GBuffer.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Deferred/GBuffer.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetRenderingInfo(0, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .AttachShader("Deferred/Depth/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/Depth/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL, VK_FALSE, {}, {})
-            .AddBlendAttachment(
-                VK_FALSE,
-                VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
-                VK_BLEND_OP_ADD,
-                VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
-                VK_BLEND_OP_ADD,
-                VK_COLOR_COMPONENT_R_BIT |
-                VK_COLOR_COMPONENT_G_BIT |
-                VK_COLOR_COMPONENT_B_BIT |
-                VK_COLOR_COMPONENT_A_BIT
-            )
-            .AddBlendAttachment(
-                VK_FALSE,
-                VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
-                VK_BLEND_OP_ADD,
-                VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
-                VK_BLEND_OP_ADD,
-                VK_COLOR_COMPONENT_R_BIT |
-                VK_COLOR_COMPONENT_G_BIT |
-                VK_COLOR_COMPONENT_B_BIT |
-                VK_COLOR_COMPONENT_A_BIT
-            )
-            .AddBlendAttachment(
-                VK_FALSE,
-                VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
-                VK_BLEND_OP_ADD,
-                VK_BLEND_FACTOR_ONE,
-                VK_BLEND_FACTOR_ZERO,
-                VK_BLEND_OP_ADD,
-                VK_COLOR_COMPONENT_R_BIT |
-                VK_COLOR_COMPONENT_G_BIT |
-                VK_COLOR_COMPONENT_B_BIT |
-                VK_COLOR_COMPONENT_A_BIT
-            )
-            .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER, VK_FALSE, {}, {})
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
@@ -129,8 +80,8 @@ namespace Renderer::GBuffer
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "GBufferPipeline");
-        Vk::SetDebugName(context.device, layout,                                                "GBufferPipelineLayout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "GBufferPipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle,                                                "DepthAlphaMaskedPipeline");
+        Vk::SetDebugName(context.device, layout,                                                "DepthAlphaMaskedPipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "DepthAlphaMaskedPipeline/TextureSampler");
     }
 }

@@ -17,7 +17,8 @@
 #ifndef SPOT_SHADOW_PASS_H
 #define SPOT_SHADOW_PASS_H
 
-#include "Pipeline.h"
+#include "Opaque/Pipeline.h"
+#include "AlphaMasked/Pipeline.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
@@ -34,7 +35,9 @@ namespace Renderer::SpotShadow
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager
+            Vk::FramebufferManager& framebufferManager,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
         );
 
         void Render
@@ -43,6 +46,7 @@ namespace Renderer::SpotShadow
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
@@ -52,7 +56,8 @@ namespace Renderer::SpotShadow
 
         void Destroy(VkDevice device);
 
-        SpotShadow::Pipeline pipeline;
+        Opaque::Pipeline      opaquePipeline;
+        AlphaMasked::Pipeline alphaMaskedPipeline;
     };
 }
 

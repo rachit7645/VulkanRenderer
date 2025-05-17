@@ -17,7 +17,8 @@
 #ifndef GBUFFER_PASS_H
 #define GBUFFER_PASS_H
 
-#include "Pipeline.h"
+#include "Opaque/Pipeline.h"
+#include "AlphaMasked/Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
@@ -45,7 +46,7 @@ namespace Renderer::GBuffer
         void Render
         (
             usize FIF,
-        usize frameIndex,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
@@ -55,7 +56,8 @@ namespace Renderer::GBuffer
             const Buffers::IndirectBuffer& indirectBuffer
         );
 
-        GBuffer::Pipeline pipeline;
+        Opaque::Pipeline      opaquePipeline;
+        AlphaMasked::Pipeline alphaMaskedPipeline;
     };
 }
 

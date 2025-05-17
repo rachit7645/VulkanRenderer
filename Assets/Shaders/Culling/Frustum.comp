@@ -38,8 +38,10 @@ void main()
 
     if (index == 0)
     {
-        Constants.CulledOpaqueDrawCalls.count            = 0;
-        Constants.CulledOpaqueDoubleSidedDrawCalls.count = 0;
+        Constants.CulledOpaqueDrawCalls.count                 = 0;
+        Constants.CulledOpaqueDoubleSidedDrawCalls.count      = 0;
+        Constants.CulledAlphaMaskedDrawCalls.count            = 0;
+        Constants.CulledAlphaMaskedDoubleSidedDrawCalls.count = 0;
     }
 
     memoryBarrierBuffer();
@@ -57,12 +59,26 @@ void main()
     bool isDoubleSided  = Material_IsDoubleSided(material);
     bool isAlphaMasked  = Material_IsAlphaMasked(material);
 
-    if (isDoubleSided)
+    if (isDoubleSided && !isAlphaMasked)
     {
         uint drawIndex = atomicAdd(Constants.CulledOpaqueDoubleSidedDrawCalls.count, 1);
 
         Constants.CulledOpaqueDoubleSidedDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
         Constants.CulledOpaqueDoubleSidedMeshIndices.indices[drawIndex] = index;
+    }
+    else if (isAlphaMasked && !isDoubleSided)
+    {
+        uint drawIndex = atomicAdd(Constants.CulledAlphaMaskedDrawCalls.count, 1);
+
+        Constants.CulledAlphaMaskedDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
+        Constants.CulledAlphaMaskedMeshIndices.indices[drawIndex] = index;
+    }
+    else if (isDoubleSided && isAlphaMasked)
+    {
+        uint drawIndex = atomicAdd(Constants.CulledAlphaMaskedDoubleSidedDrawCalls.count, 1);
+
+        Constants.CulledAlphaMaskedDoubleSidedDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
+        Constants.CulledAlphaMaskedDoubleSidedMeshIndices.indices[drawIndex] = index;
     }
     else
     {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef POINT_SHADOW_PUSH_CONSTANT
-#define POINT_SHADOW_PUSH_CONSTANT
+#ifndef DEPTH_ALPHA_MASKED_PUSH_CONSTANT
+#define DEPTH_ALPHA_MASKED_PUSH_CONSTANT
 
 #include "GLSL.h"
 #include "GPU/Mesh.h"
@@ -26,7 +26,7 @@
 #include "DrawCall.glsl"
 #endif
 
-GLSL_NAMESPACE_BEGIN(Renderer::PointShadow)
+GLSL_NAMESPACE_BEGIN(Renderer::Depth::AlphaMasked)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
@@ -34,9 +34,9 @@ GLSL_PUSH_CONSTANT_BEGIN
     GLSL_BUFFER_POINTER(MeshBuffer)      Meshes;
     GLSL_BUFFER_POINTER(MeshIndexBuffer) MeshIndices;
     GLSL_BUFFER_POINTER(PositionBuffer)  Positions;
+    GLSL_BUFFER_POINTER(VertexBuffer)    Vertices;
 
-    u32 LightIndex;
-    u32 FaceIndex;
+    u32 TextureSamplerIndex;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

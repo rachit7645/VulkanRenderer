@@ -109,7 +109,8 @@ add_executable(VulkanRenderer
 	Source/Renderer/PostProcess/Pipeline.cpp
 	Source/Renderer/PostProcess/RenderPass.cpp
     # Depth Pass Sources
-    Source/Renderer/Depth/Pipeline.cpp
+    Source/Renderer/Depth/Opaque/Pipeline.cpp
+    Source/Renderer/Depth/AlphaMasked/Pipeline.cpp
     Source/Renderer/Depth/RenderPass.cpp
     # ImGui Pass Sources
     Source/Renderer/ImGui/Pipeline.cpp
@@ -129,17 +130,20 @@ add_executable(VulkanRenderer
     Source/Renderer/Bloom/DownSample/Pipeline.cpp
     Source/Renderer/Bloom/UpSample/Pipeline.cpp
     # Point Shadow Pass Sources
-    Source/Renderer/PointShadow/Pipeline.cpp
+    Source/Renderer/PointShadow/Opaque/Pipeline.cpp
+    Source/Renderer/PointShadow/AlphaMasked/Pipeline.cpp
     Source/Renderer/PointShadow/RenderPass.cpp
     # Point Shadow Pass Sources
-    Source/Renderer/SpotShadow/Pipeline.cpp
+    Source/Renderer/SpotShadow/Opaque/Pipeline.cpp
+    Source/Renderer/SpotShadow/AlphaMasked/Pipeline.cpp
     Source/Renderer/SpotShadow/RenderPass.cpp
     # Culling Dispatch Sources
     Source/Renderer/Culling/Pipeline.cpp
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
     # GBuffer Pass Sources
-    Source/Renderer/GBuffer/Pipeline.cpp
+    Source/Renderer/GBuffer/Opaque/Pipeline.cpp
+    Source/Renderer/GBuffer/AlphaMasked/Pipeline.cpp
     Source/Renderer/GBuffer/RenderPass.cpp
     # Lighting Pass Sources
     Source/Renderer/Lighting/Pipeline.cpp

@@ -41,7 +41,7 @@ void main()
     vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0);
     albedo.rgb  *= mesh.material.albedoFactor.rgb;
 
-    // Ignoring alpha component for now
+    // Ignoring alpha component
     gAlbedo = albedo.rgb;
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;

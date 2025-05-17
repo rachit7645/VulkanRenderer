@@ -17,9 +17,9 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Shadows/PointShadow.h"
+#include "Shadows/PointShadow/Opaque.h"
 
-namespace Renderer::PointShadow
+namespace Renderer::PointShadow::Opaque
 {
     Pipeline::Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper)
     {
@@ -33,14 +33,14 @@ namespace Renderer::PointShadow
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
-            .AttachShader("Shadows/PointShadow.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Shadows/PointShadow.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Shadows/PointShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Shadows/PointShadow/Opaque.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetMSAAState()
             .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PointShadow::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Opaque::Constants))
             .Build();
 
         Vk::SetDebugName(context.device, handle, "PointShadowPipeline");

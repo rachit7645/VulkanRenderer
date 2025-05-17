@@ -48,8 +48,8 @@ void main()
                            Constants.Scene.previousMatrices.view *
                            previousMesh.transform * vec4(position, 1.0f);
 
-    fragUV0 = vertex.uv0;
-    fragDrawID    = meshIndex;
+    fragUV0    = vertex.uv0;
+    fragDrawID = meshIndex;
 
     vec3 N = normalize(currentMesh.normalMatrix * vertex.normal);
     vec3 T = normalize(currentMesh.transform    * vec4(vertex.tangent.xyz, 0.0f)).xyz;

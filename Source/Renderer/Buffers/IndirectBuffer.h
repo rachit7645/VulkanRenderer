@@ -43,8 +43,17 @@ namespace Renderer::Buffers
 
         std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> writtenDrawCallBuffers;
 
-        DrawCallBuffer frustumCulledOpaqueBuffer;
-        DrawCallBuffer frustumCulledOpaqueDoubleSidedBuffer;
+        struct CulledBuffers
+        {
+            CulledBuffers(VkDevice device, VmaAllocator allocator);
+
+            void Destroy(VmaAllocator allocator);
+
+            DrawCallBuffer opaqueBuffer;
+            DrawCallBuffer opaqueDoubleSidedBuffer;
+            DrawCallBuffer alphaMaskedBuffer;
+            DrawCallBuffer alphaMaskedDoubleSidedBuffer;
+        } frustumCulledBuffers;
     };
 }
 

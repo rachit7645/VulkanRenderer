@@ -20,14 +20,26 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Shadows/PointShadow.h"
+#include "Shadows/PointShadow/AlphaMasked.h"
 
-layout(location = 0) out vec3 fragPosition;
+layout(location = 0) out      vec3 fragPosition;
+layout(location = 1) out      vec2 fragUV0;
+layout(location = 2) out flat uint fragDrawID;
 
-// Note: Writing the shader in this compact way reduces register pressure a lot (for some reason)
 void main()
 {
-    vec4 fragPos = Constants.Meshes.meshes[Constants.MeshIndices.indices[gl_DrawID]].transform * vec4(Constants.Positions.positions[gl_VertexIndex], 1.0f);
+    uint meshIndex = Constants.MeshIndices.indices[gl_DrawID];
+    Mesh mesh      = Constants.Meshes.meshes[meshIndex];
+
+    vec3   position = Constants.Positions.positions[gl_VertexIndex];
+    Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
+
+    mat4 projectionView = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex];
+
+    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
+    gl_Position  = projectionView * fragPos;
     fragPosition = fragPos.xyz;
-    gl_Position  = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
+
+    fragUV0    = vertex.uv0;
+    fragDrawID = meshIndex;
 }

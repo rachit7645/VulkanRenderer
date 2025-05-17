@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PIPELINE_H
-#define GBUFFER_PIPELINE_H
+#ifndef SPOT_SHADOW_ALPHA_MASKED_PIPELINE_H
+#define SPOT_SHADOW_ALPHA_MASKED_PIPELINE_H
 
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::GBuffer
+namespace Renderer::SpotShadow::AlphaMasked
 {
     class Pipeline : public Vk::Pipeline
     {

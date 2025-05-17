@@ -20,16 +20,14 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-layout(location = 0) in vec3 fragPosition;
+#include "Shadows/PointShadow/Opaque.h"
 
-#include "Shadows/PointShadow.h"
+layout(location = 0) out vec3 fragPosition;
 
+// Note: Writing the shader in this way reduces register pressure a lot (for some reason)
 void main()
 {
-    float lightDistance = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
-
-    // Map to [0, 1] to store into depth buffer
-    lightDistance = lightDistance / Constants.Scene.CommonLight.pointLightShadowPlanes.y;
-
-    gl_FragDepth = lightDistance;
+    vec4 fragPos = Constants.Meshes.meshes[Constants.MeshIndices.indices[gl_DrawID]].transform * vec4(Constants.Positions.positions[gl_VertexIndex], 1.0f);
+    fragPosition = fragPos.xyz;
+    gl_Position  = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
 }

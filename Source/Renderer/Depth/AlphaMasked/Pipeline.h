@@ -14,20 +14,29 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef ALPHA_MASKED_DEPTH_PIPELINE_H
+#define ALPHA_MASKED_DEPTH_PIPELINE_H
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
+#include "Vulkan/TextureManager.h"
 
-#include "Shadows/SpotShadow.h"
-
-void main()
+namespace Renderer::Depth::AlphaMasked
 {
-    uint meshIndex = Constants.MeshIndices.indices[gl_DrawID];
-    Mesh mesh      = Constants.Meshes.meshes[meshIndex];
-    vec3 position  = Constants.Positions.positions[gl_VertexIndex];
-    mat4 matrix    = Constants.Scene.ShadowedSpotLights.lights[Constants.CurrentIndex].matrix;
+    class Pipeline : public Vk::Pipeline
+    {
+    public:
+        Pipeline
+        (
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
+        );
 
-    gl_Position = matrix * mesh.transform * vec4(position, 1.0f);
+        u32 textureSamplerIndex = 0;
+    };
 }
+
+#endif

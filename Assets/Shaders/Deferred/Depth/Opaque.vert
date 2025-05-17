@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef POINT_SHADOW_PIPELINE_H
-#define POINT_SHADOW_PIPELINE_H
+#version 460
 
-#include "Vulkan/Pipeline.h"
-#include "Vulkan/FormatHelper.h"
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
 
-namespace Renderer::PointShadow
+#include "Deferred/Depth/Opaque.h"
+
+void main()
 {
-    class Pipeline : public Vk::Pipeline
-    {
-    public:
-        Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
-    };
-}
+    uint meshIndex = Constants.MeshIndices.indices[gl_DrawID];
+    Mesh mesh      = Constants.Meshes.meshes[meshIndex];
+    vec3 position  = Constants.Positions.positions[gl_VertexIndex];
 
-#endif
+    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
+    gl_Position  = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * fragPos;
+}
