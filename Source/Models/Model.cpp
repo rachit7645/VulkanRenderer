@@ -401,6 +401,17 @@ namespace Models
                 material.albedoFactor    = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
                 material.roughnessFactor = mat.pbrData.roughnessFactor;
                 material.metallicFactor  = mat.pbrData.metallicFactor;
+
+                if (mat.doubleSided)
+                {
+                    material.flags |= GPU::MaterialFlags::DoubleSided;
+                }
+
+                if (mat.alphaMode == fastgltf::AlphaMode::Mask)
+                {
+                    material.flags       |= GPU::MaterialFlags::AlphaMasked;
+                    material.alphaCutOff  = mat.alphaCutoff;
+                }
             }
 
             // Albedo

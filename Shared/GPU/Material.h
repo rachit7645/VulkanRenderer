@@ -21,6 +21,12 @@
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
+GLSL_ENUM_CLASS_BEGIN(MaterialFlags, u32)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, None,        0u << 0u)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, DoubleSided, 1u << 1u)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, AlphaMasked, 1u << 2u)
+GLSL_ENUM_CLASS_END
+
 struct Material
 {
     u32 albedo;
@@ -28,12 +34,25 @@ struct Material
     u32 aoRghMtl;
 
     GLSL_VEC4 albedoFactor;
+    f32       roughnessFactor;
+    f32       metallicFactor;
 
-    f32 roughnessFactor;
-    f32 metallicFactor;
+    f32 alphaCutOff;
+
+    GLSL_ENUM_CLASS_NAME(MaterialFlags, u32) flags;
 };
 
 #ifndef __cplusplus
+
+bool Material_IsDoubleSided(Material material)
+{
+    return (material.flags & MaterialFlags_DoubleSided) != 0u;
+}
+
+bool Material_IsAlphaClipped(Material material)
+{
+    return (material.flags & MaterialFlags_AlphaClipped) != 0u;
+}
 
 // Safe version, use with bad geometry
 vec3 Orthogonalize(vec3 T, vec3 N)

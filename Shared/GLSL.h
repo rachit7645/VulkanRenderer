@@ -17,6 +17,9 @@
 #ifndef GLSL_H
 #define GLSL_H
 
+#define GLSL_CONCAT3_INNER(a, b, c) a##b##c
+#define GLSL_CONCAT3(a, b, c) GLSL_CONCAT3_INNER(a, b, c)
+
 #ifdef __cplusplus
 
 #include <vulkan/vulkan.h>
@@ -47,6 +50,20 @@ using GLSL_MAT4 = glm::mat4;
 #define GLSL_PUSH_CONSTANT_BEGIN struct Constants
 #define GLSL_PUSH_CONSTANT_END
 
+#define GLSL_ENUM_CLASS_BEGIN(EnumClassName, UnderlyingType) \
+    enum class EnumClassName : UnderlyingType \
+    { \
+
+#define GLSL_ENUM_CLASS_ENTRY(EnumClassName, UnderlyingType, EnumClassEntryName, EnumClassEntryValue) \
+    EnumClassEntryName = EnumClassEntryValue,
+
+#define GLSL_ENUM_CLASS_END };
+
+#define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) EnumClassName
+
+#define GLSL_CONSTANT(ConstantType, ConstantName, ConstantValue) \
+    constexpr ConstantType ConstantName = ConstantValue;
+
 #else
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int32   : enable
@@ -76,6 +93,18 @@ using GLSL_MAT4 = glm::mat4;
 
 #define GLSL_PUSH_CONSTANT_BEGIN layout(push_constant, scalar) uniform ConstantsBuffer
 #define GLSL_PUSH_CONSTANT_END Constants
+
+#define GLSL_ENUM_CLASS_BEGIN(EnumClassName, UnderlyingType)
+
+#define GLSL_ENUM_CLASS_ENTRY(EnumClassName, UnderlyingType, EnumClassEntryName, EnumClassEntryValue) \
+    const UnderlyingType GLSL_CONCAT3(EnumClassName, _, EnumClassEntryName) = UnderlyingType(EnumClassEntryValue);
+
+#define GLSL_ENUM_CLASS_END
+
+#define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) UnderlyingType
+
+#define GLSL_CONSTANT(ConstantType, ConstantName, ConstantValue) \
+    const ConstantType ConstantName = ConstantValue;
 
 #endif
 
