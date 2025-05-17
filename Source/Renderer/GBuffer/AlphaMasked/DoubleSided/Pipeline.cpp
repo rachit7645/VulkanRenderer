@@ -43,7 +43,7 @@ namespace Renderer::GBuffer::AlphaMasked::DoubleSided
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
             .AttachShader("Deferred/GBuffer/GBuffer.vert",                 VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Deferred/GBuffer/AlphaMasked/DoubleSided.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Deferred/GBuffer/DoubleSided/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
