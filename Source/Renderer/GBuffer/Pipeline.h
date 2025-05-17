@@ -36,15 +36,6 @@ namespace Renderer::GBuffer
         );
 
         u32 textureSamplerIndex = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData(const Vk::Context& context, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

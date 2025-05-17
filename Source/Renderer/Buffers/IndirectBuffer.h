@@ -41,9 +41,10 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> drawCallBuffers;
+        std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> writtenDrawCallBuffers;
 
-        DrawCallBuffer frustumCulledDrawCallBuffer;
+        DrawCallBuffer frustumCulledOpaqueBuffer;
+        DrawCallBuffer frustumCulledOpaqueDoubleSidedBuffer;
     };
 }
 

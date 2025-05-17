@@ -51,7 +51,7 @@ namespace Renderer::PointShadow
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
             Culling::Dispatch& cullingDispatch
-        );
+        ) const;
 
         void Destroy(VkDevice device);
 

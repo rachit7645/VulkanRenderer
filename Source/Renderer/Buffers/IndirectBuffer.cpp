@@ -24,17 +24,20 @@ namespace Renderer::Buffers
 {
     IndirectBuffer::IndirectBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < drawCallBuffers.size(); ++i)
+        for (usize i = 0; i < writtenDrawCallBuffers.size(); ++i)
         {
-            drawCallBuffers[i] = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::CPUToGPU);
+            writtenDrawCallBuffers[i] = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::CPUToGPU);
 
-            Vk::SetDebugName(device, drawCallBuffers[i].drawCallBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/DrawCalls/{}", i));
+            Vk::SetDebugName(device, writtenDrawCallBuffers[i].drawCallBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/DrawCalls/{}", i));
         }
 
-        frustumCulledDrawCallBuffer = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
+        frustumCulledOpaqueBuffer            = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
+        frustumCulledOpaqueDoubleSidedBuffer = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
 
-        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.drawCallBuffer.handle,   "IndirectBuffer/DrawCallBuffer/FrustumCulled/DrawCalls");
-        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.meshIndexBuffer->handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledOpaqueBuffer.drawCallBuffer.handle,              "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledOpaqueBuffer.meshIndexBuffer->handle,            "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.handle,   "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledOpaqueDoubleSidedBuffer.meshIndexBuffer->handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/MeshIndices");
     }
 
     void IndirectBuffer::WriteDrawCalls
@@ -45,16 +48,17 @@ namespace Renderer::Buffers
         const std::span<const Renderer::RenderObject> renderObjects
     )
     {
-        drawCallBuffers[FIF].WriteDrawCalls(allocator, modelManager, renderObjects);
+        writtenDrawCallBuffers[FIF].WriteDrawCalls(allocator, modelManager, renderObjects);
     }
 
     void IndirectBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : drawCallBuffers)
+        for (auto& buffer : writtenDrawCallBuffers)
         {
             buffer.Destroy(allocator);
         }
 
-        frustumCulledDrawCallBuffer.Destroy(allocator);
+        frustumCulledOpaqueBuffer.Destroy(allocator);
+        frustumCulledOpaqueDoubleSidedBuffer.Destroy(allocator);
     }
 }

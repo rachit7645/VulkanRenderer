@@ -46,12 +46,12 @@ struct Material
 
 bool Material_IsDoubleSided(Material material)
 {
-    return (material.flags & MaterialFlags_DoubleSided) != 0u;
+    return (material.flags & MaterialFlags_DoubleSided) == MaterialFlags_DoubleSided;
 }
 
-bool Material_IsAlphaClipped(Material material)
+bool Material_IsAlphaMasked(Material material)
 {
-    return (material.flags & MaterialFlags_AlphaClipped) != 0u;
+    return (material.flags & MaterialFlags_AlphaMasked) == MaterialFlags_AlphaMasked;
 }
 
 // Safe version, use with bad geometry

@@ -31,20 +31,19 @@ namespace Renderer::GBuffer
         Vk::TextureManager& textureManager
     )
     {
-        CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context, megaSet, textureManager);
-    }
+        constexpr std::array DYNAMIC_STATES =
+        {
+            VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
+            VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
+            VK_DYNAMIC_STATE_CULL_MODE
+        };
 
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
-    )
-    {
-        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
-
-        const std::array colorFormats = {formatHelper.b10g11r11SFloat, formatHelper.rgba8UnormFormat, formatHelper.rgSFloat16Format};
+        const std::array colorFormats =
+        {
+            formatHelper.b10g11r11SFloat,
+            formatHelper.rgba8UnormFormat,
+            formatHelper.rgSFloat16Format
+        };
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
@@ -100,17 +99,6 @@ namespace Renderer::GBuffer
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "GBufferPipeline");
-        Vk::SetDebugName(context.device, layout, "GBufferPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        const Vk::Context& context,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
         textureSamplerIndex = textureManager.AddSampler
@@ -141,6 +129,8 @@ namespace Renderer::GBuffer
 
         megaSet.Update(context.device);
 
+        Vk::SetDebugName(context.device, handle,                                                "GBufferPipeline");
+        Vk::SetDebugName(context.device, layout,                                                "GBufferPipelineLayout");
         Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "GBufferPipeline/TextureSampler");
     }
 }

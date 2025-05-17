@@ -172,33 +172,69 @@ namespace Renderer::Depth
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto constants = Depth::Constants
-        {
-            .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
-            .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .MeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
-            .Positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
-        };
-
-        pipeline.PushConstants
-        (
-           cmdBuffer,
-           VK_SHADER_STAGE_VERTEX_BIT,
-           constants
-        );
-
         geometryBuffer.Bind(cmdBuffer);
 
-        vkCmdDrawIndexedIndirectCount
-        (
-            cmdBuffer.handle,
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-            sizeof(u32),
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-            0,
-            indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
-            sizeof(VkDrawIndexedIndirectCommand)
-        );
+        // Opaque, Single Sided
+        {
+            vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
+
+            const auto constants = Depth::Constants
+            {
+                .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
+                .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                .MeshIndices = indirectBuffer.frustumCulledOpaqueBuffer.meshIndexBuffer->deviceAddress,
+                .Positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
+            };
+
+            pipeline.PushConstants
+            (
+               cmdBuffer,
+               VK_SHADER_STAGE_VERTEX_BIT,
+               constants
+            );
+
+            vkCmdDrawIndexedIndirectCount
+            (
+                cmdBuffer.handle,
+                indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer.handle,
+                sizeof(u32),
+                indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer.handle,
+                0,
+                indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                sizeof(VkDrawIndexedIndirectCommand)
+            );
+        }
+
+        // Opaque, Double Sided
+        {
+            vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
+
+            const auto constants = Depth::Constants
+            {
+                .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
+                .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                .MeshIndices = indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                .Positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
+            };
+
+            pipeline.PushConstants
+            (
+               cmdBuffer,
+               VK_SHADER_STAGE_VERTEX_BIT,
+               constants
+            );
+
+            vkCmdDrawIndexedIndirectCount
+            (
+                cmdBuffer.handle,
+                indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                sizeof(u32),
+                indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                0,
+                indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                sizeof(VkDrawIndexedIndirectCommand)
+            );
+        }
 
         vkCmdEndRendering(cmdBuffer.handle);
 

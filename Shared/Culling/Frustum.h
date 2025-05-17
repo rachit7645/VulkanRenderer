@@ -31,8 +31,10 @@ GLSL_PUSH_CONSTANT_BEGIN
 {
     GLSL_BUFFER_POINTER(MeshBuffer)      Meshes;
     GLSL_BUFFER_POINTER(DrawCallBuffer)  DrawCalls;
-    GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledDrawCalls;
-    GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledMeshIndices;
+    GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledOpaqueDrawCalls;
+    GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledOpaqueMeshIndices;
+    GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledOpaqueDoubleSidedDrawCalls;
+    GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledOpaqueDoubleSidedMeshIndices;
     GLSL_BUFFER_POINTER(FrustumBuffer)   Frustum;
 } GLSL_PUSH_CONSTANT_END;
 

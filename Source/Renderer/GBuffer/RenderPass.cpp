@@ -316,39 +316,78 @@ namespace Renderer::GBuffer
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto constants = GBuffer::Constants
-        {
-            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-            .MeshIndices         = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
-            .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
-            .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-            .TextureSamplerIndex = pipeline.textureSamplerIndex
-        };
-
-        pipeline.PushConstants
-        (
-            cmdBuffer,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            constants
-        );
-
         const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         geometryBuffer.Bind(cmdBuffer);
 
-        vkCmdDrawIndexedIndirectCount
-        (
-            cmdBuffer.handle,
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-            sizeof(u32),
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-            0,
-            indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
-            sizeof(VkDrawIndexedIndirectCommand)
-        );
+        // Opaque, Single Sided
+        {
+            vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
+
+            const auto constants = GBuffer::Constants
+            {
+                .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
+                .MeshIndices         = indirectBuffer.frustumCulledOpaqueBuffer.meshIndexBuffer->deviceAddress,
+                .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                .TextureSamplerIndex = pipeline.textureSamplerIndex
+            };
+
+            pipeline.PushConstants
+            (
+                cmdBuffer,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                constants
+            );
+
+            vkCmdDrawIndexedIndirectCount
+            (
+                cmdBuffer.handle,
+                indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer.handle,
+                sizeof(u32),
+                indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer.handle,
+                0,
+                indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                sizeof(VkDrawIndexedIndirectCommand)
+            );
+        }
+
+        // Opaque, Double Sided
+        {
+            vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
+
+            const auto constants = GBuffer::Constants
+            {
+                .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
+                .MeshIndices         = indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                .TextureSamplerIndex = pipeline.textureSamplerIndex
+            };
+
+            pipeline.PushConstants
+            (
+                cmdBuffer,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                constants
+            );
+
+            vkCmdDrawIndexedIndirectCount
+            (
+                cmdBuffer.handle,
+                indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                sizeof(u32),
+                indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                0,
+                indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                sizeof(VkDrawIndexedIndirectCommand)
+            );
+        }
 
         vkCmdEndRendering(cmdBuffer.handle);
 

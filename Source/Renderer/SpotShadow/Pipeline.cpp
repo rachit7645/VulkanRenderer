@@ -23,7 +23,12 @@ namespace Renderer::SpotShadow
 {
     Pipeline::Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper)
     {
-        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+        constexpr std::array DYNAMIC_STATES =
+        {
+            VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
+            VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
+            VK_DYNAMIC_STATE_CULL_MODE
+        };
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)

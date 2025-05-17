@@ -31,7 +31,7 @@ struct AABB
 
 #include "Constants.glsl"
 
-vec3[8] GetAABBCorners(AABB aabb)
+vec3[8] AABB_GetCorners(AABB aabb)
 {
     const vec3 corners[8] =
     {
@@ -48,9 +48,9 @@ vec3[8] GetAABBCorners(AABB aabb)
     return corners;
 }
 
-AABB TransformAABB(AABB aabb, mat4 transform)
+AABB AABB_Transform(AABB aabb, mat4 transform)
 {
-    vec3[8] corners = GetAABBCorners(aabb);
+    vec3[8] corners = AABB_GetCorners(aabb);
 
     AABB newAABB;
 

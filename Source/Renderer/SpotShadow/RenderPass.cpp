@@ -122,6 +122,8 @@ namespace Renderer::SpotShadow
 
         for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedSpotLights.size(); ++i)
         {
+            Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.5146f, 0.7488f, 0.9388f, 1.0f));
+
             cullingDispatch.DispatchFrustumCulling
             (
                 FIF,
@@ -131,8 +133,6 @@ namespace Renderer::SpotShadow
                 meshBuffer,
                 indirectBuffer
             );
-
-            Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.5146f, 0.7488f, 0.9388f, 1.0f));
 
             const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SpotShadowMapView/{}", i));
 
@@ -191,34 +191,71 @@ namespace Renderer::SpotShadow
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            const auto constants = SpotShadow::Constants
-            {
-                .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
-                .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                .MeshIndices  = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
-                .Positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                .CurrentIndex = static_cast<u32>(i)
-            };
-
-            pipeline.PushConstants
-            (
-               cmdBuffer,
-               VK_SHADER_STAGE_VERTEX_BIT,
-               constants
-            );
-
             geometryBuffer.Bind(cmdBuffer);
 
-            vkCmdDrawIndexedIndirectCount
-            (
-                cmdBuffer.handle,
-                indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-                sizeof(u32),
-                indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-                0,
-                indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
-                sizeof(VkDrawIndexedIndirectCommand)
-            );
+            // Opaque, Single Sided
+            {
+                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
+
+                const auto constants = SpotShadow::Constants
+                {
+                    .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                    .MeshIndices  = indirectBuffer.frustumCulledOpaqueBuffer.meshIndexBuffer->deviceAddress,
+                    .Positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                    .CurrentIndex = static_cast<u32>(i)
+                };
+
+                pipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT,
+                   constants
+                );
+
+                vkCmdDrawIndexedIndirectCount
+                (
+                    cmdBuffer.handle,
+                    indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer.handle,
+                    sizeof(u32),
+                    indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer.handle,
+                    0,
+                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
+            }
+
+            // Opaque, Double Sided
+            {
+                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
+
+                const auto constants = SpotShadow::Constants
+                {
+                    .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                    .MeshIndices  = indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .Positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                    .CurrentIndex = static_cast<u32>(i)
+                };
+
+                pipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT,
+                   constants
+                );
+
+                vkCmdDrawIndexedIndirectCount
+                (
+                    cmdBuffer.handle,
+                    indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                    sizeof(u32),
+                    indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                    0,
+                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
+            }
 
             vkCmdEndRendering(cmdBuffer.handle);
 

@@ -49,11 +49,13 @@ namespace Renderer::Culling
 
         const auto constants = Culling::Constants
         {
-            .Meshes            = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .DrawCalls         = indirectBuffer.drawCallBuffers[FIF].drawCallBuffer.deviceAddress,
-            .CulledDrawCalls   = indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.deviceAddress,
-            .CulledMeshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer->deviceAddress,
-            .Frustum           = frustumBuffer.buffer.deviceAddress
+            .Meshes                             = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+            .DrawCalls                          = indirectBuffer.writtenDrawCallBuffers[FIF].drawCallBuffer.deviceAddress,
+            .CulledOpaqueDrawCalls              = indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer.deviceAddress,
+            .CulledOpaqueMeshIndices            = indirectBuffer.frustumCulledOpaqueBuffer.meshIndexBuffer->deviceAddress,
+            .CulledOpaqueDoubleSidedDrawCalls   = indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer.deviceAddress,
+            .CulledOpaqueDoubleSidedMeshIndices = indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+            .Frustum                            = frustumBuffer.buffer.deviceAddress
         };
 
         frustumPipeline.PushConstants
@@ -65,13 +67,13 @@ namespace Renderer::Culling
 
         Vk::BarrierWriter barrierWriter = {};
 
-        const u32          drawCallCount   = indirectBuffer.drawCallBuffers[FIF].writtenDrawCount;
+        const u32          drawCallCount   = indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount;
         const VkDeviceSize drawCallsSize   = sizeof(u32) + drawCallCount * sizeof(VkDrawIndexedIndirectCommand);
         const VkDeviceSize meshIndicesSize = drawCallCount * sizeof(u32);
 
         barrierWriter
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer,
+            indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer,
             Vk::BufferBarrier{
                 .srcStageMask  = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
                 .srcAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
@@ -82,7 +84,29 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            *indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer,
+            *indirectBuffer.frustumCulledOpaqueBuffer.meshIndexBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .offset        = 0,
+                .size          = meshIndicesSize
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .offset        = 0,
+                .size          = drawCallsSize
+            }
+        )
+        .WriteBufferBarrier(
+            *indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.meshIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -104,7 +128,7 @@ namespace Renderer::Culling
 
         barrierWriter
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer,
+            indirectBuffer.frustumCulledOpaqueBuffer.drawCallBuffer,
             Vk::BufferBarrier{
                 .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -115,7 +139,29 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            *indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer,
+            *indirectBuffer.frustumCulledOpaqueBuffer.meshIndexBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .offset        = 0,
+                .size          = meshIndicesSize
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .offset        = 0,
+                .size          = drawCallsSize
+            }
+        )
+        .WriteBufferBarrier(
+            *indirectBuffer.frustumCulledOpaqueDoubleSidedBuffer.meshIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
