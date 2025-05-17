@@ -31,7 +31,9 @@ namespace Renderer::GBuffer
         Vk::TextureManager& textureManager
     )
         : opaquePipeline(context, formatHelper, megaSet, textureManager),
-          alphaMaskedPipeline(context, formatHelper, megaSet, textureManager)
+          opaqueDoubleSidedPipeline(context, formatHelper, megaSet, textureManager),
+          alphaMaskedPipeline(context, formatHelper, megaSet, textureManager),
+          alphaMaskedDoubleSidedPipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -164,9 +166,9 @@ namespace Renderer::GBuffer
         const auto& motionVectorsView   = framebufferManager.GetFramebufferView("GMotionVectorsView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
-        const auto& gAlbedo         = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
-        const auto& gNormal         = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
-        const auto& motionVectors   = framebufferManager.GetFramebuffer(motionVectorsView.framebuffer);
+        const auto& gAlbedo        = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
+        const auto& gNormal        = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
+        const auto& gMotionVectors = framebufferManager.GetFramebuffer(motionVectorsView.framebuffer);
 
         Vk::BarrierWriter barrierWriter = {};
 
@@ -202,7 +204,7 @@ namespace Renderer::GBuffer
             }
         )
         .WriteImageBarrier(
-            motionVectors.image,
+            gMotionVectors.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -211,9 +213,9 @@ namespace Renderer::GBuffer
                 .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = motionVectors.image.mipLevels,
+                .levelCount     = gMotionVectors.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = motionVectors.image.arrayLayers
+                .layerCount     = gMotionVectors.image.arrayLayers
             }
         )
         .Execute(cmdBuffer);
@@ -315,18 +317,20 @@ namespace Renderer::GBuffer
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        opaquePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
-
         geometryBuffer.Bind(cmdBuffer);
 
         // Opaque
         {
-            opaquePipeline.Bind(cmdBuffer);
+            Vk::BeginLabel(cmdBuffer, "Opaque", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
             // Single Sided
             {
-                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
+                Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
+
+                opaquePipeline.Bind(cmdBuffer);
+
+                const std::array descriptorSets = {megaSet.descriptorSet};
+                opaquePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -356,11 +360,18 @@ namespace Renderer::GBuffer
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
 
             // Double Sided
             {
-                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
+                Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
+
+                opaqueDoubleSidedPipeline.Bind(cmdBuffer);
+
+                const std::array descriptorSets = {megaSet.descriptorSet};
+                opaqueDoubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -370,10 +381,10 @@ namespace Renderer::GBuffer
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
                     .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                    .TextureSamplerIndex = opaquePipeline.textureSamplerIndex
+                    .TextureSamplerIndex = opaqueDoubleSidedPipeline.textureSamplerIndex
                 };
 
-                opaquePipeline.PushConstants
+                opaqueDoubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -390,16 +401,25 @@ namespace Renderer::GBuffer
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
+
+            Vk::EndLabel(cmdBuffer);
         }
 
         // Alpha Masked
         {
-            alphaMaskedPipeline.Bind(cmdBuffer);
+            Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
             // Single Sided
             {
-                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
+                Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
+
+                alphaMaskedPipeline.Bind(cmdBuffer);
+
+                const std::array descriptorSets = {megaSet.descriptorSet};
+                alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -409,7 +429,7 @@ namespace Renderer::GBuffer
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
                     .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                    .TextureSamplerIndex = opaquePipeline.textureSamplerIndex
+                    .TextureSamplerIndex = alphaMaskedPipeline.textureSamplerIndex
                 };
 
                 alphaMaskedPipeline.PushConstants
@@ -429,11 +449,18 @@ namespace Renderer::GBuffer
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
 
             // Double Sided
             {
-                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
+                Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
+
+                alphaMaskedDoubleSidedPipeline.Bind(cmdBuffer);
+
+                const std::array descriptorSets = {megaSet.descriptorSet};
+                alphaMaskedDoubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -443,10 +470,10 @@ namespace Renderer::GBuffer
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
                     .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                    .TextureSamplerIndex = opaquePipeline.textureSamplerIndex
+                    .TextureSamplerIndex = alphaMaskedDoubleSidedPipeline.textureSamplerIndex
                 };
 
-                alphaMaskedPipeline.PushConstants
+                alphaMaskedDoubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -463,7 +490,11 @@ namespace Renderer::GBuffer
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
+
+            Vk::EndLabel(cmdBuffer);
         }
 
         vkCmdEndRendering(cmdBuffer.handle);
@@ -500,7 +531,7 @@ namespace Renderer::GBuffer
             }
         )
         .WriteImageBarrier(
-            motionVectors.image,
+            gMotionVectors.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -509,9 +540,9 @@ namespace Renderer::GBuffer
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = motionVectors.image.mipLevels,
+                .levelCount     = gMotionVectors.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = motionVectors.image.arrayLayers
+                .layerCount     = gMotionVectors.image.arrayLayers
             }
         )
         .Execute(cmdBuffer);
@@ -524,6 +555,8 @@ namespace Renderer::GBuffer
         Logger::Debug("{}\n", "Destroying GBuffer pass!");
 
         opaquePipeline.Destroy(device);
+        opaqueDoubleSidedPipeline.Destroy(device);
         alphaMaskedPipeline.Destroy(device);
+        alphaMaskedDoubleSidedPipeline.Destroy(device);
     }
 }

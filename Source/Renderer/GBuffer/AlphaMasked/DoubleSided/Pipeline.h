@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef TAA_PIPELINE_H
-#define TAA_PIPELINE_H
+#ifndef GBUFFER_ALPHA_MASKED_DOUBLE_SIDED_PIPELINE_H
+#define GBUFFER_ALPHA_MASKED_DOUBLE_SIDED_PIPELINE_H
 
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::TAA
+namespace Renderer::GBuffer::AlphaMasked::DoubleSided
 {
     class Pipeline : public Vk::Pipeline
     {
@@ -35,8 +35,7 @@ namespace Renderer::TAA
             Vk::TextureManager& textureManager
         );
 
-        u32 pointSamplerIndex  = 0;
-        u32 linearSamplerIndex = 0;
+        u32 textureSamplerIndex = 0;
     };
 }
 

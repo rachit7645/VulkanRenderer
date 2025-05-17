@@ -179,10 +179,14 @@ namespace Renderer::Depth
 
         // Opaque
         {
+            Vk::BeginLabel(cmdBuffer, "Opaque", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
+
             opaquePipeline.Bind(cmdBuffer);
 
             // Single-Sided
             {
+                Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
+
                 vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
 
                 const auto constants = Opaque::Constants
@@ -210,10 +214,14 @@ namespace Renderer::Depth
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
 
             // Double Sided
             {
+                Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
+
                 vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
 
                 const auto constants = Opaque::Constants
@@ -241,11 +249,17 @@ namespace Renderer::Depth
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
+
+            Vk::EndLabel(cmdBuffer);
         }
 
         // Alpha Masked
         {
+            Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
+
             alphaMaskedPipeline.Bind(cmdBuffer);
 
             const std::array descriptorSets = {megaSet.descriptorSet};
@@ -253,6 +267,8 @@ namespace Renderer::Depth
 
             // Single-Sided
             {
+                Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
+
                 vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
 
                 const auto constants = AlphaMasked::Constants
@@ -282,10 +298,14 @@ namespace Renderer::Depth
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
 
             // Double Sided
             {
+                Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
+
                 vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
 
                 const auto constants = AlphaMasked::Constants
@@ -315,7 +335,11 @@ namespace Renderer::Depth
                     indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
+
+                Vk::EndLabel(cmdBuffer);
             }
+
+            Vk::EndLabel(cmdBuffer);
         }
 
         vkCmdEndRendering(cmdBuffer.handle);

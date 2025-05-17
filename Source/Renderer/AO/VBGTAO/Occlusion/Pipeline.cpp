@@ -89,9 +89,9 @@ namespace Renderer::AO::VBGTAO::Occlusion
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                               "VBGTAOPipeline");
-        Vk::SetDebugName(context.device, layout,                                               "VBGTAOPipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle,  "VBGTAOPipeline/PointSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(linearSamplerIndex).handle, "VBGTAOPipeline/LinearSampler");
+        Vk::SetDebugName(context.device, handle,                                               "VBGTAO/Occlusion/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                               "VBGTAO/Occlusion/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle,  "VBGTAO/Occlusion/Pipeline/PointSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(linearSamplerIndex).handle, "VBGTAO/Occlusion/Pipeline/LinearSampler");
     }
 }

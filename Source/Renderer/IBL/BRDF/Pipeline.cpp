@@ -26,7 +26,7 @@ namespace Renderer::IBL::BRDF
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.rgSFloat16Format};
+        const std::array colorFormats = {formatHelper.rgSFloat16Format};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
@@ -53,7 +53,7 @@ namespace Renderer::IBL::BRDF
             .SetBlendState()
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "BRDFPipeline");
-        Vk::SetDebugName(context.device, layout, "BRDFPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "IBL/BRDF/Pipeline");
+        Vk::SetDebugName(context.device, layout, "IBL/BRDF/PipelineLayout");
     }
 }

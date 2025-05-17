@@ -43,7 +43,7 @@ namespace Renderer::Depth::Opaque
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "DepthPipeline");
-        Vk::SetDebugName(context.device, layout, "DepthPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "Depth/Opaque/Pipeline");
+        Vk::SetDebugName(context.device, layout, "Depth/Opaque/Pipeline/Layout");
     }
 }

@@ -18,7 +18,6 @@
 
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Util/Types.h"
 #include "Deferred/GBuffer.h"
 
 namespace Renderer::GBuffer::Opaque
@@ -31,12 +30,7 @@ namespace Renderer::GBuffer::Opaque
         Vk::TextureManager& textureManager
     )
     {
-        constexpr std::array DYNAMIC_STATES =
-        {
-            VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
-            VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
-            VK_DYNAMIC_STATE_CULL_MODE
-        };
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         const std::array colorFormats =
         {
@@ -48,8 +42,8 @@ namespace Renderer::GBuffer::Opaque
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
-            .AttachShader("Deferred/GBuffer/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Deferred/GBuffer/Opaque.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Deferred/GBuffer/GBuffer.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/GBuffer/Opaque.frag",  VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -129,8 +123,8 @@ namespace Renderer::GBuffer::Opaque
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "GBufferPipeline");
-        Vk::SetDebugName(context.device, layout,                                                "GBufferPipelineLayout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "GBufferPipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle,                                                "GBuffer/Opaque/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                                "GBuffer/Opaque/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "GBuffer/Opaque/Pipeline/TextureSampler");
     }
 }

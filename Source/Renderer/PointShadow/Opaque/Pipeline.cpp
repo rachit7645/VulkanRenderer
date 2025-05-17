@@ -43,7 +43,7 @@ namespace Renderer::PointShadow::Opaque
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Opaque::Constants))
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "PointShadowPipeline");
-        Vk::SetDebugName(context.device, layout, "PointShadowPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "PointShadow/Opaque/Pipeline");
+        Vk::SetDebugName(context.device, layout, "PointShadow/Opaque/Pipeline/Layout");
     }
 }

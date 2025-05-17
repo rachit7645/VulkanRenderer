@@ -35,20 +35,6 @@ namespace Renderer::DearImGui
         );
 
         u32 samplerIndex = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::MegaSet& megaSet,
-            VkFormat colorFormat
-        );
-
-        void CreatePipelineData
-        (
-            VkDevice device,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
     };
 }
 

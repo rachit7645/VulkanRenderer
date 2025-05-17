@@ -31,17 +31,6 @@ namespace Renderer::Lighting
         Vk::TextureManager& textureManager
     )
     {
-        CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context.device, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
-    )
-    {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
@@ -73,21 +62,10 @@ namespace Renderer::Lighting
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "LightingPipeline");
-        Vk::SetDebugName(context.device, layout, "LightingPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        VkDevice device,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
         gBufferSamplerIndex = textureManager.AddSampler
         (
             megaSet,
-            device,
+            context.device,
             {
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
@@ -113,7 +91,7 @@ namespace Renderer::Lighting
         iblSamplerIndex = textureManager.AddSampler
         (
             megaSet,
-            device,
+            context.device,
             {
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
@@ -139,7 +117,7 @@ namespace Renderer::Lighting
         shadowSamplerIndex = textureManager.AddSampler
         (
             megaSet,
-            device,
+            context.device,
             {
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
@@ -162,10 +140,12 @@ namespace Renderer::Lighting
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(gBufferSamplerIndex).handle, "LightingPipeline/GBufferSampler");
-        Vk::SetDebugName(device, textureManager.GetSampler(iblSamplerIndex).handle,     "LightingPipeline/IBLSampler");
-        Vk::SetDebugName(device, textureManager.GetSampler(shadowSamplerIndex).handle,  "LightingPipeline/ShadowSampler");
+        megaSet.Update(context.device);
 
-        megaSet.Update(device);
+        Vk::SetDebugName(context.device, handle,                                                "Lighting/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                                "Lighting/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(gBufferSamplerIndex).handle, "Lighting/Pipeline/GBufferSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(iblSamplerIndex).handle,     "Lighting/Pipeline/IBLSampler");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(shadowSamplerIndex).handle,  "Lighting/Pipeline/ShadowSampler");
     }
 }

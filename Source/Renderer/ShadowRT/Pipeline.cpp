@@ -64,8 +64,8 @@ namespace Renderer::ShadowRT
             }
         );
 
-        Vk::SetDebugName(context.device, handle,                                                "ShadowRTPipeline");
-        Vk::SetDebugName(context.device, layout,                                                "ShadowRTPipelineLayout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(gBufferSamplerIndex).handle, "ShadowRTPipeline/GBufferSampler");
+        Vk::SetDebugName(context.device, handle,                                                "ShadowRT/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                                "ShadowRT/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(gBufferSamplerIndex).handle, "ShadowRT/Pipeline/GBufferSampler");
     }
 }

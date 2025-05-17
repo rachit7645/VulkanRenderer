@@ -90,8 +90,8 @@ namespace Renderer::PostProcess
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                         "SwapchainPipeline");
-        Vk::SetDebugName(context.device, layout,                                         "SwapchainPipelineLayout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "SwapchainPipeline/Sampler");
+        Vk::SetDebugName(context.device, handle,                                         "PostProcess/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                         "PostProcess/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "PostProcess/Pipeline/Sampler");
     }
 }

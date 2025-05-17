@@ -47,6 +47,11 @@ void main()
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);
 
+    if (!gl_FrontFacing)
+    {
+        normal = -normal;
+    }
+
     vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtl], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
     aoRghMtl.g   *= mesh.material.roughnessFactor;
     aoRghMtl.b   *= mesh.material.metallicFactor;

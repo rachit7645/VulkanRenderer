@@ -43,7 +43,7 @@ namespace Renderer::SpotShadow::Opaque
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "SpotShadowPipeline");
-        Vk::SetDebugName(context.device, layout, "SpotShadowPipelineLayout");
+        Vk::SetDebugName(context.device, handle, "SpotShadow/Opaque/Pipeline");
+        Vk::SetDebugName(context.device, layout, "SpotShadow/Opaque/Pipeline/Layout");
     }
 }

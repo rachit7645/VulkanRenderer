@@ -39,13 +39,23 @@ void main()
     Mesh mesh = Constants.CurrentMeshes.meshes[fragDrawID];
 
     vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0);
-    albedo.rgb  *= mesh.material.albedoFactor.rgb;
+         albedo *= mesh.material.albedoFactor;
+
+    if (albedo.a < mesh.material.alphaCutOff)
+    {
+        discard;
+    }
 
     // Ignoring alpha component
     gAlbedo = albedo.rgb;
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);
+
+    if (!gl_FrontFacing)
+    {
+        normal = -normal;
+    }
 
     vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtl], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
     aoRghMtl.g   *= mesh.material.roughnessFactor;

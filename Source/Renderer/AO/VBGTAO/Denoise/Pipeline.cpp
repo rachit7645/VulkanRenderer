@@ -63,8 +63,8 @@ namespace Renderer::AO::VBGTAO::Denoise
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                              "VBGTAO/DenoisePipeline");
-        Vk::SetDebugName(context.device, layout,                                              "VBGTAO/DenoisePipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle, "VBGTAO/DenoisePipeline/PointSampler");
+        Vk::SetDebugName(context.device, handle,                                              "VBGTAO/Denoise/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                              "VBGTAO/Denoise/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle, "VBGTAO/Denoise/Pipeline/PointSampler");
     }
 }

@@ -31,20 +31,9 @@ namespace Renderer::Bloom::UpSample
         Vk::TextureManager& textureManager
     )
     {
-        CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
-    )
-    {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
@@ -73,17 +62,6 @@ namespace Renderer::Bloom::UpSample
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "UpSamplePipeline");
-        Vk::SetDebugName(context.device, layout, "UpSamplePipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        const Vk::Context& context,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
         samplerIndex = textureManager.AddSampler
         (
             megaSet,
@@ -110,8 +88,10 @@ namespace Renderer::Bloom::UpSample
             }
         );
 
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "UpSamplePipeline/Sampler");
-
         megaSet.Update(context.device);
+
+        Vk::SetDebugName(context.device, handle,                                         "Bloom/UpSample/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                         "Bloom/UpSample/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "Bloom/UpSample/Pipeline/Sampler");
     }
 }

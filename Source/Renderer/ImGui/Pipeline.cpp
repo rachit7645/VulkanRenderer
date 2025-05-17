@@ -29,24 +29,13 @@ namespace Renderer::DearImGui
         VkFormat colorFormat
     )
     {
-        CreatePipeline(context, megaSet, colorFormat);
-        CreatePipelineData(context.device, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::MegaSet& megaSet,
-        VkFormat colorFormat
-    )
-    {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array COLOR_FORMATS = {colorFormat};
+        const std::array colorFormats = {colorFormat};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, COLOR_FORMATS, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
             .AttachShader("ImGui/ImGui.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("ImGui/ImGui.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
@@ -71,21 +60,10 @@ namespace Renderer::DearImGui
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ImGuiPipeline");
-        Vk::SetDebugName(context.device, layout, "ImGuiPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        VkDevice device,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
         samplerIndex = textureManager.AddSampler
         (
             megaSet,
-            device,
+            context.device,
             {
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
@@ -108,8 +86,10 @@ namespace Renderer::DearImGui
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "ImGuiPipeline/Sampler");
+        Vk::SetDebugName(context.device, handle,                                         "ImGui/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                         "ImGui/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "ImGui/Pipeline/Sampler");
 
-        megaSet.Update(device);
+        megaSet.Update(context.device);
     }
 }

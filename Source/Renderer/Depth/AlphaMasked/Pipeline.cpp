@@ -80,8 +80,8 @@ namespace Renderer::Depth::AlphaMasked
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "DepthAlphaMaskedPipeline");
-        Vk::SetDebugName(context.device, layout,                                                "DepthAlphaMaskedPipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "DepthAlphaMaskedPipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle,                                                "Depth/AlphaMasked/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                                "Depth/AlphaMasked/Pipeline/Layout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "Depth/AlphaMasked/Pipeline/TextureSampler");
     }
 }

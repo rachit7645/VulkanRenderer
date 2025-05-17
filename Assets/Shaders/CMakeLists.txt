@@ -70,9 +70,11 @@ file(GLOB SHADER_SOURCES
     Deferred/Depth/Opaque.vert
     Deferred/Depth/AlphaMasked.vert
     Deferred/Depth/AlphaMasked.frag
-    Deferred/GBuffer/Opaque.vert
+    Deferred/GBuffer/GBuffer.vert
     Deferred/GBuffer/Opaque.frag
     Deferred/GBuffer/AlphaMasked.frag
+    Deferred/GBuffer/DoubleSided/Opaque.frag
+    Deferred/GBuffer/DoubleSided/AlphaMasked.frag
     Deferred/Lighting.frag
     AO/VBGTAO/DepthPreFilter.comp
     AO/VBGTAO/SpacialDenoise.comp

@@ -38,15 +38,6 @@ namespace Renderer::Lighting
         u32 gBufferSamplerIndex = 0;
         u32 iblSamplerIndex     = 0;
         u32 shadowSamplerIndex  = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
     };
 }
 

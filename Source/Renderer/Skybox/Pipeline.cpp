@@ -31,20 +31,9 @@ namespace Renderer::Skybox
         Vk::TextureManager& textureManager
     )
     {
-        CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
-    )
-    {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
@@ -74,17 +63,6 @@ namespace Renderer::Skybox
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "SkyboxPipeline");
-        Vk::SetDebugName(context.device, layout, "SkyboxPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        const Vk::Context& context,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
         samplerIndex = textureManager.AddSampler
@@ -113,8 +91,10 @@ namespace Renderer::Skybox
             }
         );
 
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "SkyboxPipeline/Sampler");
-
         megaSet.Update(context.device);
+
+        Vk::SetDebugName(context.device, handle,                                         "Skybox/Pipeline");
+        Vk::SetDebugName(context.device, layout,                                         "Skybox/PipelineLayout");
+        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "SkyboxPipeline/Sampler");
     }
 }
