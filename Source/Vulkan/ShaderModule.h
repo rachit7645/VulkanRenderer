@@ -26,9 +26,10 @@ namespace Vk
     {
     public:
         ShaderModule(VkDevice device, const std::string_view path);
+
         void Destroy(VkDevice device) const;
-        // Handle
-        VkShaderModule handle = {};
+
+        VkShaderModule handle = VK_NULL_HANDLE;
     };
 }
 

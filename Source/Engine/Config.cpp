@@ -29,8 +29,6 @@ namespace Engine
         {
             simdjson::ondemand::parser parser;
 
-            Logger::Info("{}\n", "Loading config!");
-
             const auto path = Util::Files::GetAssetPath("", "Config.json");
             const auto json = simdjson::padded_string::load(path);
 

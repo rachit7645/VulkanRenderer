@@ -17,7 +17,7 @@ project(VulkanRenderer)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin)
+set(ENGINE_INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
@@ -32,12 +32,9 @@ find_package(simdjson REQUIRED)
 find_package(fmt      REQUIRED)
 find_package(KTX      REQUIRED)
 
+# Check for LTO
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
-
-if (LTOSupported AND CMAKE_BUILD_TYPE STREQUAL Release)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
 
 # Add sub-projects
 add_subdirectory(Externals/)
@@ -267,6 +264,11 @@ endif()
 
 # Release config
 if (CMAKE_BUILD_TYPE STREQUAL Release)
+    # Enable LTO
+    if (LTOSupported)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
+
     # Release Mode
     target_compile_definitions(VulkanRenderer PRIVATE NDEBUG)
 endif()
@@ -289,18 +291,28 @@ target_link_libraries(VulkanRenderer
 
 # Install
 install(
-	TARGETS VulkanRenderer imgui
-	ARCHIVE DESTINATION ${INSTALL_DIR}
-	LIBRARY DESTINATION ${INSTALL_DIR}
-	RUNTIME DESTINATION ${INSTALL_DIR}
+	TARGETS VulkanRenderer
+	ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
+	LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
+	RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
 )
 
+# Store application name at config time
+set(APPLICATION_NAME "$<TARGET_FILE_NAME:VulkanRenderer>")
+
 # Copy required DLLs
-install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
+install(CODE "
+    include(BundleUtilities)
+    fixup_bundle(
+        \"${ENGINE_INSTALL_DIR}/${APPLICATION_NAME}\"
+        \"\"
+        \"\"
+    )
+")
 
 # Copy other directories
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX    DESTINATION ${INSTALL_DIR}/Assets)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/Scenes DESTINATION ${INSTALL_DIR}/Assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX    DESTINATION ${ENGINE_INSTALL_DIR}/Assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/Scenes DESTINATION ${ENGINE_INSTALL_DIR}/Assets)
 
 # Copy misc files
-install(FILES ${CMAKE_SOURCE_DIR}/Assets/Config.json DESTINATION ${INSTALL_DIR}/Assets)
+install(FILES ${CMAKE_SOURCE_DIR}/Assets/Config.json DESTINATION ${ENGINE_INSTALL_DIR}/Assets)

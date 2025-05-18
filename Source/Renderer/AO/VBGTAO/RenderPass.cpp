@@ -198,8 +198,6 @@ namespace Renderer::AO::VBGTAO
                 .layerCount     = 1
             }
         );
-        
-        Logger::Info("{}\n", "Created VBGTAO pass!");
     }
 
     void RenderPass::Render
@@ -547,8 +545,6 @@ namespace Renderer::AO::VBGTAO
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying VBGTAO pass!");
-
         m_depthPreFilterPipeline.Destroy(device);
         m_occlusionPipeline.Destroy(device);
         m_denoisePipeline.Destroy(device);

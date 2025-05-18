@@ -28,9 +28,9 @@ namespace Engine
 {
     Window::Window()
     {
-        Logger::Info
+        Logger::Debug
         (
-            "Initializing SDL2 version: {}.{}.{}\n",
+            "Initializing SDL3! [Version = {}.{}.{}]\n",
             SDL_MAJOR_VERSION,
             SDL_MINOR_VERSION,
             SDL_MICRO_VERSION
@@ -54,8 +54,6 @@ namespace Engine
             Logger::Error("SDL_CreateWindow Failed: {}\n", SDL_GetError());
         }
 
-        Logger::Info("Succesfully created window handle! [handle={}]\n", std::bit_cast<void*>(handle));
-
         if (!SDL_RaiseWindow(handle))
         {
             Logger::Error("SDL_RaiseWindow Failed: {}\n", SDL_GetError());
@@ -75,7 +73,5 @@ namespace Engine
 
         SDL_DestroyWindow(handle);
         SDL_Quit();
-
-        Logger::Info("{}\n", "Window destroyed!");
     }
 }

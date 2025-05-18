@@ -69,8 +69,6 @@ namespace Renderer::Depth
                 .layerCount     = 1
             }
         );
-
-        Logger::Info("{}\n", "Created depth pass!");
     }
 
     void RenderPass::Render
@@ -349,8 +347,6 @@ namespace Renderer::Depth
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying depth pass!");
-
         opaquePipeline.Destroy(device);
         alphaMaskedPipeline.Destroy(device);
     }

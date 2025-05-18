@@ -84,8 +84,6 @@ namespace Renderer::PointShadow
                 );
             }
         }
-
-        Logger::Info("{}\n", "Created point shadow pass!");
     }
 
     void RenderPass::Render
@@ -406,8 +404,6 @@ namespace Renderer::PointShadow
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying point shadow pass!");
-
         opaquePipeline.Destroy(device);
         alphaMaskedPipeline.Destroy(device);
     }

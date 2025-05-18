@@ -68,8 +68,6 @@ namespace Renderer::ShadowRT
                 .layerCount     = 1,
             }
         );
-
-        Logger::Info("{}\n", "Created shadow pass!");
     }
 
     void RenderPass::Render
@@ -160,10 +158,7 @@ namespace Renderer::ShadowRT
 
     void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        Logger::Debug("{}\n", "Destroying shadow pass!");
-
         shaderBindingTable.Destroy(allocator);
-
         pipeline.Destroy(device);
     }
 }

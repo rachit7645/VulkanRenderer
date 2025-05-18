@@ -1,9 +1,9 @@
 [submodule "Dear ImGui"]
 	path = Externals/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "Vulkan Memory Allocator"]
-	path = Externals/VMA
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "Volk"]
 	path = Externals/volk
 	url = https://github.com/zeux/volk.git
+[submodule "Vulkan Memory Allocator"]
+	path = Externals/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

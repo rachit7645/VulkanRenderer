@@ -128,6 +128,8 @@ namespace Vk
         Vk::SetDebugName(device, texture.image.handle,     name);
         Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
 
+        Logger::Debug("Loaded texture! [Name={}]\n", name);
+
         return id;
     }
 
@@ -154,6 +156,8 @@ namespace Vk
 
         Vk::SetDebugName(device, texture.image.handle,     name);
         Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
+
+        Logger::Debug("Added texture! [Name={}]\n", name);
 
         return id;
     }
@@ -316,7 +320,5 @@ namespace Vk
         samplerMap.clear();
 
         m_nameHashToTextureIDMap.clear();
-
-        Logger::Info("{}\n", "Destroyed texture manager!");
     }
 }

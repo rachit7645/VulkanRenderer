@@ -32,7 +32,6 @@ namespace Renderer::DearImGui
     )
         : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
-        Logger::Info("{}\n", "Created imgui pass!");
     }
 
     void RenderPass::Render
@@ -373,8 +372,6 @@ namespace Renderer::DearImGui
 
     void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        Logger::Debug("{}\n", "Destroying ImGui pass!");
-
         pipeline.Destroy(device);
 
         for (auto& buffer : m_vertexBuffers)

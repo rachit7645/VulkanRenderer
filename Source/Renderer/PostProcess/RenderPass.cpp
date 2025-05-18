@@ -69,8 +69,6 @@ namespace Renderer::PostProcess
                 .layerCount     = 1
             }
         );
-
-        Logger::Info("{}\n", "Created post process pass!");
     }
 
     void RenderPass::Render
@@ -203,8 +201,6 @@ namespace Renderer::PostProcess
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying swapchain pass!");
-
         pipeline.Destroy(device);
     }
 }

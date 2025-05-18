@@ -23,11 +23,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
-set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in VOLK" FORCE)
+# Volk Config
+set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE)
 set(VOLK_INSTALL        OFF CACHE BOOL "Enable volk installation"          FORCE)
 
-# Libraries with CMake support
-add_subdirectory(VMA/)
+# External Libraries
+add_subdirectory(vma/)
 add_subdirectory(volk/)
 
 # ImGui source files

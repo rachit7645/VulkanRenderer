@@ -24,8 +24,7 @@ namespace Engine
     class AppInstance
     {
     public:
-         AppInstance();
-        ~AppInstance();
+        AppInstance();
 
         // No copying
         AppInstance(const AppInstance&)            = delete;

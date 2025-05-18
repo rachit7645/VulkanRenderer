@@ -653,7 +653,8 @@ namespace Renderer
 
     void RenderManager::InitImGui()
     {
-        Logger::Info("Initializing Dear ImGui [version = {}]\n", ImGui::GetVersion());
+        Logger::Debug("Initializing Dear ImGui [Version = {}]\n", ImGui::GetVersion());
+
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
@@ -686,7 +687,7 @@ namespace Renderer
                     m_context.allocator,
                     m_megaSet,
                     m_deletionQueues[m_FIF],
-                    "DearImGuiFont",
+                    "DearImGui/Font",
                     VK_FORMAT_R8G8B8A8_UNORM,
                     pixels,
                     width,

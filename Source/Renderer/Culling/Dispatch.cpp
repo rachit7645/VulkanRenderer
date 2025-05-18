@@ -28,7 +28,6 @@ namespace Renderer::Culling
         : frustumPipeline(context),
           frustumBuffer(context.device, context.allocator)
     {
-        Logger::Info("{}\n", "Created culling dispatch pass!");
     }
 
     void Dispatch::DispatchFrustumCulling
@@ -270,8 +269,6 @@ namespace Renderer::Culling
 
     void Dispatch::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        Logger::Debug("{}\n", "Destroying culling dispatch pass!");
-
         frustumBuffer.Destroy(allocator);
         frustumPipeline.Destroy(device);
     }

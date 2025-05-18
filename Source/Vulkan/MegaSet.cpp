@@ -157,8 +157,6 @@ namespace Vk
         Vk::SetDebugName(context.device, m_descriptorPool, "MegaSet/DescriptorPool");
         Vk::SetDebugName(context.device, descriptorLayout, "MegaSet/DescriptorLayout");
         Vk::SetDebugName(context.device, descriptorSet,    "MegaSet/DescriptorSet");
-
-        Logger::Info("{}\n", "Initialised mega set!");
     }
 
     u32 MegaSet::WriteSampler(const Vk::Sampler& sampler)
@@ -302,7 +300,5 @@ namespace Vk
     {
         vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(device, descriptorLayout, nullptr);
-
-        Logger::Info("{}\n", "Destroyed mega set!");
     }
 }

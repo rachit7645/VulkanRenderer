@@ -70,8 +70,6 @@ namespace Renderer::Lighting
                 .layerCount     = 1
             }
         );
-
-        Logger::Info("{}\n", "Created lighting pass!");
     }
 
     void RenderPass::Render
@@ -205,8 +203,6 @@ namespace Renderer::Lighting
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying lighting pass!");
-
         pipeline.Destroy(device);
     }
 }

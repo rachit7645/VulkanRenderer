@@ -33,8 +33,6 @@ namespace Vk
 
         CreateSwapChain(context, cmdBufferAllocator);
         CreateStaticSyncObjects(context.device);
-
-        Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     bool Swapchain::IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context)
@@ -54,8 +52,6 @@ namespace Vk
     {
         DestroySwapchain(context.device);
         CreateSwapChain(context, cmdBufferAllocator);
-
-        Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     VkResult Swapchain::Present(VkDevice device, VkQueue queue)
@@ -486,8 +482,6 @@ namespace Vk
             Vk::SetDebugName(device, presentFences[i],            fmt::format("Swapchain/PresentFence{}",            i));
             Vk::SetDebugName(device, renderFinishedSemaphores[i], fmt::format("Swapchain/RenderFinishedSemaphore{}", i));
         }
-
-        Logger::Debug("{}\n", "Created swapchain sync objects!");
     }
 
     VkSurfaceFormat2KHR Swapchain::ChooseSurfaceFormat() const
@@ -635,8 +629,6 @@ namespace Vk
 
     void Swapchain::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying swapchain!");
-
         DestroySwapchain(device);
 
         vkDestroySwapchainKHR(device, handle, nullptr);

@@ -32,7 +32,6 @@ namespace Renderer::Skybox
     )
         : pipeline(context, formatHelper, megaSet, textureManager)
     {
-        Logger::Info("{}\n", "Created skybox pass!");
     }
 
     void RenderPass::Render
@@ -190,8 +189,6 @@ namespace Renderer::Skybox
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying skybox pass!");
-
         pipeline.Destroy(device);
     }
 }

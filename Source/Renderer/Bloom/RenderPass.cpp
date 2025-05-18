@@ -83,8 +83,6 @@ namespace Renderer::Bloom
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
-
-        Logger::Info("{}\n", "Created bloom pass!");
     }
 
     void RenderPass::Render
@@ -421,8 +419,6 @@ namespace Renderer::Bloom
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying bloom pass!");
-
         downsamplePipeline.Destroy(device);
         upsamplePipeline.Destroy(device);
     }

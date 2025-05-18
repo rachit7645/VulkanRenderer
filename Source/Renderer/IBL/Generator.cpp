@@ -90,8 +90,6 @@ namespace Renderer::IBL
                 "Failed to flush allocation!"
             );
         }
-
-        Logger::Info("{}\n", "Created IBL Pass!");
     }
 
     IBL::IBLMaps Generator::Generate
@@ -418,7 +416,7 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "Skybox",
+            "IBL/Skybox",
             Vk::Texture{
                 .image     = skybox,
                 .imageView = skyboxView
@@ -607,7 +605,7 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "Irradiance",
+            "IBL/Irradiance",
             Vk::Texture{
                 .image     = irradianceMap,
                 .imageView = irradianceView
@@ -821,7 +819,7 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "PreFilter",
+            "IBL/PreFilter",
             Vk::Texture{
                 .image     = preFilterMap,
                 .imageView = preFilterView
@@ -998,7 +996,7 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "BRDF_LUT",
+            "IBL/BRDFLookupTable",
             Vk::Texture{
                 .image     = brdfLut,
                 .imageView = brdfLutView

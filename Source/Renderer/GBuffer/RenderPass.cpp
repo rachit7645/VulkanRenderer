@@ -142,8 +142,6 @@ namespace Renderer::GBuffer
                 .layerCount     = 1
             }
         );
-
-        Logger::Info("{}\n", "Created GBuffer pass!");
     }
 
     void RenderPass::Render
@@ -552,8 +550,6 @@ namespace Renderer::GBuffer
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying GBuffer pass!");
-
         opaquePipeline.Destroy(device);
         opaqueDoubleSidedPipeline.Destroy(device);
         alphaMaskedPipeline.Destroy(device);

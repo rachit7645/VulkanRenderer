@@ -81,8 +81,6 @@ namespace Vk
                 &pipeline),
                 "Failed to create graphics pipeline!"
             );
-
-            Logger::Debug("Created graphics pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
         }
         break;
 
@@ -108,8 +106,6 @@ namespace Vk
                 &pipeline),
                 "Failed to create compute pipeline!"
             );
-
-            Logger::Debug("Created compute pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
         }
         break;
 
@@ -143,8 +139,6 @@ namespace Vk
                 &pipeline),
                 "Failed to create ray tracing pipeline!"
             );
-
-            Logger::Debug("Created ray tracing pipeline! [handle={}]\n", std::bit_cast<void*>(pipeline));
         }
         break;
 

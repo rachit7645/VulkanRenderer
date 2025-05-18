@@ -67,11 +67,11 @@ namespace Vk
             VkPhysicalDevice phyDevice,
             const VkPhysicalDeviceProperties2& propertySet,
             const VkPhysicalDeviceFeatures2& featureSet
-        );
+        ) const;
 
         void CreateAllocator();
 
-        void AddDebugNames();
+        void AddDebugNames() const;
 
         #ifdef ENGINE_DEBUG
         // Vulkan debug callback

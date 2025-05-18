@@ -111,8 +111,6 @@ namespace Renderer::TAA
                 }
             );
         }
-
-        Logger::Info("{}\n", "Created TAA pass!");
     }
 
     void RenderPass::Render
@@ -391,8 +389,6 @@ namespace Renderer::TAA
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying TAA pass!");
-
         pipeline.Destroy(device);
     }
 }

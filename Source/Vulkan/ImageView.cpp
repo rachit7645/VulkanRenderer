@@ -69,8 +69,6 @@ namespace Vk
             return;
         }
 
-        Logger::Debug("Destroying image view! [handle={}]\n", std::bit_cast<void*>(handle));
-
         vkDestroyImageView(device, handle, nullptr);
     }
 }

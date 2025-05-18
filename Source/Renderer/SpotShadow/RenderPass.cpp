@@ -81,8 +81,6 @@ namespace Renderer::SpotShadow
                 }
             );
         }
-
-        Logger::Info("{}\n", "Created spot shadow pass!");
     }
 
     void RenderPass::Render
@@ -390,8 +388,6 @@ namespace Renderer::SpotShadow
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying spot shadow pass!");
-
         opaquePipeline.Destroy(device);
         alphaMaskedPipeline.Destroy(device);
     }

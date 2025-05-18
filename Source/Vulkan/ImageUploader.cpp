@@ -34,10 +34,11 @@ namespace Vk
         Vk::Buffer                      buffer      = {};
         std::vector<VkBufferImageCopy2> copyRegions = {};
 
-        VkFormat format    = VK_FORMAT_UNDEFINED;
-        u32      width     = 0;
-        u32      height    = 0;
-        u32      mipLevels = 0;
+        VkFormat format      = VK_FORMAT_UNDEFINED;
+        u32      width       = 0;
+        u32      height      = 0;
+        u32      mipLevels   = 0;
+        u32      arrayLayers = 0;
 
         const auto extension = Util::Files::GetExtension(path);
 
@@ -96,8 +97,9 @@ namespace Vk
                 .imageExtent = {width, height, 1}
             });
 
-            format    = VK_FORMAT_R16G16B16A16_SFLOAT;
-            mipLevels = 1;
+            format      = VK_FORMAT_R16G16B16A16_SFLOAT;
+            mipLevels   = 1;
+            arrayLayers = 1;
         }
         else if (extension == ".ktx2")
         {
@@ -114,6 +116,18 @@ namespace Vk
             {
                 Logger::Error("Failed to load KTX2 file! [Error={}] [Path={}]", ktxErrorString(result), path);
             }
+
+            if (pTexture->isVideo)
+            {
+                Logger::Error("Videos are not supported! [Path={}]", path);
+            }
+
+            if (pTexture->isCubemap)
+            {
+                Logger::Error("Cubemaps are not supported! [Path={}]", path);
+            }
+
+
 
             if (ktxTexture2_NeedsTranscoding(pTexture))
             {
@@ -137,38 +151,39 @@ namespace Vk
 
             std::memcpy(buffer.allocationInfo.pMappedData, pTexture->pData, pTexture->dataSize);
 
-            copyRegions.reserve(pTexture->numLevels);
-
             for (u32 mipLevel = 0; mipLevel < pTexture->numLevels; ++mipLevel)
             {
-                ktx_size_t offset;
-                ktxTexture2_GetImageOffset(pTexture, mipLevel, 0, 0, &offset);
+                const u32 mipWidth  = std::max(pTexture->baseWidth  >> mipLevel, 1u);
+                const u32 mipHeight = std::max(pTexture->baseHeight >> mipLevel, 1u);
 
-                const u32 copyWidth  = std::max(pTexture->baseWidth  >> mipLevel, 1u);
-                const u32 copyHeight = std::max(pTexture->baseHeight >> mipLevel, 1u);
-                const u32 copyDepth  = std::max(pTexture->baseDepth  >> mipLevel, 1u);
+                for (u32 arrayLayer = 0; arrayLayer < pTexture->numLayers; ++arrayLayer)
+                {
+                    ktx_size_t offset = 0;
+                    ktxTexture2_GetImageOffset(pTexture, mipLevel, arrayLayer, 0, &offset);
 
-                copyRegions.emplace_back(VkBufferImageCopy2{
-                    .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
-                    .pNext             = nullptr,
-                    .bufferOffset      = offset,
-                    .bufferRowLength   = 0,
-                    .bufferImageHeight = 0,
-                    .imageSubresource  = {
-                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                        .mipLevel       = mipLevel,
-                        .baseArrayLayer = 0,
-                        .layerCount     = 1
-                    },
-                    .imageOffset = {0, 0, 0},
-                    .imageExtent = {copyWidth, copyHeight, copyDepth}
-                });
+                    copyRegions.emplace_back(VkBufferImageCopy2{
+                        .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                        .pNext             = nullptr,
+                        .bufferOffset      = offset,
+                        .bufferRowLength   = 0,
+                        .bufferImageHeight = 0,
+                        .imageSubresource  = {
+                            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .mipLevel       = mipLevel,
+                            .baseArrayLayer = arrayLayer,
+                            .layerCount     = 1
+                        },
+                        .imageOffset = {0, 0, 0},
+                        .imageExtent = {mipWidth, mipHeight, 1}
+                    });
+                }
             }
 
-            format    = static_cast<VkFormat>(pTexture->vkFormat);
-            width     = pTexture->baseWidth;
-            height    = pTexture->baseHeight;
-            mipLevels = pTexture->numLevels;
+            format      = static_cast<VkFormat>(pTexture->vkFormat);
+            width       = pTexture->baseWidth;
+            height      = pTexture->baseHeight;
+            mipLevels   = pTexture->numLevels;
+            arrayLayers = pTexture->numLayers;
 
             ktxTexture2_Destroy(pTexture);
         }
@@ -188,7 +203,7 @@ namespace Vk
                 .format                = format,
                 .extent                = {width, height, 1},
                 .mipLevels             = mipLevels,
-                .arrayLayers           = 1,
+                .arrayLayers           = arrayLayers,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
                 .tiling                = VK_IMAGE_TILING_OPTIMAL,
                 .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,

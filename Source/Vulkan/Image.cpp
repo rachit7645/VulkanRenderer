@@ -80,8 +80,6 @@ namespace Vk
             );
         }
         #endif
-
-        Logger::Debug("Created image! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     Image::Image
@@ -293,13 +291,6 @@ namespace Vk
         {
             return;
         }
-
-        Logger::Debug
-        (
-            "Destroying image! [handle={}] [allocation={}]\n",
-            std::bit_cast<void*>(handle),
-            std::bit_cast<void*>(allocation)
-        );
 
         vmaDestroyImage(allocator, handle, allocation);
     }
