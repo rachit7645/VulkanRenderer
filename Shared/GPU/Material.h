@@ -19,6 +19,10 @@
 
 #include "GLSL.h"
 
+#ifdef __cplusplus
+#include "Util/Enum.h"
+#endif
+
 GLSL_NAMESPACE_BEGIN(GPU)
 
 GLSL_ENUM_CLASS_BEGIN(MaterialFlags, u32)
@@ -40,18 +44,40 @@ struct Material
     f32 alphaCutOff;
 
     GLSL_ENUM_CLASS_NAME(MaterialFlags, u32) flags;
+
+    #ifdef __cplusplus
+    [[nodiscard]] bool IsAlphaMasked() const
+    {
+        return (flags & MaterialFlags::AlphaMasked) == MaterialFlags::AlphaMasked;
+    }
+
+    [[nodiscard]] bool IsDoubleSided() const
+    {
+        return (flags & MaterialFlags::DoubleSided) == MaterialFlags::DoubleSided;
+    }
+    #endif
 };
 
 #ifndef __cplusplus
 
+bool Material_IsDoubleSided(u32 flags)
+{
+    return (flags & MaterialFlags_DoubleSided) == MaterialFlags_DoubleSided;
+}
+
+bool Material_IsAlphaMasked(u32 flags)
+{
+    return (flags & MaterialFlags_AlphaMasked) == MaterialFlags_AlphaMasked;
+}
+
 bool Material_IsDoubleSided(Material material)
 {
-    return (material.flags & MaterialFlags_DoubleSided) == MaterialFlags_DoubleSided;
+    return Material_IsDoubleSided(material.flags);
 }
 
 bool Material_IsAlphaMasked(Material material)
 {
-    return (material.flags & MaterialFlags_AlphaMasked) == MaterialFlags_AlphaMasked;
+    return Material_IsAlphaMasked(material.flags);
 }
 
 // Safe version, use with bad geometry

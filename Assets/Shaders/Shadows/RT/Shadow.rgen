@@ -48,16 +48,12 @@ void main()
 
     vec3 origin = worldPosition + normal * bias;
 
-    uint rayFlags = gl_RayFlagsOpaqueEXT |
-                    gl_RayFlagsTerminateOnFirstHitEXT |
-                    gl_RayFlagsSkipClosestHitShaderEXT |
-                    gl_RayFlagsCullBackFacingTrianglesEXT;
-
+    uint  rayFlags = gl_RayFlagsSkipClosestHitShaderEXT;
     uint  cullMask = 0xFF;
     float tmin     = 0.001f;
     float tmax     = Constants.Scene.farPlane;
 
-    // Assume that ray hits something, i.e, the point is in shadow
+    // Assume that the ray hits something, i.e, the point is in shadow
     shadowAmount = 1.0f;
 
     traceRayEXT

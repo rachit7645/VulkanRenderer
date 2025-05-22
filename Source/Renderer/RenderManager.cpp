@@ -162,6 +162,7 @@ namespace Renderer
             cmdBuffer,
             m_context.device,
             m_context.allocator,
+            m_modelManager,
             m_scene->renderObjects,
             m_deletionQueues[m_FIF]
         );
@@ -238,10 +239,13 @@ namespace Renderer
         m_shadowRTPass.Render
         (
             m_FIF,
+            m_frameIndex,
             cmdBuffer,
             m_megaSet,
             m_framebufferManager,
             m_sceneBuffer,
+            m_meshBuffer,
+            m_modelManager.geometryBuffer,
             m_accelerationStructure
         );
 

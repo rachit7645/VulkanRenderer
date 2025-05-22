@@ -63,6 +63,7 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
             Util::DeletionQueue& deletionQueue
         );

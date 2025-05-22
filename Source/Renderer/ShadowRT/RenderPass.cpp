@@ -19,9 +19,13 @@
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
+#include "Shadows/ShadowRT.h"
 
 namespace Renderer::ShadowRT
 {
+    constexpr u32 MISS_SHADER_GROUP_COUNT = 1;
+    constexpr u32 HIT_SHADER_GROUP_COUNT  = 1;
+
     RenderPass::RenderPass
     (
         const Vk::Context& context,
@@ -31,7 +35,7 @@ namespace Renderer::ShadowRT
         Vk::TextureManager& textureManager
     )
         : pipeline(context, megaSet, textureManager),
-          shaderBindingTable(context, cmdBufferAllocator, pipeline, 1, 0, 0)
+          shaderBindingTable(context, cmdBufferAllocator, pipeline, MISS_SHADER_GROUP_COUNT, HIT_SHADER_GROUP_COUNT)
     {
         framebufferManager.AddFramebuffer
         (
@@ -73,10 +77,13 @@ namespace Renderer::ShadowRT
     void RenderPass::Render
     (
         usize FIF,
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::MeshBuffer& meshBuffer,
+        const Vk::GeometryBuffer& geometryBuffer,
         const Vk::AccelerationStructure& accelerationStructure
     )
     {
@@ -104,25 +111,32 @@ namespace Renderer::ShadowRT
 
         pipeline.Bind(cmdBuffer);
 
-        const auto constants = ShadowRT::PushConstant
+        const auto constants = ShadowRT::Constants
         {
-            .tlas                = accelerationStructure.topLevelASes[FIF].deviceAddress,
-            .scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .gBufferSamplerIndex = pipeline.gBufferSamplerIndex,
-            .gNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .sceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .outputImage         = shadowMapView.storageImageIndex
+            .TLAS                = accelerationStructure.topLevelASes[FIF].deviceAddress,
+            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+            .Indices             = geometryBuffer.indexBuffer.buffer.deviceAddress,
+            .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
+            .GBufferSamplerIndex = pipeline.gBufferSamplerIndex,
+            .TextureSamplerIndex = pipeline.textureSamplerIndex,
+            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
+            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .OutputImage         = shadowMapView.storageImageIndex
         };
 
         pipeline.PushConstants
         (
             cmdBuffer,
-            VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+            VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
             constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
         pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+        // You still need an empty callable region for some reason
+        constexpr VkStridedDeviceAddressRegionKHR emptyCallableRegion = {};
 
         vkCmdTraceRaysKHR
         (
@@ -130,7 +144,7 @@ namespace Renderer::ShadowRT
             &shaderBindingTable.raygenRegion,
             &shaderBindingTable.missRegion,
             &shaderBindingTable.hitRegion,
-            &shaderBindingTable.callableRegion,
+            &emptyCallableRegion,
             shadowMap.image.width,
             shadowMap.image.height,
             1

@@ -40,7 +40,6 @@ namespace Vk
         // Physical device
         VkPhysicalDevice                                physicalDevice                             = VK_NULL_HANDLE;
         VkPhysicalDeviceLimits                          physicalDeviceLimits                       = {};
-        VkPhysicalDeviceVulkan11Properties              physicalDeviceVulkan11Properties           = {};
         VkPhysicalDeviceVulkan12Properties              physicalDeviceVulkan12Properties           = {};
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR physicalDeviceRayTracingPipelineProperties = {};
         // Logical device

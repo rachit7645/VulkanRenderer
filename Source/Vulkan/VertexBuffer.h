@@ -25,19 +25,14 @@
 #include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 #include "GPU/Vertex.h"
+#include "GPU/Surface.h"
 
 namespace Vk
 {
-    struct GeometryInfo
-    {
-        u32 offset = 0;
-        u32 count  = 0;
-    };
-
     struct GeometryUpload
     {
-        Vk::GeometryInfo info;
-        Vk::Buffer       buffer;
+        GPU::GeometryInfo info;
+        Vk::Buffer        buffer;
     };
 
     template<typename T> requires GPU::IsVertexType<T>
@@ -46,8 +41,8 @@ namespace Vk
     public:
         struct WriteHandle
         {
-            T*               pointer;
-            Vk::GeometryInfo info;
+            T*                pointer;
+            GPU::GeometryInfo info;
         };
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>;

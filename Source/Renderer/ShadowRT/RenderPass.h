@@ -18,6 +18,7 @@
 #define SHADOW_RT_PASS_H
 
 #include "Pipeline.h"
+#include "Renderer/Buffers/MeshBuffer.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
@@ -44,10 +45,13 @@ namespace Renderer::ShadowRT
         void Render
         (
             usize FIF,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::MegaSet& megaSet,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::MeshBuffer& meshBuffer,
+            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::AccelerationStructure& accelerationStructure
         );
 

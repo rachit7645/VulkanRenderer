@@ -98,9 +98,9 @@ namespace Models
                                 ImGui::Text("Info Name | Offset/Count");
                                 ImGui::Separator();
 
-                                ImGui::Text("Indices   | %u/%u", mesh.indexInfo.offset,    mesh.indexInfo.count);
-                                ImGui::Text("Positions | %u/%u", mesh.positionInfo.offset, mesh.positionInfo.count);
-                                ImGui::Text("Vertices  | %u/%u", mesh.vertexInfo.offset,   mesh.vertexInfo.count);
+                                ImGui::Text("Indices   | %u/%u", mesh.surfaceInfo.indexInfo.offset,    mesh.surfaceInfo.indexInfo.count);
+                                ImGui::Text("Positions | %u/%u", mesh.surfaceInfo.positionInfo.offset, mesh.surfaceInfo.positionInfo.count);
+                                ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset,   mesh.surfaceInfo.vertexInfo.count);
 
                                 ImGui::Separator();
                                 ImGui::Text("Texture Name                  | ID");

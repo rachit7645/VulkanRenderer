@@ -20,15 +20,17 @@
 #include "GLSL.h"
 #include "Material.h"
 #include "AABB.h"
+#include "Surface.h"
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
 struct Mesh
 {
-    GLSL_MAT4 transform;
-    GLSL_MAT3 normalMatrix;
-    Material  material;
-    AABB      aabb;
+    SurfaceInfo surfaceInfo;
+    Material    material;
+    GLSL_MAT4   transform;
+    GLSL_MAT3   normalMatrix;
+    AABB        aabb;
 };
 
 #ifndef __cplusplus

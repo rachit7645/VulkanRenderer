@@ -94,27 +94,27 @@ namespace Vk
             buffer.Destroy(allocator);
         });
 
-        std::vector<VkAccelerationStructureKHR>                            blases         = {};
-        std::vector<Vk::Buffer>                                            buffers        = {};
-        std::vector<Vk::Buffer>                                            scratchBuffers = {};
-        std::vector<VkAccelerationStructureBuildGeometryInfoKHR>           blasBuildInfos = {};
-        std::list<std::vector<VkAccelerationStructureGeometryKHR>>         geometryList   = {};
-        std::vector<std::vector<VkAccelerationStructureBuildRangeInfoKHR>> rangeMap       = {};
-        std::vector<const VkAccelerationStructureBuildRangeInfoKHR*>       pRangeInfos    = {};
+        std::vector<VkAccelerationStructureKHR>                      blases         = {};
+        std::vector<Vk::Buffer>                                      buffers        = {};
+        std::vector<Vk::Buffer>                                      scratchBuffers = {};
+        std::vector<VkAccelerationStructureBuildGeometryInfoKHR>     blasBuildInfos = {};
+        std::list<VkAccelerationStructureGeometryKHR>                geometryList   = {};
+        std::list<VkAccelerationStructureBuildRangeInfoKHR>          rangeMap       = {};
+        std::vector<const VkAccelerationStructureBuildRangeInfoKHR*> pRangeInfos    = {};
 
-        usize lastOffset = 0;
-
-        for (const auto& renderObject : renderObjects)
+        for (usize meshIndex = 0; const auto& renderObject : renderObjects)
         {
-            const auto& meshes = modelManager.GetModel(renderObject.modelID).meshes;
-
-            std::vector<VkAccelerationStructureGeometryKHR>       geometries = {};
-            std::vector<u32>                                      counts     = {};
-            std::vector<VkAccelerationStructureBuildRangeInfoKHR> ranges     = {};
-
-            for (usize j = 0; j < meshes.size(); ++j)
+            for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
-                geometries.emplace_back(VkAccelerationStructureGeometryKHR{
+                VkGeometryFlagsKHR geometryFlags = 0;
+
+                // Skip any hit shaders for non-alpha masked meshes
+                if (!mesh.material.IsAlphaMasked())
+                {
+                    geometryFlags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
+                }
+
+                geometryList.emplace_back(VkAccelerationStructureGeometryKHR{
                     .sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
                     .pNext        = nullptr,
                     .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
@@ -122,113 +122,113 @@ namespace Vk
                         .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
                         .pNext         = nullptr,
                         .vertexFormat  = VK_FORMAT_R32G32B32_SFLOAT,
-                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress + meshes[j].positionInfo.offset * sizeof(GPU::Position)},
+                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress + mesh.surfaceInfo.positionInfo.offset * sizeof(GPU::Position)},
                         .vertexStride  = sizeof(GPU::Position),
-                        .maxVertex     = meshes[j].positionInfo.count - 1,
+                        .maxVertex     = mesh.surfaceInfo.positionInfo.count - 1,
                         .indexType     = VK_INDEX_TYPE_UINT32,
-                        .indexData     = modelManager.geometryBuffer.indexBuffer.buffer.deviceAddress + meshes[j].indexInfo.offset * sizeof(GPU::Index),
-                        .transformData = {.deviceAddress = transformBuffer.deviceAddress + (lastOffset + j) * sizeof(VkTransformMatrixKHR)}
+                        .indexData     = modelManager.geometryBuffer.indexBuffer.buffer.deviceAddress + mesh.surfaceInfo.indexInfo.offset * sizeof(GPU::Index),
+                        .transformData = {.deviceAddress = transformBuffer.deviceAddress + meshIndex * sizeof(VkTransformMatrixKHR)}
                     }},
-                    .flags        = VK_GEOMETRY_OPAQUE_BIT_KHR
+                    .flags        = geometryFlags
                 });
 
-                counts.push_back(meshes[j].indexInfo.count / 3);
+                const auto count = mesh.surfaceInfo.indexInfo.count / 3;
 
-                ranges.emplace_back(VkAccelerationStructureBuildRangeInfoKHR{
-                    .primitiveCount  = counts.back(),
+                rangeMap.emplace_back(VkAccelerationStructureBuildRangeInfoKHR{
+                    .primitiveCount  = count,
                     .primitiveOffset = 0,
                     .firstVertex     = 0,
                     .transformOffset = 0
                 });
+
+                pRangeInfos.emplace_back(&rangeMap.back());
+
+                VkAccelerationStructureBuildGeometryInfoKHR blasBuildInfo =
+                {
+                    .sType                    = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+                    .pNext                    = nullptr,
+                    .type                     = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+                    .flags                    = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,
+                    .mode                     = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+                    .srcAccelerationStructure = VK_NULL_HANDLE,
+                    .dstAccelerationStructure = VK_NULL_HANDLE,
+                    .geometryCount            = 1,
+                    .pGeometries              = &geometryList.back(),
+                    .ppGeometries             = nullptr,
+                    .scratchData              = {}
+                };
+
+                VkAccelerationStructureBuildSizesInfoKHR blasBuildSizes = {};
+                blasBuildSizes.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+                vkGetAccelerationStructureBuildSizesKHR
+                (
+                    device,
+                    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                    &blasBuildInfo,
+                    &count,
+                    &blasBuildSizes
+                );
+
+                const auto buffer = Vk::Buffer
+                (
+                    allocator,
+                    blasBuildSizes.accelerationStructureSize,
+                    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    0,
+                    VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+                );
+
+                const VkAccelerationStructureCreateInfoKHR blasCreateInfo =
+                {
+                    .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+                    .pNext         = nullptr,
+                    .createFlags   = 0,
+                    .buffer        = buffer.handle,
+                    .offset        = 0,
+                    .size          = buffer.requestedSize,
+                    .type          = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+                    .deviceAddress = 0
+                };
+
+                VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
+                Vk::CheckResult(vkCreateAccelerationStructureKHR(
+                    device,
+                    &blasCreateInfo,
+                    nullptr,
+                    &blas),
+                    "Failed to create BLAS!"
+                );
+
+                auto scratchBuffer = Vk::Buffer
+                (
+                    allocator,
+                    blasBuildSizes.buildScratchSize,
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    0,
+                    VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+                );
+
+                scratchBuffer.GetDeviceAddress(device);
+
+                blasBuildInfo.dstAccelerationStructure = blas;
+                blasBuildInfo.scratchData              = {.deviceAddress = scratchBuffer.deviceAddress};
+
+                blases.emplace_back(blas);
+                buffers.emplace_back(buffer);
+                scratchBuffers.emplace_back(scratchBuffer);
+                blasBuildInfos.emplace_back(blasBuildInfo);
+
+                deletionQueue.PushDeletor([allocator, buffer = scratchBuffer] () mutable
+                {
+                    buffer.Destroy(allocator);
+                });
+
+                // On to the next one!
+                ++meshIndex;
             }
-
-            geometryList.emplace_back(geometries);
-            rangeMap.emplace_back(ranges);
-            pRangeInfos.emplace_back(rangeMap.back().data());
-            lastOffset += meshes.size();
-
-            VkAccelerationStructureBuildGeometryInfoKHR blasBuildInfo =
-            {
-                .sType                    = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
-                .pNext                    = nullptr,
-                .type                     = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-                .flags                    = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,
-                .mode                     = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
-                .srcAccelerationStructure = VK_NULL_HANDLE,
-                .dstAccelerationStructure = VK_NULL_HANDLE,
-                .geometryCount            = static_cast<u32>(geometries.size()),
-                .pGeometries              = geometryList.back().data(),
-                .ppGeometries             = nullptr,
-                .scratchData              = {}
-            };
-
-            VkAccelerationStructureBuildSizesInfoKHR blasBuildSizes = {};
-            blasBuildSizes.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-
-            vkGetAccelerationStructureBuildSizesKHR
-            (
-                device,
-                VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-                &blasBuildInfo,
-                counts.data(),
-                &blasBuildSizes
-            );
-
-            const auto buffer = Vk::Buffer
-            (
-                allocator,
-                blasBuildSizes.accelerationStructureSize,
-                VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                0,
-                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-            );
-
-            const VkAccelerationStructureCreateInfoKHR blasCreateInfo =
-            {
-                .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
-                .pNext         = nullptr,
-                .createFlags   = 0,
-                .buffer        = buffer.handle,
-                .offset        = 0,
-                .size          = buffer.requestedSize,
-                .type          = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
-                .deviceAddress = 0
-            };
-
-            VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
-            Vk::CheckResult(vkCreateAccelerationStructureKHR(
-                device,
-                &blasCreateInfo,
-                nullptr,
-                &blas),
-                "Failed to create BLAS!"
-            );
-
-            auto scratchBuffer = Vk::Buffer
-            (
-                allocator,
-                blasBuildSizes.buildScratchSize,
-                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                0,
-                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-            );
-
-            scratchBuffer.GetDeviceAddress(device);
-
-            blasBuildInfo.dstAccelerationStructure = blas;
-            blasBuildInfo.scratchData              = {.deviceAddress = scratchBuffer.deviceAddress};
-
-            blases.emplace_back(blas);
-            buffers.emplace_back(buffer);
-            scratchBuffers.emplace_back(scratchBuffer);
-            blasBuildInfos.emplace_back(blasBuildInfo);
-
-            deletionQueue.PushDeletor([allocator, buffer = scratchBuffer] () mutable
-            {
-                buffer.Destroy(allocator);
-            });
         }
 
         vkCmdBuildAccelerationStructuresKHR
@@ -423,6 +423,8 @@ namespace Vk
         vkDestroyQueryPool(device, m_compactionQueryPool, nullptr);
 
         m_compactionQueryPool = VK_NULL_HANDLE;
+
+        m_initialBLASBuildFrameIndex = std::numeric_limits<usize>::max();
     }
 
     void AccelerationStructure::BuildTopLevelAS
@@ -431,6 +433,7 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
+        const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects,
         Util::DeletionQueue& deletionQueue
     )
@@ -438,22 +441,42 @@ namespace Vk
         Vk::BeginLabel(cmdBuffer, "TLASBuild", {0.2117f, 0.8136f, 0.7313f, 1.0f});
 
         std::vector<VkAccelerationStructureInstanceKHR> instances = {};
-        instances.reserve(renderObjects.size());
 
-        for (usize i = 0; i < renderObjects.size(); ++i)
+        for (usize meshIndex = 0; const auto& renderObject : renderObjects)
         {
-            instances.emplace_back(VkAccelerationStructureInstanceKHR{
-                .transform                              = glm::vk_cast(Maths::CreateTransformMatrix(
-                    renderObjects[i].position,
-                    renderObjects[i].rotation,
-                    renderObjects[i].scale
-                )),
-                .instanceCustomIndex                    = static_cast<u32>(i),
-                .mask                                   = 0xFF,
-                .instanceShaderBindingTableRecordOffset = 0,
-                .flags                                  = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR,
-                .accelerationStructureReference         = bottomLevelASes[i].deviceAddress
-            });
+            for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
+            {
+                VkGeometryInstanceFlagsKHR instanceFlags = 0;
+
+                if (mesh.material.IsAlphaMasked())
+                {
+                    instanceFlags |= VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR;
+                }
+                else
+                {
+                    instanceFlags |= VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR;
+                }
+
+                if (mesh.material.IsDoubleSided())
+                {
+                    instanceFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+                }
+
+                instances.emplace_back(VkAccelerationStructureInstanceKHR{
+                    .transform                              = glm::vk_cast(Maths::CreateTransformMatrix(
+                        renderObject.position,
+                        renderObject.rotation,
+                        renderObject.scale
+                    )),
+                    .instanceCustomIndex                    = static_cast<u32>(meshIndex),
+                    .mask                                   = 0xFF,
+                    .instanceShaderBindingTableRecordOffset = 0,
+                    .flags                                  = instanceFlags,
+                    .accelerationStructureReference         = bottomLevelASes[meshIndex].deviceAddress
+                });
+
+                ++meshIndex;
+            }
         }
 
         const VkDeviceSize instancesSize = instances.size() * sizeof(VkAccelerationStructureInstanceKHR);
@@ -520,10 +543,10 @@ namespace Vk
                 .arrayOfPointers = VK_FALSE,
                 .data            = {.deviceAddress = m_instanceBuffers[FIF].deviceAddress}
             }},
-            .flags        = VK_GEOMETRY_OPAQUE_BIT_KHR
+            .flags        = 0
         };
 
-        const u32 count = renderObjects.size();
+        const u32 count = instances.size();
 
         const VkAccelerationStructureBuildRangeInfoKHR range =
         {

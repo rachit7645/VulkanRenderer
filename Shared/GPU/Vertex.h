@@ -40,6 +40,11 @@ layout(buffer_reference, scalar) readonly buffer PositionBuffer
     vec3 positions[];
 };
 
+layout(buffer_reference, scalar) readonly buffer IndexBuffer
+{
+    uint indices[];
+};
+
 #endif
 
 #ifdef __cplusplus

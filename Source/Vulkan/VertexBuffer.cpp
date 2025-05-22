@@ -62,7 +62,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        const auto info = Vk::GeometryInfo
+        const auto info = GPU::GeometryInfo
         {
             .offset = count,
             .count  = static_cast<u32>(writeCount)

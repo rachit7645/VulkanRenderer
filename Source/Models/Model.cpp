@@ -219,9 +219,7 @@ namespace Models
             }
 
             // Geometry data
-            Vk::GeometryInfo indexInfo;
-            Vk::GeometryInfo positionInfo;
-            Vk::GeometryInfo vertexInfo;
+            GPU::SurfaceInfo surfaceInfo;
             GPU::AABB        aabb;
 
             // Indices
@@ -249,7 +247,7 @@ namespace Models
                     deletionQueue
                 );
 
-                indexInfo = info;
+                surfaceInfo.indexInfo = info;
 
                 // Assume indices are u32s
                 switch (indicesAccessor.componentType)
@@ -322,7 +320,7 @@ namespace Models
                     deletionQueue
                 );
 
-                positionInfo = info;
+                surfaceInfo.positionInfo = info;
 
                 aabb.min = glm::vec3(std::numeric_limits<f32>::max());
                 aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
@@ -374,7 +372,7 @@ namespace Models
                     deletionQueue
                 );
 
-                vertexInfo = info;
+                surfaceInfo.vertexInfo = info;
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
@@ -469,9 +467,7 @@ namespace Models
 
             meshes.emplace_back
             (
-                indexInfo,
-                positionInfo,
-                vertexInfo,
+                surfaceInfo,
                 material,
                 nodeMatrix,
                 aabb

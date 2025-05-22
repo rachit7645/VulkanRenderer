@@ -17,7 +17,6 @@
 #ifndef SHADOW_RT_PIPELINE_H
 #define SHADOW_RT_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/MegaSet.h"
@@ -35,6 +34,7 @@ namespace Renderer::ShadowRT
         );
 
         u32 gBufferSamplerIndex = 0;
+        u32 textureSamplerIndex = 0;
     };
 }
 

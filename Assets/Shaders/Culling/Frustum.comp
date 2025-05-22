@@ -56,8 +56,8 @@ void main()
 
     Material material = mesh.material;
 
-    bool isDoubleSided  = Material_IsDoubleSided(material);
-    bool isAlphaMasked  = Material_IsAlphaMasked(material);
+    bool isDoubleSided = Material_IsDoubleSided(material);
+    bool isAlphaMasked = Material_IsAlphaMasked(material);
 
     if (isDoubleSided && !isAlphaMasked)
     {

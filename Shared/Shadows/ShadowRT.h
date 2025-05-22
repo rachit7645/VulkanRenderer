@@ -19,6 +19,8 @@
 
 #include "GLSL.h"
 #include "GPU/Scene.h"
+#include "GPU/Vertex.h"
+#include "GPU/Mesh.h"
 
 GLSL_NAMESPACE_BEGIN(Renderer::ShadowRT)
 
@@ -26,9 +28,14 @@ GLSL_PUSH_CONSTANT_BEGIN
 {
     u64 TLAS;
 
-    GLSL_BUFFER_POINTER(SceneBuffer) Scene;
+    GLSL_BUFFER_POINTER(SceneBuffer)  Scene;
+    GLSL_BUFFER_POINTER(MeshBuffer)   Meshes;
+    GLSL_BUFFER_POINTER(IndexBuffer)  Indices;
+    GLSL_BUFFER_POINTER(VertexBuffer) Vertices;
 
     u32 GBufferSamplerIndex;
+    u32 TextureSamplerIndex;
+
     u32 GNormalIndex;
     u32 SceneDepthIndex;
     u32 OutputImage;

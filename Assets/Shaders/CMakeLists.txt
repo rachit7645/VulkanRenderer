@@ -67,6 +67,7 @@ file(GLOB SHADER_SOURCES
     Shadows/SpotShadow/AlphaMasked.frag
     Shadows/RT/Shadow.rgen
     Shadows/RT/Shadow.rmiss
+    Shadows/RT/Shadow.rahit
     Deferred/Depth/Opaque.vert
     Deferred/Depth/AlphaMasked.vert
     Deferred/Depth/AlphaMasked.frag

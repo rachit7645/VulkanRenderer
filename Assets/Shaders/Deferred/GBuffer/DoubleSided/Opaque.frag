@@ -32,7 +32,7 @@ layout(location = 6) in flat uint fragDrawID;
 
 layout(location = 0) out vec3 gAlbedo;
 layout(location = 1) out vec4 gNormal_Rgh_Mtl;
-layout(location = 2) out vec2 motionVectors;
+layout(location = 2) out vec2 gMotionVectors;
 
 void main()
 {
@@ -41,7 +41,6 @@ void main()
     vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0);
     albedo.rgb  *= mesh.material.albedoFactor.rgb;
 
-    // Ignoring alpha component
     gAlbedo = albedo.rgb;
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
@@ -64,5 +63,5 @@ void main()
     vec2 current  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
     vec2 previous = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;
 
-    motionVectors = current - previous;
+    gMotionVectors = current - previous;
 }

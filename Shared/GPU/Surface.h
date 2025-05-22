@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef SHADOW_RT_CONSTANTS_H
-#define SHADOW_RT_CONSTANTS_H
+#ifndef SURFACE_H
+#define SURFACE_H
 
-#include <vulkan/vulkan.h>
+#include "GLSL.h"
 
-#include "Util/Types.h"
+GLSL_NAMESPACE_BEGIN(GPU)
 
-namespace Renderer::ShadowRT
+struct GeometryInfo
 {
-    struct PushConstant
-    {
-        VkDeviceAddress tlas;
-        VkDeviceAddress scene;
-        u32             gBufferSamplerIndex;
-        u32             gNormalIndex;
-        u32             sceneDepthIndex;
-        u32             outputImage;
-    };
-}
+    u32 offset;
+    u32 count;
+};
+
+struct SurfaceInfo
+{
+    GeometryInfo indexInfo;
+    GeometryInfo positionInfo;
+    GeometryInfo vertexInfo;
+};
+
+GLSL_NAMESPACE_END
 
 #endif

@@ -89,10 +89,10 @@ namespace Renderer::Buffers
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
                 drawCalls.emplace_back(VkDrawIndexedIndirectCommand{
-                    .indexCount    = mesh.indexInfo.count,
+                    .indexCount    = mesh.surfaceInfo.indexInfo.count,
                     .instanceCount = 1,
-                    .firstIndex    = mesh.indexInfo.offset,
-                    .vertexOffset  = static_cast<s32>(mesh.vertexInfo.offset),
+                    .firstIndex    = mesh.surfaceInfo.indexInfo.offset,
+                    .vertexOffset  = static_cast<s32>(mesh.surfaceInfo.vertexInfo.offset),
                     .firstInstance = 0
                 });
             }

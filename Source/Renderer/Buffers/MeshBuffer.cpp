@@ -67,10 +67,12 @@ namespace Renderer::Buffers
                 const auto transform    = globalTransform * mesh.transform;
                 const auto normalMatrix = Maths::CreateNormalMatrix(transform);
 
-                meshes.emplace_back(
+                meshes.emplace_back
+                (
+                    mesh.surfaceInfo,
+                    mesh.material,
                     transform,
                     normalMatrix,
-                    mesh.material,
                     mesh.aabb
                 );
             }

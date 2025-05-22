@@ -25,14 +25,10 @@ namespace Models
 {
     struct Mesh
     {
-        Vk::GeometryInfo indexInfo    = {};
-        Vk::GeometryInfo positionInfo = {};
-        Vk::GeometryInfo vertexInfo   = {};
-
-        GPU::Material material = {};
-
-        glm::mat4 transform = glm::identity<glm::mat4>();
-        GPU::AABB aabb      = {};
+        GPU::SurfaceInfo surfaceInfo = {};
+        GPU::Material    material    = {};
+        glm::mat4        transform   = glm::identity<glm::mat4>();
+        GPU::AABB        aabb        = {};
     };
 }
 

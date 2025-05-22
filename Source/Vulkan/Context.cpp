@@ -259,7 +259,6 @@ namespace Vk
         physicalDevice                             = bestDevice;
         physicalDeviceLimits                       = properties[physicalDevice].properties.limits;
         physicalDeviceRayTracingPipelineProperties = rtPipelineProperties[physicalDevice];
-        physicalDeviceVulkan11Properties           = vk11Properties[physicalDevice];
         physicalDeviceVulkan12Properties           = vk12Properties[physicalDevice];
 
         Logger::Info("Selected GPU! [GPU={}]\n", properties[physicalDevice].properties.deviceName);
