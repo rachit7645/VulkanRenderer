@@ -21,7 +21,6 @@
 #include "Util/Files.h"
 #include "Util/JSON.h"
 #include "Util/Log.h"
-#include "Vulkan/Util.h"
 #include "Externals/ImGui.h"
 
 namespace Engine
@@ -92,7 +91,7 @@ namespace Engine
 
                     for (auto light : lights)
                     {
-                        GPU::PointLight pointLight;
+                        GPU::PointLight pointLight = {};
 
                         JSON::CheckError(light.get<GPU::PointLight>(pointLight), "Failed to load point light!");
 
@@ -108,7 +107,7 @@ namespace Engine
 
                     for (auto light : lights)
                     {
-                        GPU::SpotLight spotLight;
+                        GPU::SpotLight spotLight = {};
 
                         JSON::CheckError(light.get<GPU::SpotLight>(spotLight), "Failed to load spot light!");
 

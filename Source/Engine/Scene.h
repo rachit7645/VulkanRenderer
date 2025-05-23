@@ -64,12 +64,12 @@ namespace Engine
             Util::DeletionQueue& deletionQueue
         );
 
-        std::vector<Renderer::RenderObject>    renderObjects;
-        GPU::DirLight                sun;
-        std::vector<GPU::PointLight> pointLights;
-        std::vector<GPU::SpotLight>  spotLights;
-        Renderer::Objects::FreeCamera          camera;
-        Renderer::IBL::IBLMaps                 iblMaps;
+        std::vector<Renderer::RenderObject> renderObjects = {};
+        GPU::DirLight                       sun           = {};
+        std::vector<GPU::PointLight>        pointLights   = {};
+        std::vector<GPU::SpotLight>         spotLights    = {};
+        Renderer::Objects::FreeCamera       camera        = {};
+        Renderer::IBL::IBLMaps              iblMaps       = {};
     private:
         std::string m_hdrMap;
     };

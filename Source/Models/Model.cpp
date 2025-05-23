@@ -405,7 +405,7 @@ namespace Models
                     material.flags |= GPU::MaterialFlags::DoubleSided;
                 }
 
-                if (mat.alphaMode == fastgltf::AlphaMode::Mask)
+                if (mat.alphaMode == fastgltf::AlphaMode::Mask || mat.alphaMode == fastgltf::AlphaMode::Blend)
                 {
                     material.flags       |= GPU::MaterialFlags::AlphaMasked;
                     material.alphaCutOff  = mat.alphaCutoff;
