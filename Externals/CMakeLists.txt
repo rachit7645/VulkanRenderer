@@ -28,8 +28,21 @@ set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE
 set(VOLK_INSTALL        OFF CACHE BOOL "Enable volk installation"          FORCE)
 
 # External Libraries
-add_subdirectory(vma/)
-add_subdirectory(volk/)
+add_subdirectory(vma)
+add_subdirectory(volk)
+
+# Profile config
+if (CMAKE_BUILD_TYPE STREQUAL Profile)
+    # Tracy Config
+    set(TRACY_ENABLE         ON  CACHE BOOL "Enable Tracy"         FORCE)
+    set(TRACY_ON_DEMAND      ON  CACHE BOOL "On-Demand Mode"       FORCE)
+    set(TRACY_ONLY_LOCALHOST ON  CACHE BOOL "Localhost Only Mode"  FORCE)
+    set(TRACY_INSTALL        OFF CACHE BOOL "Disable Installation" FORCE)
+    set(TRACY_CALLSTACK      ON  CACHE BOOL "Enable Callstack"     FORCE)
+
+    # Add Tracy
+    add_subdirectory(tracy)
+endif()
 
 # ImGui source files
 add_library(imgui STATIC

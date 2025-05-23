@@ -38,7 +38,7 @@
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
-#include "VMA/include/vk_mem_alloc.h"
+#include "vma/include/vk_mem_alloc.h"
 
 // Reset warning stack
 #if defined(__GNUC__) && !defined(__clang__)

@@ -21,9 +21,10 @@
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
 #include "Vulkan/DebugUtils.h"
+#include "Vulkan/ImmediateSubmit.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
-#include "Vulkan/ImmediateSubmit.h"
+#include "Externals/Tracy.h"
 
 namespace Renderer
 {
@@ -547,6 +548,10 @@ namespace Renderer
 
         ++m_frameIndex;
         m_FIF = (m_FIF + 1) % Vk::FRAMES_IN_FLIGHT;
+
+        #ifdef ENGINE_PROFILE
+        FrameMark;
+        #endif
     }
 
     bool RenderManager::HandleEvents()

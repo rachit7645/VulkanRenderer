@@ -37,8 +37,8 @@ include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
 # Add sub-projects
-add_subdirectory(Externals/)
-add_subdirectory(Assets/Shaders/)
+add_subdirectory(Externals)
+add_subdirectory(Assets/Shaders)
 
 # Main executable
 add_executable(VulkanRenderer
@@ -271,6 +271,28 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
 
     # Release Mode
     target_compile_definitions(VulkanRenderer PRIVATE NDEBUG)
+endif()
+
+# Profile config
+if (CMAKE_BUILD_TYPE STREQUAL Profile)
+    # Enable LTO
+    if (LTOSupported)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
+
+    # Engine Debug Mode
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
+    # Engine Profile Mode
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_PROFILE)
+    # Enable debug output
+    target_compile_options(VulkanRenderer PRIVATE -g)
+    # Add Tracy
+    target_link_libraries(VulkanRenderer Tracy::TracyClient)
+    # Add Tracy Headers
+    target_precompile_headers(VulkanRenderer PRIVATE
+        Externals/tracy/public/tracy/Tracy.hpp
+        Externals/tracy/public/tracy/TracyVulkan.hpp
+    )
 endif()
 
 # Add shader dependency

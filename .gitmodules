@@ -7,3 +7,6 @@
 [submodule "Vulkan Memory Allocator"]
 	path = Externals/vma
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Tracy Profiler"]
+	path = Externals/tracy
+	url = https://github.com/rachit7645/tracy.git
