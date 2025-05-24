@@ -25,6 +25,8 @@
 
 namespace Vk
 {
+    using TextureID = usize;
+
     class TextureManager
     {
     public:
@@ -64,7 +66,7 @@ namespace Vk
             const Vk::Texture& texture
         );
 
-        [[nodiscard]] u32 AddSampler
+        [[nodiscard]] Vk::DescriptorID AddSampler
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
@@ -74,7 +76,7 @@ namespace Vk
         void Update(const Vk::CommandBuffer& cmdBuffer);
 
         [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
-        [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
+        [[nodiscard]] const Vk::Sampler& GetSampler(Vk::DescriptorID id) const;
 
         void DestroyTexture
         (
@@ -87,13 +89,13 @@ namespace Vk
 
         void ImGuiDisplay();
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
 
         void Destroy(VkDevice device, VmaAllocator allocator);
-
-        std::unordered_map<u32, TextureInfo> textureMap;
-        std::unordered_map<u32, Vk::Sampler> samplerMap;
     private:
+        std::unordered_map<u32,          TextureInfo> m_textureMap;
+        std::unordered_map<Vk::DescriptorID, Vk::Sampler> m_samplerMap;
+
         Vk::ImageUploader m_imageUploader;
 
         std::unordered_map<usize, u32> m_nameHashToTextureIDMap;

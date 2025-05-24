@@ -61,7 +61,7 @@ namespace Vk
         const auto id   = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const auto name = Util::Files::GetNameWithoutExtension(path);
 
-        textureMap.emplace(id, TextureInfo(name, texture));
+        m_textureMap.emplace(id, TextureInfo(name, texture));
 
         m_nameHashToTextureIDMap.emplace(pathHash, id);
 
@@ -121,7 +121,7 @@ namespace Vk
 
         const auto id = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        textureMap.emplace(id, TextureInfo(name.data(), texture));
+        m_textureMap.emplace(id, TextureInfo(name.data(), texture));
 
         m_nameHashToTextureIDMap.emplace(nameHash, id);
 
@@ -150,7 +150,7 @@ namespace Vk
 
         const auto id = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        textureMap.emplace(id, TextureInfo(name.data(), texture));
+        m_textureMap.emplace(id, TextureInfo(name.data(), texture));
 
         m_nameHashToTextureIDMap.emplace(nameHash, id);
 
@@ -162,7 +162,7 @@ namespace Vk
         return id;
     }
 
-    u32 TextureManager::AddSampler
+    Vk::DescriptorID TextureManager::AddSampler
     (
         Vk::MegaSet& megaSet,
         VkDevice device,
@@ -172,7 +172,7 @@ namespace Vk
         const auto sampler = Vk::Sampler(device, createInfo);
         const auto id      = megaSet.WriteSampler(sampler);
 
-        samplerMap.emplace(id, sampler);
+        m_samplerMap.emplace(id, sampler);
 
         return id;
     }
@@ -193,9 +193,9 @@ namespace Vk
 
     const Texture& TextureManager::GetTexture(u32 id) const
     {
-        const auto iter = textureMap.find(id);
+        const auto iter = m_textureMap.find(id);
 
-        if (iter == textureMap.end())
+        if (iter == m_textureMap.end())
         {
             Logger::Error("Invalid texture id! [ID={}]\n", id);
         }
@@ -203,11 +203,11 @@ namespace Vk
         return iter->second.texture;
     }
 
-    const Vk::Sampler& TextureManager::GetSampler(u32 id) const
+    const Vk::Sampler& TextureManager::GetSampler(Vk::DescriptorID id) const
     {
-        const auto iter = samplerMap.find(id);
+        const auto iter = m_samplerMap.find(id);
 
-        if (iter == samplerMap.end())
+        if (iter == m_samplerMap.end())
         {
             Logger::Error("Invalid sampler ID! [ID={}]\n", id);
         }
@@ -224,9 +224,9 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        const auto iter = textureMap.find(id);
+        const auto iter = m_textureMap.find(id);
 
-        if (iter == textureMap.end())
+        if (iter == m_textureMap.end())
         {
             return;
         }
@@ -249,7 +249,7 @@ namespace Vk
             megaSet.FreeSampledImage(id);
         });
 
-        textureMap.erase(iter);
+        m_textureMap.erase(iter);
     }
 
     void TextureManager::ImGuiDisplay()
@@ -260,7 +260,7 @@ namespace Vk
             {
                 for (const auto& [nameHash, textureID] : m_nameHashToTextureIDMap)
                 {
-                    const auto& [name, texture] = textureMap.at(textureID);
+                    const auto& [name, texture] = m_textureMap.at(textureID);
 
                     if (ImGui::TreeNode(std::bit_cast<void*>(nameHash), name.c_str()))
                     {
@@ -299,25 +299,25 @@ namespace Vk
         }
     }
 
-    bool TextureManager::HasPendingUploads() const
+    bool TextureManager::HasPendingUploads()
     {
         return m_imageUploader.HasPendingUploads();
     }
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& [_, texture] : textureMap | std::views::values)
+        for (auto& [_, texture] : m_textureMap | std::views::values)
         {
             texture.Destroy(device, allocator);
         }
 
-        for (const auto& sampler : samplerMap | std::views::values)
+        for (const auto& sampler : m_samplerMap | std::views::values)
         {
             sampler.Destroy(device);
         }
 
-        textureMap.clear();
-        samplerMap.clear();
+        m_textureMap.clear();
+        m_samplerMap.clear();
 
         m_nameHashToTextureIDMap.clear();
     }

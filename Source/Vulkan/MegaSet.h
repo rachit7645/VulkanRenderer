@@ -30,23 +30,15 @@ namespace Vk
     class MegaSet
     {
     public:
-        enum DescriptorBinding : u32
-        {
-            MEGA_SET_SAMPLER_BINDING        = 0,
-            MEGA_SET_SAMPLED_IMAGES_BINDING = 1,
-            MEGA_SET_STORAGE_IMAGES_BINDING = 2,
-            MEGA_SET_BINDINGS_COUNT
-        };
-
         explicit MegaSet(const Vk::Context& context);
 
-        [[nodiscard]] u32 WriteSampler(const Vk::Sampler& sampler);
-        [[nodiscard]] u32 WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout);
-        [[nodiscard]] u32 WriteStorageImage(const Vk::ImageView& imageView);
+        [[nodiscard]] Vk::DescriptorID WriteSampler(const Vk::Sampler& sampler);
+        [[nodiscard]] Vk::DescriptorID WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout);
+        [[nodiscard]] Vk::DescriptorID WriteStorageImage(const Vk::ImageView& imageView);
 
-        void FreeSampler(u32 id);
-        void FreeSampledImage(u32 id);
-        void FreeStorageImage(u32 id);
+        void FreeSampler(Vk::DescriptorID id);
+        void FreeSampledImage(Vk::DescriptorID id);
+        void FreeStorageImage(Vk::DescriptorID id);
 
         void Update(VkDevice device);
 

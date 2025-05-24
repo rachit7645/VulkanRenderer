@@ -29,14 +29,14 @@ namespace Vk
     class ImageUploader
     {
     public:
-        Vk::Image LoadImageFromFile
+        [[nodiscard]] Vk::Image LoadImageFromFile
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
-        Vk::Image LoadImageFromMemory
+        [[nodiscard]] Vk::Image LoadImageFromMemory
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -48,7 +48,7 @@ namespace Vk
 
         void FlushUploads(const Vk::CommandBuffer& cmdBuffer);
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
     private:
         struct Upload
         {
@@ -57,7 +57,24 @@ namespace Vk
             std::vector<VkBufferImageCopy2> copyRegions;
         };
 
+        [[nodiscard]] Vk::Image LoadImageHDR
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view path
+        );
+
+        [[nodiscard]] Vk::Image LoadImageKTX2
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view path
+        );
+
+        void AppendUpload(const Upload& upload);
+
         std::vector<Upload> m_pendingUploads;
+        std::mutex          m_uploadMutex;
 
         Vk::BarrierWriter m_barrierWriter;
     };

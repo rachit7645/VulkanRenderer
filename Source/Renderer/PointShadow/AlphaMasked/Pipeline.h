@@ -35,7 +35,7 @@ namespace Renderer::PointShadow::AlphaMasked
             Vk::TextureManager& textureManager
         );
 
-        u32 textureSamplerIndex = 0;
+        Vk::DescriptorID textureSamplerIndex = 0;
     };
 }
 

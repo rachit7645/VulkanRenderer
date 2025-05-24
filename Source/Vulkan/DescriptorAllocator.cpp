@@ -25,9 +25,9 @@ namespace Vk
     {
     }
 
-    u32 DescriptorAllocator::Allocate()
+    Vk::DescriptorID DescriptorAllocator::Allocate()
     {
-        u32 id = 0;
+        Vk::DescriptorID id = 0;
 
         if (!m_freeIDs.empty())
         {
@@ -47,7 +47,7 @@ namespace Vk
         return id;
     }
 
-    void DescriptorAllocator::Free(u32 id)
+    void DescriptorAllocator::Free(Vk::DescriptorID id)
     {
         m_freeIDs.push(id);
     }

@@ -36,21 +36,7 @@ namespace Renderer::IBL::Converter
             Vk::TextureManager& textureManager
         );
 
-        u32 samplerIndex = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData
-        (
-            VkDevice device,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
+        Vk::DescriptorID samplerIndex = 0;
     };
 }
 

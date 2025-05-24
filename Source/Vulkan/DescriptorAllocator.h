@@ -23,14 +23,16 @@
 
 namespace Vk
 {
+    using DescriptorID = u32;
+
     class DescriptorAllocator
     {
     public:
         DescriptorAllocator() = default;
         explicit DescriptorAllocator(u32 maxDescriptorCount);
 
-        [[nodiscard]] u32 Allocate();
-        void Free(u32 id);
+        [[nodiscard]] Vk::DescriptorID Allocate();
+        void Free(Vk::DescriptorID id);
 
         [[nodiscard]] u32 GetAllocatedCount() const;
         [[nodiscard]] u32 GetFreeSlotCount()  const;
@@ -39,8 +41,8 @@ namespace Vk
     private:
         u32 m_maxDescriptorCount = 0;
 
-        u32             m_currentID = 0;
-        std::queue<u32> m_freeIDs   = {};
+        Vk::DescriptorID             m_currentID = 0;
+        std::queue<Vk::DescriptorID> m_freeIDs   = {};
     };
 }
 

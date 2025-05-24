@@ -19,6 +19,7 @@
 
 #include <stack>
 #include <functional>
+#include <mutex>
 
 namespace Util
 {
@@ -31,6 +32,7 @@ namespace Util
         void FlushQueue();
     private:
         std::stack<Deletor> m_deletors = {};
+        std::mutex          m_mutex    = {};
     };
 }
 

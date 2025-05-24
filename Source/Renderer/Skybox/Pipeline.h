@@ -35,7 +35,7 @@ namespace Renderer::Skybox
             Vk::TextureManager& textureManager
         );
 
-        u32 samplerIndex = 0;
+        Vk::DescriptorID samplerIndex = 0;
     };
 }
 
