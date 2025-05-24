@@ -70,7 +70,7 @@ namespace Renderer::Buffers
                 meshes.emplace_back
                 (
                     mesh.surfaceInfo,
-                    mesh.material,
+                    mesh.material.Convert(modelManager.textureManager),
                     transform,
                     normalMatrix,
                     mesh.aabb

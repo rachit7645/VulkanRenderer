@@ -44,18 +44,6 @@ struct Material
     f32 alphaCutOff;
 
     GLSL_ENUM_CLASS_NAME(MaterialFlags, u32) flags;
-
-    #ifdef __cplusplus
-    [[nodiscard]] bool IsAlphaMasked() const
-    {
-        return (flags & MaterialFlags::AlphaMasked) == MaterialFlags::AlphaMasked;
-    }
-
-    [[nodiscard]] bool IsDoubleSided() const
-    {
-        return (flags & MaterialFlags::DoubleSided) == MaterialFlags::DoubleSided;
-    }
-    #endif
 };
 
 #ifndef __cplusplus

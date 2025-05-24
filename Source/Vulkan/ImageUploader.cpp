@@ -371,8 +371,6 @@ namespace Vk
 
     void ImageUploader::AppendUpload(const Upload& upload)
     {
-        std::lock_guard lock(m_uploadMutex);
-
         m_pendingUploads.emplace_back(upload);
     }
 
@@ -386,8 +384,6 @@ namespace Vk
         {
             return;
         }
-
-        std::lock_guard lock(m_uploadMutex);
 
         // Undefined -> Transfer Destination
         {
@@ -461,10 +457,8 @@ namespace Vk
         m_pendingUploads.clear();
     }
 
-    bool ImageUploader::HasPendingUploads()
+    bool ImageUploader::HasPendingUploads() const
     {
-        std::lock_guard lock(m_uploadMutex);
-
         return !m_pendingUploads.empty();
     }
 }

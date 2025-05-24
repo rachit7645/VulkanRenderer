@@ -25,18 +25,19 @@
 
 namespace Vk
 {
-    using TextureID = usize;
+    using TextureID = u64;
 
     class TextureManager
     {
     public:
         struct TextureInfo
         {
-            std::string name;
-            Vk::Texture texture;
+            std::string      name;
+            Vk::Texture      texture;
+            Vk::DescriptorID descriptorID;
         };
 
-        [[nodiscard]] u32 AddTexture
+        [[nodiscard]] Vk::TextureID AddTexture
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -45,7 +46,7 @@ namespace Vk
             const std::string_view path
         );
 
-        [[nodiscard]] u32 AddTexture
+        [[nodiscard]] Vk::TextureID AddTexture
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -58,7 +59,7 @@ namespace Vk
             u32 height
         );
 
-        [[nodiscard]] u32 AddTexture
+        [[nodiscard]] Vk::TextureID AddTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
@@ -75,12 +76,12 @@ namespace Vk
 
         void Update(const Vk::CommandBuffer& cmdBuffer);
 
-        [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
+        [[nodiscard]] const TextureInfo& GetTextureInfo(Vk::TextureID id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(Vk::DescriptorID id) const;
 
         void DestroyTexture
         (
-            u32 id,
+            Vk::TextureID id,
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
@@ -89,16 +90,14 @@ namespace Vk
 
         void ImGuiDisplay();
 
-        [[nodiscard]] bool HasPendingUploads();
+        [[nodiscard]] bool HasPendingUploads() const;
 
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        std::unordered_map<u32,          TextureInfo> m_textureMap;
+        std::unordered_map<Vk::TextureID,    TextureInfo> m_textureMap;
         std::unordered_map<Vk::DescriptorID, Vk::Sampler> m_samplerMap;
 
         Vk::ImageUploader m_imageUploader;
-
-        std::unordered_map<usize, u32> m_nameHashToTextureIDMap;
     };
 }
 

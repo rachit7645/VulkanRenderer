@@ -256,6 +256,7 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
+            m_modelManager.textureManager,
             m_sceneBuffer,
             m_scene->iblMaps
         );
@@ -266,7 +267,7 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.geometryBuffer,
+            m_modelManager,
             m_sceneBuffer,
             m_scene->iblMaps
         );
@@ -703,7 +704,7 @@ namespace Renderer
                     height
                 );
 
-                io.Fonts->SetTexID(static_cast<ImTextureID>(fontID));
+                io.Fonts->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTextureInfo(fontID).descriptorID));
 
                 m_modelManager.Update
                 (

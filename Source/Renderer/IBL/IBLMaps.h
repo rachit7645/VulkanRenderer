@@ -33,10 +33,10 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         ) const;
 
-        u32 skyboxID        = 0;
-        u32 irradianceMapID = 0;
-        u32 preFilterMapID  = 0;
-        u32 brdfLutID       = 0;
+        Vk::TextureID skyboxID        = 0;
+        Vk::TextureID irradianceMapID = 0;
+        Vk::TextureID preFilterMapID  = 0;
+        Vk::TextureID brdfLutID       = 0;
     };
 }
 

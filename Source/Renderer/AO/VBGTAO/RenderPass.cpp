@@ -259,6 +259,7 @@ namespace Renderer::AO::VBGTAO
             cmdBuffer,
             framebufferManager,
             megaSet,
+            modelManager.textureManager,
             sceneBuffer
         );
 
@@ -353,6 +354,7 @@ namespace Renderer::AO::VBGTAO
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer
     )
     {
@@ -403,7 +405,7 @@ namespace Renderer::AO::VBGTAO
             .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
             .PointSamplerIndex        = m_occlusionPipeline.pointSamplerIndex,
             .LinearSamplerIndex       = m_occlusionPipeline.linearSamplerIndex,
-            .HilbertLUTIndex          = m_hilbertLUT.value(),
+            .HilbertLUTIndex          = textureManager.GetTextureInfo(m_hilbertLUT.value()).descriptorID,
             .GNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageIndex,
             .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageIndex,

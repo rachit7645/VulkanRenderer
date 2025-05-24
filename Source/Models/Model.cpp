@@ -390,7 +390,7 @@ namespace Models
                 Logger::Error("{}\n", "No material in primitive!");
             }
 
-            GPU::Material material = {};
+            Models::Material material = {};
 
             const auto& mat = asset.materials[primitive.materialIndex.value()];
 
@@ -523,7 +523,7 @@ namespace Models
         return accessor;
     }
 
-    u32 Model::LoadTexture
+    Vk::TextureID Model::LoadTexture
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -572,7 +572,7 @@ namespace Models
         );
     }
 
-    u32 Model::LoadTexture
+    Vk::TextureID Model::LoadTexture
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -620,7 +620,7 @@ namespace Models
         );
     }
 
-    u32 Model::LoadTextureInternal
+    Vk::TextureID Model::LoadTextureInternal
     (
         VkDevice device,
         VmaAllocator allocator,

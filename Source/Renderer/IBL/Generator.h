@@ -50,7 +50,7 @@ namespace Renderer::IBL
 
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        [[nodiscard]] u32 LoadHDRMap
+        [[nodiscard]] Vk::TextureID LoadHDRMap
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
@@ -60,10 +60,10 @@ namespace Renderer::IBL
             const std::string_view hdrMapAssetPath
         );
 
-        [[nodiscard]] u32 GenerateSkybox
+        [[nodiscard]] Vk::TextureID GenerateSkybox
         (
             const Vk::CommandBuffer& cmdBuffer,
-            u32 hdrMapID,
+            Vk::TextureID hdrMapID,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             Models::ModelManager& modelManager,
@@ -71,20 +71,20 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         );
 
-        [[nodiscard]] u32 GenerateIrradianceMap
+        [[nodiscard]] Vk::TextureID GenerateIrradianceMap
         (
             const Vk::CommandBuffer& cmdBuffer,
-            u32 skyboxID,
+            Vk::TextureID skyboxID,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet
         );
 
-        [[nodiscard]] u32 GeneratePreFilterMap
+        [[nodiscard]] Vk::TextureID GeneratePreFilterMap
         (
             const Vk::CommandBuffer& cmdBuffer,
-            u32 skyboxID,
+            Vk::TextureID skyboxID,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             Models::ModelManager& modelManager,
@@ -92,7 +92,7 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         );
 
-        [[nodiscard]] u32 GenerateBRDFLUT
+        [[nodiscard]] Vk::TextureID GenerateBRDFLUT
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
@@ -109,7 +109,7 @@ namespace Renderer::IBL
         Vk::Buffer m_matrixBuffer;
 
         // Cache BRDF LUT
-        std::optional<u32> m_brdfLutID = std::nullopt;
+        std::optional<Vk::TextureID> m_brdfLutID = std::nullopt;
     };
 }
 

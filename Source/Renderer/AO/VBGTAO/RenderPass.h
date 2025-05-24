@@ -69,6 +69,7 @@ namespace Renderer::AO::VBGTAO
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer
         );
 
@@ -83,7 +84,7 @@ namespace Renderer::AO::VBGTAO
         Occlusion::Pipeline      m_occlusionPipeline;
         Denoise::Pipeline        m_denoisePipeline;
 
-        std::optional<u32> m_hilbertLUT = std::nullopt;
+        std::optional<Vk::TextureID> m_hilbertLUT = std::nullopt;
 
         f32 m_finalValuePower = 1.3f;
         f32 m_thickness       = 0.25f;

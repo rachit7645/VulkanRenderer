@@ -48,7 +48,7 @@ namespace Vk
 
         void FlushUploads(const Vk::CommandBuffer& cmdBuffer);
 
-        [[nodiscard]] bool HasPendingUploads();
+        [[nodiscard]] bool HasPendingUploads() const;
     private:
         struct Upload
         {
@@ -74,7 +74,6 @@ namespace Vk
         void AppendUpload(const Upload& upload);
 
         std::vector<Upload> m_pendingUploads;
-        std::mutex          m_uploadMutex;
 
         Vk::BarrierWriter m_barrierWriter;
     };

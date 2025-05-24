@@ -95,7 +95,7 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        [[nodiscard]] static u32 LoadTexture
+        [[nodiscard]] static Vk::TextureID LoadTexture
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -108,7 +108,7 @@ namespace Models
             const std::string_view defaultTexture
         );
 
-        [[nodiscard]] static u32 LoadTexture
+        [[nodiscard]] static Vk::TextureID LoadTexture
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -120,7 +120,7 @@ namespace Models
             const std::optional<fastgltf::NormalTextureInfo>& textureInfo
         );
 
-        [[nodiscard]] static u32 LoadTextureInternal
+        [[nodiscard]] static Vk::TextureID LoadTextureInternal
         (
             VkDevice device,
             VmaAllocator allocator,

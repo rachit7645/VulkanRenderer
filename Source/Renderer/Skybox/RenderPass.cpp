@@ -40,7 +40,7 @@ namespace Renderer::Skybox
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::GeometryBuffer& geometryBuffer,
+        const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const IBL::IBLMaps& iblMaps
     )
@@ -124,10 +124,10 @@ namespace Renderer::Skybox
 
         const auto constants = Skybox::Constants
         {
-            .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
+            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
             .SamplerIndex = pipeline.samplerIndex,
-            .CubemapIndex = iblMaps.skyboxID
+            .CubemapIndex = modelManager.textureManager.GetTextureInfo(iblMaps.skyboxID).descriptorID
         };
 
         pipeline.PushConstants

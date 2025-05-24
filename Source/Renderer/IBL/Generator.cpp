@@ -180,7 +180,7 @@ namespace Renderer::IBL
         };
     }
 
-    u32 Generator::LoadHDRMap
+    Vk::TextureID Generator::LoadHDRMap
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
@@ -221,10 +221,10 @@ namespace Renderer::IBL
         return hdrMapID;
     }
 
-    u32 Generator::GenerateSkybox
+    Vk::TextureID Generator::GenerateSkybox
     (
         const Vk::CommandBuffer& cmdBuffer,
-        u32 hdrMapID,
+        Vk::TextureID hdrMapID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
@@ -348,7 +348,7 @@ namespace Renderer::IBL
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
             .SamplerIndex = m_converterPipeline.samplerIndex,
-            .TextureIndex = hdrMapID
+            .TextureIndex = modelManager.textureManager.GetTextureInfo(hdrMapID).descriptorID
         };
 
         m_converterPipeline.PushConstants
@@ -431,10 +431,10 @@ namespace Renderer::IBL
         return skyboxID;
     }
 
-    u32 Generator::GenerateIrradianceMap
+    Vk::TextureID Generator::GenerateIrradianceMap
     (
         const Vk::CommandBuffer& cmdBuffer,
-        u32 skyboxID,
+        Vk::TextureID skyboxID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
@@ -557,7 +557,7 @@ namespace Renderer::IBL
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
             .SamplerIndex = m_convolutionPipeline.samplerIndex,
-            .EnvMapIndex  = skyboxID
+            .EnvMapIndex  = modelManager.textureManager.GetTextureInfo(skyboxID).descriptorID
         };
 
         m_convolutionPipeline.PushConstants
@@ -613,10 +613,10 @@ namespace Renderer::IBL
         );
     }
 
-    [[nodiscard]] u32 Generator::GeneratePreFilterMap
+    [[nodiscard]] Vk::TextureID Generator::GeneratePreFilterMap
     (
         const Vk::CommandBuffer& cmdBuffer,
-        u32 skyboxID,
+        Vk::TextureID skyboxID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
@@ -752,7 +752,7 @@ namespace Renderer::IBL
                 .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .Matrices     = m_matrixBuffer.deviceAddress,
                 .SamplerIndex = m_preFilterPipeline.samplerIndex,
-                .EnvMapIndex  = skyboxID,
+                .EnvMapIndex  = modelManager.textureManager.GetTextureInfo(skyboxID).descriptorID ,
                 .Roughness    = roughness,
                 .SampleCount  = sampleCount
             };
@@ -837,7 +837,7 @@ namespace Renderer::IBL
         return preFilterID;
     }
 
-    [[nodiscard]] u32 Generator::GenerateBRDFLUT
+    [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLUT
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,

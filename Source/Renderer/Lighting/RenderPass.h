@@ -46,6 +46,7 @@ namespace Renderer::Lighting
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const IBL::IBLMaps& iblMaps
         );

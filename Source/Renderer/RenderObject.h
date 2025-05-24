@@ -17,17 +17,17 @@
 #ifndef RENDER_OBJECT_H
 #define RENDER_OBJECT_H
 
-#include "Util/Types.h"
+#include "Externals/GLM.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer
 {
-    class RenderObject
+    struct RenderObject
     {
-    public:
-        usize     modelID  = 0;
-        glm::vec3 position = {};
-        glm::vec3 rotation = {};
-        glm::vec3 scale    = {};
+        Models::ModelID modelID  = 0;
+        glm::vec3       position = {};
+        glm::vec3       rotation = {};
+        glm::vec3       scale    = {};
     };
 }
 

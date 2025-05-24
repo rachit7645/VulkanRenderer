@@ -20,13 +20,54 @@
 #include "GPU/Material.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "GPU/AABB.h"
+#include "Vulkan/TextureManager.h"
 
 namespace Models
 {
+    struct Material
+    {
+        Vk::TextureID albedo;
+        Vk::TextureID normal;
+        Vk::TextureID aoRghMtl;
+
+        glm::vec4 albedoFactor;
+        f32       roughnessFactor;
+        f32       metallicFactor;
+
+        f32 alphaCutOff;
+
+        GPU::MaterialFlags flags;
+
+        [[nodiscard]] GPU::Material Convert(const Vk::TextureManager& textureManager) const
+        {
+            return GPU::Material
+            {
+                .albedo          = textureManager.GetTextureInfo(albedo).descriptorID,
+                .normal          = textureManager.GetTextureInfo(normal).descriptorID,
+                .aoRghMtl        = textureManager.GetTextureInfo(aoRghMtl).descriptorID,
+                .albedoFactor    = albedoFactor,
+                .roughnessFactor = roughnessFactor,
+                .metallicFactor  = metallicFactor,
+                .alphaCutOff     = alphaCutOff,
+                .flags           = flags
+            };
+        }
+
+        [[nodiscard]] bool IsAlphaMasked() const
+        {
+            return (flags & GPU::MaterialFlags::AlphaMasked) == GPU::MaterialFlags::AlphaMasked;
+        }
+
+        [[nodiscard]] bool IsDoubleSided() const
+        {
+            return (flags & GPU::MaterialFlags::DoubleSided) == GPU::MaterialFlags::DoubleSided;
+        }
+    };
+
     struct Mesh
     {
         GPU::SurfaceInfo surfaceInfo = {};
-        GPU::Material    material    = {};
+        Models::Material material    = {};
         glm::mat4        transform   = glm::identity<glm::mat4>();
         GPU::AABB        aabb        = {};
     };

@@ -78,6 +78,7 @@ namespace Renderer::Lighting
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const IBL::IBLMaps& iblMaps
     )
@@ -168,9 +169,9 @@ namespace Renderer::Lighting
             .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
             .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .IrradianceIndex     = iblMaps.irradianceMapID,
-            .PreFilterIndex      = iblMaps.preFilterMapID,
-            .BRDFLUTIndex        = iblMaps.brdfLutID,
+            .IrradianceIndex     = textureManager.GetTextureInfo(iblMaps.irradianceMapID).descriptorID,
+            .PreFilterIndex      = textureManager.GetTextureInfo(iblMaps.preFilterMapID).descriptorID,
+            .BRDFLUTIndex        = textureManager.GetTextureInfo(iblMaps.brdfLutID).descriptorID,
             .ShadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
             .PointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
             .SpotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,

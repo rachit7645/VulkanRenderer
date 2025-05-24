@@ -27,13 +27,15 @@
 
 namespace Models
 {
+    using ModelID = u64;
+
     class ModelManager
     {
     public:
         ModelManager(VkDevice device, VmaAllocator allocator);
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        [[nodiscard]] usize AddModel
+        [[nodiscard]] Models::ModelID AddModel
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -42,7 +44,7 @@ namespace Models
             const std::string_view path
         );
 
-        [[nodiscard]] const Model& GetModel(usize modelID) const;
+        [[nodiscard]] const Model& GetModel(Models::ModelID id) const;
 
         void Update
         (

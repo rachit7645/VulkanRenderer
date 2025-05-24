@@ -26,7 +26,7 @@ namespace Models
     {
     }
 
-    usize ModelManager::AddModel
+    Models::ModelID ModelManager::AddModel
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -35,23 +35,31 @@ namespace Models
         const std::string_view path
     )
     {
-        usize pathHash = std::hash<std::string_view>()(path);
+        Models::ModelID id = std::hash<std::string_view>()(path);
 
-        if (!modelMap.contains(pathHash))
+        if (!modelMap.contains(id))
         {
-            modelMap.emplace(pathHash, Model(device, allocator, megaSet, geometryBuffer, textureManager, deletionQueue, path));
+            modelMap.emplace(id, Model(
+                device,
+                allocator,
+                megaSet,
+                geometryBuffer,
+                textureManager,
+                deletionQueue,
+                path
+            ));
         }
 
-        return pathHash;
+        return id;
     }
 
-    const Model& ModelManager::GetModel(usize modelID) const
+    const Model& ModelManager::GetModel(Models::ModelID id) const
     {
-        const auto iter = modelMap.find(modelID);
+        const auto iter = modelMap.find(id);
 
         if (iter == modelMap.end())
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", modelID);
+            Logger::Error("Invalid model ID! [ID={}]\n", id);
         }
 
         return iter->second;
@@ -84,9 +92,9 @@ namespace Models
         {
             if (ImGui::BeginMenu("Model Manager"))
             {
-                for (const auto& [pathHash, model] : modelMap)
+                for (const auto& [id, model] : modelMap)
                 {
-                    if (ImGui::TreeNode(fmt::format("[{}]", pathHash).c_str()))
+                    if (ImGui::TreeNode(fmt::format("[{}]", id).c_str()))
                     {
                         for (usize i = 0; i < model.meshes.size(); ++i)
                         {
@@ -106,9 +114,9 @@ namespace Models
                                 ImGui::Text("Texture Name                  | ID");
                                 ImGui::Separator();
 
-                                ImGui::Text("Albedo                        | %u", mesh.material.albedo);
-                                ImGui::Text("Normal Map                    | %u", mesh.material.normal);
-                                ImGui::Text("AO + Roughness + Metallic Map | %u", mesh.material.aoRghMtl);
+                                ImGui::Text("Albedo                        | %llu", mesh.material.albedo);
+                                ImGui::Text("Normal Map                    | %llu", mesh.material.normal);
+                                ImGui::Text("AO + Roughness + Metallic Map | %llu", mesh.material.aoRghMtl);
 
                                 ImGui::Separator();
                                 ImGui::Text("Factor Name | Value");
