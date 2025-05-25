@@ -31,7 +31,7 @@ namespace Renderer::IBL
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
-        ) const;
+        );
 
         Vk::TextureID skyboxID        = 0;
         Vk::TextureID irradianceMapID = 0;

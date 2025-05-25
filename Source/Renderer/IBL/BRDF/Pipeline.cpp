@@ -30,13 +30,12 @@ namespace Renderer::IBL::BRDF
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("IBL/BRDF.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,
@@ -50,7 +49,6 @@ namespace Renderer::IBL::BRDF
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .SetBlendState()
             .Build();
 
         Vk::SetDebugName(context.device, handle, "IBL/BRDF/Pipeline");

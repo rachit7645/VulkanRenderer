@@ -41,6 +41,7 @@ namespace Models
             const std::string_view path
         );
 
+        std::string               name;
         std::vector<Models::Mesh> meshes;
     private:
         void ProcessScenes

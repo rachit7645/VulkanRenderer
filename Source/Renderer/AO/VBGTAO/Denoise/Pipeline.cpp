@@ -39,7 +39,7 @@ namespace Renderer::AO::VBGTAO::Denoise
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -56,7 +56,7 @@ namespace Renderer::AO::VBGTAO::Denoise
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );

@@ -37,14 +37,13 @@ namespace Renderer::Skybox
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
             .AttachShader("Skybox/Skybox.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Skybox/Skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL, VK_FALSE, {}, {})
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,
@@ -58,7 +57,6 @@ namespace Renderer::Skybox
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Skybox::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
@@ -69,7 +67,7 @@ namespace Renderer::Skybox
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,

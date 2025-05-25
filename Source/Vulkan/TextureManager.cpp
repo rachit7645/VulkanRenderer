@@ -244,11 +244,14 @@ namespace Vk
             return;
         }
 
-        deletionQueue.PushDeletor([&megaSet, device, allocator, textureInfo = iter->second] () mutable
+        if (iter->second.isLoaded)
         {
-            textureInfo.texture.Destroy(device, allocator);
-            megaSet.FreeSampledImage(textureInfo.descriptorID);
-        });
+            deletionQueue.PushDeletor([&megaSet, device, allocator, textureInfo = iter->second] () mutable
+            {
+                textureInfo.texture.Destroy(device, allocator);
+                megaSet.FreeSampledImage(textureInfo.descriptorID);
+            });
+        }
 
         m_textureMap.erase(iter);
     }
@@ -268,7 +271,7 @@ namespace Vk
                         continue;
                     }
 
-                    if (ImGui::TreeNode(std::bit_cast<void*>(id), name.c_str()))
+                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", name.c_str()))
                     {
                         ImGui::Text("Descriptor Index | %u", descriptorID);
                         ImGui::Text("Width            | %u", texture.image.width);

@@ -44,6 +44,7 @@ namespace Models
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
+        : name(Util::Files::GetNameWithoutExtension(path))
     {
         Logger::Info("Loading model: {}\n", path);
 

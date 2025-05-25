@@ -36,13 +36,12 @@ namespace Renderer::TAA
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Misc/TAA.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,
@@ -69,7 +68,6 @@ namespace Renderer::TAA
                     VK_COLOR_COMPONENT_B_BIT |
                     VK_COLOR_COMPONENT_A_BIT
             )
-            .SetBlendState()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
@@ -78,7 +76,7 @@ namespace Renderer::TAA
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -95,7 +93,7 @@ namespace Renderer::TAA
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
@@ -104,7 +102,7 @@ namespace Renderer::TAA
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -121,7 +119,7 @@ namespace Renderer::TAA
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );

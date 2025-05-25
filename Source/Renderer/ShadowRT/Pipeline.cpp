@@ -33,9 +33,9 @@ namespace Renderer::ShadowRT
             .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
             .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
             .AttachShader("Shadows/RT/Shadow.rahit", VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2,                    VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
             .SetMaxRayRecursionDepth(1)
             .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
@@ -45,7 +45,7 @@ namespace Renderer::ShadowRT
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -62,7 +62,7 @@ namespace Renderer::ShadowRT
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
@@ -73,7 +73,7 @@ namespace Renderer::ShadowRT
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -90,7 +90,7 @@ namespace Renderer::ShadowRT
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );

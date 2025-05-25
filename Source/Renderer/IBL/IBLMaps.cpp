@@ -24,7 +24,7 @@ namespace Renderer::IBL
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
-    ) const
+    )
     {
         textureManager.DestroyTexture
         (
@@ -52,5 +52,10 @@ namespace Renderer::IBL
             megaSet,
             deletionQueue
         );
+
+        // Don't reset BRDF LUT ID
+        skyboxID        = 0;
+        preFilterMapID  = 0;
+        irradianceMapID = 0;
     }
 }

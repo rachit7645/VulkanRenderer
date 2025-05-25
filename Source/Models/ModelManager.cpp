@@ -91,7 +91,7 @@ namespace Models
             {
                 for (const auto& [id, model] : modelMap)
                 {
-                    if (ImGui::TreeNode(fmt::format("[{}]", id).c_str()))
+                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", model.name.c_str()))
                     {
                         for (usize i = 0; i < model.meshes.size(); ++i)
                         {

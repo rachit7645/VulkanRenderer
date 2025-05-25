@@ -173,7 +173,7 @@ namespace Engine
                         {
                             auto& renderObject = renderObjects[i];
 
-                            ImGui::Text("ModelID: %llu", renderObject.modelID);
+                            ImGui::Text("Model | %s", modelManager.GetModel(renderObject.modelID).name.c_str());
 
                             ImGui::Separator();
 

@@ -38,14 +38,13 @@ namespace Renderer::PointShadow::AlphaMasked
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, {}, formatHelper.depthFormat, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Shadows/PointShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Shadows/PointShadow/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE, {}, {})
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
@@ -56,7 +55,7 @@ namespace Renderer::PointShadow::AlphaMasked
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -73,7 +72,7 @@ namespace Renderer::PointShadow::AlphaMasked
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );

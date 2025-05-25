@@ -23,6 +23,8 @@ namespace Vk
 {
     PipelineBuilder::Products PipelineBuilder::Build()
     {
+        Validate();
+
         const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -56,7 +58,7 @@ namespace Vk
                 .flags               = 0,
                 .stageCount          = static_cast<u32>(m_shaderStageCreateInfos.size()),
                 .pStages             = m_shaderStageCreateInfos.data(),
-                .pVertexInputState   = &m_vertexInputInfo                       ,
+                .pVertexInputState   = &m_vertexInputInfo,
                 .pInputAssemblyState = &m_inputAssemblyInfo,
                 .pTessellationState  = nullptr,
                 .pViewportState      = &m_viewportInfo,
@@ -81,8 +83,9 @@ namespace Vk
                 &pipeline),
                 "Failed to create graphics pipeline!"
             );
+
+            break;
         }
-        break;
 
         case VK_PIPELINE_BIND_POINT_COMPUTE:
         {
@@ -106,8 +109,9 @@ namespace Vk
                 &pipeline),
                 "Failed to create compute pipeline!"
             );
+
+            break;
         }
-        break;
 
         case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
         {
@@ -139,8 +143,9 @@ namespace Vk
                 &pipeline),
                 "Failed to create ray tracing pipeline!"
             );
+
+            break;
         }
-        break;
 
         default:
             Logger::Error("{}\n", "Invalid pipeline type!");
@@ -159,41 +164,13 @@ namespace Vk
     PipelineBuilder::PipelineBuilder(const Vk::Context& context)
         : m_context(&context)
     {
-        // Disable warnings
-        #if defined(__GNUC__) && !defined(__clang__)
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-        #elif defined(__clang__)
-        #pragma clang diagnostic push
-        #pragma clang diagnostic ignored "-Wmissing-field-initializers"
-        #endif
-
-        m_renderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO           };
-        m_dynamicStateInfo    = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO       };
-        m_viewportInfo        = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO      };
-        m_vertexInputInfo     = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO  };
-        m_inputAssemblyInfo   = {.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
-        m_rasterizationInfo   = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-        m_msaaStateInfo       = {.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO   };
-        m_depthStencilInfo    = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-        m_colorBlendInfo      = {.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO   };
-
-        m_maxRayRecursionDepth = 0;
-
-        // Reset warning stack
-        #if defined(__GNUC__) && !defined(__clang__)
-        #pragma GCC diagnostic pop
-        #elif defined(__clang__)
-        #pragma clang diagnostic pop
-        #endif
     }
 
     PipelineBuilder& PipelineBuilder::SetRenderingInfo
     (
         u32 viewMask,
         const std::span<const VkFormat> colorFormats,
-        VkFormat depthFormat,
-        VkFormat stencilFormat
+        VkFormat depthFormat
     )
     {
         m_renderingColorFormats = std::vector(colorFormats.begin(), colorFormats.end());
@@ -206,7 +183,7 @@ namespace Vk
             .colorAttachmentCount    = static_cast<u32>(m_renderingColorFormats.size()),
             .pColorAttachmentFormats = m_renderingColorFormats.data(),
             .depthAttachmentFormat   = depthFormat,
-            .stencilAttachmentFormat = stencilFormat
+            .stencilAttachmentFormat = VK_FORMAT_UNDEFINED
         };
 
         return *this;
@@ -214,14 +191,14 @@ namespace Vk
 
     PipelineBuilder& PipelineBuilder::AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage)
     {
-        m_shaderModules.emplace_back(m_context->device, path);
+        const auto& module = m_shaderModules.emplace_back(m_context->device, path);
 
         m_shaderStageCreateInfos.emplace_back(VkPipelineShaderStageCreateInfo{
             .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             .pNext               = nullptr,
             .flags               = 0,
             .stage               = shaderStage,
-            .module              = m_shaderModules.back().handle,
+            .module              = module.handle,
             .pName               = "main",
             .pSpecializationInfo = nullptr
         });
@@ -234,8 +211,7 @@ namespace Vk
         VkRayTracingShaderGroupTypeKHR groupType,
         u32 generalShader,
         u32 closestHitShader,
-        u32 anyHitShader,
-        u32 intersectionShader
+        u32 anyHitShader
     )
     {
         m_shaderGroups.emplace_back(VkRayTracingShaderGroupCreateInfoKHR{
@@ -245,7 +221,7 @@ namespace Vk
             .generalShader                   = generalShader,
             .closestHitShader                = closestHitShader,
             .anyHitShader                    = anyHitShader,
-            .intersectionShader              = intersectionShader,
+            .intersectionShader              = VK_SHADER_UNUSED_KHR,
             .pShaderGroupCaptureReplayHandle = nullptr
         });
 
@@ -270,29 +246,6 @@ namespace Vk
             .flags             = 0,
             .dynamicStateCount = static_cast<u32>(m_dynamicStates.size()),
             .pDynamicStates    = m_dynamicStates.data()
-        };
-
-        return *this;
-    }
-
-    PipelineBuilder& PipelineBuilder::SetVertexInputState
-    (
-        const std::span<const VkVertexInputBindingDescription> vertexBindings,
-        const std::span<const VkVertexInputAttributeDescription> vertexAttribs
-    )
-    {
-        m_vertexInputBindings      = std::vector(vertexBindings.begin(), vertexBindings.end());
-        m_vertexAttribDescriptions = std::vector(vertexAttribs.begin(), vertexAttribs.end());
-
-        m_vertexInputInfo =
-        {
-            .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            .pNext                           = nullptr,
-            .flags                           = 0,
-            .vertexBindingDescriptionCount   = static_cast<u32>(m_vertexInputBindings.size()),
-            .pVertexBindingDescriptions      = m_vertexInputBindings.data(),
-            .vertexAttributeDescriptionCount = static_cast<u32>(m_vertexAttribDescriptions.size()),
-            .pVertexAttributeDescriptions    = m_vertexAttribDescriptions.data()
         };
 
         return *this;
@@ -326,7 +279,7 @@ namespace Vk
         return *this;
     }
 
-    PipelineBuilder& PipelineBuilder::SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart)
+    PipelineBuilder& PipelineBuilder::SetIAState(VkPrimitiveTopology topology)
     {
         m_inputAssemblyInfo =
         {
@@ -334,25 +287,7 @@ namespace Vk
             .pNext                  = nullptr,
             .flags                  = 0,
             .topology               = topology,
-            .primitiveRestartEnable = enablePrimitiveRestart
-        };
-
-        return *this;
-    }
-
-    PipelineBuilder& PipelineBuilder::SetMSAAState()
-    {
-        m_msaaStateInfo =
-        {
-            .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = 0,
-            .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
-            .sampleShadingEnable   = VK_FALSE,
-            .minSampleShading      = 0.0f,
-            .pSampleMask           = nullptr,
-            .alphaToCoverageEnable = VK_FALSE,
-            .alphaToOneEnable      = VK_FALSE
+            .primitiveRestartEnable = VK_FALSE
         };
 
         return *this;
@@ -362,10 +297,7 @@ namespace Vk
     (
         VkBool32 depthTestEnable,
         VkBool32 depthWriteEnable,
-        VkCompareOp depthCompareOp,
-        VkBool32 stencilTestEnable,
-        const VkStencilOpState& front,
-        const VkStencilOpState& back
+        VkCompareOp depthCompareOp
     )
     {
         m_depthStencilInfo =
@@ -377,9 +309,25 @@ namespace Vk
             .depthWriteEnable      = depthWriteEnable,
             .depthCompareOp        = depthCompareOp,
             .depthBoundsTestEnable = VK_FALSE,
-            .stencilTestEnable     = stencilTestEnable,
-            .front                 = front,
-            .back                  = back,
+            .stencilTestEnable     = VK_FALSE,
+            .front                 = {
+                .failOp      = VK_STENCIL_OP_KEEP,
+                .passOp      = VK_STENCIL_OP_KEEP,
+                .depthFailOp = VK_STENCIL_OP_KEEP,
+                .compareOp   = VK_COMPARE_OP_NEVER,
+                .compareMask = 0,
+                .writeMask   = 0,
+                .reference   = 0
+            },
+            .back                  = {
+                .failOp      = VK_STENCIL_OP_KEEP,
+                .passOp      = VK_STENCIL_OP_KEEP,
+                .depthFailOp = VK_STENCIL_OP_KEEP,
+                .compareOp   = VK_COMPARE_OP_NEVER,
+                .compareMask = 0,
+                .writeMask   = 0,
+                .reference   = 0
+            },
             .minDepthBounds        = 0.0f,
             .maxDepthBounds        = 1.0f
         };
@@ -399,8 +347,7 @@ namespace Vk
         VkColorComponentFlags colorWriteMask
     )
     {
-        VkPipelineColorBlendAttachmentState colorBlendAttachment =
-        {
+        m_colorBlendStates.emplace_back(VkPipelineColorBlendAttachmentState{
             .blendEnable         = blendEnable,
             .srcColorBlendFactor = srcColorBlendFactor,
             .dstColorBlendFactor = dstColorBlendFactor,
@@ -409,40 +356,18 @@ namespace Vk
             .dstAlphaBlendFactor = dstAlphaBlendFactor,
             .alphaBlendOp        = alphaBlendOp,
             .colorWriteMask      = colorWriteMask
-        };
-
-        m_colorBlendStates.emplace_back(colorBlendAttachment);
-
-        return *this;
-    }
-
-    PipelineBuilder& PipelineBuilder::SetBlendState()
-    {
-        m_colorBlendInfo =
-        {
-            .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-            .pNext           = nullptr,
-            .flags           = 0,
-            .logicOpEnable   = VK_FALSE,
-            .logicOp         = VK_LOGIC_OP_COPY,
-            .attachmentCount = static_cast<u32>(m_colorBlendStates.size()),
-            .pAttachments    = m_colorBlendStates.data(),
-            .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f}
-        };
+        });
 
         return *this;
     }
 
     PipelineBuilder& PipelineBuilder::AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size)
     {
-        const VkPushConstantRange pushConstant =
-        {
+        m_pushConstantRanges.emplace_back(VkPushConstantRange{
             .stageFlags = stages,
             .offset     = offset,
             .size       = size
-        };
-
-        m_pushConstantRanges.emplace_back(pushConstant);
+        });
 
         return *this;
     }
@@ -452,6 +377,74 @@ namespace Vk
         m_descriptorLayouts.emplace_back(layout);
 
         return *this;
+    }
+
+    void PipelineBuilder::Validate()
+    {
+        // We defer actual error checking to the VVL
+        // Here we just want to fill in unused but required structs / structs that can be filled with existing information
+
+        if (m_pipelineType == VK_PIPELINE_BIND_POINT_GRAPHICS)
+        {
+            m_viewportInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                .pNext         = nullptr,
+                .flags         = 0,
+                .viewportCount = 0,
+                .pViewports    = nullptr,
+                .scissorCount  = 0,
+                .pScissors     = nullptr
+            };
+
+            m_vertexInputInfo =
+            {
+                .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+                .pNext                           = nullptr,
+                .flags                           = 0,
+                .vertexBindingDescriptionCount   = 0,
+                .pVertexBindingDescriptions      = nullptr,
+                .vertexAttributeDescriptionCount = 0,
+                .pVertexAttributeDescriptions    = nullptr
+            };
+
+            m_msaaStateInfo =
+            {
+                .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
+                .sampleShadingEnable   = VK_FALSE,
+                .minSampleShading      = 0.0f,
+                .pSampleMask           = nullptr,
+                .alphaToCoverageEnable = VK_FALSE,
+                .alphaToOneEnable      = VK_FALSE
+            };
+
+            m_colorBlendInfo =
+            {
+                .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+                .pNext           = nullptr,
+                .flags           = 0,
+                .logicOpEnable   = VK_FALSE,
+                .logicOp         = VK_LOGIC_OP_COPY,
+                .attachmentCount = static_cast<u32>(m_colorBlendStates.size()),
+                .pAttachments    = m_colorBlendStates.data(),
+                .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f}
+            };
+        }
+
+        if (m_pipelineType == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
+        {
+            m_dynamicStateInfo =
+            {
+                .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                .pNext             = nullptr,
+                .flags             = 0,
+                .dynamicStateCount = 0,
+                .pDynamicStates    = nullptr
+            };
+        }
     }
 
     PipelineBuilder::~PipelineBuilder()
