@@ -191,26 +191,20 @@ namespace Renderer::IBL
     )
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
-        
-        // HDRi Environment Maps are always flipped for some reason idk why
-        stbi_set_flip_vertically_on_load(true);
 
         const auto hdrMapID = modelManager.textureManager.AddTexture
         (
-            context.device,
             context.allocator,
-            megaSet,
             deletionQueue,
             hdrMapAssetPath
         );
-
-        stbi_set_flip_vertically_on_load(false);
 
         modelManager.Update
         (
             cmdBuffer,
             context.device,
             context.allocator,
+            megaSet,
             deletionQueue
         );
 

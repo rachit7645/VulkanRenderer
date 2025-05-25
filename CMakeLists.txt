@@ -208,6 +208,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <fastgltf/tools.hpp>
     <fastgltf/glm_element_traits.hpp>
     <fastgltf/math.hpp>
+    # Taskflow Headers
+    Externals/taskflow/taskflow/taskflow.hpp
     # C++ STL Headers
 	<map>
     <unordered_map>

@@ -31,6 +31,7 @@ GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)
 {
     #ifdef __cplusplus
     explicit FrustumBuffer(const glm::mat4& projectionView)
+        : planes()
     {
         // Left
         planes[0].normal.x = projectionView[0][3] + projectionView[0][0];

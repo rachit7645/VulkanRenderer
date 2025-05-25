@@ -10,3 +10,6 @@
 [submodule "Tracy Profiler"]
 	path = Externals/tracy
 	url = https://github.com/rachit7645/tracy.git
+[submodule "Taskflow"]
+	path = Externals/taskflow
+	url = https://github.com/taskflow/taskflow.git

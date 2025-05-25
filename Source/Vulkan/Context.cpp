@@ -545,9 +545,8 @@ namespace Vk
 
         const VmaAllocatorCreateInfo createInfo =
         {
-            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT   |
-                                           VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT |
-                                           VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT       |
+            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT |
+                                           VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT |
                                            VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT,
             .physicalDevice              = physicalDevice,
             .device                      = device,

@@ -37,9 +37,7 @@ namespace Models
 
         [[nodiscard]] Models::ModelID AddModel
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
@@ -51,6 +49,7 @@ namespace Models
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
         );
 

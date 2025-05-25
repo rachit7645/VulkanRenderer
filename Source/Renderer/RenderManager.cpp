@@ -129,6 +129,7 @@ namespace Renderer
                 cmdBuffer,
                 m_context.device,
                 m_context.allocator,
+                m_megaSet,
                 m_deletionQueues[m_FIF]
             );
 
@@ -693,9 +694,7 @@ namespace Renderer
 
                 const auto fontID = m_modelManager.textureManager.AddTexture
                 (
-                    m_context.device,
                     m_context.allocator,
-                    m_megaSet,
                     m_deletionQueues[m_FIF],
                     "DearImGui/Font",
                     VK_FORMAT_R8G8B8A8_UNORM,
@@ -704,17 +703,18 @@ namespace Renderer
                     height
                 );
 
-                io.Fonts->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTextureInfo(fontID).descriptorID));
-
                 m_modelManager.Update
                 (
                     cmdBuffer,
                     m_context.device,
                     m_context.allocator,
+                    m_megaSet,
                     m_deletionQueues[m_FIF]
                 );
 
                 m_megaSet.Update(m_context.device);
+
+                io.Fonts->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTextureInfo(fontID).descriptorID));
             }
         );
 

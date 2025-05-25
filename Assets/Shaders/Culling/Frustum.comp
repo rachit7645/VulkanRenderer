@@ -19,6 +19,7 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
+#extension GL_EXT_debug_printf         : enable
 
 #include "Constants.glsl"
 #include "Culling/Frustum.h"

@@ -67,6 +67,9 @@ namespace Vk
         s32 _width  = 0;
         s32 _height = 0;
 
+        // HDRi Environment Maps are always flipped for some reason idk why
+        stbi_set_flip_vertically_on_load_thread(true);
+
         const f32* data = stbi_loadf
         (
             path.data(),
@@ -75,6 +78,8 @@ namespace Vk
             nullptr,
             STBI_rgb_alpha
         );
+
+        stbi_set_flip_vertically_on_load_thread(false);
 
         if (data == nullptr)
         {
@@ -172,7 +177,7 @@ namespace Vk
             const auto result = ktxTexture2_CreateFromNamedFile
             (
                 path.data(),
-                KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT | KTX_TEXTURE_CREATE_CHECK_GLTF_BASISU_BIT,
+                KTX_TEXTURE_CREATE_NO_FLAGS,
                 &pTexture
             );
 
@@ -371,6 +376,8 @@ namespace Vk
 
     void ImageUploader::AppendUpload(const Upload& upload)
     {
+        std::lock_guard lock(m_uploadMutex);
+
         m_pendingUploads.emplace_back(upload);
     }
 
@@ -384,6 +391,8 @@ namespace Vk
         {
             return;
         }
+
+        std::lock_guard lock(m_uploadMutex);
 
         // Undefined -> Transfer Destination
         {
@@ -457,8 +466,18 @@ namespace Vk
         m_pendingUploads.clear();
     }
 
-    bool ImageUploader::HasPendingUploads() const
+    bool ImageUploader::HasPendingUploads()
     {
+        std::lock_guard lock(m_uploadMutex);
+
         return !m_pendingUploads.empty();
+    }
+
+    void ImageUploader::Clear()
+    {
+        std::lock_guard lock(m_uploadMutex);
+
+        m_pendingUploads.clear();
+        m_barrierWriter.Clear();
     }
 }

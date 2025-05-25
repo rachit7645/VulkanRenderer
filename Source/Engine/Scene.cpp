@@ -66,7 +66,7 @@ namespace Engine
 
                     JSON::CheckError(model, "Failed to load model path!");
 
-                    renderObject.modelID = modelManager.AddModel(context.device, context.allocator, megaSet, deletionQueue, model.value());
+                    renderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, model.value());
 
                     JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
                     JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");

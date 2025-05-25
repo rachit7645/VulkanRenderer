@@ -34,9 +34,7 @@ namespace Models
     public:
         Model
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
@@ -47,9 +45,7 @@ namespace Models
     private:
         void ProcessScenes
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
@@ -59,9 +55,7 @@ namespace Models
 
         void ProcessNode
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
@@ -73,9 +67,7 @@ namespace Models
 
         void LoadMesh
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
@@ -97,9 +89,7 @@ namespace Models
 
         [[nodiscard]] static Vk::TextureID LoadTexture
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
@@ -110,9 +100,7 @@ namespace Models
 
         [[nodiscard]] static Vk::TextureID LoadTexture
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
@@ -122,9 +110,7 @@ namespace Models
 
         [[nodiscard]] static Vk::TextureID LoadTextureInternal
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,

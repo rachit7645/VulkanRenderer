@@ -22,6 +22,7 @@
 #include "Sampler.h"
 #include "MegaSet.h"
 #include "Util/Types.h"
+#include "Externals/Taskflow.h"
 
 namespace Vk
 {
@@ -35,22 +36,20 @@ namespace Vk
             std::string      name;
             Vk::Texture      texture;
             Vk::DescriptorID descriptorID;
+            bool             isLoaded;
         };
 
         [[nodiscard]] Vk::TextureID AddTexture
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
+        // `data` needs to remain valid until after the next call to Update()
         [[nodiscard]] Vk::TextureID AddTexture
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue,
             const std::string_view name,
             VkFormat format,
@@ -74,7 +73,7 @@ namespace Vk
             const VkSamplerCreateInfo& createInfo
         );
 
-        void Update(const Vk::CommandBuffer& cmdBuffer);
+        void Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet);
 
         [[nodiscard]] const TextureInfo& GetTextureInfo(Vk::TextureID id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(Vk::DescriptorID id) const;
@@ -90,7 +89,7 @@ namespace Vk
 
         void ImGuiDisplay();
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
 
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
@@ -98,6 +97,9 @@ namespace Vk
         std::unordered_map<Vk::DescriptorID, Vk::Sampler> m_samplerMap;
 
         Vk::ImageUploader m_imageUploader;
+
+        tf::Executor                                              m_executor;
+        std::unordered_map<Vk::TextureID, std::future<Vk::Image>> m_futuresMap;
     };
 }
 

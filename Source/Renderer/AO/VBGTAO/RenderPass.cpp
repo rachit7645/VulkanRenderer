@@ -235,9 +235,7 @@ namespace Renderer::AO::VBGTAO
 
             m_hilbertLUT = modelManager.textureManager.AddTexture
             (
-                context.device,
                 context.allocator,
-                megaSet,
                 deletionQueue,
                 "VBGTAO/HilbertLUT",
                 formatHelper.rUint16Format,
@@ -246,7 +244,15 @@ namespace Renderer::AO::VBGTAO
                 VBGTAO_HILBERT_WIDTH
             );
 
-            modelManager.Update(cmdBuffer, context.device, context.allocator, deletionQueue);
+            modelManager.Update
+            (
+                cmdBuffer,
+                context.device,
+                context.allocator,
+                megaSet,
+                deletionQueue
+            );
+
             megaSet.Update(context.device);
         }
 

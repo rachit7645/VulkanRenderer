@@ -28,9 +28,7 @@ namespace Models
 
     Models::ModelID ModelManager::AddModel
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
@@ -40,9 +38,7 @@ namespace Models
         if (!modelMap.contains(id))
         {
             modelMap.emplace(id, Model(
-                device,
                 allocator,
-                megaSet,
                 geometryBuffer,
                 textureManager,
                 deletionQueue,
@@ -70,6 +66,7 @@ namespace Models
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -81,7 +78,7 @@ namespace Models
         Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
         geometryBuffer.Update(cmdBuffer, device, allocator, deletionQueue);
-        textureManager.Update(cmdBuffer);
+        textureManager.Update(cmdBuffer, device, megaSet);
 
         Vk::EndLabel(cmdBuffer);
     }

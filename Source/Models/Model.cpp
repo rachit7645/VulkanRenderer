@@ -38,9 +38,7 @@ namespace Models
 
     Model::Model
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
@@ -97,9 +95,7 @@ namespace Models
 
         ProcessScenes
         (
-            device,
             allocator,
-            megaSet,
             geometryBuffer,
             textureManager,
             deletionQueue,
@@ -110,9 +106,7 @@ namespace Models
 
     void Model::ProcessScenes
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
@@ -126,9 +120,7 @@ namespace Models
             {
                 ProcessNode
                 (
-                    device,
                     allocator,
-                    megaSet,
                     geometryBuffer,
                     textureManager,
                     deletionQueue,
@@ -143,9 +135,7 @@ namespace Models
 
     void Model::ProcessNode
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
@@ -162,9 +152,7 @@ namespace Models
         {
             LoadMesh
             (
-                device,
                 allocator,
-                megaSet,
                 geometryBuffer,
                 textureManager,
                 deletionQueue,
@@ -179,9 +167,7 @@ namespace Models
         {
             ProcessNode
             (
-                device,
                 allocator,
-                megaSet,
                 geometryBuffer,
                 textureManager,
                 deletionQueue,
@@ -195,9 +181,7 @@ namespace Models
 
     void Model::LoadMesh
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
@@ -219,8 +203,8 @@ namespace Models
             }
 
             // Geometry data
-            GPU::SurfaceInfo surfaceInfo;
-            GPU::AABB        aabb;
+            GPU::SurfaceInfo surfaceInfo = {};
+            GPU::AABB        aabb        = {};
 
             // Indices
             {
@@ -405,6 +389,7 @@ namespace Models
                     material.flags |= GPU::MaterialFlags::DoubleSided;
                 }
 
+                // TODO: Add proper support for AlphaMode::Blend
                 if (mat.alphaMode == fastgltf::AlphaMode::Mask || mat.alphaMode == fastgltf::AlphaMode::Blend)
                 {
                     material.flags       |= GPU::MaterialFlags::AlphaMasked;
@@ -418,9 +403,7 @@ namespace Models
 
                 material.albedo = LoadTexture
                 (
-                    device,
                     allocator,
-                    megaSet,
                     textureManager,
                     deletionQueue,
                     directory,
@@ -436,9 +419,7 @@ namespace Models
 
                 material.normal = LoadTexture
                 (
-                    device,
                     allocator,
-                    megaSet,
                     textureManager,
                     deletionQueue,
                     directory,
@@ -453,9 +434,7 @@ namespace Models
 
                 material.aoRghMtl = LoadTexture
                 (
-                    device,
                     allocator,
-                    megaSet,
                     textureManager,
                     deletionQueue,
                     directory,
@@ -525,9 +504,7 @@ namespace Models
 
     Vk::TextureID Model::LoadTexture
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
@@ -540,9 +517,7 @@ namespace Models
         {
             return textureManager.AddTexture
             (
-                device,
                 allocator,
-                megaSet,
                 deletionQueue,
                 Util::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
             );
@@ -561,9 +536,7 @@ namespace Models
 
         return LoadTextureInternal
         (
-            device,
             allocator,
-            megaSet,
             textureManager,
             deletionQueue,
             directory,
@@ -574,9 +547,7 @@ namespace Models
 
     Vk::TextureID Model::LoadTexture
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
@@ -588,9 +559,7 @@ namespace Models
         {
             return textureManager.AddTexture
             (
-                device,
                 allocator,
-                megaSet,
                 deletionQueue,
                 Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
             );
@@ -609,9 +578,7 @@ namespace Models
 
         return LoadTextureInternal
         (
-            device,
             allocator,
-            megaSet,
             textureManager,
             deletionQueue,
             directory,
@@ -622,9 +589,7 @@ namespace Models
 
     Vk::TextureID Model::LoadTextureInternal
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
@@ -675,9 +640,7 @@ namespace Models
 
         return textureManager.AddTexture
         (
-            device,
             allocator,
-            megaSet,
             deletionQueue,
             fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
         );
