@@ -34,7 +34,7 @@ namespace Models
     // Default texture paths
     constexpr auto DEFAULT_ALBEDO     = "Albedo.ktx2";
     constexpr auto DEFAULT_NORMAL     = "Normal.ktx2";
-    constexpr auto DEFAULT_AO_RGH_MTL = "Metal-Roughness.ktx2";
+    constexpr auto DEFAULT_AO_RGH_MTL = "Albedo.ktx2";
 
     Model::Model
     (
@@ -600,20 +600,30 @@ namespace Models
     {
         const auto& texture = asset.textures[textureIndex];
 
-        if (!texture.basisuImageIndex.has_value())
+        usize imageIndex = 0;
+
+        if (texture.basisuImageIndex.has_value())
+        {
+            imageIndex = texture.basisuImageIndex.value();
+        }
+        else if (texture.imageIndex.has_value())
+        {
+            imageIndex = texture.imageIndex.value();
+        }
+        else
         {
             Logger::Error("Image index not found! [TextureIndex={}]\n", textureIndex);
         }
 
-        const auto& image = asset.images[texture.basisuImageIndex.value()];
+        const auto& image = asset.images[imageIndex];
 
         if (!std::holds_alternative<fastgltf::sources::URI>(image.data))
         {
             Logger::Error
             (
-                "Unsupported format! [TextureIndex={}] [ImageIndex={}]\n",
+                "Unsupported source! [TextureIndex={}] [ImageIndex={}]\n",
                 textureIndex,
-                texture.basisuImageIndex.value()
+                imageIndex
             );
         }
 

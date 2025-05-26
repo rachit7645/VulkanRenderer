@@ -59,6 +59,13 @@ namespace Vk
             std::vector<VkBufferImageCopy2> copyRegions;
         };
 
+        [[nodiscard]] Vk::Image LoadImageKTX2
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view path
+        );
+
         [[nodiscard]] Vk::Image LoadImageHDR
         (
             VmaAllocator allocator,
@@ -66,7 +73,7 @@ namespace Vk
             const std::string_view path
         );
 
-        [[nodiscard]] Vk::Image LoadImageKTX2
+        [[nodiscard]] Vk::Image LoadImageSTBI
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,

@@ -23,6 +23,12 @@
             "Position" : [ 50.0, 0.0,  12.0 ],
             "Rotation" : [-90.0, 0.0,  141.5],
             "Scale"    : [ 22.0, 22.0, 22.0 ]
+        },
+        {
+            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured_Complex_T.gltf",
+            "Position" : [50.0, 0.0, -50.0],
+            "Rotation" : [0.0,  0.0,  0.0],
+            "Scale"    : [1.0,  1.0,  1.0]
         }
     ],
     "Sun": {

@@ -40,119 +40,17 @@ namespace Vk
 
         const auto extension = Util::Files::GetExtension(path);
 
-        if (extension == ".hdr")
-        {
-            return LoadImageHDR(allocator, deletionQueue, path);
-        }
-
         if (extension == ".ktx2")
         {
             return LoadImageKTX2(allocator, deletionQueue, path);
         }
 
-        Logger::Error("Unsupported image format! [Extension={}]\n", extension);
-    }
-
-    Vk::Image ImageUploader::LoadImageHDR
-    (
-        VmaAllocator allocator,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view path
-    )
-    {
-        #ifdef ENGINE_PROFILE
-        ZoneScopedN("STB HDRi Loader");
-        #endif
-
-        s32 _width  = 0;
-        s32 _height = 0;
-
-        // HDRi Environment Maps are always flipped for some reason idk why
-        stbi_set_flip_vertically_on_load_thread(true);
-
-        const f32* data = stbi_loadf
-        (
-            path.data(),
-            &_width,
-            &_height,
-            nullptr,
-            STBI_rgb_alpha
-        );
-
-        stbi_set_flip_vertically_on_load_thread(false);
-
-        if (data == nullptr)
+        if (extension == ".hdr")
         {
-            Logger::Error("Unable to load texture! [Error={}] [Path={}]\n", stbi_failure_reason(), path);
+            return LoadImageHDR(allocator, deletionQueue, path);
         }
 
-        const u32 width  = _width;
-        const u32 height = _height;
-
-        const usize        elemCount = static_cast<usize>(width) * height * STBI_rgb_alpha;
-        const VkDeviceSize dataSize  = elemCount * sizeof(f16);
-
-        auto buffer = Vk::Buffer
-        (
-            allocator,
-            dataSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
-        );
-
-        Util::ConvertF32ToF16(data, static_cast<f16*>(buffer.allocationInfo.pMappedData), elemCount);
-
-        stbi_image_free(std::bit_cast<void*>(data));
-
-        const std::vector copyRegions = {VkBufferImageCopy2{
-            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
-            .pNext             = nullptr,
-            .bufferOffset      = 0,
-            .bufferRowLength   = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource  = {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .mipLevel       = 0,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, 1}
-        }};
-
-        const auto image = Vk::Image
-        (
-            allocator,
-            VkImageCreateInfo{
-                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext                 = nullptr,
-                .flags                 = 0,
-                .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = VK_FORMAT_R16G16B16A16_SFLOAT,
-                .extent                = {width, height, 1},
-                .mipLevels             = 1,
-                .arrayLayers           = 1,
-                .samples               = VK_SAMPLE_COUNT_1_BIT,
-                .tiling                = VK_IMAGE_TILING_OPTIMAL,
-                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices   = nullptr,
-                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-            },
-            VK_IMAGE_ASPECT_COLOR_BIT
-        );
-
-        AppendUpload(Upload{image, buffer, copyRegions});
-
-        deletionQueue.PushDeletor([allocator, buffer] () mutable
-        {
-            buffer.Destroy(allocator);
-        });
-
-        return image;
+        return LoadImageSTBI(allocator, deletionQueue, path);
     }
 
     Vk::Image ImageUploader::LoadImageKTX2
@@ -295,6 +193,208 @@ namespace Vk
         return image;
     }
 
+
+    Vk::Image ImageUploader::LoadImageHDR
+    (
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view path
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScopedN("STB HDRi Loader");
+        #endif
+
+        s32 _width  = 0;
+        s32 _height = 0;
+
+        // HDRi Environment Maps are always flipped for some reason idk why
+        stbi_set_flip_vertically_on_load_thread(true);
+
+        const f32* data = stbi_loadf
+        (
+            path.data(),
+            &_width,
+            &_height,
+            nullptr,
+            STBI_rgb_alpha
+        );
+
+        stbi_set_flip_vertically_on_load_thread(false);
+
+        if (data == nullptr)
+        {
+            Logger::Error("Unable to load texture! [Error={}] [Path={}]\n", stbi_failure_reason(), path);
+        }
+
+        const u32 width  = _width;
+        const u32 height = _height;
+
+        const usize        texelCount = static_cast<usize>(width) * height;
+        const usize        elemCount  = texelCount * STBI_rgb_alpha;
+        const VkDeviceSize dataSize   = elemCount * sizeof(f16);
+
+        auto buffer = Vk::Buffer
+        (
+            allocator,
+            dataSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        Util::ConvertF32ToF16(data, static_cast<f16*>(buffer.allocationInfo.pMappedData), elemCount);
+
+        stbi_image_free(std::bit_cast<void*>(data));
+
+        const std::vector copyRegions = {VkBufferImageCopy2{
+            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+            .pNext             = nullptr,
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource  = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, 1}
+        }};
+
+        const auto image = Vk::Image
+        (
+            allocator,
+            VkImageCreateInfo{
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = VK_FORMAT_R16G16B16A16_SFLOAT,
+                .extent                = {width, height, 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 1,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        AppendUpload(Upload{image, buffer, copyRegions});
+
+        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        {
+            buffer.Destroy(allocator);
+        });
+
+        return image;
+    }
+
+    Vk::Image ImageUploader::LoadImageSTBI
+    (
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view path
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScopedN("STB Standard Loader");
+        #endif
+
+        s32 _width  = 0;
+        s32 _height = 0;
+
+        const u8* data = stbi_load
+        (
+            path.data(),
+            &_width,
+            &_height,
+            nullptr,
+            STBI_rgb_alpha
+        );
+
+        if (data == nullptr)
+        {
+            Logger::Error("Unable to load texture! [Error={}] [Path={}]\n", stbi_failure_reason(), path);
+        }
+
+        const u32 width  = _width;
+        const u32 height = _height;
+
+        const usize        texelCount = static_cast<usize>(width) * height;
+        const usize        elemCount  = texelCount * STBI_rgb_alpha;
+        const VkDeviceSize dataSize   = elemCount * sizeof(u8);
+
+        auto buffer = Vk::Buffer
+        (
+            allocator,
+            dataSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        std::memcpy(buffer.allocationInfo.pMappedData, data, dataSize);
+
+        stbi_image_free(std::bit_cast<void*>(data));
+
+        const std::vector copyRegions = {VkBufferImageCopy2{
+            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+            .pNext             = nullptr,
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource  = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, 1}
+        }};
+
+        const auto image = Vk::Image
+        (
+            allocator,
+            VkImageCreateInfo{
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = VK_FORMAT_R8G8B8A8_SRGB,
+                .extent                = {width, height, 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 1,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        AppendUpload(Upload{image, buffer, copyRegions});
+
+        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        {
+            buffer.Destroy(allocator);
+        });
+
+        return image;
+    }
+
     Vk::Image ImageUploader::LoadImageFromMemory
     (
         VmaAllocator allocator,
@@ -309,7 +409,7 @@ namespace Vk
         ZoneScoped;
         #endif
 
-        const VkDeviceSize dataSize = width * height * static_cast<VkDeviceSize>(vkuFormatTexelSize(format));
+        const VkDeviceSize dataSize = (static_cast<usize>(width) * height) * static_cast<VkDeviceSize>(vkuFormatTexelSize(format));
 
         auto buffer = Vk::Buffer
         (

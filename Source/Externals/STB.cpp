@@ -14,7 +14,5 @@
  * limitations under the License.
  */
 
-#define STBI_ONLY_HDR
 #define STB_IMAGE_IMPLEMENTATION
-
 #include <stb/stb_image.h>
