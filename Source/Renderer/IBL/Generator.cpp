@@ -342,7 +342,7 @@ namespace Renderer::IBL
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
             .SamplerIndex = m_converterPipeline.samplerIndex,
-            .TextureIndex = modelManager.textureManager.GetTextureInfo(hdrMapID).descriptorID
+            .TextureIndex = modelManager.textureManager.GetTexture(hdrMapID).descriptorID
         };
 
         m_converterPipeline.PushConstants
@@ -411,10 +411,8 @@ namespace Renderer::IBL
             megaSet,
             context.device,
             "IBL/Skybox",
-            Vk::Texture{
-                .image     = skybox,
-                .imageView = skyboxView
-            }
+            skybox,
+            skyboxView
         );
 
         deletionQueue.PushDeletor([device = context.device, skyboxRenderView] () mutable
@@ -551,7 +549,7 @@ namespace Renderer::IBL
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
             .SamplerIndex = m_convolutionPipeline.samplerIndex,
-            .EnvMapIndex  = modelManager.textureManager.GetTextureInfo(skyboxID).descriptorID
+            .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID
         };
 
         m_convolutionPipeline.PushConstants
@@ -600,10 +598,8 @@ namespace Renderer::IBL
             megaSet,
             context.device,
             "IBL/Irradiance",
-            Vk::Texture{
-                .image     = irradianceMap,
-                .imageView = irradianceView
-            }
+            irradianceMap,
+            irradianceView
         );
     }
 
@@ -746,7 +742,7 @@ namespace Renderer::IBL
                 .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .Matrices     = m_matrixBuffer.deviceAddress,
                 .SamplerIndex = m_preFilterPipeline.samplerIndex,
-                .EnvMapIndex  = modelManager.textureManager.GetTextureInfo(skyboxID).descriptorID ,
+                .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID ,
                 .Roughness    = roughness,
                 .SampleCount  = sampleCount
             };
@@ -814,10 +810,8 @@ namespace Renderer::IBL
             megaSet,
             context.device,
             "IBL/PreFilter",
-            Vk::Texture{
-                .image     = preFilterMap,
-                .imageView = preFilterView
-            }
+            preFilterMap,
+            preFilterView
         );
 
         deletionQueue.PushDeletor([device = context.device, preFilterRenderViews] () mutable
@@ -991,10 +985,8 @@ namespace Renderer::IBL
             megaSet,
             context.device,
             "IBL/BRDFLookupTable",
-            Vk::Texture{
-                .image     = brdfLut,
-                .imageView = brdfLutView
-            }
+            brdfLut,
+            brdfLutView
         );
 
         return m_brdfLutID.value();

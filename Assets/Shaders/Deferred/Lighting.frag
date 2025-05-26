@@ -20,7 +20,6 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Color.glsl"
 #include "PBR.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
@@ -47,9 +46,6 @@ void main()
 
     vec3 toCamera = normalize(Constants.Scene.cameraPosition - worldPosition);
 
-    vec3  F0    = mix(vec3(0.04f), albedo, metallic);
-    float NdotV = max(dot(normal, toCamera), 0.0f);
-
     vec3 Lo = vec3(0.0f);
 
     for (uint i = 0; i < Constants.Scene.DirLights.count; ++i)
@@ -59,17 +55,15 @@ void main()
 
         float shadow = texture(sampler2D(Textures[Constants.ShadowMapIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
 
-        Lo += CalculateLight
+        Lo += shadow * CalculateLight
         (
             lightInfo,
             normal,
             toCamera,
-            F0,
             albedo,
             roughness,
-            metallic,
-            NdotV
-        ) * shadow;
+            metallic
+        );
     }
 
     for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
@@ -82,11 +76,9 @@ void main()
             lightInfo,
             normal,
             toCamera,
-            F0,
             albedo,
             roughness,
-            metallic,
-            NdotV
+            metallic
         );
     }
 
@@ -106,17 +98,15 @@ void main()
             Samplers[Constants.ShadowSamplerIndex]
         );
 
-        Lo += CalculateLight
+        Lo += shadow * CalculateLight
         (
             lightInfo,
             normal,
             toCamera,
-            F0,
             albedo,
             roughness,
-            metallic,
-            NdotV
-        ) * shadow;
+            metallic
+        );
     }
 
     for (uint i = 0; i < Constants.Scene.SpotLights.count; ++i)
@@ -129,11 +119,9 @@ void main()
             lightInfo,
             normal,
             toCamera,
-            F0,
             albedo,
             roughness,
-            metallic,
-            NdotV
+            metallic
         );
     }
 
@@ -152,17 +140,15 @@ void main()
             Samplers[Constants.ShadowSamplerIndex]
         );
 
-        Lo += CalculateLight
+        Lo += (1.0f - shadow) * CalculateLight
         (
             lightInfo,
             normal,
             toCamera,
-            F0,
             albedo,
             roughness,
-            metallic,
-            NdotV
-        ) * (1.0f - shadow);
+            metallic
+        );
     }
 
     vec3  R                = reflect(-toCamera, normal);
@@ -176,14 +162,12 @@ void main()
     (
         normal,
         toCamera,
-        F0,
         albedo,
         roughness,
         metallic,
         irradiance,
         preFilter,
-        brdf,
-        NdotV
+        brdf
     );
 
     outColor = Lo;

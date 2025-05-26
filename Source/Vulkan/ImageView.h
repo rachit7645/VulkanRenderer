@@ -44,19 +44,4 @@ namespace Vk
     };
 }
 
-// Don't nuke me for this
-namespace std
-{
-    // Hashing
-    template <>
-    struct hash<Vk::ImageView>
-    {
-        std::size_t operator()(const Vk::ImageView& imageView) const noexcept
-        {
-            // Since VkImageView is a pointer, its safe to hash it directly
-            return std::hash<VkImageView>()(imageView.handle);
-        }
-    };
-}
-
 #endif

@@ -43,9 +43,10 @@ namespace Vk
             return m_imageUploader.LoadImageFromFile(allocator, deletionQueue, path);
         }));
 
-        m_textureMap.emplace(id, TextureInfo{
+        m_textureMap.emplace(id, Vk::Texture{
             .name         = Util::Files::GetNameWithoutExtension(path),
-            .texture      = {},
+            .image        = {},
+            .imageView    = {}, 
             .descriptorID = 0,
             .isLoaded     = false
         });
@@ -84,9 +85,10 @@ namespace Vk
             );
         }));
 
-        m_textureMap.emplace(id, TextureInfo{
+        m_textureMap.emplace(id, Vk::Texture{
             .name         = name.data(),
-            .texture      = {},
+            .image        = {},
+            .imageView    = {},
             .descriptorID = 0,
             .isLoaded     = false
         });
@@ -99,7 +101,8 @@ namespace Vk
         Vk::MegaSet& megaSet,
         VkDevice device,
         const std::string_view name,
-        const Vk::Texture& texture
+        const Vk::Image& image,
+        const Vk::ImageView& imageView
     )
     {
         const Vk::TextureID id = std::hash<std::string_view>()(name);
@@ -109,17 +112,18 @@ namespace Vk
             return id;
         }
 
-        const auto descriptorID = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        const auto descriptorID = megaSet.WriteSampledImage(imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        m_textureMap.emplace(id, TextureInfo{
+        m_textureMap.emplace(id, Vk::Texture{
             .name         = name.data(),
-            .texture      = texture,
+            .image        = image,
+            .imageView    = imageView,
             .descriptorID = descriptorID,
             .isLoaded     = true
         });
 
-        Vk::SetDebugName(device, texture.image.handle,     name);
-        Vk::SetDebugName(device, texture.imageView.handle, name.data() + std::string("_View"));
+        Vk::SetDebugName(device, image.handle,     name);
+        Vk::SetDebugName(device, imageView.handle, name.data() + std::string("_View"));
 
         Logger::Debug("Added texture! [Name={}]\n", name);
 
@@ -150,7 +154,7 @@ namespace Vk
 
         m_executor.wait_for_all();
 
-        for (auto& [id, info] : m_textureMap)
+        for (auto& [id, texture] : m_textureMap)
         {
             if (m_futuresMap.contains(id))
             {
@@ -163,30 +167,30 @@ namespace Vk
 
                 future.wait();
 
-                info.texture.image = future.get();
+                texture.image = future.get();
 
-                info.texture.imageView = Vk::ImageView
+                texture.imageView = Vk::ImageView
                 (
                     device,
-                    info.texture.image,
+                    texture.image,
                     VK_IMAGE_VIEW_TYPE_2D,
                     VkImageSubresourceRange{
-                        .aspectMask     = info.texture.image.aspect,
+                        .aspectMask     = texture.image.aspect,
                         .baseMipLevel   = 0,
-                        .levelCount     = info.texture.image.mipLevels,
+                        .levelCount     = texture.image.mipLevels,
                         .baseArrayLayer = 0,
-                        .layerCount     = info.texture.image.arrayLayers
+                        .layerCount     = texture.image.arrayLayers
                     }
                 );
 
-                info.descriptorID = megaSet.WriteSampledImage(info.texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                texture.descriptorID = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-                info.isLoaded = true;
+                texture.isLoaded = true;
 
-                Vk::SetDebugName(device, info.texture.image.handle,     info.name);
-                Vk::SetDebugName(device, info.texture.imageView.handle, info.name + "_View");
+                Vk::SetDebugName(device, texture.image.handle,     texture.name);
+                Vk::SetDebugName(device, texture.imageView.handle, texture.name + "_View");
 
-                Logger::Debug("Loaded texture! [Name={}]\n", info.name);
+                Logger::Debug("Loaded texture! [Name={}]\n", texture.name);
             }
         }
 
@@ -199,7 +203,7 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
-    const TextureManager::TextureInfo& TextureManager::GetTextureInfo(Vk::TextureID id) const
+    const Vk::Texture& TextureManager::GetTexture(Vk::TextureID id) const
     {
         const auto iter = m_textureMap.find(id);
 
@@ -244,14 +248,10 @@ namespace Vk
             return;
         }
 
-        if (iter->second.isLoaded)
+        deletionQueue.PushDeletor([&megaSet, device, allocator, texture = iter->second] () mutable
         {
-            deletionQueue.PushDeletor([&megaSet, device, allocator, textureInfo = iter->second] () mutable
-            {
-                textureInfo.texture.Destroy(device, allocator);
-                megaSet.FreeSampledImage(textureInfo.descriptorID);
-            });
-        }
+            texture.Destroy(device, allocator);
+        });
 
         m_textureMap.erase(iter);
     }
@@ -262,18 +262,16 @@ namespace Vk
         {
             if (ImGui::BeginMenu("Texture Manager"))
             {
-                for (const auto& [id, textureInfo] : m_textureMap)
+                for (const auto& [id, texture] : m_textureMap)
                 {
-                    const auto& [name, texture, descriptorID, isLoaded] = textureInfo;
-
-                    if (!isLoaded)
+                    if (!texture.isLoaded)
                     {
                         continue;
                     }
 
-                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", name.c_str()))
+                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", texture.name.c_str()))
                     {
-                        ImGui::Text("Descriptor Index | %u", descriptorID);
+                        ImGui::Text("Descriptor Index | %u", texture.descriptorID);
                         ImGui::Text("Width            | %u", texture.image.width);
                         ImGui::Text("Height           | %u", texture.image.height);
                         ImGui::Text("Depth            | %u", texture.image.depth);
@@ -293,7 +291,7 @@ namespace Vk
                         const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
                         const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
 
-                        ImGui::Image(descriptorID, imageSize);
+                        ImGui::Image(texture.descriptorID, imageSize);
 
                         ImGui::TreePop();
                     }
@@ -315,12 +313,9 @@ namespace Vk
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& textureInfo : m_textureMap | std::views::values)
+        for (auto& texture : m_textureMap | std::views::values)
         {
-            if (textureInfo.isLoaded)
-            {
-                textureInfo.texture.Destroy(device, allocator);
-            }
+            texture.Destroy(device, allocator);
         }
 
         for (const auto& sampler : m_samplerMap | std::views::values)
@@ -331,7 +326,6 @@ namespace Vk
         m_textureMap.clear();
         m_samplerMap.clear();
         m_futuresMap.clear();
-
         m_imageUploader.Clear();
     }
 }

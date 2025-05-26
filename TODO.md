@@ -20,4 +20,3 @@
 * IBL Cache
 * Staging Pool
 * Combined Uploader
-* Profiling Builds with Tracy

@@ -46,7 +46,7 @@ namespace Models
     )
         : name(Util::Files::GetNameWithoutExtension(path))
     {
-        Logger::Info("Loading model: {}\n", path);
+        Logger::Info("Loading model! [Path={}]\n", path);
 
         const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
@@ -402,7 +402,7 @@ namespace Models
             {
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
-                material.albedo = LoadTexture
+                material.albedoID = LoadTexture
                 (
                     allocator,
                     textureManager,
@@ -418,7 +418,7 @@ namespace Models
             {
                 const auto& normalTexture = mat.normalTexture;
 
-                material.normal = LoadTexture
+                material.normalID = LoadTexture
                 (
                     allocator,
                     textureManager,
@@ -433,7 +433,7 @@ namespace Models
             {
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
-                material.aoRghMtl = LoadTexture
+                material.aoRghMtlID = LoadTexture
                 (
                     allocator,
                     textureManager,

@@ -127,7 +127,7 @@ namespace Renderer::Skybox
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
             .SamplerIndex = pipeline.samplerIndex,
-            .CubemapIndex = modelManager.textureManager.GetTextureInfo(iblMaps.skyboxID).descriptorID
+            .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };
 
         pipeline.PushConstants

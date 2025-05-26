@@ -31,14 +31,6 @@ namespace Vk
     class TextureManager
     {
     public:
-        struct TextureInfo
-        {
-            std::string      name;
-            Vk::Texture      texture;
-            Vk::DescriptorID descriptorID;
-            bool             isLoaded;
-        };
-
         [[nodiscard]] Vk::TextureID AddTexture
         (
             VmaAllocator allocator,
@@ -63,7 +55,8 @@ namespace Vk
             Vk::MegaSet& megaSet,
             VkDevice device,
             const std::string_view name,
-            const Vk::Texture& texture
+            const Vk::Image& image,
+            const Vk::ImageView& imageView
         );
 
         [[nodiscard]] Vk::DescriptorID AddSampler
@@ -75,7 +68,7 @@ namespace Vk
 
         void Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet);
 
-        [[nodiscard]] const TextureInfo& GetTextureInfo(Vk::TextureID id) const;
+        [[nodiscard]] const Vk::Texture& GetTexture(Vk::TextureID id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(Vk::DescriptorID id) const;
 
         void DestroyTexture
@@ -93,7 +86,7 @@ namespace Vk
 
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        std::unordered_map<Vk::TextureID,    TextureInfo> m_textureMap;
+        std::unordered_map<Vk::TextureID,    Vk::Texture> m_textureMap;
         std::unordered_map<Vk::DescriptorID, Vk::Sampler> m_samplerMap;
 
         Vk::ImageUploader m_imageUploader;

@@ -34,11 +34,18 @@ void main()
     vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
     vec2 uv          = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
 
+    float depth = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv).r;
+
+    if (depth == 0.0f)
+    {
+        imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f, 0.0f, 0.0f, 0.0f));
+        return;
+    }
+
+    vec3 worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
+
     vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     vec3 normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
-
-    float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), uv).r;
-    vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
 
     vec3 direction = normalize(-Constants.Scene.DirLights.lights[0].position);
 

@@ -26,9 +26,9 @@ namespace Models
 {
     struct Material
     {
-        Vk::TextureID albedo;
-        Vk::TextureID normal;
-        Vk::TextureID aoRghMtl;
+        Vk::TextureID albedoID;
+        Vk::TextureID normalID;
+        Vk::TextureID aoRghMtlID;
 
         glm::vec4 albedoFactor;
         f32       roughnessFactor;
@@ -42,9 +42,9 @@ namespace Models
         {
             return GPU::Material
             {
-                .albedo          = textureManager.GetTextureInfo(albedo).descriptorID,
-                .normal          = textureManager.GetTextureInfo(normal).descriptorID,
-                .aoRghMtl        = textureManager.GetTextureInfo(aoRghMtl).descriptorID,
+                .albedo          = textureManager.GetTexture(albedoID).descriptorID,
+                .normal          = textureManager.GetTexture(normalID).descriptorID,
+                .aoRghMtl        = textureManager.GetTexture(aoRghMtlID).descriptorID,
                 .albedoFactor    = albedoFactor,
                 .roughnessFactor = roughnessFactor,
                 .metallicFactor  = metallicFactor,

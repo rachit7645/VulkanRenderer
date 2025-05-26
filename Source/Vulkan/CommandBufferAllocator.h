@@ -31,7 +31,7 @@ namespace Vk
     class CommandBufferAllocator
     {
     public:
-        explicit CommandBufferAllocator(VkDevice device, const Vk::QueueFamilyIndices& queueFamilies);
+        CommandBufferAllocator(VkDevice device, const Vk::QueueFamilyIndices& queueFamilies);
 
         [[nodiscard]] Vk::CommandBuffer AllocateGlobalCommandBuffer(VkDevice device, VkCommandBufferLevel level);
         void FreeGlobalCommandBuffer(const Vk::CommandBuffer& commandBuffer);

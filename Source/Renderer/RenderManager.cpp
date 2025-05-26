@@ -714,7 +714,7 @@ namespace Renderer
 
                 m_megaSet.Update(m_context.device);
 
-                io.Fonts->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTextureInfo(fontID).descriptorID));
+                io.Fonts->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTexture(fontID).descriptorID));
             }
         );
 

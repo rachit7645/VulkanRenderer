@@ -17,10 +17,7 @@
 #ifndef SAMPLER_H
 #define SAMPLER_H
 
-#include <utility>
 #include <vulkan/vulkan.h>
-
-#include "Util/Types.h"
 
 namespace Vk
 {
@@ -32,8 +29,7 @@ namespace Vk
         Sampler(VkDevice device, const VkSamplerCreateInfo& createInfo);
         void Destroy(VkDevice device) const;
 
-        // Vulkan handle
-        VkSampler handle = nullptr;
+        VkSampler handle = VK_NULL_HANDLE;
     };
 }
 

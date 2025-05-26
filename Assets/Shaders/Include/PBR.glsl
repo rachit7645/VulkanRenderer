@@ -57,16 +57,17 @@ vec3 CalculateLight
     LightInfo lightInfo,
     vec3 N,
     vec3 V,
-    vec3 F0,
     vec3 albedo,
     float roughness,
-    float metallic,
-    float NdotV
+    float metallic
 )
 {
+    vec3 F0 = mix(vec3(0.04f), albedo, metallic);
+
     vec3 L = lightInfo.L;
     vec3 H = normalize(V + L);
 
+    float NdotV = max(dot(N, V), 0.0f);
     float NdotL = max(dot(N, L), 0.0f);
     float NdotH = max(dot(N, H), 0.0f);
     float HdotV = max(dot(H, V), 0.0f);
@@ -126,16 +127,17 @@ vec3 CalculateAmbient
 (
     vec3 N,
     vec3 V,
-    vec3 F0,
     vec3 albedo,
     float roughness,
     float metallic,
     vec3 irradiance,
     vec3 preFilter,
-    vec2 brdf,
-    float NdotV
+    vec2 brdf
 )
 {
+    vec3  F0    = mix(vec3(0.04f), albedo, metallic);
+    float NdotV = max(dot(N, V), 0.0f);
+
     vec3 F = FresnelSchlick_IBL(NdotV, F0, roughness);
 
     // Energy conservation

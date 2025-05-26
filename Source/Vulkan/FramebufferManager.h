@@ -212,7 +212,7 @@ namespace Vk
 
         VkExtent2D m_extent = {};
 
-        Vk::BarrierWriter m_barrierWriter       = {};
+        Vk::BarrierWriter m_barrierWriter = {};
     };
 }
 

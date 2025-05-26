@@ -411,7 +411,7 @@ namespace Renderer::AO::VBGTAO
             .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
             .PointSamplerIndex        = m_occlusionPipeline.pointSamplerIndex,
             .LinearSamplerIndex       = m_occlusionPipeline.linearSamplerIndex,
-            .HilbertLUTIndex          = textureManager.GetTextureInfo(m_hilbertLUT.value()).descriptorID,
+            .HilbertLUTIndex          = textureManager.GetTexture(m_hilbertLUT.value()).descriptorID,
             .GNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageIndex,
             .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageIndex,
