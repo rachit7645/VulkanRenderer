@@ -59,7 +59,8 @@ namespace Renderer::AO::VBGTAO
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
 
         void Occlusion
@@ -77,7 +78,8 @@ namespace Renderer::AO::VBGTAO
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
 
         DepthPreFilter::Pipeline m_depthPreFilterPipeline;

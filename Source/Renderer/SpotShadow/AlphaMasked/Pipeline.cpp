@@ -39,8 +39,8 @@ namespace Renderer::SpotShadow::AlphaMasked
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
-            .AttachShader("Shadows/SpotShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Misc/Empty.frag",                VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Shadows/SpotShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Shadows/SpotShadow/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_TRUE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -51,7 +51,7 @@ namespace Renderer::SpotShadow::AlphaMasked
 
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        textureSamplerIndex = textureManager.AddSampler
+        textureSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -79,8 +79,7 @@ namespace Renderer::SpotShadow::AlphaMasked
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "SpotShadow/AlphaMasked/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                                "SpotShadow/AlphaMasked/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "SpotShadow/AlphaMasked/Pipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle, "SpotShadow/AlphaMasked/Pipeline");
+        Vk::SetDebugName(context.device, layout, "SpotShadow/AlphaMasked/Pipeline/Layout");
     }
 }

@@ -32,7 +32,7 @@ namespace Renderer::PostProcess
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -75,7 +75,8 @@ namespace Renderer::PostProcess
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -144,7 +145,7 @@ namespace Renderer::PostProcess
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -168,13 +169,13 @@ namespace Renderer::PostProcess
 
         const auto constants = PostProcess::Constants
         {
-            .SamplerIndex  = pipeline.samplerIndex,
-            .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageIndex,
-            .BloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
+            .SamplerIndex  = textureManager.GetSampler(m_pipeline.samplerID).descriptorID,
+            .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
+            .BloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
             .BloomStrength = m_bloomStrength
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -183,7 +184,7 @@ namespace Renderer::PostProcess
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -201,6 +202,6 @@ namespace Renderer::PostProcess
 
     void RenderPass::Destroy(VkDevice device)
     {
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
     }
 }

@@ -93,7 +93,7 @@ namespace Renderer::GBuffer::AlphaMasked
 
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        textureSamplerIndex = textureManager.AddSampler
+        textureSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -121,8 +121,7 @@ namespace Renderer::GBuffer::AlphaMasked
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "GBuffer/AlphaMasked/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                                "GBuffer/AlphaMasked/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "GBuffer/AlphaMasked/Pipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle, "GBuffer/AlphaMasked/Pipeline");
+        Vk::SetDebugName(context.device, layout, "GBuffer/AlphaMasked/Pipeline/Layout");
     }
 }

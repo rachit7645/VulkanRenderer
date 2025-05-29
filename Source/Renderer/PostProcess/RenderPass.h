@@ -41,11 +41,12 @@ namespace Renderer::PostProcess
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
-
-        PostProcess::Pipeline pipeline;
     private:
+        PostProcess::Pipeline m_pipeline;
+
         f32 m_bloomStrength = 0.031f;
     };
 }

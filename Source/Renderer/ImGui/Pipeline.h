@@ -34,7 +34,7 @@ namespace Renderer::DearImGui
             VkFormat colorFormat
         );
 
-        Vk::DescriptorID samplerIndex = 0;
+        Vk::SamplerID samplerID = 0;
     };
 }
 

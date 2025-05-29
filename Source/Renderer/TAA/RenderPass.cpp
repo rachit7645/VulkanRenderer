@@ -35,7 +35,7 @@ namespace Renderer::TAA
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -118,7 +118,8 @@ namespace Renderer::TAA
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         Vk::BeginLabel(cmdBuffer, "TAAPass", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
@@ -293,7 +294,7 @@ namespace Renderer::TAA
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -317,15 +318,15 @@ namespace Renderer::TAA
 
         const auto constants = TAA::Constants
         {
-            .PointSamplerIndex  = pipeline.pointSamplerIndex,
-            .LinearSamplerIndex = pipeline.linearSamplerIndex,
-            .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
-            .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
-            .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageIndex,
-            .SceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
+            .PointSamplerIndex  = textureManager.GetSampler(m_pipeline.pointSamplerID).descriptorID,
+            .LinearSamplerIndex = textureManager.GetSampler(m_pipeline.linearSamplerID).descriptorID,
+            .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageID,
+            .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageID,
+            .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageID,
+            .SceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -333,7 +334,7 @@ namespace Renderer::TAA
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -389,6 +390,6 @@ namespace Renderer::TAA
 
     void RenderPass::Destroy(VkDevice device)
     {
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
     }
 }

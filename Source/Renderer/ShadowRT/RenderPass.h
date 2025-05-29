@@ -19,7 +19,6 @@
 
 #include "Pipeline.h"
 #include "Renderer/Buffers/MeshBuffer.h"
-#include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
@@ -48,16 +47,15 @@ namespace Renderer::ShadowRT
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::MegaSet& megaSet,
+            const Models::ModelManager& modelManager,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
-            const Vk::GeometryBuffer& geometryBuffer,
             const Vk::AccelerationStructure& accelerationStructure
         );
-
-        ShadowRT::Pipeline pipeline;
-
-        Vk::ShaderBindingTable shaderBindingTable;
+    private:
+        ShadowRT::Pipeline     m_pipeline;
+        Vk::ShaderBindingTable m_shaderBindingTable;
     };
 }
 

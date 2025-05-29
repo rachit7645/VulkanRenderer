@@ -14,29 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef ALPHA_MASKED_DEPTH_PIPELINE_H
-#define ALPHA_MASKED_DEPTH_PIPELINE_H
+#ifndef HASH_H
+#define HASH_H
 
-#include "Vulkan/Pipeline.h"
-#include "Vulkan/FormatHelper.h"
-#include "Vulkan/MegaSet.h"
-#include "Vulkan/TextureManager.h"
+#include "Util/Types.h"
 
-namespace Renderer::Depth::AlphaMasked
+namespace Util
 {
-    class Pipeline : public Vk::Pipeline
+    template <typename T>
+    usize HashCombine(usize seed, const T& value)
     {
-    public:
-        Pipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
-        Vk::SamplerID textureSamplerID = 0;
-    };
+        return seed ^= std::hash<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
 }
 
 #endif

@@ -34,8 +34,8 @@ namespace Renderer::ShadowRT
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, megaSet, textureManager),
-          shaderBindingTable(context, cmdBufferAllocator, pipeline, MISS_SHADER_GROUP_COUNT, HIT_SHADER_GROUP_COUNT)
+        : m_pipeline(context, megaSet, textureManager),
+          m_shaderBindingTable(context, cmdBufferAllocator, m_pipeline, MISS_SHADER_GROUP_COUNT, HIT_SHADER_GROUP_COUNT)
     {
         framebufferManager.AddFramebuffer
         (
@@ -80,10 +80,10 @@ namespace Renderer::ShadowRT
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
+        const Models::ModelManager& modelManager,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Vk::GeometryBuffer& geometryBuffer,
         const Vk::AccelerationStructure& accelerationStructure
     )
     {
@@ -109,23 +109,23 @@ namespace Renderer::ShadowRT
             }
         );
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const auto constants = ShadowRT::Constants
         {
             .TLAS                = accelerationStructure.topLevelASes[FIF].deviceAddress,
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .Indices             = geometryBuffer.indexBuffer.buffer.deviceAddress,
-            .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-            .GBufferSamplerIndex = pipeline.gBufferSamplerIndex,
-            .TextureSamplerIndex = pipeline.textureSamplerIndex,
-            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .OutputImage         = shadowMapView.storageImageIndex
+            .Indices             = modelManager.geometryBuffer.indexBuffer.buffer.deviceAddress,
+            .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+            .GBufferSamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.gBufferSamplerID).descriptorID,
+            .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.textureSamplerID).descriptorID,
+            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageID,
+            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
+            .OutputImage         = shadowMapView.storageImageID
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
@@ -133,7 +133,7 @@ namespace Renderer::ShadowRT
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         // You still need an empty callable region for some reason
         constexpr VkStridedDeviceAddressRegionKHR emptyCallableRegion = {};
@@ -141,9 +141,9 @@ namespace Renderer::ShadowRT
         vkCmdTraceRaysKHR
         (
             cmdBuffer.handle,
-            &shaderBindingTable.raygenRegion,
-            &shaderBindingTable.missRegion,
-            &shaderBindingTable.hitRegion,
+            &m_shaderBindingTable.raygenRegion,
+            &m_shaderBindingTable.missRegion,
+            &m_shaderBindingTable.hitRegion,
             &emptyCallableRegion,
             shadowMap.image.width,
             shadowMap.image.height,
@@ -172,7 +172,7 @@ namespace Renderer::ShadowRT
 
     void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        shaderBindingTable.Destroy(allocator);
-        pipeline.Destroy(device);
+        m_shaderBindingTable.Destroy(allocator);
+        m_pipeline.Destroy(device);
     }
 }

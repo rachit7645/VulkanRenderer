@@ -52,16 +52,16 @@ namespace Renderer::GBuffer
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::GeometryBuffer& geometryBuffer,
+            const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer
         );
-
-        Opaque::Pipeline                   opaquePipeline;
-        Opaque::DoubleSided::Pipeline      opaqueDoubleSidedPipeline;
-        AlphaMasked::Pipeline              alphaMaskedPipeline;
-        AlphaMasked::DoubleSided::Pipeline alphaMaskedDoubleSidedPipeline;
+    private:
+        Opaque::Pipeline                   m_opaquePipeline;
+        Opaque::DoubleSided::Pipeline      m_opaqueDoubleSidedPipeline;
+        AlphaMasked::Pipeline              m_alphaMaskedPipeline;
+        AlphaMasked::DoubleSided::Pipeline m_alphaMaskedDoubleSidedPipeline;
     };
 }
 

@@ -35,7 +35,7 @@ namespace Renderer::Bloom::UpSample
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID samplerIndex = 0;
+        Vk::SamplerID samplerID = 0;
     };
 }
 

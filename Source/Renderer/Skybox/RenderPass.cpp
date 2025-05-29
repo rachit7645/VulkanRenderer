@@ -30,7 +30,7 @@ namespace Renderer::Skybox
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
     }
 
@@ -100,7 +100,7 @@ namespace Renderer::Skybox
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -126,11 +126,11 @@ namespace Renderer::Skybox
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
-            .SamplerIndex = pipeline.samplerIndex,
+            .SamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.samplerID).descriptorID,
             .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
            cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -138,7 +138,7 @@ namespace Renderer::Skybox
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -189,6 +189,6 @@ namespace Renderer::Skybox
 
     void RenderPass::Destroy(VkDevice device)
     {
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
     }
 }

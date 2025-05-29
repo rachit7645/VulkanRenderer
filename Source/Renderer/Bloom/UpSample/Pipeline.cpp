@@ -60,7 +60,7 @@ namespace Renderer::Bloom::UpSample
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        samplerIndex = textureManager.AddSampler
+        samplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -76,20 +76,19 @@ namespace Renderer::Bloom::UpSample
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                         "Bloom/UpSample/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                         "Bloom/UpSample/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "Bloom/UpSample/Pipeline/Sampler");
+        Vk::SetDebugName(context.device, handle, "Bloom/UpSample/Pipeline");
+        Vk::SetDebugName(context.device, layout, "Bloom/UpSample/Pipeline/Layout");
     }
 }

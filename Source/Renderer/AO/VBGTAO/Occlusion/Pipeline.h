@@ -33,8 +33,8 @@ namespace Renderer::AO::VBGTAO::Occlusion
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID pointSamplerIndex  = 0;
-        Vk::DescriptorID linearSamplerIndex = 0;
+        Vk::SamplerID pointSamplerID  = 0;
+        Vk::SamplerID linearSamplerID = 0;
     };
 }
 

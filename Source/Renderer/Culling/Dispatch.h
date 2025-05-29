@@ -41,9 +41,9 @@ namespace Renderer::Culling
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer
         );
-
-        Culling::Pipeline      frustumPipeline;
-        Culling::FrustumBuffer frustumBuffer;
+    private:
+        Culling::Pipeline      m_frustumPipeline;
+        Culling::FrustumBuffer m_frustumBuffer;
     };
 }
 

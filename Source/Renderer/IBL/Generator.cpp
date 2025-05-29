@@ -32,7 +32,6 @@ namespace Renderer::IBL
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
     constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
-    constexpr u32 PREFILTER_MIPMAP_LEVELS = 5;
     constexpr u32 PREFILTER_SAMPLE_COUNT  = 512;
     
     Generator::Generator
@@ -341,7 +340,7 @@ namespace Renderer::IBL
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
-            .SamplerIndex = m_converterPipeline.samplerIndex,
+            .SamplerIndex = modelManager.textureManager.GetSampler(m_converterPipeline.samplerID).descriptorID,
             .TextureIndex = modelManager.textureManager.GetTexture(hdrMapID).descriptorID
         };
 
@@ -548,7 +547,7 @@ namespace Renderer::IBL
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
-            .SamplerIndex = m_convolutionPipeline.samplerIndex,
+            .SamplerIndex = modelManager.textureManager.GetSampler(m_convolutionPipeline.samplerID).descriptorID,
             .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID
         };
 
@@ -741,7 +740,7 @@ namespace Renderer::IBL
             {
                 .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .Matrices     = m_matrixBuffer.deviceAddress,
-                .SamplerIndex = m_preFilterPipeline.samplerIndex,
+                .SamplerIndex = modelManager.textureManager.GetSampler(m_preFilterPipeline.samplerID).descriptorID,
                 .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID ,
                 .Roughness    = roughness,
                 .SampleCount  = sampleCount

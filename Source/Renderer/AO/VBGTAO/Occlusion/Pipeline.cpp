@@ -35,7 +35,7 @@ namespace Renderer::AO::VBGTAO::Occlusion
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        pointSamplerIndex = textureManager.AddSampler
+        pointSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -61,7 +61,7 @@ namespace Renderer::AO::VBGTAO::Occlusion
             }
         );
 
-        linearSamplerIndex = textureManager.AddSampler
+        linearSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -89,9 +89,7 @@ namespace Renderer::AO::VBGTAO::Occlusion
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                               "VBGTAO/Occlusion/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                               "VBGTAO/Occlusion/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle,  "VBGTAO/Occlusion/Pipeline/PointSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(linearSamplerIndex).handle, "VBGTAO/Occlusion/Pipeline/LinearSampler");
+        Vk::SetDebugName(context.device, handle, "VBGTAO/Occlusion/Pipeline");
+        Vk::SetDebugName(context.device, layout, "VBGTAO/Occlusion/Pipeline/Layout");
     }
 }

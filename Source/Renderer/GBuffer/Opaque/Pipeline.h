@@ -35,7 +35,7 @@ namespace Renderer::GBuffer::Opaque
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID textureSamplerIndex = 0;
+        Vk::SamplerID textureSamplerID = 0;
     };
 }
 

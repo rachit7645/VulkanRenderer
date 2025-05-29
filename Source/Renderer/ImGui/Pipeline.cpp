@@ -58,7 +58,7 @@ namespace Renderer::DearImGui
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        samplerIndex = textureManager.AddSampler
+        samplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -74,19 +74,18 @@ namespace Renderer::DearImGui
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = -1000.0f,
                 .maxLod                  = 1000.0f,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        Vk::SetDebugName(context.device, handle,                                         "ImGui/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                         "ImGui/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "ImGui/Pipeline/Sampler");
+        Vk::SetDebugName(context.device, handle, "ImGui/Pipeline");
+        Vk::SetDebugName(context.device, layout, "ImGui/Pipeline/Layout");
 
         megaSet.Update(context.device);
     }

@@ -33,8 +33,8 @@ namespace Renderer::ShadowRT
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID gBufferSamplerIndex = 0;
-        Vk::DescriptorID textureSamplerIndex = 0;
+        Vk::SamplerID gBufferSamplerID = 0;
+        Vk::SamplerID textureSamplerID = 0;
     };
 }
 

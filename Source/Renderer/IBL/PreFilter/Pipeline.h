@@ -36,7 +36,7 @@ namespace Renderer::IBL::PreFilter
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID samplerIndex = 0;
+        Vk::SamplerID samplerID = 0;
     };
 }
 

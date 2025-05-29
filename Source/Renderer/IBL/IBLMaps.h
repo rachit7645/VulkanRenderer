@@ -23,6 +23,8 @@
 
 namespace Renderer::IBL
 {
+    constexpr u32 PREFILTER_MIPMAP_LEVELS = 5;
+
     struct IBLMaps
     {
         void Destroy

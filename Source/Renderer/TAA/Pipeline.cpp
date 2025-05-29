@@ -72,7 +72,7 @@ namespace Renderer::TAA
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        pointSamplerIndex = textureManager.AddSampler
+        pointSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -98,7 +98,7 @@ namespace Renderer::TAA
             }
         );
 
-        linearSamplerIndex = textureManager.AddSampler
+        linearSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -108,7 +108,7 @@ namespace Renderer::TAA
                 .flags                   = 0,
                 .magFilter               = VK_FILTER_LINEAR,
                 .minFilter               = VK_FILTER_LINEAR,
-                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
                 .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -126,9 +126,7 @@ namespace Renderer::TAA
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                               "TAA/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                               "TAA/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle,  "TAA/Pipeline/PointSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(linearSamplerIndex).handle, "TAA/Pipeline/LinearSampler");
+        Vk::SetDebugName(context.device, handle, "TAA/Pipeline");
+        Vk::SetDebugName(context.device, layout, "TAA/Pipeline/Layout");
     }
 }

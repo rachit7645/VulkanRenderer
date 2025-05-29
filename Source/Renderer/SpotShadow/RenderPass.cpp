@@ -31,8 +31,8 @@ namespace Renderer::SpotShadow
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : opaquePipeline(context, formatHelper),
-          alphaMaskedPipeline(context, formatHelper, megaSet, textureManager)
+        : m_opaquePipeline(context, formatHelper),
+          m_alphaMaskedPipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -90,7 +90,7 @@ namespace Renderer::SpotShadow
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::GeometryBuffer& geometryBuffer,
+        const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
@@ -192,13 +192,13 @@ namespace Renderer::SpotShadow
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            geometryBuffer.Bind(cmdBuffer);
+            modelManager.geometryBuffer.Bind(cmdBuffer);
 
             // Opaque
             {
                 Vk::BeginLabel(cmdBuffer, "Opaque", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
-                opaquePipeline.Bind(cmdBuffer);
+                m_opaquePipeline.Bind(cmdBuffer);
 
                 // Single Sided
                 {
@@ -211,11 +211,11 @@ namespace Renderer::SpotShadow
                         .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
                         .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                         .MeshIndices  = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
-                        .Positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                        .Positions    = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
                         .CurrentIndex = static_cast<u32>(i)
                     };
 
-                    opaquePipeline.PushConstants
+                    m_opaquePipeline.PushConstants
                     (
                        cmdBuffer,
                        VK_SHADER_STAGE_VERTEX_BIT,
@@ -247,11 +247,11 @@ namespace Renderer::SpotShadow
                         .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
                         .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                         .MeshIndices  = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-                        .Positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
+                        .Positions    = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
                         .CurrentIndex = static_cast<u32>(i)
                     };
 
-                    opaquePipeline.PushConstants
+                    m_opaquePipeline.PushConstants
                     (
                        cmdBuffer,
                        VK_SHADER_STAGE_VERTEX_BIT,
@@ -279,10 +279,10 @@ namespace Renderer::SpotShadow
             {
                 Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
-                alphaMaskedPipeline.Bind(cmdBuffer);
+                m_alphaMaskedPipeline.Bind(cmdBuffer);
 
                 const std::array descriptorSets = {megaSet.descriptorSet};
-                alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                m_alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 // Single Sided
                 {
@@ -295,13 +295,13 @@ namespace Renderer::SpotShadow
                         .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                         .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                         .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
-                        .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                        .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                        .TextureSamplerIndex = alphaMaskedPipeline.textureSamplerIndex,
+                        .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
+                        .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                        .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID,
                         .CurrentIndex        = static_cast<u32>(i)
                     };
 
-                    alphaMaskedPipeline.PushConstants
+                    m_alphaMaskedPipeline.PushConstants
                     (
                        cmdBuffer,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -328,16 +328,18 @@ namespace Renderer::SpotShadow
 
                     vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
 
-                    const auto constants = Opaque::Constants
+                    const auto constants = AlphaMasked::Constants
                     {
-                        .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
-                        .Meshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                        .MeshIndices  = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-                        .Positions    = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                        .CurrentIndex = static_cast<u32>(i)
+                        .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                        .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                        .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                        .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
+                        .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                        .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID,
+                        .CurrentIndex        = static_cast<u32>(i)
                     };
 
-                    alphaMaskedPipeline.PushConstants
+                    m_alphaMaskedPipeline.PushConstants
                     (
                        cmdBuffer,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -388,7 +390,7 @@ namespace Renderer::SpotShadow
 
     void RenderPass::Destroy(VkDevice device)
     {
-        opaquePipeline.Destroy(device);
-        alphaMaskedPipeline.Destroy(device);
+        m_opaquePipeline.Destroy(device);
+        m_alphaMaskedPipeline.Destroy(device);
     }
 }

@@ -60,7 +60,7 @@ namespace Renderer::PostProcess
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        samplerIndex = textureManager.AddSampler
+        samplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -80,7 +80,7 @@ namespace Renderer::PostProcess
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
-                .maxLod                  = 0.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
                 .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
@@ -88,8 +88,7 @@ namespace Renderer::PostProcess
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                         "PostProcess/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                         "PostProcess/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "PostProcess/Pipeline/Sampler");
+        Vk::SetDebugName(context.device, handle, "PostProcess/Pipeline");
+        Vk::SetDebugName(context.device, layout, "PostProcess/Pipeline/Layout");
     }
 }

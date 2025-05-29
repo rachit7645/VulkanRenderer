@@ -32,8 +32,8 @@ namespace Renderer::Bloom
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : downsamplePipeline(context, formatHelper, megaSet, textureManager),
-          upsamplePipeline(context, formatHelper, megaSet, textureManager)
+        : m_downsamplePipeline(context, formatHelper, megaSet, textureManager),
+          m_upsamplePipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -89,7 +89,8 @@ namespace Renderer::Bloom
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -110,14 +111,16 @@ namespace Renderer::Bloom
         (
             cmdBuffer,
             framebufferManager,
-            megaSet
+            megaSet,
+            textureManager
         );
 
         RenderUpSamples
         (
             cmdBuffer,
             framebufferManager,
-            megaSet
+            megaSet,
+            textureManager
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -127,7 +130,8 @@ namespace Renderer::Bloom
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         Vk::BeginLabel(cmdBuffer, "DownSamplePass", {0.7796f, 0.3588f, 0.5518f, 1.0f});
@@ -194,7 +198,7 @@ namespace Renderer::Bloom
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            downsamplePipeline.Bind(cmdBuffer);
+            m_downsamplePipeline.Bind(cmdBuffer);
 
             const VkViewport viewport =
             {
@@ -218,12 +222,12 @@ namespace Renderer::Bloom
 
             const auto constants = DownSample::Constants
             {
-                .SamplerIndex  = downsamplePipeline.samplerIndex,
-                .ImageIndex    = srcView.sampledImageIndex,
+                .SamplerIndex  = textureManager.GetSampler(m_downsamplePipeline.samplerID).descriptorID,
+                .ImageIndex    = srcView.sampledImageID,
                 .IsFirstSample = (mip == 0) ? 1u : 0u
             };
 
-            downsamplePipeline.PushConstants
+            m_downsamplePipeline.PushConstants
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -231,7 +235,7 @@ namespace Renderer::Bloom
             );
 
             std::array descriptorSets = {megaSet.descriptorSet};
-            downsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            m_downsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
             (
@@ -277,7 +281,8 @@ namespace Renderer::Bloom
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         Vk::BeginLabel(cmdBuffer, "UpSamplePass", {0.8736f, 0.2598f, 0.7548f, 1.0f});
@@ -344,7 +349,7 @@ namespace Renderer::Bloom
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            upsamplePipeline.Bind(cmdBuffer);
+            m_upsamplePipeline.Bind(cmdBuffer);
 
             const VkViewport viewport =
             {
@@ -368,12 +373,12 @@ namespace Renderer::Bloom
 
             const auto constants = UpSample::Constants
             {
-                .SamplerIndex  = upsamplePipeline.samplerIndex,
-                .ImageIndex    = srcView.sampledImageIndex,
+                .SamplerIndex  = textureManager.GetSampler(m_upsamplePipeline.samplerID).descriptorID,
+                .ImageIndex    = srcView.sampledImageID,
                 .FilterRadius  = m_filterRadius
             };
 
-            upsamplePipeline.PushConstants
+            m_upsamplePipeline.PushConstants
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -381,7 +386,7 @@ namespace Renderer::Bloom
             );
 
             std::array descriptorSets = {megaSet.descriptorSet};
-            upsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            m_upsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
             (
@@ -419,7 +424,7 @@ namespace Renderer::Bloom
 
     void RenderPass::Destroy(VkDevice device)
     {
-        downsamplePipeline.Destroy(device);
-        upsamplePipeline.Destroy(device);
+        m_downsamplePipeline.Destroy(device);
+        m_upsamplePipeline.Destroy(device);
     }
 }

@@ -43,13 +43,14 @@ namespace Renderer::TAA
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
 
         void ResetHistory();
-
-        TAA::Pipeline pipeline;
     private:
+        TAA::Pipeline m_pipeline;
+
         bool m_hasToResetHistory = true;
     };
 }

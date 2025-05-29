@@ -51,7 +51,7 @@ namespace Renderer::Depth::AlphaMasked
 
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        textureSamplerIndex = textureManager.AddSampler
+        textureSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -79,8 +79,7 @@ namespace Renderer::Depth::AlphaMasked
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "Depth/AlphaMasked/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                                "Depth/AlphaMasked/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "Depth/AlphaMasked/Pipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle, "Depth/AlphaMasked/Pipeline");
+        Vk::SetDebugName(context.device, layout, "Depth/AlphaMasked/Pipeline/Layout");
     }
 }

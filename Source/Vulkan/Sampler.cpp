@@ -23,17 +23,6 @@
 
 namespace Vk
 {
-    Sampler::Sampler(VkDevice device, const VkSamplerCreateInfo& createInfo)
-    {
-        Vk::CheckResult(vkCreateSampler(
-            device,
-            &createInfo,
-            nullptr,
-            &handle),
-            "Failed to create sampler!"
-        );
-    }
-
     void Sampler::Destroy(VkDevice device) const
     {
         vkDestroySampler(device, handle, nullptr);

@@ -130,15 +130,33 @@ namespace Vk
         return id;
     }
 
-    Vk::DescriptorID TextureManager::AddSampler
+    Vk::SamplerID TextureManager::AddSampler
     (
         Vk::MegaSet& megaSet,
         VkDevice device,
         const VkSamplerCreateInfo& createInfo
     )
     {
-        const auto sampler = Vk::Sampler(device, createInfo);
-        const auto id      = megaSet.WriteSampler(sampler);
+        const auto id = std::hash<VkSamplerCreateInfo>()(createInfo);
+
+        if (m_samplerMap.contains(id))
+        {
+            return id;
+        }
+
+        Vk::Sampler sampler = {};
+
+        Vk::CheckResult(vkCreateSampler(
+            device,
+            &createInfo,
+            nullptr,
+            &sampler.handle),
+            "Failed to create sampler!"
+        );
+
+        sampler.descriptorID = megaSet.WriteSampler(sampler);
+
+        Vk::SetDebugName(device, sampler.handle, fmt::format("Sampler/{}", id));
 
         m_samplerMap.emplace(id, sampler);
 
@@ -220,7 +238,7 @@ namespace Vk
         return iter->second;
     }
 
-    const Vk::Sampler& TextureManager::GetSampler(Vk::DescriptorID id) const
+    const Vk::Sampler& TextureManager::GetSampler(Vk::SamplerID id) const
     {
         const auto iter = m_samplerMap.find(id);
 

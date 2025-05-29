@@ -35,7 +35,7 @@ namespace Renderer::AO::VBGTAO::Denoise
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        pointSamplerIndex = textureManager.AddSampler
+        pointSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -63,8 +63,7 @@ namespace Renderer::AO::VBGTAO::Denoise
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                              "VBGTAO/Denoise/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                              "VBGTAO/Denoise/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle, "VBGTAO/Denoise/Pipeline/PointSampler");
+        Vk::SetDebugName(context.device, handle, "VBGTAO/Denoise/Pipeline");
+        Vk::SetDebugName(context.device, layout, "VBGTAO/Denoise/Pipeline/Layout");
     }
 }

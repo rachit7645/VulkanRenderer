@@ -256,7 +256,13 @@ namespace Renderer::AO::VBGTAO
             megaSet.Update(context.device);
         }
 
-        PreFilterDepth(cmdBuffer, framebufferManager, megaSet);
+        PreFilterDepth
+        (
+            cmdBuffer,
+            framebufferManager,
+            megaSet,
+            modelManager.textureManager
+        );
 
         Occlusion
         (
@@ -269,7 +275,13 @@ namespace Renderer::AO::VBGTAO
             sceneBuffer
         );
 
-        Denoise(cmdBuffer, framebufferManager, megaSet);
+        Denoise
+        (
+            cmdBuffer,
+            framebufferManager,
+            megaSet,
+            modelManager.textureManager
+        );
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -278,7 +290,8 @@ namespace Renderer::AO::VBGTAO
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
@@ -306,13 +319,13 @@ namespace Renderer::AO::VBGTAO
 
         const auto constants = DepthPreFilter::Constants
         {
-            .PointSamplerIndex = m_depthPreFilterPipeline.pointSamplerIndex,
-            .SceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
-            .OutDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageIndex,
-            .OutDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageIndex,
-            .OutDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageIndex,
-            .OutDepthMip3Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip3").storageImageIndex,
-            .OutDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageIndex,
+            .PointSamplerIndex = textureManager.GetSampler(m_depthPreFilterPipeline.pointSamplerID).descriptorID,
+            .SceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
+            .OutDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageID,
+            .OutDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageID,
+            .OutDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageID,
+            .OutDepthMip3Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip3").storageImageID,
+            .OutDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageID,
         };
 
         m_depthPreFilterPipeline.PushConstants
@@ -409,13 +422,13 @@ namespace Renderer::AO::VBGTAO
         const auto constants = Occlusion::Constants
         {
             .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
-            .PointSamplerIndex        = m_occlusionPipeline.pointSamplerIndex,
-            .LinearSamplerIndex       = m_occlusionPipeline.linearSamplerIndex,
+            .PointSamplerIndex        = textureManager.GetSampler(m_occlusionPipeline.pointSamplerID).descriptorID,
+            .LinearSamplerIndex       = textureManager.GetSampler(m_occlusionPipeline.linearSamplerID).descriptorID,
             .HilbertLUTIndex          = textureManager.GetTexture(m_hilbertLUT.value()).descriptorID,
-            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageIndex,
-            .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageIndex,
-            .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageIndex,
+            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageID,
+            .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageID,
+            .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageID,
+            .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageID,
             .TemporalIndex            = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
             .Thickness                = m_thickness
         };
@@ -478,7 +491,8 @@ namespace Renderer::AO::VBGTAO
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));
@@ -489,10 +503,10 @@ namespace Renderer::AO::VBGTAO
 
         const auto constants = Denoise::Constants
         {
-            .PointSamplerIndex     = m_denoisePipeline.pointSamplerIndex,
-            .DepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageIndex,
-            .NoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").sampledImageIndex,
-            .OutAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageIndex,
+            .PointSamplerIndex     = textureManager.GetSampler(m_denoisePipeline.pointSamplerID).descriptorID,
+            .DepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageID,
+            .NoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").sampledImageID,
+            .OutAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageID,
             .FinalValuePower       = m_finalValuePower
         };
 

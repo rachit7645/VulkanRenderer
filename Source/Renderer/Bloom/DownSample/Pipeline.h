@@ -35,7 +35,7 @@ namespace Renderer::Bloom::DownSample
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID samplerIndex = 0;
+        Vk::SamplerID samplerID = 0;
     };
 }
 

@@ -25,8 +25,6 @@
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
-#include "Renderer/PointShadow/AlphaMasked/Pipeline.h"
-#include "Shadows/PointShadow/AlphaMasked.h"
 
 namespace Renderer::PointShadow
 {
@@ -49,7 +47,7 @@ namespace Renderer::PointShadow
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::GeometryBuffer& geometryBuffer,
+            const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
@@ -57,9 +55,9 @@ namespace Renderer::PointShadow
         ) const;
 
         void Destroy(VkDevice device);
-
-        Opaque::Pipeline      opaquePipeline;
-        AlphaMasked::Pipeline alphaMaskedPipeline;
+    private:
+        Opaque::Pipeline      m_opaquePipeline;
+        AlphaMasked::Pipeline m_alphaMaskedPipeline;
     };
 }
 

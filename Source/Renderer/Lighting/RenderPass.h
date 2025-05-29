@@ -50,8 +50,8 @@ namespace Renderer::Lighting
             const Buffers::SceneBuffer& sceneBuffer,
             const IBL::IBLMaps& iblMaps
         );
-
-        Lighting::Pipeline pipeline;
+    private:
+        Lighting::Pipeline m_pipeline;
     };
 }
 

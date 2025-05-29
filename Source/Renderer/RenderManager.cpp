@@ -176,7 +176,7 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.geometryBuffer,
+            m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
@@ -190,7 +190,7 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.geometryBuffer,
+            m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
@@ -204,7 +204,7 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.geometryBuffer,
+            m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
@@ -218,7 +218,7 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.geometryBuffer,
+            m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer
@@ -244,10 +244,10 @@ namespace Renderer
             m_frameIndex,
             cmdBuffer,
             m_megaSet,
+            m_modelManager,
             m_framebufferManager,
             m_sceneBuffer,
             m_meshBuffer,
-            m_modelManager.geometryBuffer,
             m_accelerationStructure
         );
 
@@ -278,21 +278,24 @@ namespace Renderer
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
-            m_megaSet
+            m_megaSet,
+            m_modelManager.textureManager
         );
 
         m_bloomPass.Render
         (
             cmdBuffer,
             m_framebufferManager,
-            m_megaSet
+            m_megaSet,
+            m_modelManager.textureManager
         );
 
         m_postProcessPass.Render
         (
             cmdBuffer,
             m_framebufferManager,
-            m_megaSet
+            m_megaSet,
+            m_modelManager.textureManager
         );
 
         m_swapchain.Blit(cmdBuffer, m_framebufferManager);
@@ -304,6 +307,7 @@ namespace Renderer
             m_context.allocator,
             cmdBuffer,
             m_megaSet,
+            m_modelManager.textureManager,
             m_swapchain,
             m_deletionQueues[m_FIF]
         );

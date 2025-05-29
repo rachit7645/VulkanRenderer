@@ -41,7 +41,7 @@ namespace Renderer::ShadowRT
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        gBufferSamplerIndex = textureManager.AddSampler
+        gBufferSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -69,7 +69,7 @@ namespace Renderer::ShadowRT
 
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        textureSamplerIndex = textureManager.AddSampler
+        textureSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -95,9 +95,7 @@ namespace Renderer::ShadowRT
             }
         );
 
-        Vk::SetDebugName(context.device, handle,                                                "ShadowRT/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                                "ShadowRT/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(gBufferSamplerIndex).handle, "ShadowRT/Pipeline/GBufferSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "ShadowRT/Pipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle, "ShadowRT/Pipeline");
+        Vk::SetDebugName(context.device, layout, "ShadowRT/Pipeline/Layout");
     }
 }

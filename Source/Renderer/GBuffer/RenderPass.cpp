@@ -30,10 +30,10 @@ namespace Renderer::GBuffer
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : opaquePipeline(context, formatHelper, megaSet, textureManager),
-          opaqueDoubleSidedPipeline(context, formatHelper, megaSet, textureManager),
-          alphaMaskedPipeline(context, formatHelper, megaSet, textureManager),
-          alphaMaskedDoubleSidedPipeline(context, formatHelper, megaSet, textureManager)
+        : m_opaquePipeline(context, formatHelper, megaSet, textureManager),
+          m_opaqueDoubleSidedPipeline(context, formatHelper, megaSet, textureManager),
+          m_alphaMaskedPipeline(context, formatHelper, megaSet, textureManager),
+          m_alphaMaskedDoubleSidedPipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -151,7 +151,7 @@ namespace Renderer::GBuffer
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::GeometryBuffer& geometryBuffer,
+        const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer
@@ -315,7 +315,7 @@ namespace Renderer::GBuffer
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        geometryBuffer.Bind(cmdBuffer);
+        modelManager.geometryBuffer.Bind(cmdBuffer);
 
         // Opaque
         {
@@ -325,10 +325,10 @@ namespace Renderer::GBuffer
             {
                 Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
 
-                opaquePipeline.Bind(cmdBuffer);
+                m_opaquePipeline.Bind(cmdBuffer);
 
                 const std::array descriptorSets = {megaSet.descriptorSet};
-                opaquePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                m_opaquePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -336,12 +336,12 @@ namespace Renderer::GBuffer
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                    .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                    .TextureSamplerIndex = opaquePipeline.textureSamplerIndex
+                    .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_opaquePipeline.textureSamplerID).descriptorID
                 };
 
-                opaquePipeline.PushConstants
+                m_opaquePipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -366,10 +366,10 @@ namespace Renderer::GBuffer
             {
                 Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
 
-                opaqueDoubleSidedPipeline.Bind(cmdBuffer);
+                m_opaqueDoubleSidedPipeline.Bind(cmdBuffer);
 
                 const std::array descriptorSets = {megaSet.descriptorSet};
-                opaqueDoubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                m_opaqueDoubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -377,12 +377,12 @@ namespace Renderer::GBuffer
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                    .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                    .TextureSamplerIndex = opaqueDoubleSidedPipeline.textureSamplerIndex
+                    .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_opaqueDoubleSidedPipeline.textureSamplerID).descriptorID
                 };
 
-                opaqueDoubleSidedPipeline.PushConstants
+                m_opaqueDoubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -414,10 +414,10 @@ namespace Renderer::GBuffer
             {
                 Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
 
-                alphaMaskedPipeline.Bind(cmdBuffer);
+                m_alphaMaskedPipeline.Bind(cmdBuffer);
 
                 const std::array descriptorSets = {megaSet.descriptorSet};
-                alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                m_alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -425,12 +425,12 @@ namespace Renderer::GBuffer
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                    .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                    .TextureSamplerIndex = alphaMaskedPipeline.textureSamplerIndex
+                    .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
                 };
 
-                alphaMaskedPipeline.PushConstants
+                m_alphaMaskedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -455,10 +455,10 @@ namespace Renderer::GBuffer
             {
                 Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
 
-                alphaMaskedDoubleSidedPipeline.Bind(cmdBuffer);
+                m_alphaMaskedDoubleSidedPipeline.Bind(cmdBuffer);
 
                 const std::array descriptorSets = {megaSet.descriptorSet};
-                alphaMaskedDoubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                m_alphaMaskedDoubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                 const auto constants = GBuffer::Constants
                 {
@@ -466,12 +466,12 @@ namespace Renderer::GBuffer
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions           = geometryBuffer.positionBuffer.buffer.deviceAddress,
-                    .Vertices            = geometryBuffer.vertexBuffer.buffer.deviceAddress,
-                    .TextureSamplerIndex = alphaMaskedDoubleSidedPipeline.textureSamplerIndex
+                    .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedDoubleSidedPipeline.textureSamplerID).descriptorID
                 };
 
-                alphaMaskedDoubleSidedPipeline.PushConstants
+                m_alphaMaskedDoubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -550,9 +550,9 @@ namespace Renderer::GBuffer
 
     void RenderPass::Destroy(VkDevice device)
     {
-        opaquePipeline.Destroy(device);
-        opaqueDoubleSidedPipeline.Destroy(device);
-        alphaMaskedPipeline.Destroy(device);
-        alphaMaskedDoubleSidedPipeline.Destroy(device);
+        m_opaquePipeline.Destroy(device);
+        m_opaqueDoubleSidedPipeline.Destroy(device);
+        m_alphaMaskedPipeline.Destroy(device);
+        m_alphaMaskedDoubleSidedPipeline.Destroy(device);
     }
 }

@@ -33,7 +33,7 @@ namespace Renderer::Lighting
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -138,7 +138,7 @@ namespace Renderer::Lighting
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -163,22 +163,22 @@ namespace Renderer::Lighting
         const auto constants = Lighting::Constants
         {
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .GBufferSamplerIndex = pipeline.gBufferSamplerIndex,
-            .IBLSamplerIndex     = pipeline.iblSamplerIndex,
-            .ShadowSamplerIndex  = pipeline.shadowSamplerIndex,
-            .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageIndex,
-            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageIndex,
-            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex,
+            .GBufferSamplerIndex = textureManager.GetSampler(m_pipeline.gBufferSamplerID).descriptorID,
+            .IBLSamplerIndex     = textureManager.GetSampler(m_pipeline.iblSamplerID).descriptorID,
+            .ShadowSamplerIndex  = textureManager.GetSampler(m_pipeline.shadowSamplerID).descriptorID,
+            .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageID,
+            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageID,
+            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .IrradianceIndex     = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
             .PreFilterIndex      = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,
             .BRDFLUTIndex        = textureManager.GetTexture(iblMaps.brdfLutID).descriptorID,
-            .ShadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageIndex,
-            .PointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageIndex,
-            .SpotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageIndex,
-            .AOIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageIndex,
+            .ShadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
+            .PointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
+            .SpotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
+            .AOIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID,
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -186,7 +186,7 @@ namespace Renderer::Lighting
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -204,6 +204,6 @@ namespace Renderer::Lighting
 
     void RenderPass::Destroy(VkDevice device)
     {
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
     }
 }

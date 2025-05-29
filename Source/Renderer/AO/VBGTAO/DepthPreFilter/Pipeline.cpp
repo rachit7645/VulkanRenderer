@@ -35,7 +35,7 @@ namespace Renderer::AO::VBGTAO::DepthPreFilter
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        pointSamplerIndex = textureManager.AddSampler
+        pointSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -63,8 +63,7 @@ namespace Renderer::AO::VBGTAO::DepthPreFilter
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                              "VBGTAO/DepthPreFilter/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                              "VBGTAO/DepthPreFilter/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle, "VBGTAO/DepthPreFilter/Pipeline/PointSampler");
+        Vk::SetDebugName(context.device, handle, "VBGTAO/DepthPreFilter/Pipeline");
+        Vk::SetDebugName(context.device, layout, "VBGTAO/DepthPreFilter/Pipeline/Layout");
     }
 }

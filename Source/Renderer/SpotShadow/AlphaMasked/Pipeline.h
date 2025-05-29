@@ -35,7 +35,7 @@ namespace Renderer::SpotShadow::AlphaMasked
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID textureSamplerIndex = 0;
+        Vk::SamplerID textureSamplerID = 0;
     };
 }
 

@@ -63,7 +63,7 @@ namespace Renderer::Skybox
 
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        samplerIndex = textureManager.AddSampler
+        samplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -84,15 +84,14 @@ namespace Renderer::Skybox
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                         "Skybox/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                         "Skybox/PipelineLayout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "SkyboxPipeline/Sampler");
+        Vk::SetDebugName(context.device, handle, "Skybox/Pipeline");
+        Vk::SetDebugName(context.device, layout, "Skybox/PipelineLayout");
     }
 }

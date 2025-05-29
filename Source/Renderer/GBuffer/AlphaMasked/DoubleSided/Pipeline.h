@@ -35,7 +35,7 @@ namespace Renderer::GBuffer::AlphaMasked::DoubleSided
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID textureSamplerIndex = 0;
+        Vk::SamplerID textureSamplerID = 0;
     };
 }
 

@@ -16,6 +16,7 @@
 
 #include "Pipeline.h"
 
+#include "Renderer/IBL/IBLMaps.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Types.h"
@@ -60,7 +61,7 @@ namespace Renderer::Lighting
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        gBufferSamplerIndex = textureManager.AddSampler
+        gBufferSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -86,7 +87,7 @@ namespace Renderer::Lighting
             }
         );
 
-        iblSamplerIndex = textureManager.AddSampler
+        iblSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -102,17 +103,17 @@ namespace Renderer::Lighting
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
-                .maxLod                  = 5.0f,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+                .maxLod                  = static_cast<f32>(Renderer::IBL::PREFILTER_MIPMAP_LEVELS),
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        shadowSamplerIndex = textureManager.AddSampler
+        shadowSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -128,7 +129,7 @@ namespace Renderer::Lighting
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_TRUE,
                 .compareOp               = VK_COMPARE_OP_LESS,
                 .minLod                  = 0.0f,
@@ -140,10 +141,7 @@ namespace Renderer::Lighting
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "Lighting/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                                "Lighting/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(gBufferSamplerIndex).handle, "Lighting/Pipeline/GBufferSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(iblSamplerIndex).handle,     "Lighting/Pipeline/IBLSampler");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(shadowSamplerIndex).handle,  "Lighting/Pipeline/ShadowSampler");
+        Vk::SetDebugName(context.device, handle, "Lighting/Pipeline");
+        Vk::SetDebugName(context.device, layout, "Lighting/Pipeline/Layout");
     }
 }

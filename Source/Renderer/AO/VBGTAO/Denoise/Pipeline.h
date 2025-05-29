@@ -33,7 +33,7 @@ namespace Renderer::AO::VBGTAO::Denoise
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID pointSamplerIndex = 0;
+        Vk::SamplerID pointSamplerID = 0;
     };
 }
 

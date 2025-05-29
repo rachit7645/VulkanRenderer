@@ -49,8 +49,8 @@ namespace Renderer::Skybox
             const Buffers::SceneBuffer& sceneBuffer,
             const IBL::IBLMaps& iblMaps
         );
-
-        Skybox::Pipeline pipeline;
+    private:
+        Skybox::Pipeline m_pipeline;
     };
 }
 

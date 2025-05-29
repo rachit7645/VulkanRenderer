@@ -57,7 +57,7 @@ namespace Vk
     {
         m_framebufferViews.emplace(name, FramebufferView{
             .framebuffer     = framebufferName.data(),
-            .sampledImageIndex = std::numeric_limits<u32>::max(),
+            .sampledImageID = std::numeric_limits<u32>::max(),
             .type            = imageType,
             .size            = size,
             .view            = {}
@@ -478,12 +478,12 @@ namespace Vk
     {
         if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
         {
-            framebufferView.sampledImageIndex = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            framebufferView.sampledImageID = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
         if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
         {
-            framebufferView.storageImageIndex = megaSet.WriteStorageImage(framebufferView.view);
+            framebufferView.storageImageID = megaSet.WriteStorageImage(framebufferView.view);
         }
     }
 
@@ -499,7 +499,7 @@ namespace Vk
         {
             if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
             {
-                deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageIndex]
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageID]
                 {
                     megaSet.FreeSampledImage(id);
                 });
@@ -507,7 +507,7 @@ namespace Vk
 
             if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
             {
-                deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageIndex]
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageID]
                 {
                     megaSet.FreeStorageImage(id);
                 });
@@ -584,7 +584,7 @@ namespace Vk
 
                     if (ImGui::TreeNode(name.c_str()))
                     {
-                        ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageIndex);
+                        ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageID);
                         ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
                         ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
                         ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
@@ -603,7 +603,7 @@ namespace Vk
                         const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
                         const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
 
-                        ImGui::Image(framebufferView.sampledImageIndex, imageSize);
+                        ImGui::Image(framebufferView.sampledImageID, imageSize);
 
                         ImGui::TreePop();
                     }

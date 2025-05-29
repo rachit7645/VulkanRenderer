@@ -49,15 +49,15 @@ namespace Renderer::Depth
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::GeometryBuffer& geometryBuffer,
+            const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
             Culling::Dispatch& cullingDispatch
         );
-
-        Opaque::Pipeline      opaquePipeline;
-        AlphaMasked::Pipeline alphaMaskedPipeline;
+    private:
+        Opaque::Pipeline      m_opaquePipeline;
+        AlphaMasked::Pipeline m_alphaMaskedPipeline;
     };
 }
 

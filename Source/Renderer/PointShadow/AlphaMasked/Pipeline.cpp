@@ -51,7 +51,7 @@ namespace Renderer::PointShadow::AlphaMasked
 
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        textureSamplerIndex = textureManager.AddSampler
+        textureSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -79,8 +79,7 @@ namespace Renderer::PointShadow::AlphaMasked
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "PointShadow/AlphaMasked/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                                "PointShadow/AlphaMasked/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "PointShadow/AlphaMasked/Pipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle, "PointShadow/AlphaMasked/Pipeline");
+        Vk::SetDebugName(context.device, layout, "PointShadow/AlphaMasked/Pipeline/Layout");
     }
 }

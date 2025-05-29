@@ -93,7 +93,7 @@ namespace Renderer::GBuffer::Opaque
 
         const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
 
-        textureSamplerIndex = textureManager.AddSampler
+        textureSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
@@ -121,8 +121,7 @@ namespace Renderer::GBuffer::Opaque
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                                "GBuffer/Opaque/Pipeline");
-        Vk::SetDebugName(context.device, layout,                                                "GBuffer/Opaque/Pipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(textureSamplerIndex).handle, "GBuffer/Opaque/Pipeline/TextureSampler");
+        Vk::SetDebugName(context.device, handle, "GBuffer/Opaque/Pipeline");
+        Vk::SetDebugName(context.device, layout, "GBuffer/Opaque/Pipeline/Layout");
     }
 }

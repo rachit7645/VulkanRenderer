@@ -25,8 +25,8 @@ namespace Renderer::Culling
     constexpr auto CULLING_WORKGROUP_SIZE = 64;
 
     Dispatch::Dispatch(const Vk::Context& context)
-        : frustumPipeline(context),
-          frustumBuffer(context.device, context.allocator)
+        : m_frustumPipeline(context),
+          m_frustumBuffer(context.device, context.allocator)
     {
     }
 
@@ -42,9 +42,9 @@ namespace Renderer::Culling
     {
         Vk::BeginLabel(cmdBuffer, "FrustumCullingDispatch", glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
 
-        frustumBuffer.LoadPlanes(cmdBuffer, projectionView);
+        m_frustumBuffer.LoadPlanes(cmdBuffer, projectionView);
 
-        frustumPipeline.Bind(cmdBuffer);
+        m_frustumPipeline.Bind(cmdBuffer);
 
         const auto constants = Culling::Constants
         {
@@ -58,10 +58,10 @@ namespace Renderer::Culling
             .CulledAlphaMaskedMeshIndices            = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
             .CulledAlphaMaskedDoubleSidedDrawCalls   = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.deviceAddress,
             .CulledAlphaMaskedDoubleSidedMeshIndices = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-            .Frustum                                 = frustumBuffer.buffer.deviceAddress
+            .Frustum                                 = m_frustumBuffer.buffer.deviceAddress
         };
 
-        frustumPipeline.PushConstants
+        m_frustumPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
@@ -269,7 +269,7 @@ namespace Renderer::Culling
 
     void Dispatch::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        frustumBuffer.Destroy(allocator);
-        frustumPipeline.Destroy(device);
+        m_frustumBuffer.Destroy(allocator);
+        m_frustumPipeline.Destroy(device);
     }
 }

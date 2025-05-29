@@ -35,9 +35,9 @@ namespace Renderer::Lighting
             Vk::TextureManager& textureManager
         );
 
-        Vk::DescriptorID gBufferSamplerIndex = 0;
-        Vk::DescriptorID iblSamplerIndex     = 0;
-        Vk::DescriptorID shadowSamplerIndex  = 0;
+        Vk::SamplerID gBufferSamplerID = 0;
+        Vk::SamplerID iblSamplerID     = 0;
+        Vk::SamplerID shadowSamplerID  = 0;
     };
 }
 
