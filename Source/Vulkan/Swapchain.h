@@ -69,6 +69,7 @@ namespace Vk
         [[nodiscard]] VkSurfaceFormat2KHR ChooseSurfaceFormat() const;
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
         [[nodiscard]] VkExtent2D ChooseSwapExtent(const glm::ivec2& size) const;
+        [[nodiscard]] u32 GetImageCount() const;
 
         Vk::SwapchainInfo m_swapChainInfo = {};
     };
