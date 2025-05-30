@@ -33,7 +33,7 @@ namespace Models
         const std::string_view path
     )
     {
-        Models::ModelID id = std::hash<std::string_view>()(path);
+        const Models::ModelID id = std::hash<std::string_view>()(path);
 
         if (!modelMap.contains(id))
         {

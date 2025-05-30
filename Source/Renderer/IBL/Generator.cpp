@@ -195,7 +195,13 @@ namespace Renderer::IBL
         (
             context.allocator,
             deletionQueue,
-            hdrMapAssetPath
+            Vk::ImageUpload{
+                .type   = Vk::ImageUploadType::HDR,
+                .flags  = Vk::ImageUploadFlags::Flipped | Vk::ImageUploadFlags::F16,
+                .source = Vk::ImageUploadFile{
+                    .path = hdrMapAssetPath.data()
+                }
+            }
         );
 
         modelManager.Update

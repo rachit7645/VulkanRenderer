@@ -45,7 +45,6 @@ namespace Renderer::AO::VBGTAO
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             Vk::MegaSet& megaSet,

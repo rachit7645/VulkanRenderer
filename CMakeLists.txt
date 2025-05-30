@@ -161,6 +161,7 @@ add_executable(VulkanRenderer
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp
+    Source/Models/Mesh.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp

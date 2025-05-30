@@ -36,19 +36,7 @@ namespace Vk
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
-            const std::string_view path
-        );
-
-        // `data` needs to remain valid until after the next call to Update()
-        [[nodiscard]] Vk::TextureID AddTexture
-        (
-            VmaAllocator allocator,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view name,
-            VkFormat format,
-            const void* data,
-            u32 width,
-            u32 height
+            const Vk::ImageUpload& upload
         );
 
         [[nodiscard]] Vk::TextureID AddTexture

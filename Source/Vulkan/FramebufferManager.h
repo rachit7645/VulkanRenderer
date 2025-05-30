@@ -117,7 +117,6 @@ namespace Vk
 
     using FramebufferSizeData = std::variant
     <
-        std::monostate,
         FramebufferSize,
         FramebufferResizeCallbackWithExtent,
         FramebufferResizeCallbackWithExtentAndDeletionQueue

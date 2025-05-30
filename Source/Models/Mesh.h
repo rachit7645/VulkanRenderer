@@ -26,42 +26,22 @@ namespace Models
 {
     struct Material
     {
-        Vk::TextureID albedoID;
-        Vk::TextureID normalID;
-        Vk::TextureID aoRghMtlID;
+        [[nodiscard]] GPU::Material Convert(const Vk::TextureManager& textureManager) const;
 
-        glm::vec4 albedoFactor;
-        f32       roughnessFactor;
-        f32       metallicFactor;
+        [[nodiscard]] bool IsAlphaMasked() const;
+        [[nodiscard]] bool IsDoubleSided() const;
 
-        f32 alphaCutOff;
+        Vk::TextureID albedoID   = 0;
+        Vk::TextureID normalID   = 0;
+        Vk::TextureID aoRghMtlID = 0;
 
-        GPU::MaterialFlags flags;
+        glm::vec4 albedoFactor    = {1.0f, 1.0f, 1.0f, 1.0f};
+        f32       roughnessFactor = 1.0f;
+        f32       metallicFactor  = 1.0f;
 
-        [[nodiscard]] GPU::Material Convert(const Vk::TextureManager& textureManager) const
-        {
-            return GPU::Material
-            {
-                .albedo          = textureManager.GetTexture(albedoID).descriptorID,
-                .normal          = textureManager.GetTexture(normalID).descriptorID,
-                .aoRghMtl        = textureManager.GetTexture(aoRghMtlID).descriptorID,
-                .albedoFactor    = albedoFactor,
-                .roughnessFactor = roughnessFactor,
-                .metallicFactor  = metallicFactor,
-                .alphaCutOff     = alphaCutOff,
-                .flags           = flags
-            };
-        }
+        f32 alphaCutOff = 1.0f;
 
-        [[nodiscard]] bool IsAlphaMasked() const
-        {
-            return (flags & GPU::MaterialFlags::AlphaMasked) == GPU::MaterialFlags::AlphaMasked;
-        }
-
-        [[nodiscard]] bool IsDoubleSided() const
-        {
-            return (flags & GPU::MaterialFlags::DoubleSided) == GPU::MaterialFlags::DoubleSided;
-        }
+        GPU::MaterialFlags flags = GPU::MaterialFlags::None;
     };
 
     struct Mesh

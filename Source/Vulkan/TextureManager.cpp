@@ -21,6 +21,7 @@
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Types.h"
+#include "Util/Visitor.h"
 
 namespace Vk
 {
@@ -28,67 +29,40 @@ namespace Vk
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
-        const std::string_view path
+        const Vk::ImageUpload& upload
     )
     {
-        const Vk::TextureID id = std::hash<std::string_view>()(path);
+        const auto [name, nameID] = std::visit(Util::Visitor{
+            [] (const Vk::ImageUploadFile& file)
+            {
+                return std::make_pair(Util::Files::GetNameWithoutExtension(file.path), file.path);
+            },
+            [] (const Vk::ImageUploadMemory& memory)
+            {
+                return std::make_pair(memory.name, memory.name);
+            },
+            [] (const Vk::ImageUploadRawMemory& rawMemory)
+            {
+                return std::make_pair(rawMemory.name, rawMemory.name);
+            }
+        }, upload.source);
+
+        const Vk::TextureID id = std::hash<std::string_view>()(nameID);
 
         if (m_textureMap.contains(id))
         {
             return id;
         }
 
-        m_futuresMap.emplace(id, m_executor.async([this, allocator, &deletionQueue, path = std::string(path)] ()
+        m_futuresMap.emplace(id, m_executor.async([this, allocator, &deletionQueue, upload] ()
         {
-            return m_imageUploader.LoadImageFromFile(allocator, deletionQueue, path);
+            return m_imageUploader.LoadImage(allocator, deletionQueue, upload);
         }));
 
         m_textureMap.emplace(id, Vk::Texture{
-            .name         = Util::Files::GetNameWithoutExtension(path),
+            .name         = name,
             .image        = {},
             .imageView    = {}, 
-            .descriptorID = 0,
-            .isLoaded     = false
-        });
-
-        return id;
-    }
-
-    Vk::TextureID TextureManager::AddTexture
-    (
-        VmaAllocator allocator,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view name,
-        VkFormat format,
-        const void* data,
-        u32 width,
-        u32 height
-    )
-    {
-        const Vk::TextureID id = std::hash<std::string_view>()(name);
-
-        if (m_textureMap.contains(id))
-        {
-            return id;
-        }
-
-        m_futuresMap.emplace(id, m_executor.async([this, allocator, &deletionQueue, format, data, width, height] ()
-        {
-            return m_imageUploader.LoadImageFromMemory
-            (
-                allocator,
-                deletionQueue,
-                format,
-                data,
-                width,
-                height
-            );
-        }));
-
-        m_textureMap.emplace(id, Vk::Texture{
-            .name         = name.data(),
-            .image        = {},
-            .imageView    = {},
             .descriptorID = 0,
             .isLoaded     = false
         });

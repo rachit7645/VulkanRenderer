@@ -28,7 +28,7 @@ namespace Vk
     {
         if (!IsSurfaceValid(size, context))
         {
-            Logger::Error("{]\n", "Invalid surface!");
+            Logger::Error("{}\n", "Invalid surface!");
         }
 
         CreateSwapChain(context, cmdBufferAllocator);
@@ -352,7 +352,7 @@ namespace Vk
                     .baseMipLevel   = 0,
                     .levelCount     = images[i].mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = images[i].mipLevels
+                    .layerCount     = images[i].arrayLayers
                 }
             );
 

@@ -206,7 +206,6 @@ namespace Renderer::AO::VBGTAO
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
         Vk::MegaSet& megaSet,
@@ -237,11 +236,17 @@ namespace Renderer::AO::VBGTAO
             (
                 context.allocator,
                 deletionQueue,
-                "VBGTAO/HilbertLUT",
-                formatHelper.rUint16Format,
-                HILBERT_SEQUENCE.data(),
-                VBGTAO_HILBERT_WIDTH,
-                VBGTAO_HILBERT_WIDTH
+                Vk::ImageUpload{
+                    .type   = Vk::ImageUploadType::RAW,
+                    .flags  = Vk::ImageUploadFlags::None,
+                    .source = Vk::ImageUploadRawMemory{
+                        .name   = "VBGTAO/HilbertLUT",
+                        .width  = VBGTAO_HILBERT_WIDTH,
+                        .height = VBGTAO_HILBERT_WIDTH,
+                        .format = VK_FORMAT_R16_UINT,
+                        .data   = HILBERT_SEQUENCE.data()
+                    }
+                }
             );
 
             modelManager.Update

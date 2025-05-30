@@ -230,7 +230,6 @@ namespace Renderer
             m_frameIndex,
             cmdBuffer,
             m_context,
-            m_formatHelper,
             m_framebufferManager,
             m_sceneBuffer,
             m_megaSet,
@@ -700,11 +699,17 @@ namespace Renderer
                 (
                     m_context.allocator,
                     m_deletionQueues[m_FIF],
-                    "DearImGui/Font",
-                    VK_FORMAT_R8G8B8A8_UNORM,
-                    pixels,
-                    width,
-                    height
+                    Vk::ImageUpload{
+                        .type   = Vk::ImageUploadType::RAW,
+                        .flags  = Vk::ImageUploadFlags::None,
+                        .source = Vk::ImageUploadRawMemory{
+                            .name   = "DearImGui/Font",
+                            .width  = static_cast<u32>(width),
+                            .height = static_cast<u32>(height),
+                            .format = VK_FORMAT_R8G8B8A8_UNORM,
+                            .data   = pixels
+                        }
+                    }
                 );
 
                 m_modelManager.Update

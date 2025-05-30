@@ -520,7 +520,13 @@ namespace Models
             (
                 allocator,
                 deletionQueue,
-                Util::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
+                Vk::ImageUpload{
+                    .type   = Vk::ImageUploadType::KTX2,
+                    .flags  = Vk::ImageUploadFlags::None,
+                    .source = Vk::ImageUploadFile{
+                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
+                    }
+                }
             );
         }
 
@@ -562,7 +568,13 @@ namespace Models
             (
                 allocator,
                 deletionQueue,
-                Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
+                Vk::ImageUpload{
+                    .type   = Vk::ImageUploadType::KTX2,
+                    .flags  = Vk::ImageUploadFlags::None,
+                    .source = Vk::ImageUploadFile{
+                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
+                    }
+                }
             );
         }
 
@@ -600,15 +612,18 @@ namespace Models
     {
         const auto& texture = asset.textures[textureIndex];
 
-        usize imageIndex = 0;
+        usize imageIndex         = 0;
+        Vk::ImageUploadType type = Vk::ImageUploadType::KTX2;
 
         if (texture.basisuImageIndex.has_value())
         {
             imageIndex = texture.basisuImageIndex.value();
+            type       = Vk::ImageUploadType::KTX2;
         }
         else if (texture.imageIndex.has_value())
         {
             imageIndex = texture.imageIndex.value();
+            type       = Vk::ImageUploadType::SDR;
         }
         else
         {
@@ -653,7 +668,13 @@ namespace Models
         (
             allocator,
             deletionQueue,
-            fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
+            Vk::ImageUpload{
+                .type   = type,
+                .flags  = Vk::ImageUploadFlags::None,
+                .source = Vk::ImageUploadFile{
+                    .path = fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
+                }
+            }
         );
     }
 }
