@@ -149,7 +149,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Lighting/Pipeline.cpp
     Source/Renderer/Lighting/RenderPass.cpp
     # VBGTAO Pass Sources
-    Source/Renderer/AO/VBGTAO/RenderPass.cpp
+    Source/Renderer/AO/VBGTAO/Dispatch.cpp
     Source/Renderer/AO/VBGTAO/DepthPreFilter/Pipeline.cpp
     Source/Renderer/AO/VBGTAO/Occlusion/Pipeline.cpp
     Source/Renderer/AO/VBGTAO/Denoise/Pipeline.cpp

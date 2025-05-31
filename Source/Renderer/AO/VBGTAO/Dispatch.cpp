@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "RenderPass.h"
+#include "Dispatch.h"
 
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
@@ -28,7 +28,7 @@ namespace Renderer::AO::VBGTAO
     constexpr u32 VBGTAO_HILBERT_LEVEL    = 6;                          // Must match the value in Constants.glsl
     constexpr u32 VBGTAO_HILBERT_WIDTH    = 1u << VBGTAO_HILBERT_LEVEL; // Must match the value in Constants.glsl
     
-    RenderPass::RenderPass
+    Dispatch::Dispatch
     (
         const Vk::Context& context,
         Vk::FramebufferManager& framebufferManager,
@@ -200,7 +200,7 @@ namespace Renderer::AO::VBGTAO
         );
     }
 
-    void RenderPass::Render
+    void Dispatch::Execute
     (
         usize FIF,
         usize frameIndex,
@@ -291,7 +291,7 @@ namespace Renderer::AO::VBGTAO
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::PreFilterDepth
+    void Dispatch::PreFilterDepth
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
@@ -371,7 +371,7 @@ namespace Renderer::AO::VBGTAO
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::Occlusion
+    void Dispatch::Occlusion
     (
         usize FIF,
         usize frameIndex,
@@ -492,7 +492,7 @@ namespace Renderer::AO::VBGTAO
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::Denoise
+    void Dispatch::Denoise
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
@@ -570,7 +570,7 @@ namespace Renderer::AO::VBGTAO
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::Destroy(VkDevice device)
+    void Dispatch::Destroy(VkDevice device)
     {
         m_depthPreFilterPipeline.Destroy(device);
         m_occlusionPipeline.Destroy(device);

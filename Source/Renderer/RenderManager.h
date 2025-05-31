@@ -29,7 +29,7 @@
 #include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "AO/VBGTAO/RenderPass.h"
+#include "AO/VBGTAO/Dispatch.h"
 #include "ShadowRT/RenderPass.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
@@ -96,21 +96,21 @@ namespace Renderer
         Models::ModelManager      m_modelManager;
 
         // Render Passes
-        PostProcess::RenderPass m_postProcessPass;
-        Depth::RenderPass       m_depthPass;
-        DearImGui::RenderPass   m_imGuiPass;
-        Skybox::RenderPass      m_skyboxPass;
-        Bloom::RenderPass       m_bloomPass;
-        PointShadow::RenderPass m_pointShadowPass;
-        SpotShadow::RenderPass  m_spotShadowPass;
-        GBuffer::RenderPass     m_gBufferPass;
-        Lighting::RenderPass    m_lightingPass;
-        AO::VBGTAO::RenderPass  m_vbgtaoPass;
-        ShadowRT::RenderPass    m_shadowRTPass;
-        TAA::RenderPass         m_taaPass;
+        PostProcess::RenderPass m_postProcess;
+        Depth::RenderPass       m_depth;
+        DearImGui::RenderPass   m_imGui;
+        Skybox::RenderPass      m_skybox;
+        Bloom::RenderPass       m_bloom;
+        PointShadow::RenderPass m_pointShadow;
+        SpotShadow::RenderPass  m_spotShadow;
+        GBuffer::RenderPass     m_gBuffer;
+        Lighting::RenderPass    m_lighting;
+        ShadowRT::RenderPass    m_shadowRT;
+        TAA::RenderPass         m_taa;
 
         // Dispatches
-        Culling::Dispatch m_cullingDispatch;
+        Culling::Dispatch    m_culling;
+        AO::VBGTAO::Dispatch m_vbgtao;
 
         // Generators
         IBL::Generator m_iblGenerator;

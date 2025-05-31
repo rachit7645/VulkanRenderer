@@ -28,10 +28,10 @@
 
 namespace Renderer::AO::VBGTAO
 {
-    class RenderPass
+    class Dispatch
     {
     public:
-        RenderPass
+        Dispatch
         (
             const Vk::Context& context,
             Vk::FramebufferManager& framebufferManager,
@@ -39,7 +39,7 @@ namespace Renderer::AO::VBGTAO
             Vk::TextureManager& textureManager
         );
 
-        void Render
+        void Execute
         (
             usize FIF,
             usize frameIndex,
@@ -87,7 +87,7 @@ namespace Renderer::AO::VBGTAO
 
         std::optional<Vk::TextureID> m_hilbertLUT = std::nullopt;
 
-        f32 m_finalValuePower = 1.3f;
+        f32 m_finalValuePower = 1.0f;
         f32 m_thickness       = 0.25f;
     };
 }

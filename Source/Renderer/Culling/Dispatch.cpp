@@ -30,7 +30,7 @@ namespace Renderer::Culling
     {
     }
 
-    void Dispatch::DispatchFrustumCulling
+    void Dispatch::Execute
     (
         usize FIF,
         usize frameIndex,

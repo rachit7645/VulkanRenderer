@@ -53,7 +53,7 @@ namespace Renderer::Depth
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            Culling::Dispatch& cullingDispatch
+            Culling::Dispatch& culling
         );
     private:
         Opaque::Pipeline      m_opaquePipeline;

@@ -94,7 +94,7 @@ namespace Renderer::SpotShadow
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        Culling::Dispatch& cullingDispatch
+        Culling::Dispatch& culling
     )
     {
         if (sceneBuffer.lightsBuffer.shadowedSpotLights.empty())
@@ -127,7 +127,7 @@ namespace Renderer::SpotShadow
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.5146f, 0.7488f, 0.9388f, 1.0f));
 
-            cullingDispatch.DispatchFrustumCulling
+            culling.Execute
             (
                 FIF,
                 frameIndex,

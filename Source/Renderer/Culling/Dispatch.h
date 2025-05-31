@@ -32,7 +32,7 @@ namespace Renderer::Culling
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        void DispatchFrustumCulling
+        void Execute
         (
             usize FIF,
             usize frameIndex,

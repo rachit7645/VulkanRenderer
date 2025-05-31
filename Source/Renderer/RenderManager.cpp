@@ -37,19 +37,19 @@ namespace Renderer
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
           m_modelManager(m_context.device, m_context.allocator),
-          m_postProcessPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_depthPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_imGuiPass(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_skyboxPass(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
-          m_bloomPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_pointShadowPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_spotShadowPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_gBufferPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_lightingPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_vbgtaoPass(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_shadowRTPass(m_context, m_cmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_taaPass(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_cullingDispatch(m_context),
+          m_postProcess(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_depth(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_imGui(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
+          m_skybox(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
+          m_bloom(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_pointShadow(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_spotShadow(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_gBuffer(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_lighting(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_shadowRT(m_context, m_cmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_taa(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_culling(m_context),
+          m_vbgtao(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_iblGenerator(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -62,19 +62,19 @@ namespace Renderer
             m_meshBuffer.Destroy(m_context.allocator);
 
             m_iblGenerator.Destroy(m_context.device, m_context.allocator);
-            m_cullingDispatch.Destroy(m_context.device, m_context.allocator);
-            m_taaPass.Destroy(m_context.device);
-            m_shadowRTPass.Destroy(m_context.device, m_context.allocator);
-            m_vbgtaoPass.Destroy(m_context.device);
-            m_lightingPass.Destroy(m_context.device);
-            m_gBufferPass.Destroy(m_context.device);
-            m_spotShadowPass.Destroy(m_context.device);
-            m_pointShadowPass.Destroy(m_context.device);
-            m_bloomPass.Destroy(m_context.device);
-            m_skyboxPass.Destroy(m_context.device);
-            m_imGuiPass.Destroy(m_context.device, m_context.allocator);
-            m_depthPass.Destroy(m_context.device);
-            m_postProcessPass.Destroy(m_context.device);
+            m_vbgtao.Destroy(m_context.device);
+            m_culling.Destroy(m_context.device, m_context.allocator);
+            m_taa.Destroy(m_context.device);
+            m_shadowRT.Destroy(m_context.device, m_context.allocator);
+            m_lighting.Destroy(m_context.device);
+            m_gBuffer.Destroy(m_context.device);
+            m_spotShadow.Destroy(m_context.device);
+            m_pointShadow.Destroy(m_context.device);
+            m_bloom.Destroy(m_context.device);
+            m_skybox.Destroy(m_context.device);
+            m_imGui.Destroy(m_context.device, m_context.allocator);
+            m_depth.Destroy(m_context.device);
+            m_postProcess.Destroy(m_context.device);
 
             m_megaSet.Destroy(m_context.device);
             m_accelerationStructure.Destroy(m_context.device, m_context.allocator);
@@ -169,7 +169,7 @@ namespace Renderer
             m_deletionQueues[m_FIF]
         );
 
-        m_pointShadowPass.Render
+        m_pointShadow.Render
         (
             m_FIF,
             m_frameIndex,
@@ -180,10 +180,10 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_cullingDispatch
+            m_culling
         );
 
-        m_spotShadowPass.Render
+        m_spotShadow.Render
         (
             m_FIF,
             m_frameIndex,
@@ -194,10 +194,10 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_cullingDispatch
+            m_culling
         );
 
-        m_depthPass.Render
+        m_depth.Render
         (
             m_FIF,
             m_frameIndex,
@@ -208,10 +208,10 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_cullingDispatch
+            m_culling
         );
 
-        m_gBufferPass.Render
+        m_gBuffer.Render
         (
             m_FIF,
             m_frameIndex,
@@ -224,7 +224,7 @@ namespace Renderer
             m_indirectBuffer
         );
 
-        m_vbgtaoPass.Render
+        m_vbgtao.Execute
         (
             m_FIF,
             m_frameIndex,
@@ -237,7 +237,7 @@ namespace Renderer
             m_deletionQueues[m_FIF]
         );
 
-        m_shadowRTPass.Render
+        m_shadowRT.Render
         (
             m_FIF,
             m_frameIndex,
@@ -250,7 +250,7 @@ namespace Renderer
             m_accelerationStructure
         );
 
-        m_lightingPass.Render
+        m_lighting.Render
         (
             m_FIF,
             cmdBuffer,
@@ -261,7 +261,7 @@ namespace Renderer
             m_scene->iblMaps
         );
 
-        m_skyboxPass.Render
+        m_skybox.Render
         (
             m_FIF,
             cmdBuffer,
@@ -272,7 +272,7 @@ namespace Renderer
             m_scene->iblMaps
         );
 
-        m_taaPass.Render
+        m_taa.Render
         (
             m_frameIndex,
             cmdBuffer,
@@ -281,7 +281,7 @@ namespace Renderer
             m_modelManager.textureManager
         );
 
-        m_bloomPass.Render
+        m_bloom.Render
         (
             cmdBuffer,
             m_framebufferManager,
@@ -289,7 +289,7 @@ namespace Renderer
             m_modelManager.textureManager
         );
 
-        m_postProcessPass.Render
+        m_postProcess.Render
         (
             cmdBuffer,
             m_framebufferManager,
@@ -299,7 +299,7 @@ namespace Renderer
 
         m_swapchain.Blit(cmdBuffer, m_framebufferManager);
 
-        m_imGuiPass.Render
+        m_imGui.Render
         (
             m_FIF,
             m_context.device,
@@ -658,7 +658,7 @@ namespace Renderer
 
         m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
 
-        m_taaPass.ResetHistory();
+        m_taa.ResetHistory();
 
         m_isSwapchainOk = true;
 

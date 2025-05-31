@@ -82,13 +82,13 @@ namespace Renderer::Depth
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        Culling::Dispatch& cullingDispatch
+        Culling::Dispatch& culling
     )
     {
         const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
         const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
 
-        cullingDispatch.DispatchFrustumCulling
+        culling.Execute
         (
             FIF,
             frameIndex,

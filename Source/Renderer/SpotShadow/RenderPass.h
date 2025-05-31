@@ -51,7 +51,7 @@ namespace Renderer::SpotShadow
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            Culling::Dispatch& cullingDispatch
+            Culling::Dispatch& culling
         );
 
         void Destroy(VkDevice device);

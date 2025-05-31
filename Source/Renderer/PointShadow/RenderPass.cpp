@@ -97,7 +97,7 @@ namespace Renderer::PointShadow
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        Culling::Dispatch& cullingDispatch
+        Culling::Dispatch& culling
     ) const
     {
         if (sceneBuffer.lightsBuffer.shadowedPointLights.empty())
@@ -134,7 +134,7 @@ namespace Renderer::PointShadow
             {
                 Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", face), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
 
-                cullingDispatch.DispatchFrustumCulling
+                culling.Execute
                 (
                     FIF,
                     frameIndex,
