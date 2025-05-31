@@ -161,6 +161,16 @@ namespace Vk
         }
     }
 
+    void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue)
+    {
+        deletionQueue.PushDeletor([this, info] ()
+        {
+            indexBuffer.Free(info.indexInfo);
+            positionBuffer.Free(info.positionInfo);
+            vertexBuffer.Free(info.vertexInfo);
+        });
+    }
+
     void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
     {
         constexpr std::array CUBE_VERTICES =

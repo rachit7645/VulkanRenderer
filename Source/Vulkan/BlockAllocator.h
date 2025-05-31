@@ -49,6 +49,8 @@ namespace Vk
 
         Block Allocate(VkDeviceSize size);
 
+        void Free(const Block& block);
+
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
@@ -63,6 +65,8 @@ namespace Vk
     private:
         void QueueResize(VkDeviceSize minRequiredCapacity);
 
+        std::optional<Block> FindFreeBlock(VkDeviceSize size);
+
         VkBufferUsageFlags    m_usage      = 0;
         VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
         VkAccessFlags2        m_accessMask = VK_ACCESS_2_NONE;
@@ -73,6 +77,7 @@ namespace Vk
         std::optional<std::set<Block>> m_resizeCopyBlocks = std::nullopt;
 
         std::set<Block> m_usedBlocks = {};
+        std::set<Block> m_freeBlocks = {};
 
         Vk::BarrierWriter m_barrierWriter = {};
     };

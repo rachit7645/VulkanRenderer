@@ -19,16 +19,6 @@
 
 namespace Vk
 {
-    bool BlockAllocator::Block::operator==(const Block& other) const noexcept
-    {
-        return offset == other.offset && size == other.size;
-    }
-
-    bool BlockAllocator::Block::operator<(const Block& other) const noexcept
-    {
-        return offset < other.offset;
-    }
-
     BlockAllocator::BlockAllocator
     (
         VkBufferUsageFlags usage,
@@ -43,9 +33,14 @@ namespace Vk
 
     BlockAllocator::Block BlockAllocator::Allocate(VkDeviceSize size)
     {
-        const auto lastUsedBlock = m_usedBlocks.empty() ? BlockAllocator::Block{} : *m_usedBlocks.rbegin();
+        if (const auto block = FindFreeBlock(size); block.has_value())
+        {
+            return block.value();
+        }
 
-        const auto block = BlockAllocator::Block
+        const auto lastUsedBlock = m_usedBlocks.empty() ? Block{} : *m_usedBlocks.rbegin();
+
+        const auto block = Block
         {
             .offset = lastUsedBlock.offset + lastUsedBlock.size,
             .size   = size,
@@ -61,6 +56,22 @@ namespace Vk
         m_usedBlocks.insert(block);
 
         return block;
+    }
+
+    void BlockAllocator::Free(const Block& block)
+    {
+        if (m_usedBlocks.contains(block))
+        {
+            Logger::Error("Block already freed! [Offset={}] [Size={}]\n", block.offset, block.size);
+        }
+
+        if (!m_usedBlocks.contains(block))
+        {
+            Logger::Error("Invalid block! [Offset={}] [Size={}]\n", block.offset, block.size);
+        }
+
+        m_usedBlocks.erase(block);
+        m_freeBlocks.insert(block);
     }
 
     void BlockAllocator::Update
@@ -171,8 +182,63 @@ namespace Vk
         }
     }
 
+    std::optional<BlockAllocator::Block> BlockAllocator::FindFreeBlock(VkDeviceSize size)
+    {
+        for (auto& block : m_freeBlocks)
+        {
+            if (block.size < size)
+            {
+                continue;
+            }
+
+            if (block.size == size)
+            {
+                const auto copy = block;
+
+                m_usedBlocks.insert(block);
+                m_freeBlocks.erase(block);
+
+                return copy;
+            }
+
+            if (block.size > size)
+            {
+                const auto free = Block
+                {
+                    .offset = block.offset,
+                    .size   = size
+                };
+
+                m_usedBlocks.insert(free);
+
+                const auto remaining = Block
+                {
+                    .offset = block.offset + free.size,
+                    .size   = block.size   - free.size
+                };
+
+                m_freeBlocks.erase(block);
+                m_freeBlocks.insert(remaining);
+
+                return free;
+            }
+        }
+
+        return std::nullopt;
+    }
+
     void BlockAllocator::Destroy(VmaAllocator allocator)
     {
         buffer.Destroy(allocator);
+    }
+
+    bool BlockAllocator::Block::operator==(const Block& other) const noexcept
+    {
+        return offset == other.offset && size == other.size;
+    }
+
+    bool BlockAllocator::Block::operator<(const Block& other) const noexcept
+    {
+        return offset < other.offset;
     }
 }

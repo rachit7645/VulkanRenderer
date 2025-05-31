@@ -57,7 +57,7 @@ namespace Vk
     }
 
     template <typename T> requires GPU::IsVertexType<T>
-    typename VertexBuffer<T>::WriteHandle VertexBuffer<T>::GetWriteHandle
+    typename VertexBuffer<T>::WriteHandle VertexBuffer<T>::Allocate
     (
         VmaAllocator allocator,
         usize writeCount,
@@ -101,6 +101,18 @@ namespace Vk
     }
 
     template <typename T> requires GPU::IsVertexType<T>
+    void VertexBuffer<T>::Free(const GPU::GeometryInfo& info)
+    {
+        const auto block = BlockAllocator::Block
+        {
+            .offset = info.offset * sizeof(T),
+            .size   = info.count  * sizeof(T)
+        };
+
+        m_allocator.Free(block);
+    }
+
+    template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::FlushUploads
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -123,6 +135,24 @@ namespace Vk
         );
 
         constexpr auto bufferInfo = Detail::GetVertexBufferInfo<T>();
+
+        for (const auto& [info, _] : m_pendingUploads)
+        {
+            m_barrierWriter.WriteBufferBarrier
+            (
+               m_allocator.buffer,
+               Vk::BufferBarrier{
+                   .srcStageMask  = bufferInfo.stageMask,
+                   .srcAccessMask = bufferInfo.accessMask,
+                   .dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                   .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                   .offset        = info.offset * sizeof(T),
+                   .size          = info.count  * sizeof(T)
+               }
+            );
+        }
+
+        m_barrierWriter.Execute(cmdBuffer);
 
         for (const auto& [info, stagingBuffer] : m_pendingUploads)
         {

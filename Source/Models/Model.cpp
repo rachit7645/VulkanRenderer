@@ -225,7 +225,7 @@ namespace Models
                     );
                 }
 
-                const auto [writePointer, info] = geometryBuffer.indexBuffer.GetWriteHandle
+                const auto [writePointer, info] = geometryBuffer.indexBuffer.Allocate
                 (
                     allocator,
                     indicesAccessor.count,
@@ -298,7 +298,7 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                const auto [writePointer, info] = geometryBuffer.positionBuffer.GetWriteHandle
+                const auto [writePointer, info] = geometryBuffer.positionBuffer.Allocate
                 (
                     allocator,
                     positionAccessor.count,
@@ -350,7 +350,7 @@ namespace Models
                     Logger::Error("{}\n", "Invalid primitive!");
                 }
 
-                const auto [writePointer, info] = geometryBuffer.vertexBuffer.GetWriteHandle
+                const auto [writePointer, info] = geometryBuffer.vertexBuffer.Allocate
                 (
                     allocator,
                     normalAccessor.count,

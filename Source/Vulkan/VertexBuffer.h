@@ -111,12 +111,14 @@ namespace Vk
 
         void Destroy(VmaAllocator allocator);
 
-        WriteHandle GetWriteHandle
+        WriteHandle Allocate
         (
             VmaAllocator allocator,
             usize writeCount,
             Util::DeletionQueue& deletionQueue
         );
+
+        void Free(const GPU::GeometryInfo& info);
 
         void FlushUploads
         (

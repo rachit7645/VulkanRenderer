@@ -45,6 +45,8 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
+        void Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue);
+
         void ImGuiDisplay() const;
 
         [[nodiscard]] bool HasPendingUploads() const;
