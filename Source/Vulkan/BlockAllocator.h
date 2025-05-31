@@ -22,6 +22,7 @@
 
 #include "Buffer.h"
 #include "Util/DeletionQueue.h"
+#include "Vulkan/BarrierWriter.h"
 
 namespace Vk
 {
@@ -60,7 +61,7 @@ namespace Vk
 
         Vk::Buffer buffer = {};
     private:
-        void QueueResize(VkDeviceSize currentMaxOffset, VkDeviceSize minRequiredCapacity);
+        void QueueResize(VkDeviceSize minRequiredCapacity);
 
         VkBufferUsageFlags    m_usage      = 0;
         VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
@@ -69,9 +70,11 @@ namespace Vk
         VkDeviceSize m_capacity    = 0;
         VkDeviceSize m_oldCapacity = 0;
 
-        std::optional<VkDeviceSize> m_resizeCopyOffset = std::nullopt;
+        std::optional<std::set<Block>> m_resizeCopyBlocks = std::nullopt;
 
         std::set<Block> m_usedBlocks = {};
+
+        Vk::BarrierWriter m_barrierWriter = {};
     };
 }
 

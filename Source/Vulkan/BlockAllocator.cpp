@@ -51,14 +51,11 @@ namespace Vk
             .size   = size,
         };
 
-        if (m_usedBlocks.contains(block))
-        {
-            Logger::Error("Block already exists! [Offset={}] [Size={}]\n", block.offset, block.size);
-        }
+        const VkDeviceSize minRequiredCapacity = block.offset + block.size;
 
-        if (block.offset + block.size > m_capacity)
+        if (minRequiredCapacity > m_capacity)
         {
-            QueueResize(block.offset, block.offset + block.size);
+            QueueResize(minRequiredCapacity);
         }
 
         m_usedBlocks.insert(block);
@@ -74,10 +71,16 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
+        // Capacity Check
+
         if (m_capacity == 0 || m_oldCapacity == m_capacity)
         {
             return;
         }
+
+        m_oldCapacity = m_capacity;
+
+        // Buffer Resize
 
         auto oldBuffer = buffer;
 
@@ -101,32 +104,45 @@ namespace Vk
             buffer.GetDeviceAddress(device);
         }
 
-        if (!m_resizeCopyOffset.has_value() || oldBuffer.handle == VK_NULL_HANDLE)
+        // Copy old elements
+
+        if (oldBuffer.handle == VK_NULL_HANDLE || !m_resizeCopyBlocks.has_value())
         {
             return;
         }
 
-        oldBuffer.Barrier
-        (
-            cmdBuffer,
-            Vk::BufferBarrier{
-                .srcStageMask  = m_stageMask,
-                .srcAccessMask = m_accessMask,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
-                .offset        = 0,
-                .size          = *m_resizeCopyOffset
-            }
-        );
-
-        const VkBufferCopy2 copyRegion =
+        if (m_resizeCopyBlocks->empty())
         {
-            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-            .pNext     = nullptr,
-            .srcOffset = 0,
-            .dstOffset = 0,
-            .size      = *m_resizeCopyOffset
-        };
+            return;
+        }
+
+        std::vector<VkBufferCopy2> copyRegions = {};
+
+        for (const auto& block : *m_resizeCopyBlocks)
+        {
+            copyRegions.emplace_back(VkBufferCopy2{
+                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext     = nullptr,
+                .srcOffset = block.offset,
+                .dstOffset = block.offset,
+                .size      = block.size
+            });
+
+            m_barrierWriter.WriteBufferBarrier
+            (
+                oldBuffer,
+                Vk::BufferBarrier{
+                    .srcStageMask  = m_stageMask,
+                    .srcAccessMask = m_accessMask,
+                    .dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .offset        = block.offset,
+                    .size          = block.size
+                }
+            );
+        }
+
+        m_barrierWriter.Execute(cmdBuffer);
 
         const VkCopyBufferInfo2 copyInfo =
         {
@@ -134,25 +150,24 @@ namespace Vk
             .pNext       = nullptr,
             .srcBuffer   = oldBuffer.handle,
             .dstBuffer   = buffer.handle,
-            .regionCount = 1,
-            .pRegions    = &copyRegion,
+            .regionCount = static_cast<u32>(copyRegions.size()),
+            .pRegions    = copyRegions.data(),
         };
 
         vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
 
-        m_resizeCopyOffset = std::nullopt;
-        m_oldCapacity      = m_capacity;
+        m_resizeCopyBlocks = std::nullopt;
     }
 
-    void BlockAllocator::QueueResize(VkDeviceSize currentMaxOffset, VkDeviceSize minRequiredCapacity)
+    void BlockAllocator::QueueResize(VkDeviceSize minRequiredCapacity)
     {
-        constexpr f64 BUFFER_GROWTH_FACTOR = 1.5f;
+        constexpr f64 BUFFER_GROWTH_FACTOR = 1.5;
 
         m_capacity = static_cast<VkDeviceSize>(BUFFER_GROWTH_FACTOR * static_cast<f64>(minRequiredCapacity));
 
-        if (!m_resizeCopyOffset.has_value())
+        if (!m_resizeCopyBlocks.has_value())
         {
-            m_resizeCopyOffset = currentMaxOffset;
+            m_resizeCopyBlocks = m_usedBlocks;
         }
     }
 
