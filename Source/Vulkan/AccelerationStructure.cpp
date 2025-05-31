@@ -122,11 +122,11 @@ namespace Vk
                         .sType         = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
                         .pNext         = nullptr,
                         .vertexFormat  = VK_FORMAT_R32G32B32_SFLOAT,
-                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress + mesh.surfaceInfo.positionInfo.offset * sizeof(GPU::Position)},
+                        .vertexData    = {.deviceAddress = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress + mesh.surfaceInfo.positionInfo.offset * sizeof(GPU::Position)},
                         .vertexStride  = sizeof(GPU::Position),
                         .maxVertex     = mesh.surfaceInfo.positionInfo.count - 1,
                         .indexType     = VK_INDEX_TYPE_UINT32,
-                        .indexData     = modelManager.geometryBuffer.indexBuffer.buffer.deviceAddress + mesh.surfaceInfo.indexInfo.offset * sizeof(GPU::Index),
+                        .indexData     = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress + mesh.surfaceInfo.indexInfo.offset * sizeof(GPU::Index),
                         .transformData = {.deviceAddress = transformBuffer.deviceAddress + meshIndex * sizeof(VkTransformMatrixKHR)}
                     }},
                     .flags        = geometryFlags

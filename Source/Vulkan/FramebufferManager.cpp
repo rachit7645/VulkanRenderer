@@ -630,4 +630,17 @@ namespace Vk
             framebufferViews.view.Destroy(device);
         }
     }
+
+    bool FramebufferSize::Matches(const Vk::Image& image) const
+    {
+        if (image.handle == VK_NULL_HANDLE)
+        {
+            return false;
+        }
+
+        return width == image.width &&
+               height == image.height &&
+               mipLevels == image.mipLevels &&
+               arrayLayers == image.arrayLayers;
+    }
 }

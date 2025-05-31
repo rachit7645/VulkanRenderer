@@ -26,12 +26,25 @@ namespace Vk
     using WriteHandle = typename VertexBuffer<T>::WriteHandle;
 
     template <typename T> requires GPU::IsVertexType<T>
+    VertexBuffer<T>::VertexBuffer()
+    {
+        constexpr auto bufferInfo = Detail::GetVertexBufferInfo<T>();
+
+        m_allocator = Vk::BlockAllocator
+        (
+            bufferInfo.usage,
+            bufferInfo.stageMask,
+            bufferInfo.accessMask
+        );
+    }
+
+    template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>
     {
         vkCmdBindIndexBuffer
         (
             cmdBuffer.handle,
-            buffer.handle,
+            m_allocator.buffer.handle,
             0,
             VK_INDEX_TYPE_UINT32
         );
@@ -40,8 +53,7 @@ namespace Vk
     template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::Destroy(VmaAllocator allocator)
     {
-        buffer.Destroy(allocator);
-        m_pendingUploads.clear();
+        m_allocator.Destroy(allocator);
     }
 
     template <typename T> requires GPU::IsVertexType<T>
@@ -52,29 +64,34 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
+        const VkDeviceSize writeSize = writeCount * sizeof(T);
+
         const auto stagingBuffer = Vk::Buffer
         (
             allocator,
-            writeCount * sizeof(T),
+            writeSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
-        const auto info = GPU::GeometryInfo
-        {
-            .offset = count,
-            .count  = static_cast<u32>(writeCount)
-        };
-
-        m_pendingUploads.emplace_back(info, stagingBuffer);
-        count += writeCount;
-
         deletionQueue.PushDeletor([allocator, buffer = stagingBuffer] () mutable
         {
             buffer.Destroy(allocator);
         });
+
+        const auto allocation = m_allocator.Allocate(writeSize);
+
+        const auto info = GPU::GeometryInfo
+        {
+            .offset = static_cast<u32>(allocation.offset / sizeof(T)),
+            .count  = static_cast<u32>(allocation.size   / sizeof(T))
+        };
+
+        count += info.count;
+
+        m_pendingUploads.emplace_back(info, stagingBuffer);
 
         return Vk::WriteHandle<T>
         {
@@ -97,7 +114,7 @@ namespace Vk
             return;
         }
 
-        ResizeBuffer
+        m_allocator.Update
         (
             cmdBuffer,
             device,
@@ -105,72 +122,46 @@ namespace Vk
             deletionQueue
         );
 
-        // Copy
+        constexpr auto bufferInfo = Detail::GetVertexBufferInfo<T>();
+
+        for (const auto& [info, stagingBuffer] : m_pendingUploads)
         {
-            for (const auto& [info, stagingBuffer] : m_pendingUploads)
+            const VkBufferCopy2 copyRegion =
             {
-                const VkBufferCopy2 copyRegion =
-                {
-                    .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                    .pNext     = nullptr,
-                    .srcOffset = 0,
-                    .dstOffset = info.offset * sizeof(T),
-                    .size      = info.count  * sizeof(T)
-                };
+                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext     = nullptr,
+                .srcOffset = 0,
+                .dstOffset = info.offset * sizeof(T),
+                .size      = info.count  * sizeof(T)
+            };
 
-                const VkCopyBufferInfo2 copyInfo =
-                {
-                    .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-                    .pNext       = nullptr,
-                    .srcBuffer   = stagingBuffer.handle,
-                    .dstBuffer   = buffer.handle,
-                    .regionCount = 1,
-                    .pRegions    = &copyRegion
-                };
+            const VkCopyBufferInfo2 copyInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                .pNext       = nullptr,
+                .srcBuffer   = stagingBuffer.handle,
+                .dstBuffer   = m_allocator.buffer.handle,
+                .regionCount = 1,
+                .pRegions    = &copyRegion
+            };
 
-                vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
-            }
+            vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+
+            m_barrierWriter.WriteBufferBarrier
+            (
+                m_allocator.buffer,
+                Vk::BufferBarrier{
+                    .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask  = bufferInfo.stageMask,
+                    .dstAccessMask = bufferInfo.accessMask,
+                    .offset        = info.offset * sizeof(T),
+                    .size          = info.count  * sizeof(T)
+                }
+            );
         }
 
-        // Barriers
-        {
-            VkPipelineStageFlags2 dstStageMask  = VK_PIPELINE_STAGE_2_NONE;
-            VkAccessFlags2        dstAccessMask = VK_ACCESS_2_NONE;
-
-            if constexpr (std::is_same_v<T, GPU::Index>)
-            {
-                dstStageMask  = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-                dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT;
-            }
-            else if constexpr (std::is_same_v<T, GPU::Position>)
-            {
-                dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-                dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
-            }
-            else if constexpr (std::is_same_v<T, GPU::Vertex>)
-            {
-                dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
-                dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-            }
-
-            for (const auto& [info, _] : m_pendingUploads)
-            {
-                m_barrierWriter.WriteBufferBarrier
-                (
-                    buffer,
-                    Vk::BufferBarrier{
-                        .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        .dstStageMask  = dstStageMask,
-                        .dstAccessMask = dstAccessMask,
-                        .offset        = info.offset * sizeof(T),
-                        .size          = info.count  * sizeof(T)
-                    }
-                );
-            }
-
-            m_barrierWriter.Execute(cmdBuffer);
-        }
+        m_barrierWriter.Execute(cmdBuffer);
 
         m_pendingUploads.clear();
     }
@@ -182,131 +173,9 @@ namespace Vk
     }
 
     template <typename T> requires GPU::IsVertexType<T>
-    void VertexBuffer<T>::ResizeBuffer
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
-        Util::DeletionQueue& deletionQueue
-    )
+    const Vk::Buffer& VertexBuffer<T>::GetBuffer() const
     {
-        if (count == 0)
-        {
-            return;
-        }
-
-        VkBufferUsageFlags    usage         = 0;
-        VkPipelineStageFlags2 srcStageMask  = VK_PIPELINE_STAGE_2_NONE;
-        VkAccessFlags2        srcAccessMask = VK_ACCESS_2_NONE;
-
-        if constexpr (std::is_same_v<T, GPU::Index>)
-        {
-            usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-                    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-
-            srcStageMask  = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
-            srcAccessMask = VK_ACCESS_2_INDEX_READ_BIT;
-        }
-        else if constexpr (std::is_same_v<T, GPU::Position>)
-        {
-            usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-
-            srcStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
-            srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-        }
-        else if constexpr (std::is_same_v<T, GPU::Vertex>)
-        {
-            usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-            srcStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
-            srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-        }
-
-        if (count * sizeof(T) > buffer.requestedSize)
-        {
-            u32 pendingCount = 0;
-
-            for (const auto& upload : m_pendingUploads)
-            {
-                pendingCount += upload.info.count;
-            }
-
-            if (pendingCount > count)
-            {
-                Logger::Error("{}\n", "Pending m_count exceeds total m_count!");
-            }
-
-            const u32          oldCount = count - pendingCount;
-            const VkDeviceSize oldSize  = oldCount * sizeof(T);
-
-            auto oldBuffer = buffer;
-
-            const auto newSize = static_cast<VkDeviceSize>(static_cast<f64>(count * sizeof(T)) * BUFFER_GROWTH_FACTOR);
-
-            buffer = Vk::Buffer
-            (
-                allocator,
-                newSize,
-                usage,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                0,
-                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-            );
-
-            buffer.GetDeviceAddress(device);
-
-            if (oldBuffer.handle != VK_NULL_HANDLE && oldCount > 0)
-            {
-                oldBuffer.Barrier
-                (
-                    cmdBuffer,
-                    Vk::BufferBarrier{
-                        .srcStageMask  = srcStageMask,
-                        .srcAccessMask = srcAccessMask,
-                        .dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
-                        .offset        = 0,
-                        .size          = oldSize
-                    }
-                );
-
-                const VkBufferCopy2 copyRegion =
-                {
-                    .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                    .pNext     = nullptr,
-                    .srcOffset = 0,
-                    .dstOffset = 0,
-                    .size      = oldSize
-                };
-
-                const VkCopyBufferInfo2 copyInfo =
-                {
-                    .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-                    .pNext       = nullptr,
-                    .srcBuffer   = oldBuffer.handle,
-                    .dstBuffer   = buffer.handle,
-                    .regionCount = 1,
-                    .pRegions    = &copyRegion,
-                };
-
-                vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
-            }
-
-            deletionQueue.PushDeletor([allocator, buffer = oldBuffer] () mutable
-            {
-                buffer.Destroy(allocator);
-            });
-        }
+        return m_allocator.buffer;
     }
 
     // Explicit Instantiations

@@ -49,6 +49,10 @@ namespace Vk
 
         [[nodiscard]] bool HasPendingUploads() const;
 
+        [[nodiscard]] const Vk::Buffer& GetIndexBuffer()    const;
+        [[nodiscard]] const Vk::Buffer& GetPositionBuffer() const;
+        [[nodiscard]] const Vk::Buffer& GetVertexBuffer()   const;
+
         Vk::VertexBuffer<GPU::Index>    indexBuffer;
         Vk::VertexBuffer<GPU::Position> positionBuffer;
         Vk::VertexBuffer<GPU::Vertex>   vertexBuffer;

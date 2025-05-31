@@ -192,7 +192,7 @@ namespace Renderer::Depth
                     .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions   = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress
+                    .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
                 m_opaquePipeline.PushConstants
@@ -227,7 +227,7 @@ namespace Renderer::Depth
                     .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions   = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress
+                    .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
                 m_opaquePipeline.PushConstants
@@ -274,8 +274,8 @@ namespace Renderer::Depth
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
                 };
 
@@ -311,8 +311,8 @@ namespace Renderer::Depth
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.positionBuffer.buffer.deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.vertexBuffer.buffer.deviceAddress,
+                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
                 };
 

@@ -146,9 +146,9 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
-        Vk::SetDebugName(device, indexBuffer.buffer.handle,    "GeometryBuffer/IndexBuffer"   );
-        Vk::SetDebugName(device, positionBuffer.buffer.handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, vertexBuffer.buffer.handle,   "GeometryBuffer/VertexBuffer"  );
+        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer"   );
+        Vk::SetDebugName(device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
+        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer"  );
 
         if (m_pendingCubeUpload.has_value())
         {
@@ -237,8 +237,8 @@ namespace Vk
                     "Index Buffer    | %u | %llu/%llu/%llu",
                     indexBuffer.count,
                     indexBuffer.count * sizeof(GPU::Index),
-                    indexBuffer.buffer.allocationInfo.size - (indexBuffer.count * sizeof(GPU::Index)),
-                    indexBuffer.buffer.allocationInfo.size
+                    GetIndexBuffer().allocationInfo.size - (indexBuffer.count * sizeof(GPU::Index)),
+                    GetIndexBuffer().allocationInfo.size
                 );
 
                 ImGui::Text
@@ -246,8 +246,8 @@ namespace Vk
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionBuffer.count,
                     positionBuffer.count * sizeof(GPU::Position),
-                    positionBuffer.buffer.allocationInfo.size - (positionBuffer.count * sizeof(GPU::Position)),
-                    positionBuffer.buffer.allocationInfo.size
+                    GetPositionBuffer().allocationInfo.size - (positionBuffer.count * sizeof(GPU::Position)),
+                    GetPositionBuffer().allocationInfo.size
                 );
 
                 ImGui::Text
@@ -255,8 +255,8 @@ namespace Vk
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexBuffer.count,
                     vertexBuffer.count * sizeof(GPU::Vertex),
-                    vertexBuffer.buffer.allocationInfo.size - (vertexBuffer.count * sizeof(GPU::Vertex)),
-                    vertexBuffer.buffer.allocationInfo.size
+                    GetVertexBuffer().allocationInfo.size - (vertexBuffer.count * sizeof(GPU::Vertex)),
+                    GetVertexBuffer().allocationInfo.size
                 );
 
                 ImGui::EndMenu();
@@ -270,6 +270,21 @@ namespace Vk
     {
         return indexBuffer.HasPendingUploads()  || vertexBuffer.HasPendingUploads() ||
                vertexBuffer.HasPendingUploads() || m_pendingCubeUpload.has_value();
+    }
+
+    const Vk::Buffer& GeometryBuffer::GetIndexBuffer() const
+    {
+        return indexBuffer.GetBuffer();
+    }
+
+    const Vk::Buffer& GeometryBuffer::GetPositionBuffer() const
+    {
+        return positionBuffer.GetBuffer();
+    }
+
+    const Vk::Buffer& GeometryBuffer::GetVertexBuffer() const
+    {
+        return vertexBuffer.GetBuffer();
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator)
