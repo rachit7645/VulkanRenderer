@@ -67,6 +67,8 @@ namespace Vk
 
         std::optional<Block> FindFreeBlock(VkDeviceSize size);
 
+        void MergeFreeBlocks();
+
         VkBufferUsageFlags    m_usage      = 0;
         VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
         VkAccessFlags2        m_accessMask = VK_ACCESS_2_NONE;

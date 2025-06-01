@@ -167,21 +167,46 @@ namespace Engine
             {
                 if (ImGui::BeginMenu("Render Objects"))
                 {
-                    for (usize i = 0; i < renderObjects.size(); ++i)
+                    usize i = 0;
+
+                    for (auto iter = renderObjects.begin(); iter != renderObjects.end(); ++i)
                     {
+                        bool toDelete = false;
+
                         if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                         {
-                            auto& renderObject = renderObjects[i];
-
-                            ImGui::Text("Model | %s", modelManager.GetModel(renderObject.modelID).name.c_str());
+                            ImGui::Text("Model | %s", modelManager.GetModel(iter->modelID).name.c_str());
 
                             ImGui::Separator();
 
-                            ImGui::DragFloat3("Position", &renderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
-                            ImGui::DragFloat3("Rotation", &renderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
-                            ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,                     0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Position", &iter->position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Rotation", &iter->rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Scale",    &iter->scale[0],    1.0f,                      0.0f, 0.0f, "%.2f");
+
+                            if (ImGui::Button("Delete"))
+                            {
+                                toDelete = true;
+                            }
 
                             ImGui::TreePop();
+                        }
+
+                        if (toDelete)
+                        {
+                            iter->Destroy
+                            (
+                                context.device,
+                                context.allocator,
+                                megaSet,
+                                modelManager,
+                                deletionQueue
+                            );
+
+                            iter = renderObjects.erase(iter);
+                        }
+                        else
+                        {
+                            ++iter;
                         }
 
                         ImGui::Separator();
@@ -314,7 +339,7 @@ namespace Engine
     void Scene::Destroy
     (
         const Vk::Context& context,
-        Vk::TextureManager& textureManager,
+        Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
     )
@@ -322,9 +347,21 @@ namespace Engine
         iblMaps.Destroy
         (
             context,
-            textureManager,
+            modelManager.textureManager,
             megaSet,
             deletionQueue
         );
+
+        for (auto& renderObject : renderObjects)
+        {
+            renderObject.Destroy
+            (
+                context.device,
+                context.allocator,
+                megaSet,
+                modelManager,
+                deletionQueue
+            );
+        }
     }
 }

@@ -60,7 +60,7 @@ namespace Vk
 
     void BlockAllocator::Free(const Block& block)
     {
-        if (m_usedBlocks.contains(block))
+        if (m_freeBlocks.contains(block))
         {
             Logger::Error("Block already freed! [Offset={}] [Size={}]\n", block.offset, block.size);
         }
@@ -72,6 +72,8 @@ namespace Vk
 
         m_usedBlocks.erase(block);
         m_freeBlocks.insert(block);
+
+        MergeFreeBlocks();
     }
 
     void BlockAllocator::Update
@@ -225,6 +227,41 @@ namespace Vk
         }
 
         return std::nullopt;
+    }
+
+    void BlockAllocator::MergeFreeBlocks()
+    {
+        if (m_freeBlocks.size() <= 1)
+        {
+            return;
+        }
+
+        std::set<Block> mergedBlocks;
+
+        auto it = m_freeBlocks.begin();
+        Block currentBlock = *it;
+        ++it;
+
+        while (it != m_freeBlocks.end())
+        {
+            const Block& nextBlock = *it;
+
+            if (currentBlock.offset + currentBlock.size == nextBlock.offset)
+            {
+                currentBlock.size += nextBlock.size;
+            }
+            else
+            {
+                mergedBlocks.insert(currentBlock);
+                currentBlock = nextBlock;
+            }
+
+            ++it;
+        }
+
+        mergedBlocks.insert(currentBlock);
+
+        m_freeBlocks = std::move(mergedBlocks);
     }
 
     void BlockAllocator::Destroy(VmaAllocator allocator)

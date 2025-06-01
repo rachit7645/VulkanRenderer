@@ -59,7 +59,7 @@ namespace Engine
         void Destroy
         (
             const Vk::Context& context,
-            Vk::TextureManager& textureManager,
+            Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
         );

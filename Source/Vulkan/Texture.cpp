@@ -29,16 +29,12 @@ namespace Vk
 
     void Texture::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        if (isLoaded)
+        if (!isLoaded)
         {
-            imageView.Destroy(device);
-            image.Destroy(allocator);
+            return;
         }
 
-        name         = "";
-        image        = {};
-        imageView    = {};
-        descriptorID = 0;
-        isLoaded     = false;
+        imageView.Destroy(device);
+        image.Destroy(allocator);
     }
 }

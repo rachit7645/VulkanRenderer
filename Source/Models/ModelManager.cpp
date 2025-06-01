@@ -35,30 +35,83 @@ namespace Models
     {
         const Models::ModelID id = std::hash<std::string_view>()(path);
 
-        if (!modelMap.contains(id))
+        auto iter = m_modelMap.find(id);
+
+        if (iter != m_modelMap.end())
         {
-            modelMap.emplace(id, Model(
-                allocator,
-                geometryBuffer,
-                textureManager,
-                deletionQueue,
-                path
-            ));
+            ++iter->second.referenceCount;
+        }
+        else
+        {
+            m_modelMap.emplace(id, ModelInfo{
+                .model = Model(
+                    allocator,
+                    geometryBuffer,
+                    textureManager,
+                    deletionQueue,
+                    path
+                ),
+                .referenceCount = 1
+            });
         }
 
         return id;
     }
 
-    const Model& ModelManager::GetModel(Models::ModelID id) const
+    void ModelManager::DestroyModel
+    (
+        ModelID id,
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
     {
-        const auto iter = modelMap.find(id);
+        const auto iter = m_modelMap.find(id);
 
-        if (iter == modelMap.end())
+        if (iter == m_modelMap.end())
         {
             Logger::Error("Invalid model ID! [ID={}]\n", id);
         }
 
-        return iter->second;
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Model already freed! [ID={}]\n", id);
+        }
+
+        --iter->second.referenceCount;
+
+        if (iter->second.referenceCount == 0)
+        {
+            iter->second.model.Destroy
+            (
+                device,
+                allocator,
+                megaSet,
+                textureManager,
+                geometryBuffer,
+                deletionQueue
+            );
+
+            m_modelMap.erase(iter);
+        }
+    }
+
+    const Model& ModelManager::GetModel(Models::ModelID id) const
+    {
+        const auto iter = m_modelMap.find(id);
+
+        if (iter == m_modelMap.end())
+        {
+            Logger::Error("Invalid model ID! [ID={}]\n", id);
+        }
+
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Model already freed! [ID={}]\n", id);
+        }
+
+        return iter->second.model;
     }
 
     void ModelManager::Update
@@ -89,10 +142,14 @@ namespace Models
         {
             if (ImGui::BeginMenu("Model Manager"))
             {
-                for (const auto& [id, model] : modelMap)
+                for (const auto& [id, info] : m_modelMap)
                 {
+                    const auto& [model, refCount] = info;
+
                     if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", model.name.c_str()))
                     {
+                        ImGui::Text("Reference Count | %llu", refCount);
+
                         for (usize i = 0; i < model.meshes.size(); ++i)
                         {
                             if (ImGui::TreeNode(fmt::format("Mesh #{}", i).c_str()))

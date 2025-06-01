@@ -42,4 +42,63 @@ namespace Models
     {
         return (flags & GPU::MaterialFlags::DoubleSided) == GPU::MaterialFlags::DoubleSided;
     }
+
+    void Material::Destroy
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        textureManager.DestroyTexture
+        (
+            albedoID,
+            device,
+            allocator,
+            megaSet,
+            deletionQueue
+        );
+
+        textureManager.DestroyTexture
+        (
+            normalID,
+            device,
+            allocator,
+            megaSet,
+            deletionQueue
+        );
+
+        textureManager.DestroyTexture
+        (
+            aoRghMtlID,
+            device,
+            allocator,
+            megaSet,
+            deletionQueue
+        );
+    }
+
+    void Mesh::Destroy
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        Vk::GeometryBuffer& geometryBuffer,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        geometryBuffer.Free(surfaceInfo, deletionQueue);
+
+        material.Destroy
+        (
+            device,
+            allocator,
+            megaSet,
+            textureManager,
+            deletionQueue
+        );
+    }
 }

@@ -41,6 +41,16 @@ namespace Models
             const std::string_view path
         );
 
+        void Destroy
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Vk::GeometryBuffer& geometryBuffer,
+            Util::DeletionQueue& deletionQueue
+        );
+
         std::string               name;
         std::vector<Models::Mesh> meshes;
     private:

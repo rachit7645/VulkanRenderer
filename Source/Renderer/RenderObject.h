@@ -24,6 +24,15 @@ namespace Renderer
 {
     struct RenderObject
     {
+        void Destroy
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Models::ModelManager& modelManager,
+            Util::DeletionQueue& deletionQueue
+        );
+
         Models::ModelID modelID  = 0;
         glm::vec3       position = {};
         glm::vec3       rotation = {};

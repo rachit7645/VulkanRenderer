@@ -75,7 +75,13 @@ namespace Vk
 
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        std::unordered_map<Vk::TextureID, Vk::Texture> m_textureMap;
+        struct TextureInfo
+        {
+            Vk::Texture texture        = {};
+            u64         referenceCount = 0;
+        };
+
+        std::unordered_map<Vk::TextureID, TextureInfo> m_textureMap;
         std::unordered_map<Vk::SamplerID, Vk::Sampler> m_samplerMap;
 
         Vk::ImageUploader m_imageUploader;

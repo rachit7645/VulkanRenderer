@@ -31,6 +31,15 @@ namespace Models
         [[nodiscard]] bool IsAlphaMasked() const;
         [[nodiscard]] bool IsDoubleSided() const;
 
+        void Destroy
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue
+        );
+
         Vk::TextureID albedoID   = 0;
         Vk::TextureID normalID   = 0;
         Vk::TextureID aoRghMtlID = 0;
@@ -46,6 +55,16 @@ namespace Models
 
     struct Mesh
     {
+        void Destroy
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Vk::GeometryBuffer& geometryBuffer,
+            Util::DeletionQueue& deletionQueue
+        );
+
         GPU::SurfaceInfo surfaceInfo = {};
         Models::Material material    = {};
         glm::mat4        transform   = glm::identity<glm::mat4>();

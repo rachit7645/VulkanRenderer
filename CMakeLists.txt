@@ -94,6 +94,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/BlockAllocator.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
+    Source/Renderer/RenderObject.cpp
     # Object sources
     Source/Renderer/Objects/FreeCamera.cpp
     Source/Renderer/Objects/Camera.cpp

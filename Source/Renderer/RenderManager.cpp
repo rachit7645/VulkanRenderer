@@ -16,8 +16,6 @@
 
 #include "RenderManager.h"
 
-#include <utility>
-
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
 #include "Vulkan/DebugUtils.h"

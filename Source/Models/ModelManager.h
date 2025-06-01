@@ -42,6 +42,15 @@ namespace Models
             const std::string_view path
         );
 
+        void DestroyModel
+        (
+            ModelID id,
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
+
         [[nodiscard]] const Model& GetModel(Models::ModelID id) const;
 
         void Update
@@ -55,10 +64,16 @@ namespace Models
 
         void ImGuiDisplay();
 
-        std::unordered_map<Models::ModelID, Models::Model> modelMap;
-
         Vk::GeometryBuffer geometryBuffer;
         Vk::TextureManager textureManager;
+    private:
+        struct ModelInfo
+        {
+            Models::Model model;
+            u64           referenceCount = 0;
+        };
+
+        std::unordered_map<Models::ModelID, ModelManager::ModelInfo> m_modelMap;
     };
 }
 

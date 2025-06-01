@@ -105,6 +105,30 @@ namespace Models
         );
     }
 
+    void Model::Destroy
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        Vk::GeometryBuffer& geometryBuffer,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        for (auto& mesh : meshes)
+        {
+            mesh.Destroy
+            (
+                device,
+                allocator,
+                megaSet,
+                textureManager,
+                geometryBuffer,
+                deletionQueue
+            );
+        }
+    }
+
     void Model::ProcessScenes
     (
         VmaAllocator allocator,
