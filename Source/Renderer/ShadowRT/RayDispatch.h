@@ -27,10 +27,10 @@
 
 namespace Renderer::ShadowRT
 {
-    class RenderPass
+    class RayDispatch
     {
     public:
-        RenderPass
+        RayDispatch
         (
             const Vk::Context& context,
             Vk::CommandBufferAllocator& cmdBufferAllocator,
@@ -41,7 +41,7 @@ namespace Renderer::ShadowRT
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        void Render
+        void TraceRays
         (
             usize FIF,
             usize frameIndex,

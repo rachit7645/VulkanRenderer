@@ -156,7 +156,7 @@ add_executable(VulkanRenderer
     Source/Renderer/AO/VBGTAO/Denoise/Pipeline.cpp
     # Shadow RT sources
     Source/Renderer/ShadowRT/Pipeline.cpp
-    Source/Renderer/ShadowRT/RenderPass.cpp
+    Source/Renderer/ShadowRT/RayDispatch.cpp
     # TAA Sources
     Source/Renderer/TAA/Pipeline.cpp
     Source/Renderer/TAA/RenderPass.cpp

@@ -39,7 +39,7 @@ namespace Renderer::Culling
         Vk::SetDebugName(device, buffer.handle, "FrustumBuffer");
     }
 
-    void FrustumBuffer::LoadPlanes(const Vk::CommandBuffer& cmdBuffer, const glm::mat4& projectionView)
+    void FrustumBuffer::Load(const Vk::CommandBuffer& cmdBuffer, const glm::mat4& projectionView)
     {
         const auto frustum = GPU::FrustumBuffer(projectionView);
 

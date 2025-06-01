@@ -34,6 +34,13 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
+        if (renderObjects.empty() || !bottomLevelASes.empty())
+        {
+            return;
+        }
+
+        Vk::BeginLabel(cmdBuffer, "BLASBuild", {0.7117f, 0.8136f, 0.7313f, 1.0f});
+
         std::vector<VkTransformMatrixKHR> transforms = {};
 
         for (const auto& renderObject : renderObjects)
@@ -291,16 +298,18 @@ namespace Vk
             {
                 .sType                  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
                 .pNext                  = nullptr,
-                .accelerationStructure  = blas.as
+                .accelerationStructure  = blas.handle
             };
 
             blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
 
-            Vk::SetDebugName(device, blas.as,            fmt::format("BLAS/{}",       i));
+            Vk::SetDebugName(device, blas.handle,            fmt::format("BLAS/{}",       i));
             Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/{}", i));
         }
 
         m_initialBLASBuildFrameIndex = frameIndex;
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void AccelerationStructure::TryCompactBottomLevelAS
@@ -312,7 +321,12 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (m_compactionQueryPool == VK_NULL_HANDLE)
+        if
+        (
+            m_compactionQueryPool == VK_NULL_HANDLE ||
+            m_initialBLASBuildFrameIndex == std::numeric_limits<usize>::max() ||
+            bottomLevelASes.empty()
+        )
         {
             return;
         }
@@ -329,6 +343,8 @@ namespace Vk
         {
             return;
         }
+
+        Vk::BeginLabel(cmdBuffer, "BLAS Compaction", {0.2117f, 0.4136f, 0.7313f, 1.0f});
 
         std::vector<VkDeviceSize> compactedSizes = {};
         compactedSizes.resize(bottomLevelASes.size());
@@ -356,7 +372,7 @@ namespace Vk
         {
             auto& blas = bottomLevelASes[i];
 
-            auto oldBLAS   = blas.as;
+            auto oldBLAS   = blas.handle;
             auto oldBuffer = blas.buffer;
 
             deletionQueue.PushDeletor([device, allocator, oldBLAS, oldBuffer] () mutable
@@ -392,7 +408,7 @@ namespace Vk
                 device,
                 &compactedBlasCreateInfo,
                 nullptr,
-                &blas.as),
+                &blas.handle),
                 "Failed to create BLAS!"
             );
 
@@ -401,7 +417,7 @@ namespace Vk
                 .sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR,
                 .pNext = nullptr,
                 .src   = oldBLAS,
-                .dst   = blas.as,
+                .dst   = blas.handle,
                 .mode  = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR
             };
 
@@ -411,12 +427,12 @@ namespace Vk
             {
                 .sType                  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
                 .pNext                  = nullptr,
-                .accelerationStructure  = blas.as
+                .accelerationStructure  = blas.handle
             };
 
             blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
 
-            Vk::SetDebugName(device, blas.as,            fmt::format("BLAS/Compacted/{}",       i));
+            Vk::SetDebugName(device, blas.handle,            fmt::format("BLAS/Compacted/{}",       i));
             Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/Compacted/{}", i));
         }
 
@@ -425,6 +441,8 @@ namespace Vk
         m_compactionQueryPool = VK_NULL_HANDLE;
 
         m_initialBLASBuildFrameIndex = std::numeric_limits<usize>::max();
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void AccelerationStructure::BuildTopLevelAS
@@ -438,6 +456,21 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
+        if (renderObjects.empty() || bottomLevelASes.empty())
+        {
+            deletionQueue.PushDeletor([device, as = topLevelASes[FIF].handle] () mutable
+            {
+                if (as != VK_NULL_HANDLE)
+                {
+                    vkDestroyAccelerationStructureKHR(device, as, nullptr);
+                }
+            });
+
+            topLevelASes[FIF] = {};
+
+            return;
+        }
+
         Vk::BeginLabel(cmdBuffer, "TLASBuild", {0.2117f, 0.8136f, 0.7313f, 1.0f});
 
         std::vector<VkAccelerationStructureInstanceKHR> instances = {};
@@ -613,11 +646,19 @@ namespace Vk
             .deviceAddress = 0
         };
 
+        deletionQueue.PushDeletor([device, as = topLevelASes[FIF].handle] () mutable
+        {
+            if (as != VK_NULL_HANDLE)
+            {
+                vkDestroyAccelerationStructureKHR(device, as, nullptr);
+            }
+        });
+
         Vk::CheckResult(vkCreateAccelerationStructureKHR(
             device,
             &tlasCreateInfo,
             nullptr,
-            &topLevelASes[FIF].as),
+            &topLevelASes[FIF].handle),
             "Failed to create TLAS!"
         );
 
@@ -641,7 +682,7 @@ namespace Vk
             m_scratchBuffers[FIF].GetDeviceAddress(device);
         }
 
-        tlasBuildInfo.dstAccelerationStructure = topLevelASes[FIF].as;
+        tlasBuildInfo.dstAccelerationStructure = topLevelASes[FIF].handle;
         tlasBuildInfo.scratchData              = {.deviceAddress = m_scratchBuffers[FIF].deviceAddress};
 
         const std::array pRangeInfos = {&range};
@@ -658,20 +699,15 @@ namespace Vk
         {
             .sType                  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
             .pNext                  = nullptr,
-            .accelerationStructure  = topLevelASes[FIF].as
+            .accelerationStructure  = topLevelASes[FIF].handle
         };
 
         topLevelASes[FIF].deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &tlasDAInfo);
 
-        Vk::SetDebugName(device, topLevelASes[FIF].as,            fmt::format("TLAS/{}",               FIF));
+        Vk::SetDebugName(device, topLevelASes[FIF].handle,            fmt::format("TLAS/{}",               FIF));
         Vk::SetDebugName(device, topLevelASes[FIF].buffer.handle, fmt::format("TLASBuffer/{}",         FIF));
         Vk::SetDebugName(device, m_instanceBuffers[FIF].handle,   fmt::format("TLASInstanceBuffer/{}", FIF));
         Vk::SetDebugName(device, m_scratchBuffers[FIF].handle,    fmt::format("TLASScratchBuffer/{}",  FIF));
-
-        deletionQueue.PushDeletor([device, as = topLevelASes[FIF].as] () mutable
-        {
-            vkDestroyAccelerationStructureKHR(device, as, nullptr);
-        });
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -682,7 +718,10 @@ namespace Vk
         {
             blas.buffer.Destroy(allocator);
 
-            vkDestroyAccelerationStructureKHR(device, blas.as, nullptr);
+            if (blas.handle != VK_NULL_HANDLE)
+            {
+                vkDestroyAccelerationStructureKHR(device, blas.handle, nullptr);
+            }
         }
 
         for (auto& instanceBuffer : m_instanceBuffers)
@@ -698,6 +737,11 @@ namespace Vk
         for (auto& tlas : topLevelASes)
         {
             tlas.buffer.Destroy(allocator);
+
+            if (tlas.handle != VK_NULL_HANDLE)
+            {
+                vkDestroyAccelerationStructureKHR(device, tlas.handle, nullptr);
+            }
         }
 
         if (m_compactionQueryPool != VK_NULL_HANDLE)

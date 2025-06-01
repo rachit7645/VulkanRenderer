@@ -44,6 +44,8 @@ namespace Renderer::Culling
     private:
         Culling::Pipeline      m_frustumPipeline;
         Culling::FrustumBuffer m_frustumBuffer;
+
+        Vk::BarrierWriter m_barrierWriter = {};
     };
 }
 

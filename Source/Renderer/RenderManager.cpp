@@ -132,6 +132,18 @@ namespace Renderer
             );
 
             m_megaSet.Update(m_context.device);
+        }
+
+        Update(cmdBuffer);
+
+        if (m_scene->haveRenderObjectsChanged)
+        {
+            m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = m_accelerationStructure] () mutable
+            {
+                as.Destroy(device, allocator);
+            });
+
+            m_accelerationStructure = {};
 
             m_accelerationStructure.BuildBottomLevelAS
             (
@@ -143,9 +155,9 @@ namespace Renderer
                 m_scene->renderObjects,
                 m_deletionQueues[m_FIF]
             );
-        }
 
-        Update(cmdBuffer);
+            m_scene->haveRenderObjectsChanged = false;
+        }
 
         m_accelerationStructure.TryCompactBottomLevelAS
         (
@@ -235,7 +247,7 @@ namespace Renderer
             m_deletionQueues[m_FIF]
         );
 
-        m_shadowRT.Render
+        m_shadowRT.TraceRays
         (
             m_FIF,
             m_frameIndex,
@@ -389,6 +401,17 @@ namespace Renderer
             m_iblGenerator,
             m_deletionQueues[m_FIF]
         );
+
+        m_modelManager.Update
+        (
+            cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_megaSet,
+            m_deletionQueues[m_FIF]
+        );
+
+        m_megaSet.Update(m_context.device);
 
         m_sceneBuffer.WriteScene
         (

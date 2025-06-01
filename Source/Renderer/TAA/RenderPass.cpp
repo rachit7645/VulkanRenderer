@@ -160,7 +160,7 @@ namespace Renderer::TAA
                 }
             );
 
-            constexpr VkClearColorValue clearColor = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
+            constexpr VkClearColorValue BLACK = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
 
             const VkImageSubresourceRange subresourceRange =
             {
@@ -176,7 +176,7 @@ namespace Renderer::TAA
                 cmdBuffer.handle,
                 history.image.handle,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                &clearColor,
+                &BLACK,
                 1,
                 &subresourceRange
             );

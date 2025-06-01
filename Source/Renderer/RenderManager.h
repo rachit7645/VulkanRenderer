@@ -30,7 +30,7 @@
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
 #include "AO/VBGTAO/Dispatch.h"
-#include "ShadowRT/RenderPass.h"
+#include "ShadowRT/RayDispatch.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "IBL/Generator.h"
@@ -105,7 +105,7 @@ namespace Renderer
         SpotShadow::RenderPass  m_spotShadow;
         GBuffer::RenderPass     m_gBuffer;
         Lighting::RenderPass    m_lighting;
-        ShadowRT::RenderPass    m_shadowRT;
+        ShadowRT::RayDispatch    m_shadowRT;
         TAA::RenderPass         m_taa;
 
         // Dispatches

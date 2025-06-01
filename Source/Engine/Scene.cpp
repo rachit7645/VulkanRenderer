@@ -75,6 +75,8 @@ namespace Engine
                     renderObject.rotation = glm::radians(renderObject.rotation);
 
                     renderObjects.emplace_back(renderObject);
+
+                    haveRenderObjectsChanged = true;
                 }
             }
 
@@ -203,6 +205,8 @@ namespace Engine
                             );
 
                             iter = renderObjects.erase(iter);
+
+                            haveRenderObjectsChanged = true;
                         }
                         else
                         {

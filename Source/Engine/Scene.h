@@ -70,6 +70,10 @@ namespace Engine
         std::vector<GPU::SpotLight>         spotLights    = {};
         Renderer::Objects::FreeCamera       camera        = {};
         Renderer::IBL::IBLMaps              iblMaps       = {};
+
+        // This does not account for render object internal changes
+        // Only addition/deletion of render objects will update this
+        bool haveRenderObjectsChanged = false;
     private:
         std::string m_hdrMap;
     };

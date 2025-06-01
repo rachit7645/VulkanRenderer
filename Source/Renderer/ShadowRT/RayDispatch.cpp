@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "RenderPass.h"
+#include "RayDispatch.h"
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
@@ -26,7 +26,7 @@ namespace Renderer::ShadowRT
     constexpr u32 MISS_SHADER_GROUP_COUNT = 1;
     constexpr u32 HIT_SHADER_GROUP_COUNT  = 1;
 
-    RenderPass::RenderPass
+    RayDispatch::RayDispatch
     (
         const Vk::Context& context,
         Vk::CommandBufferAllocator& cmdBufferAllocator,
@@ -42,7 +42,7 @@ namespace Renderer::ShadowRT
             "ShadowRT",
             Vk::FramebufferType::ColorR_Unorm8,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::TransferDestination,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -74,7 +74,7 @@ namespace Renderer::ShadowRT
         );
     }
 
-    void RenderPass::Render
+    void RayDispatch::TraceRays
     (
         usize FIF,
         usize frameIndex,
@@ -91,6 +91,66 @@ namespace Renderer::ShadowRT
 
         const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
         const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);
+
+        if (accelerationStructure.topLevelASes[FIF].handle == VK_NULL_HANDLE)
+        {
+            shadowMap.image.Barrier
+            (
+                cmdBuffer,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .baseMipLevel   = 0,
+                    .levelCount     = shadowMap.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = shadowMap.image.arrayLayers
+                }
+            );
+
+            constexpr VkClearColorValue WHITE = {.float32 = {1.0f, 1.0f, 1.0f, 1.0f}};
+
+            const VkImageSubresourceRange subresourceRange =
+            {
+                .aspectMask     = shadowMap.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = shadowMap.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = shadowMap.image.arrayLayers
+            };
+
+            vkCmdClearColorImage
+            (
+                cmdBuffer.handle,
+                shadowMap.image.handle,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                &WHITE,
+                1,
+                &subresourceRange
+            );
+
+            shadowMap.image.Barrier
+            (
+                cmdBuffer,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .baseMipLevel   = 0,
+                    .levelCount     = shadowMap.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = shadowMap.image.arrayLayers
+                }
+            );
+
+            return;
+        }
 
         shadowMap.image.Barrier
         (
@@ -170,7 +230,7 @@ namespace Renderer::ShadowRT
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
+    void RayDispatch::Destroy(VkDevice device, VmaAllocator allocator)
     {
         m_shaderBindingTable.Destroy(allocator);
         m_pipeline.Destroy(device);
