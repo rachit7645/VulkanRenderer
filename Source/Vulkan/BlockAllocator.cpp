@@ -88,6 +88,7 @@ namespace Vk
 
         if (m_capacity == 0 || m_oldCapacity == m_capacity)
         {
+            m_resizeCopyBlocks = std::nullopt;
             return;
         }
 
@@ -126,6 +127,7 @@ namespace Vk
 
         if (m_resizeCopyBlocks->empty())
         {
+            m_resizeCopyBlocks = std::nullopt;
             return;
         }
 
@@ -133,6 +135,11 @@ namespace Vk
 
         for (const auto& block : *m_resizeCopyBlocks)
         {
+            if (!m_usedBlocks.contains(block))
+            {
+                continue;
+            }
+
             copyRegions.emplace_back(VkBufferCopy2{
                 .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
                 .pNext     = nullptr,
@@ -156,6 +163,12 @@ namespace Vk
         }
 
         m_barrierWriter.Execute(cmdBuffer);
+
+        if (copyRegions.empty())
+        {
+            m_resizeCopyBlocks = std::nullopt;
+            return;
+        }
 
         const VkCopyBufferInfo2 copyInfo =
         {

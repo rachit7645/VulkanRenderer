@@ -169,6 +169,36 @@ namespace Engine
             {
                 if (ImGui::BeginMenu("Render Objects"))
                 {
+                    if (ImGui::TreeNode("Load"))
+                    {
+                        ImGui::InputText("Model Path", &m_modelPath);
+
+                        ImGui::DragFloat3("Position", &m_loadedRenderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Rotation", &m_loadedRenderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Scale",    &m_loadedRenderObject.scale[0],    1.0f,                      0.0f, 0.0f, "%.2f");
+
+                        if (ImGui::Button("Load") && !m_modelPath.empty())
+                        {
+                            const auto modelAssetPath = Util::Files::GetAssetPath("GFX/", m_modelPath);
+
+                            if (Util::Files::Exists(modelAssetPath))
+                            {
+                                m_loadedRenderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, m_modelPath);
+
+                                renderObjects.emplace_back(m_loadedRenderObject);
+
+                                haveRenderObjectsChanged = true;
+                            }
+
+                            m_loadedRenderObject = {};
+                            m_modelPath.clear();
+                        }
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::Separator();
+
                     usize i = 0;
 
                     for (auto iter = renderObjects.begin(); iter != renderObjects.end(); ++i)

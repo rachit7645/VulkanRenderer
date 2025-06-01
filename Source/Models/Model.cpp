@@ -46,7 +46,7 @@ namespace Models
     )
         : name(Util::Files::GetNameWithoutExtension(path))
     {
-        Logger::Info("Loading model! [Path={}]\n", path);
+        Logger::Info("Loading model! [Name={}]\n", name);
 
         const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Util::Files::GetDirectory(assetPath);

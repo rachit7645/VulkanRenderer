@@ -75,7 +75,9 @@ namespace Engine
         // Only addition/deletion of render objects will update this
         bool haveRenderObjectsChanged = false;
     private:
-        std::string m_hdrMap;
+        std::string            m_hdrMap;
+        std::string            m_modelPath          = {};
+        Renderer::RenderObject m_loadedRenderObject = {};
     };
 }
 
