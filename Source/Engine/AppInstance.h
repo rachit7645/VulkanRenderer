@@ -24,11 +24,8 @@ namespace Engine
     class AppInstance
     {
     public:
-        AppInstance();
-
         void Run();
     private:
-        Engine::Config          m_config;
         Renderer::RenderManager m_renderer;
     };
 }

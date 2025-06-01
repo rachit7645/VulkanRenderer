@@ -26,9 +26,8 @@
 
 namespace Renderer
 {
-    RenderManager::RenderManager(Engine::Config config)
-        : m_config(std::move(config)),
-          m_context(m_window.handle),
+    RenderManager::RenderManager()
+        : m_context(m_window.handle),
           m_cmdBufferAllocator(m_context.device, m_context.queueFamilies),
           m_swapchain(m_window.size, m_context, m_cmdBufferAllocator),
           m_timeline(m_context.device),
@@ -107,32 +106,6 @@ namespace Renderer
         const auto cmdBuffer = m_cmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        if (!m_scene.has_value())
-        {
-            m_scene = Engine::Scene
-            (
-                m_config,
-                cmdBuffer,
-                m_context,
-                m_formatHelper,
-                m_modelManager,
-                m_megaSet,
-                m_iblGenerator,
-                m_deletionQueues[m_FIF]
-            );
-
-            m_modelManager.Update
-            (
-                cmdBuffer,
-                m_context.device,
-                m_context.allocator,
-                m_megaSet,
-                m_deletionQueues[m_FIF]
-            );
-
-            m_megaSet.Update(m_context.device);
-        }
 
         Update(cmdBuffer);
 
@@ -377,6 +350,90 @@ namespace Renderer
     void RenderManager::Update(const Vk::CommandBuffer& cmdBuffer)
     {
         m_frameCounter.Update();
+
+        if (!m_scene.has_value())
+        {
+            m_scene = Engine::Scene
+            (
+                m_config,
+                cmdBuffer,
+                m_context,
+                m_formatHelper,
+                m_modelManager,
+                m_megaSet,
+                m_iblGenerator,
+                m_deletionQueues[m_FIF]
+            );
+
+            m_modelManager.Update
+            (
+                cmdBuffer,
+                m_context.device,
+                m_context.allocator,
+                m_megaSet,
+                m_deletionQueues[m_FIF]
+            );
+
+            m_megaSet.Update(m_context.device);
+        }
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Scene"))
+            {
+                if (ImGui::BeginMenu("Reload"))
+                {
+                    if (ImGui::Button("Reload Scene"))
+                    {
+                        m_config = Engine::Config();
+
+                        if (m_scene.has_value())
+                        {
+                            m_scene->Destroy
+                            (
+                                m_context,
+                                m_modelManager,
+                                m_megaSet,
+                                m_deletionQueues[m_FIF]
+                            );
+                        }
+
+                        m_scene = Engine::Scene
+                        (
+                            m_config,
+                            cmdBuffer,
+                            m_context,
+                            m_formatHelper,
+                            m_modelManager,
+                            m_megaSet,
+                            m_iblGenerator,
+                            m_deletionQueues[m_FIF]
+                        );
+
+                        m_modelManager.Update
+                        (
+                            cmdBuffer,
+                            m_context.device,
+                            m_context.allocator,
+                            m_megaSet,
+                            m_deletionQueues[m_FIF]
+                        );
+
+                        m_megaSet.Update(m_context.device);
+
+                        m_taa.ResetHistory();
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
 
         m_framebufferManager.Update
         (

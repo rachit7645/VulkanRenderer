@@ -20,11 +20,6 @@
 
 namespace Engine
 {
-    AppInstance::AppInstance()
-        : m_renderer(m_config)
-    {
-    }
-
     void AppInstance::Run()
     {
         while (true)

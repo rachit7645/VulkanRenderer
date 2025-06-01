@@ -38,7 +38,7 @@ check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
 # Add sub-projects
 add_subdirectory(Externals)
-add_subdirectory(Assets/Shaders)
+add_subdirectory(Assets)
 
 # Main executable
 add_executable(VulkanRenderer
@@ -336,10 +336,3 @@ install(CODE "
         \"\"
     )
 ")
-
-# Copy other directories
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX    DESTINATION ${ENGINE_INSTALL_DIR}/Assets)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/Scenes DESTINATION ${ENGINE_INSTALL_DIR}/Assets)
-
-# Copy misc files
-install(FILES ${CMAKE_SOURCE_DIR}/Assets/Config.json DESTINATION ${ENGINE_INSTALL_DIR}/Assets)

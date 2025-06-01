@@ -52,7 +52,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        explicit RenderManager(Engine::Config config);
+        RenderManager();
         ~RenderManager();
 
         void Render();
