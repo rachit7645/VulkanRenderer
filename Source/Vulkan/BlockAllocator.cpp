@@ -16,6 +16,8 @@
 
 #include "BlockAllocator.h"
 #include "Util/Log.h"
+#include "Util/Scope.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Vk
 {
@@ -33,16 +35,24 @@ namespace Vk
 
     BlockAllocator::Block BlockAllocator::Allocate(VkDeviceSize size)
     {
+        if (size == 0)
+        {
+            Logger::Error("{}\n", "Can't allocate a block of size zero!");
+        }
+
         if (const auto block = FindFreeBlock(size); block.has_value())
         {
             return block.value();
         }
 
         const auto lastUsedBlock = m_usedBlocks.empty() ? Block{} : *m_usedBlocks.rbegin();
+        const auto lastFreeBlock = m_freeBlocks.empty() ? Block{} : *m_freeBlocks.rbegin();
+
+        const auto lastBlock = std::max(lastUsedBlock, lastFreeBlock);
 
         const auto block = Block
         {
-            .offset = lastUsedBlock.offset + lastUsedBlock.size,
+            .offset = lastBlock.offset + lastBlock.size,
             .size   = size,
         };
 
@@ -84,11 +94,15 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
+        auto Reset = Util::MakeScopeGuard([this] ()
+        {
+            m_resizeCopyBlocks = std::nullopt;
+        });
+
         // Capacity Check
 
         if (m_capacity == 0 || m_oldCapacity == m_capacity)
         {
-            m_resizeCopyBlocks = std::nullopt;
             return;
         }
 
@@ -127,7 +141,11 @@ namespace Vk
 
         if (m_resizeCopyBlocks->empty())
         {
-            m_resizeCopyBlocks = std::nullopt;
+            return;
+        }
+
+        if (m_usedBlocks.empty())
+        {
             return;
         }
 
@@ -148,7 +166,7 @@ namespace Vk
                 .size      = block.size
             });
 
-            m_barrierWriter.WriteBufferBarrier
+            m_barrierWriterOld.WriteBufferBarrier
             (
                 oldBuffer,
                 Vk::BufferBarrier{
@@ -160,15 +178,27 @@ namespace Vk
                     .size          = block.size
                 }
             );
-        }
 
-        m_barrierWriter.Execute(cmdBuffer);
+            m_barrierWriterNew.WriteBufferBarrier
+            (
+                buffer,
+                Vk::BufferBarrier{
+                    .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask  = m_stageMask,
+                    .dstAccessMask = m_accessMask,
+                    .offset        = block.offset,
+                    .size          = block.size
+                }
+            );
+        }
 
         if (copyRegions.empty())
         {
-            m_resizeCopyBlocks = std::nullopt;
             return;
         }
+
+        Vk::BeginLabel(cmdBuffer, "Resize Copy", {0.3882f, 0.9294f, 0.2118f, 1.0f});
 
         const VkCopyBufferInfo2 copyInfo =
         {
@@ -180,14 +210,18 @@ namespace Vk
             .pRegions    = copyRegions.data(),
         };
 
+        m_barrierWriterOld.Execute(cmdBuffer);
+
         vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
 
-        m_resizeCopyBlocks = std::nullopt;
+        m_barrierWriterNew.Execute(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void BlockAllocator::QueueResize(VkDeviceSize minRequiredCapacity)
     {
-        constexpr f64 BUFFER_GROWTH_FACTOR = 1.5;
+        constexpr f64 BUFFER_GROWTH_FACTOR = 1.3;
 
         m_capacity = static_cast<VkDeviceSize>(BUFFER_GROWTH_FACTOR * static_cast<f64>(minRequiredCapacity));
 
@@ -199,7 +233,7 @@ namespace Vk
 
     std::optional<BlockAllocator::Block> BlockAllocator::FindFreeBlock(VkDeviceSize size)
     {
-        for (auto& block : m_freeBlocks)
+        for (const auto& block : m_freeBlocks)
         {
             if (block.size < size)
             {
@@ -224,14 +258,13 @@ namespace Vk
                     .size   = size
                 };
 
-                m_usedBlocks.insert(free);
-
                 const auto remaining = Block
                 {
                     .offset = block.offset + free.size,
                     .size   = block.size   - free.size
                 };
 
+                m_usedBlocks.insert(free);
                 m_freeBlocks.erase(block);
                 m_freeBlocks.insert(remaining);
 

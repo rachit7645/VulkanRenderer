@@ -81,7 +81,8 @@ namespace Vk
         std::set<Block> m_usedBlocks = {};
         std::set<Block> m_freeBlocks = {};
 
-        Vk::BarrierWriter m_barrierWriter = {};
+        Vk::BarrierWriter m_barrierWriterOld = {};
+        Vk::BarrierWriter m_barrierWriterNew = {};
     };
 }
 

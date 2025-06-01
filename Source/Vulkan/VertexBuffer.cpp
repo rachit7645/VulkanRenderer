@@ -110,6 +110,17 @@ namespace Vk
         };
 
         m_allocator.Free(block);
+
+        if (count < info.count)
+        {
+            Logger::Warning("Suspicious free! [Offset={}] [Count={}]", info.offset, info.count);
+
+            count = 0;
+        }
+        else
+        {
+            count -= info.count;
+        }
     }
 
     template <typename T> requires GPU::IsVertexType<T>
