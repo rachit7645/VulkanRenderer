@@ -25,6 +25,7 @@
 #include "Util/Enum.h"
 #include "Util/Types.h"
 #include "Util/Maths.h"
+#include "Util/Visitor.h"
 
 namespace Models
 {
@@ -656,49 +657,111 @@ namespace Models
 
         const auto& image = asset.images[imageIndex];
 
-        if (!std::holds_alternative<fastgltf::sources::URI>(image.data))
-        {
-            Logger::Error
-            (
-                "Unsupported source! [TextureIndex={}] [ImageIndex={}]\n",
-                textureIndex,
-                imageIndex
-            );
-        }
+        return std::visit(fastgltf::visitor{
+            [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
+            {
+                Logger::Error
+                (
+                    "Unsupported source! [TextureIndex={}] [ImageIndex={}]\n",
+                    textureIndex,
+                    imageIndex
+                );
 
-        const auto& filePath = std::get<fastgltf::sources::URI>(image.data);
-
-        if (filePath.fileByteOffset != 0)
-        {
-            Logger::Error
-            (
-                "Unsupported file byte offset! [TextureIndex={}] [FileByteOffset={}]\n",
-                textureIndex,
-                filePath.fileByteOffset
-            );
-        }
-
-        if (!filePath.uri.isLocalPath())
-        {
-            Logger::Error
-            (
-                "Only local paths are supported! [TextureIndex={}] [UriPath={}]\n",
-                textureIndex,
-                filePath.uri.c_str()
-            );
-        }
-
-        return textureManager.AddTexture
-        (
-            allocator,
-            deletionQueue,
-            Vk::ImageUpload{
-                .type   = type,
-                .flags  = Vk::ImageUploadFlags::None,
-                .source = Vk::ImageUploadFile{
-                    .path = fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
+                return 0;
+            },
+            [&] (const fastgltf::sources::URI& filePath) -> Vk::TextureID
+            {
+                if (filePath.fileByteOffset != 0)
+                {
+                    Logger::Error
+                    (
+                        "Unsupported file byte offset! [TextureIndex={}] [FileByteOffset={}]\n",
+                        textureIndex,
+                        filePath.fileByteOffset
+                    );
                 }
-            }
-        );
+
+                if (!filePath.uri.isLocalPath())
+                {
+                    Logger::Error
+                    (
+                        "Only local paths are supported! [TextureIndex={}] [UriPath={}]\n",
+                        textureIndex,
+                        filePath.uri.c_str()
+                    );
+                }
+
+                return textureManager.AddTexture
+                (
+                    allocator,
+                    deletionQueue,
+                    Vk::ImageUpload{
+                        .type   = type,
+                        .flags  = Vk::ImageUploadFlags::None,
+                        .source = Vk::ImageUploadFile{
+                            .path = fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
+                        }
+                    }
+                );
+            },
+            [&] (const fastgltf::sources::Array& array) -> Vk::TextureID
+            {
+                const auto arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + 0);
+                const auto arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + array.bytes.size());
+
+                return textureManager.AddTexture
+                (
+                    allocator,
+                    deletionQueue,
+                    Vk::ImageUpload{
+                        .type   = type,
+                        .flags  = Vk::ImageUploadFlags::None,
+                        .source = Vk::ImageUploadMemory{
+                            .name = image.name.c_str(),
+                            .data = std::vector(arrayBegin, arrayEnd)
+                        }
+                    }
+                );
+            },
+            [&] (const fastgltf::sources::BufferView& view) -> Vk::TextureID
+            {
+                const auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+                const auto& buffer     = asset.buffers[bufferView.bufferIndex];
+
+                return std::visit(fastgltf::visitor {
+                    // Because we specify LoadExternalBuffers. all buffers are already loaded into a vector.
+                    [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
+                    {
+                        Logger::Error
+                        (
+                            "Unsupported buffer source! [TextureIndex={}] [ImageIndex={}]\n",
+                            textureIndex,
+                            imageIndex
+                        );
+
+                        return 0;
+                    },
+                    [&] (const fastgltf::sources::Array& array) -> Vk::TextureID
+                    {
+                        const auto arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + 0);
+                        const auto arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + bufferView.byteLength);
+
+                        return textureManager.AddTexture
+                        (
+                            allocator,
+                            deletionQueue,
+                            Vk::ImageUpload{
+                                .type   = type,
+                                .flags  = Vk::ImageUploadFlags::None,
+                                .source = Vk::ImageUploadMemory{
+                                    .name = image.name.c_str(),
+                                    .data = std::vector(arrayBegin, arrayEnd)
+                                }
+                            }
+                        );
+                    }
+                }, buffer.data);
+            },
+        }, image.data);
     }
 }

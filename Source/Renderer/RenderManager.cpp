@@ -766,12 +766,13 @@ namespace Renderer
             m_cmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                // Font data
                 u8* pixels = nullptr;
                 s32 width  = 0;
                 s32 height = 0;
 
                 io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+
+                const usize count = 4ull * static_cast<usize>(width) * static_cast<usize>(height);
 
                 const auto fontID = m_modelManager.textureManager.AddTexture
                 (
@@ -785,7 +786,7 @@ namespace Renderer
                             .width  = static_cast<u32>(width),
                             .height = static_cast<u32>(height),
                             .format = VK_FORMAT_R8G8B8A8_UNORM,
-                            .data   = pixels
+                            .data   = std::vector(pixels, pixels + count),
                         }
                     }
                 );

@@ -38,7 +38,7 @@ namespace Vk
         return std::visit(Util::Visitor{
             [&] (const ImageUploadFile& file) -> Vk::Image
             {
-                return LoadImageFromFile
+                return LoadFromFile
                 (
                     allocator,
                     deletionQueue,
@@ -49,7 +49,7 @@ namespace Vk
             },
             [&] (const ImageUploadMemory& memory) -> Vk::Image
             {
-                return LoadImageFromMemory
+                return LoadFromMemory
                 (
                     allocator,
                     deletionQueue,
@@ -60,7 +60,12 @@ namespace Vk
             },
             [&] (const ImageUploadRawMemory& rawMemory) -> Vk::Image
             {
-                return LoadImageRawMemory(allocator, deletionQueue, rawMemory);
+                return LoadRawMemory
+                (
+                    allocator,
+                    deletionQueue,
+                    rawMemory
+                );
             }
         }, upload.source);
     }
@@ -161,7 +166,7 @@ namespace Vk
         m_barrierWriter.Clear();
     }
 
-    Vk::Image ImageUploader::LoadImageFromFile
+    Vk::Image ImageUploader::LoadFromFile
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -178,20 +183,20 @@ namespace Vk
         switch (type)
         {
         case ImageUploadType::SDR:
-            return LoadImageSTBIFile(allocator, deletionQueue, path, flags);
+            return LoadSTBIFile(allocator, deletionQueue, path, flags);
 
         case ImageUploadType::HDR:
-            return LoadImageHDRFile(allocator, deletionQueue, path, flags);
+            return LoadHDRFile(allocator, deletionQueue, path, flags);
 
         case ImageUploadType::KTX2:
-            return LoadImageKTX2(allocator, deletionQueue, path);
+            return LoadKTX2File(allocator, deletionQueue, path);
 
         default:
             Logger::Error("{}\n", "Invalid image type!");
         }
     }
 
-    Vk::Image ImageUploader::LoadImageFromMemory
+    Vk::Image ImageUploader::LoadFromMemory
     (
        VmaAllocator allocator,
        Util::DeletionQueue& deletionQueue,
@@ -207,20 +212,20 @@ namespace Vk
         switch (type)
         {
             case ImageUploadType::SDR:
-                return LoadImageSTBIMemory(allocator, deletionQueue, memory, flags);
+                return LoadSTBIMemory(allocator, deletionQueue, memory, flags);
 
             case ImageUploadType::HDR:
-                return LoadImageHDRMemory(allocator, deletionQueue, memory, flags);
+                return LoadHDRMemory(allocator, deletionQueue, memory, flags);
 
             case ImageUploadType::KTX2:
-                Logger::Error("{}\n", "KTX2 Not Supported!");
+                return LoadKTX2Memory(allocator, deletionQueue, memory);
 
             default:
                 Logger::Error("{}\n", "Invalid image type!");
         }
     }
 
-    Vk::Image ImageUploader::LoadImageSTBIFile
+    Vk::Image ImageUploader::LoadSTBIFile
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -257,7 +262,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadImageSTBIInternal
+        return LoadSTBIInternal
         (
             allocator,
             deletionQueue,
@@ -267,7 +272,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadImageSTBIMemory
+    Vk::Image ImageUploader::LoadSTBIMemory
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -289,8 +294,8 @@ namespace Vk
 
         const u8* data = stbi_load_from_memory
         (
-            static_cast<stbi_uc const*>(memory.data),
-            static_cast<s32>(memory.size),
+            memory.data.data(),
+            static_cast<s32>(memory.data.size()),
             &_width,
             &_height,
             nullptr,
@@ -305,7 +310,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadImageSTBIInternal
+        return LoadSTBIInternal
         (
             allocator,
             deletionQueue,
@@ -315,7 +320,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadImageSTBIInternal
+    Vk::Image ImageUploader::LoadSTBIInternal
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -395,7 +400,7 @@ namespace Vk
         return image;
     }
 
-    Vk::Image ImageUploader::LoadImageHDRFile
+    Vk::Image ImageUploader::LoadHDRFile
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -432,7 +437,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadImageHDRInternal
+        return LoadHDRInternal
         (
             allocator,
             deletionQueue,
@@ -443,7 +448,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadImageHDRMemory
+    Vk::Image ImageUploader::LoadHDRMemory
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -465,8 +470,8 @@ namespace Vk
 
         const f32* data = stbi_loadf_from_memory
         (
-            static_cast<stbi_uc const*>(memory.data),
-            static_cast<s32>(memory.size),
+            memory.data.data(),
+            static_cast<s32>(memory.data.size()),
             &_width,
             &_height,
             nullptr,
@@ -481,7 +486,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadImageHDRInternal
+        return LoadHDRInternal
         (
             allocator,
             deletionQueue,
@@ -492,7 +497,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadImageHDRInternal
+    Vk::Image ImageUploader::LoadHDRInternal
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -584,7 +589,7 @@ namespace Vk
         return image;
     }
 
-    Vk::Image ImageUploader::LoadImageKTX2
+    Vk::Image ImageUploader::LoadKTX2File
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -597,33 +602,69 @@ namespace Vk
 
         ktxTexture2* pTexture = nullptr;
 
-        // Texture Load
+        const auto result = ktxTexture2_CreateFromNamedFile
+        (
+            path.data(),
+            KTX_TEXTURE_CREATE_NO_FLAGS,
+            &pTexture
+        );
+
+        if (result != KTX_SUCCESS)
         {
-            #ifdef ENGINE_PROFILE
-            ZoneScopedN("CreateFromNamedFile");
-            #endif
+            Logger::Error("Failed to load KTX2 file! [Error={}] [Path={}]", ktxErrorString(result), path);
+        }
 
-            const auto result = ktxTexture2_CreateFromNamedFile
-            (
-                path.data(),
-                KTX_TEXTURE_CREATE_NO_FLAGS,
-                &pTexture
-            );
+        return LoadKTX2Internal(allocator, deletionQueue, pTexture);
+    }
 
-            if (result != KTX_SUCCESS)
-            {
-                Logger::Error("Failed to load KTX2 file! [Error={}] [Path={}]", ktxErrorString(result), path);
-            }
+    Vk::Image ImageUploader::LoadKTX2Memory
+    (
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        const Vk::ImageUploadMemory& memory
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
 
-            if (pTexture->isVideo)
-            {
-                Logger::Error("Videos are not supported! [Path={}]", path);
-            }
+        ktxTexture2* pTexture = nullptr;
 
-            if (pTexture->isCubemap)
-            {
-                Logger::Error("Cubemaps are not supported! [Path={}]", path);
-            }
+        const auto result = ktxTexture2_CreateFromMemory
+        (
+            memory.data.data(),
+            memory.data.size(),
+            KTX_TEXTURE_CREATE_NO_FLAGS,
+            &pTexture
+        );
+
+        if (result != KTX_SUCCESS)
+        {
+            Logger::Error("Failed to load KTX2 file! [Error={}] [Name={}]", ktxErrorString(result), memory.name);
+        }
+
+        return LoadKTX2Internal(allocator, deletionQueue, pTexture);
+    }
+
+    Vk::Image ImageUploader::LoadKTX2Internal
+    (
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        ktxTexture2* pTexture
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        if (pTexture->isVideo)
+        {
+            Logger::Error("{}\n", "Videos are not supported!");
+        }
+
+        if (pTexture->isCubemap)
+        {
+            Logger::Error("{}\n", "Cubemaps are not supported!");
         }
 
         if (ktxTexture2_NeedsTranscoding(pTexture))
@@ -636,7 +677,7 @@ namespace Vk
 
             if (result != KTX_SUCCESS)
             {
-                Logger::Error("Failed to transcode KTX2 file! [Error={}] [Path={}]", ktxErrorString(result), path);
+                Logger::Error("Failed to transcode to BC7! [Error={}]", ktxErrorString(result));
             }
         }
 
@@ -724,7 +765,7 @@ namespace Vk
         return image;
     }
 
-    Vk::Image ImageUploader::LoadImageRawMemory
+    Vk::Image ImageUploader::LoadRawMemory
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
@@ -735,7 +776,7 @@ namespace Vk
         ZoneScoped;
         #endif
 
-        if (rawMemory.data == nullptr || rawMemory.width == 0 || rawMemory.height == 0 || rawMemory.format == VK_FORMAT_UNDEFINED)
+        if (rawMemory.data.empty() || rawMemory.width == 0 || rawMemory.height == 0 || rawMemory.format == VK_FORMAT_UNDEFINED)
         {
             Logger::Error("{}\n", "Invalid parameters!");
         }
@@ -752,7 +793,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(buffer.allocationInfo.pMappedData, rawMemory.data, dataSize);
+        std::memcpy(buffer.allocationInfo.pMappedData, rawMemory.data.data(), dataSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 

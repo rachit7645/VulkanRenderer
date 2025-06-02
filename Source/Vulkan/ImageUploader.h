@@ -48,18 +48,17 @@ namespace Vk
 
     struct ImageUploadMemory
     {
-        std::string name = "Null/Memory";
-        const void* data = nullptr;
-        usize       size = 0;
+        std::string     name = "Null/Memory";
+        std::vector<u8> data = {};
     };
 
     struct ImageUploadRawMemory
     {
-        std::string name   = "Null/RawMemory";
-        u32         width  = 0;
-        u32         height = 0;
-        VkFormat    format = VK_FORMAT_UNDEFINED;
-        const void* data   = nullptr;
+        std::string     name   = "Null/RawMemory";
+        u32             width  = 0;
+        u32             height = 0;
+        VkFormat        format = VK_FORMAT_UNDEFINED;
+        std::vector<u8> data = {};
     };
 
     using ImageUploadSource = std::variant<ImageUploadFile, ImageUploadMemory, ImageUploadRawMemory>;
@@ -94,7 +93,7 @@ namespace Vk
             std::vector<VkBufferImageCopy2> copyRegions;
         };
 
-        [[nodiscard]] Vk::Image LoadImageFromFile
+        [[nodiscard]] Vk::Image LoadFromFile
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -103,7 +102,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadImageFromMemory
+        [[nodiscard]] Vk::Image LoadFromMemory
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -112,7 +111,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadImageSTBIFile
+        [[nodiscard]] Vk::Image LoadSTBIFile
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -120,7 +119,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadImageSTBIMemory
+        [[nodiscard]] Vk::Image LoadSTBIMemory
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -128,7 +127,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadImageSTBIInternal
+        [[nodiscard]] Vk::Image LoadSTBIInternal
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -137,7 +136,7 @@ namespace Vk
             u32 height
         );
 
-        [[nodiscard]] Vk::Image LoadImageHDRFile
+        [[nodiscard]] Vk::Image LoadHDRFile
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -145,7 +144,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadImageHDRMemory
+        [[nodiscard]] Vk::Image LoadHDRMemory
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -153,7 +152,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadImageHDRInternal
+        [[nodiscard]] Vk::Image LoadHDRInternal
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
@@ -163,14 +162,28 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadImageKTX2
+        [[nodiscard]] Vk::Image LoadKTX2File
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
-        [[nodiscard]] Vk::Image LoadImageRawMemory
+        [[nodiscard]] Vk::Image LoadKTX2Memory
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const Vk::ImageUploadMemory& memory
+        );
+
+        [[nodiscard]] Vk::Image LoadKTX2Internal
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            ktxTexture2* pTexture
+        );
+
+        [[nodiscard]] Vk::Image LoadRawMemory
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,

@@ -31,13 +31,13 @@
             "Scale"    : [1.0,  1.0,  1.0]
         },
         {
-            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured_Complex_T.gltf",
+            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured.glb",
             "Position" : [100.0, 0.0, -50.0],
             "Rotation" : [0.0,   0.0,  0.0],
             "Scale"    : [1.0,   1.0,  1.0]
         },
         {
-            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured_Complex_T.gltf",
+            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured.glb",
             "Position" : [50.0, 0.0, -100.0],
             "Rotation" : [0.0,  0.0,  0.0],
             "Scale"    : [1.0,  1.0,  1.0]

@@ -232,6 +232,10 @@ namespace Renderer::AO::VBGTAO
         {
             constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<VBGTAO_HILBERT_LEVEL>();
 
+            // A bit hacky but what can you do :(
+            const auto HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
+            const auto HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
+
             m_hilbertLUT = modelManager.textureManager.AddTexture
             (
                 context.allocator,
@@ -244,7 +248,7 @@ namespace Renderer::AO::VBGTAO
                         .width  = VBGTAO_HILBERT_WIDTH,
                         .height = VBGTAO_HILBERT_WIDTH,
                         .format = VK_FORMAT_R16_UINT,
-                        .data   = HILBERT_SEQUENCE.data()
+                        .data   = std::vector(HILBERT_BEGIN, HILBERT_END)
                     }
                 }
             );
