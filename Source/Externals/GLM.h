@@ -17,38 +17,35 @@
 #ifndef RACHIT_GLM_H
 #define RACHIT_GLM_H
 
-// Use compiler intrinsics
 #define GLM_FORCE_INTRINSICS
-// Vulkan uses this format
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-// Silence
 #define GLM_FORCE_SILENT_WARNINGS
 
 // Standard vector types
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
+#include "glm/glm/vec2.hpp"
+#include "glm/glm/vec3.hpp"
+#include "glm/glm/vec4.hpp"
 
 // Standard matrix types
-#include <glm/mat4x4.hpp>
+#include "glm/glm/mat4x4.hpp"
 
 // Integer vector types
-#include <glm/ext/vector_int2.hpp>
-#include <glm/ext/vector_int4.hpp>
+#include "glm/glm/ext/vector_int2.hpp"
+#include "glm/glm/ext/vector_int4.hpp"
 
 // Unsigned integer vector types
-#include <glm/ext/vector_uint2.hpp>
-#include <glm/ext/vector_uint3.hpp>
-#include <glm/ext/vector_uint4.hpp>
+#include "glm/glm/ext/vector_uint2.hpp"
+#include "glm/glm/ext/vector_uint3.hpp"
+#include "glm/glm/ext/vector_uint4.hpp"
 
 // Core operations
-#include <glm/geometric.hpp>
-#include <glm/matrix.hpp>
-#include <glm/vector_relational.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "glm/glm/geometric.hpp"
+#include "glm/glm/matrix.hpp"
+#include "glm/glm/vector_relational.hpp"
+#include "glm/glm/gtc/type_ptr.hpp"
 
 // Matrix transformations
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm/glm/gtc/matrix_transform.hpp"
 
 // Fastgltf math types
 #include <fastgltf/types.hpp>

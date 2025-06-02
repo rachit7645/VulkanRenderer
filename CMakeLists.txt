@@ -26,7 +26,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Required packages
 find_package(SDL3     REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan   REQUIRED)
-find_package(glm      REQUIRED)
 find_package(fastgltf REQUIRED)
 find_package(simdjson REQUIRED)
 find_package(fmt      REQUIRED)
@@ -191,16 +190,16 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <fmt/chrono.h>
 	<fmt/color.h>
     # GLM Headers
-    <glm/vec2.hpp>
-    <glm/vec3.hpp>
-    <glm/vec4.hpp>
-    <glm/mat4x4.hpp>
-    <glm/ext/vector_int2.hpp>
-    <glm/ext/vector_int4.hpp>
-    <glm/ext/vector_uint3.hpp>
-    <glm/trigonometric.hpp>
-    <glm/geometric.hpp>
-    <glm/gtc/matrix_transform.hpp>
+    Externals/glm/glm/vec2.hpp
+    Externals/glm/glm/vec3.hpp
+    Externals/glm/glm/vec4.hpp
+    Externals/glm/glm/mat4x4.hpp
+    Externals/glm/glm/ext/vector_int2.hpp
+    Externals/glm/glm/ext/vector_int4.hpp
+    Externals/glm/glm/ext/vector_uint3.hpp
+    Externals/glm/glm/trigonometric.hpp
+    Externals/glm/glm/geometric.hpp
+    Externals/glm/glm/gtc/matrix_transform.hpp
     # VMA Headers
 	Externals/vma/include/vk_mem_alloc.h
     # fastgltf Headers
@@ -313,7 +312,8 @@ target_link_libraries(VulkanRenderer
     simdjson::simdjson
 	GPUOpen::VulkanMemoryAllocator
     KTX::ktx
-	imgui
+    glm::glm
+    DearImGui
 )
 
 # Install

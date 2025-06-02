@@ -27,9 +27,14 @@ find_package(Vulkan REQUIRED)
 set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE)
 set(VOLK_INSTALL        OFF CACHE BOOL "Enable volk installation"          FORCE)
 
+# GLM Config
+set(GLM_ENABLE_CXX_20    ON CACHE BOOL "Use C++20"   FORCE)
+set(GLM_ENABLE_SIMD_AVX2 ON CACHE BOOL "Enable AVX2" FORCE)
+
 # External Libraries
 add_subdirectory(vma)
 add_subdirectory(volk)
+add_subdirectory(glm)
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
@@ -44,7 +49,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
 endif()
 
 # ImGui source files
-add_library(imgui STATIC
+add_library(DearImGui STATIC
 	imgui/imgui.cpp
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
@@ -55,7 +60,7 @@ add_library(imgui STATIC
 )
 
 # ImGui precompiled headers
-target_precompile_headers(imgui PRIVATE
+target_precompile_headers(DearImGui PRIVATE
 	imgui/imconfig.h
 	imgui/imgui_internal.h
 	imgui/imgui.h
@@ -65,16 +70,16 @@ target_precompile_headers(imgui PRIVATE
 )
 
 # SDL2 Includes
-target_include_directories(imgui PRIVATE ${SDL3_INCLUDE_DIRS})
+target_include_directories(DearImGui PRIVATE ${SDL3_INCLUDE_DIRS})
 # ImGUI Includes
-target_include_directories(imgui PUBLIC imgui/ imgui/backends imgui/misc)
+target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
-target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
+target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
 # Disable warnings
-target_compile_options(imgui PRIVATE -w)
+target_compile_options(DearImGui PRIVATE -w)
 # -O3 optimisations
-target_compile_options(imgui PRIVATE -O3)
+target_compile_options(DearImGui PRIVATE -O3)
 # Enable CPU vectorisation
-target_compile_options(imgui PRIVATE -mavx2)
+target_compile_options(DearImGui PRIVATE -mavx2)
 # Link libraries
-target_link_libraries(imgui SDL3::SDL3)
+target_link_libraries(DearImGui SDL3::SDL3)
