@@ -52,9 +52,9 @@ void main()
     fragDrawID = meshIndex;
 
     vec3 N = normalize(currentMesh.normalMatrix * vertex.normal);
-    vec3 T = normalize(currentMesh.transform    * vec4(vertex.tangent.xyz, 0.0f)).xyz;
+    vec3 T = normalize(currentMesh.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
          T = normalize(T - dot(T, N) * N);
-    vec3 B = cross(N, T) * vertex.tangent.w;
+    vec3 B = normalize(cross(N, T)) * vertex.tangent.w;
 
     fragTBNMatrix = mat3(T, B, N);
 }

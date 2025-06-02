@@ -61,10 +61,13 @@ namespace Renderer
         void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
+
         void Update(const Vk::CommandBuffer& cmdBuffer);
         void ImGuiDisplay();
+
         void SubmitQueue();
         void EndFrame();
+
         void Resize();
 
         void InitImGui();

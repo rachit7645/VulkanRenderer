@@ -725,15 +725,6 @@ namespace Renderer
             return;
         }
 
-        Vk::CheckResult(vkWaitForFences(
-            m_context.device,
-            m_swapchain.presentFences.size(),
-            m_swapchain.presentFences.data(),
-            VK_TRUE,
-            std::numeric_limits<u64>::max()),
-            "Failed to wait for fences!"
-        );
-
         m_swapchain.RecreateSwapChain(m_context, m_cmdBufferAllocator);
 
         m_taa.ResetHistory();

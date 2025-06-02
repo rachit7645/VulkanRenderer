@@ -571,6 +571,15 @@ namespace Vk
 
     void Swapchain::DestroySwapchain(VkDevice device)
     {
+        Vk::CheckResult(vkWaitForFences(
+            device,
+            presentFences.size(),
+            presentFences.data(),
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fences!"
+        );
+
         for (auto& imageView : imageViews)
         {
             imageView.Destroy(device);
