@@ -17,13 +17,13 @@
 #include "ImageUploader.h"
 
 #include <ktx.h>
-#include <stb/stb_image.h>
 #include <vulkan/utility/vk_format_utils.h>
 
 #include "Util/Log.h"
 #include "Util/SIMD.h"
 #include "Util/Visitor.h"
 #include "Util/Enum.h"
+#include "Externals/STB.h"
 #include "Externals/Tracy.h"
 
 namespace Vk
@@ -35,10 +35,6 @@ namespace Vk
         const Vk::ImageUpload& upload
     )
     {
-        #ifdef ENGINE_PROFILE
-        ZoneScoped;
-        #endif
-
         return std::visit(Util::Visitor{
             [&] (const ImageUploadFile& file) -> Vk::Image
             {
@@ -71,10 +67,6 @@ namespace Vk
 
     void ImageUploader::FlushUploads(const Vk::CommandBuffer& cmdBuffer)
     {
-        #ifdef ENGINE_PROFILE
-        ZoneScoped;
-        #endif
-
         if (!HasPendingUploads())
         {
             return;

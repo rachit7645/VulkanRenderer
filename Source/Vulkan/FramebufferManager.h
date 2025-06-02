@@ -86,12 +86,12 @@ namespace Vk
 
     struct FramebufferView
     {
-        std::string          framebuffer       = {};
+        std::string          framebuffer    = {};
         u32                  sampledImageID = 0;
         u32                  storageImageID = 0;
-        FramebufferImageType type              = FramebufferImageType::Single2D;
-        FramebufferViewSize  size              = {};
-        Vk::ImageView        view              = {};
+        FramebufferImageType type           = FramebufferImageType::Single2D;
+        FramebufferViewSize  size           = {};
+        Vk::ImageView        view           = {};
     };
 
     struct FramebufferInitialState

@@ -182,9 +182,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/volk/volk.h
 	# ImGui Headers
     Externals/imgui/imgui.h
-    Externals/imgui/imgui_internal.h
     Externals/imgui/backends/imgui_impl_sdl2.h
-    Externals/imgui/backends/imgui_impl_vulkan.h
     # KTX Headers
     <ktx.h>
     # FMT Headers
@@ -213,6 +211,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <fastgltf/math.hpp>
     # Taskflow Headers
     Externals/taskflow/taskflow/taskflow.hpp
+    # STB Headers
+    Externals/stb/stb_image.h
     # C++ STL Headers
 	<map>
     <unordered_map>

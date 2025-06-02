@@ -14,5 +14,9 @@
  * limitations under the License.
  */
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "STB.h"
+#ifndef STB_H
+#define STB_H
+
+#include "stb/stb_image.h"
+
+#endif

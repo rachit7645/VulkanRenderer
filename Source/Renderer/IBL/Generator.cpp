@@ -16,8 +16,6 @@
 
 #include "Generator.h"
 
-#include <stb/stb_image.h>
-
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Externals/GLM.h"

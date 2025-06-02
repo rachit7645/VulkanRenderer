@@ -34,14 +34,13 @@ add_subdirectory(volk)
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Tracy Config
-    set(TRACY_ENABLE         ON  CACHE BOOL "Enable Tracy"         FORCE)
-    set(TRACY_ON_DEMAND      ON  CACHE BOOL "On-Demand Mode"       FORCE)
-    set(TRACY_ONLY_LOCALHOST ON  CACHE BOOL "Localhost Only Mode"  FORCE)
-    set(TRACY_INSTALL        OFF CACHE BOOL "Disable Installation" FORCE)
-    set(TRACY_CALLSTACK      ON  CACHE BOOL "Enable Callstack"     FORCE)
+    set(TRACY_ENABLE         ON  CACHE BOOL "Enable Tracy"        FORCE)
+    set(TRACY_ON_DEMAND      ON  CACHE BOOL "On-Demand Mode"      FORCE)
+    set(TRACY_ONLY_LOCALHOST ON  CACHE BOOL "Localhost Only Mode" FORCE)
+    set(TRACY_CALLSTACK      ON  CACHE BOOL "Enable Callstack"    FORCE)
 
-    # Add Tracy
-    add_subdirectory(tracy)
+    # Add Tracy (Requires v0.11.1!)
+    add_subdirectory(tracy EXCLUDE_FROM_ALL)
 endif()
 
 # ImGui source files
