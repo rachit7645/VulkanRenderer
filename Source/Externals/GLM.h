@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef RACHIT_GLM_H
-#define RACHIT_GLM_H
+#ifndef EXTERNALS_GLM_H
+#define EXTERNALS_GLM_H
 
 #define GLM_FORCE_INTRINSICS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

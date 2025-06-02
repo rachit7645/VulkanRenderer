@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef EXT_VMA_H
-#define EXT_VMA_H
+#ifndef EXTERNALS_VMA_H
+#define EXTERNALS_VMA_H
 
 // Disable warnings
 #if defined(__GNUC__) && !defined(__clang__)

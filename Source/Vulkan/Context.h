@@ -18,13 +18,13 @@
 #define VK_CONTEXT_H
 
 #include <vulkan/vulkan.h>
-#include <SDL3/SDL.h>
 
 #include "DebugCallback.h"
 #include "QueueFamilyIndices.h"
 #include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 #include "Externals/VMA.h"
+#include "Externals/SDL.h"
 
 namespace Vk
 {

@@ -24,7 +24,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL3     REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan   REQUIRED)
 find_package(fastgltf REQUIRED)
 find_package(simdjson REQUIRED)
@@ -172,8 +171,8 @@ add_executable(VulkanRenderer
 # Precompiled Headers
 target_precompile_headers(VulkanRenderer PRIVATE
 	# SDL headers
-	<SDL3/SDL.h>
-	<SDL3/SDL_vulkan.h>
+    Externals/sdl/include/SDL3/SDL.h
+    Externals/sdl/include/SDL3/SDL_vulkan.h
 	# Vulkan headers
 	<vulkan/vulkan.h>
 	<vulkan/vulkan_core.h>
@@ -306,7 +305,7 @@ add_dependencies(VulkanRenderer Shaders)
 target_link_libraries(VulkanRenderer
     Vulkan::Headers
     volk::volk
-	SDL3::SDL3
+    SDL3::SDL3-shared
 	fmt::fmt
 	fastgltf::fastgltf
     simdjson::simdjson
@@ -322,6 +321,13 @@ install(
 	ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
 	LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
 	RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
+)
+
+# Manually copy SDL3.dll/libSDL3.so
+add_custom_command(
+    TARGET VulkanRenderer POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_FILE:SDL3::SDL3-shared> ${ENGINE_INSTALL_DIR}
+    VERBATIM
 )
 
 # Store application name at config time

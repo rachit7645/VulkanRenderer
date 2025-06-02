@@ -17,10 +17,9 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <SDL3/SDL.h>
-
 #include "Inputs.h"
 #include "Externals/GLM.h"
+#include "Externals/SDL.h"
 
 namespace Engine
 {

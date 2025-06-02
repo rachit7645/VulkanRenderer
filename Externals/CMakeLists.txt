@@ -20,7 +20,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
 # Volk Config
@@ -35,6 +34,7 @@ set(GLM_ENABLE_SIMD_AVX2 ON CACHE BOOL "Enable AVX2" FORCE)
 add_subdirectory(vma)
 add_subdirectory(volk)
 add_subdirectory(glm)
+add_subdirectory(sdl EXCLUDE_FROM_ALL)
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
@@ -70,7 +70,7 @@ target_precompile_headers(DearImGui PRIVATE
 )
 
 # SDL2 Includes
-target_include_directories(DearImGui PRIVATE ${SDL3_INCLUDE_DIRS})
+target_include_directories(DearImGui PRIVATE sdl/include/)
 # ImGUI Includes
 target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
@@ -82,4 +82,4 @@ target_compile_options(DearImGui PRIVATE -O3)
 # Enable CPU vectorisation
 target_compile_options(DearImGui PRIVATE -mavx2)
 # Link libraries
-target_link_libraries(DearImGui SDL3::SDL3)
+target_link_libraries(DearImGui SDL3::SDL3-shared)

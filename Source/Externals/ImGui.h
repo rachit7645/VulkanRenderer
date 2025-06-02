@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef EXT_IMGUI_H
-#define EXT_IMGUI_H
+#ifndef EXTERNALS_IMGUI_H
+#define EXTERNALS_IMGUI_H
 
 #include "imgui/imgui.h"
 #include "imgui/misc/cpp/imgui_stdlib.h"

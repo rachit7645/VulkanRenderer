@@ -17,6 +17,7 @@
 #include "Inputs.h"
 
 #include "Externals/ImGui.h"
+#include "Util/Types.h"
 
 namespace Engine
 {

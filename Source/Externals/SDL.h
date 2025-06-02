@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef EXTERNALS_STB_H
-#define EXTERNALS_STB_H
+#ifndef EXTERNALS_SDL_H
+#define EXTERNALS_SDL_H
 
-#include "stb/stb_image.h"
+#include "sdl/include/SDL3/SDL.h"
+#include "sdl/include/SDL3/SDL_vulkan.h"
 
 #endif
