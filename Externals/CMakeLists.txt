@@ -15,12 +15,20 @@
 cmake_minimum_required(VERSION 3.25)
 project(Externals)
 
+# Install location
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
+
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
 find_package(Vulkan REQUIRED)
+
+# Check for LTO
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
 # Volk Config
 set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE)
@@ -48,6 +56,13 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     add_subdirectory(tracy EXCLUDE_FROM_ALL)
 endif()
 
+# Manually copy SDL3.dll/libSDL3.so (Yes, this is the recommended way to do it)
+install(
+    FILES $<TARGET_FILE:SDL3::SDL3-shared>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)
+
 # ImGui source files
 add_library(DearImGui STATIC
 	imgui/imgui.cpp
@@ -69,6 +84,13 @@ target_precompile_headers(DearImGui PRIVATE
 	imgui/backends/imgui_impl_sdl3.h
 )
 
+# Enable LTO
+if (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Profile)
+    if (LTOSupported)
+        set_property(TARGET DearImGui PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
+endif()
+
 # SDL2 Includes
 target_include_directories(DearImGui PRIVATE sdl/include/)
 # ImGUI Includes
@@ -83,3 +105,11 @@ target_compile_options(DearImGui PRIVATE -O3)
 target_compile_options(DearImGui PRIVATE -mavx2)
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
+
+# Install Dear ImGui
+install(
+    TARGETS DearImGui
+    ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
+    LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
+    RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
+)

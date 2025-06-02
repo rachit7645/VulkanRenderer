@@ -17,7 +17,7 @@ project(VulkanRenderer)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-set(ENGINE_INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin)
+set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
@@ -34,8 +34,22 @@ find_package(KTX      REQUIRED)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
-# Add sub-projects
+# Save current flags
+set(ORIGINAL_C_FLAGS   ${CMAKE_C_FLAGS})
+set(ORIGINAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+# Force Release flags
+set(CMAKE_C_FLAGS   ${CMAKE_C_FLAGS_RELEASE})
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
+
+# Externals
 add_subdirectory(Externals)
+
+# Restore original flags
+set(CMAKE_C_FLAGS   ${ORIGINAL_C_FLAGS})
+set(CMAKE_CXX_FLAGS ${ORIGINAL_CXX_FLAGS})
+
+# Assets
 add_subdirectory(Assets)
 
 # Main executable
@@ -269,7 +283,7 @@ endif()
 if (CMAKE_BUILD_TYPE STREQUAL Release)
     # Enable LTO
     if (LTOSupported)
-        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+        set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
 
     # Release Mode
@@ -280,7 +294,7 @@ endif()
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Enable LTO
     if (LTOSupported)
-        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+        set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
 
     # Engine Debug Mode
@@ -290,7 +304,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Enable debug output
     target_compile_options(VulkanRenderer PRIVATE -g)
     # Add Tracy
-    target_link_libraries(VulkanRenderer Tracy::TracyClient)
+    target_link_libraries(VulkanRenderer TracyClient)
     # Add Tracy Headers
     target_precompile_headers(VulkanRenderer PRIVATE
         Externals/tracy/public/tracy/Tracy.hpp
@@ -318,16 +332,9 @@ target_link_libraries(VulkanRenderer
 # Install
 install(
 	TARGETS VulkanRenderer
-	ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
+    ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
 	LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
 	RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
-)
-
-# Manually copy SDL3.dll/libSDL3.so
-add_custom_command(
-    TARGET VulkanRenderer POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E copy $<TARGET_FILE:SDL3::SDL3-shared> ${ENGINE_INSTALL_DIR}
-    VERBATIM
 )
 
 # Store application name at config time
