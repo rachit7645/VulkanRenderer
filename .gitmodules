@@ -22,3 +22,6 @@
 [submodule "Simple DirectMedia Layer"]
 	path = Externals/sdl
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "fastgltf"]
+	path = Externals/fastgltf
+	url = https://github.com/spnda/fastgltf.git

@@ -20,12 +20,11 @@
 #include <vector>
 #include <string_view>
 
-#include <fastgltf/types.hpp>
-
 #include "Mesh.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
+#include "Externals/FastglTF.h"
 
 namespace Models
 {

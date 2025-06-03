@@ -39,6 +39,7 @@
 #include "glm/glm/ext/vector_uint4.hpp"
 
 // Core operations
+#include "glm/glm/trigonometric.hpp"
 #include "glm/glm/geometric.hpp"
 #include "glm/glm/matrix.hpp"
 #include "glm/glm/vector_relational.hpp"
@@ -48,7 +49,7 @@
 #include "glm/glm/gtc/matrix_transform.hpp"
 
 // Fastgltf math types
-#include <fastgltf/types.hpp>
+#include "FastglTF.h"
 
 namespace glm
 {

@@ -25,7 +25,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
 find_package(Vulkan   REQUIRED)
-find_package(fastgltf REQUIRED)
 find_package(simdjson REQUIRED)
 find_package(fmt      REQUIRED)
 find_package(KTX      REQUIRED)
@@ -209,18 +208,21 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/glm/glm/mat4x4.hpp
     Externals/glm/glm/ext/vector_int2.hpp
     Externals/glm/glm/ext/vector_int4.hpp
+    Externals/glm/glm/ext/vector_uint2.hpp
     Externals/glm/glm/ext/vector_uint3.hpp
     Externals/glm/glm/trigonometric.hpp
     Externals/glm/glm/geometric.hpp
+    Externals/glm/glm/vector_relational.hpp
+    Externals/glm/glm/gtc/type_ptr.hpp
     Externals/glm/glm/gtc/matrix_transform.hpp
     # VMA Headers
 	Externals/vma/include/vk_mem_alloc.h
     # fastgltf Headers
-    <fastgltf/core.hpp>
-    <fastgltf/types.hpp>
-    <fastgltf/tools.hpp>
-    <fastgltf/glm_element_traits.hpp>
-    <fastgltf/math.hpp>
+    Externals/fastgltf/include/fastgltf/core.hpp
+    Externals/fastgltf/include/fastgltf/types.hpp
+    Externals/fastgltf/include/fastgltf/tools.hpp
+    Externals/fastgltf/include/fastgltf/glm_element_traits.hpp
+    Externals/fastgltf/include/fastgltf/math.hpp
     # Taskflow Headers
     Externals/taskflow/taskflow/taskflow.hpp
     # STB Headers

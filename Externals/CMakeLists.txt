@@ -41,11 +41,31 @@ set(VOLK_INSTALL        OFF CACHE BOOL "Disable volk installation"         FORCE
 set(GLM_ENABLE_CXX_20    ON CACHE BOOL "Use C++20"   FORCE)
 set(GLM_ENABLE_SIMD_AVX2 ON CACHE BOOL "Enable AVX2" FORCE)
 
+# fastgltf Config
+set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
+
 # External Libraries
 add_subdirectory(vma)
 add_subdirectory(volk)
 add_subdirectory(glm)
-add_subdirectory(sdl EXCLUDE_FROM_ALL)
+
+# Excluded
+add_subdirectory(sdl      EXCLUDE_FROM_ALL)
+add_subdirectory(fastgltf EXCLUDE_FROM_ALL)
+
+# Manually install SDL3.dll/libSDL3.so (Yes, this is the recommended way to do it)
+install(
+    FILES $<TARGET_FILE:SDL3::SDL3-shared>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)
+
+# Manually install libfastgltf.(dll/so)
+install(
+    FILES $<TARGET_FILE:fastgltf::fastgltf>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
@@ -65,13 +85,6 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
         COMPONENT Runtime
     )
 endif()
-
-# Manually copy SDL3.dll/libSDL3.so (Yes, this is the recommended way to do it)
-install(
-    FILES $<TARGET_FILE:SDL3::SDL3-shared>
-    DESTINATION ${ENGINE_INSTALL_DIR}
-    COMPONENT Runtime
-)
 
 # ImGui source files
 add_library(DearImGui SHARED

@@ -16,9 +16,6 @@
 
 #include "Model.h"
 
-#include <fastgltf/tools.hpp>
-#include <fastgltf/glm_element_traits.hpp>
-
 #include "GPU/Vertex.h"
 #include "Util/Log.h"
 #include "Util/Files.h"
@@ -482,7 +479,7 @@ namespace Models
 
     glm::mat4 Model::GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base)
     {
-        return std::visit(fastgltf::visitor {
+        return std::visit(Util::Visitor {
             [&] (const fastgltf::math::fmat4x4& matrix)
             {
                 return base * glm::fastgltf_cast(matrix);
@@ -657,7 +654,7 @@ namespace Models
 
         const auto& image = asset.images[imageIndex];
 
-        return std::visit(fastgltf::visitor{
+        return std::visit(Util::Visitor{
             [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
             {
                 Logger::Error
@@ -717,7 +714,7 @@ namespace Models
                         .type   = type,
                         .flags  = Vk::ImageUploadFlags::None,
                         .source = Vk::ImageUploadMemory{
-                            .name = image.name.c_str(),
+                            .name = std::string(image.name),
                             .data = std::vector(arrayBegin, arrayEnd)
                         }
                     }
@@ -728,7 +725,7 @@ namespace Models
                 const auto& bufferView = asset.bufferViews[view.bufferViewIndex];
                 const auto& buffer     = asset.buffers[bufferView.bufferIndex];
 
-                return std::visit(fastgltf::visitor {
+                return std::visit(Util::Visitor {
                     // Because we specify LoadExternalBuffers. all buffers are already loaded into a vector.
                     [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
                     {
@@ -754,7 +751,7 @@ namespace Models
                                 .type   = type,
                                 .flags  = Vk::ImageUploadFlags::None,
                                 .source = Vk::ImageUploadMemory{
-                                    .name = image.name.c_str(),
+                                    .name = std::string(image.name),
                                     .data = std::vector(arrayBegin, arrayEnd)
                                 }
                             }
