@@ -285,7 +285,6 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
     if (LTOSupported)
         set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
-
     # Release Mode
     target_compile_definitions(VulkanRenderer PRIVATE NDEBUG)
 endif()
@@ -296,7 +295,6 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     if (LTOSupported)
         set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
-
     # Engine Debug Mode
     target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
     # Engine Profile Mode

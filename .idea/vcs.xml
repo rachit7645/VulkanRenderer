@@ -4,6 +4,7 @@
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/sdl" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/stb" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/taskflow" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/tracy" vcs="Git" />

@@ -30,9 +30,12 @@ find_package(Vulkan REQUIRED)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
+# Build shared libraries
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
 # Volk Config
 set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE)
-set(VOLK_INSTALL        OFF CACHE BOOL "Enable volk installation"          FORCE)
+set(VOLK_INSTALL        OFF CACHE BOOL "Disable volk installation"         FORCE)
 
 # GLM Config
 set(GLM_ENABLE_CXX_20    ON CACHE BOOL "Use C++20"   FORCE)
@@ -47,13 +50,20 @@ add_subdirectory(sdl EXCLUDE_FROM_ALL)
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Tracy Config
-    set(TRACY_ENABLE         ON  CACHE BOOL "Enable Tracy"        FORCE)
-    set(TRACY_ON_DEMAND      ON  CACHE BOOL "On-Demand Mode"      FORCE)
-    set(TRACY_ONLY_LOCALHOST ON  CACHE BOOL "Localhost Only Mode" FORCE)
-    set(TRACY_CALLSTACK      ON  CACHE BOOL "Enable Callstack"    FORCE)
+    set(TRACY_ENABLE         ON CACHE BOOL "Enable Tracy"         FORCE)
+    set(TRACY_ON_DEMAND      ON CACHE BOOL "On-Demand Mode"       FORCE)
+    set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "Localhost Only Mode"  FORCE)
+    set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
 
     # Add Tracy (Requires v0.11.1!)
     add_subdirectory(tracy EXCLUDE_FROM_ALL)
+
+    # Manually copy libTracyClient.(dll/so)
+    install(
+        FILES $<TARGET_FILE:TracyClient>
+        DESTINATION ${ENGINE_INSTALL_DIR}
+        COMPONENT Runtime
+    )
 endif()
 
 # Manually copy SDL3.dll/libSDL3.so (Yes, this is the recommended way to do it)
@@ -64,7 +74,7 @@ install(
 )
 
 # ImGui source files
-add_library(DearImGui STATIC
+add_library(DearImGui SHARED
 	imgui/imgui.cpp
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
@@ -83,13 +93,6 @@ target_precompile_headers(DearImGui PRIVATE
 	imgui/imstb_truetype.h
 	imgui/backends/imgui_impl_sdl3.h
 )
-
-# Enable LTO
-if (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Profile)
-    if (LTOSupported)
-        set_property(TARGET DearImGui PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-endif()
 
 # SDL2 Includes
 target_include_directories(DearImGui PRIVATE sdl/include/)
