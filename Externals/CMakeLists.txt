@@ -34,36 +34,45 @@ set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
 # Build shared libraries
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
-function(add_subdirectory_release directory)
+function(engine_add_external directory)
     # Parse optional arguments
-    set(options EXCLUDE_FROM_ALL)
-    set(oneValueArgs "")
+    set(options EXCLUDE_FROM_ALL FORCE_RELEASE)
+    set(oneValueArgs INSTALL_TARGET)
     set(multiValueArgs "")
     cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
     # Save current build type
     set(ORIGINAL_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 
-    # Force Release build type
-    set(CMAKE_BUILD_TYPE Release)
+    # Force Release
+    if(ARG_FORCE_RELEASE)
+        set(CMAKE_BUILD_TYPE Release)
+    endif()
 
-    # Add
+    # Add subdirectory
     if(ARG_EXCLUDE_FROM_ALL)
         add_subdirectory(${directory} EXCLUDE_FROM_ALL)
     else()
         add_subdirectory(${directory})
     endif()
 
+    # Handle manual installation
+    if(ARG_INSTALL_TARGET)
+        install(
+            FILES $<TARGET_FILE:${ARG_INSTALL_TARGET}>
+            DESTINATION ${ENGINE_INSTALL_DIR}
+            COMPONENT Runtime
+        )
+    endif()
+
     # Restore original build type
-    set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
+    if(ARG_FORCE_RELEASE)
+        set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
+    endif()
 endfunction()
 
 # Required packages
 find_package(Vulkan REQUIRED)
-
-# Check for LTO
-include(CheckIPOSupported)
-check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
 # Volk Config
 set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE)
@@ -80,50 +89,13 @@ set(FMT_INSTALL OFF CACHE BOOL "Disable fmt installation" FORCE)
 set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
 
 # External Libraries
-add_subdirectory_release(vma)
-add_subdirectory_release(volk)
-add_subdirectory_release(glm)
-add_subdirectory        (fmt)
-
-# Excluded
-add_subdirectory        (sdl      EXCLUDE_FROM_ALL)
-add_subdirectory_release(simdjson EXCLUDE_FROM_ALL)
-add_subdirectory_release(fastgltf EXCLUDE_FROM_ALL)
-
-# Manually install libglm.(dll/so)
-install(
-    FILES $<TARGET_FILE:glm::glm>
-    DESTINATION ${ENGINE_INSTALL_DIR}
-    COMPONENT Runtime
-)
-
-# Manually install libfmt.(dll/so)
-install(
-    FILES $<TARGET_FILE:fmt::fmt>
-    DESTINATION ${ENGINE_INSTALL_DIR}
-    COMPONENT Runtime
-)
-
-# Manually install SDL3.dll/libSDL3.so (Yes, this is the recommended way to do it)
-install(
-    FILES $<TARGET_FILE:SDL3::SDL3-shared>
-    DESTINATION ${ENGINE_INSTALL_DIR}
-    COMPONENT Runtime
-)
-
-# Manually install libsimdjson.(dll/so)
-install(
-    FILES $<TARGET_FILE:simdjson::simdjson>
-    DESTINATION ${ENGINE_INSTALL_DIR}
-    COMPONENT Runtime
-)
-
-# Manually install libfastgltf.(dll/so)
-install(
-    FILES $<TARGET_FILE:fastgltf::fastgltf>
-    DESTINATION ${ENGINE_INSTALL_DIR}
-    COMPONENT Runtime
-)
+engine_add_external(vma      FORCE_RELEASE                                                   )
+engine_add_external(volk     FORCE_RELEASE                                                   )
+engine_add_external(glm      FORCE_RELEASE                  INSTALL_TARGET glm::glm          )
+engine_add_external(fmt                                     INSTALL_TARGET fmt::fmt          )
+engine_add_external(sdl                    EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(simdjson FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
+engine_add_external(fastgltf FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
@@ -134,14 +106,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
 
     # Add Tracy (Requires v0.11.1!)
-    add_subdirectory(tracy EXCLUDE_FROM_ALL)
-
-    # Manually copy libTracyClient.(dll/so)
-    install(
-        FILES $<TARGET_FILE:TracyClient>
-        DESTINATION ${ENGINE_INSTALL_DIR}
-        COMPONENT Runtime
-    )
+    engine_add_external(tracy FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
 endif()
 
 # ImGui source files
