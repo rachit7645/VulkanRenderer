@@ -3,6 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/fastgltf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/fmt" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/imgui" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/sdl" vcs="Git" />

@@ -25,29 +25,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
 find_package(Vulkan REQUIRED)
-find_package(fmt    REQUIRED)
 find_package(KTX    REQUIRED)
 
 # Check for LTO
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
-# Save current flags
-set(ORIGINAL_C_FLAGS   ${CMAKE_C_FLAGS})
-set(ORIGINAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-
-# Force Release flags
-set(CMAKE_C_FLAGS   ${CMAKE_C_FLAGS_RELEASE})
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
-
-# Externals
+# Sub-directories
 add_subdirectory(Externals)
-
-# Restore original flags
-set(CMAKE_C_FLAGS   ${ORIGINAL_C_FLAGS})
-set(CMAKE_CXX_FLAGS ${ORIGINAL_CXX_FLAGS})
-
-# Assets
 add_subdirectory(Assets)
 
 # Main executable
@@ -196,10 +181,10 @@ target_precompile_headers(VulkanRenderer PRIVATE
     # KTX Headers
     <ktx.h>
     # FMT Headers
-    <fmt/core.h>
-    <fmt/format.h>
-    <fmt/chrono.h>
-	<fmt/color.h>
+    Externals/fmt/include/fmt/core.h
+    Externals/fmt/include/fmt/format.h
+    Externals/fmt/include/fmt/chrono.h
+	Externals/fmt/include/fmt/color.h
     # GLM Headers
     Externals/glm/glm/vec2.hpp
     Externals/glm/glm/vec3.hpp

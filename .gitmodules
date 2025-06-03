@@ -28,3 +28,6 @@
 [submodule "simdjson"]
 	path = Externals/simdjson
 	url = https://github.com/simdjson/simdjson.git
+[submodule "{fmt}"]
+	path = Externals/fmt
+	url = https://github.com/fmtlib/fmt.git

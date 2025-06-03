@@ -16,11 +16,6 @@
 
 #include "Window.h"
 
-#include <thread>
-#include <SDL3/SDL_vulkan.h>
-
-#include "Externals/ImGui.h"
-
 #include "Inputs.h"
 #include "Util/Log.h"
 

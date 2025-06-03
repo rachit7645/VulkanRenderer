@@ -17,7 +17,6 @@
 #include "SIMD.h"
 
 #include <immintrin.h>
-#include <thread>
 
 namespace Util
 {

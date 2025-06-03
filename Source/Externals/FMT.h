@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-#include <SDL3/SDL_main.h>
+#ifndef EXTERNALS_FMT_H
+#define EXTERNALS_FMT_H
 
-#include "Util/Unused.h"
-#include "Engine/AppInstance.h"
-#include "Externals/Tracy.h"
+#include "fmt/include/fmt/core.h"
+#include "fmt/include/fmt/format.h"
+#include "fmt/include/fmt/chrono.h"
+#include "fmt/include/fmt/color.h"
 
-int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
-{
-    #ifdef ENGINE_DEBUG
-    // Set stderr to line buffering mode (does this even work on windows lol)
-    setvbuf(stderr, nullptr, _IOLBF, 0);
-    #endif
-
-    #ifdef ENGINE_PROFILE
-    while(!tracy::GetProfiler().IsConnected())
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-    #endif
-
-    Engine::AppInstance().Run();
-
-    return EXIT_SUCCESS;
-}
+#endif

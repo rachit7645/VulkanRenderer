@@ -21,13 +21,11 @@
 #include <source_location>
 #include <cstdlib>
 
-#include <fmt/format.h>
-#include <fmt/color.h>
-
 #include "Time.h"
 #include "Types.h"
 #include "Files.h"
 #include "Unused.h"
+#include "Externals/FMT.h"
 
 namespace Logger
 {

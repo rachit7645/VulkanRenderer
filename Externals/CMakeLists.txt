@@ -23,15 +23,47 @@ set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Save current flags
+set(ORIGINAL_C_FLAGS   ${CMAKE_C_FLAGS})
+set(ORIGINAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+# Force Release flags
+set(CMAKE_C_FLAGS   ${CMAKE_C_FLAGS_RELEASE})
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
+
+# Build shared libraries
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
+function(add_subdirectory_release directory)
+    # Parse optional arguments
+    set(options EXCLUDE_FROM_ALL)
+    set(oneValueArgs "")
+    set(multiValueArgs "")
+    cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
+    # Save current build type
+    set(ORIGINAL_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+
+    # Force Release build type
+    set(CMAKE_BUILD_TYPE Release)
+
+    # Add
+    if(ARG_EXCLUDE_FROM_ALL)
+        add_subdirectory(${directory} EXCLUDE_FROM_ALL)
+    else()
+        add_subdirectory(${directory})
+    endif()
+
+    # Restore original build type
+    set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
+endfunction()
+
 # Required packages
 find_package(Vulkan REQUIRED)
 
 # Check for LTO
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
-
-# Build shared libraries
-option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
 # Volk Config
 set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE)
@@ -41,18 +73,36 @@ set(VOLK_INSTALL        OFF CACHE BOOL "Disable volk installation"         FORCE
 set(GLM_ENABLE_CXX_20    ON CACHE BOOL "Use C++20"   FORCE)
 set(GLM_ENABLE_SIMD_AVX2 ON CACHE BOOL "Enable AVX2" FORCE)
 
+# fmt Config
+set(FMT_INSTALL OFF CACHE BOOL "Disable fmt installation" FORCE)
+
 # fastgltf Config
 set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
 
 # External Libraries
-add_subdirectory(vma)
-add_subdirectory(volk)
-add_subdirectory(glm)
+add_subdirectory_release(vma)
+add_subdirectory_release(volk)
+add_subdirectory_release(glm)
+add_subdirectory        (fmt)
 
 # Excluded
-add_subdirectory(sdl      EXCLUDE_FROM_ALL)
-add_subdirectory(simdjson EXCLUDE_FROM_ALL)
-add_subdirectory(fastgltf EXCLUDE_FROM_ALL)
+add_subdirectory        (sdl      EXCLUDE_FROM_ALL)
+add_subdirectory_release(simdjson EXCLUDE_FROM_ALL)
+add_subdirectory_release(fastgltf EXCLUDE_FROM_ALL)
+
+# Manually install libglm.(dll/so)
+install(
+    FILES $<TARGET_FILE:glm::glm>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)
+
+# Manually install libfmt.(dll/so)
+install(
+    FILES $<TARGET_FILE:fmt::fmt>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)
 
 # Manually install SDL3.dll/libSDL3.so (Yes, this is the recommended way to do it)
 install(
@@ -137,3 +187,7 @@ install(
     LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
     RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
 )
+
+# Restore original flags
+set(CMAKE_C_FLAGS   ${ORIGINAL_C_FLAGS})
+set(CMAKE_CXX_FLAGS ${ORIGINAL_CXX_FLAGS})
