@@ -17,10 +17,9 @@
 #ifndef JSON_H
 #define JSON_H
 
-#include <simdjson.h>
-
 #include "GPU/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
+#include "Externals/SIMDJSON.h"
 
 namespace JSON
 {

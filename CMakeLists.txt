@@ -24,10 +24,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(Vulkan   REQUIRED)
-find_package(simdjson REQUIRED)
-find_package(fmt      REQUIRED)
-find_package(KTX      REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(fmt    REQUIRED)
+find_package(KTX    REQUIRED)
 
 # Check for LTO
 include(CheckIPOSupported)
@@ -217,6 +216,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/glm/glm/gtc/matrix_transform.hpp
     # VMA Headers
 	Externals/vma/include/vk_mem_alloc.h
+    # simdjson Headers
+    Externals/simdjson/include/simdjson.h
     # fastgltf Headers
     Externals/fastgltf/include/fastgltf/core.hpp
     Externals/fastgltf/include/fastgltf/types.hpp

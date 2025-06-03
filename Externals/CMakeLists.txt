@@ -51,11 +51,19 @@ add_subdirectory(glm)
 
 # Excluded
 add_subdirectory(sdl      EXCLUDE_FROM_ALL)
+add_subdirectory(simdjson EXCLUDE_FROM_ALL)
 add_subdirectory(fastgltf EXCLUDE_FROM_ALL)
 
 # Manually install SDL3.dll/libSDL3.so (Yes, this is the recommended way to do it)
 install(
     FILES $<TARGET_FILE:SDL3::SDL3-shared>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)
+
+# Manually install libsimdjson.(dll/so)
+install(
+    FILES $<TARGET_FILE:simdjson::simdjson>
     DESTINATION ${ENGINE_INSTALL_DIR}
     COMPONENT Runtime
 )

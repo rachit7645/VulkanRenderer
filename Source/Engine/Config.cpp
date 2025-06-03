@@ -16,10 +16,9 @@
 
 #include "Config.h"
 
-#include <simdjson.h>
-
 #include "Util/JSON.h"
 #include "Util/Log.h"
+#include "Externals/SIMDJSON.h"
 
 namespace Engine
 {

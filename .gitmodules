@@ -25,3 +25,6 @@
 [submodule "fastgltf"]
 	path = Externals/fastgltf
 	url = https://github.com/spnda/fastgltf.git
+[submodule "simdjson"]
+	path = Externals/simdjson
+	url = https://github.com/simdjson/simdjson.git

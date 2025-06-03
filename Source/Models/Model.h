@@ -24,7 +24,7 @@
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
-#include "Externals/FastglTF.h"
+#include "Externals/FastGLTF.h"
 
 namespace Models
 {

@@ -49,7 +49,7 @@
 #include "glm/glm/gtc/matrix_transform.hpp"
 
 // Fastgltf math types
-#include "FastglTF.h"
+#include "FastGLTF.h"
 
 namespace glm
 {
