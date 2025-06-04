@@ -19,7 +19,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Deferred/GBuffer.h"
 
-namespace Renderer::GBuffer::Opaque::DoubleSided
+namespace Renderer::GBuffer::DoubleSided::Opaque
 {
     Pipeline::Pipeline
     (

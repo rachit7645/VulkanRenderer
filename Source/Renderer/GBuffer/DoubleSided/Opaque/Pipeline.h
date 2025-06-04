@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef GBUFFER_PIPELINE_H
-#define GBUFFER_PIPELINE_H
+#ifndef GBUFFER_DOUBLE_SIDED_PIPELINE_H
+#define GBUFFER_DOUBLE_SIDED_PIPELINE_H
 
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::GBuffer::Opaque
+namespace Renderer::GBuffer::DoubleSided::Opaque
 {
     class Pipeline : public Vk::Pipeline
     {

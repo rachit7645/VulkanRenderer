@@ -22,9 +22,9 @@
 #define saturate(x) clamp(x, 0.0f, 1.0f)
 
 // Get max component
-float max3(vec3 x)
+float max3(vec3 v)
 {
-    return max(x.r, max(x.g, x.b));
+    return max(v.x, max(v.y, v.z));
 }
 
 float rcp(float x)

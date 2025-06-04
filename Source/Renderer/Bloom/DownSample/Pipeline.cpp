@@ -16,10 +16,10 @@
 
 #include "Pipeline.h"
 
-#include "../../../../Shared/Bloom/DownSample.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "Bloom/DownSample.h"
 
 namespace Renderer::Bloom::DownSample
 {

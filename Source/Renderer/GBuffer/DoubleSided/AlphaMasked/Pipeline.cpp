@@ -20,7 +20,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Deferred/GBuffer.h"
 
-namespace Renderer::GBuffer::AlphaMasked
+namespace Renderer::GBuffer::DoubleSided::AlphaMasked
 {
     Pipeline::Pipeline
     (
@@ -42,11 +42,11 @@ namespace Renderer::GBuffer::AlphaMasked
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
-            .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Deferred/GBuffer/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Deferred/GBuffer/GBuffer.vert",                 VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/GBuffer/DoubleSided/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
             .AddBlendAttachment(
                 VK_FALSE,
@@ -121,7 +121,7 @@ namespace Renderer::GBuffer::AlphaMasked
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle, "GBuffer/AlphaMasked/Pipeline");
-        Vk::SetDebugName(context.device, layout, "GBuffer/AlphaMasked/Pipeline/Layout");
+        Vk::SetDebugName(context.device, handle, "GBuffer/AlphaMasked/DoubleSided/Pipeline");
+        Vk::SetDebugName(context.device, layout, "GBuffer/AlphaMasked/DoubleSided/Pipeline/Layout");
     }
 }

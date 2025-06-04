@@ -153,8 +153,8 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
-        [[nodiscard]] bool DoesFramebufferExist(const std::string_view name);
-        [[nodiscard]] bool DoesFramebufferViewExist(const std::string_view name);
+        [[nodiscard]] bool DoesFramebufferExist(const std::string_view name) const;
+        [[nodiscard]] bool DoesFramebufferViewExist(const std::string_view name) const;
 
         [[nodiscard]] Framebuffer& GetFramebuffer(const std::string_view name);
         [[nodiscard]] const Framebuffer& GetFramebuffer(const std::string_view name) const;
@@ -173,10 +173,10 @@ namespace Vk
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
     private:
-        FramebufferSize GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue);
+        FramebufferSize GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const;
 
         template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
-        void AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage);
+        static void AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage);
 
         void AllocateDescriptors
         (

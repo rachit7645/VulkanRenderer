@@ -49,7 +49,7 @@ namespace Renderer::Buffers
         usize FIF,
         usize frameIndex,
         VmaAllocator allocator,
-        VkExtent2D swapchainExtent,
+        VkExtent2D extent,
         const Engine::Scene& scene
     )
     {
@@ -67,14 +67,14 @@ namespace Renderer::Buffers
         const auto projection = Maths::CreateInfiniteProjectionReverseZ
         (
             scene.camera.FOV,
-            static_cast<f32>(swapchainExtent.width) /
-            static_cast<f32>(swapchainExtent.height),
+            static_cast<f32>(extent.width) /
+            static_cast<f32>(extent.height),
             Renderer::NEAR_PLANE
         );
 
         auto jitter = Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT];
         jitter     -= glm::vec2(0.5f);
-        jitter     /= glm::vec2(swapchainExtent.width, swapchainExtent.height);
+        jitter     /= glm::vec2(extent.width, extent.height);
 
         auto jitteredProjection = projection;
 

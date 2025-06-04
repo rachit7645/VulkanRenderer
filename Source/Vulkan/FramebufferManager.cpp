@@ -214,17 +214,11 @@ namespace Vk
             switch (framebuffer.imageType)
             {
             case FramebufferImageType::Single2D:
-                createInfo.flags = 0;
-                break;
-
             case FramebufferImageType::Array2D:
                 createInfo.flags = 0;
                 break;
 
             case FramebufferImageType::Cube:
-                createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-                break;
-
             case FramebufferImageType::ArrayCube:
                 createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
                 break;
@@ -339,12 +333,12 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
-    bool FramebufferManager::DoesFramebufferExist(const std::string_view name)
+    bool FramebufferManager::DoesFramebufferExist(const std::string_view name) const
     {
         return m_framebuffers.contains(name.data());
     }
 
-    bool FramebufferManager::DoesFramebufferViewExist(const std::string_view name)
+    bool FramebufferManager::DoesFramebufferViewExist(const std::string_view name) const
     {
         return m_framebufferViews.contains(name.data());
     }
@@ -438,7 +432,7 @@ namespace Vk
         });
     }
 
-    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue)
+    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const
     {
         return std::visit(Util::Visitor{
             [] (std::monostate) -> Vk::FramebufferSize

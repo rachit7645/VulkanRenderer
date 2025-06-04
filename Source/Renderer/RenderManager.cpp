@@ -381,53 +381,73 @@ namespace Renderer
         {
             if (ImGui::BeginMenu("Scene"))
             {
+                bool toReload = false;
+
                 if (ImGui::BeginMenu("Reload"))
                 {
                     if (ImGui::Button("Reload Scene"))
                     {
                         m_config = Engine::Config();
-
-                        if (m_scene.has_value())
-                        {
-                            m_scene->Destroy
-                            (
-                                m_context,
-                                m_modelManager,
-                                m_megaSet,
-                                m_deletionQueues[m_FIF]
-                            );
-                        }
-
-                        m_scene = Engine::Scene
-                        (
-                            m_config,
-                            cmdBuffer,
-                            m_context,
-                            m_formatHelper,
-                            m_modelManager,
-                            m_megaSet,
-                            m_iblGenerator,
-                            m_deletionQueues[m_FIF]
-                        );
-
-                        m_modelManager.Update
-                        (
-                            cmdBuffer,
-                            m_context.device,
-                            m_context.allocator,
-                            m_megaSet,
-                            m_deletionQueues[m_FIF]
-                        );
-
-                        m_megaSet.Update(m_context.device);
-
-                        m_taa.ResetHistory();
+                        toReload = true;
                     }
 
                     ImGui::EndMenu();
                 }
 
                 ImGui::Separator();
+
+                if (ImGui::BeginMenu("Load"))
+                {
+                    ImGui::InputText("Scene", &m_config.scene);
+
+                    if (ImGui::Button("Load Scene"))
+                    {
+                        toReload = true;
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::Separator();
+
+                if (toReload)
+                {
+                    if (m_scene.has_value())
+                    {
+                        m_scene->Destroy
+                        (
+                            m_context,
+                            m_modelManager,
+                            m_megaSet,
+                            m_deletionQueues[m_FIF]
+                        );
+                    }
+
+                    m_scene = Engine::Scene
+                    (
+                        m_config,
+                        cmdBuffer,
+                        m_context,
+                        m_formatHelper,
+                        m_modelManager,
+                        m_megaSet,
+                        m_iblGenerator,
+                        m_deletionQueues[m_FIF]
+                    );
+
+                    m_modelManager.Update
+                    (
+                        cmdBuffer,
+                        m_context.device,
+                        m_context.allocator,
+                        m_megaSet,
+                        m_deletionQueues[m_FIF]
+                    );
+
+                    m_megaSet.Update(m_context.device);
+
+                    m_taa.ResetHistory();
+                }
 
                 ImGui::EndMenu();
             }

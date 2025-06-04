@@ -17,10 +17,10 @@
 #ifndef GBUFFER_PASS_H
 #define GBUFFER_PASS_H
 
-#include "Opaque/Pipeline.h"
-#include "Opaque/DoubleSided/Pipeline.h"
-#include "AlphaMasked/Pipeline.h"
-#include "AlphaMasked/DoubleSided/Pipeline.h"
+#include "SingleSided/Opaque/Pipeline.h"
+#include "DoubleSided/Opaque/Pipeline.h"
+#include "SingleSided/AlphaMasked/Pipeline.h"
+#include "DoubleSided/AlphaMasked/Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
@@ -58,10 +58,10 @@ namespace Renderer::GBuffer
             const Buffers::IndirectBuffer& indirectBuffer
         );
     private:
-        Opaque::Pipeline                   m_opaquePipeline;
-        Opaque::DoubleSided::Pipeline      m_opaqueDoubleSidedPipeline;
-        AlphaMasked::Pipeline              m_alphaMaskedPipeline;
-        AlphaMasked::DoubleSided::Pipeline m_alphaMaskedDoubleSidedPipeline;
+        SingleSided::Opaque::Pipeline      m_opaquePipeline;
+        DoubleSided::Opaque::Pipeline      m_opaqueDoubleSidedPipeline;
+        SingleSided::AlphaMasked::Pipeline m_alphaMaskedPipeline;
+        DoubleSided::AlphaMasked::Pipeline m_alphaMaskedDoubleSidedPipeline;
     };
 }
 

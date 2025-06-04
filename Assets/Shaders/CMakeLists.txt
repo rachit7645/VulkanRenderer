@@ -72,8 +72,8 @@ file(GLOB SHADER_SOURCES
     Deferred/Depth/AlphaMasked.vert
     Deferred/Depth/AlphaMasked.frag
     Deferred/GBuffer/GBuffer.vert
-    Deferred/GBuffer/Opaque.frag
-    Deferred/GBuffer/AlphaMasked.frag
+    Deferred/GBuffer/SingleSided/Opaque.frag
+    Deferred/GBuffer/SingleSided/AlphaMasked.frag
     Deferred/GBuffer/DoubleSided/Opaque.frag
     Deferred/GBuffer/DoubleSided/AlphaMasked.frag
     Deferred/Lighting.frag

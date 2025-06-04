@@ -47,7 +47,7 @@ float ToLuminance(vec3 color)
 
 float KarisAverage(vec3 color)
 {
-    float luma = ToLuminance(color) * 0.25f;
+    float luma = 0.25f * ToLuminance(color);
 
     return 1.0f / (1.0f + luma);
 }
