@@ -45,4 +45,30 @@ namespace Util
             destination[i] = _cvtss_sh(source[i], _MM_FROUND_TO_NEAREST_INT);
         }
     }
+
+    void ConvertF16ToF32(const f16* __restrict__ source, f32* __restrict__ destination, usize count)
+    {
+        usize i = 0;
+
+        for (; (i + 8) < count; i += 8)
+        {
+            const __m128i src = _mm_loadu_si128(reinterpret_cast<__m128i const*>(source + i));
+            const __m256  dst = _mm256_cvtph_ps(src);
+
+            _mm256_storeu_ps(destination + i, dst);
+        }
+
+        for (; (i + 4) < count; i += 4)
+        {
+            const __m128i src = _mm_loadu_si64(source + i);
+            const __m128  dst = _mm_cvtph_ps(src);
+
+            _mm_storeu_ps(destination + i, dst);
+        }
+
+        for (; i < count; ++i)
+        {
+            destination[i] = _cvtsh_ss(source[i]);
+        }
+    }
 }

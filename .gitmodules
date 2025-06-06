@@ -31,3 +31,6 @@
 [submodule "{fmt}"]
 	path = Externals/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "OpenEXR"]
+	path = Externals/openexr
+	url = https://github.com/AcademySoftwareFoundation/openexr.git

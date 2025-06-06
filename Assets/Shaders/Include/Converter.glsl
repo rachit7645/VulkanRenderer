@@ -40,6 +40,8 @@ vec2 GetSphericalMapUV(vec3 v)
     uv     *= INVERSE_CONSTANTS;
     uv     += 0.5f;
 
+    uv.y = 1.0f - uv.y;
+
     return uv;
 }
 

@@ -189,13 +189,26 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
 
+        const auto extension = Util::Files::GetExtension(hdrMapAssetPath);
+
+        Vk::ImageUploadType type = Vk::ImageUploadType{0};
+
+        if (extension == ".hdr")
+        {
+            type = Vk::ImageUploadType::HDR;
+        }
+        else if (extension == ".exr")
+        {
+            type = Vk::ImageUploadType::EXR;
+        }
+
         const auto hdrMapID = modelManager.textureManager.AddTexture
         (
             context.allocator,
             deletionQueue,
             Vk::ImageUpload{
-                .type   = Vk::ImageUploadType::HDR,
-                .flags  = Vk::ImageUploadFlags::Flipped | Vk::ImageUploadFlags::F16,
+                .type   = type,
+                .flags  = Vk::ImageUploadFlags::F16,
                 .source = Vk::ImageUploadFile{
                     .path = hdrMapAssetPath.data()
                 }

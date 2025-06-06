@@ -27,7 +27,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(ORIGINAL_C_FLAGS   ${CMAKE_C_FLAGS})
 set(ORIGINAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
-# Force Release flags
+# Force Release flags w/ no warnings
 set(CMAKE_C_FLAGS   ${CMAKE_C_FLAGS_RELEASE})
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
 
@@ -63,6 +63,12 @@ function(engine_add_external directory)
             DESTINATION ${ENGINE_INSTALL_DIR}
             COMPONENT Runtime
         )
+
+        install(
+            FILES $<TARGET_RUNTIME_DLLS:${ARG_INSTALL_TARGET}>
+            DESTINATION ${ENGINE_INSTALL_DIR}
+            COMPONENT Runtime
+        )
     endif()
 
     # Restore original build type
@@ -88,6 +94,10 @@ set(FMT_INSTALL OFF CACHE BOOL "Disable fmt installation" FORCE)
 # fastgltf Config
 set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
 
+# OpenEXR Config
+set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FORCE)
+set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
+
 # External Libraries
 engine_add_external(vma      FORCE_RELEASE                                                   )
 engine_add_external(volk     FORCE_RELEASE                                                   )
@@ -96,6 +106,7 @@ engine_add_external(fmt                                     INSTALL_TARGET fmt::
 engine_add_external(sdl                    EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
 engine_add_external(simdjson FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
 engine_add_external(fastgltf FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
+engine_add_external(openexr  FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET OpenEXR::OpenEXR  )
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)

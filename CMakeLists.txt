@@ -213,6 +213,9 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/taskflow/taskflow/taskflow.hpp
     # STB Headers
     Externals/stb/stb_image.h
+    # OpenEXR Headers
+    Externals/openexr/src/lib/OpenEXR/ImfRgbaFile.h
+    Externals/openexr/src/lib/OpenEXR/ImfArray.h
     # C++ STL Headers
 	<map>
     <unordered_map>
@@ -312,6 +315,7 @@ target_link_libraries(VulkanRenderer
 	GPUOpen::VulkanMemoryAllocator
     KTX::ktx
     glm::glm
+    OpenEXR::OpenEXR
     DearImGui
 )
 

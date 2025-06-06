@@ -30,8 +30,9 @@ namespace Vk
     {
         SDR  = 0,
         HDR  = 1,
-        KTX2 = 2,
-        RAW  = 3
+        EXR  = 2,
+        KTX2 = 3,
+        RAW  = 4
     };
 
     enum class ImageUploadFlags : u8
@@ -159,6 +160,14 @@ namespace Vk
             const f32* data,
             u32 width,
             u32 height,
+            ImageUploadFlags flags
+        );
+
+        [[nodiscard]] Vk::Image LoadEXRFile
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view path,
             ImageUploadFlags flags
         );
 

@@ -24,6 +24,7 @@
 #include "Util/Visitor.h"
 #include "Util/Enum.h"
 #include "Externals/STB.h"
+#include "Externals/OpenEXR.h"
 #include "Externals/Tracy.h"
 
 namespace Vk
@@ -187,6 +188,9 @@ namespace Vk
 
         case ImageUploadType::HDR:
             return LoadHDRFile(allocator, deletionQueue, path, flags);
+
+        case ImageUploadType::EXR:
+            return LoadEXRFile(allocator, deletionQueue, path, flags);
 
         case ImageUploadType::KTX2:
             return LoadKTX2File(allocator, deletionQueue, path);
@@ -587,6 +591,112 @@ namespace Vk
         });
 
         return image;
+    }
+
+    Vk::Image ImageUploader::LoadEXRFile
+    (
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        const std::string_view path,
+        ImageUploadFlags flags
+    )
+    {
+        try
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScoped;
+            #endif
+
+            Imf::RgbaInputFile file(path.data());
+
+            const Imath::Box2i dataWindow = file.dataWindow();
+            const s32          width      = dataWindow.max.x - dataWindow.min.x + 1;
+            const s32          height     = dataWindow.max.y - dataWindow.min.y + 1;
+
+            Imf::Array2D<Imf::Rgba> pixels(width, height);
+
+            file.setFrameBuffer(&pixels[0][0], 1, width);
+            file.readPixels(dataWindow.min.y, dataWindow.max.y);
+
+            // Flags
+            const bool toF16  = (flags & ImageUploadFlags::F16)     == ImageUploadFlags::F16;
+
+            const usize        texelCount = static_cast<usize>(width) * height;
+            const usize        elemCount  = 4 * texelCount;
+            const VkDeviceSize elemSize   = toF16 ? sizeof(f16) : sizeof(f32);
+            const VkDeviceSize dataSize   = elemCount * elemSize;
+
+            auto buffer = Vk::Buffer
+            (
+                allocator,
+                dataSize,
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                VMA_MEMORY_USAGE_AUTO
+            );
+
+            if (toF16)
+            {
+                std::memcpy(buffer.allocationInfo.pMappedData, &pixels[0][0], dataSize);
+            }
+            else
+            {
+                Util::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(buffer.allocationInfo.pMappedData), elemCount);
+            }
+
+            const std::vector copyRegions = {VkBufferImageCopy2{
+                .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                .pNext             = nullptr,
+                .bufferOffset      = 0,
+                .bufferRowLength   = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource  = {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {static_cast<u32>(width), static_cast<u32>(height), 1}
+            }};
+
+            const auto image = Vk::Image
+            (
+                allocator,
+                VkImageCreateInfo{
+                    .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                    .pNext                 = nullptr,
+                    .flags                 = 0,
+                    .imageType             = VK_IMAGE_TYPE_2D,
+                    .format                = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT,
+                    .extent                = {static_cast<u32>(width), static_cast<u32>(height), 1},
+                    .mipLevels             = 1,
+                    .arrayLayers           = 1,
+                    .samples               = VK_SAMPLE_COUNT_1_BIT,
+                    .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                    .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                    .queueFamilyIndexCount = 0,
+                    .pQueueFamilyIndices   = nullptr,
+                    .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+                },
+                VK_IMAGE_ASPECT_COLOR_BIT
+            );
+
+            AppendUpload(Upload{image, buffer, copyRegions});
+
+            deletionQueue.PushDeletor([allocator, buffer] () mutable
+            {
+                buffer.Destroy(allocator);
+            });
+
+            return image;
+        }
+        catch (const std::exception& e)
+        {
+            Logger::Error("Failed to read EXR file! [Error={}] [Path={}]\n", e.what(), path);
+        }
     }
 
     Vk::Image ImageUploader::LoadKTX2File
