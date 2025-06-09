@@ -22,6 +22,7 @@
 
 #include "Packing.glsl"
 #include "MegaSet.glsl"
+#include "PBR.glsl"
 #include "Deferred/GBuffer.h"
 
 layout(location = 0) in      vec4 fragCurrentPosition;
@@ -30,7 +31,7 @@ layout(location = 2) in      vec2 fragUV0;
 layout(location = 3) in      mat3 fragTBNMatrix;
 layout(location = 6) in flat uint fragDrawID;
 
-layout(location = 0) out vec3 gAlbedo;
+layout(location = 0) out vec4 gAlbedo_Reflectance;
 layout(location = 1) out vec4 gNormal_Rgh_Mtl;
 layout(location = 2) out vec2 gMotionVectors;
 
@@ -46,7 +47,8 @@ void main()
         discard;
     }
 
-    gAlbedo = albedo.rgb;
+    gAlbedo_Reflectance.rgb = albedo.rgb;
+    gAlbedo_Reflectance.a   = IoRToReflectance(mesh.material.ior);
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);

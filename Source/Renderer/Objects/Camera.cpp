@@ -29,7 +29,7 @@ namespace Renderer::Objects
 
     glm::mat4 Camera::GetViewMatrix() const
     {
-        return glm::lookAt(position, position + front, up);
+        return glm::lookAtRH(position, position + front, up);
     }
 
     void Camera::ImGuiDisplay()

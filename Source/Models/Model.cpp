@@ -49,7 +49,7 @@ namespace Models
         const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
 
-        fastgltf::Parser parser(fastgltf::Extensions::KHR_texture_basisu);
+        fastgltf::Parser parser(fastgltf::Extensions::KHR_texture_basisu | fastgltf::Extensions::KHR_materials_ior);
 
         auto data = fastgltf::GltfDataBuffer::FromPath(assetPath);
         if (auto error = data.error(); error != fastgltf::Error::None)
@@ -406,6 +406,7 @@ namespace Models
                 material.albedoFactor    = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
                 material.roughnessFactor = mat.pbrData.roughnessFactor;
                 material.metallicFactor  = mat.pbrData.metallicFactor;
+                material.ior             = mat.ior;
 
                 if (mat.doubleSided)
                 {

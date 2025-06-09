@@ -121,7 +121,7 @@ namespace Renderer::Objects
         if (inputs.WasMouseScrolled())
         {
             FOV -= inputs.GetMouseScroll().y * m_zoom * frameDelta;
-            FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
+            FOV  = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }
 

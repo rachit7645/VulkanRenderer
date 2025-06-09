@@ -127,7 +127,7 @@ struct ShadowedSpotLight
             GPU::SPOT_LIGHT_SHADOW_PLANES.y
         );
 
-        const glm::mat4 view = glm::lookAt
+        const glm::mat4 view = glm::lookAtRH
         (
            position,
            glm::vec3(0.0f, 0.0f, 0.0f),
@@ -150,11 +150,11 @@ struct ShadowedSpotLight
 #ifdef __cplusplus
 
 template<typename T>
-concept IsLightType = std::is_same_v<T, DirLight          > ||
-                      std::is_same_v<T, PointLight        > ||
+concept IsLightType = std::is_same_v<T, DirLight> ||
+                      std::is_same_v<T, PointLight> ||
                       std::is_same_v<T, ShadowedPointLight> ||
-                      std::is_same_v<T, SpotLight         > ||
-                      std::is_same_v<T, ShadowedSpotLight >  ;
+                      std::is_same_v<T, SpotLight> ||
+                      std::is_same_v<T, ShadowedSpotLight>;
 
 #endif
 

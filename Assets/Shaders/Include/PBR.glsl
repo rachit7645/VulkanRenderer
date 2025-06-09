@@ -22,6 +22,18 @@
 #include "Lights.h"
 #include "Math.glsl"
 
+float IoRToReflectance(float ior)
+{
+    float r = (ior - 1.0f) / (ior + 1.0f);
+
+    return r * r;
+}
+
+vec3 CalculateF0(vec3 albedo, float metallic, float reflectance)
+{
+    return mix(vec3(reflectance), albedo, metallic);
+}
+
 // Trowbridge-Reitz Normal Distribution Function
 float DistributionGGX(float NdotH, float a)
 {
@@ -46,7 +58,7 @@ float GeometrySmith(float NdotL, float NdotV, float a)
     return 2.0f * NdotL * NdotV / max(ggxV + ggxL, 1e-5f);
 }
 
-// Fresnel equation
+// Schlick's Fresnel Approximation
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0f - F0) * pow5(saturate(1.0f - cosTheta));
@@ -59,29 +71,30 @@ vec3 CalculateLight
     vec3 V,
     vec3 albedo,
     float roughness,
-    float metallic
+    float metallic,
+    float reflectance
 )
 {
-    vec3 F0 = mix(vec3(0.04f), albedo, metallic);
+    vec3 F0 = CalculateF0(albedo, metallic, reflectance);
 
     vec3 L = lightInfo.L;
     vec3 H = normalize(V + L);
 
-    float NdotV = max(dot(N, V), 0.0f);
-    float NdotL = max(dot(N, L), 0.0f);
-    float NdotH = max(dot(N, H), 0.0f);
-    float HdotV = max(dot(H, V), 0.0f);
+    float NdotV = abs(dot(N, V)) + 1e-5f;
+    float NdotL = saturate(dot(N, L));
+    float NdotH = saturate(dot(N, H));
+    float HdotV = saturate(dot(H, V));
 
-    // Squared Roughness as proposed by Disney
-    float a = roughness * roughness;
+    // Brent Burley (2012)
+    float r2 = roughness * roughness;
 
 	// Cook-Torrance BRDF
-	float NDF = DistributionGGX(NdotH, a);
-	float G   = GeometrySmith(NdotL, NdotV, a);
-	vec3  F   = FresnelSchlick(HdotV, F0);
+	float D = DistributionGGX(NdotH, r2);
+	float G = GeometrySmith(NdotL, NdotV, r2);
+	vec3  F = FresnelSchlick(HdotV, F0);
 
 	// Specular
-	vec3  numerator   = NDF * G * F;
+	vec3  numerator   = D * G * F;
     float denominator = max(4.0f * NdotV * NdotL, 1e-5f);
     vec3  specular    = numerator / denominator;
 
@@ -117,7 +130,7 @@ float GeometrySmith_IBL(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-// Fresnel equation with injected roughness parameter
+// Schlick's Fresnel approximation with injected roughness parameter
 vec3 FresnelSchlick_IBL(float cosTheta, vec3 F0, float roughness)
 {
     return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(saturate(1.0f - cosTheta));
@@ -130,13 +143,14 @@ vec3 CalculateAmbient
     vec3 albedo,
     float roughness,
     float metallic,
+    float reflectance,
     vec3 irradiance,
     vec3 preFilter,
     vec2 brdf
 )
 {
-    vec3  F0    = mix(vec3(0.04f), albedo, metallic);
-    float NdotV = max(dot(N, V), 0.0f);
+    vec3  F0    = CalculateF0(albedo, metallic, reflectance);
+    float NdotV = abs(dot(N, V)) + 1e-5f;
 
     vec3 F = FresnelSchlick_IBL(NdotV, F0, roughness);
 

@@ -50,6 +50,8 @@ namespace Models
 
         f32 alphaCutOff = 1.0f;
 
+        f32 ior = 1.5f;
+
         GPU::MaterialFlags flags = GPU::MaterialFlags::None;
     };
 

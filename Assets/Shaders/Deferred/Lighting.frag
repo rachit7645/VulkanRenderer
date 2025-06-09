@@ -33,8 +33,9 @@ layout(location = 0) out vec3 outColor;
 
 void main()
 {
-    vec4 gAlbedo = texture(sampler2D(Textures[Constants.GAlbedoIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    vec3 albedo  = gAlbedo.rgb;
+    vec4  gAlbedo_Reflectance = texture(sampler2D(Textures[Constants.GAlbedoIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
+    vec3  albedo              = gAlbedo_Reflectance.rgb;
+    float reflectance         = gAlbedo_Reflectance.a;
 
     vec4  gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
     vec3  normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
@@ -62,7 +63,8 @@ void main()
             toCamera,
             albedo,
             roughness,
-            metallic
+            metallic,
+            reflectance
         );
     }
 
@@ -78,7 +80,8 @@ void main()
             toCamera,
             albedo,
             roughness,
-            metallic
+            metallic,
+            reflectance
         );
     }
 
@@ -105,7 +108,8 @@ void main()
             toCamera,
             albedo,
             roughness,
-            metallic
+            metallic,
+            reflectance
         );
     }
 
@@ -121,7 +125,8 @@ void main()
             toCamera,
             albedo,
             roughness,
-            metallic
+            metallic,
+            reflectance
         );
     }
 
@@ -147,7 +152,8 @@ void main()
             toCamera,
             albedo,
             roughness,
-            metallic
+            metallic,
+            reflectance
         );
     }
 
@@ -165,6 +171,7 @@ void main()
         albedo,
         roughness,
         metallic,
+        reflectance,
         irradiance,
         preFilter,
         brdf

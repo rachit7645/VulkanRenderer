@@ -29,6 +29,7 @@ namespace Models
             .roughnessFactor = roughnessFactor,
             .metallicFactor  = metallicFactor,
             .alphaCutOff     = alphaCutOff,
+            .ior             = ior,
             .flags           = flags
         };
     }

@@ -43,6 +43,8 @@ struct Material
 
     f32 alphaCutOff;
 
+    f32 ior;
+
     GLSL_ENUM_CLASS_NAME(MaterialFlags, u32) flags;
 };
 
