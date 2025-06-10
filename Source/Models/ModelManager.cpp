@@ -187,9 +187,18 @@ namespace Models
                                 ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
 
                                 ImGui::Separator();
+                                ImGui::Text("Misc         | Value");
+                                ImGui::Separator();
 
-                                ImGui::Text("AABB Min    | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
-                                ImGui::Text("AABB Max    | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
+                                ImGui::Text("Alpha Cutoff | %.3f", mesh.material.alphaCutOff);
+                                ImGui::Text("IoR          | %.3f", mesh.material.ior);
+
+                                ImGui::Separator();
+                                ImGui::Text("Bounds   | Value");
+                                ImGui::Separator();
+
+                                ImGui::Text("AABB Min | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
+                                ImGui::Text("AABB Max | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
 
                                 ImGui::TreePop();
                             }

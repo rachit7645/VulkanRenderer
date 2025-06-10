@@ -136,10 +136,8 @@ add_executable(VulkanRenderer
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
     # GBuffer Pass Sources
-    Source/Renderer/GBuffer/SingleSided/Opaque/Pipeline.cpp
-    Source/Renderer/GBuffer/DoubleSided/Opaque/Pipeline.cpp
-    Source/Renderer/GBuffer/SingleSided/AlphaMasked/Pipeline.cpp
-    Source/Renderer/GBuffer/DoubleSided/AlphaMasked/Pipeline.cpp
+    Source/Renderer/GBuffer/SingleSided/Pipeline.cpp
+    Source/Renderer/GBuffer/DoubleSided/Pipeline.cpp
     Source/Renderer/GBuffer/RenderPass.cpp
     # Lighting Pass Sources
     Source/Renderer/Lighting/Pipeline.cpp

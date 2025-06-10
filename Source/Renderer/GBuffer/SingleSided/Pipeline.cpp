@@ -20,7 +20,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Deferred/GBuffer.h"
 
-namespace Renderer::GBuffer::SingleSided::AlphaMasked
+namespace Renderer::GBuffer::SingleSided
 {
     Pipeline::Pipeline
     (
@@ -34,7 +34,7 @@ namespace Renderer::GBuffer::SingleSided::AlphaMasked
 
         const std::array colorFormats =
         {
-            formatHelper.b10g11r11SFloat,
+            formatHelper.rgba8UnormFormat,
             formatHelper.rgba8UnormFormat,
             formatHelper.rgSFloat16Format
         };
@@ -42,8 +42,8 @@ namespace Renderer::GBuffer::SingleSided::AlphaMasked
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
-            .AttachShader("Deferred/GBuffer/GBuffer.vert",                 VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Deferred/GBuffer/SingleSided/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/GBuffer/SingleSided.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -121,7 +121,7 @@ namespace Renderer::GBuffer::SingleSided::AlphaMasked
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle, "GBuffer/AlphaMasked/Pipeline");
-        Vk::SetDebugName(context.device, layout, "GBuffer/AlphaMasked/Pipeline/Layout");
+        Vk::SetDebugName(context.device, handle, "GBuffer/SingleSided/Pipeline");
+        Vk::SetDebugName(context.device, layout, "GBuffer/SingleSided/Pipeline/Layout");
     }
 }

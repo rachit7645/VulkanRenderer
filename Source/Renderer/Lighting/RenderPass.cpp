@@ -166,7 +166,7 @@ namespace Renderer::Lighting
             .GBufferSamplerIndex = textureManager.GetSampler(m_pipeline.gBufferSamplerID).descriptorID,
             .IBLSamplerIndex     = textureManager.GetSampler(m_pipeline.iblSamplerID).descriptorID,
             .ShadowSamplerIndex  = textureManager.GetSampler(m_pipeline.shadowSamplerID).descriptorID,
-            .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoView").sampledImageID,
+            .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedo_Reflectance_View").sampledImageID,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageID,
             .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .IrradianceIndex     = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,

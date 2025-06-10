@@ -22,7 +22,7 @@
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/TextureManager.h"
 
-namespace Renderer::GBuffer::SingleSided::Opaque
+namespace Renderer::GBuffer::SingleSided
 {
     class Pipeline : public Vk::Pipeline
     {
