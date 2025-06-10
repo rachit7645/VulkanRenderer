@@ -45,7 +45,8 @@ void main()
     float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
     vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, fragUV, depth);
 
-    vec3 toCamera = normalize(Constants.Scene.cameraPosition - worldPosition);
+    vec3 toCamera  = normalize(Constants.Scene.cameraPosition - worldPosition);
+    vec3 reflected = normalize(reflect(-toCamera, normal));
 
     vec3 Lo = vec3(0.0f);
 
@@ -157,10 +158,9 @@ void main()
         );
     }
 
-    vec3  R                = reflect(-toCamera, normal);
     vec3  irradiance       = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
     uint  maxReflectionLod = textureQueryLevels(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]));
-    vec3  preFilter        = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), R, roughness * float(maxReflectionLod)).rgb;
+    vec3  preFilter        = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), reflected, roughness * float(maxReflectionLod)).rgb;
     vec2  brdf             = texture(sampler2D(Textures[Constants.BRDFLUTIndex], Samplers[Constants.IBLSamplerIndex]), vec2(max(dot(normal, toCamera), 0.0f), roughness)).rg;
     float ao               = texture(sampler2D(Textures[Constants.AOIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
 

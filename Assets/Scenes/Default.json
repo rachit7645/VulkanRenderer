@@ -47,6 +47,24 @@
             "Position" : [100.0, 0.0, -100.0],
             "Rotation" : [0.0,   0.0,  0.0],
             "Scale"    : [1.0,   1.0,  1.0]
+        },
+        {
+            "Model"    : "IoRTest/IoRTestC.gltf",
+            "Position" : [-50.0, 0.0, 50.0],
+            "Rotation" : [ 0.0,  0.0, 0.0],
+            "Scale"    : [ 1.0,  1.0, 1.0]
+        },
+        {
+            "Model"    : "Fish/FishC.gltf",
+            "Position" : [ 0.0, 0.0, 50.0],
+            "Rotation" : [ 0.0, 0.0, 0.0],
+            "Scale"    : [ 2.0, 2.0, 2.0]
+        },
+        {
+            "Model"    : "Phx/PhxC.gltf",
+            "Position" : [ 0.0, 0.0, 65.0],
+            "Rotation" : [ 0.0, 0.0, 0.0],
+            "Scale"    : [ 2.0, 2.0, 2.0]
         }
     ],
     "Sun": {

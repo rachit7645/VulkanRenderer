@@ -32,7 +32,7 @@ const float FLOAT_MAX = 3.402823466e+38;
 
 // IBL Constants
 const float CONVOLUTION_SAMPLE_DELTA = 0.025f;
-const uint  BRDF_LUT_SAMPLE_COUNT    = 512u;
+const uint  BRDF_LUT_SAMPLE_COUNT    = 1024u;
 
 // Point Shadow Constants
 const float POINT_SHADOW_BIAS = 0.15f;

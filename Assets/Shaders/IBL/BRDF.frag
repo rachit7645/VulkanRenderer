@@ -56,8 +56,8 @@ void main()
         if (NdotL > 0.0f)
         {
             float G     = GeometrySmith_IBL(N, V, L, roughness);
-            float G_Vis = (G * VdotH) / (NdotH * NdotV);
-            float Fc    = pow(1.0f - VdotH, 5.0f);
+            float G_Vis = (G * VdotH) / max(NdotH * NdotV, 1e-7f);
+            float Fc    = pow5(1.0f - VdotH);
 
             X += (1.0f - Fc) * G_Vis;
             Y += Fc * G_Vis;

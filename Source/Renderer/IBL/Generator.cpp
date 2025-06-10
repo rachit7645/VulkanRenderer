@@ -30,7 +30,7 @@ namespace Renderer::IBL
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
     constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
-    constexpr u32 PREFILTER_SAMPLE_COUNT  = 512;
+    constexpr u32 PREFILTER_SAMPLE_COUNT = 512;
     
     Generator::Generator
     (
@@ -191,7 +191,7 @@ namespace Renderer::IBL
 
         const auto extension = Util::Files::GetExtension(hdrMapAssetPath);
 
-        Vk::ImageUploadType type = Vk::ImageUploadType{0};
+        auto type = Vk::ImageUploadType{0};
 
         if (extension == ".hdr")
         {
