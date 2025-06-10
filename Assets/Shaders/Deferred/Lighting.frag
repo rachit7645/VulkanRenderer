@@ -95,9 +95,7 @@ void main()
         (
             i,
             light,
-            Constants.Scene.CommonLight.pointLightShadowPlanes,
             worldPosition,
-            Constants.Scene.cameraPosition,
             CubemapArrays[Constants.PointShadowMapIndex],
             Samplers[Constants.ShadowSamplerIndex]
         );

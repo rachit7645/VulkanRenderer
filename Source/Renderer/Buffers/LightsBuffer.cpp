@@ -23,7 +23,6 @@ namespace Renderer::Buffers
 {
     struct GPULights
     {
-        glm::vec2               pointLightShadowPlanes                                   = {};
         u32                     dirLightCount                                            = 0;
         GPU::DirLight           dirLights[GPU::MAX_DIR_LIGHT_COUNT]                      = {};
         u32                     pointLightCount                                          = 0;
@@ -52,8 +51,6 @@ namespace Renderer::Buffers
 
             const u32  count       = 0;
             const auto pMappedData = static_cast<u8*>(buffers[i].allocationInfo.pMappedData);
-
-            std::memcpy(pMappedData + 0, &GPU::POINT_LIGHT_SHADOW_PLANES, sizeof(glm::vec2));
 
             std::memcpy(pMappedData + GetDirLightOffset(),           &count, sizeof(u32));
             std::memcpy(pMappedData + GetPointLightOffset(),         &count, sizeof(u32));

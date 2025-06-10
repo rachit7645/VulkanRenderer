@@ -30,15 +30,30 @@ namespace Renderer::PointShadow::Opaque
             VK_DYNAMIC_STATE_CULL_MODE
         };
 
+        const std::array colorFormats = {formatHelper.rSFloat32Format};
+
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, {}, formatHelper.depthFormat)
+            .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
             .AttachShader("Shadows/PointShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Shadows/PointShadow/Opaque.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS)
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .AddBlendAttachment(
+                VK_FALSE,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_COLOR_COMPONENT_R_BIT |
+                VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT
+            )
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Opaque::Constants))
             .Build();
 

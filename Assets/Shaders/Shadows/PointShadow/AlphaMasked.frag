@@ -24,6 +24,8 @@ layout(location = 0) in      vec3 fragPosition;
 layout(location = 1) in      vec2 fragUV0;
 layout(location = 2) in flat uint fragDrawID;
 
+layout(location = 0) out float lightDistance;
+
 #include "MegaSet.glsl"
 #include "Shadows/PointShadow/AlphaMasked.h"
 
@@ -39,10 +41,5 @@ void main()
         discard;
     }
 
-    float lightDistance = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
-
-    // Map to [0, 1] to store into depth buffer
-    lightDistance = lightDistance / Constants.Scene.CommonLight.pointLightShadowPlanes.y;
-
-    gl_FragDepth = lightDistance;
+    lightDistance = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
 }

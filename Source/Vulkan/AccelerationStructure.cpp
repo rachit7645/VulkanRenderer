@@ -496,7 +496,7 @@ namespace Vk
                 }
 
                 instances.emplace_back(VkAccelerationStructureInstanceKHR{
-                    .transform                              = glm::vk_cast(Maths::CreateTransformMatrix(
+                    .transform                              = glm::vk_cast(Maths::TransformMatrix(
                         renderObject.position,
                         renderObject.rotation,
                         renderObject.scale

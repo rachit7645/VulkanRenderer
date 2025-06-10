@@ -64,7 +64,7 @@ namespace Renderer::Buffers
         
         gpuScene.previousMatrices = gpuScene.currentMatrices;
 
-        const auto projection = Maths::CreateInfiniteProjectionReverseZ
+        const auto projection = Maths::InfiniteProjectionReverseZ
         (
             scene.camera.FOV,
             static_cast<f32>(extent.width) /
@@ -98,7 +98,6 @@ namespace Renderer::Buffers
 
         const auto lightsBufferAddress = lightsBuffer.buffers[FIF].deviceAddress;
 
-        gpuScene.CommonLight         = lightsBufferAddress + 0;
         gpuScene.DirLights           = lightsBufferAddress + lightsBuffer.GetDirLightOffset();
         gpuScene.PointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
         gpuScene.ShadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();

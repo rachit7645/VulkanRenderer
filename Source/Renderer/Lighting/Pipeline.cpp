@@ -131,7 +131,7 @@ namespace Renderer::Lighting
                 .anisotropyEnable        = VK_FALSE,
                 .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_TRUE,
-                .compareOp               = VK_COMPARE_OP_LESS,
+                .compareOp               = VK_COMPARE_OP_LESS_OR_EQUAL,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
                 .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,

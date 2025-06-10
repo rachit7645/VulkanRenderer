@@ -487,7 +487,7 @@ namespace Models
             },
             [&] (const fastgltf::TRS& trs)
             {
-                return base * Maths::CreateTransformMatrix
+                return base * Maths::TransformMatrix
                 (
                     glm::fastgltf_cast(trs.translation),
                     glm::eulerAngles(glm::fastgltf_cast(trs.rotation)),

@@ -19,6 +19,11 @@
 
 #include "GLSL.h"
 
+#ifdef __cplusplus
+#include "Util/Maths.h"
+#include "Renderer/RenderConstants.h"
+#endif
+
 GLSL_NAMESPACE_BEGIN(GPU)
 
 #ifdef __cplusplus
@@ -36,8 +41,7 @@ constexpr u32 MAX_TOTAL_SPOT_LIGHT_COUNT  = MAX_SHADOWED_SPOT_LIGHT_COUNT  + MAX
 
 constexpr u32 MAX_LIGHT_COUNT = MAX_DIR_LIGHT_COUNT + MAX_TOTAL_POINT_LIGHT_COUNT + MAX_TOTAL_SPOT_LIGHT_COUNT;
 
-constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS   = {512,  512};
-constexpr glm::vec2  POINT_LIGHT_SHADOW_PLANES = {1.0f, 25.0f};
+constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
 
 constexpr glm::uvec2 SPOT_LIGHT_SHADOW_DIMENSIONS = {1024, 1024};
 constexpr glm::vec2  SPOT_LIGHT_SHADOW_PLANES     = {0.1f, 100.0f};
@@ -71,13 +75,15 @@ struct ShadowedPointLight
           attenuation(pointLight.attenuation),
           matrices()
     {
-        const auto projection = glm::perspectiveRH_ZO
+        auto projection = Maths::InfiniteProjectionReverseZ
         (
             glm::radians(90.0f),
-            static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) / static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y),
-            GPU::POINT_LIGHT_SHADOW_PLANES.x,
-            GPU::POINT_LIGHT_SHADOW_PLANES.y
+            static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
+            static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y),
+            Renderer::NEAR_PLANE
         );
+
+        projection[1][1] *= -1;
 
         matrices[0] = projection * glm::lookAtRH(position, position + glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
         matrices[1] = projection * glm::lookAtRH(position, position + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f));
@@ -161,11 +167,6 @@ concept IsLightType = std::is_same_v<T, DirLight> ||
 #ifndef __cplusplus
 
 #include "Constants.glsl"
-
-layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer CommonLightBuffer
-{
-    vec2 pointLightShadowPlanes;
-};
 
 layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer DirLightBuffer
 {

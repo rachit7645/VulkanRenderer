@@ -37,7 +37,7 @@ namespace Renderer::PointShadow
         framebufferManager.AddFramebuffer
         (
             "PointShadowMap",
-            Vk::FramebufferType::Depth,
+            Vk::FramebufferType::ColorR_SFloat32,
             Vk::FramebufferImageType::ArrayCube,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             Vk::FramebufferSize{
@@ -45,6 +45,25 @@ namespace Renderer::PointShadow
                 .height      = GPU::POINT_SHADOW_DIMENSIONS.y,
                 .mipLevels   = 1,
                 .arrayLayers = 6 * GPU::MAX_SHADOWED_POINT_LIGHT_COUNT
+            },
+            Vk::FramebufferInitialState{
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "PointShadowDepth",
+            Vk::FramebufferType::Depth,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferSize{
+                .width       = GPU::POINT_SHADOW_DIMENSIONS.x,
+                .height      = GPU::POINT_SHADOW_DIMENSIONS.y,
+                .mipLevels   = 1,
+                .arrayLayers = 1
             },
             Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
@@ -84,6 +103,19 @@ namespace Renderer::PointShadow
                 );
             }
         }
+
+        framebufferManager.AddFramebufferView
+        (
+            "PointShadowDepth",
+            "PointShadowDepthView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1,
+            }
+        );
     }
 
     void RenderPass::Render
@@ -107,11 +139,33 @@ namespace Renderer::PointShadow
 
         Vk::BeginLabel(cmdBuffer, "PointShadowPass", glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
 
-        const auto& depthAttachment = framebufferManager.GetFramebuffer("PointShadowMap");
+        const auto& depthView = framebufferManager.GetFramebufferView("PointShadowDepthView");
 
-        depthAttachment.image.Barrier
+        const auto& shadowMap = framebufferManager.GetFramebuffer("PointShadowMap");
+        const auto& depth     = framebufferManager.GetFramebuffer(depthView.framebuffer);
+
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier
         (
-            cmdBuffer,
+            shadowMap.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = shadowMap.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+            }
+        )
+        .WriteImageBarrier
+        (
+            depth.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -120,11 +174,12 @@ namespace Renderer::PointShadow
                 .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = depthAttachment.image.mipLevels,
+                .levelCount     = depth.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+                .layerCount     = depth.image.arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedPointLights.size(); ++i)
         {
@@ -144,20 +199,34 @@ namespace Renderer::PointShadow
                     indirectBuffer
                 );
 
-                const auto depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/Light{}/{}", i, face));
+                const auto shadowMapView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/Light{}/{}", i, face));
+
+                const VkRenderingAttachmentInfo colorAttachmentInfo =
+                {
+                    .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                    .pNext              = nullptr,
+                    .imageView          = shadowMapView.view.handle,
+                    .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .resolveMode        = VK_RESOLVE_MODE_NONE,
+                    .resolveImageView   = VK_NULL_HANDLE,
+                    .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                    .clearValue         = {.color = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}}}
+                };
 
                 const VkRenderingAttachmentInfo depthAttachmentInfo =
                 {
                     .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                     .pNext              = nullptr,
-                    .imageView          = depthAttachmentView.view.handle,
+                    .imageView          = depthView.view.handle,
                     .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                     .resolveMode        = VK_RESOLVE_MODE_NONE,
                     .resolveImageView   = VK_NULL_HANDLE,
                     .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
                     .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                    .clearValue         = {.depthStencil = {1.0f, 0x0}}
+                    .clearValue         = {.depthStencil = {0.0f, 0x0}}
                 };
 
                 const VkRenderingInfo renderInfo =
@@ -167,12 +236,12 @@ namespace Renderer::PointShadow
                     .flags                = 0,
                     .renderArea           = {
                         .offset = {0, 0},
-                        .extent = {depthAttachment.image.width, depthAttachment.image.height}
+                        .extent = {shadowMap.image.width, shadowMap.image.height}
                     },
                     .layerCount           = 1,
                     .viewMask             = 0,
-                    .colorAttachmentCount = 0,
-                    .pColorAttachments    = nullptr,
+                    .colorAttachmentCount = 1,
+                    .pColorAttachments    = &colorAttachmentInfo,
                     .pDepthAttachment     = &depthAttachmentInfo,
                     .pStencilAttachment   = nullptr
                 };
@@ -183,8 +252,8 @@ namespace Renderer::PointShadow
                 {
                     .x        = 0.0f,
                     .y        = 0.0f,
-                    .width    = static_cast<f32>(depthAttachment.image.width),
-                    .height   = static_cast<f32>(depthAttachment.image.height),
+                    .width    = static_cast<f32>(shadowMap.image.width),
+                    .height   = static_cast<f32>(shadowMap.image.height),
                     .minDepth = 0.0f,
                     .maxDepth = 1.0f
                 };
@@ -194,7 +263,7 @@ namespace Renderer::PointShadow
                 const VkRect2D scissor =
                 {
                     .offset = {0, 0},
-                    .extent = {depthAttachment.image.width, depthAttachment.image.height}
+                    .extent = {shadowMap.image.width, shadowMap.image.height}
                 };
 
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -382,9 +451,26 @@ namespace Renderer::PointShadow
             Vk::EndLabel(cmdBuffer);
         }
 
-        depthAttachment.image.Barrier
+        barrierWriter
+        .WriteImageBarrier
         (
-            cmdBuffer,
+            shadowMap.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = shadowMap.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+            }
+        )
+        .WriteImageBarrier
+        (
+            depth.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
                 .srcAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
@@ -393,11 +479,12 @@ namespace Renderer::PointShadow
                 .oldLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .baseMipLevel   = 0,
-                .levelCount     = depthAttachment.image.mipLevels,
+                .levelCount     = depth.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+                .layerCount     = depth.image.arrayLayers
             }
-        );
+        )
+        .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }

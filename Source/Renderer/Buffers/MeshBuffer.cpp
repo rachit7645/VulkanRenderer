@@ -55,7 +55,7 @@ namespace Renderer::Buffers
 
         for (const auto& renderObject : renderObjects)
         {
-            const auto globalTransform = Maths::CreateTransformMatrix
+            const auto globalTransform = Maths::TransformMatrix
             (
                 renderObject.position,
                 renderObject.rotation,
@@ -65,7 +65,7 @@ namespace Renderer::Buffers
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
                 const auto transform    = globalTransform * mesh.transform;
-                const auto normalMatrix = Maths::CreateNormalMatrix(transform);
+                const auto normalMatrix = Maths::NormalMatrix(transform);
 
                 meshes.emplace_back
                 (

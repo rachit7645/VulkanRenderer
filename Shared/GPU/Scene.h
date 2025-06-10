@@ -40,7 +40,6 @@ GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
     f32 nearPlane;
     f32 farPlane;
 
-    GLSL_BUFFER_POINTER(CommonLightBuffer)        CommonLight;
     GLSL_BUFFER_POINTER(DirLightBuffer)           DirLights;
     GLSL_BUFFER_POINTER(PointLightBuffer)         PointLights;
     GLSL_BUFFER_POINTER(ShadowedPointLightBuffer) ShadowedPointLights;
