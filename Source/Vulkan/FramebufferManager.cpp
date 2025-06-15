@@ -90,7 +90,7 @@ namespace Vk
 
         m_extent = extent;
 
-        std::unordered_set<std::string> updatedFramebuffers = {};
+        ankerl::unordered_dense::set<std::string> updatedFramebuffers = {};
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
@@ -472,7 +472,7 @@ namespace Vk
     {
         if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
         {
-            framebufferView.sampledImageID = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            framebufferView.sampledImageID = megaSet.WriteSampledImage(framebufferView.view);
         }
 
         if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
@@ -515,12 +515,12 @@ namespace Vk
         {
             if (ImGui::BeginMenu("Framebuffer Manager"))
             {
-                std::vector<std::pair<std::string, FramebufferView>> sortedFramebufferViews
+                std::vector sortedFramebufferViews
                 (
                     m_framebufferViews.begin(),
                     m_framebufferViews.end()
                 );
-                
+
                 auto CustomOrderedSort = [] (const std::string& a, const std::string& b)
                 {
                     usize i = 0;
@@ -567,7 +567,7 @@ namespace Vk
                     return a.length() < b.length();
                 };
 
-                std::ranges::sort(sortedFramebufferViews,[&CustomOrderedSort] (const auto& a, const auto& b)
+                std::ranges::sort(sortedFramebufferViews, [&CustomOrderedSort] (const auto& a, const auto& b)
                 {
                     return CustomOrderedSort(a.first, b.first);
                 });

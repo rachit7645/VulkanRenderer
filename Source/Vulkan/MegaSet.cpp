@@ -185,7 +185,7 @@ namespace Vk
         return id;
     }
 
-    Vk::DescriptorID MegaSet::WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout)
+    Vk::DescriptorID MegaSet::WriteSampledImage(const Vk::ImageView& imageView)
     {
         const auto id = m_sampledImageAllocator.Allocate();
 
@@ -196,7 +196,7 @@ namespace Vk
             id,
             VK_NULL_HANDLE,
             imageView.handle,
-            layout,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
         );
 

@@ -45,7 +45,7 @@ namespace Renderer::Skybox
         const IBL::IBLMaps& iblMaps
     )
     {
-        Vk::BeginLabel(cmdBuffer, "SkyboxPass", {0.2796f, 0.8588f, 0.3548f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "Skybox", {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");

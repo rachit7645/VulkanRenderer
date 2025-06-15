@@ -39,7 +39,7 @@ namespace Vk
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, "BLASBuild", {0.7117f, 0.8136f, 0.7313f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "BLAS Build", {0.7117f, 0.8136f, 0.7313f, 1.0f});
 
         std::vector<VkTransformMatrixKHR> transforms = {};
 
@@ -471,7 +471,7 @@ namespace Vk
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, "TLASBuild", {0.2117f, 0.8136f, 0.7313f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "TLAS Build", {0.2117f, 0.8136f, 0.7313f, 1.0f});
 
         std::vector<VkAccelerationStructureInstanceKHR> instances = {};
 

@@ -158,13 +158,13 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto properties           = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
-        auto vk11Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
-        auto vk12Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
-        auto rtPipelineProperties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
+        auto properties           = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
+        auto vk11Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
+        auto vk12Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
+        auto rtPipelineProperties = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
 
-        auto features = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
-        auto scores   = std::unordered_map<VkPhysicalDevice, usize>{};
+        auto features = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
+        auto scores   = ankerl::unordered_dense::map<VkPhysicalDevice, usize>{};
 
         for (const auto& currentDevice : devices)
         {

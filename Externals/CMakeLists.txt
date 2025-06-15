@@ -99,14 +99,15 @@ set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FO
 set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
 
 # External Libraries
-engine_add_external(vma      FORCE_RELEASE                                                   )
-engine_add_external(volk     FORCE_RELEASE                                                   )
-engine_add_external(glm      FORCE_RELEASE                  INSTALL_TARGET glm::glm          )
-engine_add_external(fmt                                     INSTALL_TARGET fmt::fmt          )
-engine_add_external(sdl                    EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
-engine_add_external(simdjson FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
-engine_add_external(fastgltf FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
-engine_add_external(openexr  FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET OpenEXR::OpenEXR  )
+engine_add_external(vma             FORCE_RELEASE                                                   )
+engine_add_external(volk            FORCE_RELEASE                                                   )
+engine_add_external(unordered_dense FORCE_RELEASE                                                   )
+engine_add_external(glm             FORCE_RELEASE                  INSTALL_TARGET glm::glm          )
+engine_add_external(fmt                                            INSTALL_TARGET fmt::fmt          )
+engine_add_external(sdl                           EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(simdjson        FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
+engine_add_external(fastgltf        FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
+engine_add_external(openexr         FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET OpenEXR::OpenEXR  )
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)

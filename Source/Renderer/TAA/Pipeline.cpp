@@ -56,17 +56,17 @@ namespace Renderer::TAA
                 VK_COLOR_COMPONENT_A_BIT
             )
             .AddBlendAttachment(
-                    VK_FALSE,
-                    VK_BLEND_FACTOR_ONE,
-                    VK_BLEND_FACTOR_ZERO,
-                    VK_BLEND_OP_ADD,
-                    VK_BLEND_FACTOR_ONE,
-                    VK_BLEND_FACTOR_ZERO,
-                    VK_BLEND_OP_ADD,
-                    VK_COLOR_COMPONENT_R_BIT |
-                    VK_COLOR_COMPONENT_G_BIT |
-                    VK_COLOR_COMPONENT_B_BIT |
-                    VK_COLOR_COMPONENT_A_BIT
+                VK_FALSE,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_COLOR_COMPONENT_R_BIT |
+                VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT
             )
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)

@@ -302,8 +302,6 @@ namespace Renderer
 
     void RenderManager::WaitForTimeline()
     {
-        Vk::BeginLabel(m_context.graphicsQueue, "Graphics Queue", {0.1137f, 0.7176f, 0.7490, 1.0f});
-
         // Frame indices 0 to Vk::FRAMES_IN_FLIGHT - 1 do not need to wait for anything
         if (m_frameIndex >= Vk::FRAMES_IN_FLIGHT)
         {
@@ -339,6 +337,8 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
+        Vk::BeginLabel(m_context.graphicsQueue, "Graphics Queue", {0.1137f, 0.7176f, 0.7490, 1.0f});
+
         m_deletionQueues[m_FIF].FlushQueue();
 
         ImGui_ImplSDL3_NewFrame();
@@ -629,6 +629,8 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
+        Vk::EndLabel(m_context.graphicsQueue);
+
         m_timeline.TimelineToRenderFinished
         (
             m_frameIndex,
@@ -646,8 +648,6 @@ namespace Renderer
         {
             Vk::CheckResult(result, "Failed to present swapchain image to queue!");
         }
-
-        Vk::EndLabel(m_context.graphicsQueue);
 
         ++m_frameIndex;
         m_FIF = (m_FIF + 1) % Vk::FRAMES_IN_FLIGHT;

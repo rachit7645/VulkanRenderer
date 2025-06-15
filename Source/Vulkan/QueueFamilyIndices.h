@@ -18,10 +18,10 @@
 #define QUEUE_FAMILY_INDEX_H
 
 #include <optional>
-#include <set>
 #include <vulkan/vulkan.h>
 
 #include "Util/Types.h"
+#include "Externals/UnorderedDense.h"
 
 namespace Vk
 {
@@ -33,7 +33,7 @@ namespace Vk
         // Graphics + Presentation family
         std::optional<u32> graphicsFamily;
 
-        [[nodiscard]] std::set<u32> GetUniqueFamilies() const;
+        [[nodiscard]] ankerl::unordered_dense::set<u32> GetUniqueFamilies() const;
         [[nodiscard]] bool IsComplete() const;
     };
 }

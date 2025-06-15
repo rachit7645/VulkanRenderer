@@ -17,13 +17,12 @@
 #ifndef MODEL_MANAGER_H
 #define MODEL_MANAGER_H
 
-#include <unordered_map>
-
 #include "Model.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/CommandBufferAllocator.h"
 #include "Util/Types.h"
+#include "Externals/UnorderedDense.h"
 
 namespace Models
 {
@@ -73,7 +72,7 @@ namespace Models
             u64           referenceCount = 0;
         };
 
-        std::unordered_map<Models::ModelID, ModelManager::ModelInfo> m_modelMap;
+        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelInfo> m_modelMap;
     };
 }
 

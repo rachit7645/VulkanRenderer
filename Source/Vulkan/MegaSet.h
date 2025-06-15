@@ -33,7 +33,7 @@ namespace Vk
         explicit MegaSet(const Vk::Context& context);
 
         [[nodiscard]] Vk::DescriptorID WriteSampler(const Vk::Sampler& sampler);
-        [[nodiscard]] Vk::DescriptorID WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout);
+        [[nodiscard]] Vk::DescriptorID WriteSampledImage(const Vk::ImageView& imageView);
         [[nodiscard]] Vk::DescriptorID WriteStorageImage(const Vk::ImageView& imageView);
 
         void FreeSampler(Vk::DescriptorID id);

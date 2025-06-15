@@ -17,15 +17,13 @@
 #ifndef FRAME_BUFFER_MANAGER_H
 #define FRAME_BUFFER_MANAGER_H
 
-#include <unordered_set>
-#include <unordered_map>
-
 #include "Image.h"
 #include "ImageView.h"
 #include "FormatHelper.h"
 #include "MegaSet.h"
 #include "BarrierWriter.h"
 #include "Util/Enum.h"
+#include "Externals/UnorderedDense.h"
 
 namespace Vk
 {
@@ -193,10 +191,10 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
-        std::unordered_map<std::string, Framebuffer>     m_framebuffers;
-        std::unordered_map<std::string, FramebufferView> m_framebufferViews;
+        ankerl::unordered_dense::map<std::string, Framebuffer>     m_framebuffers;
+        ankerl::unordered_dense::map<std::string, FramebufferView> m_framebufferViews;
 
-        std::unordered_set<std::string> m_fixedSizeFramebuffers;
+        ankerl::unordered_dense::set<std::string> m_fixedSizeFramebuffers;
 
         VkExtent2D m_extent = {};
 

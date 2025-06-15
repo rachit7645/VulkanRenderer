@@ -14,31 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef POINT_SHADOW_MAP_GLSL
-#define POINT_SHADOW_MAP_GLSL
+#ifndef EXTERNALS_UNORDERED_DENSE_H
+#define EXTERNALS_UNORDERED_DENSE_H
 
-#include "Lights.h"
-
-float CalculatePointShadow
-(
-    uint lightIndex,
-    ShadowedPointLight light,
-    vec3 fragPosition,
-    textureCubeArray pointShadowMap,
-    sampler pointShadowSampler
-)
-{
-    vec3  fragToLight     = fragPosition - light.position;
-    float currentDistance = length(fragToLight);
-
-    float shadow = texture
-    (
-        samplerCubeArrayShadow(pointShadowMap, pointShadowSampler),
-        vec4(fragToLight, lightIndex),
-        currentDistance - POINT_SHADOW_BIAS
-    );
-
-    return shadow;
-}
+#include "unordered_dense/include/ankerl/unordered_dense.h"
 
 #endif

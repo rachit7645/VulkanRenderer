@@ -81,7 +81,7 @@ namespace Vk
         }
     }
 
-    std::set<u32> QueueFamilyIndices::GetUniqueFamilies() const
+    ankerl::unordered_dense::set<u32> QueueFamilyIndices::GetUniqueFamilies() const
     {
         return {graphicsFamily.value_or(0)};
     }

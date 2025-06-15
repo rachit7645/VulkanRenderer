@@ -102,7 +102,7 @@ namespace Renderer::SpotShadow
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, "SpotShadowPass", glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "Spot Light Shadows", glm::vec4(0.2196f, 0.2418f, 0.6588f, 1.0f));
 
         const auto& depthAttachment = framebufferManager.GetFramebuffer("SpotShadowMap");
 

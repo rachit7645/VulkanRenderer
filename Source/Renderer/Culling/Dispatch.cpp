@@ -40,7 +40,7 @@ namespace Renderer::Culling
         const Buffers::IndirectBuffer& indirectBuffer
     )
     {
-        Vk::BeginLabel(cmdBuffer, "FrustumCullingDispatch", glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "Frustum Culling", glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
 
         const u32 drawCallCount = indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount;
 

@@ -85,6 +85,8 @@ namespace Renderer::Depth
         Culling::Dispatch& culling
     )
     {
+        Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
+
         const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
         const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
 
@@ -97,8 +99,6 @@ namespace Renderer::Depth
             meshBuffer,
             indirectBuffer
         );
-
-        Vk::BeginLabel(cmdBuffer, "DepthPass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
         const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);

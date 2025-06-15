@@ -105,7 +105,7 @@ namespace Renderer::Bloom
             ImGui::EndMainMenuBar();
         }
 
-        Vk::BeginLabel(cmdBuffer, "BloomPass", {0.6796f, 0.4538f, 0.1518f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "Bloom", {0.6796f, 0.4538f, 0.1518f, 1.0f});
 
         RenderDownSamples
         (
@@ -134,7 +134,7 @@ namespace Renderer::Bloom
         const Vk::TextureManager& textureManager
     )
     {
-        Vk::BeginLabel(cmdBuffer, "DownSamplePass", {0.7796f, 0.3588f, 0.5518f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "DownSample", {0.7796f, 0.3588f, 0.5518f, 1.0f});
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
@@ -285,7 +285,7 @@ namespace Renderer::Bloom
         const Vk::TextureManager& textureManager
     )
     {
-        Vk::BeginLabel(cmdBuffer, "UpSamplePass", {0.8736f, 0.2598f, 0.7548f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "UpSample", {0.8736f, 0.2598f, 0.7548f, 1.0f});
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 

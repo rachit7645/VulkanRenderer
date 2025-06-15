@@ -198,7 +198,7 @@ namespace Vk
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, "Resize Copy", {0.3882f, 0.9294f, 0.2118f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "Block Allocator -> Resize Copy", {0.3882f, 0.9294f, 0.2118f, 1.0f});
 
         const VkCopyBufferInfo2 copyInfo =
         {

@@ -87,7 +87,7 @@ namespace Renderer::ShadowRT
         const Vk::AccelerationStructure& accelerationStructure
     )
     {
-        Vk::BeginLabel(cmdBuffer, "ShadowRTPass", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
 
         const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
         const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);

@@ -122,7 +122,7 @@ namespace Renderer::TAA
         const Vk::TextureManager& textureManager
     )
     {
-        Vk::BeginLabel(cmdBuffer, "TAAPass", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "TAA", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
 
         if (ImGui::BeginMainMenuBar())
         {

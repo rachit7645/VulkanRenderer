@@ -50,7 +50,7 @@ namespace Renderer::DearImGui
 
         const auto drawData = ImGui::GetDrawData();
 
-        Vk::BeginLabel(cmdBuffer, "ImGuiPass", glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "Dear ImGui", glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
 
         if (drawData->TotalVtxCount > 0)
         {

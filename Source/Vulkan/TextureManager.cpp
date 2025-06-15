@@ -93,7 +93,7 @@ namespace Vk
             return id;
         }
 
-        const auto descriptorID = megaSet.WriteSampledImage(imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        const auto descriptorID = megaSet.WriteSampledImage(imageView);
 
         m_textureMap.emplace(id, TextureInfo{
             .texture = Vk::Texture{
@@ -202,7 +202,7 @@ namespace Vk
                 }
             );
 
-            texture.descriptorID = megaSet.WriteSampledImage(texture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            texture.descriptorID = megaSet.WriteSampledImage(texture.imageView);
 
             texture.isLoaded = true;
 

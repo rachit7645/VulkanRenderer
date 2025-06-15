@@ -12,6 +12,7 @@
     <mapping directory="$PROJECT_DIR$/Externals/stb" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/taskflow" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/tracy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/unordered_dense" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/vma" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/volk" vcs="Git" />
   </component>

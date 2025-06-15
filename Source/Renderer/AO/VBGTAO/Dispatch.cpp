@@ -226,7 +226,7 @@ namespace Renderer::AO::VBGTAO
             ImGui::EndMainMenuBar();
         }
 
-        Vk::BeginLabel(cmdBuffer, "VBGTAOPass", glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "VBGTAO", glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
 
         if (!m_hilbertLUT.has_value())
         {

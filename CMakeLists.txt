@@ -214,6 +214,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     # OpenEXR Headers
     Externals/openexr/src/lib/OpenEXR/ImfRgbaFile.h
     Externals/openexr/src/lib/OpenEXR/ImfArray.h
+    # Unordered Dense Headers
+    Externals/unordered_dense/include/ankerl/unordered_dense.h
     # C++ STL Headers
 	<map>
     <unordered_map>
@@ -314,6 +316,7 @@ target_link_libraries(VulkanRenderer
     KTX::ktx
     glm::glm
     OpenEXR::OpenEXR
+    unordered_dense::unordered_dense
     DearImGui
 )
 

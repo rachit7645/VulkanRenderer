@@ -23,6 +23,7 @@
 #include "MegaSet.h"
 #include "Util/Types.h"
 #include "Externals/Taskflow.h"
+#include "Externals/UnorderedDense.h"
 
 namespace Vk
 {
@@ -81,13 +82,13 @@ namespace Vk
             u64         referenceCount = 0;
         };
 
-        std::unordered_map<Vk::TextureID, TextureInfo> m_textureMap;
-        std::unordered_map<Vk::SamplerID, Vk::Sampler> m_samplerMap;
+        ankerl::unordered_dense::map<Vk::TextureID, TextureInfo> m_textureMap;
+        ankerl::unordered_dense::map<Vk::SamplerID, Vk::Sampler> m_samplerMap;
 
         Vk::ImageUploader m_imageUploader;
 
-        tf::Executor                                              m_executor;
-        std::unordered_map<Vk::TextureID, std::future<Vk::Image>> m_futuresMap;
+        tf::Executor                                                        m_executor;
+        ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::Image>> m_futuresMap;
     };
 }
 
