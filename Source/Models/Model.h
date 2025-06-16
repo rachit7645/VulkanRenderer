@@ -97,6 +97,14 @@ namespace Models
             fastgltf::AccessorType type
         );
 
+        [[nodiscard]] static std::optional<usize> GetAccessorOptional
+        (
+            const fastgltf::Asset& asset,
+            const fastgltf::Primitive& primitive,
+            const std::string_view attribute,
+            fastgltf::AccessorType type
+        );
+
         [[nodiscard]] static Vk::TextureID LoadTexture
         (
             VmaAllocator allocator,

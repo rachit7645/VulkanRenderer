@@ -23,7 +23,7 @@
 #include "Shadows/PointShadow/AlphaMasked.h"
 
 layout(location = 0) out      vec3 fragPosition;
-layout(location = 1) out      vec2 fragUV0;
+layout(location = 1) out      vec2 fragUV;
 layout(location = 2) out flat uint fragDrawID;
 
 void main()
@@ -40,6 +40,6 @@ void main()
     gl_Position  = projectionView * fragPos;
     fragPosition = fragPos.xyz;
 
-    fragUV0    = vertex.uv0;
+    fragUV     = vertex.uv[mesh.material.albedoUVMapID];
     fragDrawID = meshIndex;
 }

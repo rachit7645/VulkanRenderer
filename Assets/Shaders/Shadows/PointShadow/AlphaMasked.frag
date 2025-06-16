@@ -21,7 +21,7 @@
 #extension GL_EXT_scalar_block_layout  : enable
 
 layout(location = 0) in      vec3 fragPosition;
-layout(location = 1) in      vec2 fragUV0;
+layout(location = 1) in      vec2 fragUV;
 layout(location = 2) in flat uint fragDrawID;
 
 layout(location = 0) out float lightDistance;
@@ -33,7 +33,7 @@ void main()
 {
     Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
-    float alpha  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0).a;
+    float alpha  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV).a;
           alpha *= mesh.material.albedoFactor.a;
 
     if (alpha < mesh.material.alphaCutOff)

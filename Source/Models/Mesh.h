@@ -44,6 +44,10 @@ namespace Models
         Vk::TextureID normalID   = 0;
         Vk::TextureID aoRghMtlID = 0;
 
+        u32 albedoUVMapID   = 0;
+        u32 normalUVMapID   = 0;
+        u32 aoRghMtlUVMapID = 0;
+
         glm::vec4 albedoFactor    = {1.0f, 1.0f, 1.0f, 1.0f};
         f32       roughnessFactor = 1.0f;
         f32       metallicFactor  = 1.0f;

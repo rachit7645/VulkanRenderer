@@ -32,7 +32,7 @@ namespace Vk
         VmaAllocationCreateFlags allocationFlags,
         VmaMemoryUsage memoryUsage
     )
-        : requestedSize(size)
+        : size(size)
     {
         const VkBufferCreateInfo createInfo =
         {
@@ -138,7 +138,7 @@ namespace Vk
         handle           = VK_NULL_HANDLE;
         allocation       = {};
         deviceAddress    = 0;
-        requestedSize    = 0;
+        size             = 0;
         allocationInfo   = {};
         memoryProperties = {};
     }

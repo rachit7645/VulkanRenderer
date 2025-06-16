@@ -351,13 +351,26 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                const auto& uvAccessor = GetAccessor
+                auto uv0AccessorIndex = GetAccessorOptional
                 (
                     asset,
                     primitive,
                     "TEXCOORD_0",
                     fastgltf::AccessorType::Vec2
                 );
+
+                auto uv1AccessorIndex = GetAccessorOptional
+                (
+                    asset,
+                    primitive,
+                    "TEXCOORD_1",
+                    fastgltf::AccessorType::Vec2
+                );
+
+                if (!uv0AccessorIndex.has_value() && !uv1AccessorIndex.has_value())
+                {
+                    Logger::Error("{}\n", "At least one UV map must be present!");
+                }
 
                 const auto& tangentAccessor = GetAccessor
                 (
@@ -366,11 +379,6 @@ namespace Models
                     "TANGENT",
                     fastgltf::AccessorType::Vec4
                 );
-
-                if (normalAccessor.count != uvAccessor.count || normalAccessor.count != tangentAccessor.count)
-                {
-                    Logger::Error("{}\n", "Invalid primitive!");
-                }
 
                 const auto [writePointer, info] = geometryBuffer.vertexBuffer.Allocate
                 (
@@ -383,12 +391,28 @@ namespace Models
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    writePointer[i] = GPU::Vertex
+                    GPU::Vertex vertex = {};
+
+                    vertex.normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
+                    vertex.tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
+
+                    std::optional<glm::vec2> uv0 = std::nullopt;
+                    std::optional<glm::vec2> uv1 = std::nullopt;
+
+                    if (uv0AccessorIndex.has_value())
                     {
-                        .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
-                        .uv0     = fastgltf::getAccessorElement<glm::vec2>(asset, uvAccessor,      i),
-                        .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i),
-                    };
+                        uv0 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv0AccessorIndex], i);
+                    }
+
+                    if (uv1AccessorIndex.has_value())
+                    {
+                        uv1 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i);
+                    }
+
+                    vertex.uv[0] = uv0.has_value() ? uv0.value() : uv1.value();
+                    vertex.uv[1] = uv1.has_value() ? uv1.value() : uv0.value();
+
+                    writePointer[i] = vertex;
                 }
             }
 
@@ -435,6 +459,8 @@ namespace Models
                     baseColorTexture,
                     DEFAULT_ALBEDO
                 );
+
+                material.albedoUVMapID = baseColorTexture->texCoordIndex;
             }
 
             // Normal
@@ -450,6 +476,8 @@ namespace Models
                     asset,
                     normalTexture
                 );
+
+                material.normalUVMapID = normalTexture->texCoordIndex;
             }
 
             // AO + Roughness + Metallic
@@ -466,6 +494,8 @@ namespace Models
                     metallicRoughnessTexture,
                     DEFAULT_AO_RGH_MTL
                 );
+
+                material.aoRghMtlUVMapID = metallicRoughnessTexture->texCoordIndex;
             }
 
             meshes.emplace_back
@@ -506,6 +536,7 @@ namespace Models
     )
     {
         const auto attributeIt = primitive.findAttribute(attribute);
+
         if (attributeIt == primitive.attributes.cend())
         {
             Logger::Error("Failed to find attribute! [Attribute={}]\n", attribute);
@@ -524,6 +555,36 @@ namespace Models
         }
 
         return accessor;
+    }
+
+    std::optional<usize> Model::GetAccessorOptional
+    (
+        const fastgltf::Asset& asset,
+        const fastgltf::Primitive& primitive,
+        const std::string_view attribute,
+        fastgltf::AccessorType type
+    )
+    {
+        const auto attributeIt = primitive.findAttribute(attribute);
+
+        if (attributeIt == primitive.attributes.cend())
+        {
+            return std::nullopt;
+        }
+
+        const auto& accessor = asset.accessors[attributeIt->accessorIndex];
+
+        if (accessor.type != type)
+        {
+            Logger::Error
+            (
+                "Invalid accessor type! [AccessorType={}] [Required={}]\n",
+                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(accessor.type),
+                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(type)
+            );
+        }
+
+        return attributeIt->accessorIndex;
     }
 
     Vk::TextureID Model::LoadTexture
@@ -553,12 +614,11 @@ namespace Models
             );
         }
 
-        // TODO: Support multiple UV channels
-        if (textureInfo->texCoordIndex != 0)
+        if (textureInfo->texCoordIndex > 1)
         {
             Logger::Warning
             (
-                "Texture uses more than one UV channel! [TextureIndex={}] [TexCoordIndex={}]\n",
+                "Texture uses more than 2 UV channels! [TextureIndex={}] [TexCoordIndex={}]\n",
                 textureInfo->textureIndex,
                 textureInfo->texCoordIndex
             );
@@ -601,12 +661,11 @@ namespace Models
             );
         }
 
-        // TODO: Support multiple UV channels
-        if (textureInfo->texCoordIndex != 0)
+        if (textureInfo->texCoordIndex > 1)
         {
             Logger::Warning
             (
-                "Normal texture uses more than one UV channel! [TextureIndex={}] [TexCoordIndex={}]\n",
+                "Normal texture uses more than two UV channels! [TextureIndex={}] [TexCoordIndex={}]\n",
                 textureInfo->textureIndex,
                 textureInfo->texCoordIndex
             );
@@ -727,7 +786,7 @@ namespace Models
                 const auto& buffer     = asset.buffers[bufferView.bufferIndex];
 
                 return std::visit(Util::Visitor {
-                    // Because we specify LoadExternalBuffers. all buffers are already loaded into a vector.
+                    // Because we specify LoadExternalBuffers, all buffers are already loaded into a vector.
                     [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
                     {
                         Logger::Error

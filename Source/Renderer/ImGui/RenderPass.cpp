@@ -270,7 +270,7 @@ namespace Renderer::DearImGui
         const VkDeviceSize vertexSize = drawData->TotalVtxCount * sizeof(ImDrawVert);
         const VkDeviceSize indexSize  = drawData->TotalIdxCount * sizeof(ImDrawIdx);
 
-        if (vertexBuffer.requestedSize < vertexSize)
+        if (vertexBuffer.size < vertexSize)
         {
             Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
@@ -294,7 +294,7 @@ namespace Renderer::DearImGui
             Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
         }
 
-        if (indexBuffer.requestedSize < indexSize)
+        if (indexBuffer.size < indexSize)
         {
             Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 

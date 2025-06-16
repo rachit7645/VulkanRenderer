@@ -23,14 +23,14 @@
 #include "MegaSet.glsl"
 #include "Deferred/Depth/AlphaMasked.h"
 
-layout(location = 0) in      vec2 fragUV0;
+layout(location = 0) in      vec2 fragUV;
 layout(location = 1) in flat uint fragDrawID;
 
 void main()
 {
     Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
-    float alpha  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0).a;
+    float alpha  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV).a;
           alpha *= mesh.material.albedoFactor.a;
 
     if (alpha < mesh.material.alphaCutOff)

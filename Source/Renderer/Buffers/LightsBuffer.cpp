@@ -64,7 +64,7 @@ namespace Renderer::Buffers
                     allocator,
                     buffers[i].allocation,
                     0,
-                    buffers[i].requestedSize),
+                    buffers[i].size),
                     "Failed to flush allocation!"
                 );
             }
@@ -134,7 +134,7 @@ namespace Renderer::Buffers
                 allocator,
                 buffers[FIF].allocation,
                 0,
-                buffers[FIF].requestedSize),
+                buffers[FIF].size),
                 "Failed to flush allocation!"
             );
         }

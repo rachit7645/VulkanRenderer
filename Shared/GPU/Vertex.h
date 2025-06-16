@@ -24,8 +24,8 @@ GLSL_NAMESPACE_BEGIN(GPU)
 struct Vertex
 {
     GLSL_VEC3 normal;
-    GLSL_VEC2 uv0;
     GLSL_VEC4 tangent;
+    GLSL_VEC2 uv[2];
 };
 
 #ifndef __cplusplus

@@ -96,7 +96,6 @@ namespace Renderer::IBL
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet
         );

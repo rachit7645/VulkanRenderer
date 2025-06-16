@@ -70,9 +70,10 @@ namespace Vk
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        std::vector<AS>                      bottomLevelASes;
         std::array<AS, Vk::FRAMES_IN_FLIGHT> topLevelASes = {};
     private:
+        std::vector<AS> m_bottomLevelASes;
+
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_instanceBuffers = {};
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_scratchBuffers  = {};
 

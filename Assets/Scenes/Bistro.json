@@ -1,7 +1,7 @@
 {
     "RenderObjects": [
         {
-            "Model"    : "Bistro/BistroC.gltf",
+            "Model"    : "BistroN/BistroC.gltf",
             "Position" : [0.0, 0.0, 0.0],
             "Rotation" : [0.0, 0.0, 0.0],
             "Scale"    : [1.0, 1.0, 1.0]
@@ -16,8 +16,8 @@
     "SpotLights" : [],
     "Camera" : {
         "FreeCamera" : {
-            "Position"    : [-18.5, 4.2,  1.1],
-            "Rotation"    : [ 1.71, 31.9, 0.0],
+            "Position"    : [-10.19, 1.97, -0.73],
+            "Rotation"    : [ 5.16, -3.44,  0.0],
             "FOV"         : 80.0,
             "Speed"       : 0.000015,
             "Sensitivity" : 0.0001,

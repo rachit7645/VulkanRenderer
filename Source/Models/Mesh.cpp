@@ -22,9 +22,12 @@ namespace Models
     {
         return GPU::Material
         {
-            .albedo          = textureManager.GetTexture(albedoID).descriptorID,
-            .normal          = textureManager.GetTexture(normalID).descriptorID,
-            .aoRghMtl        = textureManager.GetTexture(aoRghMtlID).descriptorID,
+            .albedoID        = textureManager.GetTexture(albedoID).descriptorID,
+            .albedoUVMapID   = albedoUVMapID,
+            .normalID        = textureManager.GetTexture(normalID).descriptorID,
+            .normalUVMapID   = normalUVMapID,
+            .aoRghMtlID      = textureManager.GetTexture(aoRghMtlID).descriptorID,
+            .aoRghMtlUVMapID = aoRghMtlUVMapID,
             .albedoFactor    = albedoFactor,
             .roughnessFactor = roughnessFactor,
             .metallicFactor  = metallicFactor,

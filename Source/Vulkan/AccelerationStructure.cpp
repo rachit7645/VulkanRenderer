@@ -34,7 +34,7 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (renderObjects.empty() || !bottomLevelASes.empty())
+        if (renderObjects.empty() || !m_bottomLevelASes.empty())
         {
             return;
         }
@@ -106,7 +106,7 @@ namespace Vk
         std::vector<Vk::Buffer>                                      scratchBuffers = {};
         std::vector<VkAccelerationStructureBuildGeometryInfoKHR>     blasBuildInfos = {};
         std::list<VkAccelerationStructureGeometryKHR>                geometryList   = {};
-        std::list<VkAccelerationStructureBuildRangeInfoKHR>          rangeMap       = {};
+        std::list<VkAccelerationStructureBuildRangeInfoKHR>          ranges         = {};
         std::vector<const VkAccelerationStructureBuildRangeInfoKHR*> pRangeInfos    = {};
 
         for (usize meshIndex = 0; const auto& renderObject : renderObjects)
@@ -141,14 +141,14 @@ namespace Vk
 
                 const auto count = mesh.surfaceInfo.indexInfo.count / 3;
 
-                rangeMap.emplace_back(VkAccelerationStructureBuildRangeInfoKHR{
+                ranges.emplace_back(VkAccelerationStructureBuildRangeInfoKHR{
                     .primitiveCount  = count,
                     .primitiveOffset = 0,
                     .firstVertex     = 0,
                     .transformOffset = 0
                 });
 
-                pRangeInfos.emplace_back(&rangeMap.back());
+                pRangeInfos.emplace_back(&ranges.back());
 
                 VkAccelerationStructureBuildGeometryInfoKHR blasBuildInfo =
                 {
@@ -194,7 +194,7 @@ namespace Vk
                     .createFlags   = 0,
                     .buffer        = buffer.handle,
                     .offset        = 0,
-                    .size          = buffer.requestedSize,
+                    .size          = buffer.size,
                     .type          = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
                     .deviceAddress = 0
                 };
@@ -292,7 +292,7 @@ namespace Vk
 
         for (usize i = 0; i < blases.size(); ++i)
         {
-            auto& blas = bottomLevelASes.emplace_back(blases[i], buffers[i], 0);
+            auto& blas = m_bottomLevelASes.emplace_back(blases[i], buffers[i], 0);
 
             const VkAccelerationStructureDeviceAddressInfoKHR blasDAInfo =
             {
@@ -303,7 +303,7 @@ namespace Vk
 
             blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
 
-            Vk::SetDebugName(device, blas.handle,            fmt::format("BLAS/{}",       i));
+            Vk::SetDebugName(device, blas.handle,        fmt::format("BLAS/{}",       i));
             Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/{}", i));
         }
 
@@ -325,7 +325,7 @@ namespace Vk
         (
             m_compactionQueryPool == VK_NULL_HANDLE ||
             m_initialBLASBuildFrameIndex == std::numeric_limits<usize>::max() ||
-            bottomLevelASes.empty()
+            m_bottomLevelASes.empty()
         )
         {
             return;
@@ -347,7 +347,7 @@ namespace Vk
         Vk::BeginLabel(cmdBuffer, "BLAS Compaction", {0.2117f, 0.4136f, 0.7313f, 1.0f});
 
         std::vector<VkDeviceSize> compactedSizes = {};
-        compactedSizes.resize(bottomLevelASes.size());
+        compactedSizes.resize(m_bottomLevelASes.size());
 
         const auto result = vkGetQueryPoolResults
         (
@@ -368,9 +368,9 @@ namespace Vk
 
         Vk::CheckResult(result, "Failed to retrieve BLAS compacted sizes!");
 
-        for (usize i = 0; i < bottomLevelASes.size(); ++i)
+        for (usize i = 0; i < m_bottomLevelASes.size(); ++i)
         {
-            auto& blas = bottomLevelASes[i];
+            auto& blas = m_bottomLevelASes[i];
 
             auto oldBLAS   = blas.handle;
             auto oldBuffer = blas.buffer;
@@ -399,7 +399,7 @@ namespace Vk
                 .createFlags   = 0,
                 .buffer        = blas.buffer.handle,
                 .offset        = 0,
-                .size          = blas.buffer.requestedSize,
+                .size          = blas.buffer.size,
                 .type          = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
                 .deviceAddress = 0
             };
@@ -456,7 +456,7 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (renderObjects.empty() || bottomLevelASes.empty())
+        if (renderObjects.empty() || m_bottomLevelASes.empty())
         {
             deletionQueue.PushDeletor([device, as = topLevelASes[FIF].handle] () mutable
             {
@@ -505,7 +505,7 @@ namespace Vk
                     .mask                                   = 0xFF,
                     .instanceShaderBindingTableRecordOffset = 0,
                     .flags                                  = instanceFlags,
-                    .accelerationStructureReference         = bottomLevelASes[meshIndex].deviceAddress
+                    .accelerationStructureReference         = m_bottomLevelASes[meshIndex].deviceAddress
                 });
 
                 ++meshIndex;
@@ -514,7 +514,7 @@ namespace Vk
 
         const VkDeviceSize instancesSize = instances.size() * sizeof(VkAccelerationStructureInstanceKHR);
 
-        if (m_instanceBuffers[FIF].requestedSize < instancesSize)
+        if (m_instanceBuffers[FIF].size < instancesSize)
         {
             deletionQueue.PushDeletor([allocator, oldBuffer = m_instanceBuffers[FIF]] () mutable
             {
@@ -616,7 +616,7 @@ namespace Vk
             &tlasBuildSizes
         );
 
-        if (topLevelASes[FIF].buffer.requestedSize < tlasBuildSizes.accelerationStructureSize)
+        if (topLevelASes[FIF].buffer.size < tlasBuildSizes.accelerationStructureSize)
         {
             deletionQueue.PushDeletor([allocator, oldBuffer = topLevelASes[FIF].buffer] () mutable
             {
@@ -641,7 +641,7 @@ namespace Vk
             .createFlags   = 0,
             .buffer        = topLevelASes[FIF].buffer.handle,
             .offset        = 0,
-            .size          = topLevelASes[FIF].buffer.requestedSize,
+            .size          = topLevelASes[FIF].buffer.size,
             .type          = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
             .deviceAddress = 0
         };
@@ -662,7 +662,7 @@ namespace Vk
             "Failed to create TLAS!"
         );
 
-        if (m_scratchBuffers[FIF].requestedSize < tlasBuildSizes.buildScratchSize)
+        if (m_scratchBuffers[FIF].size < tlasBuildSizes.buildScratchSize)
         {
             deletionQueue.PushDeletor([allocator, oldBuffer = m_scratchBuffers[FIF]] () mutable
             {
@@ -714,7 +714,7 @@ namespace Vk
 
     void AccelerationStructure::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& blas : bottomLevelASes)
+        for (auto& blas : m_bottomLevelASes)
         {
             blas.buffer.Destroy(allocator);
 

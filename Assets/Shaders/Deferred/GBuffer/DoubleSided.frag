@@ -27,9 +27,9 @@
 
 layout(location = 0) in      vec4 fragCurrentPosition;
 layout(location = 1) in      vec4 fragPreviousPosition;
-layout(location = 2) in      vec2 fragUV0;
-layout(location = 3) in      mat3 fragTBNMatrix;
-layout(location = 6) in flat uint fragDrawID;
+layout(location = 2) in      vec2 fragUV[2];
+layout(location = 4) in      mat3 fragTBNMatrix;
+layout(location = 7) in flat uint fragDrawID;
 
 layout(location = 0) out vec4 gAlbedoReflectance;
 layout(location = 1) out vec2 gNormal;
@@ -40,13 +40,13 @@ void main()
 {
     Mesh mesh = Constants.CurrentMeshes.meshes[fragDrawID];
 
-    vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0);
+    vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.albedoUVMapID]);
     albedo.rgb  *= mesh.material.albedoFactor.rgb;
 
     gAlbedoReflectance.rgb = albedo.rgb;
     gAlbedoReflectance.a   = IoRToReflectance(mesh.material.ior);
 
-    vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
+    vec3 normal = texture(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.normalUVMapID]).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);
 
     if (!gl_FrontFacing)
@@ -56,7 +56,7 @@ void main()
 
     gNormal = PackNormal(normal);
 
-    vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtl], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
+    vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.aoRghMtlUVMapID]).rgb;
     aoRghMtl.g   *= mesh.material.roughnessFactor;
     aoRghMtl.b   *= mesh.material.metallicFactor;
 
