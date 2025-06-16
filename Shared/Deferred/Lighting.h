@@ -32,6 +32,7 @@ GLSL_PUSH_CONSTANT_BEGIN
 
     u32 GAlbedoIndex;
     u32 GNormalIndex;
+    u32 GRghMtlIndex;
     u32 SceneDepthIndex;
 
     u32 IrradianceIndex;

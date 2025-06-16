@@ -35,7 +35,7 @@ namespace Renderer::GBuffer
     {
         framebufferManager.AddFramebuffer
         (
-            "GAlbedo_Reflectance",
+            "GAlbedoReflectance",
             Vk::FramebufferType::ColorRGBA_UNorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
@@ -49,7 +49,7 @@ namespace Renderer::GBuffer
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -58,8 +58,8 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebuffer
         (
-            "GNormal_Rgh_Mtl",
-            Vk::FramebufferType::ColorRGBA_UNorm8,
+            "GNormal",
+            Vk::FramebufferType::ColorRG_Unorm16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
@@ -72,7 +72,30 @@ namespace Renderer::GBuffer
                     .arrayLayers = 1
                 };
             },
+            Vk::FramebufferInitialState{
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "GRoughnessMetallic",
+            Vk::FramebufferType::ColorRG_Unorm8,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -95,7 +118,7 @@ namespace Renderer::GBuffer
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -104,8 +127,8 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
-            "GAlbedo_Reflectance",
-            "GAlbedo_Reflectance_View",
+            "GAlbedoReflectance",
+            "GAlbedoReflectanceView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -117,8 +140,21 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
-            "GNormal_Rgh_Mtl",
-            "GNormal_Rgh_Mtl_View",
+            "GNormal",
+            "GNormalView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "GRoughnessMetallic",
+            "GRoughnessMetallicView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -157,14 +193,16 @@ namespace Renderer::GBuffer
     {
         Vk::BeginLabel(cmdBuffer, "GBuffer Generation", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
-        const auto& gAlbedoView         = framebufferManager.GetFramebufferView("GAlbedo_Reflectance_View");
-        const auto& gNormalView         = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View");
-        const auto& motionVectorsView   = framebufferManager.GetFramebufferView("GMotionVectorsView");
-        const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
+        const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView");
+        const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");
+        const auto& gRghMtlView        = framebufferManager.GetFramebufferView("GRoughnessMetallicView");
+        const auto& gMotionVectorsView = framebufferManager.GetFramebufferView("GMotionVectorsView");
+        const auto& sceneDepthView     = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& gAlbedo        = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
         const auto& gNormal        = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
-        const auto& gMotionVectors = framebufferManager.GetFramebuffer(motionVectorsView.framebuffer);
+        const auto& gRghMtl        = framebufferManager.GetFramebuffer(gRghMtlView.framebuffer);
+        const auto& gMotionVectors = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
 
         Vk::BarrierWriter barrierWriter = {};
 
@@ -197,6 +235,21 @@ namespace Renderer::GBuffer
                 .levelCount     = gNormal.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = gNormal.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            gRghMtl.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = gRghMtl.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = gRghMtl.image.arrayLayers
             }
         )
         .WriteImageBarrier(
@@ -244,11 +297,11 @@ namespace Renderer::GBuffer
             .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
         };
 
-        const VkRenderingAttachmentInfo motionVectorsInfo =
+        const VkRenderingAttachmentInfo gRghMtlInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = motionVectorsView.view.handle,
+            .imageView          = gRghMtlView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -258,11 +311,25 @@ namespace Renderer::GBuffer
             .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
         };
 
-        const VkRenderingAttachmentInfo depthAttachmentInfo =
+        const VkRenderingAttachmentInfo gMotionVectorsInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = depthAttachmentView.view.handle,
+            .imageView          = gMotionVectorsView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
+        };
+
+        const VkRenderingAttachmentInfo sceneDepthInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = sceneDepthView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -272,7 +339,7 @@ namespace Renderer::GBuffer
             .clearValue         = {}
         };
 
-        const std::array colorAttachments = {gAlbedoInfo, gNormalInfo, motionVectorsInfo};
+        const std::array colorAttachments = {gAlbedoInfo, gNormalInfo, gRghMtlInfo, gMotionVectorsInfo};
 
         const VkRenderingInfo renderInfo =
         {
@@ -287,7 +354,7 @@ namespace Renderer::GBuffer
             .viewMask             = 0,
             .colorAttachmentCount = colorAttachments.size(),
             .pColorAttachments    = colorAttachments.data(),
-            .pDepthAttachment     = &depthAttachmentInfo,
+            .pDepthAttachment     = &sceneDepthInfo,
             .pStencilAttachment   = nullptr
         };
 
@@ -514,6 +581,21 @@ namespace Renderer::GBuffer
                 .levelCount     = gNormal.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = gNormal.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            gRghMtl.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .baseMipLevel   = 0,
+                .levelCount     = gRghMtl.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = gRghMtl.image.arrayLayers
             }
         )
         .WriteImageBarrier(

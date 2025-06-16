@@ -36,11 +36,11 @@ namespace Renderer::PointShadow::AlphaMasked
             VK_DYNAMIC_STATE_CULL_MODE
         };
 
-        const std::array colorFormats = {formatHelper.rSFloat32Format};
+        constexpr std::array COLOR_FORMATS = {VK_FORMAT_R32_SFLOAT};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
+            .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
             .AttachShader("Shadows/PointShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Shadows/PointShadow/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

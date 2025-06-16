@@ -22,15 +22,15 @@
 
 namespace Renderer::IBL::BRDF
 {
-    Pipeline::Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper)
+    Pipeline::Pipeline(const Vk::Context& context)
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.rgSFloat16Format};
+        constexpr std::array COLOR_FORMATS = {VK_FORMAT_R16G16_SFLOAT};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, COLOR_FORMATS, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("IBL/BRDF.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)

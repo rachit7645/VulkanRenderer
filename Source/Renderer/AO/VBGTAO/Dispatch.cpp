@@ -434,7 +434,7 @@ namespace Renderer::AO::VBGTAO
             .PointSamplerIndex        = textureManager.GetSampler(m_occlusionPipeline.pointSamplerID).descriptorID,
             .LinearSamplerIndex       = textureManager.GetSampler(m_occlusionPipeline.linearSamplerID).descriptorID,
             .HilbertLUTIndex          = textureManager.GetTexture(m_hilbertLUT.value()).descriptorID,
-            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageID,
+            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageID,
             .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageID,
             .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageID,

@@ -26,7 +26,7 @@ namespace Renderer::IBL::BRDF
     class Pipeline : public Vk::Pipeline
     {
     public:
-        Pipeline(const Vk::Context& context, const Vk::FormatHelper& formatHelper);
+        Pipeline(const Vk::Context& context);
     };
 }
 

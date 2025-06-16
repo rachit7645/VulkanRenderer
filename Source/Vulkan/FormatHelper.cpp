@@ -22,36 +22,6 @@ namespace Vk
 {
     FormatHelper::FormatHelper(VkPhysicalDevice physicalDevice)
     {
-        textureFormatBC7 = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_BC7_UNORM_BLOCK},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
-        textureFormatBC7SRGB = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_BC7_SRGB_BLOCK},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
-        textureFormatHDR = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R16G16B16A16_SFLOAT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
         colorAttachmentFormatLDR = FindSupportedFormat
         (
             physicalDevice,
@@ -110,87 +80,6 @@ namespace Vk
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-
-        r8UnormFormat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R8_UNORM},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
-        );
-
-        r16UnormFormat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R16_UNORM},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
-        );
-
-        rUint16Format = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R16_UINT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-
-        rSFloat16Format = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R16_SFLOAT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-
-        rSFloat32Format = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R32_SFLOAT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
-        );
-
-        rUint32Format = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R32_UINT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT
-        );
-
-        rgSFloat16Format = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R16G16_SFLOAT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-
-        rgba8UnormFormat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_R8G8B8A8_UNORM},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-
-        b10g11r11SFloat = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array{VK_FORMAT_B10G11R11_UFLOAT_PACK32},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
         );
     }

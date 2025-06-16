@@ -31,9 +31,10 @@ layout(location = 2) in      vec2 fragUV0;
 layout(location = 3) in      mat3 fragTBNMatrix;
 layout(location = 6) in flat uint fragDrawID;
 
-layout(location = 0) out vec4 gAlbedo_Reflectance;
-layout(location = 1) out vec4 gNormal_Rgh_Mtl;
-layout(location = 2) out vec2 gMotionVectors;
+layout(location = 0) out vec4 gAlbedoReflectance;
+layout(location = 1) out vec2 gNormal;
+layout(location = 2) out vec2 gRoughnessMetallic;
+layout(location = 3) out vec2 gMotionVectors;
 
 void main()
 {
@@ -42,8 +43,8 @@ void main()
     vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedo], Samplers[Constants.TextureSamplerIndex]), fragUV0);
     albedo.rgb  *= mesh.material.albedoFactor.rgb;
 
-    gAlbedo_Reflectance.rgb = albedo.rgb;
-    gAlbedo_Reflectance.a   = IoRToReflectance(mesh.material.ior);
+    gAlbedoReflectance.rgb = albedo.rgb;
+    gAlbedoReflectance.a   = IoRToReflectance(mesh.material.ior);
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normal], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);
@@ -53,14 +54,14 @@ void main()
         normal = -normal;
     }
 
+    gNormal = PackNormal(normal);
+
     vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtl], Samplers[Constants.TextureSamplerIndex]), fragUV0).rgb;
     aoRghMtl.g   *= mesh.material.roughnessFactor;
     aoRghMtl.b   *= mesh.material.metallicFactor;
 
-    // Pack normal into 16 bits, 8 bits are enough for roughness and metallic
-    gNormal_Rgh_Mtl.rg = PackNormal(normal);
-    gNormal_Rgh_Mtl.b  = aoRghMtl.g;
-    gNormal_Rgh_Mtl.a  = aoRghMtl.b;
+    gRoughnessMetallic.r = aoRghMtl.g;
+    gRoughnessMetallic.g = aoRghMtl.b;
 
     vec2 current  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
     vec2 previous = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;

@@ -37,10 +37,12 @@ void main()
     vec3  albedo              = gAlbedo_Reflectance.rgb;
     float reflectance         = gAlbedo_Reflectance.a;
 
-    vec4  gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    vec3  normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
-    float roughness       = gNormal_Rgh_Mtl.b;
-    float metallic        = gNormal_Rgh_Mtl.a;
+    vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
+    vec3 normal  = UnpackNormal(gNormal.rg);
+
+    vec4  gRghMtl   = texture(sampler2D(Textures[Constants.GRghMtlIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
+    float roughness = gRghMtl.r;
+    float metallic  = gRghMtl.g;
 
     float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
     vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, fragUV, depth);

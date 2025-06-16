@@ -42,7 +42,7 @@ namespace Renderer::IBL
         : m_converterPipeline(context, formatHelper, megaSet, textureManager),
           m_convolutionPipeline(context, formatHelper, megaSet, textureManager),
           m_preFilterPipeline(context, formatHelper, megaSet, textureManager),
-          m_brdfLutPipeline(context, formatHelper)
+          m_brdfLutPipeline(context)
     {
         const auto projection = glm::perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
@@ -865,7 +865,7 @@ namespace Renderer::IBL
                 .pNext                 = nullptr,
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.rgSFloat16Format,
+                .format                = VK_FORMAT_R16G16_SFLOAT,
                 .extent                = {BRDF_LUT_SIZE.x, BRDF_LUT_SIZE.y, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,

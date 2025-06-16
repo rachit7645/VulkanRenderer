@@ -35,6 +35,8 @@ namespace Vk
         ColorR_SFloat16,
         ColorR_SFloat32,
         ColorR_Uint32,
+        ColorRG_Unorm8,
+        ColorRG_Unorm16,
         ColorRG_SFloat16,
         ColorRGBA_UNorm8,
         ColorBGR_SFloat_10_11_11,

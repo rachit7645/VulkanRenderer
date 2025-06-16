@@ -180,7 +180,7 @@ namespace Renderer::ShadowRT
             .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
             .GBufferSamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.gBufferSamplerID).descriptorID,
             .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.textureSamplerID).descriptorID,
-            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormal_Rgh_Mtl_View").sampledImageID,
+            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .OutputImage         = shadowMapView.storageImageID
         };

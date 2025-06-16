@@ -75,12 +75,13 @@ struct ShadowedPointLight
           attenuation(pointLight.attenuation),
           matrices()
     {
-        auto projection = Maths::InfiniteProjectionReverseZ
+        auto projection = Maths::ProjectionReverseZ
         (
             glm::radians(90.0f),
             static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
             static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y),
-            Renderer::NEAR_PLANE
+            Renderer::NEAR_PLANE,
+            Renderer::FAR_PLANE
         );
 
         projection[1][1] *= -1;
