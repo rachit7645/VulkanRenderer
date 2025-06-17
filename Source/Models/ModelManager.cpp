@@ -165,12 +165,13 @@ namespace Models
                                 ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset,   mesh.surfaceInfo.vertexInfo.count);
 
                                 ImGui::Separator();
-                                ImGui::Text("Texture Name                  | ID");
+                                ImGui::Text("Texture Name              | ID");
                                 ImGui::Separator();
 
-                                ImGui::Text("Albedo                        | %llu", mesh.material.albedoID);
-                                ImGui::Text("Normal Map                    | %llu", mesh.material.normalID);
-                                ImGui::Text("AO + Roughness + Metallic Map | %llu", mesh.material.aoRghMtlID);
+                                ImGui::Text("Albedo                    | %llu", mesh.material.albedoID);
+                                ImGui::Text("Normal                    | %llu", mesh.material.normalID);
+                                ImGui::Text("AO + Roughness + Metallic | %llu", mesh.material.aoRghMtlID);
+                                ImGui::Text("Emmisive                  | %llu", mesh.material.emmisiveID);
 
                                 ImGui::Separator();
                                 ImGui::Text("Factor Name | Value");
@@ -186,12 +187,19 @@ namespace Models
                                 ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
                                 ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
 
+                                ImGui::Text("Emmisive    | [%.3f, %.3f, %.3f]",
+                                    mesh.material.emmisiveFactor.r,
+                                    mesh.material.emmisiveFactor.g,
+                                    mesh.material.emmisiveFactor.b
+                                );
+
                                 ImGui::Separator();
-                                ImGui::Text("Misc         | Value");
+                                ImGui::Text("Misc              | Value");
                                 ImGui::Separator();
 
-                                ImGui::Text("Alpha Cutoff | %.3f", mesh.material.alphaCutOff);
-                                ImGui::Text("IoR          | %.3f", mesh.material.ior);
+                                ImGui::Text("Emmisive Strength | %.3f", mesh.material.emmisiveStrength);
+                                ImGui::Text("Alpha Cutoff      | %.3f", mesh.material.alphaCutOff);
+                                ImGui::Text("IoR               | %.3f", mesh.material.ior);
 
                                 ImGui::Separator();
                                 ImGui::Text("Bounds   | Value");

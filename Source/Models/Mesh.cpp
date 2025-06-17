@@ -22,18 +22,22 @@ namespace Models
     {
         return GPU::Material
         {
-            .albedoID        = textureManager.GetTexture(albedoID).descriptorID,
-            .albedoUVMapID   = albedoUVMapID,
-            .normalID        = textureManager.GetTexture(normalID).descriptorID,
-            .normalUVMapID   = normalUVMapID,
-            .aoRghMtlID      = textureManager.GetTexture(aoRghMtlID).descriptorID,
-            .aoRghMtlUVMapID = aoRghMtlUVMapID,
-            .albedoFactor    = albedoFactor,
-            .roughnessFactor = roughnessFactor,
-            .metallicFactor  = metallicFactor,
-            .alphaCutOff     = alphaCutOff,
-            .ior             = ior,
-            .flags           = flags
+            .albedoID         = textureManager.GetTexture(albedoID).descriptorID,
+            .normalID         = textureManager.GetTexture(normalID).descriptorID,
+            .aoRghMtlID       = textureManager.GetTexture(aoRghMtlID).descriptorID,
+            .emmisiveID       = textureManager.GetTexture(emmisiveID).descriptorID,
+            .albedoUVMapID    = albedoUVMapID,
+            .normalUVMapID    = normalUVMapID,
+            .aoRghMtlUVMapID  = aoRghMtlUVMapID,
+            .emmisiveUVMapID  = emmisiveUVMapID,
+            .albedoFactor     = albedoFactor,
+            .roughnessFactor  = roughnessFactor,
+            .metallicFactor   = metallicFactor,
+            .emmisiveFactor   = emmisiveFactor,
+            .emmisiveStrength = emmisiveStrength,
+            .alphaCutOff      = alphaCutOff,
+            .ior              = ior,
+            .flags            = flags
         };
     }
 

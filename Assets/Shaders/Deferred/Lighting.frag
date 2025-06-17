@@ -177,5 +177,9 @@ void main()
         brdf
     );
 
+    vec3 emmisive = texture(sampler2D(Textures[Constants.GEmmisiveIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).rgb;
+
+    Lo += emmisive;
+
     outColor = Lo;
 }

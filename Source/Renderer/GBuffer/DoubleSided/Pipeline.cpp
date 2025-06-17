@@ -36,6 +36,7 @@ namespace Renderer::GBuffer::DoubleSided
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_FORMAT_R16G16_UNORM,
             VK_FORMAT_R8G8_UNORM,
+            VK_FORMAT_B10G11R11_UFLOAT_PACK32,
             VK_FORMAT_R16G16_SFLOAT
         };
 
@@ -48,6 +49,19 @@ namespace Renderer::GBuffer::DoubleSided
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddBlendAttachment(
+                VK_FALSE,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_COLOR_COMPONENT_R_BIT |
+                VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT
+            )
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,

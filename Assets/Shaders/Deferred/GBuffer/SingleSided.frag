@@ -34,14 +34,15 @@ layout(location = 7) in flat uint fragDrawID;
 layout(location = 0) out vec4 gAlbedoReflectance;
 layout(location = 1) out vec2 gNormal;
 layout(location = 2) out vec2 gRoughnessMetallic;
-layout(location = 3) out vec2 gMotionVectors;
+layout(location = 3) out vec3 gEmmisive;
+layout(location = 4) out vec2 gMotionVectors;
 
 void main()
 {
     Mesh mesh = Constants.CurrentMeshes.meshes[fragDrawID];
 
-    vec4 albedo  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.albedoUVMapID]);
-    albedo.rgb  *= mesh.material.albedoFactor.rgb;
+    vec3 albedo  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.albedoUVMapID]).rgb;
+         albedo *= mesh.material.albedoFactor.rgb;
 
     gAlbedoReflectance.rgb = albedo.rgb;
     gAlbedoReflectance.a   = IoRToReflectance(mesh.material.ior);
@@ -51,12 +52,18 @@ void main()
 
     gNormal = PackNormal(normal);
 
-    vec3 aoRghMtl = texture(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.aoRghMtlUVMapID]).rgb;
-    aoRghMtl.g   *= mesh.material.roughnessFactor;
-    aoRghMtl.b   *= mesh.material.metallicFactor;
+    vec3 aoRghMtl    = texture(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.aoRghMtlUVMapID]).rgb;
+         aoRghMtl.g *= mesh.material.roughnessFactor;
+         aoRghMtl.b *= mesh.material.metallicFactor;
 
     gRoughnessMetallic.r = aoRghMtl.g;
     gRoughnessMetallic.g = aoRghMtl.b;
+
+    vec3 emmisive  = texture(sampler2D(Textures[mesh.material.emmisiveID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.emmisiveUVMapID]).rgb;
+         emmisive *= mesh.material.emmisiveFactor;
+         emmisive *= mesh.material.emmisiveStrength;
+
+    gEmmisive = emmisive;
 
     vec2 current  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
     vec2 previous = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;

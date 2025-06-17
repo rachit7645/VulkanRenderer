@@ -33,6 +33,7 @@ namespace Models
     constexpr auto DEFAULT_ALBEDO     = "Albedo.ktx2";
     constexpr auto DEFAULT_NORMAL     = "Normal.ktx2";
     constexpr auto DEFAULT_AO_RGH_MTL = "Albedo.ktx2";
+    constexpr auto DEFAULT_EMMISIVE   = "Albedo.ktx2";
 
     Model::Model
     (
@@ -49,7 +50,12 @@ namespace Models
         const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
 
-        fastgltf::Parser parser(fastgltf::Extensions::KHR_texture_basisu | fastgltf::Extensions::KHR_materials_ior);
+        fastgltf::Parser parser
+        (
+            fastgltf::Extensions::KHR_texture_basisu |
+            fastgltf::Extensions::KHR_materials_ior |
+            fastgltf::Extensions::KHR_materials_emissive_strength
+        );
 
         auto data = fastgltf::GltfDataBuffer::FromPath(assetPath);
         if (auto error = data.error(); error != fastgltf::Error::None)
@@ -351,7 +357,7 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                auto uv0AccessorIndex = GetAccessorOptional
+                const auto uv0AccessorIndex = GetAccessorIndex
                 (
                     asset,
                     primitive,
@@ -359,7 +365,7 @@ namespace Models
                     fastgltf::AccessorType::Vec2
                 );
 
-                auto uv1AccessorIndex = GetAccessorOptional
+                const auto uv1AccessorIndex = GetAccessorIndex
                 (
                     asset,
                     primitive,
@@ -427,10 +433,12 @@ namespace Models
 
             // Material Factors
             {
-                material.albedoFactor    = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
-                material.roughnessFactor = mat.pbrData.roughnessFactor;
-                material.metallicFactor  = mat.pbrData.metallicFactor;
-                material.ior             = mat.ior;
+                material.albedoFactor     = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
+                material.roughnessFactor  = mat.pbrData.roughnessFactor;
+                material.metallicFactor   = mat.pbrData.metallicFactor;
+                material.emmisiveFactor   = glm::fastgltf_cast(mat.emissiveFactor);
+                material.emmisiveStrength = mat.emissiveStrength;
+                material.ior              = mat.ior;
 
                 if (mat.doubleSided)
                 {
@@ -498,6 +506,24 @@ namespace Models
                 material.aoRghMtlUVMapID = metallicRoughnessTexture->texCoordIndex;
             }
 
+            // Emmisive
+            {
+                const auto& emmisiveTexture = mat.emissiveTexture;
+
+                material.emmisiveID = LoadTexture
+                (
+                    allocator,
+                    textureManager,
+                    deletionQueue,
+                    directory,
+                    asset,
+                    emmisiveTexture,
+                    DEFAULT_EMMISIVE
+                );
+
+                material.emmisiveUVMapID = emmisiveTexture->texCoordIndex;
+            }
+
             meshes.emplace_back
             (
                 surfaceInfo,
@@ -557,7 +583,7 @@ namespace Models
         return accessor;
     }
 
-    std::optional<usize> Model::GetAccessorOptional
+    std::optional<usize> Model::GetAccessorIndex
     (
         const fastgltf::Asset& asset,
         const fastgltf::Primitive& primitive,

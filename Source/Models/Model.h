@@ -97,7 +97,7 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        [[nodiscard]] static std::optional<usize> GetAccessorOptional
+        [[nodiscard]] static std::optional<usize> GetAccessorIndex
         (
             const fastgltf::Asset& asset,
             const fastgltf::Primitive& primitive,

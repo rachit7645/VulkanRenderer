@@ -169,6 +169,7 @@ namespace Renderer::Lighting
             .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView").sampledImageID,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .GRghMtlIndex        = framebufferManager.GetFramebufferView("GRoughnessMetallicView").sampledImageID,
+            .GEmmisiveIndex      = framebufferManager.GetFramebufferView("GEmmisiveView").sampledImageID,
             .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .IrradianceIndex     = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
             .PreFilterIndex      = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,

@@ -34,17 +34,20 @@ GLSL_ENUM_CLASS_END
 struct Material
 {
     u32 albedoID;
-    u32 albedoUVMapID;
-
     u32 normalID;
-    u32 normalUVMapID;
-
     u32 aoRghMtlID;
+    u32 emmisiveID;
+
+    u32 albedoUVMapID;
+    u32 normalUVMapID;
     u32 aoRghMtlUVMapID;
+    u32 emmisiveUVMapID;
 
     GLSL_VEC4 albedoFactor;
     f32       roughnessFactor;
     f32       metallicFactor;
+    GLSL_VEC3 emmisiveFactor;
+    f32       emmisiveStrength;
 
     f32 alphaCutOff;
 
