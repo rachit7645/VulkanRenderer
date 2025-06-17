@@ -165,13 +165,13 @@ namespace Models
                                 ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset,   mesh.surfaceInfo.vertexInfo.count);
 
                                 ImGui::Separator();
-                                ImGui::Text("Texture Name              | ID");
+                                ImGui::Text("Texture Name              | UV Map ID | ID");
                                 ImGui::Separator();
 
-                                ImGui::Text("Albedo                    | %llu", mesh.material.albedoID);
-                                ImGui::Text("Normal                    | %llu", mesh.material.normalID);
-                                ImGui::Text("AO + Roughness + Metallic | %llu", mesh.material.aoRghMtlID);
-                                ImGui::Text("Emmisive                  | %llu", mesh.material.emmisiveID);
+                                ImGui::Text("Albedo                    | %u         | %llu", mesh.material.albedoUVMapID,   mesh.material.albedoID);
+                                ImGui::Text("Normal                    | %u         | %llu", mesh.material.normalUVMapID,   mesh.material.normalID);
+                                ImGui::Text("AO + Roughness + Metallic | %u         | %llu", mesh.material.aoRghMtlUVMapID, mesh.material.aoRghMtlID);
+                                ImGui::Text("Emmisive                  | %u         | %llu", mesh.material.emmisiveUVMapID, mesh.material.emmisiveID);
 
                                 ImGui::Separator();
                                 ImGui::Text("Factor Name | Value");

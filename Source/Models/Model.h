@@ -105,7 +105,8 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        [[nodiscard]] static Vk::TextureID LoadTexture
+        // Texture ID, UV Map Index
+        [[nodiscard]] static std::pair<Vk::TextureID, u32> LoadTexture
         (
             VmaAllocator allocator,
             Vk::TextureManager& textureManager,
@@ -116,7 +117,8 @@ namespace Models
             const std::string_view defaultTexture
         );
 
-        [[nodiscard]] static Vk::TextureID LoadTexture
+        // Texture ID, UV Map Index
+        [[nodiscard]] static std::pair<Vk::TextureID, u32> LoadTexture
         (
             VmaAllocator allocator,
             Vk::TextureManager& textureManager,

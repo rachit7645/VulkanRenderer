@@ -457,7 +457,7 @@ namespace Models
             {
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
-                material.albedoID = LoadTexture
+                std::tie(material.albedoID, material.albedoUVMapID) = LoadTexture
                 (
                     allocator,
                     textureManager,
@@ -467,15 +467,13 @@ namespace Models
                     baseColorTexture,
                     DEFAULT_ALBEDO
                 );
-
-                material.albedoUVMapID = baseColorTexture->texCoordIndex;
             }
 
             // Normal
             {
                 const auto& normalTexture = mat.normalTexture;
 
-                material.normalID = LoadTexture
+                std::tie(material.normalID, material.normalUVMapID) = LoadTexture
                 (
                     allocator,
                     textureManager,
@@ -484,15 +482,13 @@ namespace Models
                     asset,
                     normalTexture
                 );
-
-                material.normalUVMapID = normalTexture->texCoordIndex;
             }
 
             // AO + Roughness + Metallic
             {
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
-                material.aoRghMtlID = LoadTexture
+                std::tie(material.aoRghMtlID, material.aoRghMtlUVMapID) = LoadTexture
                 (
                     allocator,
                     textureManager,
@@ -502,15 +498,13 @@ namespace Models
                     metallicRoughnessTexture,
                     DEFAULT_AO_RGH_MTL
                 );
-
-                material.aoRghMtlUVMapID = metallicRoughnessTexture->texCoordIndex;
             }
 
             // Emmisive
             {
                 const auto& emmisiveTexture = mat.emissiveTexture;
 
-                material.emmisiveID = LoadTexture
+                std::tie(material.emmisiveID, material.emmisiveUVMapID) = LoadTexture
                 (
                     allocator,
                     textureManager,
@@ -520,8 +514,6 @@ namespace Models
                     emmisiveTexture,
                     DEFAULT_EMMISIVE
                 );
-
-                material.emmisiveUVMapID = emmisiveTexture->texCoordIndex;
             }
 
             meshes.emplace_back
@@ -613,7 +605,7 @@ namespace Models
         return attributeIt->accessorIndex;
     }
 
-    Vk::TextureID Model::LoadTexture
+    std::pair<Vk::TextureID, u32> Model::LoadTexture
     (
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
@@ -626,7 +618,7 @@ namespace Models
     {
         if (!textureInfo.has_value())
         {
-            return textureManager.AddTexture
+            const auto id = textureManager.AddTexture
             (
                 allocator,
                 deletionQueue,
@@ -638,6 +630,8 @@ namespace Models
                     }
                 }
             );
+
+            return std::make_pair(id, 0);
         }
 
         if (textureInfo->texCoordIndex > 1)
@@ -650,7 +644,7 @@ namespace Models
             );
         }
 
-        return LoadTextureInternal
+        const auto id = LoadTextureInternal
         (
             allocator,
             textureManager,
@@ -659,9 +653,13 @@ namespace Models
             asset,
             textureInfo->textureIndex
         );
+
+        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
+
+        return std::make_pair(id, index);
     }
 
-    Vk::TextureID Model::LoadTexture
+    std::pair<Vk::TextureID, u32> Model::LoadTexture
     (
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
@@ -673,7 +671,7 @@ namespace Models
     {
         if (!textureInfo.has_value())
         {
-            return textureManager.AddTexture
+            const auto id = textureManager.AddTexture
             (
                 allocator,
                 deletionQueue,
@@ -685,6 +683,8 @@ namespace Models
                     }
                 }
             );
+
+            return std::make_pair(id, 0);
         }
 
         if (textureInfo->texCoordIndex > 1)
@@ -697,7 +697,7 @@ namespace Models
             );
         }
 
-        return LoadTextureInternal
+        const auto id = LoadTextureInternal
         (
             allocator,
             textureManager,
@@ -706,6 +706,10 @@ namespace Models
             asset,
             textureInfo->textureIndex
         );
+
+        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
+
+        return std::make_pair(id, index);
     }
 
     Vk::TextureID Model::LoadTextureInternal
