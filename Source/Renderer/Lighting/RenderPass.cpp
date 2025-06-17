@@ -176,8 +176,7 @@ namespace Renderer::Lighting
             .BRDFLUTIndex        = textureManager.GetTexture(iblMaps.brdfLutID).descriptorID,
             .ShadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
             .PointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
-            .SpotShadowMapIndex  = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
-            .AOIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID,
+            .AOIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID
         };
 
         m_pipeline.PushConstants

@@ -42,7 +42,6 @@ GLSL_PUSH_CONSTANT_BEGIN
 
     u32 ShadowMapIndex;
     u32 PointShadowMapIndex;
-    u32 SpotShadowMapIndex;
 
     u32 AOIndex;
 } GLSL_PUSH_CONSTANT_END;

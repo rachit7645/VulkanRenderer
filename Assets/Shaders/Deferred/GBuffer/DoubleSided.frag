@@ -70,8 +70,8 @@ void main()
 
     gEmmisive = emmisive;
 
-    vec2 current  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
-    vec2 previous = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;
+    vec2 currentUV  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
+    vec2 previousUV = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;
 
-    gMotionVectors = current - previous;
+    gMotionVectors = currentUV - previousUV;
 }

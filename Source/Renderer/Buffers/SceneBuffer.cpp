@@ -102,7 +102,6 @@ namespace Renderer::Buffers
         gpuScene.PointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
         gpuScene.ShadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
         gpuScene.SpotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();
-        gpuScene.ShadowedSpotLights  = lightsBufferAddress + lightsBuffer.GetShadowedSpotLightOffset();
         
         std::memcpy
         (

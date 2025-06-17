@@ -24,7 +24,6 @@
 #include "MegaSet.glsl"
 #include "Packing.glsl"
 #include "PointShadowMap.glsl"
-#include "SpotShadowMap.glsl"
 #include "Deferred/Lighting.h"
 
 layout(location = 0) in vec2 fragUV;
@@ -120,33 +119,6 @@ void main()
         LightInfo lightInfo = GetLightInfo(light, worldPosition);
 
         Lo += CalculateLight
-        (
-            lightInfo,
-            normal,
-            toCamera,
-            albedo,
-            roughness,
-            metallic,
-            reflectance
-        );
-    }
-
-    for (uint i = 0; i < Constants.Scene.ShadowedSpotLights.count; ++i)
-    {
-        ShadowedSpotLight light     = Constants.Scene.ShadowedSpotLights.lights[i];
-        LightInfo         lightInfo = GetLightInfo(light, worldPosition);
-
-        float shadow = CalculateSpotShadow
-        (
-            i,
-            light,
-            worldPosition,
-            normal,
-            TextureArrays[Constants.SpotShadowMapIndex],
-            Samplers[Constants.ShadowSamplerIndex]
-        );
-
-        Lo += (1.0f - shadow) * CalculateLight
         (
             lightInfo,
             normal,

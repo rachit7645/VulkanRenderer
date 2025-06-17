@@ -62,9 +62,6 @@ file(GLOB SHADER_SOURCES
     Shadows/PointShadow/Opaque.frag
     Shadows/PointShadow/AlphaMasked.vert
     Shadows/PointShadow/AlphaMasked.frag
-    Shadows/SpotShadow/Opaque.vert
-    Shadows/SpotShadow/AlphaMasked.vert
-    Shadows/SpotShadow/AlphaMasked.frag
     Shadows/RT/Shadow.rgen
     Shadows/RT/Shadow.rmiss
     Shadows/RT/Shadow.rahit

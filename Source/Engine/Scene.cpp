@@ -276,10 +276,10 @@ namespace Engine
                             {
                                 auto& light = pointLights[i];
 
-                                ImGui::DragFloat3("Position",    &light.position[0],    1.0f, 0.0f, 0.0f, "%.2f");
-                                ImGui::ColorEdit3("Color",       &light.color[0]);
-                                ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f, 0.0f, 0.0f, "%.2f");
-                                ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f, 0.0f, 0.0f, "%.4f");
+                                ImGui::DragFloat3("Position",  &light.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                                ImGui::ColorEdit3("Color",     &light.color[0]);
+                                ImGui::DragFloat3("Intensity", &light.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
+                                ImGui::DragFloat( "Range",     &light.range,        1.0f, 0.0f, 0.0f, "%.3f");
 
                                 ImGui::TreePop();
                             }
@@ -300,13 +300,15 @@ namespace Engine
                             {
                                 auto& light = spotLights[i];
 
-                                ImGui::DragFloat3("Position",    &light.position[0],    1.0f,   0.0f, 0.0f, "%.2f");
-                                ImGui::ColorEdit3("Color",       &light.color[0]);
-                                ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f,   0.0f, 0.0f, "%.2f");
-                                ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f,   0.0f, 1.0f, "%.4f");
-                                ImGui::DragFloat3("Direction",   &light.direction[0],   0.05f, -1.0f, 1.0f, "%.2f");
+                                constexpr auto ONE_DEGREE    = glm::radians(1.0f);
+                                constexpr auto HALF_ROTATION = std::numbers::pi;
 
-                                ImGui::DragFloat2("Cut Off", &light.cutOff[0], glm::radians(1.0f), 0.0f, std::numbers::pi, "%.2f");
+                                ImGui::DragFloat3("Position",  &light.position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::ColorEdit3("Color",     &light.color[0]                                             );
+                                ImGui::DragFloat3("Intensity", &light.intensity[0], 0.5f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::DragFloat3("Direction", &light.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
+                                ImGui::DragFloat2("Cut Off",   &light.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
+                                ImGui::DragFloat( "Range",     &light.range,        1.0f,       0.0f, 0.0f,          "%.3f");
 
                                 ImGui::TreePop();
                             }

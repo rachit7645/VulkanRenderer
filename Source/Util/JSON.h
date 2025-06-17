@@ -165,7 +165,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Attenuation"].get<glm::vec3>(light.attenuation); error != error_code::SUCCESS)
+        if (const auto error = object["Range"].get<f32>(light.range); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -198,17 +198,17 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Attenuation"].get<glm::vec3>(light.attenuation); error != error_code::SUCCESS)
-        {
-            return error;
-        }
-
         if (const auto error = object["Direction"].get<glm::vec3>(light.direction); error != error_code::SUCCESS)
         {
             return error;
         }
 
         if (const auto error = object["CutOff"].get<glm::vec2>(light.cutOff); error != error_code::SUCCESS)
+        {
+            return error;
+        }
+
+        if (const auto error = object["Range"].get<f32>(light.range); error != error_code::SUCCESS)
         {
             return error;
         }

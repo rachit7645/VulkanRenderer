@@ -373,11 +373,6 @@ namespace Models
                     fastgltf::AccessorType::Vec2
                 );
 
-                if (!uv0AccessorIndex.has_value() && !uv1AccessorIndex.has_value())
-                {
-                    Logger::Error("{}\n", "At least one UV map must be present!");
-                }
-
                 const auto& tangentAccessor = GetAccessor
                 (
                     asset,
@@ -415,8 +410,8 @@ namespace Models
                         uv1 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i);
                     }
 
-                    vertex.uv[0] = uv0.has_value() ? uv0.value() : uv1.value();
-                    vertex.uv[1] = uv1.has_value() ? uv1.value() : uv0.value();
+                    vertex.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::vec2(0.0f, 0.0f));
+                    vertex.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::vec2(0.0f, 0.0f));
 
                     writePointer[i] = vertex;
                 }

@@ -26,7 +26,6 @@
 #include "Skybox/RenderPass.h"
 #include "Bloom/RenderPass.h"
 #include "PointShadow/RenderPass.h"
-#include "SpotShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
 #include "AO/VBGTAO/Dispatch.h"
@@ -105,10 +104,9 @@ namespace Renderer
         Skybox::RenderPass      m_skybox;
         Bloom::RenderPass       m_bloom;
         PointShadow::RenderPass m_pointShadow;
-        SpotShadow::RenderPass  m_spotShadow;
         GBuffer::RenderPass     m_gBuffer;
         Lighting::RenderPass    m_lighting;
-        ShadowRT::RayDispatch    m_shadowRT;
+        ShadowRT::RayDispatch   m_shadowRT;
         TAA::RenderPass         m_taa;
 
         // Dispatches

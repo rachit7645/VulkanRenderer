@@ -40,7 +40,6 @@ namespace Renderer
           m_skybox(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
           m_bloom(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_pointShadow(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_spotShadow(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_gBuffer(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_lighting(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
           m_shadowRT(m_context, m_cmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
@@ -65,7 +64,6 @@ namespace Renderer
             m_shadowRT.Destroy(m_context.device, m_context.allocator);
             m_lighting.Destroy(m_context.device);
             m_gBuffer.Destroy(m_context.device);
-            m_spotShadow.Destroy(m_context.device);
             m_pointShadow.Destroy(m_context.device);
             m_bloom.Destroy(m_context.device);
             m_skybox.Destroy(m_context.device);
@@ -153,20 +151,6 @@ namespace Renderer
         );
 
         m_pointShadow.Render
-        (
-            m_FIF,
-            m_frameIndex,
-            cmdBuffer,
-            m_framebufferManager,
-            m_megaSet,
-            m_modelManager,
-            m_sceneBuffer,
-            m_meshBuffer,
-            m_indirectBuffer,
-            m_culling
-        );
-
-        m_spotShadow.Render
         (
             m_FIF,
             m_frameIndex,

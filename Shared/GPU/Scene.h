@@ -44,7 +44,6 @@ GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
     GLSL_BUFFER_POINTER(PointLightBuffer)         PointLights;
     GLSL_BUFFER_POINTER(ShadowedPointLightBuffer) ShadowedPointLights;
     GLSL_BUFFER_POINTER(SpotLightBuffer)          SpotLights;
-    GLSL_BUFFER_POINTER(ShadowedSpotLightBuffer)  ShadowedSpotLights;
 };
 
 #ifndef __cplusplus
