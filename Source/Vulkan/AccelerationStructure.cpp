@@ -87,12 +87,14 @@ namespace Vk
         (
             cmdBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
-                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-                .dstAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
-                .offset        = 0,
-                .size          = transformsSize
+                .srcStageMask   = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask  = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                .dstAccessMask  = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = transformsSize
             }
         );
 
@@ -556,12 +558,14 @@ namespace Vk
         (
             cmdBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
-                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-                .dstAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
-                .offset        = 0,
-                .size          = instancesSize
+                .srcStageMask   = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask  = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                .dstAccessMask  = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = instancesSize
             }
         );
 

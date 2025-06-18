@@ -153,12 +153,14 @@ namespace Vk
             (
                m_allocator.buffer,
                Vk::BufferBarrier{
-                   .srcStageMask  = bufferInfo.stageMask,
-                   .srcAccessMask = bufferInfo.accessMask,
-                   .dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                   .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                   .offset        = info.offset * sizeof(T),
-                   .size          = info.count  * sizeof(T)
+                   .srcStageMask   = bufferInfo.stageMask,
+                   .srcAccessMask  = bufferInfo.accessMask,
+                   .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                   .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                   .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                   .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                   .offset         = info.offset * sizeof(T),
+                   .size           = info.count  * sizeof(T)
                }
             );
         }
@@ -192,12 +194,14 @@ namespace Vk
             (
                 m_allocator.buffer,
                 Vk::BufferBarrier{
-                    .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask  = bufferInfo.stageMask,
-                    .dstAccessMask = bufferInfo.accessMask,
-                    .offset        = info.offset * sizeof(T),
-                    .size          = info.count  * sizeof(T)
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = bufferInfo.stageMask,
+                    .dstAccessMask  = bufferInfo.accessMask,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .offset         = info.offset * sizeof(T),
+                    .size           = info.count  * sizeof(T)
                 }
             );
         }

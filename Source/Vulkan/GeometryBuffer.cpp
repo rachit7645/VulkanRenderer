@@ -132,12 +132,14 @@ namespace Vk
             (
                 cmdBuffer,
                 Vk::BufferBarrier{
-                    .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-                    .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-                    .offset        = 0,
-                    .size          = VERTICES_SIZE
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .offset         = 0,
+                    .size           = VERTICES_SIZE
                 }
             );
 

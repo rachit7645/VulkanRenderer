@@ -23,12 +23,14 @@ namespace Vk
 {
     struct BufferBarrier
     {
-        VkPipelineStageFlags2 srcStageMask  = VK_PIPELINE_STAGE_2_NONE;
-        VkAccessFlags2        srcAccessMask = VK_ACCESS_2_NONE;
-        VkPipelineStageFlags2 dstStageMask  = VK_PIPELINE_STAGE_2_NONE;
-        VkAccessFlags2        dstAccessMask = VK_ACCESS_2_NONE;
-        VkDeviceSize          offset        = 0;
-        VkDeviceSize          size          = VK_WHOLE_SIZE;
+        VkPipelineStageFlags2 srcStageMask   = VK_PIPELINE_STAGE_2_NONE;
+        VkAccessFlags2        srcAccessMask  = VK_ACCESS_2_NONE;
+        VkPipelineStageFlags2 dstStageMask   = VK_PIPELINE_STAGE_2_NONE;
+        VkAccessFlags2        dstAccessMask  = VK_ACCESS_2_NONE;
+        u32                   srcQueueFamily = VK_QUEUE_FAMILY_IGNORED;
+        u32                   dstQueueFamily = VK_QUEUE_FAMILY_IGNORED;
+        VkDeviceSize          offset         = 0;
+        VkDeviceSize          size           = VK_WHOLE_SIZE;
     };
 
     struct ImageBarrier
@@ -39,6 +41,8 @@ namespace Vk
         VkAccessFlags2        dstAccessMask  = VK_ACCESS_2_NONE;
         VkImageLayout         oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED;
         VkImageLayout         newLayout      = VK_IMAGE_LAYOUT_UNDEFINED;
+        u32                   srcQueueFamily = VK_QUEUE_FAMILY_IGNORED;
+        u32                   dstQueueFamily = VK_QUEUE_FAMILY_IGNORED;
         u32                   baseMipLevel   = 0;
         u32                   levelCount     = VK_REMAINING_MIP_LEVELS;
         u32                   baseArrayLayer = 0;

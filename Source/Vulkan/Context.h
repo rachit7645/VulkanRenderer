@@ -51,6 +51,7 @@ namespace Vk
         // Queues
         Vk::QueueFamilyIndices queueFamilies;
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
+        VkQueue                computeQueue  = VK_NULL_HANDLE;
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;

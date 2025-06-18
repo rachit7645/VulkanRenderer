@@ -63,18 +63,23 @@ namespace Vk
 
             const auto& properties = queueFamilies[i].queueFamilyProperties;
 
-            if
-            (
-                presentSupport == VK_TRUE &&
-                properties.queueFlags & VK_QUEUE_GRAPHICS_BIT &&
-                properties.queueFlags & VK_QUEUE_TRANSFER_BIT &&
-                properties.queueFlags & VK_QUEUE_COMPUTE_BIT
-            )
+            const bool hasGraphics = properties.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+            const bool hasTransfer = properties.queueFlags & VK_QUEUE_TRANSFER_BIT;
+            const bool hasCompute  = properties.queueFlags & VK_QUEUE_COMPUTE_BIT;
+
+            const bool graphicsFamilyFlags = hasGraphics && hasTransfer && hasCompute && presentSupport;
+            const bool computeFamilyFlags  = hasCompute && !hasGraphics;
+
+            if (graphicsFamilyFlags)
             {
                 graphicsFamily = i;
             }
+            else if (computeFamilyFlags)
+            {
+                computeFamily = i;
+            }
 
-            if (IsComplete())
+            if (HasAllFamilies())
             {
                 break;
             }
@@ -83,11 +88,23 @@ namespace Vk
 
     ankerl::unordered_dense::set<u32> QueueFamilyIndices::GetUniqueFamilies() const
     {
-        return {graphicsFamily.value_or(0)};
+        ankerl::unordered_dense::set<u32> uniqueFamilies = {*graphicsFamily};
+
+        if (computeFamily.has_value())
+        {
+            uniqueFamilies.insert(*computeFamily);
+        }
+
+        return uniqueFamilies;
     }
 
-    bool QueueFamilyIndices::IsComplete() const
+    bool QueueFamilyIndices::HasRequiredFamilies() const
     {
         return graphicsFamily.has_value();
+    }
+
+    bool QueueFamilyIndices::HasAllFamilies() const
+    {
+        return graphicsFamily.has_value() && computeFamily.has_value();
     }
 }

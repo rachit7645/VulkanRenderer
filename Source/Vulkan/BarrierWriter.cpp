@@ -27,8 +27,8 @@ namespace Vk
             .srcAccessMask       = barrier.srcAccessMask,
             .dstStageMask        = barrier.dstStageMask,
             .dstAccessMask       = barrier.dstAccessMask,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .srcQueueFamilyIndex = barrier.srcQueueFamily,
+            .dstQueueFamilyIndex = barrier.dstQueueFamily,
             .buffer              = buffer.handle,
             .offset              = barrier.offset,
             .size                = barrier.size
@@ -48,8 +48,8 @@ namespace Vk
             .dstAccessMask       = barrier.dstAccessMask,
             .oldLayout           = barrier.oldLayout,
             .newLayout           = barrier.newLayout,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .srcQueueFamilyIndex = barrier.srcQueueFamily,
+            .dstQueueFamilyIndex = barrier.dstQueueFamily,
             .image               = image.handle,
             .subresourceRange    = {
                 .aspectMask     = image.aspect,

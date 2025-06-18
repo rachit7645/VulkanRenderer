@@ -276,6 +276,8 @@ namespace Renderer::IBL
                 .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
                 .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = skybox.mipLevels,
                 .baseArrayLayer = 0,
@@ -388,16 +390,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = skybox.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = skybox.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = skybox.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = skybox.arrayLayers
             }
         );
 
@@ -477,16 +481,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = irradianceMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = irradianceMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = irradianceMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = irradianceMap.arrayLayers
             }
         );
 
@@ -593,16 +599,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = irradianceMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = irradianceMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = irradianceMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = irradianceMap.arrayLayers
             }
         );
 
@@ -658,16 +666,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = preFilterMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = preFilterMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = preFilterMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = preFilterMap.arrayLayers
             }
         );
 
@@ -791,16 +801,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = preFilterMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = preFilterMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = preFilterMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = preFilterMap.arrayLayers
             }
         );
 
@@ -896,16 +908,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = brdfLut.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = brdfLut.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = brdfLut.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = brdfLut.arrayLayers
             }
         );
 
@@ -979,16 +993,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = brdfLut.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = brdfLut.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = brdfLut.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = brdfLut.arrayLayers
             }
         );
 

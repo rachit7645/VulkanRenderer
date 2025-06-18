@@ -80,6 +80,8 @@ namespace Renderer::DearImGui
                 .dstAccessMask  = VK_ACCESS_2_NONE,
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
@@ -332,23 +334,27 @@ namespace Renderer::DearImGui
         .WriteBufferBarrier(
             vertexBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
-                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-                .offset        = 0,
-                .size          = vertexSize
+                .srcStageMask   = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask  = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = vertexSize
             }
         )
         .WriteBufferBarrier(
             indexBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
-                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-                .dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT,
-                .offset        = 0,
-                .size          = indexSize
+                .srcStageMask   = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask  = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDEX_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = indexSize
             }
         )
         .Execute(cmdBuffer);

@@ -288,10 +288,11 @@ namespace Vk
         #endif
 
         // Score parts
-        const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
+        const usize discreteGPU    = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
+        const usize completeQueues = queues.HasAllFamilies() ? 1000 : 0;
 
         // Requirements
-        const bool areQueuesValid = queues.IsComplete();
+        const bool areQueuesValid = queues.HasRequiredFamilies();
         const bool hasExtensions  = Vk::CheckDeviceExtensionSupport(phyDevice, REQUIRED_DEVICE_EXTENSIONS);
 
         // Need extensions to calculate these
@@ -377,7 +378,9 @@ namespace Vk
                                 hasDrawIndirectCount && hasTimelineSemaphore;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
-        return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
+        const usize totalScore = discreteGPU + completeQueues;
+
+        return (required && standard && extensions && vk11 && vk12 && vk13) * totalScore;
     }
 
     void Context::CreateLogicalDevice()
@@ -501,13 +504,38 @@ namespace Vk
 
         volkLoadDevice(device);
 
-        vkGetDeviceQueue
+        const VkDeviceQueueInfo2 graphicsQueueInfo =
+        {
+            .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
+            .pNext            = nullptr,
+            .flags            = 0,
+            .queueFamilyIndex = *queueFamilies.graphicsFamily
+        };
+
+        vkGetDeviceQueue2
         (
             device,
-            queueFamilies.graphicsFamily.value_or(0),
-            0,
+            &graphicsQueueInfo,
             &graphicsQueue
         );
+
+        if (queueFamilies.computeFamily.has_value())
+        {
+            const VkDeviceQueueInfo2 computeQueueInfo =
+            {
+                .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
+                .pNext            = nullptr,
+                .flags            = 0,
+                .queueFamilyIndex = *queueFamilies.computeFamily
+            };
+
+            vkGetDeviceQueue2
+            (
+                device,
+                &computeQueueInfo,
+                &computeQueue
+            );
+        }
     }
 
     void Context::CreateAllocator()
@@ -577,6 +605,11 @@ namespace Vk
         Vk::SetDebugName(device, device,         "Device");
         Vk::SetDebugName(device, surface,        "SDL3Surface");
         Vk::SetDebugName(device, graphicsQueue,  "GraphicsQueue");
+
+        if (queueFamilies.computeFamily.has_value())
+        {
+            Vk::SetDebugName(device, computeQueue, "ComputeQueue");
+        }
     }
 
     void Context::Destroy()

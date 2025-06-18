@@ -47,12 +47,14 @@ namespace Renderer::Culling
         (
             cmdBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .offset        = 0,
-                .size          = sizeof(GPU::FrustumBuffer)
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(GPU::FrustumBuffer)
             }
         );
 
@@ -69,12 +71,14 @@ namespace Renderer::Culling
         (
             cmdBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-                .offset        = 0,
-                .size          = sizeof(GPU::FrustumBuffer)
+                .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(GPU::FrustumBuffer)
             }
         );
     }

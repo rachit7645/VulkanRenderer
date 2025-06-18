@@ -271,6 +271,8 @@ namespace Vk
                     .dstAccessMask  = framebuffer.initialState.dstAccessMask,
                     .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
                     .newLayout      = framebuffer.initialState.initialLayout,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = 0,
                     .levelCount     = framebuffer.image.mipLevels,
                     .baseArrayLayer = 0,

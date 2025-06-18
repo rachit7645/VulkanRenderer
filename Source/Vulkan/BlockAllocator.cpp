@@ -170,12 +170,14 @@ namespace Vk
             (
                 oldBuffer,
                 Vk::BufferBarrier{
-                    .srcStageMask  = m_stageMask,
-                    .srcAccessMask = m_accessMask,
-                    .dstStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
-                    .offset        = block.offset,
-                    .size          = block.size
+                    .srcStageMask   = m_stageMask,
+                    .srcAccessMask  = m_accessMask,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .offset         = block.offset,
+                    .size           = block.size
                 }
             );
 
@@ -183,12 +185,14 @@ namespace Vk
             (
                 buffer,
                 Vk::BufferBarrier{
-                    .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask  = m_stageMask,
-                    .dstAccessMask = m_accessMask,
-                    .offset        = block.offset,
-                    .size          = block.size
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = m_stageMask,
+                    .dstAccessMask  = m_accessMask,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .offset         = block.offset,
+                    .size           = block.size
                 }
             );
         }
