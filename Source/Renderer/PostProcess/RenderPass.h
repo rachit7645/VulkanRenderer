@@ -20,6 +20,7 @@
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
+#include "Renderer/Objects/Camera.h"
 
 namespace Renderer::PostProcess
 {
@@ -42,7 +43,8 @@ namespace Renderer::PostProcess
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const Renderer::Objects::Camera& camera
         );
     private:
         PostProcess::Pipeline m_pipeline;

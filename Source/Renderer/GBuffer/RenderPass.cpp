@@ -406,7 +406,14 @@ namespace Renderer::GBuffer
             .clearValue         = {}
         };
 
-        const std::array colorAttachments = {gAlbedoInfo, gNormalInfo, gRghMtlInfo, gEmmisiveInfo, gMotionVectorsInfo};
+        const std::array colorAttachments =
+        {
+            gAlbedoInfo,
+            gNormalInfo,
+            gRghMtlInfo,
+            gEmmisiveInfo,
+            gMotionVectorsInfo
+        };
 
         const VkRenderingInfo renderInfo =
         {

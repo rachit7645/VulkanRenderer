@@ -27,6 +27,7 @@ GLSL_PUSH_CONSTANT_BEGIN
     u32 ImageIndex;
     u32 BloomIndex;
     f32 BloomStrength;
+    f32 Exposure;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

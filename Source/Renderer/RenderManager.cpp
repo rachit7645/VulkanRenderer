@@ -261,7 +261,8 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            m_scene->camera
         );
 
         m_swapchain.Blit(cmdBuffer, m_framebufferManager);

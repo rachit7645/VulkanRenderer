@@ -18,7 +18,6 @@
 
 #include "Util/Log.h"
 #include "Util/Ranges.h"
-#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Misc/PostProcess.h"
 
@@ -76,7 +75,8 @@ namespace Renderer::PostProcess
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Renderer::Objects::Camera& camera
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -172,7 +172,8 @@ namespace Renderer::PostProcess
             .SamplerIndex  = textureManager.GetSampler(m_pipeline.samplerID).descriptorID,
             .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
             .BloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
-            .BloomStrength = m_bloomStrength
+            .BloomStrength = m_bloomStrength,
+            .Exposure      = camera.exposure
         };
 
         m_pipeline.PushConstants

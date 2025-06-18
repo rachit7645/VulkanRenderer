@@ -27,7 +27,7 @@ namespace Renderer::Objects
     {
     public:
         Camera() = default;
-        Camera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV);
+        Camera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV, f32 exposure);
         virtual ~Camera() = default;
 
         Camera(const Camera&) noexcept = default;
@@ -47,6 +47,8 @@ namespace Renderer::Objects
         glm::vec3 rotation = {0.0f, 0.0f, 0.0f};
         // Must be in radians
         f32 FOV = Renderer::DEFAULT_FOV;
+        // In EV
+        f32 exposure = 0.0f;
 
         glm::vec3 front = {0.0f, 0.0f, -1.0f};
         glm::vec3 up    = {0.0f, 1.0f,  0.0f};

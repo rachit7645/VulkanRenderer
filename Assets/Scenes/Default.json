@@ -109,6 +109,7 @@
             "Position"    : [0.0, 2.0,   0.0],
             "Rotation"    : [0.0, 180.0, 0.0],
             "FOV"         : 80.0,
+            "Exposure"    : 0.7,
             "Speed"       : 0.000015,
             "Sensitivity" : 0.0001,
             "Zoom"        : 0.000045

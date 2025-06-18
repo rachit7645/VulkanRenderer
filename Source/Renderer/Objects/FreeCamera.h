@@ -33,6 +33,7 @@ namespace Renderer::Objects
             const glm::vec3& position,
             const glm::vec3& rotation,
             f32 FOV,
+            f32 exposure,
             f32 speed,
             f32 sensitivity,
             f32 zoom
