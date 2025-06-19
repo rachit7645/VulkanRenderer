@@ -24,10 +24,6 @@
 
 namespace Renderer::AO::VBGTAO
 {
-    constexpr u32 VBGTAO_DEPTH_MIP_LEVELS = 5;
-    constexpr u32 VBGTAO_HILBERT_LEVEL    = 6;                          // Must match the value in Constants.glsl
-    constexpr u32 VBGTAO_HILBERT_WIDTH    = 1u << VBGTAO_HILBERT_LEVEL; // Must match the value in Constants.glsl
-    
     Dispatch::Dispatch
     (
         const Vk::Context& context,
@@ -51,7 +47,7 @@ namespace Renderer::AO::VBGTAO
                 {
                     .width       = extent.width,
                     .height      = extent.height,
-                    .mipLevels   = VBGTAO_DEPTH_MIP_LEVELS,
+                    .mipLevels   = Occlusion::GTAO_DEPTH_MIP_LEVELS,
                     .arrayLayers = 1
                 };
             },
@@ -69,13 +65,13 @@ namespace Renderer::AO::VBGTAO
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
-                .levelCount     = VBGTAO_DEPTH_MIP_LEVELS,
+                .levelCount     = Occlusion::GTAO_DEPTH_MIP_LEVELS,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
         );
 
-        for (u32 i = 0; i < VBGTAO_DEPTH_MIP_LEVELS; ++i)
+        for (u32 i = 0; i < Occlusion::GTAO_DEPTH_MIP_LEVELS; ++i)
         {
             framebufferManager.AddFramebufferView
             (
@@ -205,12 +201,12 @@ namespace Renderer::AO::VBGTAO
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
-        const Vk::Context& context,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        Vk::MegaSet& megaSet,
-        Models::ModelManager& modelManager,
-        Util::DeletionQueue& deletionQueue
+        const std::string_view sceneDepthID,
+        const std::string_view gNormalID,
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -228,49 +224,13 @@ namespace Renderer::AO::VBGTAO
 
         Vk::BeginLabel(cmdBuffer, "VBGTAO", glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
 
-        if (!m_hilbertLUT.has_value())
-        {
-            constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<VBGTAO_HILBERT_LEVEL>();
-
-            // A bit hacky but what can you do :(
-            const auto HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
-            const auto HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
-
-            m_hilbertLUT = modelManager.textureManager.AddTexture
-            (
-                context.allocator,
-                deletionQueue,
-                Vk::ImageUpload{
-                    .type   = Vk::ImageUploadType::RAW,
-                    .flags  = Vk::ImageUploadFlags::None,
-                    .source = Vk::ImageUploadRawMemory{
-                        .name   = "VBGTAO/HilbertLUT",
-                        .width  = VBGTAO_HILBERT_WIDTH,
-                        .height = VBGTAO_HILBERT_WIDTH,
-                        .format = VK_FORMAT_R16_UINT,
-                        .data   = std::vector(HILBERT_BEGIN, HILBERT_END)
-                    }
-                }
-            );
-
-            modelManager.Update
-            (
-                cmdBuffer,
-                context.device,
-                context.allocator,
-                megaSet,
-                deletionQueue
-            );
-
-            megaSet.Update(context.device);
-        }
-
         PreFilterDepth
         (
             cmdBuffer,
             framebufferManager,
             megaSet,
-            modelManager.textureManager
+            textureManager,
+            sceneDepthID
         );
 
         Occlusion
@@ -280,8 +240,9 @@ namespace Renderer::AO::VBGTAO
             cmdBuffer,
             framebufferManager,
             megaSet,
-            modelManager.textureManager,
-            sceneBuffer
+            textureManager,
+            sceneBuffer,
+            gNormalID
         );
 
         Denoise
@@ -289,7 +250,7 @@ namespace Renderer::AO::VBGTAO
             cmdBuffer,
             framebufferManager,
             megaSet,
-            modelManager.textureManager
+            textureManager
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -300,7 +261,8 @@ namespace Renderer::AO::VBGTAO
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const std::string_view sceneDepthID
     )
     {
         Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
@@ -311,7 +273,7 @@ namespace Renderer::AO::VBGTAO
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -331,7 +293,7 @@ namespace Renderer::AO::VBGTAO
         const auto constants = DepthPreFilter::Constants
         {
             .PointSamplerIndex = textureManager.GetSampler(m_depthPreFilterPipeline.pointSamplerID).descriptorID,
-            .SceneDepthIndex   = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
+            .SceneDepthIndex   = framebufferManager.GetFramebufferView(sceneDepthID).sampledImageID,
             .OutDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageID,
             .OutDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageID,
             .OutDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageID,
@@ -387,7 +349,8 @@ namespace Renderer::AO::VBGTAO
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Buffers::SceneBuffer& sceneBuffer
+        const Buffers::SceneBuffer& sceneBuffer,
+        const std::string_view gNormalID
     )
     {
         Vk::BeginLabel(cmdBuffer, "Occlusion", glm::vec4(0.6098f, 0.7143f, 0.4529f, 1.0f));
@@ -401,7 +364,7 @@ namespace Renderer::AO::VBGTAO
         .WriteImageBarrier(
             noisyAO.image,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -418,7 +381,7 @@ namespace Renderer::AO::VBGTAO
         .WriteImageBarrier(
             depthDifferences.image,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -441,8 +404,8 @@ namespace Renderer::AO::VBGTAO
             .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
             .PointSamplerIndex        = textureManager.GetSampler(m_occlusionPipeline.pointSamplerID).descriptorID,
             .LinearSamplerIndex       = textureManager.GetSampler(m_occlusionPipeline.linearSamplerID).descriptorID,
-            .HilbertLUTIndex          = textureManager.GetTexture(m_hilbertLUT.value()).descriptorID,
-            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
+            .HilbertLUTIndex          = textureManager.GetTexture(hilbertLUT).descriptorID,
+            .GNormalIndex             = framebufferManager.GetFramebufferView(gNormalID).sampledImageID,
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageID,
             .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageID,
             .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageID,

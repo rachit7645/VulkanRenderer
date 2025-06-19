@@ -68,7 +68,7 @@ namespace Vk
             const bool hasCompute  = properties.queueFlags & VK_QUEUE_COMPUTE_BIT;
 
             const bool graphicsFamilyFlags = hasGraphics && hasTransfer && hasCompute && presentSupport;
-            const bool computeFamilyFlags  = hasCompute && !hasGraphics;
+            const bool computeFamilyFlags  = hasCompute && hasTransfer && !hasGraphics;
 
             if (graphicsFamilyFlags)
             {

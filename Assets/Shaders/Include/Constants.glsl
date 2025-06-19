@@ -50,17 +50,8 @@ const float TAA_DEFAULT_HISTORY_BLEND_RATE = 0.1f;
 const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
 
 // GTAO Constants
-
-// |---------|--------|---------|
-// | Setting | Slices | Samples |
-// |---------|--------|---------|
-// | Low     |   1    |    2    |
-// | Medium  |   2    |    2    |
-// | High    |   3    |    3    |
-// | Ultra   |   9    |    3    |
-// |---------|--------|---------|
-const uint GTAO_SLICE_COUNT  = 2;
-const uint GTAO_SAMPLE_COUNT = 2;
+const uint GTAO_SLICE_COUNT  = 3;
+const uint GTAO_SAMPLE_COUNT = 3;
 
 const float GTAO_DEPTH_RANGE_SCALE_FACTOR  = 0.75f;
 const float GTAO_DEFAULT_RADIUS            = 0.5f;
@@ -75,8 +66,5 @@ const float GTAO_FALLOFF_MUL = -1.0f / GTAO_FALLOFF_RANGE;
 const float GTAO_FALLOFF_ADD = GTAO_FALLOFF_FROM / (GTAO_FALLOFF_RANGE) + 1.0f;
 
 const float GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET = 3.30f;
-
-const uint GTAO_HILBERT_LEVEL = 6;
-const uint GTAO_HILBERT_WIDTH = 1u << GTAO_HILBERT_LEVEL;
 
 #endif

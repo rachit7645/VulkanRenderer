@@ -167,7 +167,7 @@ namespace Vk
 
             if (referenceCount == 0)
             {
-                return;
+                continue;
             }
 
             auto iter = m_futuresMap.find(id);
@@ -221,11 +221,45 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
+    Vk::Texture& TextureManager::GetTexture(Vk::TextureID id)
+    {
+        auto iter = m_textureMap.find(id);
+
+        if (iter == m_textureMap.end())
+        {
+            Logger::Error("Invalid texture id! [ID={}]\n", id);
+        }
+
+        if (!iter->second.texture.isLoaded)
+        {
+            Logger::Error("Texture not yet loaded! [ID={}]\n", id);
+        }
+
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Texture reference count is zero! [ID={}]\n", id);
+        }
+
+        return iter->second.texture;
+    }
+
+    Vk::Sampler& TextureManager::GetSampler(Vk::SamplerID id)
+    {
+        auto iter = m_samplerMap.find(id);
+
+        if (iter == m_samplerMap.end())
+        {
+            Logger::Error("Invalid sampler ID! [ID={}]\n", id);
+        }
+
+        return iter->second;
+    }
+
     const Vk::Texture& TextureManager::GetTexture(Vk::TextureID id) const
     {
         const auto iter = m_textureMap.find(id);
 
-        if (iter == m_textureMap.end())
+        if (iter == m_textureMap.cend())
         {
             Logger::Error("Invalid texture id! [ID={}]\n", id);
         }
@@ -247,7 +281,7 @@ namespace Vk
     {
         const auto iter = m_samplerMap.find(id);
 
-        if (iter == m_samplerMap.end())
+        if (iter == m_samplerMap.cend())
         {
             Logger::Error("Invalid sampler ID! [ID={}]\n", id);
         }

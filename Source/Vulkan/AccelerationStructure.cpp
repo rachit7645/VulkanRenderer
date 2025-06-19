@@ -319,7 +319,7 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
-        const Vk::Timeline& timeline,
+        const Vk::GraphicsTimeline& timeline,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -337,7 +337,7 @@ namespace Vk
         const bool isQueryReady = timeline.IsAtOrPastState
         (
             m_initialBLASBuildFrameIndex + Vk::FRAMES_IN_FLIGHT,
-            Vk::Timeline::TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED,
+            Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED,
             device
         );
 

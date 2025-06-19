@@ -44,22 +44,25 @@ namespace Renderer::AO::VBGTAO
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
-            const Vk::Context& context,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
-            Vk::MegaSet& megaSet,
-            Models::ModelManager& modelManager,
-            Util::DeletionQueue& deletionQueue
+            const std::string_view sceneDepthID,
+            const std::string_view gNormalID,
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
 
         void Destroy(VkDevice device);
+
+        Vk::TextureID hilbertLUT = 0;
     private:
         void PreFilterDepth
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const std::string_view sceneDepthID
         );
 
         void Occlusion
@@ -70,7 +73,8 @@ namespace Renderer::AO::VBGTAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Buffers::SceneBuffer& sceneBuffer
+            const Buffers::SceneBuffer& sceneBuffer,
+            const std::string_view gNormalID
         );
 
         void Denoise
@@ -84,8 +88,6 @@ namespace Renderer::AO::VBGTAO
         DepthPreFilter::Pipeline m_depthPreFilterPipeline;
         Occlusion::Pipeline      m_occlusionPipeline;
         Denoise::Pipeline        m_denoisePipeline;
-
-        std::optional<Vk::TextureID> m_hilbertLUT = std::nullopt;
 
         f32 m_finalValuePower = 1.0f;
         f32 m_thickness       = 0.25f;

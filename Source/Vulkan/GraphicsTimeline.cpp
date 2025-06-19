@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "Timeline.h"
+#include "GraphicsTimeline.h"
 
 #include "Util.h"
 #include "DebugUtils.h"
 
 namespace Vk
 {
-    Timeline::Timeline(VkDevice device)
+    GraphicsTimeline::GraphicsTimeline(VkDevice device)
     {
         const VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
         {
@@ -46,10 +46,10 @@ namespace Vk
             "Failed to create timeline semaphore!"
         );
 
-        Vk::SetDebugName(device, semaphore, "TimelineSemaphore");
+        Vk::SetDebugName(device, semaphore, "Graphics/TimelineSemaphore");
     }
 
-    void Timeline::AcquireImageToTimeline(usize frameIndex, VkQueue queue, VkSemaphore imageAcquire)
+    void GraphicsTimeline::AcquireImageToTimeline(usize frameIndex, VkQueue queue, VkSemaphore imageAcquire)
     {
         const VkSemaphoreSubmitInfo waitSemaphoreInfo =
         {
@@ -66,7 +66,7 @@ namespace Vk
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
             .semaphore   = semaphore,
-            .value       = GetTimelineValue(frameIndex, TimelineStage::TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
+            .value       = GetTimelineValue(frameIndex, GraphicsTimelineStage::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
             .stageMask   = VK_PIPELINE_STAGE_2_NONE,
             .deviceIndex = 0
         };
@@ -93,14 +93,14 @@ namespace Vk
         );
     }
 
-    void Timeline::TimelineToRenderFinished(usize frameIndex, VkQueue queue, VkSemaphore renderFinished)
+    void GraphicsTimeline::TimelineToRenderFinished(usize frameIndex, VkQueue queue, VkSemaphore renderFinished)
     {
         const VkSemaphoreSubmitInfo waitSemaphoreInfo =
         {
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
             .semaphore   = semaphore,
-            .value       = GetTimelineValue(frameIndex, TimelineStage::TIMELINE_STAGE_RENDER_FINISHED),
+            .value       = GetTimelineValue(frameIndex, GraphicsTimelineStage::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED),
             .stageMask   = VK_PIPELINE_STAGE_2_NONE,
             .deviceIndex = 0
         };
@@ -137,14 +137,14 @@ namespace Vk
         );
     }
 
-    u64 Timeline::GetTimelineValue(usize frameIndex, TimelineStage timelineStage) const
+    u64 GraphicsTimeline::GetTimelineValue(usize frameIndex, GraphicsTimelineStage timelineStage) const
     {
         // Since we use an initial value of 0, an easy fix is to add 1 to the frame index
         // 0 -> 1 * TIMELINE_STAGE_COUNT + 0 -> ....
-        return (frameIndex + 1) * TimelineStage::TIMELINE_STAGE_COUNT + timelineStage;
+        return (frameIndex + 1) * GraphicsTimelineStage::GRAPHICS_TIMELINE_STAGE_COUNT + timelineStage;
     }
 
-    void Timeline::WaitForStage(usize frameIndex, TimelineStage timelineStage, VkDevice device) const
+    void GraphicsTimeline::WaitForStage(usize frameIndex, GraphicsTimelineStage timelineStage, VkDevice device) const
     {
         const u64 value = GetTimelineValue(frameIndex, timelineStage);
 
@@ -166,7 +166,7 @@ namespace Vk
         );
     }
 
-    bool Timeline::IsAtOrPastState(usize frameIndex, TimelineStage timelineStage, VkDevice device) const
+    bool GraphicsTimeline::IsAtOrPastState(usize frameIndex, GraphicsTimelineStage timelineStage, VkDevice device) const
     {
         const u64 value = GetTimelineValue(frameIndex, timelineStage);
 
@@ -181,7 +181,7 @@ namespace Vk
         return currentValue >= value;
     }
 
-    void Timeline::Destroy(VkDevice device)
+    void GraphicsTimeline::Destroy(VkDevice device)
     {
         vkDestroySemaphore(device, semaphore, nullptr);
     }

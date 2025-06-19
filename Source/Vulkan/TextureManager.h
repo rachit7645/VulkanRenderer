@@ -56,7 +56,11 @@ namespace Vk
             const VkSamplerCreateInfo& createInfo
         );
 
+        // WARNING! Blocks this thread!
         void Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet);
+
+        [[nodiscard]] Vk::Texture& GetTexture(Vk::TextureID id);
+        [[nodiscard]] Vk::Sampler& GetSampler(Vk::SamplerID id);
 
         [[nodiscard]] const Vk::Texture& GetTexture(Vk::TextureID id) const;
         [[nodiscard]] const Vk::Sampler& GetSampler(Vk::SamplerID id) const;

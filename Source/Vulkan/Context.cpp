@@ -509,7 +509,8 @@ namespace Vk
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
             .pNext            = nullptr,
             .flags            = 0,
-            .queueFamilyIndex = *queueFamilies.graphicsFamily
+            .queueFamilyIndex = *queueFamilies.graphicsFamily,
+            .queueIndex       = 0
         };
 
         vkGetDeviceQueue2
@@ -526,7 +527,8 @@ namespace Vk
                 .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
                 .pNext            = nullptr,
                 .flags            = 0,
-                .queueFamilyIndex = *queueFamilies.computeFamily
+                .queueFamilyIndex = *queueFamilies.computeFamily,
+                .queueIndex       = 0
             };
 
             vkGetDeviceQueue2

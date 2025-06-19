@@ -21,7 +21,7 @@
 #include "CommandBuffer.h"
 #include "Context.h"
 #include "Buffer.h"
-#include "Timeline.h"
+#include "GraphicsTimeline.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"
 
@@ -53,7 +53,7 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
-            const Vk::Timeline& timeline,
+            const Vk::GraphicsTimeline& timeline,
             Util::DeletionQueue& deletionQueue
         );
 

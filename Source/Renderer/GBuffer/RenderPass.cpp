@@ -61,7 +61,30 @@ namespace Renderer::GBuffer
             "GNormal",
             Vk::FramebufferType::ColorRG_Unorm16,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            Vk::FramebufferInitialState{
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "GNormalAsyncCompute",
+            Vk::FramebufferType::ColorRG_Unorm16,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -176,6 +199,19 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
+            "GNormalAsyncCompute",
+            "GNormalAsyncComputeView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
             "GRoughnessMetallic",
             "GRoughnessMetallicView",
             Vk::FramebufferImageType::Single2D,
@@ -241,6 +277,7 @@ namespace Renderer::GBuffer
         const auto& gRghMtl        = framebufferManager.GetFramebuffer(gRghMtlView.framebuffer);
         const auto& gEmmisive      = framebufferManager.GetFramebuffer(gEmmisiveView.framebuffer);
         const auto& gMotionVectors = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
+        const auto& sceneDepth     = framebufferManager.GetFramebuffer(sceneDepthView.framebuffer);
 
         Vk::BarrierWriter barrierWriter = {};
 
@@ -720,6 +757,23 @@ namespace Renderer::GBuffer
                 .levelCount     = gMotionVectors.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = gMotionVectors.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            sceneDepth.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                .srcAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = sceneDepth.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = sceneDepth.image.arrayLayers
             }
         )
         .Execute(cmdBuffer);

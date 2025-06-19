@@ -21,14 +21,15 @@
 
 namespace Vk
 {
-    CommandBufferAllocator::CommandBufferAllocator(VkDevice device, const Vk::QueueFamilyIndices& queueFamilies)
+    CommandBufferAllocator::CommandBufferAllocator(VkDevice device, u32 queueFamilyIndex)
+        : m_queueFamilyIndex(queueFamilyIndex)
     {
         const VkCommandPoolCreateInfo resetCreateInfo =
         {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = queueFamilies.graphicsFamily.value_or(0)
+            .queueFamilyIndex = m_queueFamilyIndex
         };
 
         Vk::CheckResult(vkCreateCommandPool(
@@ -44,7 +45,7 @@ namespace Vk
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = 0,
-            .queueFamilyIndex = queueFamilies.graphicsFamily.value_or(0)
+            .queueFamilyIndex = m_queueFamilyIndex
         };
 
         for (auto& commandPool : m_commandPools)
@@ -58,11 +59,11 @@ namespace Vk
             );
         }
 
-        Vk::SetDebugName(device, m_globalCommandPool, "GlobalCommandPool");
+        Vk::SetDebugName(device, m_globalCommandPool, fmt::format("QueueFamily{}/GlobalCommandPool", m_queueFamilyIndex));
 
         for (usize i = 0; i < m_commandPools.size(); ++i)
         {
-            Vk::SetDebugName(device, m_commandPools[i], fmt::format("CommandPool/FIF{}", i));
+            Vk::SetDebugName(device, m_commandPools[i], fmt::format("QueueFamily{}/CommandPool/FIF{}", m_queueFamilyIndex, i));
         }
     }
 
@@ -79,7 +80,7 @@ namespace Vk
         {
             cmdBuffer = m_allocatedGlobalCommandBuffers.emplace_back(device, m_globalCommandPool, level);
 
-            Vk::SetDebugName(device, cmdBuffer.handle, fmt::format("GlobalCommandBuffer/{}", m_allocatedGlobalCommandBuffers.size() - 1));
+            Vk::SetDebugName(device, cmdBuffer.handle, fmt::format("QueueFamily{}/GlobalCommandBuffer/{}", m_queueFamilyIndex, m_allocatedGlobalCommandBuffers.size() - 1));
         }
 
         return cmdBuffer;
@@ -104,29 +105,9 @@ namespace Vk
 
         const auto cmdBuffer = m_allocatedCommandBuffers[FIF].emplace_back(Vk::CommandBuffer(device, m_commandPools[FIF], level), true).commandBuffer;
 
-        Vk::SetDebugName(device, cmdBuffer.handle, fmt::format("CommandBuffer/FIF{}/{}", FIF, m_allocatedCommandBuffers[FIF].size() - 1));
+        Vk::SetDebugName(device, cmdBuffer.handle, fmt::format("QueueFamily{}/CommandBuffer/FIF{}/{}", m_queueFamilyIndex, FIF, m_allocatedCommandBuffers[FIF].size() - 1));
 
         return cmdBuffer;
-    }
-
-    std::vector<VkCommandBufferSubmitInfo> CommandBufferAllocator::GetGraphicsQueueSubmits(usize FIF)
-    {
-        std::vector<VkCommandBufferSubmitInfo> submits;
-
-        for (const auto& [commandBuffer, isDirty] : m_allocatedCommandBuffers[FIF])
-        {
-            if (isDirty)
-            {
-                submits.emplace_back(VkCommandBufferSubmitInfo{
-                    .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                    .pNext         = nullptr,
-                    .commandBuffer = commandBuffer.handle,
-                    .deviceMask    = 1
-                });
-            }
-        }
-
-        return submits;
     }
 
     void CommandBufferAllocator::ResetPool(usize FIF, VkDevice device)

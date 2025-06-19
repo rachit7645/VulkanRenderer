@@ -112,7 +112,11 @@ namespace Vk
                allocation == rhs.allocation &&
                width  == rhs.width &&
                height == rhs.height &&
+               depth == rhs.depth &&
+               mipLevels == rhs.mipLevels &&
+               arrayLayers == rhs.arrayLayers &&
                format == rhs.format &&
+               usage == rhs.usage &&
                aspect == rhs.aspect;
     }
 

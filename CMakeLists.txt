@@ -81,12 +81,13 @@ add_executable(VulkanRenderer
     Source/Vulkan/DescriptorAllocator.cpp
     Source/Vulkan/CommandBufferAllocator.cpp
     Source/Vulkan/ImmediateSubmit.cpp
-    Source/Vulkan/Timeline.cpp
+    Source/Vulkan/GraphicsTimeline.cpp
     Source/Vulkan/ImageUploader.cpp
     Source/Vulkan/PipelineBuilder.cpp
     Source/Vulkan/BarrierWriter.cpp
     Source/Vulkan/VertexBuffer.cpp
     Source/Vulkan/BlockAllocator.cpp
+    Source/Vulkan/ComputeTimeline.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderObject.cpp

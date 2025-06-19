@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef TIMELINE_H
-#define TIMELINE_H
+#ifndef COMPUTE_TIMELINE_H
+#define COMPUTE_TIMELINE_H
 
 #include <vulkan/vulkan.h>
 
@@ -23,25 +23,21 @@
 
 namespace Vk
 {
-    class Timeline
+    class ComputeTimeline
     {
     public:
-        enum TimelineStage : u64
+        enum ComputeTimelineStage : u64
         {
-            TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED = 0,
-            TIMELINE_STAGE_RENDER_FINISHED          = 1,
-            TIMELINE_STAGE_COUNT
+            COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED = 0,
+            COMPUTE_TIMELINE_STAGE_COUNT
         };
 
-        explicit Timeline(VkDevice device);
+        explicit ComputeTimeline(VkDevice device);
 
-        void AcquireImageToTimeline(usize frameIndex, VkQueue queue, VkSemaphore imageAcquire);
-        void TimelineToRenderFinished(usize frameIndex, VkQueue queue, VkSemaphore renderFinished);
+        [[nodiscard]] u64 GetTimelineValue(usize frameIndex, ComputeTimelineStage timelineStage) const;
 
-        [[nodiscard]] u64 GetTimelineValue(usize frameIndex, TimelineStage timelineStage) const;
-
-        void WaitForStage(usize frameIndex, TimelineStage timelineStage, VkDevice device) const;
-        bool IsAtOrPastState(usize frameIndex, TimelineStage timelineStage, VkDevice device) const;
+        void WaitForStage(usize frameIndex, ComputeTimelineStage timelineStage, VkDevice device) const;
+        bool IsAtOrPastState(usize frameIndex, ComputeTimelineStage timelineStage, VkDevice device) const;
 
         void Destroy(VkDevice device);
 
