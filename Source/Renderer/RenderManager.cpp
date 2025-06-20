@@ -192,12 +192,10 @@ namespace Renderer
         const auto cmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-        GBufferGeneration(cmdBuffer);
-        Occlusion(cmdBuffer, m_sceneBuffer, "SceneDepthView", "GNormalView");
-        TraceRays(cmdBuffer);
-        Lighting(cmdBuffer);
-
+            GBufferGeneration(cmdBuffer);
+            Occlusion(cmdBuffer, m_sceneBuffer, "SceneDepthView", "GNormalView");
+            TraceRays(cmdBuffer);
+            Lighting(cmdBuffer);
         cmdBuffer.EndRecording();
 
         const VkSemaphoreSubmitInfo waitSemaphoreInfo =
@@ -206,7 +204,7 @@ namespace Renderer
             .pNext       = nullptr,
             .semaphore   = m_graphicsTimeline.semaphore,
             .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
-            .stageMask   = VK_PIPELINE_STAGE_2_NONE,
+            .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             .deviceIndex = 0
         };
 
@@ -216,7 +214,7 @@ namespace Renderer
             .pNext       = nullptr,
             .semaphore   = m_graphicsTimeline.semaphore,
             .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED),
-            .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+            .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             .deviceIndex = 0
         };
 
@@ -252,198 +250,253 @@ namespace Renderer
 
     void RenderManager::RenderMultiQueue()
     {
-        const auto gBufferGenerationCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        const auto asyncComputeCmdBuffer      = m_computeCmdBufferAllocator->AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        const auto rayDispatchCmdBuffer       = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        const auto lightingCmdBuffer          = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-        gBufferGenerationCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            GBufferGeneration(gBufferGenerationCmdBuffer);
-            GraphicsToAsyncComputeRelease(gBufferGenerationCmdBuffer);
-        gBufferGenerationCmdBuffer.EndRecording();
-
-        asyncComputeCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            GraphicsToAsyncComputeAcquire(asyncComputeCmdBuffer);
-            Occlusion(asyncComputeCmdBuffer, *m_sceneBufferCompute, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView");
-            AsyncComputeToGraphicsRelease(asyncComputeCmdBuffer);
-        asyncComputeCmdBuffer.EndRecording();
-
-        rayDispatchCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            TraceRays(rayDispatchCmdBuffer);
-        rayDispatchCmdBuffer.EndRecording();
-
-        lightingCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            AsyncComputeToGraphicsAcquire(lightingCmdBuffer);
-            Lighting(lightingCmdBuffer);
-        lightingCmdBuffer.EndRecording();
-
-        const VkSemaphoreSubmitInfo swapchainImageSemaphoreInfo =
+        // GBuffer Generation Submit
         {
-            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext       = nullptr,
-            .semaphore   = m_graphicsTimeline.semaphore,
-            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
-            .stageMask   = VK_PIPELINE_STAGE_2_NONE,
-            .deviceIndex = 0
-        };
+            const auto gBufferGenerationCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        const VkSemaphoreSubmitInfo gBufferGenerationSemaphoreInfo =
+            gBufferGenerationCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                GBufferGeneration(gBufferGenerationCmdBuffer);
+                GraphicsToAsyncComputeRelease(gBufferGenerationCmdBuffer);
+            gBufferGenerationCmdBuffer.EndRecording();
+
+            const VkSemaphoreSubmitInfo swapchainImageAcquireWaitSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_graphicsTimeline.semaphore,
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
+                .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .deviceIndex = 0
+            };
+
+            const VkCommandBufferSubmitInfo gBufferGenerationCmdBufferInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = gBufferGenerationCmdBuffer.handle,
+                .deviceMask    = 0
+            };
+
+            const VkSemaphoreSubmitInfo gBufferGenerationSignalSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_graphicsTimeline.semaphore,
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
+                .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .deviceIndex = 0
+            };
+
+            const VkSubmitInfo2 gBufferGenerationSubmitInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                .pNext                    = nullptr,
+                .flags                    = 0,
+                .waitSemaphoreInfoCount   = 1,
+                .pWaitSemaphoreInfos      = &swapchainImageAcquireWaitSemaphoreInfo,
+                .commandBufferInfoCount   = 1,
+                .pCommandBufferInfos      = &gBufferGenerationCmdBufferInfo,
+                .signalSemaphoreInfoCount = 1,
+                .pSignalSemaphoreInfos    = &gBufferGenerationSignalSemaphoreInfo
+            };
+
+            Vk::CheckResult(vkQueueSubmit2(
+                m_context.graphicsQueue,
+                1,
+                &gBufferGenerationSubmitInfo,
+                VK_NULL_HANDLE),
+                "Failed to submit to graphics queue!"
+            );
+        }
+
+        // Async Compute Submit
         {
-            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext       = nullptr,
-            .semaphore   = m_graphicsTimeline.semaphore,
-            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
-            .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-            .deviceIndex = 0
-        };
+            const auto asyncComputeCmdBuffer = m_computeCmdBufferAllocator->AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        const VkSemaphoreSubmitInfo asyncComputeSemaphoreInfo =
+            asyncComputeCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                GraphicsToAsyncComputeAcquire(asyncComputeCmdBuffer);
+                Occlusion(asyncComputeCmdBuffer, *m_sceneBufferCompute, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView");
+                AsyncComputeToGraphicsRelease(asyncComputeCmdBuffer);
+            asyncComputeCmdBuffer.EndRecording();
+
+            const VkSemaphoreSubmitInfo gBufferGenerationAsyncComputeWaitSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_graphicsTimeline.semaphore,
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
+                .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .deviceIndex = 0
+            };
+
+            const VkCommandBufferSubmitInfo asyncComputeCmdBufferInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = asyncComputeCmdBuffer.handle,
+                .deviceMask    = 0
+            };
+
+            const VkSemaphoreSubmitInfo asyncComputeSignalSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_computeTimeline->semaphore,
+                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED),
+                .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .deviceIndex = 0
+            };
+
+            const VkSubmitInfo2 asyncComputeSubmitInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                .pNext                    = nullptr,
+                .flags                    = 0,
+                .waitSemaphoreInfoCount   = 1,
+                .pWaitSemaphoreInfos      = &gBufferGenerationAsyncComputeWaitSemaphoreInfo,
+                .commandBufferInfoCount   = 1,
+                .pCommandBufferInfos      = &asyncComputeCmdBufferInfo,
+                .signalSemaphoreInfoCount = 1,
+                .pSignalSemaphoreInfos    = &asyncComputeSignalSemaphoreInfo
+            };
+
+            Vk::CheckResult(vkQueueSubmit2(
+                m_context.computeQueue,
+                1,
+                &asyncComputeSubmitInfo,
+                VK_NULL_HANDLE),
+                "Failed to submit to compute queue!"
+            );
+        }
+
+        // Ray Dispatch Submit
         {
-            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext       = nullptr,
-            .semaphore   = m_computeTimeline->semaphore,
-            .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED),
-            .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .deviceIndex = 0
-        };
+            const auto rayDispatchCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        const VkSemaphoreSubmitInfo rayDispatchSemaphoreInfo =
+            rayDispatchCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                TraceRays(rayDispatchCmdBuffer);
+            rayDispatchCmdBuffer.EndRecording();
+
+            const VkSemaphoreSubmitInfo gBufferGenerationWaitSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_graphicsTimeline.semaphore,
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
+                .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .deviceIndex = 0
+            };
+
+            const VkCommandBufferSubmitInfo rayDispatchCmdBufferInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = rayDispatchCmdBuffer.handle,
+                .deviceMask    = 0
+            };
+
+            const VkSemaphoreSubmitInfo rayDispatchSignalSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_graphicsTimeline.semaphore,
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH),
+                .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .deviceIndex = 0
+            };
+
+            const VkSubmitInfo2 rayDispatchSubmitInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                .pNext                    = nullptr,
+                .flags                    = 0,
+                .waitSemaphoreInfoCount   = 1,
+                .pWaitSemaphoreInfos      = &gBufferGenerationWaitSemaphoreInfo,
+                .commandBufferInfoCount   = 1,
+                .pCommandBufferInfos      = &rayDispatchCmdBufferInfo,
+                .signalSemaphoreInfoCount = 1,
+                .pSignalSemaphoreInfos    = &rayDispatchSignalSemaphoreInfo
+            };
+
+            Vk::CheckResult(vkQueueSubmit2(
+                m_context.graphicsQueue,
+                1,
+                &rayDispatchSubmitInfo,
+                VK_NULL_HANDLE),
+                "Failed to submit to graphics queue!"
+            );
+        }
+
+        // Lighting Submit
         {
-            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext       = nullptr,
-            .semaphore   = m_graphicsTimeline.semaphore,
-            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH),
-            .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-            .deviceIndex = 0
-        };
+            const auto lightingCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-        const VkSemaphoreSubmitInfo renderFinishedSemaphoreInfo =
-        {
-            .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext       = nullptr,
-            .semaphore   = m_graphicsTimeline.semaphore,
-            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED),
-            .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-            .deviceIndex = 0
-        };
+            lightingCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+                AsyncComputeToGraphicsAcquire(lightingCmdBuffer);
+                Lighting(lightingCmdBuffer);
+            lightingCmdBuffer.EndRecording();
 
-        const VkCommandBufferSubmitInfo gBufferGenerationCmdBufferInfo =
-        {
-            .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-            .pNext         = nullptr,
-            .commandBuffer = gBufferGenerationCmdBuffer.handle,
-            .deviceMask    = 0
-        };
+            const VkSemaphoreSubmitInfo asyncComputeWaitSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_computeTimeline->semaphore,
+                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED),
+                .stageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .deviceIndex = 0
+            };
 
-        const VkCommandBufferSubmitInfo asyncComputeCmdBufferInfo =
-        {
-            .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-            .pNext         = nullptr,
-            .commandBuffer = asyncComputeCmdBuffer.handle,
-            .deviceMask    = 0
-        };
+            const VkSemaphoreSubmitInfo rayDispatchWaitSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_graphicsTimeline.semaphore,
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH),
+                .stageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .deviceIndex = 0
+            };
 
-        const VkCommandBufferSubmitInfo rayDispatchCmdBufferInfo =
-        {
-            .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-            .pNext         = nullptr,
-            .commandBuffer = rayDispatchCmdBuffer.handle,
-            .deviceMask    = 0
-        };
+            const std::array lightingWaitSemaphoreInfos = {asyncComputeWaitSemaphoreInfo, rayDispatchWaitSemaphoreInfo};
 
-        const VkCommandBufferSubmitInfo lightingCmdBufferInfo =
-        {
-            .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-            .pNext         = nullptr,
-            .commandBuffer = lightingCmdBuffer.handle,
-            .deviceMask    = 0
-        };
+            const VkCommandBufferSubmitInfo lightingCmdBufferInfo =
+            {
+                .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                .pNext         = nullptr,
+                .commandBuffer = lightingCmdBuffer.handle,
+                .deviceMask    = 0
+            };
 
-        const VkSubmitInfo2 gBufferGenerationSubmitInfo =
-        {
-            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-            .pNext                    = nullptr,
-            .flags                    = 0,
-            .waitSemaphoreInfoCount   = 1,
-            .pWaitSemaphoreInfos      = &swapchainImageSemaphoreInfo,
-            .commandBufferInfoCount   = 1,
-            .pCommandBufferInfos      = &gBufferGenerationCmdBufferInfo,
-            .signalSemaphoreInfoCount = 1,
-            .pSignalSemaphoreInfos    = &gBufferGenerationSemaphoreInfo
-        };
+            const VkSemaphoreSubmitInfo renderFinishedSignalSemaphoreInfo =
+            {
+                .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .pNext       = nullptr,
+                .semaphore   = m_graphicsTimeline.semaphore,
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED),
+                .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .deviceIndex = 0
+            };
 
-        const VkSubmitInfo2 asyncComputeSubmitInfo =
-        {
-            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-            .pNext                    = nullptr,
-            .flags                    = 0,
-            .waitSemaphoreInfoCount   = 1,
-            .pWaitSemaphoreInfos      = &gBufferGenerationSemaphoreInfo,
-            .commandBufferInfoCount   = 1,
-            .pCommandBufferInfos      = &asyncComputeCmdBufferInfo,
-            .signalSemaphoreInfoCount = 1,
-            .pSignalSemaphoreInfos    = &asyncComputeSemaphoreInfo
-        };
+            const VkSubmitInfo2 lightingSubmitInfo =
+            {
+                .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                .pNext                    = nullptr,
+                .flags                    = 0,
+                .waitSemaphoreInfoCount   = static_cast<u32>(lightingWaitSemaphoreInfos.size()),
+                .pWaitSemaphoreInfos      = lightingWaitSemaphoreInfos.data(),
+                .commandBufferInfoCount   = 1,
+                .pCommandBufferInfos      = &lightingCmdBufferInfo,
+                .signalSemaphoreInfoCount = 1,
+                .pSignalSemaphoreInfos    = &renderFinishedSignalSemaphoreInfo
+            };
 
-        const VkSubmitInfo2 rayDispatchSubmitInfo =
-        {
-            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-            .pNext                    = nullptr,
-            .flags                    = 0,
-            .waitSemaphoreInfoCount   = 1,
-            .pWaitSemaphoreInfos      = &gBufferGenerationSemaphoreInfo,
-            .commandBufferInfoCount   = 1,
-            .pCommandBufferInfos      = &rayDispatchCmdBufferInfo,
-            .signalSemaphoreInfoCount = 1,
-            .pSignalSemaphoreInfos    = &rayDispatchSemaphoreInfo
-        };
-
-        const std::array lightingWaitSemaphoreInfos = {asyncComputeSemaphoreInfo, rayDispatchSemaphoreInfo};
-
-        const VkSubmitInfo2 lightingSubmitInfo =
-        {
-            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-            .pNext                    = nullptr,
-            .flags                    = 0,
-            .waitSemaphoreInfoCount   = static_cast<u32>(lightingWaitSemaphoreInfos.size()),
-            .pWaitSemaphoreInfos      = lightingWaitSemaphoreInfos.data(),
-            .commandBufferInfoCount   = 1,
-            .pCommandBufferInfos      = &lightingCmdBufferInfo,
-            .signalSemaphoreInfoCount = 1,
-            .pSignalSemaphoreInfos    = &renderFinishedSemaphoreInfo
-        };
-
-        Vk::CheckResult(vkQueueSubmit2(
-            m_context.graphicsQueue,
-            1,
-            &gBufferGenerationSubmitInfo,
-            VK_NULL_HANDLE),
-            "Failed to submit graphics queue!"
-        );
-
-        Vk::CheckResult(vkQueueSubmit2(
-            m_context.computeQueue,
-            1,
-            &asyncComputeSubmitInfo,
-            VK_NULL_HANDLE),
-            "Failed to submit compute queue!"
-        );
-
-        Vk::CheckResult(vkQueueSubmit2(
-            m_context.graphicsQueue,
-            1,
-            &rayDispatchSubmitInfo,
-            VK_NULL_HANDLE),
-            "Failed to submit graphics queue!"
-        );
-
-        Vk::CheckResult(vkQueueSubmit2(
-            m_context.graphicsQueue,
-            1,
-            &lightingSubmitInfo,
-            VK_NULL_HANDLE),
-            "Failed to submit graphics queue!"
-        );
+            Vk::CheckResult(vkQueueSubmit2(
+                m_context.graphicsQueue,
+                1,
+                &lightingSubmitInfo,
+                VK_NULL_HANDLE),
+                "Failed to submit to graphics queue!"
+            );
+        }
     }
 
     void RenderManager::GBufferGeneration(const Vk::CommandBuffer& cmdBuffer)
