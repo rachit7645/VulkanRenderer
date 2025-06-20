@@ -37,11 +37,9 @@ vec3 CalculateF0(vec3 albedo, float metallic, float reflectance)
 // Trowbridge-Reitz Normal Distribution Function
 float DistributionGGX(float NdotH, float a)
 {
-	float a2     = a * a;
-	float NdotH2 = NdotH * NdotH;
-
+	float a2    = a * a;
 	float nom   = a2;
-	float denom = NdotH2 * (a2 - 1.0f) + 1.0f;
+	float denom = (NdotH * a2 - NdotH) * NdotH + 1.0f;
 	denom       = PI * denom * denom;
 
 	return nom / denom;
@@ -83,7 +81,14 @@ vec3 Lambert(vec3 albedo)
 }
 
 // Burley 2012, "Physically-Based Shading at Disney"
-vec3 Burley(vec3 albedo, float roughness, float NdotV, float NdotL, float LdotH)
+vec3 Burley
+(
+    vec3 albedo,
+    float roughness,
+    float NdotV,
+    float NdotL,
+    float LdotH
+)
 {
     float F90 = 0.5f + 2.0f * roughness * LdotH * LdotH;
 

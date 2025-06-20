@@ -126,7 +126,7 @@ namespace Renderer::Depth
         const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
         const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
 
-        culling.Execute
+        culling.Frustum
         (
             FIF,
             frameIndex,

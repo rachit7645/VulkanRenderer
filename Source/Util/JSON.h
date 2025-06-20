@@ -32,7 +32,7 @@ namespace JSON
     };
 
     template<glm::length_t L>
-    simdjson::simdjson_result<glm::vec<L, f32, glm::defaultp>> ParseVector(simdjson::ondemand::array& array)
+    simdjson::simdjson_result<glm::vec<L, f32>> ParseVector(simdjson::ondemand::array& array)
     {
         glm::vec<L, f32, glm::defaultp> output;
 

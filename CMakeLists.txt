@@ -129,7 +129,7 @@ add_executable(VulkanRenderer
     Source/Renderer/PointShadow/AlphaMasked/Pipeline.cpp
     Source/Renderer/PointShadow/RenderPass.cpp
     # Culling Dispatch Sources
-    Source/Renderer/Culling/Pipeline.cpp
+    Source/Renderer/Culling/Frustum/Pipeline.cpp
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
     # GBuffer Pass Sources

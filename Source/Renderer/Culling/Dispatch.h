@@ -18,7 +18,7 @@
 #define CULLING_DISPATCH_H
 
 #include "FrustumBuffer.h"
-#include "Pipeline.h"
+#include "Frustum/Pipeline.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
@@ -32,7 +32,7 @@ namespace Renderer::Culling
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        void Execute
+        void Frustum
         (
             usize FIF,
             usize frameIndex,
@@ -42,7 +42,38 @@ namespace Renderer::Culling
             const Buffers::IndirectBuffer& indirectBuffer
         );
     private:
-        Culling::Pipeline      m_frustumPipeline;
+        bool NeedsDispatch
+        (
+            usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Buffers::IndirectBuffer& indirectBuffer
+        );
+
+        void PreDispatch
+        (
+            usize FIF,
+            const glm::mat4& projectionView,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Buffers::IndirectBuffer& indirectBuffer
+        );
+
+        void Execute
+        (
+            usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Buffers::IndirectBuffer& indirectBuffer
+        );
+
+        void PostDispatch
+        (
+            usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Buffers::IndirectBuffer& indirectBuffer
+        );
+
+        static u32 GetWorkGroupCount(usize FIF, const Buffers::IndirectBuffer& indirectBuffer);
+
+        Frustum::Pipeline      m_frustumPipeline;
         Culling::FrustumBuffer m_frustumBuffer;
 
         Vk::BarrierWriter m_barrierWriter = {};

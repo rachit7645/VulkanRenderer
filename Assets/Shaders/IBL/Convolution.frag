@@ -39,7 +39,7 @@ void main()
     vec3 irradiance  = vec3(0.0f);
     uint sampleCount = 0u;
 
-    for (float phi = 0.0; phi < TWO_PI; phi += CONVOLUTION_SAMPLE_DELTA)
+    for (float phi = 0.0f; phi < TWO_PI; phi += CONVOLUTION_SAMPLE_DELTA)
     {
         float sinPhi = sin(phi);
         float cosPhi = cos(phi);

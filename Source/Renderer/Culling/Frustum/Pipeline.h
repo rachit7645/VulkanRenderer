@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef CULLING_PIPELINE_H
-#define CULLING_PIPELINE_H
+#ifndef FRUSTUM_CULLING_PIPELINE_H
+#define FRUSTUM_CULLING_PIPELINE_H
 
 #include "Vulkan/Pipeline.h"
 
-namespace Renderer::Culling
+namespace Renderer::Culling::Frustum
 {
     class Pipeline : public Vk::Pipeline
     {

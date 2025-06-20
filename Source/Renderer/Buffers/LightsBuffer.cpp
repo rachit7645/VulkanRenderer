@@ -16,6 +16,7 @@
 
 #include "LightsBuffer.h"
 
+#include "Util/Concept.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
@@ -23,8 +24,7 @@ namespace Renderer::Buffers
 {
     struct GPULights
     {
-        u32                     dirLightCount                                            = 0;
-        GPU::DirLight           dirLights[GPU::MAX_DIR_LIGHT_COUNT]                      = {};
+        GPU::DirLight           sun                                                      = {};
         u32                     pointLightCount                                          = 0;
         GPU::PointLight         pointLights[GPU::MAX_POINT_LIGHT_COUNT]                  = {};
         u32                     shadowedPointLightCount                                  = 0;
@@ -47,13 +47,13 @@ namespace Renderer::Buffers
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            const u32  count       = 0;
+            constexpr u32 ZERO = 0;
+
             const auto pMappedData = static_cast<u8*>(buffers[i].allocationInfo.pMappedData);
 
-            std::memcpy(pMappedData + GetDirLightOffset(),           &count, sizeof(u32));
-            std::memcpy(pMappedData + GetPointLightOffset(),         &count, sizeof(u32));
-            std::memcpy(pMappedData + GetShadowedPointLightOffset(), &count, sizeof(u32));
-            std::memcpy(pMappedData + GetSpotLightOffset(),          &count, sizeof(u32));
+            std::memcpy(pMappedData + GetPointLightOffset(),         &ZERO, sizeof(u32));
+            std::memcpy(pMappedData + GetShadowedPointLightOffset(), &ZERO, sizeof(u32));
+            std::memcpy(pMappedData + GetSpotLightOffset(),          &ZERO, sizeof(u32));
 
             if (!(buffers[i].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
             {
@@ -76,12 +76,13 @@ namespace Renderer::Buffers
     (
         usize FIF,
         VmaAllocator allocator,
-        const std::span<const GPU::DirLight> inDirLights,
+        const GPU::DirLight& inSun,
         const std::span<const GPU::PointLight> inPointLights,
         const std::span<const GPU::SpotLight> inSpotLights
     )
     {
-        dirLights  = WriteLights(FIF, inDirLights);
+        WriteSunLight(FIF, inSun);
+
         spotLights = WriteLights(FIF, inSpotLights);
 
         // Point Lights
@@ -117,18 +118,28 @@ namespace Renderer::Buffers
         }
     }
 
+    void LightsBuffer::WriteSunLight(usize FIF, const GPU::DirLight& inSun)
+    {
+        sun = inSun;
+
+        const auto offset  = GetSunOffset();
+        const auto pointer = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData) + offset;
+
+        std::memcpy
+        (
+            pointer,
+            &sun,
+            sizeof(GPU::DirLight)
+        );
+    }
+
     template <typename T> requires GPU::IsLightType<T>
     std::vector<T> LightsBuffer::WriteLights(usize FIF, const std::span<const T> lights)
     {
         VkDeviceSize offset        = 0;
         u32          maxLightCount = 0;
 
-        if constexpr (std::is_same_v<T, GPU::DirLight>)
-        {
-            offset        = GetDirLightOffset();
-            maxLightCount = GPU::MAX_DIR_LIGHT_COUNT;
-        }
-        else if constexpr (std::is_same_v<T, GPU::PointLight>)
+        if constexpr (std::is_same_v<T, GPU::PointLight>)
         {
             offset        = GetPointLightOffset();
             maxLightCount = GPU::MAX_POINT_LIGHT_COUNT;
@@ -142,6 +153,10 @@ namespace Renderer::Buffers
         {
             offset        = GetSpotLightOffset();
             maxLightCount = GPU::MAX_SPOT_LIGHT_COUNT;
+        }
+        else if constexpr (Util::AlwaysTrue<T>)
+        {
+            static_assert(Util::AlwaysFalse<T>, "Invalid light type!");
         }
 
         const VkDeviceSize requiredSize   = lights.size_bytes();
@@ -174,9 +189,9 @@ namespace Renderer::Buffers
                std::vector<T>(lights.begin(), lights.begin() + count);
     }
 
-    VkDeviceSize LightsBuffer::GetDirLightOffset()
+    VkDeviceSize LightsBuffer::GetSunOffset()
     {
-        return offsetof(GPULights, dirLightCount);
+        return offsetof(GPULights, sun);
     }
 
     VkDeviceSize LightsBuffer::GetPointLightOffset()

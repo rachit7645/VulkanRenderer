@@ -25,7 +25,7 @@
 #include "DrawCall.glsl"
 #endif
 
-GLSL_NAMESPACE_BEGIN(Renderer::Culling)
+GLSL_NAMESPACE_BEGIN(Renderer::Culling::Frustum)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {

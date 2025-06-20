@@ -303,7 +303,7 @@ namespace Renderer
             .pNext       = nullptr,
             .semaphore   = m_computeTimeline->semaphore,
             .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED),
-            .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+            .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
             .deviceIndex = 0
         };
 
@@ -313,7 +313,7 @@ namespace Renderer
             .pNext       = nullptr,
             .semaphore   = m_graphicsTimeline.semaphore,
             .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH),
-            .stageMask   = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+            .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
             .deviceIndex = 0
         };
 
@@ -822,6 +822,23 @@ namespace Renderer
                 .dstAccessMask  = VK_ACCESS_2_NONE,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            sceneDepthAsyncCompute.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .dstAccessMask  = VK_ACCESS_2_NONE,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
                 .dstQueueFamily = *m_context.queueFamilies.computeFamily,
                 .baseMipLevel   = 0,
@@ -855,6 +872,23 @@ namespace Renderer
                 .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
                 .dstAccessMask  = VK_ACCESS_2_NONE,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = gNormalAsyncCompute.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = gNormalAsyncCompute.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            gNormalAsyncCompute.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .dstAccessMask  = VK_ACCESS_2_NONE,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
                 .dstQueueFamily = *m_context.queueFamilies.computeFamily,
@@ -974,7 +1008,7 @@ namespace Renderer
                 .srcAccessMask  = VK_ACCESS_2_NONE,
                 .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
                 .dstQueueFamily = *m_context.queueFamilies.computeFamily,
@@ -991,7 +1025,7 @@ namespace Renderer
                 .srcAccessMask  = VK_ACCESS_2_NONE,
                 .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
                 .dstQueueFamily = *m_context.queueFamilies.computeFamily,

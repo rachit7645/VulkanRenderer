@@ -252,16 +252,11 @@ namespace Engine
 
                 if (ImGui::BeginMenu("Lights"))
                 {
-                    if (ImGui::BeginMenu("Directional"))
+                    if (ImGui::BeginMenu("Sun"))
                     {
-                        if (ImGui::TreeNode("Sun"))
-                        {
-                            ImGui::DragFloat3("Position",  &sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
-                            ImGui::ColorEdit3("Color",     &sun.color[0]);
-                            ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
-
-                            ImGui::TreePop();
-                        }
+                        ImGui::DragFloat3("Position",  &sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                        ImGui::ColorEdit3("Color",     &sun.color[0]);
+                        ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
 
                         ImGui::EndMenu();
                     }

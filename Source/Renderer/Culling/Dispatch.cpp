@@ -17,7 +17,6 @@
 #include "Dispatch.h"
 
 #include "Vulkan/DebugUtils.h"
-#include "Util/Log.h"
 #include "Culling/Frustum.h"
 
 namespace Renderer::Culling
@@ -30,7 +29,7 @@ namespace Renderer::Culling
     {
     }
 
-    void Dispatch::Execute
+    void Dispatch::Frustum
     (
         usize FIF,
         usize frameIndex,
@@ -42,169 +41,24 @@ namespace Renderer::Culling
     {
         Vk::BeginLabel(cmdBuffer, "Frustum Culling", glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
 
-        const u32 drawCallCount = indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount;
-
-        // Manually write zero to draw count
-        if (drawCallCount == 0)
+        if (!NeedsDispatch(FIF, cmdBuffer, indirectBuffer))
         {
-            m_barrierWriter
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .Execute(cmdBuffer);
-
-            constexpr u32 ZERO = 0;
-
-            vkCmdUpdateBuffer
-            (
-                cmdBuffer.handle,
-                indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
-                0,
-                sizeof(u32),
-                &ZERO
-            );
-
-            vkCmdUpdateBuffer
-            (
-                cmdBuffer.handle,
-                indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
-                0,
-                sizeof(u32),
-                &ZERO
-            );
-
-            vkCmdUpdateBuffer
-            (
-                cmdBuffer.handle,
-                indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
-                0,
-                sizeof(u32),
-                &ZERO
-            );
-
-            vkCmdUpdateBuffer
-            (
-                cmdBuffer.handle,
-                indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
-                0,
-                sizeof(u32),
-                &ZERO
-            );
-
-            m_barrierWriter
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .WriteBufferBarrier(
-                indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = 0,
-                    .size           = sizeof(u32)
-                }
-            )
-            .Execute(cmdBuffer);
-
             Vk::EndLabel(cmdBuffer);
 
             return;
         }
 
-        m_frustumBuffer.Load(cmdBuffer, projectionView);
+        PreDispatch
+        (
+            FIF,
+            projectionView,
+            cmdBuffer,
+            indirectBuffer
+        );
 
         m_frustumPipeline.Bind(cmdBuffer);
 
-        const auto constants = Culling::Constants
+        const auto constants = Frustum::Constants
         {
             .Meshes                                  = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .DrawCalls                               = indirectBuffer.writtenDrawCallBuffers[FIF].drawCallBuffer.deviceAddress,
@@ -226,6 +80,189 @@ namespace Renderer::Culling
             constants
         );
 
+        Execute(FIF, cmdBuffer, indirectBuffer);
+
+        PostDispatch(FIF, cmdBuffer, indirectBuffer);
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    bool Dispatch::NeedsDispatch
+    (
+        usize FIF,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Buffers::IndirectBuffer& indirectBuffer
+    )
+    {
+        const u32 drawCallCount = indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount;
+
+        if (drawCallCount != 0)
+        {
+            return true;
+        }
+
+        m_barrierWriter
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .Execute(cmdBuffer);
+
+        constexpr u32 ZERO = 0;
+
+        vkCmdUpdateBuffer
+        (
+            cmdBuffer.handle,
+            indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
+            0,
+            sizeof(u32),
+            &ZERO
+        );
+
+        vkCmdUpdateBuffer
+        (
+            cmdBuffer.handle,
+            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
+            0,
+            sizeof(u32),
+            &ZERO
+        );
+
+        vkCmdUpdateBuffer
+        (
+            cmdBuffer.handle,
+            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
+            0,
+            sizeof(u32),
+            &ZERO
+        );
+
+        vkCmdUpdateBuffer
+        (
+            cmdBuffer.handle,
+            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
+            0,
+            sizeof(u32),
+            &ZERO
+        );
+
+        m_barrierWriter
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .Execute(cmdBuffer);
+
+        return false;
+    }
+
+    void Dispatch::PreDispatch
+    (
+        usize FIF,
+        const glm::mat4& projectionView,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Buffers::IndirectBuffer& indirectBuffer
+    )
+    {
+        m_frustumBuffer.Load(cmdBuffer, projectionView);
+
+        const u32 drawCallCount            = indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount;
         const VkDeviceSize drawCallsSize   = sizeof(u32) + drawCallCount * sizeof(VkDrawIndexedIndirectCommand);
         const VkDeviceSize meshIndicesSize = drawCallCount * sizeof(u32);
 
@@ -335,14 +372,34 @@ namespace Renderer::Culling
             }
         )
         .Execute(cmdBuffer);
+    }
 
+    void Dispatch::Execute
+    (
+        usize FIF,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Buffers::IndirectBuffer& indirectBuffer
+    )
+    {
         vkCmdDispatch
         (
             cmdBuffer.handle,
-            (drawCallCount + CULLING_WORKGROUP_SIZE - 1) / CULLING_WORKGROUP_SIZE,
+            GetWorkGroupCount(FIF, indirectBuffer),
             1,
             1
         );
+    }
+
+    void Dispatch::PostDispatch
+    (
+        usize FIF,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Buffers::IndirectBuffer& indirectBuffer
+    )
+    {
+        const u32 drawCallCount            = indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount;
+        const VkDeviceSize drawCallsSize   = sizeof(u32) + drawCallCount * sizeof(VkDrawIndexedIndirectCommand);
+        const VkDeviceSize meshIndicesSize = drawCallCount * sizeof(u32);
 
         m_barrierWriter
         .WriteBufferBarrier(
@@ -450,8 +507,11 @@ namespace Renderer::Culling
             }
         )
         .Execute(cmdBuffer);
+    }
 
-        Vk::EndLabel(cmdBuffer);
+    u32 Dispatch::GetWorkGroupCount(usize FIF, const Buffers::IndirectBuffer& indirectBuffer)
+    {
+        return (indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount + CULLING_WORKGROUP_SIZE - 1) / CULLING_WORKGROUP_SIZE;
     }
 
     void Dispatch::Destroy(VkDevice device, VmaAllocator allocator)

@@ -57,7 +57,7 @@ namespace Renderer::Buffers
         (
             FIF,
             allocator,
-            {&scene.sun, 1},
+            scene.sun,
             scene.pointLights,
             scene.spotLights
         );
@@ -98,7 +98,7 @@ namespace Renderer::Buffers
 
         const auto lightsBufferAddress = lightsBuffer.buffers[FIF].deviceAddress;
 
-        gpuScene.DirLights           = lightsBufferAddress + lightsBuffer.GetDirLightOffset();
+        gpuScene.Sun                 = lightsBufferAddress + lightsBuffer.GetSunOffset();
         gpuScene.PointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
         gpuScene.ShadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
         gpuScene.SpotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();

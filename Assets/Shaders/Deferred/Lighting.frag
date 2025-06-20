@@ -51,9 +51,9 @@ void main()
 
     vec3 Lo = vec3(0.0f);
 
-    for (uint i = 0; i < Constants.Scene.DirLights.count; ++i)
+    // Sun Light
     {
-        DirLight  light     = Constants.Scene.DirLights.lights[i];
+        DirLight  light     = Constants.Scene.Sun.light;
         LightInfo lightInfo = GetLightInfo(light);
 
         float shadow = texture(sampler2D(Textures[Constants.ShadowMapIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;

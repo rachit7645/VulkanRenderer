@@ -32,12 +32,12 @@ namespace Renderer::Buffers
         (
             usize FIF,
             VmaAllocator allocator,
-            const std::span<const GPU::DirLight> inDirLights,
+            const GPU::DirLight& inSun,
             const std::span<const GPU::PointLight> inPointLights,
             const std::span<const GPU::SpotLight> inSpotLights
         );
 
-        [[nodiscard]] static VkDeviceSize GetDirLightOffset();
+        [[nodiscard]] static VkDeviceSize GetSunOffset();
         [[nodiscard]] static VkDeviceSize GetPointLightOffset();
         [[nodiscard]] static VkDeviceSize GetShadowedPointLightOffset();
         [[nodiscard]] static VkDeviceSize GetSpotLightOffset();
@@ -46,11 +46,13 @@ namespace Renderer::Buffers
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
 
-        std::vector<GPU::DirLight>           dirLights;
+        GPU::DirLight                        sun = {};
         std::vector<GPU::PointLight>         pointLights;
         std::vector<GPU::ShadowedPointLight> shadowedPointLights;
         std::vector<GPU::SpotLight>          spotLights;
     private:
+        void WriteSunLight(usize FIF, const GPU::DirLight& inSun);
+
         template <typename T> requires GPU::IsLightType<T>
         [[nodiscard]] std::vector<T> WriteLights(usize FIF, const std::span<const T> lights);
     };

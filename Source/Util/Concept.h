@@ -20,6 +20,9 @@
 namespace Util
 {
     template<typename T>
+    inline constexpr bool AlwaysTrue = true;
+
+    template<typename T>
     inline constexpr bool AlwaysFalse = false;
 }
 

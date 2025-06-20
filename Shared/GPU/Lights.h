@@ -28,16 +28,10 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 #ifdef __cplusplus
 
-constexpr u32 MAX_DIR_LIGHT_COUNT = 1;
-
 constexpr u32 MAX_POINT_LIGHT_COUNT          = 16;
 constexpr u32 MAX_SHADOWED_POINT_LIGHT_COUNT = 4;
 
 constexpr u32 MAX_SPOT_LIGHT_COUNT = 16;
-
-constexpr u32 MAX_TOTAL_POINT_LIGHT_COUNT = MAX_SHADOWED_POINT_LIGHT_COUNT + MAX_POINT_LIGHT_COUNT;
-
-constexpr u32 MAX_LIGHT_COUNT = MAX_DIR_LIGHT_COUNT + MAX_TOTAL_POINT_LIGHT_COUNT + MAX_SPOT_LIGHT_COUNT;
 
 constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
 
@@ -122,10 +116,9 @@ concept IsLightType = std::is_same_v<T, DirLight> ||
 #include "Constants.glsl"
 #include "Math.glsl"
 
-layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer DirLightBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer SunBuffer
 {
-    uint     count;
-    DirLight lights[];
+    DirLight light;
 };
 
 layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer PointLightBuffer

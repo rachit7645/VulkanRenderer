@@ -47,7 +47,7 @@ void main()
     vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     vec3 normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
 
-    vec3 direction = normalize(-Constants.Scene.DirLights.lights[0].position);
+    vec3 direction = normalize(-Constants.Scene.Sun.light.position);
 
     float cosTheta = saturate(dot(normal, direction));
     float bias     = RT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);
