@@ -19,6 +19,7 @@
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "Misc/PostProcess.h"
 
 namespace Renderer::PostProcess
 {
@@ -36,13 +37,12 @@ namespace Renderer::PostProcess
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Trongle.vert",     VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Misc/PostProcess.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,
@@ -56,16 +56,15 @@ namespace Renderer::PostProcess
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        samplerIndex = textureManager.AddSampler
+        samplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -81,7 +80,7 @@ namespace Renderer::PostProcess
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
-                .maxLod                  = 0.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
                 .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
@@ -89,8 +88,7 @@ namespace Renderer::PostProcess
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                         "SwapchainPipeline");
-        Vk::SetDebugName(context.device, layout,                                         "SwapchainPipelineLayout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(samplerIndex).handle, "SwapchainPipeline/Sampler");
+        Vk::SetDebugName(context.device, handle, "PostProcess/Pipeline");
+        Vk::SetDebugName(context.device, layout, "PostProcess/Pipeline/Layout");
     }
 }

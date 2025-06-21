@@ -16,21 +16,32 @@
 
 #include "DeletionQueue.h"
 
-#include <ranges>
-
 namespace Util
 {
     void DeletionQueue::PushDeletor(Deletor&& deletor)
     {
+        std::lock_guard lock(m_mutex);
+
         m_deletors.push(std::move(deletor));
     }
 
     void DeletionQueue::FlushQueue()
     {
-        while (!m_deletors.empty())
+        if (m_deletors.empty())
         {
-            m_deletors.top()();
-            m_deletors.pop();
+            return;
+        }
+
+        std::stack<Deletor> temp = {};
+        {
+            std::lock_guard lock(m_mutex);
+            std::swap(m_deletors, temp);
+        }
+
+        while (!temp.empty())
+        {
+            temp.top()();
+            temp.pop();
         }
     }
 }

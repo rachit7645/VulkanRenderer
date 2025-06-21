@@ -21,7 +21,7 @@
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_multiview            : enable
 
-#include "Constants/IBL/Prefilter.glsl"
+#include "IBL/Prefilter.h"
 
 layout(location = 0) out vec3 worldPos;
 

@@ -17,7 +17,6 @@
 #ifndef IMGUI_PIPELINE_H
 #define IMGUI_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
@@ -35,23 +34,7 @@ namespace Renderer::DearImGui
             VkFormat colorFormat
         );
 
-        DearImGui::PushConstant pushConstant = {};
-
-        u32 samplerIndex = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::MegaSet& megaSet,
-            VkFormat colorFormat
-        );
-
-        void CreatePipelineData
-        (
-            VkDevice device,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
+        Vk::SamplerID samplerID = 0;
     };
 }
 

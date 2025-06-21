@@ -69,8 +69,6 @@ namespace Vk
         CreateAllocator();
 
         AddDebugNames();
-
-        Logger::Info("{}\n", "Initialised vulkan context!");
     }
 
     void Context::CreateInstance()
@@ -79,9 +77,9 @@ namespace Vk
         {
             .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pNext              = nullptr,
-            .pApplicationName   = "Vulkan Renderer",
+            .pApplicationName   = "Rachit's Vulkan Renderer",
             .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1),
-            .pEngineName        = "Rachit's Engine",
+            .pEngineName        = "Rachit's Engine: Vulkan Edition",
             .engineVersion      = VK_MAKE_API_VERSION(0, 0, 0, 1),
             .apiVersion         = VULKAN_API_VERSION
         };
@@ -111,8 +109,6 @@ namespace Vk
             "Failed to initialise vulkan instance!"
         );
 
-        Logger::Info("Successfully initialised Vulkan instance! [handle={}]\n", std::bit_cast<void*>(instance));
-
         volkLoadInstanceOnly(instance);
 
         #ifdef ENGINE_DEBUG
@@ -132,11 +128,9 @@ namespace Vk
             );
         }
 
-        Logger::Info("Initialised window surface! [handle={}]\n", std::bit_cast<void*>(surface));
-
         m_deletionQueue.PushDeletor([this] ()
         {
-            vkDestroySurfaceKHR(instance, surface, nullptr);
+            SDL_Vulkan_DestroySurface(instance, surface, nullptr);
         });
     }
 
@@ -164,13 +158,13 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto properties           = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
-        auto vk11Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
-        auto vk12Properties       = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
-        auto rtPipelineProperties = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
+        auto properties           = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
+        auto vk11Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
+        auto vk12Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
+        auto rtPipelineProperties = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
 
-        auto features = std::unordered_map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
-        auto scores   = std::unordered_map<VkPhysicalDevice, usize>{};
+        auto features = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
+        auto scores   = ankerl::unordered_dense::map<VkPhysicalDevice, usize>{};
 
         for (const auto& currentDevice : devices)
         {
@@ -265,16 +259,9 @@ namespace Vk
         physicalDevice                             = bestDevice;
         physicalDeviceLimits                       = properties[physicalDevice].properties.limits;
         physicalDeviceRayTracingPipelineProperties = rtPipelineProperties[physicalDevice];
-        physicalDeviceVulkan11Properties           = vk11Properties[physicalDevice];
         physicalDeviceVulkan12Properties           = vk12Properties[physicalDevice];
 
-        Logger::Info
-        (
-            "Selecting GPU: {} [Type={}] [Driver Version={}]\n",
-            properties[physicalDevice].properties.deviceName,
-            string_VkPhysicalDeviceType(properties[physicalDevice].properties.deviceType),
-            properties[physicalDevice].properties.driverVersion
-        );
+        Logger::Info("Selected GPU! [GPU={}]\n", properties[physicalDevice].properties.deviceName);
     }
 
     usize Context::CalculateScore
@@ -282,7 +269,7 @@ namespace Vk
         VkPhysicalDevice phyDevice,
         const VkPhysicalDeviceProperties2& propertySet,
         const VkPhysicalDeviceFeatures2& featureSet
-    )
+    ) const
     {
         const auto queues = QueueFamilyIndices(phyDevice, surface);
 
@@ -301,10 +288,11 @@ namespace Vk
         #endif
 
         // Score parts
-        const usize discreteGPU = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
+        const usize discreteGPU    = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
+        const usize completeQueues = queues.HasAllFamilies() ? 1000 : 0;
 
         // Requirements
-        const bool areQueuesValid = queues.IsComplete();
+        const bool areQueuesValid = queues.HasRequiredFamilies();
         const bool hasExtensions  = Vk::CheckDeviceExtensionSupport(phyDevice, REQUIRED_DEVICE_EXTENSIONS);
 
         // Need extensions to calculate these
@@ -390,7 +378,9 @@ namespace Vk
                                 hasDrawIndirectCount && hasTimelineSemaphore;
         const bool vk13       = hasSync2 && hasDynRender && hasMaintenance4;
 
-        return (required && standard && extensions && vk11 && vk12 && vk13) * discreteGPU;
+        const usize totalScore = discreteGPU + completeQueues;
+
+        return (required && standard && extensions && vk11 && vk12 && vk13) * totalScore;
     }
 
     void Context::CreateLogicalDevice()
@@ -514,15 +504,40 @@ namespace Vk
 
         volkLoadDevice(device);
 
-        Logger::Info("Created logical device! [handle={}]\n", std::bit_cast<void*>(device));
+        const VkDeviceQueueInfo2 graphicsQueueInfo =
+        {
+            .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
+            .pNext            = nullptr,
+            .flags            = 0,
+            .queueFamilyIndex = *queueFamilies.graphicsFamily,
+            .queueIndex       = 0
+        };
 
-        vkGetDeviceQueue
+        vkGetDeviceQueue2
         (
             device,
-            queueFamilies.graphicsFamily.value_or(0),
-            0,
+            &graphicsQueueInfo,
             &graphicsQueue
         );
+
+        if (queueFamilies.computeFamily.has_value())
+        {
+            const VkDeviceQueueInfo2 computeQueueInfo =
+            {
+                .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
+                .pNext            = nullptr,
+                .flags            = 0,
+                .queueFamilyIndex = *queueFamilies.computeFamily,
+                .queueIndex       = 0
+            };
+
+            vkGetDeviceQueue2
+            (
+                device,
+                &computeQueueInfo,
+                &computeQueue
+            );
+        }
     }
 
     void Context::CreateAllocator()
@@ -560,9 +575,8 @@ namespace Vk
 
         const VmaAllocatorCreateInfo createInfo =
         {
-            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT   |
-                                           VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT |
-                                           VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT       |
+            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT |
+                                           VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT |
                                            VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT,
             .physicalDevice              = physicalDevice,
             .device                      = device,
@@ -580,21 +594,24 @@ namespace Vk
 
         Vk::CheckResult(vmaCreateAllocator(&createInfo, &allocator), "Failed to create allocator!");
 
-        Logger::Info("Created vulkan memory allocator! [handle={}]\n", std::bit_cast<void*>(allocator));
-
         m_deletionQueue.PushDeletor([this] ()
         {
             vmaDestroyAllocator(allocator);
         });
     }
 
-    void Context::AddDebugNames()
+    void Context::AddDebugNames() const
     {
         Vk::SetDebugName(device, instance,       "Instance");
         Vk::SetDebugName(device, physicalDevice, "PhysicalDevice");
         Vk::SetDebugName(device, device,         "Device");
         Vk::SetDebugName(device, surface,        "SDL3Surface");
         Vk::SetDebugName(device, graphicsQueue,  "GraphicsQueue");
+
+        if (queueFamilies.computeFamily.has_value())
+        {
+            Vk::SetDebugName(device, computeQueue, "ComputeQueue");
+        }
     }
 
     void Context::Destroy()
@@ -610,7 +627,5 @@ namespace Vk
         vkDestroyInstance(instance, nullptr);
 
         volkFinalize();
-
-        Logger::Info("{}\n", "Destroyed vulkan context!");
     }
 }

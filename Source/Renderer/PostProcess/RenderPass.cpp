@@ -18,8 +18,8 @@
 
 #include "Util/Log.h"
 #include "Util/Ranges.h"
-#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
+#include "Misc/PostProcess.h"
 
 namespace Renderer::PostProcess
 {
@@ -31,7 +31,7 @@ namespace Renderer::PostProcess
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -68,15 +68,15 @@ namespace Renderer::PostProcess
                 .layerCount     = 1
             }
         );
-
-        Logger::Info("{}\n", "Created post process pass!");
     }
 
     void RenderPass::Render
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
+        const Renderer::Objects::Camera& camera
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -93,7 +93,7 @@ namespace Renderer::PostProcess
         const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
         const auto& finalColor     = framebufferManager.GetFramebuffer(finalColorView.framebuffer);
 
-        Vk::BeginLabel(cmdBuffer, "PostProcessPass", glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "PostProcess", glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
         finalColor.image.Barrier
         (
@@ -105,6 +105,8 @@ namespace Renderer::PostProcess
                 .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = finalColor.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -145,7 +147,7 @@ namespace Renderer::PostProcess
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -167,26 +169,25 @@ namespace Renderer::PostProcess
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        const auto constants = PostProcess::Constants
         {
-            .samplerIndex  = pipeline.samplerIndex,
-            .imageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageIndex,
-            .bloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageIndex,
-            .bloomStrength = m_bloomStrength
+            .SamplerIndex  = textureManager.GetSampler(m_pipeline.samplerID).descriptorID,
+            .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
+            .BloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
+            .BloomStrength = m_bloomStrength,
+            .Exposure      = camera.exposure
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(PostProcess::PushConstant),
-            &pipeline.pushConstant
+            constants
         );
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -204,8 +205,6 @@ namespace Renderer::PostProcess
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying swapchain pass!");
-
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
     }
 }

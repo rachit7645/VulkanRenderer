@@ -19,7 +19,6 @@
 #include <volk/volk.h>
 
 #include "Util/Log.h"
-#include "Models/Vertex.h"
 #include "Util.h"
 
 namespace Vk
@@ -33,7 +32,7 @@ namespace Vk
         VmaAllocationCreateFlags allocationFlags,
         VmaMemoryUsage memoryUsage
     )
-        : requestedSize(size)
+        : size(size)
     {
         const VkBufferCreateInfo createInfo =
         {
@@ -70,8 +69,6 @@ namespace Vk
         );
 
         vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
-
-        Logger::Debug("Created buffer! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     void Buffer::GetDeviceAddress(VkDevice device)
@@ -89,13 +86,6 @@ namespace Vk
         };
 
         deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
-
-        Logger::Debug
-        (
-            "Acquired device address! [Buffer={}] [Device Address={}]\n",
-            std::bit_cast<void*>(handle),
-            std::bit_cast<void*>(deviceAddress)
-        );
     }
 
     void Buffer::Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::BufferBarrier& barrier) const
@@ -143,19 +133,12 @@ namespace Vk
             return;
         }
 
-        Logger::Debug
-        (
-            "Destroying buffer [buffer={}] [allocation={}]\n",
-            std::bit_cast<void*>(handle),
-            std::bit_cast<void*>(allocation)
-        );
-
         vmaDestroyBuffer(allocator, handle, allocation);
 
         handle           = VK_NULL_HANDLE;
         allocation       = {};
         deviceAddress    = 0;
-        requestedSize    = 0;
+        size             = 0;
         allocationInfo   = {};
         memoryProperties = {};
     }

@@ -19,7 +19,7 @@
 
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
-#include "Renderer/Objects/Lights.h"
+#include "GPU/Lights.h"
 
 namespace Renderer::Buffers
 {
@@ -32,35 +32,29 @@ namespace Renderer::Buffers
         (
             usize FIF,
             VmaAllocator allocator,
-            const std::span<const Objects::DirLight> inDirLights,
-            const std::span<const Objects::PointLight> inPointLights,
-            const std::span<const Objects::SpotLight> inSpotLights
+            const GPU::DirLight& inSun,
+            const std::span<const GPU::PointLight> inPointLights,
+            const std::span<const GPU::SpotLight> inSpotLights
         );
 
-        [[nodiscard]] static VkDeviceSize GetDirLightOffset();
+        [[nodiscard]] static VkDeviceSize GetSunOffset();
         [[nodiscard]] static VkDeviceSize GetPointLightOffset();
         [[nodiscard]] static VkDeviceSize GetShadowedPointLightOffset();
         [[nodiscard]] static VkDeviceSize GetSpotLightOffset();
-        [[nodiscard]] static VkDeviceSize GetShadowedSpotLightOffset();
 
         void Destroy(VmaAllocator allocator);
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
 
-        std::vector<Objects::DirLight>           dirLights;
-        std::vector<Objects::PointLight>         pointLights;
-        std::vector<Objects::ShadowedPointLight> shadowedPointLights;
-        std::vector<Objects::SpotLight>          spotLights;
-        std::vector<Objects::ShadowedSpotLight>  shadowedSpotLights;
+        GPU::DirLight                        sun = {};
+        std::vector<GPU::PointLight>         pointLights;
+        std::vector<GPU::ShadowedPointLight> shadowedPointLights;
+        std::vector<GPU::SpotLight>          spotLights;
     private:
-        template <typename T>
-        [[nodiscard]] std::vector<std::remove_const_t<T>> WriteLights
-        (
-            usize FIF,
-            VkDeviceSize offset,
-            const std::span<T> lights,
-            u32 maxLightCount
-        );
+        void WriteSunLight(usize FIF, const GPU::DirLight& inSun);
+
+        template <typename T> requires GPU::IsLightType<T>
+        [[nodiscard]] std::vector<T> WriteLights(usize FIF, const std::span<const T> lights);
     };
 }
 

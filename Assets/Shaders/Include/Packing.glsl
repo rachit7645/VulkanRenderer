@@ -58,4 +58,14 @@ vec3 UnpackNormal(vec2 pNormal)
     return normalize(normal);
 }
 
+float PackU8ToUNorm(uint value)
+{
+    return (float(value & 0xFF) + 0.5f) / 255.0f;
+}
+
+uint UnpackUNormToU8(float value)
+{
+    return uint(round(value * 255.0f));
+}
+
 #endif

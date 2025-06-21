@@ -17,10 +17,9 @@
 #ifndef JSON_H
 #define JSON_H
 
-#include <simdjson.h>
-
-#include "Renderer/Objects/Lights.h"
+#include "GPU/Lights.h"
 #include "Renderer/Objects/FreeCamera.h"
+#include "Externals/SIMDJSON.h"
 
 namespace JSON
 {
@@ -33,7 +32,7 @@ namespace JSON
     };
 
     template<glm::length_t L>
-    simdjson::simdjson_result<glm::vec<L, f32, glm::defaultp>> ParseVector(simdjson::ondemand::array& array)
+    simdjson::simdjson_result<glm::vec<L, f32>> ParseVector(simdjson::ondemand::array& array)
     {
         glm::vec<L, f32, glm::defaultp> output;
 
@@ -114,7 +113,7 @@ namespace simdjson
     }
 
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::DirLight& light)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, GPU::DirLight& light)
     {
         ondemand::object object;
 
@@ -142,7 +141,7 @@ namespace simdjson
     }
 
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::PointLight& light)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, GPU::PointLight& light)
     {
         ondemand::object object;
 
@@ -166,7 +165,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Attenuation"].get<glm::vec3>(light.attenuation); error != error_code::SUCCESS)
+        if (const auto error = object["Range"].get<f32>(light.range); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -175,7 +174,7 @@ namespace simdjson
     }
 
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::SpotLight& light)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, GPU::SpotLight& light)
     {
         ondemand::object object;
 
@@ -195,11 +194,6 @@ namespace simdjson
         }
 
         if (const auto error = object["Intensity"].get<glm::vec3>(light.intensity); error != error_code::SUCCESS)
-        {
-            return error;
-        }
-
-        if (const auto error = object["Attenuation"].get<glm::vec3>(light.attenuation); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -210,6 +204,11 @@ namespace simdjson
         }
 
         if (const auto error = object["CutOff"].get<glm::vec2>(light.cutOff); error != error_code::SUCCESS)
+        {
+            return error;
+        }
+
+        if (const auto error = object["Range"].get<f32>(light.range); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -233,6 +232,7 @@ namespace simdjson
         glm::vec3 position    = {};
         glm::vec3 rotation    = {};
         f32       FOV         = 0.0f;
+        f32       exposure    = 0.0f;
         f32       speed       = 0.0f;
         f32       sensitivity = 0.0f;
         f32       zoom        = 0.0f;
@@ -248,6 +248,11 @@ namespace simdjson
         }
 
         if (const auto error = object["FOV"].get<f32>(FOV); error != error_code::SUCCESS)
+        {
+            return error;
+        }
+
+        if (const auto error = object["Exposure"].get<f32>(exposure); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -270,7 +275,16 @@ namespace simdjson
         rotation = glm::radians(rotation);
         FOV      = glm::radians(FOV);
 
-        camera = Renderer::Objects::FreeCamera(position, rotation, FOV, speed, sensitivity, zoom);
+        camera = Renderer::Objects::FreeCamera
+        (
+            position,
+            rotation,
+            FOV,
+            exposure,
+            speed,
+            sensitivity,
+            zoom
+        );
 
         return error_code::SUCCESS;
     }

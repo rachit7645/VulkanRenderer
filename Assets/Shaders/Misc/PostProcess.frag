@@ -19,9 +19,9 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Misc/PostProcess.glsl"
 #include "Tonemap.glsl"
 #include "MegaSet.glsl"
+#include "Misc/PostProcess.h"
 
 layout(location = 0) in vec2 fragUV;
 
@@ -32,8 +32,9 @@ void main()
     vec3 hdrColor   = texture(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), fragUV).rgb;
     vec3 bloomColor = texture(sampler2D(Textures[Constants.BloomIndex], Samplers[Constants.SamplerIndex]), fragUV).rgb;
 
-    vec3 color = mix(hdrColor, bloomColor, Constants.BloomStrength);
-         color = ACESFast(color);
+    vec3 color  = mix(hdrColor, bloomColor, Constants.BloomStrength);
+         color *= pow(2.0f, Constants.Exposure);
+         color  = ACESFitted(color);
 
     outColor = vec4(color, 1.0f);
 }

@@ -36,13 +36,14 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 endif()
 
 # Includes
-set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include)
+set(SHADER_INCLUDES -I${SHADER_SOURCE_DIR}/Include -I${CMAKE_SOURCE_DIR}/Shared -I${CMAKE_SOURCE_DIR}/Shared/GPU)
 
 # Shader files
 file(GLOB SHADER_SOURCES
     Misc/PostProcess.frag
     Misc/TAA.frag
     Misc/Trongle.vert
+    Misc/Empty.frag
     Culling/Frustum.comp
     ImGui/ImGui.vert
     ImGui/ImGui.frag
@@ -57,16 +58,19 @@ file(GLOB SHADER_SOURCES
     Skybox/Skybox.vert
     Bloom/DownSample.frag
     Bloom/UpSample.frag
-    Shadows/PointShadow.frag
-    Shadows/PointShadow.vert
-    Shadows/SpotShadow.frag
-    Shadows/SpotShadow.vert
-    Shadows/Shadow.rgen
-    Shadows/Shadow.rmiss
-    Deferred/Depth.vert
-    Deferred/Depth.frag
-    Deferred/GBuffer.frag
-    Deferred/GBuffer.vert
+    Shadows/PointShadow/Opaque.vert
+    Shadows/PointShadow/Opaque.frag
+    Shadows/PointShadow/AlphaMasked.vert
+    Shadows/PointShadow/AlphaMasked.frag
+    Shadows/RT/Shadow.rgen
+    Shadows/RT/Shadow.rmiss
+    Shadows/RT/Shadow.rahit
+    Deferred/Depth/Opaque.vert
+    Deferred/Depth/AlphaMasked.vert
+    Deferred/Depth/AlphaMasked.frag
+    Deferred/GBuffer/GBuffer.vert
+    Deferred/GBuffer/SingleSided.frag
+    Deferred/GBuffer/DoubleSided.frag
     Deferred/Lighting.frag
     AO/VBGTAO/DepthPreFilter.comp
     AO/VBGTAO/SpacialDenoise.comp
@@ -75,8 +79,10 @@ file(GLOB SHADER_SOURCES
 
 # Shader headers
 file(GLOB_RECURSE SHADER_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/Include/*.glsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/Include/Constants/*.glsl
+    ${SHADER_SOURCE_DIR}/Include/*.glsl
+    ${SHADER_SOURCE_DIR}/Include/Constants/*.glsl
+    ${CMAKE_SOURCE_DIR}/Shared/*.h
+    ${CMAKE_SOURCE_DIR}/Shared/Include/*.h
 )
 
 # Ensure CMake reconfigures when new includes are added

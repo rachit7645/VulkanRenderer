@@ -15,6 +15,7 @@
  */
 
 #include "Pipeline.h"
+#include "AO/VBGTAO/DepthPreFilter.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
 
@@ -30,15 +31,15 @@ namespace Renderer::AO::VBGTAO::DepthPreFilter
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBGTAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
-            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        pointSamplerIndex = textureManager.AddSampler
+        pointSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -55,15 +56,14 @@ namespace Renderer::AO::VBGTAO::DepthPreFilter
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                              "VBGTAO/DepthPreFilterPipeline");
-        Vk::SetDebugName(context.device, layout,                                              "VBGTAO/DepthPreFilterPipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle, "VBGTAO/DepthPreFilterPipeline/PointSampler");
+        Vk::SetDebugName(context.device, handle, "VBGTAO/DepthPreFilter/Pipeline");
+        Vk::SetDebugName(context.device, layout, "VBGTAO/DepthPreFilter/Pipeline/Layout");
     }
 }

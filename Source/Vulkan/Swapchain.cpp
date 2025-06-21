@@ -28,13 +28,11 @@ namespace Vk
     {
         if (!IsSurfaceValid(size, context))
         {
-            Logger::Error("{]\n", "Invalid surface!");
+            Logger::Error("{}\n", "Invalid surface!");
         }
 
         CreateSwapChain(context, cmdBufferAllocator);
         CreateStaticSyncObjects(context.device);
-
-        Logger::Info("Initialised swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     bool Swapchain::IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context)
@@ -54,8 +52,6 @@ namespace Vk
     {
         DestroySwapchain(context.device);
         CreateSwapChain(context, cmdBufferAllocator);
-
-        Logger::Info("Recreated swap chain! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     VkResult Swapchain::Present(VkDevice device, VkQueue queue)
@@ -139,6 +135,8 @@ namespace Vk
                 .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = finalColor.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -154,6 +152,8 @@ namespace Vk
                 .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                 .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
@@ -213,6 +213,8 @@ namespace Vk
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = finalColor.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -228,6 +230,8 @@ namespace Vk
                 .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
@@ -243,13 +247,7 @@ namespace Vk
     {
         const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
         const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
-
-        // Try to allocate 1 more than the min
-        u32 imageCount = std::min
-        (
-            m_swapChainInfo.capabilities.surfaceCapabilities.minImageCount + 1,
-            m_swapChainInfo.capabilities.surfaceCapabilities.maxImageCount
-        );
+              u32                 imageCount    = GetImageCount();
 
         const VkSwapchainPresentScalingCreateInfoEXT presentScalingCreateInfo =
         {
@@ -362,7 +360,7 @@ namespace Vk
                     .baseMipLevel   = 0,
                     .levelCount     = images[i].mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = images[i].mipLevels
+                    .layerCount     = images[i].arrayLayers
                 }
             );
 
@@ -386,16 +384,18 @@ namespace Vk
                     (
                         image,
                         Vk::ImageBarrier{
-                            .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                            .srcAccessMask  = VK_ACCESS_2_NONE,
-                            .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                            .dstAccessMask  = VK_ACCESS_2_NONE,
-                            .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                            .newLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                            .baseMipLevel   = 0,
-                            .levelCount     = image.mipLevels,
-                            .baseArrayLayer = 0,
-                            .layerCount     = image.arrayLayers
+                            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                            .srcAccessMask   = VK_ACCESS_2_NONE,
+                            .dstStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                            .dstAccessMask   = VK_ACCESS_2_NONE,
+                            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                            .newLayout       = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                            .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                            .baseMipLevel    = 0,
+                            .levelCount      = image.mipLevels,
+                            .baseArrayLayer  = 0,
+                            .layerCount      = image.arrayLayers
                         }
                     );
                 }
@@ -486,8 +486,6 @@ namespace Vk
             Vk::SetDebugName(device, presentFences[i],            fmt::format("Swapchain/PresentFence{}",            i));
             Vk::SetDebugName(device, renderFinishedSemaphores[i], fmt::format("Swapchain/RenderFinishedSemaphore{}", i));
         }
-
-        Logger::Debug("{}\n", "Created swapchain sync objects!");
     }
 
     VkSurfaceFormat2KHR Swapchain::ChooseSurfaceFormat() const
@@ -581,12 +579,43 @@ namespace Vk
         return presentMode;
     }
 
+    void Swapchain::DestroySwapchain(VkDevice device)
+    {
+        Vk::CheckResult(vkWaitForFences(
+            device,
+            presentFences.size(),
+            presentFences.data(),
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fences!"
+        );
+
+        for (auto& imageView : imageViews)
+        {
+            imageView.Destroy(device);
+        }
+
+        for (const auto fence : presentFences)
+        {
+            vkDestroyFence(device, fence, nullptr);
+        }
+
+        for (const auto semaphore : renderFinishedSemaphores)
+        {
+            vkDestroySemaphore(device, semaphore, nullptr);
+        }
+
+        images.clear();
+        imageViews.clear();
+    }
+
     VkExtent2D Swapchain::ChooseSwapExtent(const glm::ivec2& size) const
     {
         const auto& capabilities = m_swapChainInfo.capabilities;
 
-        // Some platforms set swap extents themselves
-        if (capabilities.surfaceCapabilities.currentExtent.width != std::numeric_limits<u32>::max())
+        // Special Case: If current extent is not (0xFFFFFFFF, 0xFFFFFFFF), use surface size as swapchain extent
+        if (capabilities.surfaceCapabilities.currentExtent.width  != std::numeric_limits<u32>::max() &&
+            capabilities.surfaceCapabilities.currentExtent.height != std::numeric_limits<u32>::max())
         {
             Logger::Debug
             (
@@ -612,31 +641,33 @@ namespace Vk
         };
     }
 
-    void Swapchain::DestroySwapchain(VkDevice device)
+    u32 Swapchain::GetImageCount() const
     {
-        for (auto& imageView : imageViews)
+        const u32 minRequiredImages = std::max
+        (
+            m_swapChainInfo.capabilities.surfaceCapabilities.minImageCount,
+            static_cast<u32>(Vk::FRAMES_IN_FLIGHT)
+        );
+
+        const u32 maxAllowedImages = m_swapChainInfo.capabilities.surfaceCapabilities.maxImageCount;
+
+        u32 imageCount = 0;
+
+        // Special case: If max image count is zero then there is no cap on imageCount
+        if (maxAllowedImages == 0)
         {
-            imageView.Destroy(device);
+            imageCount = minRequiredImages + 1;
+        }
+        else
+        {
+            imageCount = std::min(minRequiredImages + 1, maxAllowedImages);
         }
 
-        for (const auto fence : presentFences)
-        {
-            vkDestroyFence(device, fence, nullptr);
-        }
-
-        for (const auto semaphore : renderFinishedSemaphores)
-        {
-            vkDestroySemaphore(device, semaphore, nullptr);
-        }
-
-        images.clear();
-        imageViews.clear();
+        return imageCount;
     }
 
     void Swapchain::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying swapchain!");
-
         DestroySwapchain(device);
 
         vkDestroySwapchainKHR(device, handle, nullptr);

@@ -16,11 +16,12 @@
 
 #include "Extensions.h"
 
-#include <SDL3/SDL_vulkan.h>
 #include <volk/volk.h>
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/Log.h"
+#include "Externals/UnorderedDense.h"
+#include "Externals/SDL.h"
 
 namespace Vk
 {
@@ -44,6 +45,7 @@ namespace Vk
     bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions)
     {
         u32 extensionCount = 0;
+
         vkEnumerateDeviceExtensionProperties
         (
             device,
@@ -53,6 +55,7 @@ namespace Vk
         );
 
         auto availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
+
         vkEnumerateDeviceExtensionProperties
         (
             device,
@@ -61,16 +64,12 @@ namespace Vk
             availableExtensions.data()
         );
 
-        auto _requiredExtensions = std::set<std::string_view>(requiredExtensions.begin(), requiredExtensions.end());
+        auto _requiredExtensions = ankerl::unordered_dense::set<std::string_view>(requiredExtensions.begin(), requiredExtensions.end());
 
-        for (auto&& extension : availableExtensions)
+        for (const auto& extension : availableExtensions)
         {
-            // Logger::Debug("{}\n", extension.extensionName);
-
             _requiredExtensions.erase(extension.extensionName);
         }
-
-        // Logger::Debug("{}\n", " ");
 
         return _requiredExtensions.empty();
     }

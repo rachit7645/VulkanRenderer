@@ -17,6 +17,7 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
+#include "Shadows/ShadowRT.h"
 
 namespace Renderer::ShadowRT
 {
@@ -29,20 +30,22 @@ namespace Renderer::ShadowRT
     {
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
-            .AttachShader("Shadows/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-            .AttachShader("Shadows/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 0, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 1, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rahit", VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
             .SetMaxRayRecursionDepth(1)
-            .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(ShadowRT::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        gBufferSamplerIndex = textureManager.AddSampler
+        gBufferSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -59,13 +62,40 @@ namespace Renderer::ShadowRT
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        Vk::SetDebugName(context.device, handle,                                                "ShadowRTPipeline");
-        Vk::SetDebugName(context.device, layout,                                                "ShadowRTPipelineLayout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(gBufferSamplerIndex).handle, "ShadowRTPipeline/GBufferSampler");
+        const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
+
+        textureSamplerID = textureManager.AddSampler
+        (
+            megaSet,
+            context.device,
+            VkSamplerCreateInfo{
+                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                .pNext                   = nullptr,
+                .flags                   = 0,
+                .magFilter               = VK_FILTER_LINEAR,
+                .minFilter               = VK_FILTER_LINEAR,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                .mipLodBias              = 0.0f,
+                .anisotropyEnable        = VK_TRUE,
+                .maxAnisotropy           = anisotropy,
+                .compareEnable           = VK_FALSE,
+                .compareOp               = VK_COMPARE_OP_ALWAYS,
+                .minLod                  = 0.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+                .unnormalizedCoordinates = VK_FALSE
+            }
+        );
+
+        Vk::SetDebugName(context.device, handle, "ShadowRT/Pipeline");
+        Vk::SetDebugName(context.device, layout, "ShadowRT/Pipeline/Layout");
     }
 }

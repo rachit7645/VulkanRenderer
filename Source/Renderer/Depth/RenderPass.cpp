@@ -18,6 +18,8 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Deferred/Depth/Opaque.h"
+#include "Deferred/Depth/AlphaMasked.h"
 
 namespace Renderer::Depth
 {
@@ -25,16 +27,42 @@ namespace Renderer::Depth
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager
+        Vk::FramebufferManager& framebufferManager,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper)
+        : m_opaquePipeline(context, formatHelper),
+          m_alphaMaskedPipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
             "SceneDepth",
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            {
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "SceneDepthAsyncCompute",
+            Vk::FramebufferType::Depth,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize
             {
                 return
@@ -65,7 +93,18 @@ namespace Renderer::Depth
             }
         );
 
-        Logger::Info("{}\n", "Created depth pass!");
+        framebufferManager.AddFramebufferView
+        (
+            "SceneDepthAsyncCompute",
+            "SceneDepthAsyncComputeView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
     }
 
     void RenderPass::Render
@@ -74,17 +113,20 @@ namespace Renderer::Depth
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::MegaSet& megaSet,
+        const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        Culling::Dispatch& cullingDispatch
+        Culling::Dispatch& culling
     )
     {
+        Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
+
         const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
         const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
 
-        cullingDispatch.DispatchFrustumCulling
+        culling.Frustum
         (
             FIF,
             frameIndex,
@@ -93,8 +135,6 @@ namespace Renderer::Depth
             meshBuffer,
             indirectBuffer
         );
-
-        Vk::BeginLabel(cmdBuffer, "DepthPass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
         const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
@@ -109,6 +149,8 @@ namespace Renderer::Depth
                 .dstAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -149,8 +191,6 @@ namespace Renderer::Depth
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
-
         const VkViewport viewport =
         {
             .x        = 0.0f,
@@ -171,34 +211,172 @@ namespace Renderer::Depth
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        modelManager.geometryBuffer.Bind(cmdBuffer);
+
+        // Opaque
         {
-            .scene       = sceneBuffer.buffers[FIF].deviceAddress,
-            .meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .meshIndices = indirectBuffer.frustumCulledDrawCallBuffer.meshIndexBuffer.deviceAddress,
-            .positions   = geometryBuffer.positionBuffer.buffer.deviceAddress
-        };
+            Vk::BeginLabel(cmdBuffer, "Opaque", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
-        pipeline.PushConstants
-        (
-           cmdBuffer,
-           VK_SHADER_STAGE_VERTEX_BIT,
-           0, sizeof(Depth::PushConstant),
-           &pipeline.pushConstant
-        );
+            m_opaquePipeline.Bind(cmdBuffer);
 
-        geometryBuffer.Bind(cmdBuffer);
+            // Single-Sided
+            {
+                Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
 
-        vkCmdDrawIndexedIndirectCount
-        (
-            cmdBuffer.handle,
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-            sizeof(u32),
-            indirectBuffer.frustumCulledDrawCallBuffer.drawCallBuffer.handle,
-            0,
-            indirectBuffer.drawCallBuffers[FIF].writtenDrawCount,
-            sizeof(VkDrawIndexedIndirectCommand)
-        );
+                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
+
+                const auto constants = Opaque::Constants
+                {
+                    .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
+                    .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                };
+
+                m_opaquePipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT,
+                   constants
+                );
+
+                vkCmdDrawIndexedIndirectCount
+                (
+                    cmdBuffer.handle,
+                    indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
+                    sizeof(u32),
+                    indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
+                    0,
+                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
+
+                Vk::EndLabel(cmdBuffer);
+            }
+
+            // Double Sided
+            {
+                Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
+
+                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
+
+                const auto constants = Opaque::Constants
+                {
+                    .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                };
+
+                m_opaquePipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT,
+                   constants
+                );
+
+                vkCmdDrawIndexedIndirectCount
+                (
+                    cmdBuffer.handle,
+                    indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                    sizeof(u32),
+                    indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
+                    0,
+                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
+
+                Vk::EndLabel(cmdBuffer);
+            }
+
+            Vk::EndLabel(cmdBuffer);
+        }
+
+        // Alpha Masked
+        {
+            Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
+
+            m_alphaMaskedPipeline.Bind(cmdBuffer);
+
+            const std::array descriptorSets = {megaSet.descriptorSet};
+            m_alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+
+            // Single-Sided
+            {
+                Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
+
+                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_BACK_BIT);
+
+                const auto constants = AlphaMasked::Constants
+                {
+                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
+                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
+                };
+
+                m_alphaMaskedPipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                   constants
+                );
+
+                vkCmdDrawIndexedIndirectCount
+                (
+                    cmdBuffer.handle,
+                    indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
+                    sizeof(u32),
+                    indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
+                    0,
+                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
+
+                Vk::EndLabel(cmdBuffer);
+            }
+
+            // Double Sided
+            {
+                Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
+
+                vkCmdSetCullMode(cmdBuffer.handle, VK_CULL_MODE_NONE);
+
+                const auto constants = AlphaMasked::Constants
+                {
+                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
+                };
+
+                m_alphaMaskedPipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                   constants
+                );
+
+                vkCmdDrawIndexedIndirectCount
+                (
+                    cmdBuffer.handle,
+                    indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
+                    sizeof(u32),
+                    indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
+                    0,
+                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    sizeof(VkDrawIndexedIndirectCommand)
+                );
+
+                Vk::EndLabel(cmdBuffer);
+            }
+
+            Vk::EndLabel(cmdBuffer);
+        }
 
         vkCmdEndRendering(cmdBuffer.handle);
 
@@ -207,8 +385,7 @@ namespace Renderer::Depth
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying depth pass!");
-
-        pipeline.Destroy(device);
+        m_opaquePipeline.Destroy(device);
+        m_alphaMaskedPipeline.Destroy(device);
     }
 }

@@ -36,10 +36,9 @@ vec2 Hammersley(uint i, uint N)
 
 vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, vec3 T, vec3 B, float roughness)
 {
-    // Using Disney squared roughness
     float a = roughness * roughness;
 
-    float phi      = 2.0f * PI * Xi.x;
+    float phi      = TWO_PI * Xi.x;
     float cosTheta = sqrt((1.0f - Xi.y) / (1.0f + (a * a - 1.0f) * Xi.y));
     float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
 

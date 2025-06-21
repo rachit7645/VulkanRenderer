@@ -17,6 +17,7 @@
 #include "ShaderBindingTable.h"
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
+#include "Util/Align.h"
 
 namespace Vk
 {
@@ -26,15 +27,14 @@ namespace Vk
         Vk::CommandBufferAllocator& cmdBufferAllocator,
         const Vk::Pipeline& pipeline,
         u32 missCount,
-        u32 hitCount,
-        u32 callableCount
+        u32 hitCount
     )
     {
         const u32 shaderGroupHandleSize      = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
         const u32 shaderGroupHandleAlignment = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment;
         const u32 shaderGroupBaseAlignment   = context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment;
 
-        const u32          handleCount = 1 + missCount + hitCount + callableCount;
+        const u32          handleCount = 1 + missCount + hitCount;
         const VkDeviceSize handlesSize = handleCount * shaderGroupHandleSize;
 
         auto handlesData = std::vector<u8>(handlesSize);
@@ -60,10 +60,7 @@ namespace Vk
         hitRegion.stride = handleSizeAligned;
         hitRegion.size   = Util::Align(hitCount * handleSizeAligned, shaderGroupBaseAlignment);
 
-        callableRegion.stride = handleSizeAligned;
-        callableRegion.size   = Util::Align(callableCount * handleSizeAligned, shaderGroupBaseAlignment);
-
-        const VkDeviceSize sbtSize = raygenRegion.size + missRegion.size + hitRegion.size + callableRegion.size;
+        const VkDeviceSize sbtSize = raygenRegion.size + missRegion.size + hitRegion.size;
 
         auto stagingBuffer = Vk::Buffer
         (
@@ -80,7 +77,6 @@ namespace Vk
         const usize raygenOffset   = 0;
         const usize missOffset     = raygenOffset + 1         * shaderGroupHandleSize;
         const usize hitOffset      = missOffset   + missCount * shaderGroupHandleSize;
-        const usize callableOffset = hitOffset    + hitCount  * shaderGroupHandleSize;
 
         // Raygen
         std::memcpy
@@ -95,8 +91,8 @@ namespace Vk
         {
             std::memcpy
             (
-                pMappedData + raygenRegion.size + (i * missRegion.stride), // Base + RayGen + Current Miss (Strided)
-                handlesData.data() + missOffset + (i * shaderGroupHandleSize),        // Base + Raygen + Current Miss
+                pMappedData + raygenRegion.size + (i * missRegion.stride),     // Base + RayGen + Current Miss (Strided)
+                handlesData.data() + missOffset + (i * shaderGroupHandleSize), // Base + Raygen + Current Miss
                 shaderGroupHandleSize
             );
         }
@@ -107,18 +103,7 @@ namespace Vk
             std::memcpy
             (
                 pMappedData + raygenRegion.size + missRegion.size + (i * hitRegion.stride), // Base + RayGen + Miss + Current Hit (Strided)
-                handlesData.data() + hitOffset + (i * shaderGroupHandleSize),                          // Base + Raygen + Miss + Current Hit
-                shaderGroupHandleSize
-            );
-        }
-
-        // Callable
-        for (u32 i = 0; i < callableCount; ++i)
-        {
-            std::memcpy
-            (
-                pMappedData + raygenRegion.size + missRegion.size + hitRegion.size + (i * callableRegion.stride), // Base + RayGen + Miss + Hit + Current Callable (Strided)
-                handlesData.data() + callableOffset + (i * shaderGroupHandleSize),                                           // Base + Raygen + Miss + Hit + Current Callable
+                handlesData.data() + hitOffset + (i * shaderGroupHandleSize),               // Base + Raygen + Miss + Current Hit
                 shaderGroupHandleSize
             );
         }
@@ -178,12 +163,14 @@ namespace Vk
                 (
                     cmdBuffer,
                     Vk::BufferBarrier{
-                        .srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        .dstStageMask  = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-                        .dstAccessMask = VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,
-                        .offset        = 0,
-                        .size          = sbtSize
+                        .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                        .dstAccessMask  = VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,
+                        .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                        .offset         = 0,
+                        .size           = sbtSize
                     }
                 );
             }
@@ -191,10 +178,9 @@ namespace Vk
 
         m_buffer.GetDeviceAddress(context.device);
 
-        raygenRegion.deviceAddress   = m_buffer.deviceAddress;
-        missRegion.deviceAddress     = m_buffer.deviceAddress + raygenRegion.size;
-        hitRegion.deviceAddress      = m_buffer.deviceAddress + raygenRegion.size + missRegion.size;
-        callableRegion.deviceAddress = m_buffer.deviceAddress + raygenRegion.size + missRegion.size + hitRegion.size;
+        raygenRegion.deviceAddress = m_buffer.deviceAddress;
+        missRegion.deviceAddress   = m_buffer.deviceAddress + raygenRegion.size;
+        hitRegion.deviceAddress    = m_buffer.deviceAddress + raygenRegion.size + missRegion.size;
 
         Vk::SetDebugName(context.device, m_buffer.handle, "ShaderBindingTable/Buffer");
 

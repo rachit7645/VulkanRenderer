@@ -16,10 +16,10 @@
 
 #include "RenderPass.h"
 
-#include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
+#include "Skybox/Skybox.h"
 
 namespace Renderer::Skybox
 {
@@ -30,9 +30,8 @@ namespace Renderer::Skybox
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
-        Logger::Info("{}\n", "Created skybox pass!");
     }
 
     void RenderPass::Render
@@ -41,18 +40,37 @@ namespace Renderer::Skybox
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::GeometryBuffer& geometryBuffer,
+        const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const IBL::IBLMaps& iblMaps
     )
     {
-        Vk::BeginLabel(cmdBuffer, "SkyboxPass", {0.2796f, 0.8588f, 0.3548f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "Skybox", {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
         const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
+
+        depthAttachment.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+                .dstAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = depthAttachment.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = depthAttachment.image.arrayLayers
+            }
+        );
 
         const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
@@ -101,7 +119,7 @@ namespace Renderer::Skybox
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -123,24 +141,23 @@ namespace Renderer::Skybox
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        const auto constants = Skybox::Constants
         {
-            .positions    = geometryBuffer.cubeBuffer.deviceAddress,
-            .scene        = sceneBuffer.buffers[FIF].deviceAddress,
-            .samplerIndex = pipeline.samplerIndex,
-            .cubemapIndex = iblMaps.skyboxID
+            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
+            .SamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.samplerID).descriptorID,
+            .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
            cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-           0, sizeof(Skybox::PushConstant),
-           reinterpret_cast<void*>(&pipeline.pushConstant)
+           constants
         );
 
-        std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        const std::array descriptorSets = {megaSet.descriptorSet};
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -163,6 +180,8 @@ namespace Renderer::Skybox
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = colorAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -178,6 +197,8 @@ namespace Renderer::Skybox
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = depthAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -191,8 +212,6 @@ namespace Renderer::Skybox
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying skybox pass!");
-
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
     }
 }

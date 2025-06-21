@@ -17,7 +17,6 @@
 #ifndef TAA_PIPELINE_H
 #define TAA_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -36,19 +35,8 @@ namespace Renderer::TAA
             Vk::TextureManager& textureManager
         );
 
-        TAA::PushConstant pushConstant = {};
-
-        u32 pointSamplerIndex  = 0;
-        u32 linearSamplerIndex = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
+        Vk::SamplerID pointSamplerID  = 0;
+        Vk::SamplerID linearSamplerID = 0;
     };
 }
 

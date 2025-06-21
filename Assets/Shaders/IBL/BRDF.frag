@@ -53,14 +53,17 @@ void main()
         float NdotH = max(H.z, 0.0f);
         float VdotH = max(dot(V, H), 0.0f);
 
+        float G     = GeometrySmith_IBL(N, V, L, roughness);
+        float G_Vis = (G * VdotH) / max(NdotH * NdotV, 1e-7f);
+        float Fc    = pow5(1.0f - VdotH);
+
+        float x = (1.0f - Fc) * G_Vis;
+        float y = Fc * G_Vis;
+
         if (NdotL > 0.0f)
         {
-            float G     = GeometrySmith_IBL(N, V, L, roughness);
-            float G_Vis = (G * VdotH) / (NdotH * NdotV);
-            float Fc    = pow(1.0f - VdotH, 5.0f);
-
-            X += (1.0f - Fc) * G_Vis;
-            Y += Fc * G_Vis;
+            X += x;
+            Y += y;
         }
     }
 

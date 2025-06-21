@@ -19,6 +19,7 @@
 #include "Vulkan/PipelineBuilder.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "IBL/Convolution.h"
 
 namespace Renderer::IBL::Convolution
 {
@@ -30,30 +31,18 @@ namespace Renderer::IBL::Convolution
         Vk::TextureManager& textureManager
     )
     {
-        CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context.device, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
-    )
-    {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("IBL/Convolution.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("IBL/Convolution.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,
@@ -67,27 +56,15 @@ namespace Renderer::IBL::Convolution
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Convolution::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Convolution::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ConvolutionPipeline");
-        Vk::SetDebugName(context.device, layout, "ConvolutionPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        VkDevice device,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        samplerIndex = textureManager.AddSampler
+        samplerID = textureManager.AddSampler
         (
             megaSet,
-            device,
-            {
+            context.device,
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -99,18 +76,19 @@ namespace Renderer::IBL::Convolution
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "ConvolutionPipeline/Sampler");
+        megaSet.Update(context.device);
 
-        megaSet.Update(device);
+        Vk::SetDebugName(context.device, handle, "IBL/Convolution/Pipeline");
+        Vk::SetDebugName(context.device, layout, "IBL/Convolution/Pipeline/Layout");
     }
 }

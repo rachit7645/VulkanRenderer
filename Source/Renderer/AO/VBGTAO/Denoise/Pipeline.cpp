@@ -17,6 +17,7 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
+#include "AO/VBGTAO/SpacialDenoise.h"
 
 namespace Renderer::AO::VBGTAO::Denoise
 {
@@ -30,15 +31,15 @@ namespace Renderer::AO::VBGTAO::Denoise
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBGTAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
-            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        pointSamplerIndex = textureManager.AddSampler
+        pointSamplerID = textureManager.AddSampler
         (
             megaSet,
             context.device,
-            {
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -55,15 +56,14 @@ namespace Renderer::AO::VBGTAO::Denoise
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
         megaSet.Update(context.device);
 
-        Vk::SetDebugName(context.device, handle,                                              "VBGTAO/DenoisePipeline");
-        Vk::SetDebugName(context.device, layout,                                              "VBGTAO/DenoisePipeline/Layout");
-        Vk::SetDebugName(context.device, textureManager.GetSampler(pointSamplerIndex).handle, "VBGTAO/DenoisePipeline/PointSampler");
+        Vk::SetDebugName(context.device, handle, "VBGTAO/Denoise/Pipeline");
+        Vk::SetDebugName(context.device, layout, "VBGTAO/Denoise/Pipeline/Layout");
     }
 }

@@ -57,7 +57,7 @@ namespace Vk
     {
         m_framebufferViews.emplace(name, FramebufferView{
             .framebuffer     = framebufferName.data(),
-            .sampledImageIndex = std::numeric_limits<u32>::max(),
+            .sampledImageID = std::numeric_limits<u32>::max(),
             .type            = imageType,
             .size            = size,
             .view            = {}
@@ -90,7 +90,7 @@ namespace Vk
 
         m_extent = extent;
 
-        std::unordered_set<std::string> updatedFramebuffers = {};
+        ankerl::unordered_dense::set<std::string> updatedFramebuffers = {};
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
@@ -139,49 +139,61 @@ namespace Vk
             switch (framebuffer.type)
             {
             case FramebufferType::ColorR_Unorm8:
-                createInfo.format = formatHelper.r8UnormFormat;
+                createInfo.format = VK_FORMAT_R8_UNORM;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorR_Unorm16:
-                createInfo.format = formatHelper.r16UnormFormat;
+                createInfo.format = VK_FORMAT_R16_UNORM;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorR_SFloat16:
-                createInfo.format = formatHelper.rSFloat16Format;
+                createInfo.format = VK_FORMAT_R16_SFLOAT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorR_SFloat32:
-                createInfo.format = formatHelper.rSFloat32Format;
+                createInfo.format = VK_FORMAT_R32_SFLOAT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorR_Uint32:
-                createInfo.format = formatHelper.rUint32Format;
+                createInfo.format = VK_FORMAT_R32_UINT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorRG_Unorm8:
+                createInfo.format = VK_FORMAT_R8G8_UNORM;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorRG_Unorm16:
+                createInfo.format = VK_FORMAT_R16G16_UNORM;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorRG_SFloat16:
-                createInfo.format = formatHelper.rgSFloat16Format;
+                createInfo.format = VK_FORMAT_R16G16_SFLOAT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorRGBA_UNorm8:
-                createInfo.format = formatHelper.rgba8UnormFormat;
+                createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
             case FramebufferType::ColorBGR_SFloat_10_11_11:
-                createInfo.format = formatHelper.b10g11r11SFloat;
+                createInfo.format = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
@@ -214,17 +226,11 @@ namespace Vk
             switch (framebuffer.imageType)
             {
             case FramebufferImageType::Single2D:
-                createInfo.flags = 0;
-                break;
-
             case FramebufferImageType::Array2D:
                 createInfo.flags = 0;
                 break;
 
             case FramebufferImageType::Cube:
-                createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-                break;
-
             case FramebufferImageType::ArrayCube:
                 createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
                 break;
@@ -265,6 +271,8 @@ namespace Vk
                     .dstAccessMask  = framebuffer.initialState.dstAccessMask,
                     .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
                     .newLayout      = framebuffer.initialState.initialLayout,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = 0,
                     .levelCount     = framebuffer.image.mipLevels,
                     .baseArrayLayer = 0,
@@ -339,12 +347,12 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
-    bool FramebufferManager::DoesFramebufferExist(const std::string_view name)
+    bool FramebufferManager::DoesFramebufferExist(const std::string_view name) const
     {
         return m_framebuffers.contains(name.data());
     }
 
-    bool FramebufferManager::DoesFramebufferViewExist(const std::string_view name)
+    bool FramebufferManager::DoesFramebufferViewExist(const std::string_view name) const
     {
         return m_framebufferViews.contains(name.data());
     }
@@ -438,7 +446,7 @@ namespace Vk
         });
     }
 
-    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue)
+    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const
     {
         return std::visit(Util::Visitor{
             [] (std::monostate) -> Vk::FramebufferSize
@@ -478,12 +486,12 @@ namespace Vk
     {
         if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
         {
-            framebufferView.sampledImageIndex = megaSet.WriteSampledImage(framebufferView.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            framebufferView.sampledImageID = megaSet.WriteSampledImage(framebufferView.view);
         }
 
         if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
         {
-            framebufferView.storageImageIndex = megaSet.WriteStorageImage(framebufferView.view);
+            framebufferView.storageImageID = megaSet.WriteStorageImage(framebufferView.view);
         }
     }
 
@@ -499,7 +507,7 @@ namespace Vk
         {
             if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
             {
-                deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageIndex]
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageID]
                 {
                     megaSet.FreeSampledImage(id);
                 });
@@ -507,7 +515,7 @@ namespace Vk
 
             if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
             {
-                deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageIndex]
+                deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageID]
                 {
                     megaSet.FreeStorageImage(id);
                 });
@@ -521,12 +529,12 @@ namespace Vk
         {
             if (ImGui::BeginMenu("Framebuffer Manager"))
             {
-                std::vector<std::pair<std::string, FramebufferView>> sortedFramebufferViews
+                std::vector sortedFramebufferViews
                 (
                     m_framebufferViews.begin(),
                     m_framebufferViews.end()
                 );
-                
+
                 auto CustomOrderedSort = [] (const std::string& a, const std::string& b)
                 {
                     usize i = 0;
@@ -573,7 +581,7 @@ namespace Vk
                     return a.length() < b.length();
                 };
 
-                std::ranges::sort(sortedFramebufferViews,[&CustomOrderedSort] (const auto& a, const auto& b)
+                std::ranges::sort(sortedFramebufferViews, [&CustomOrderedSort] (const auto& a, const auto& b)
                 {
                     return CustomOrderedSort(a.first, b.first);
                 });
@@ -584,7 +592,7 @@ namespace Vk
 
                     if (ImGui::TreeNode(name.c_str()))
                     {
-                        ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageIndex);
+                        ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageID);
                         ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
                         ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
                         ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
@@ -603,7 +611,7 @@ namespace Vk
                         const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
                         const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
 
-                        ImGui::Image(framebufferView.sampledImageIndex, imageSize);
+                        ImGui::Image(framebufferView.sampledImageID, imageSize);
 
                         ImGui::TreePop();
                     }
@@ -629,5 +637,18 @@ namespace Vk
         {
             framebufferViews.view.Destroy(device);
         }
+    }
+
+    bool FramebufferSize::Matches(const Vk::Image& image) const
+    {
+        if (image.handle == VK_NULL_HANDLE)
+        {
+            return false;
+        }
+
+        return width == image.width &&
+               height == image.height &&
+               mipLevels == image.mipLevels &&
+               arrayLayers == image.arrayLayers;
     }
 }

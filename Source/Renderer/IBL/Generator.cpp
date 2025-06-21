@@ -16,11 +16,12 @@
 
 #include "Generator.h"
 
-#include <stb/stb_image.h>
-
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Externals/GLM.h"
+#include "IBL/Converter.h"
+#include "IBL/Convolution.h"
+#include "IBL/PreFilter.h"
 
 namespace Renderer::IBL
 {
@@ -29,8 +30,7 @@ namespace Renderer::IBL
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
     constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
-    constexpr u32 PREFILTER_MIPMAP_LEVELS = 5;
-    constexpr u32 PREFILTER_SAMPLE_COUNT  = 512;
+    constexpr u32 PREFILTER_SAMPLE_COUNT = 512;
     
     Generator::Generator
     (
@@ -42,18 +42,18 @@ namespace Renderer::IBL
         : m_converterPipeline(context, formatHelper, megaSet, textureManager),
           m_convolutionPipeline(context, formatHelper, megaSet, textureManager),
           m_preFilterPipeline(context, formatHelper, megaSet, textureManager),
-          m_brdfLutPipeline(context, formatHelper)
+          m_brdfLutPipeline(context)
     {
         const auto projection = glm::perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
         const std::array matrices =
         {
-            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-            projection * glm::lookAt(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+            projection * glm::lookAtRH(glm::vec3(0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            projection * glm::lookAtRH(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            projection * glm::lookAtRH(glm::vec3(0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+            projection * glm::lookAtRH(glm::vec3(0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+            projection * glm::lookAtRH(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            projection * glm::lookAtRH(glm::vec3(0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
         };
 
         m_matrixBuffer = Vk::Buffer
@@ -87,8 +87,6 @@ namespace Renderer::IBL
                 "Failed to flush allocation!"
             );
         }
-
-        Logger::Info("{}\n", "Created IBL Pass!");
     }
 
     IBL::IBLMaps Generator::Generate
@@ -161,7 +159,6 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             context,
-            formatHelper,
             modelManager.textureManager,
             megaSet
         );
@@ -179,7 +176,7 @@ namespace Renderer::IBL
         };
     }
 
-    u32 Generator::LoadHDRMap
+    Vk::TextureID Generator::LoadHDRMap
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
@@ -190,26 +187,39 @@ namespace Renderer::IBL
     )
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
-        
-        // HDRi Environment Maps are always flipped for some reason idk why
-        stbi_set_flip_vertically_on_load(true);
+
+        const auto extension = Util::Files::GetExtension(hdrMapAssetPath);
+
+        auto type = Vk::ImageUploadType{0};
+
+        if (extension == ".hdr")
+        {
+            type = Vk::ImageUploadType::HDR;
+        }
+        else if (extension == ".exr")
+        {
+            type = Vk::ImageUploadType::EXR;
+        }
 
         const auto hdrMapID = modelManager.textureManager.AddTexture
         (
-            context.device,
             context.allocator,
-            megaSet,
             deletionQueue,
-            hdrMapAssetPath
+            Vk::ImageUpload{
+                .type   = type,
+                .flags  = Vk::ImageUploadFlags::F16,
+                .source = Vk::ImageUploadFile{
+                    .path = hdrMapAssetPath.data()
+                }
+            }
         );
-
-        stbi_set_flip_vertically_on_load(false);
 
         modelManager.Update
         (
             cmdBuffer,
             context.device,
             context.allocator,
+            megaSet,
             deletionQueue
         );
 
@@ -220,10 +230,10 @@ namespace Renderer::IBL
         return hdrMapID;
     }
 
-    u32 Generator::GenerateSkybox
+    Vk::TextureID Generator::GenerateSkybox
     (
         const Vk::CommandBuffer& cmdBuffer,
-        u32 hdrMapID,
+        Vk::TextureID hdrMapID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
@@ -266,6 +276,8 @@ namespace Renderer::IBL
                 .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
                 .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = skybox.mipLevels,
                 .baseArrayLayer = 0,
@@ -342,21 +354,19 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        m_converterPipeline.pushConstant =
+        const auto constants = Converter::Constants
         {
-            .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-            .matrices     = m_matrixBuffer.deviceAddress,
-            .samplerIndex = m_converterPipeline.samplerIndex,
-            .textureIndex = hdrMapID
+            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Matrices     = m_matrixBuffer.deviceAddress,
+            .SamplerIndex = modelManager.textureManager.GetSampler(m_converterPipeline.samplerID).descriptorID,
+            .TextureIndex = modelManager.textureManager.GetTexture(hdrMapID).descriptorID
         };
 
         m_converterPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(Converter::PushConstant),
-            &m_converterPipeline.pushConstant
+            constants
         );
 
         // Mega set
@@ -380,16 +390,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = skybox.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = skybox.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = skybox.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = skybox.arrayLayers
             }
         );
 
@@ -417,11 +429,9 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "Skybox",
-            Vk::Texture{
-                .image     = skybox,
-                .imageView = skyboxView
-            }
+            "IBL/Skybox",
+            skybox,
+            skyboxView
         );
 
         deletionQueue.PushDeletor([device = context.device, skyboxRenderView] () mutable
@@ -432,10 +442,10 @@ namespace Renderer::IBL
         return skyboxID;
     }
 
-    u32 Generator::GenerateIrradianceMap
+    Vk::TextureID Generator::GenerateIrradianceMap
     (
         const Vk::CommandBuffer& cmdBuffer,
-        u32 skyboxID,
+        Vk::TextureID skyboxID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
@@ -471,16 +481,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = irradianceMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = irradianceMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = irradianceMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = irradianceMap.arrayLayers
             }
         );
 
@@ -553,21 +565,19 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        m_convolutionPipeline.pushConstant =
+        const auto constants = Convolution::Constants
         {
-            .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-            .matrices     = m_matrixBuffer.deviceAddress,
-            .samplerIndex = m_convolutionPipeline.samplerIndex,
-            .envMapIndex  = skyboxID
+            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Matrices     = m_matrixBuffer.deviceAddress,
+            .SamplerIndex = modelManager.textureManager.GetSampler(m_convolutionPipeline.samplerID).descriptorID,
+            .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID
         };
 
         m_convolutionPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            sizeof(Convolution::PushConstant),
-            &m_convolutionPipeline.pushConstant
+            constants
         );
 
         // Mega set
@@ -589,16 +599,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = irradianceMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = irradianceMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = irradianceMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = irradianceMap.arrayLayers
             }
         );
 
@@ -608,18 +620,16 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "Irradiance",
-            Vk::Texture{
-                .image     = irradianceMap,
-                .imageView = irradianceView
-            }
+            "IBL/Irradiance",
+            irradianceMap,
+            irradianceView
         );
     }
 
-    [[nodiscard]] u32 Generator::GeneratePreFilterMap
+    [[nodiscard]] Vk::TextureID Generator::GeneratePreFilterMap
     (
         const Vk::CommandBuffer& cmdBuffer,
-        u32 skyboxID,
+        Vk::TextureID skyboxID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         Models::ModelManager& modelManager,
@@ -656,16 +666,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = preFilterMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = preFilterMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = preFilterMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = preFilterMap.arrayLayers
             }
         );
 
@@ -750,23 +762,21 @@ namespace Renderer::IBL
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            m_preFilterPipeline.pushConstant =
+            const auto constants = PreFilter::Constants
             {
-                .positions    = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-                .matrices     = m_matrixBuffer.deviceAddress,
-                .samplerIndex = m_preFilterPipeline.samplerIndex,
-                .envMapIndex  = skyboxID,
-                .roughness    = roughness,
-                .sampleCount  = sampleCount
+                .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+                .Matrices     = m_matrixBuffer.deviceAddress,
+                .SamplerIndex = modelManager.textureManager.GetSampler(m_preFilterPipeline.samplerID).descriptorID,
+                .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID ,
+                .Roughness    = roughness,
+                .SampleCount  = sampleCount
             };
 
             m_preFilterPipeline.PushConstants
             (
                 cmdBuffer,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(PreFilter::PushConstant),
-                &m_preFilterPipeline.pushConstant
+                constants
             );
 
             // Mega set
@@ -791,16 +801,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = preFilterMap.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = preFilterMap.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = preFilterMap.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = preFilterMap.arrayLayers
             }
         );
 
@@ -824,11 +836,9 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "PreFilter",
-            Vk::Texture{
-                .image     = preFilterMap,
-                .imageView = preFilterView
-            }
+            "IBL/PreFilter",
+            preFilterMap,
+            preFilterView
         );
 
         deletionQueue.PushDeletor([device = context.device, preFilterRenderViews] () mutable
@@ -842,11 +852,10 @@ namespace Renderer::IBL
         return preFilterID;
     }
 
-    [[nodiscard]] u32 Generator::GenerateBRDFLUT
+    [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLUT
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet
     )
@@ -866,7 +875,7 @@ namespace Renderer::IBL
                 .pNext                 = nullptr,
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = formatHelper.rgSFloat16Format,
+                .format                = VK_FORMAT_R16G16_SFLOAT,
                 .extent                = {BRDF_LUT_SIZE.x, BRDF_LUT_SIZE.y, 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,
@@ -899,16 +908,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = brdfLut.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = brdfLut.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = brdfLut.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = brdfLut.arrayLayers
             }
         );
 
@@ -982,16 +993,18 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .baseMipLevel   = 0,
-                .levelCount     = brdfLut.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = brdfLut.arrayLayers
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = brdfLut.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = brdfLut.arrayLayers
             }
         );
 
@@ -1001,11 +1014,9 @@ namespace Renderer::IBL
         (
             megaSet,
             context.device,
-            "BRDF_LUT",
-            Vk::Texture{
-                .image     = brdfLut,
-                .imageView = brdfLutView
-            }
+            "IBL/BRDFLookupTable",
+            brdfLut,
+            brdfLutView
         );
 
         return m_brdfLutID.value();

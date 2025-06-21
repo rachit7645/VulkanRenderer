@@ -17,7 +17,6 @@
 #ifndef VBGTAO_OCCLUSION_PIPELINE_H
 #define VBGTAO_OCCLUSION_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
@@ -34,10 +33,8 @@ namespace Renderer::AO::VBGTAO::Occlusion
             Vk::TextureManager& textureManager
         );
 
-        Occlusion::PushConstant pushConstant = {};
-
-        u32 pointSamplerIndex  = 0;
-        u32 linearSamplerIndex = 0;
+        Vk::SamplerID pointSamplerID  = 0;
+        Vk::SamplerID linearSamplerID = 0;
     };
 }
 

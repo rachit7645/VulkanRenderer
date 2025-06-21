@@ -19,7 +19,7 @@
 #include "Util/Log.h"
 #include "DebugUtils.h"
 #include "Models/Model.h"
-#include "Models/Vertex.h"
+#include "GPU/Vertex.h"
 #include "Renderer/RenderConstants.h"
 
 namespace Vk
@@ -31,7 +31,7 @@ namespace Vk
         cubeBuffer = Vk::Buffer
         (
             allocator,
-            36 * sizeof(Models::Position),
+            36 * sizeof(GPU::Position),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
@@ -132,12 +132,14 @@ namespace Vk
             (
                 cmdBuffer,
                 Vk::BufferBarrier{
-                    .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-                    .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-                    .offset        = 0,
-                    .size          = VERTICES_SIZE
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .offset         = 0,
+                    .size           = VERTICES_SIZE
                 }
             );
 
@@ -146,9 +148,9 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
-        Vk::SetDebugName(device, indexBuffer.buffer.handle,    "GeometryBuffer/IndexBuffer"   );
-        Vk::SetDebugName(device, positionBuffer.buffer.handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, vertexBuffer.buffer.handle,   "GeometryBuffer/VertexBuffer"  );
+        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer"   );
+        Vk::SetDebugName(device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
+        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer"  );
 
         if (m_pendingCubeUpload.has_value())
         {
@@ -159,6 +161,16 @@ namespace Vk
 
             m_pendingCubeUpload = std::nullopt;
         }
+    }
+
+    void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue)
+    {
+        deletionQueue.PushDeletor([this, info] ()
+        {
+            indexBuffer.Free(info.indexInfo);
+            positionBuffer.Free(info.positionInfo);
+            vertexBuffer.Free(info.vertexInfo);
+        });
     }
 
     void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
@@ -236,27 +248,27 @@ namespace Vk
                 (
                     "Index Buffer    | %u | %llu/%llu/%llu",
                     indexBuffer.count,
-                    indexBuffer.count * sizeof(Models::Index),
-                    indexBuffer.buffer.allocationInfo.size - (indexBuffer.count * sizeof(Models::Index)),
-                    indexBuffer.buffer.allocationInfo.size
+                    indexBuffer.count * sizeof(GPU::Index),
+                    GetIndexBuffer().allocationInfo.size - (indexBuffer.count * sizeof(GPU::Index)),
+                    GetIndexBuffer().allocationInfo.size
                 );
 
                 ImGui::Text
                 (
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionBuffer.count,
-                    positionBuffer.count * sizeof(Models::Position),
-                    positionBuffer.buffer.allocationInfo.size - (positionBuffer.count * sizeof(Models::Position)),
-                    positionBuffer.buffer.allocationInfo.size
+                    positionBuffer.count * sizeof(GPU::Position),
+                    GetPositionBuffer().allocationInfo.size - (positionBuffer.count * sizeof(GPU::Position)),
+                    GetPositionBuffer().allocationInfo.size
                 );
 
                 ImGui::Text
                 (
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexBuffer.count,
-                    vertexBuffer.count * sizeof(Models::Vertex),
-                    vertexBuffer.buffer.allocationInfo.size - (vertexBuffer.count * sizeof(Models::Vertex)),
-                    vertexBuffer.buffer.allocationInfo.size
+                    vertexBuffer.count * sizeof(GPU::Vertex),
+                    GetVertexBuffer().allocationInfo.size - (vertexBuffer.count * sizeof(GPU::Vertex)),
+                    GetVertexBuffer().allocationInfo.size
                 );
 
                 ImGui::EndMenu();
@@ -270,6 +282,21 @@ namespace Vk
     {
         return indexBuffer.HasPendingUploads()  || vertexBuffer.HasPendingUploads() ||
                vertexBuffer.HasPendingUploads() || m_pendingCubeUpload.has_value();
+    }
+
+    const Vk::Buffer& GeometryBuffer::GetIndexBuffer() const
+    {
+        return indexBuffer.GetBuffer();
+    }
+
+    const Vk::Buffer& GeometryBuffer::GetPositionBuffer() const
+    {
+        return positionBuffer.GetBuffer();
+    }
+
+    const Vk::Buffer& GeometryBuffer::GetVertexBuffer() const
+    {
+        return vertexBuffer.GetBuffer();
     }
 
     void GeometryBuffer::Destroy(VmaAllocator allocator)

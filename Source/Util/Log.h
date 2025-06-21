@@ -21,27 +21,20 @@
 #include <source_location>
 #include <cstdlib>
 
-#include <fmt/format.h>
-#include <fmt/color.h>
-
 #include "Time.h"
-#include "Util.h"
+#include "Types.h"
 #include "Files.h"
+#include "Unused.h"
+#include "Externals/FMT.h"
 
 namespace Logger
 {
-    // Internal namespace
     namespace Detail
     {
-         /// @brief Internal logging function
-         /// @param fgColor  Foreground color for the terminal
-         /// @param type     Logger Type
-         /// @param location Source Location Information
-         /// @param format   Format string
-         /// @param args     Variable arguments
         template <typename... Args>
         void Log
         (
+            FILE* file,
             const fmt::color& fgColor,
             const std::string_view type,
             const std::source_location location,
@@ -49,10 +42,9 @@ namespace Logger
             Args&&... args
         )
         {
-            // Format & print additional data
             fmt::print
             (
-                stderr,
+                file,
                 fmt::fg(fgColor),
                 fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
@@ -63,12 +55,6 @@ namespace Logger
             );
         }
 
-        /// @brief Internal error logger
-        /// @param fgColor  Foreground color for the terminal
-        /// @param type     Logger Type
-        /// @param location Source Location Information
-        /// @param format   Format string
-        /// @param args     Variable arguments
         template <s32 ErrorCode = EXIT_FAILURE, typename... Args>
         [[noreturn]] void LogAndExit
         (
@@ -79,9 +65,9 @@ namespace Logger
             Args&&... args
         )
         {
-            // Call regular logger
             Log
             (
+                stderr,
                 fgColor,
                 type,
                 location,
@@ -97,14 +83,9 @@ namespace Logger
         }
     }
 
-    // Info logger
     template <typename... Args>
     struct Info
     {
-        /// @brief Info logging function
-        /// @param format   Format string
-        /// @param args     Variable arguments
-        /// @param location Source location information
         explicit Info
         (
             const std::string_view format,
@@ -114,6 +95,7 @@ namespace Logger
         {
             Detail::Log
             (
+                stdout,
                 fmt::color::forest_green,
                 "INFO",
                 location,
@@ -123,14 +105,9 @@ namespace Logger
         }
     };
 
-    // Warning logger
     template <typename... Args>
     struct Warning
     {
-        /// @brief Warning logging function
-        /// @param format   Format string
-        /// @param args     Variable arguments
-        /// @param location Source location information
         explicit Warning
         (
             const std::string_view format,
@@ -140,6 +117,7 @@ namespace Logger
         {
             Detail::Log
             (
+                stderr,
                 fmt::color::yellow,
                 "WARNING",
                 location,
@@ -149,15 +127,9 @@ namespace Logger
         }
     };
 
-    // Debug logger
     template <typename... Args>
     struct Debug
     {
-        /// @brief Debug logging function
-        /// @note  Enabled only if ENGINE_DEBUG is defined
-        /// @param format   Format string
-        /// @param args     Variable arguments
-        /// @param location Source location information
         explicit Debug
         (
             ENGINE_UNUSED const std::string_view format,
@@ -168,6 +140,7 @@ namespace Logger
             #ifdef ENGINE_DEBUG
             Detail::Log
             (
+                stderr,
                 fmt::color::cyan,
                 "DEBUG",
                 location,
@@ -178,15 +151,9 @@ namespace Logger
         }
     };
 
-    // Vulkan logger
     template <typename... Args>
     struct Vulkan
     {
-        /// @brief Vulkan validation layer logging function
-        /// @note  Enabled only if ENGINE_DEBUG is defined
-        /// @param format   Format string
-        /// @param args     Variable arguments
-        /// @param location Source location information
         explicit Vulkan
         (
             ENGINE_UNUSED const std::string_view format,
@@ -197,6 +164,7 @@ namespace Logger
             #ifdef ENGINE_DEBUG
             Detail::Log
             (
+                stderr,
                 fmt::color::orange,
                 "VULKAN",
                 location,
@@ -207,15 +175,9 @@ namespace Logger
         }
     };
 
-    // Error logger
     template <typename... Args>
     struct Error
     {
-        /// @brief Error logging function
-        /// @note  Will exit the program
-        /// @param format   Format string
-        /// @param args     Variable arguments
-        /// @param location Source location information
         [[noreturn]] explicit Error
         (
             const std::string_view format,
@@ -234,14 +196,9 @@ namespace Logger
         }
     };
 
-    // Vulkan error logger
     template <typename... Args>
     struct VulkanError
     {
-        /// @brief Vulkan error logging function
-        /// @param format   Format string
-        /// @param args     Variable arguments
-        /// @param location Source location information
         [[noreturn]] explicit VulkanError
         (
             const std::string_view format,

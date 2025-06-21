@@ -1,0 +1,60 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460 core
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_EXT_ray_tracing          : enable
+
+#include "MegaSet.glsl"
+#include "Shadows/ShadowRT.h"
+
+hitAttributeEXT vec2 attribs;
+
+void main()
+{
+    vec3 barycentricCoords = vec3(1.0f - (attribs.x + attribs.y), attribs.x, attribs.y);
+
+    uint meshID = gl_InstanceCustomIndexEXT;
+    Mesh mesh   = Constants.Meshes.meshes[meshID];
+
+    uint primitiveID = mesh.surfaceInfo.indexInfo.offset + 3 * gl_PrimitiveID;
+
+    uint i0 = Constants.Indices.indices[primitiveID + 0];
+    uint i1 = Constants.Indices.indices[primitiveID + 1];
+    uint i2 = Constants.Indices.indices[primitiveID + 2];
+
+    uint vertexOffset  = mesh.surfaceInfo.vertexInfo.offset;
+    uint albedoUVMapID = mesh.material.albedoUVMapID;
+
+    vec2 uv0 = Constants.Vertices.vertices[vertexOffset + i0].uv[albedoUVMapID];
+    vec2 uv1 = Constants.Vertices.vertices[vertexOffset + i1].uv[albedoUVMapID];
+    vec2 uv2 = Constants.Vertices.vertices[vertexOffset + i2].uv[albedoUVMapID];
+
+    vec2 uv = uv0 * barycentricCoords.x + uv1 * barycentricCoords.y + uv2 * barycentricCoords.z;
+
+    float alpha  = textureLod(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), uv, 0).a;
+          alpha *= mesh.material.albedoFactor.a;
+
+    if (alpha < mesh.material.alphaCutOff)
+    {
+        ignoreIntersectionEXT;
+    }
+
+    terminateRayEXT;
+}

@@ -17,15 +17,15 @@
 #ifndef MATHS_H
 #define MATHS_H
 
-#include "Util.h"
+#include "Types.h"
 #include "Externals/GLM.h"
 
 namespace Maths
 {
-    glm::mat4 CreateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
-    glm::mat4 CreateProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane);
-    glm::mat4 CreateInfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
-    glm::mat3 CreateNormalMatrix(const glm::mat4& transform);
+    glm::mat4 TransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
+    glm::mat4 ProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane);
+    glm::mat4 InfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
+    glm::mat3 NormalMatrix(const glm::mat4& transform);
 
     constexpr f32 Halton(usize index, usize base)
     {

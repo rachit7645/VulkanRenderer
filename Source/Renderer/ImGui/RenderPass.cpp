@@ -19,6 +19,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Vulkan/BarrierWriter.h"
 #include "Util/Log.h"
+#include "ImGui/DearImGui.h"
 
 namespace Renderer::DearImGui
 {
@@ -29,9 +30,8 @@ namespace Renderer::DearImGui
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, megaSet, textureManager, swapchain.imageFormat)
+        : m_pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
-        Logger::Info("{}\n", "Created imgui pass!");
     }
 
     void RenderPass::Render
@@ -41,6 +41,7 @@ namespace Renderer::DearImGui
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
         Util::DeletionQueue& deletionQueue
     )
@@ -49,7 +50,7 @@ namespace Renderer::DearImGui
 
         const auto drawData = ImGui::GetDrawData();
 
-        Vk::BeginLabel(cmdBuffer, "ImGuiPass", glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "Dear ImGui", glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
 
         if (drawData->TotalVtxCount > 0)
         {
@@ -60,6 +61,7 @@ namespace Renderer::DearImGui
                 allocator,
                 cmdBuffer,
                 megaSet,
+                textureManager,
                 swapchain,
                 deletionQueue,
                 drawData
@@ -78,6 +80,8 @@ namespace Renderer::DearImGui
                 .dstAccessMask  = VK_ACCESS_2_NONE,
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
@@ -95,6 +99,7 @@ namespace Renderer::DearImGui
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
@@ -156,7 +161,7 @@ namespace Renderer::DearImGui
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         vkCmdBindIndexBuffer
         (
@@ -178,22 +183,24 @@ namespace Renderer::DearImGui
 
         vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
-        pipeline.pushConstant.vertices     = currentVertexBuffer.deviceAddress;
-        pipeline.pushConstant.scale        = glm::vec2(2.0f) / displaySize;
-        pipeline.pushConstant.translate    = glm::vec2(-1.0f) - (displayPos * pipeline.pushConstant.scale);
-        pipeline.pushConstant.samplerIndex = pipeline.samplerIndex;
+        DearImGui::Constants constants = {};
 
-        pipeline.PushConstants
+        constants.Vertices     = currentVertexBuffer.deviceAddress;
+        constants.Scale        = glm::vec2(2.0f) / displaySize;
+        constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
+        constants.SamplerIndex = textureManager.GetSampler(m_pipeline.samplerID).descriptorID;
+
+        m_pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
-            offsetof(PushConstant, textureIndex),
-            &pipeline.pushConstant
+            offsetof(DearImGui::Constants, TextureIndex),
+            &constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         s32 globalVertexOffset = 0;
         s32 globalIndexOffset  = 0;
@@ -220,15 +227,15 @@ namespace Renderer::DearImGui
 
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-                pipeline.pushConstant.textureIndex = cmd.GetTexID();
+                constants.TextureIndex = cmd.GetTexID();
 
-                pipeline.PushConstants
+                m_pipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    offsetof(PushConstant, textureIndex),
+                    offsetof(Constants, TextureIndex),
                     sizeof(u32),
-                    &pipeline.pushConstant.textureIndex
+                    &constants.TextureIndex
                 );
 
                 vkCmdDrawIndexed
@@ -265,7 +272,7 @@ namespace Renderer::DearImGui
         const VkDeviceSize vertexSize = drawData->TotalVtxCount * sizeof(ImDrawVert);
         const VkDeviceSize indexSize  = drawData->TotalIdxCount * sizeof(ImDrawIdx);
 
-        if (vertexBuffer.requestedSize < vertexSize)
+        if (vertexBuffer.size < vertexSize)
         {
             Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
@@ -289,7 +296,7 @@ namespace Renderer::DearImGui
             Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
         }
 
-        if (indexBuffer.requestedSize < indexSize)
+        if (indexBuffer.size < indexSize)
         {
             Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 
@@ -327,23 +334,27 @@ namespace Renderer::DearImGui
         .WriteBufferBarrier(
             vertexBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
-                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-                .offset        = 0,
-                .size          = vertexSize
+                .srcStageMask   = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask  = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = vertexSize
             }
         )
         .WriteBufferBarrier(
             indexBuffer,
             Vk::BufferBarrier{
-                .srcStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT,
-                .srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT,
-                .dstStageMask  = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-                .dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT,
-                .offset        = 0,
-                .size          = indexSize
+                .srcStageMask   = VK_PIPELINE_STAGE_2_HOST_BIT,
+                .srcAccessMask  = VK_ACCESS_2_HOST_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDEX_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = indexSize
             }
         )
         .Execute(cmdBuffer);
@@ -370,9 +381,7 @@ namespace Renderer::DearImGui
 
     void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        Logger::Debug("{}\n", "Destroying ImGui pass!");
-
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
 
         for (auto& buffer : m_vertexBuffers)
         {

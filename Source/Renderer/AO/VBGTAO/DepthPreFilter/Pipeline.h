@@ -17,7 +17,6 @@
 #ifndef VBGTAO_DEPTH_PREFILTER_PIPELINE_H
 #define VBGTAO_DEPTH_PREFILTER_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
@@ -34,9 +33,7 @@ namespace Renderer::AO::VBGTAO::DepthPreFilter
             Vk::TextureManager& textureManager
         );
 
-        DepthPreFilter::PushConstant pushConstant = {};
-
-        u32 pointSamplerIndex = 0;
+        Vk::SamplerID pointSamplerID = 0;
     };
 }
 

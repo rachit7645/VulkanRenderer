@@ -19,11 +19,12 @@
 
 // I'm too damn lazy to replace all calls to saturate
 // Fuck you Microsoft
-#define saturate(x) (clamp(x, 0.0f, 1.0f))
+#define saturate(x) clamp(x, 0.0f, 1.0f)
 
-float max3(vec3 x)
+// Get max component
+float max3(vec3 v)
 {
-    return max(x.r, max(x.g, x.b));
+    return max(v.x, max(v.y, v.z));
 }
 
 float rcp(float x)
@@ -31,6 +32,18 @@ float rcp(float x)
     return 1.0f / x;
 }
 
+// x^4 in 2 multiplications
+// I assume pow(x, y) uses an exp and log implementation for this because it has to handle floating point values of y
+float pow4(float x)
+{
+    float x2 = x  * x;
+    float x4 = x2 * x2;
+
+    return x4;
+}
+
+// x^5 in 3 multiplications
+// I assume pow(x, y) uses an exp and log implementation for this because it has to handle floating point values of y
 float pow5(float x)
 {
     float x2 = x * x;
@@ -39,12 +52,23 @@ float pow5(float x)
     return x5;
 }
 
+// Safe version (NaNs are scary)
 float FastTanArcCos(float x)
 {
     // tan(acos(x)) = sqrt(1 - x^2) / x
 
     float numerator   = max(1.0f - (x * x), 0.0f);
     float denominator = max(x, 0.00001f);
+
+    return sqrt(numerator) / denominator;
+}
+
+float UnsafeFastTanArcCos(float x)
+{
+    // tan(acos(x)) = sqrt(1 - x^2) / x
+
+    float numerator   = 1.0f - (x * x);
+    float denominator = x;
 
     return sqrt(numerator) / denominator;
 }

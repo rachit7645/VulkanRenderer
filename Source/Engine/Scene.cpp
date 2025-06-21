@@ -16,13 +16,11 @@
 
 #include "Scene.h"
 
-#include <simdjson.h>
-
 #include "Util/Files.h"
 #include "Util/JSON.h"
 #include "Util/Log.h"
-#include "Vulkan/Util.h"
 #include "Externals/ImGui.h"
+#include "Externals/SIMDJSON.h"
 
 namespace Engine
 {
@@ -67,7 +65,7 @@ namespace Engine
 
                     JSON::CheckError(model, "Failed to load model path!");
 
-                    renderObject.modelID = modelManager.AddModel(context.device, context.allocator, megaSet, deletionQueue, model.value());
+                    renderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, model.value());
 
                     JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
                     JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");
@@ -76,13 +74,15 @@ namespace Engine
                     renderObject.rotation = glm::radians(renderObject.rotation);
 
                     renderObjects.emplace_back(renderObject);
+
+                    haveRenderObjectsChanged = true;
                 }
             }
 
             // Lights
             {
                 // Sun
-                JSON::CheckError(document["Sun"].get<Renderer::Objects::DirLight>(sun), "Failed to load the sun light!");
+                JSON::CheckError(document["Sun"].get<GPU::DirLight>(sun), "Failed to load the sun light!");
 
                 // Point Lights
                 {
@@ -92,9 +92,9 @@ namespace Engine
 
                     for (auto light : lights)
                     {
-                        Renderer::Objects::PointLight pointLight;
+                        GPU::PointLight pointLight = {};
 
-                        JSON::CheckError(light.get<Renderer::Objects::PointLight>(pointLight), "Failed to load point light!");
+                        JSON::CheckError(light.get<GPU::PointLight>(pointLight), "Failed to load point light!");
 
                         pointLights.emplace_back(pointLight);
                     }
@@ -108,9 +108,9 @@ namespace Engine
 
                     for (auto light : lights)
                     {
-                        Renderer::Objects::SpotLight spotLight;
+                        GPU::SpotLight spotLight = {};
 
-                        JSON::CheckError(light.get<Renderer::Objects::SpotLight>(spotLight), "Failed to load spot light!");
+                        JSON::CheckError(light.get<GPU::SpotLight>(spotLight), "Failed to load spot light!");
 
                         spotLights.emplace_back(spotLight);
                     }
@@ -168,21 +168,78 @@ namespace Engine
             {
                 if (ImGui::BeginMenu("Render Objects"))
                 {
-                    for (usize i = 0; i < renderObjects.size(); ++i)
+                    if (ImGui::TreeNode("Load"))
                     {
+                        ImGui::InputText("Model Path", &m_modelPath);
+
+                        ImGui::DragFloat3("Position", &m_loadedRenderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Rotation", &m_loadedRenderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Scale",    &m_loadedRenderObject.scale[0],    1.0f,                      0.0f, 0.0f, "%.2f");
+
+                        if (ImGui::Button("Load") && !m_modelPath.empty())
+                        {
+                            const auto modelAssetPath = Util::Files::GetAssetPath("GFX/", m_modelPath);
+
+                            if (Util::Files::Exists(modelAssetPath))
+                            {
+                                m_loadedRenderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, m_modelPath);
+
+                                renderObjects.emplace_back(m_loadedRenderObject);
+
+                                haveRenderObjectsChanged = true;
+                            }
+
+                            m_loadedRenderObject = {};
+                            m_modelPath.clear();
+                        }
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::Separator();
+
+                    usize i = 0;
+
+                    for (auto iter = renderObjects.begin(); iter != renderObjects.end(); ++i)
+                    {
+                        bool toDelete = false;
+
                         if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                         {
-                            auto& renderObject = renderObjects[i];
-
-                            ImGui::Text("ModelID: %llu", renderObject.modelID);
+                            ImGui::Text("Model | %s", modelManager.GetModel(iter->modelID).name.c_str());
 
                             ImGui::Separator();
 
-                            ImGui::DragFloat3("Position", &renderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
-                            ImGui::DragFloat3("Rotation", &renderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
-                            ImGui::DragFloat3("Scale",    &renderObject.scale[0],    1.0f,                     0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Position", &iter->position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Rotation", &iter->rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat3("Scale",    &iter->scale[0],    1.0f,                      0.0f, 0.0f, "%.2f");
+
+                            if (ImGui::Button("Delete"))
+                            {
+                                toDelete = true;
+                            }
 
                             ImGui::TreePop();
+                        }
+
+                        if (toDelete)
+                        {
+                            iter->Destroy
+                            (
+                                context.device,
+                                context.allocator,
+                                megaSet,
+                                modelManager,
+                                deletionQueue
+                            );
+
+                            iter = renderObjects.erase(iter);
+
+                            haveRenderObjectsChanged = true;
+                        }
+                        else
+                        {
+                            ++iter;
                         }
 
                         ImGui::Separator();
@@ -195,16 +252,11 @@ namespace Engine
 
                 if (ImGui::BeginMenu("Lights"))
                 {
-                    if (ImGui::BeginMenu("Directional"))
+                    if (ImGui::BeginMenu("Sun"))
                     {
-                        if (ImGui::TreeNode("Sun"))
-                        {
-                            ImGui::DragFloat3("Position",  &sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
-                            ImGui::ColorEdit3("Color",     &sun.color[0]);
-                            ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
-
-                            ImGui::TreePop();
-                        }
+                        ImGui::DragFloat3("Position",  &sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                        ImGui::ColorEdit3("Color",     &sun.color[0]);
+                        ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
 
                         ImGui::EndMenu();
                     }
@@ -219,10 +271,10 @@ namespace Engine
                             {
                                 auto& light = pointLights[i];
 
-                                ImGui::DragFloat3("Position",    &light.position[0],    1.0f, 0.0f, 0.0f, "%.2f");
-                                ImGui::ColorEdit3("Color",       &light.color[0]);
-                                ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f, 0.0f, 0.0f, "%.2f");
-                                ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f, 0.0f, 0.0f, "%.4f");
+                                ImGui::DragFloat3("Position",  &light.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                                ImGui::ColorEdit3("Color",     &light.color[0]);
+                                ImGui::DragFloat3("Intensity", &light.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
+                                ImGui::DragFloat( "Range",     &light.range,        1.0f, 0.0f, 0.0f, "%.3f");
 
                                 ImGui::TreePop();
                             }
@@ -243,13 +295,15 @@ namespace Engine
                             {
                                 auto& light = spotLights[i];
 
-                                ImGui::DragFloat3("Position",    &light.position[0],    1.0f,   0.0f, 0.0f, "%.2f");
-                                ImGui::ColorEdit3("Color",       &light.color[0]);
-                                ImGui::DragFloat3("Intensity",   &light.intensity[0],   0.5f,   0.0f, 0.0f, "%.2f");
-                                ImGui::DragFloat3("Attenuation", &light.attenuation[0], 1.0f,   0.0f, 1.0f, "%.4f");
-                                ImGui::DragFloat3("Direction",   &light.direction[0],   0.05f, -1.0f, 1.0f, "%.2f");
+                                constexpr auto ONE_DEGREE    = glm::radians(1.0f);
+                                constexpr auto HALF_ROTATION = std::numbers::pi;
 
-                                ImGui::DragFloat2("Cut Off", &light.cutOff[0], glm::radians(1.0f), 0.0f, std::numbers::pi, "%.2f");
+                                ImGui::DragFloat3("Position",  &light.position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::ColorEdit3("Color",     &light.color[0]                                             );
+                                ImGui::DragFloat3("Intensity", &light.intensity[0], 0.5f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::DragFloat3("Direction", &light.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
+                                ImGui::DragFloat2("Cut Off",   &light.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
+                                ImGui::DragFloat( "Range",     &light.range,        1.0f,       0.0f, 0.0f,          "%.3f");
 
                                 ImGui::TreePop();
                             }
@@ -315,7 +369,7 @@ namespace Engine
     void Scene::Destroy
     (
         const Vk::Context& context,
-        Vk::TextureManager& textureManager,
+        Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
     )
@@ -323,9 +377,21 @@ namespace Engine
         iblMaps.Destroy
         (
             context,
-            textureManager,
+            modelManager.textureManager,
             megaSet,
             deletionQueue
         );
+
+        for (auto& renderObject : renderObjects)
+        {
+            renderObject.Destroy
+            (
+                context.device,
+                context.allocator,
+                megaSet,
+                modelManager,
+                deletionQueue
+            );
+        }
     }
 }

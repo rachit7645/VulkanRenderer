@@ -32,16 +32,14 @@ namespace Vk
             Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::Pipeline& pipeline,
             u32 missCount,
-            u32 hitCount,
-            u32 callableCount
+            u32 hitCount
         );
 
         void Destroy(VmaAllocator allocator);
 
-        VkStridedDeviceAddressRegionKHR raygenRegion   = {};
-        VkStridedDeviceAddressRegionKHR missRegion     = {};
-        VkStridedDeviceAddressRegionKHR hitRegion      = {};
-        VkStridedDeviceAddressRegionKHR callableRegion = {};
+        VkStridedDeviceAddressRegionKHR raygenRegion = {};
+        VkStridedDeviceAddressRegionKHR missRegion   = {};
+        VkStridedDeviceAddressRegionKHR hitRegion    = {};
     private:
         Vk::Buffer m_buffer;
     };

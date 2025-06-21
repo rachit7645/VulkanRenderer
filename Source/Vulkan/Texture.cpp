@@ -20,11 +20,20 @@ namespace Vk
 {
     bool Texture::operator==(const Texture& rhs) const
     {
-        return image == rhs.image && imageView == rhs.imageView;
+        return name == rhs.name &&
+               image == rhs.image &&
+               imageView == rhs.imageView &&
+               descriptorID ==  rhs.descriptorID &&
+               isLoaded == rhs.isLoaded;
     }
 
     void Texture::Destroy(VkDevice device, VmaAllocator allocator)
     {
+        if (!isLoaded)
+        {
+            return;
+        }
+
         imageView.Destroy(device);
         image.Destroy(allocator);
     }

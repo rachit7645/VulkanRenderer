@@ -16,10 +16,9 @@
 
 #include "Config.h"
 
-#include <simdjson.h>
-
 #include "Util/JSON.h"
 #include "Util/Log.h"
+#include "Externals/SIMDJSON.h"
 
 namespace Engine
 {
@@ -28,8 +27,6 @@ namespace Engine
         try
         {
             simdjson::ondemand::parser parser;
-
-            Logger::Info("{}\n", "Loading config!");
 
             const auto path = Util::Files::GetAssetPath("", "Config.json");
             const auto json = simdjson::padded_string::load(path);

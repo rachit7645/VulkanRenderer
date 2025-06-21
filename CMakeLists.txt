@@ -17,31 +17,23 @@ project(VulkanRenderer)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-set(INSTALL_DIR ${CMAKE_SOURCE_DIR}/Bin)
+set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
-find_package(SDL3     REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
-find_package(Vulkan   REQUIRED)
-find_package(glm      REQUIRED)
-find_package(fastgltf REQUIRED)
-find_package(simdjson REQUIRED)
-find_package(fmt      REQUIRED)
-find_package(KTX      REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(KTX    REQUIRED)
 
+# Check for LTO
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
-if (LTOSupported AND CMAKE_BUILD_TYPE STREQUAL Release)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
-
-# Add sub-projects
-add_subdirectory(Externals/)
-add_subdirectory(Assets/Shaders/)
+# Sub-directories
+add_subdirectory(Externals)
+add_subdirectory(Assets)
 
 # Main executable
 add_executable(VulkanRenderer
@@ -60,8 +52,6 @@ add_executable(VulkanRenderer
 	Source/Util/FrameCounter.cpp
 	Source/Util/Maths.cpp
     Source/Util/SIMD.cpp
-    Source/Util/AABB.cpp
-    Source/Util/Plane.cpp
     Source/Util/JSON.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
@@ -91,13 +81,16 @@ add_executable(VulkanRenderer
     Source/Vulkan/DescriptorAllocator.cpp
     Source/Vulkan/CommandBufferAllocator.cpp
     Source/Vulkan/ImmediateSubmit.cpp
-    Source/Vulkan/Timeline.cpp
+    Source/Vulkan/GraphicsTimeline.cpp
     Source/Vulkan/ImageUploader.cpp
     Source/Vulkan/PipelineBuilder.cpp
     Source/Vulkan/BarrierWriter.cpp
     Source/Vulkan/VertexBuffer.cpp
+    Source/Vulkan/BlockAllocator.cpp
+    Source/Vulkan/ComputeTimeline.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
+    Source/Renderer/RenderObject.cpp
     # Object sources
     Source/Renderer/Objects/FreeCamera.cpp
     Source/Renderer/Objects/Camera.cpp
@@ -111,7 +104,8 @@ add_executable(VulkanRenderer
 	Source/Renderer/PostProcess/Pipeline.cpp
 	Source/Renderer/PostProcess/RenderPass.cpp
     # Depth Pass Sources
-    Source/Renderer/Depth/Pipeline.cpp
+    Source/Renderer/Depth/Opaque/Pipeline.cpp
+    Source/Renderer/Depth/AlphaMasked/Pipeline.cpp
     Source/Renderer/Depth/RenderPass.cpp
     # ImGui Pass Sources
     Source/Renderer/ImGui/Pipeline.cpp
@@ -131,35 +125,35 @@ add_executable(VulkanRenderer
     Source/Renderer/Bloom/DownSample/Pipeline.cpp
     Source/Renderer/Bloom/UpSample/Pipeline.cpp
     # Point Shadow Pass Sources
-    Source/Renderer/PointShadow/Pipeline.cpp
+    Source/Renderer/PointShadow/Opaque/Pipeline.cpp
+    Source/Renderer/PointShadow/AlphaMasked/Pipeline.cpp
     Source/Renderer/PointShadow/RenderPass.cpp
-    # Point Shadow Pass Sources
-    Source/Renderer/SpotShadow/Pipeline.cpp
-    Source/Renderer/SpotShadow/RenderPass.cpp
     # Culling Dispatch Sources
-    Source/Renderer/Culling/Pipeline.cpp
+    Source/Renderer/Culling/Frustum/Pipeline.cpp
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
     # GBuffer Pass Sources
-    Source/Renderer/GBuffer/Pipeline.cpp
+    Source/Renderer/GBuffer/SingleSided/Pipeline.cpp
+    Source/Renderer/GBuffer/DoubleSided/Pipeline.cpp
     Source/Renderer/GBuffer/RenderPass.cpp
     # Lighting Pass Sources
     Source/Renderer/Lighting/Pipeline.cpp
     Source/Renderer/Lighting/RenderPass.cpp
     # VBGTAO Pass Sources
-    Source/Renderer/AO/VBGTAO/RenderPass.cpp
+    Source/Renderer/AO/VBGTAO/Dispatch.cpp
     Source/Renderer/AO/VBGTAO/DepthPreFilter/Pipeline.cpp
     Source/Renderer/AO/VBGTAO/Occlusion/Pipeline.cpp
     Source/Renderer/AO/VBGTAO/Denoise/Pipeline.cpp
     # Shadow RT sources
     Source/Renderer/ShadowRT/Pipeline.cpp
-    Source/Renderer/ShadowRT/RenderPass.cpp
+    Source/Renderer/ShadowRT/RayDispatch.cpp
     # TAA Sources
     Source/Renderer/TAA/Pipeline.cpp
     Source/Renderer/TAA/RenderPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp
+    Source/Models/Mesh.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp
@@ -169,8 +163,8 @@ add_executable(VulkanRenderer
 # Precompiled Headers
 target_precompile_headers(VulkanRenderer PRIVATE
 	# SDL headers
-	<SDL3/SDL.h>
-	<SDL3/SDL_vulkan.h>
+    Externals/sdl/include/SDL3/SDL.h
+    Externals/sdl/include/SDL3/SDL_vulkan.h
 	# Vulkan headers
 	<vulkan/vulkan.h>
 	<vulkan/vulkan_core.h>
@@ -178,35 +172,47 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/volk/volk.h
 	# ImGui Headers
     Externals/imgui/imgui.h
-    Externals/imgui/imgui_internal.h
     Externals/imgui/backends/imgui_impl_sdl2.h
-    Externals/imgui/backends/imgui_impl_vulkan.h
     # KTX Headers
     <ktx.h>
     # FMT Headers
-    <fmt/core.h>
-    <fmt/format.h>
-    <fmt/chrono.h>
-	<fmt/color.h>
+    Externals/fmt/include/fmt/core.h
+    Externals/fmt/include/fmt/format.h
+    Externals/fmt/include/fmt/chrono.h
+	Externals/fmt/include/fmt/color.h
     # GLM Headers
-    <glm/vec2.hpp>
-    <glm/vec3.hpp>
-    <glm/vec4.hpp>
-    <glm/mat4x4.hpp>
-    <glm/ext/vector_int2.hpp>
-    <glm/ext/vector_int4.hpp>
-    <glm/ext/vector_uint3.hpp>
-    <glm/trigonometric.hpp>
-    <glm/geometric.hpp>
-    <glm/gtc/matrix_transform.hpp>
+    Externals/glm/glm/vec2.hpp
+    Externals/glm/glm/vec3.hpp
+    Externals/glm/glm/vec4.hpp
+    Externals/glm/glm/mat4x4.hpp
+    Externals/glm/glm/ext/vector_int2.hpp
+    Externals/glm/glm/ext/vector_int4.hpp
+    Externals/glm/glm/ext/vector_uint2.hpp
+    Externals/glm/glm/ext/vector_uint3.hpp
+    Externals/glm/glm/trigonometric.hpp
+    Externals/glm/glm/geometric.hpp
+    Externals/glm/glm/vector_relational.hpp
+    Externals/glm/glm/gtc/type_ptr.hpp
+    Externals/glm/glm/gtc/matrix_transform.hpp
     # VMA Headers
 	Externals/vma/include/vk_mem_alloc.h
+    # simdjson Headers
+    Externals/simdjson/include/simdjson.h
     # fastgltf Headers
-    <fastgltf/core.hpp>
-    <fastgltf/types.hpp>
-    <fastgltf/tools.hpp>
-    <fastgltf/glm_element_traits.hpp>
-    <fastgltf/math.hpp>
+    Externals/fastgltf/include/fastgltf/core.hpp
+    Externals/fastgltf/include/fastgltf/types.hpp
+    Externals/fastgltf/include/fastgltf/tools.hpp
+    Externals/fastgltf/include/fastgltf/glm_element_traits.hpp
+    Externals/fastgltf/include/fastgltf/math.hpp
+    # Taskflow Headers
+    Externals/taskflow/taskflow/taskflow.hpp
+    # STB Headers
+    Externals/stb/stb_image.h
+    # OpenEXR Headers
+    Externals/openexr/src/lib/OpenEXR/ImfRgbaFile.h
+    Externals/openexr/src/lib/OpenEXR/ImfArray.h
+    # Unordered Dense Headers
+    Externals/unordered_dense/include/ankerl/unordered_dense.h
     # C++ STL Headers
 	<map>
     <unordered_map>
@@ -243,7 +249,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 )
 
 # Library includes
-target_include_directories(VulkanRenderer PRIVATE Source/ Externals/)
+target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Shared/)
 # No vulkan prototypes
 target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
 # -O3 optimisations (Set to -Og when debugging)
@@ -263,8 +269,33 @@ endif()
 
 # Release config
 if (CMAKE_BUILD_TYPE STREQUAL Release)
+    # Enable LTO
+    if (LTOSupported)
+        set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
     # Release Mode
     target_compile_definitions(VulkanRenderer PRIVATE NDEBUG)
+endif()
+
+# Profile config
+if (CMAKE_BUILD_TYPE STREQUAL Profile)
+    # Enable LTO
+    if (LTOSupported)
+        set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
+    # Engine Debug Mode
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
+    # Engine Profile Mode
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_PROFILE)
+    # Enable debug output
+    target_compile_options(VulkanRenderer PRIVATE -g)
+    # Add Tracy
+    target_link_libraries(VulkanRenderer TracyClient)
+    # Add Tracy Headers
+    target_precompile_headers(VulkanRenderer PRIVATE
+        Externals/tracy/public/tracy/Tracy.hpp
+        Externals/tracy/public/tracy/TracyVulkan.hpp
+    )
 endif()
 
 # Add shader dependency
@@ -274,29 +305,35 @@ add_dependencies(VulkanRenderer Shaders)
 target_link_libraries(VulkanRenderer
     Vulkan::Headers
     volk::volk
-	SDL3::SDL3
+    SDL3::SDL3-shared
 	fmt::fmt
 	fastgltf::fastgltf
     simdjson::simdjson
 	GPUOpen::VulkanMemoryAllocator
     KTX::ktx
-	imgui
+    glm::glm
+    OpenEXR::OpenEXR
+    unordered_dense::unordered_dense
+    DearImGui
 )
 
 # Install
 install(
-	TARGETS VulkanRenderer imgui
-	ARCHIVE DESTINATION ${INSTALL_DIR}
-	LIBRARY DESTINATION ${INSTALL_DIR}
-	RUNTIME DESTINATION ${INSTALL_DIR}
+	TARGETS VulkanRenderer
+    ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
+	LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
+	RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
 )
 
+# Store application name at config time
+set(APPLICATION_NAME "$<TARGET_FILE_NAME:VulkanRenderer>")
+
 # Copy required DLLs
-install(FILES $<TARGET_RUNTIME_DLLS:VulkanRenderer> DESTINATION ${INSTALL_DIR})
-
-# Copy other directories
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/GFX    DESTINATION ${INSTALL_DIR}/Assets)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/Assets/Scenes DESTINATION ${INSTALL_DIR}/Assets)
-
-# Copy misc files
-install(FILES ${CMAKE_SOURCE_DIR}/Assets/Config.json DESTINATION ${INSTALL_DIR}/Assets)
+install(CODE "
+    include(BundleUtilities)
+    fixup_bundle(
+        \"${ENGINE_INSTALL_DIR}/${APPLICATION_NAME}\"
+        \"\"
+        \"\"
+    )
+")

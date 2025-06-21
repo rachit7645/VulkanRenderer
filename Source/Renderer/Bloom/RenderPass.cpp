@@ -16,6 +16,8 @@
 
 #include "RenderPass.h"
 
+#include "Bloom/DownSample.h"
+#include "Bloom/UpSample.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
@@ -30,8 +32,8 @@ namespace Renderer::Bloom
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : downsamplePipeline(context, formatHelper, megaSet, textureManager),
-          upsamplePipeline(context, formatHelper, megaSet, textureManager)
+        : m_downsamplePipeline(context, formatHelper, megaSet, textureManager),
+          m_upsamplePipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -81,15 +83,14 @@ namespace Renderer::Bloom
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
-
-        Logger::Info("{}\n", "Created bloom pass!");
     }
 
     void RenderPass::Render
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -104,20 +105,22 @@ namespace Renderer::Bloom
             ImGui::EndMainMenuBar();
         }
 
-        Vk::BeginLabel(cmdBuffer, "BloomPass", {0.6796f, 0.4538f, 0.1518f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "Bloom", {0.6796f, 0.4538f, 0.1518f, 1.0f});
 
         RenderDownSamples
         (
             cmdBuffer,
             framebufferManager,
-            megaSet
+            megaSet,
+            textureManager
         );
 
         RenderUpSamples
         (
             cmdBuffer,
             framebufferManager,
-            megaSet
+            megaSet,
+            textureManager
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -127,10 +130,11 @@ namespace Renderer::Bloom
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
-        Vk::BeginLabel(cmdBuffer, "DownSamplePass", {0.7796f, 0.3588f, 0.5518f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "DownSample", {0.7796f, 0.3588f, 0.5518f, 1.0f});
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
@@ -151,6 +155,8 @@ namespace Renderer::Bloom
                     .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = mip,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
@@ -194,7 +200,7 @@ namespace Renderer::Bloom
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            downsamplePipeline.Bind(cmdBuffer);
+            m_downsamplePipeline.Bind(cmdBuffer);
 
             const VkViewport viewport =
             {
@@ -216,23 +222,22 @@ namespace Renderer::Bloom
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            downsamplePipeline.pushConstant =
+            const auto constants = DownSample::Constants
             {
-                .samplerIndex  = downsamplePipeline.samplerIndex,
-                .imageIndex    = srcView.sampledImageIndex,
-                .isFirstSample = (mip == 0) ? 1u : 0u
+                .SamplerIndex  = textureManager.GetSampler(m_downsamplePipeline.samplerID).descriptorID,
+                .ImageIndex    = srcView.sampledImageID,
+                .IsFirstSample = (mip == 0) ? 1u : 0u
             };
 
-            downsamplePipeline.PushConstants
+            m_downsamplePipeline.PushConstants
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               0, sizeof(DownSample::PushConstant),
-               reinterpret_cast<void*>(&downsamplePipeline.pushConstant)
+               constants
             );
 
             std::array descriptorSets = {megaSet.descriptorSet};
-            downsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            m_downsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
             (
@@ -255,6 +260,8 @@ namespace Renderer::Bloom
                     .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = mip,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
@@ -278,10 +285,11 @@ namespace Renderer::Bloom
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
-        Vk::BeginLabel(cmdBuffer, "UpSamplePass", {0.8736f, 0.2598f, 0.7548f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "UpSample", {0.8736f, 0.2598f, 0.7548f, 1.0f});
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
@@ -299,6 +307,8 @@ namespace Renderer::Bloom
                     .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = mip - 1,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
@@ -345,7 +355,7 @@ namespace Renderer::Bloom
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            upsamplePipeline.Bind(cmdBuffer);
+            m_upsamplePipeline.Bind(cmdBuffer);
 
             const VkViewport viewport =
             {
@@ -367,23 +377,22 @@ namespace Renderer::Bloom
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-            upsamplePipeline.pushConstant =
+            const auto constants = UpSample::Constants
             {
-                .samplerIndex  = upsamplePipeline.samplerIndex,
-                .imageIndex    = srcView.sampledImageIndex,
-                .filterRadius  = m_filterRadius
+                .SamplerIndex  = textureManager.GetSampler(m_upsamplePipeline.samplerID).descriptorID,
+                .ImageIndex    = srcView.sampledImageID,
+                .FilterRadius  = m_filterRadius
             };
 
-            upsamplePipeline.PushConstants
+            m_upsamplePipeline.PushConstants
             (
                cmdBuffer,
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               0, sizeof(DownSample::PushConstant),
-               reinterpret_cast<void*>(&upsamplePipeline.pushConstant)
+               constants
             );
 
             std::array descriptorSets = {megaSet.descriptorSet};
-            upsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            m_upsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
             (
@@ -406,6 +415,8 @@ namespace Renderer::Bloom
                     .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = mip - 1,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
@@ -421,9 +432,7 @@ namespace Renderer::Bloom
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying bloom pass!");
-
-        downsamplePipeline.Destroy(device);
-        upsamplePipeline.Destroy(device);
+        m_downsamplePipeline.Destroy(device);
+        m_upsamplePipeline.Destroy(device);
     }
 }

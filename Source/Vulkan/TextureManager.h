@@ -21,64 +21,53 @@
 #include "ImageUploader.h"
 #include "Sampler.h"
 #include "MegaSet.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
+#include "Externals/Taskflow.h"
+#include "Externals/UnorderedDense.h"
 
 namespace Vk
 {
+    using TextureID = u64;
+    using SamplerID = u64;
+
     class TextureManager
     {
     public:
-        struct TextureInfo
-        {
-            std::string name;
-            Vk::Texture texture;
-        };
-
-        [[nodiscard]] u32 AddTexture
+        [[nodiscard]] Vk::TextureID AddTexture
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue,
-            const std::string_view path
+            const Vk::ImageUpload& upload
         );
 
-        [[nodiscard]] u32 AddTexture
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view name,
-            VkFormat format,
-            const void* data,
-            u32 width,
-            u32 height
-        );
-
-        [[nodiscard]] u32 AddTexture
+        [[nodiscard]] Vk::TextureID AddTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
             const std::string_view name,
-            const Vk::Texture& texture
+            const Vk::Image& image,
+            const Vk::ImageView& imageView
         );
 
-        [[nodiscard]] u32 AddSampler
+        [[nodiscard]] Vk::SamplerID AddSampler
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
             const VkSamplerCreateInfo& createInfo
         );
 
-        void Update(const Vk::CommandBuffer& cmdBuffer);
+        // WARNING! Blocks this thread!
+        void Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet);
 
-        [[nodiscard]] const Vk::Texture& GetTexture(u32 id) const;
-        [[nodiscard]] const Vk::Sampler& GetSampler(u32 id) const;
+        [[nodiscard]] Vk::Texture& GetTexture(Vk::TextureID id);
+        [[nodiscard]] Vk::Sampler& GetSampler(Vk::SamplerID id);
+
+        [[nodiscard]] const Vk::Texture& GetTexture(Vk::TextureID id) const;
+        [[nodiscard]] const Vk::Sampler& GetSampler(Vk::SamplerID id) const;
 
         void DestroyTexture
         (
-            u32 id,
+            Vk::TextureID id,
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
@@ -87,16 +76,23 @@ namespace Vk
 
         void ImGuiDisplay();
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
 
         void Destroy(VkDevice device, VmaAllocator allocator);
-
-        std::unordered_map<u32, TextureInfo> textureMap;
-        std::unordered_map<u32, Vk::Sampler> samplerMap;
     private:
+        struct TextureInfo
+        {
+            Vk::Texture texture        = {};
+            u64         referenceCount = 0;
+        };
+
+        ankerl::unordered_dense::map<Vk::TextureID, TextureInfo> m_textureMap;
+        ankerl::unordered_dense::map<Vk::SamplerID, Vk::Sampler> m_samplerMap;
+
         Vk::ImageUploader m_imageUploader;
 
-        std::unordered_map<usize, u32> m_nameHashToTextureIDMap;
+        tf::Executor                                                        m_executor;
+        ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::Image>> m_futuresMap;
     };
 }
 

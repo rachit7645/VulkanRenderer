@@ -64,9 +64,9 @@ namespace Renderer::Buffers
 
         drawCallBuffer.GetDeviceAddress(device);
 
-        if (type != Type::CPUToGPU)
+        if (meshIndexBuffer.has_value())
         {
-            meshIndexBuffer.GetDeviceAddress(device);
+            meshIndexBuffer->GetDeviceAddress(device);
         }
     }
 
@@ -77,7 +77,7 @@ namespace Renderer::Buffers
         const std::span<const Renderer::RenderObject> renderObjects
     )
     {
-        if (type != Type::CPUToGPU)
+        if (!IsCPUWritable())
         {
             Logger::Error("{}\n", "Draw calls can't be written!");
         }
@@ -89,13 +89,18 @@ namespace Renderer::Buffers
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
                 drawCalls.emplace_back(VkDrawIndexedIndirectCommand{
-                    .indexCount    = mesh.indexInfo.count,
+                    .indexCount    = mesh.surfaceInfo.indexInfo.count,
                     .instanceCount = 1,
-                    .firstIndex    = mesh.indexInfo.offset,
-                    .vertexOffset  = static_cast<s32>(mesh.vertexInfo.offset),
+                    .firstIndex    = mesh.surfaceInfo.indexInfo.offset,
+                    .vertexOffset  = static_cast<s32>(mesh.surfaceInfo.vertexInfo.offset),
                     .firstInstance = 0
                 });
             }
+        }
+
+        if (drawCalls.size() > MAX_MESH_COUNT)
+        {
+            Logger::Error("Too many draw calls! [Count={}]\n", drawCalls.size());
         }
 
         writtenDrawCount = drawCalls.size();
@@ -107,28 +112,51 @@ namespace Renderer::Buffers
             sizeof(u32)
         );
 
-        std::memcpy
-        (
-            static_cast<u8*>(drawCallBuffer.allocationInfo.pMappedData) + sizeof(u32),
-            drawCalls.data(),
-            sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()
-        );
-
         if (!(drawCallBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
                 allocator,
                 drawCallBuffer.allocation,
                 0,
-                sizeof(u32) + sizeof(VkDrawIndexedIndirectCommand) * drawCalls.size()),
+                sizeof(u32)),
                 "Failed to flush allocation!"
             );
         }
+
+        if (!drawCalls.empty())
+        {
+            std::memcpy
+            (
+                static_cast<u8*>(drawCallBuffer.allocationInfo.pMappedData) + sizeof(u32),
+                drawCalls.data(),
+                drawCalls.size() * sizeof(VkDrawIndexedIndirectCommand)
+            );
+
+            if (!(drawCallBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+            {
+                Vk::CheckResult(vmaFlushAllocation(
+                    allocator,
+                    drawCallBuffer.allocation,
+                    sizeof(u32),
+                    drawCalls.size() * sizeof(VkDrawIndexedIndirectCommand)),
+                    "Failed to flush allocation!"
+                );
+            }
+        }
+    }
+
+    bool DrawCallBuffer::IsCPUWritable() const
+    {
+        return type == Type::CPUToGPU;
     }
 
     void DrawCallBuffer::Destroy(VmaAllocator allocator)
     {
         drawCallBuffer.Destroy(allocator);
-        meshIndexBuffer.Destroy(allocator);
+
+        if (meshIndexBuffer.has_value())
+        {
+            meshIndexBuffer->Destroy(allocator);
+        }
     }
 }

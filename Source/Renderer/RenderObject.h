@@ -17,17 +17,26 @@
 #ifndef RENDER_OBJECT_H
 #define RENDER_OBJECT_H
 
-#include "Util/Util.h"
+#include "Externals/GLM.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer
 {
-    class RenderObject
+    struct RenderObject
     {
-    public:
-        usize     modelID  = 0;
-        glm::vec3 position = {};
-        glm::vec3 rotation = {};
-        glm::vec3 scale    = {};
+        void Destroy
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Models::ModelManager& modelManager,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        Models::ModelID modelID  = 0;
+        glm::vec3       position = {};
+        glm::vec3       rotation = {};
+        glm::vec3       scale    = {1.0f, 1.0f, 1.0f};
     };
 }
 

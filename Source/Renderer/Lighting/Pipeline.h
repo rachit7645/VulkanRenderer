@@ -17,7 +17,6 @@
 #ifndef LIGHTING_PIPELINE_H
 #define LIGHTING_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -36,20 +35,9 @@ namespace Renderer::Lighting
             Vk::TextureManager& textureManager
         );
 
-        Lighting::PushConstant pushConstant = {};
-
-        u32 gBufferSamplerIndex = 0;
-        u32 iblSamplerIndex     = 0;
-        u32 shadowSamplerIndex  = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData(VkDevice device, Vk::MegaSet& megaSet, Vk::TextureManager& textureManager);
+        Vk::SamplerID gBufferSamplerID = 0;
+        Vk::SamplerID iblSamplerID     = 0;
+        Vk::SamplerID shadowSamplerID  = 0;
     };
 }
 

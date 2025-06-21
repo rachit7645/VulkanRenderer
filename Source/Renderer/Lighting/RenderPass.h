@@ -19,7 +19,6 @@
 
 #include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
@@ -47,11 +46,12 @@ namespace Renderer::Lighting
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const IBL::IBLMaps& iblMaps
         );
-
-        Lighting::Pipeline pipeline;
+    private:
+        Lighting::Pipeline m_pipeline;
     };
 }
 

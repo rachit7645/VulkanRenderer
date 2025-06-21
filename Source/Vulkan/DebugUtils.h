@@ -23,7 +23,8 @@
 
 #include "Util.h"
 #include "CommandBuffer.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
+#include "Util/Unused.h"
 
 namespace Vk
 {

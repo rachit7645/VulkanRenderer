@@ -17,7 +17,8 @@
 #ifndef DEPTH_PASS_H
 #define DEPTH_PASS_H
 
-#include "Pipeline.h"
+#include "Opaque/Pipeline.h"
+#include "AlphaMasked/Pipeline.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
@@ -34,7 +35,9 @@ namespace Renderer::Depth
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager
+            Vk::FramebufferManager& framebufferManager,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
         );
 
         void Destroy(VkDevice device);
@@ -45,14 +48,16 @@ namespace Renderer::Depth
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::MegaSet& megaSet,
+            const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            Culling::Dispatch& cullingDispatch
+            Culling::Dispatch& culling
         );
-
-        Depth::Pipeline pipeline;
+    private:
+        Opaque::Pipeline      m_opaquePipeline;
+        AlphaMasked::Pipeline m_alphaMaskedPipeline;
     };
 }
 

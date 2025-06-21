@@ -23,22 +23,8 @@
 
 namespace Vk
 {
-    Sampler::Sampler(VkDevice device, const VkSamplerCreateInfo& createInfo)
-    {
-        Vk::CheckResult(vkCreateSampler(
-            device,
-            &createInfo,
-            nullptr,
-            &handle),
-            "Failed to create sampler!"
-        );
-
-        Logger::Debug("Created sampler! [handle={}]\n", std::bit_cast<void*>(handle));
-    }
-
     void Sampler::Destroy(VkDevice device) const
     {
-        Logger::Debug("Destroying sampler! [handle={}]\n", std::bit_cast<void*>(handle));
         vkDestroySampler(device, handle, nullptr);
     }
 }

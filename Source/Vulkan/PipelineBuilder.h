@@ -51,8 +51,7 @@ namespace Vk
         (
             u32 viewMask,
             const std::span<const VkFormat> colorFormats,
-            VkFormat depthFormat,
-            VkFormat stencilFormat
+            VkFormat depthFormat
         );
 
         [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
@@ -62,21 +61,14 @@ namespace Vk
             VkRayTracingShaderGroupTypeKHR groupType,
             u32 generalShader,
             u32 closestHitShader,
-            u32 anyHitShader,
-            u32 intersectionShader
+            u32 anyHitShader
         );
 
         [[nodiscard]] PipelineBuilder& SetMaxRayRecursionDepth(u32 maxRayRecursionDepth);
 
         [[nodiscard]] PipelineBuilder& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
 
-        [[nodiscard]] PipelineBuilder& SetVertexInputState
-        (
-            const std::span<const VkVertexInputBindingDescription>   vertexBindings,
-            const std::span<const VkVertexInputAttributeDescription> vertexAttribs
-        );
-
-        [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology, VkBool32 enablePrimitiveRestart);
+        [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology);
 
         [[nodiscard]] PipelineBuilder& SetRasterizerState
         (
@@ -86,16 +78,11 @@ namespace Vk
             VkPolygonMode polygonMode
         );
 
-        [[nodiscard]] PipelineBuilder& SetMSAAState();
-
         [[nodiscard]] PipelineBuilder& SetDepthStencilState
         (
             VkBool32 depthTestEnable,
             VkBool32 depthWriteEnable,
-            VkCompareOp depthCompareOp,
-            VkBool32 stencilTestEnable,
-            const VkStencilOpState& front,
-            const VkStencilOpState& back
+            VkCompareOp depthCompareOp
         );
 
         [[nodiscard]] PipelineBuilder& AddBlendAttachment
@@ -110,45 +97,42 @@ namespace Vk
             VkColorComponentFlags colorWriteMask
         );
 
-        [[nodiscard]] PipelineBuilder& SetBlendState();
-
         [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         [[nodiscard]] PipelineBuilder& AddDescriptorLayout(VkDescriptorSetLayout layout);
     private:
+        void Validate();
+
         VkPipelineBindPoint m_pipelineType = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-        VkPipelineRenderingCreateInfo m_renderingCreateInfo{};
-        std::vector<VkFormat>         m_renderingColorFormats;
+        VkPipelineRenderingCreateInfo m_renderingCreateInfo   = {};
+        std::vector<VkFormat>         m_renderingColorFormats = {};
 
-        std::vector<Vk::ShaderModule>                     m_shaderModules;
-        std::vector<VkPipelineShaderStageCreateInfo>      m_shaderStageCreateInfos;
-        std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
+        std::vector<Vk::ShaderModule>                     m_shaderModules          = {};
+        std::vector<VkPipelineShaderStageCreateInfo>      m_shaderStageCreateInfos = {};
+        std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups           = {};
 
-        u32 m_maxRayRecursionDepth;
+        u32 m_maxRayRecursionDepth = 0;
 
-        std::vector<VkDynamicState>      m_dynamicStates;
-        VkPipelineDynamicStateCreateInfo m_dynamicStateInfo{};
+        std::vector<VkDynamicState>      m_dynamicStates    = {};
+        VkPipelineDynamicStateCreateInfo m_dynamicStateInfo = {};
 
-        VkPipelineViewportStateCreateInfo m_viewportInfo{};
+        VkPipelineViewportStateCreateInfo    m_viewportInfo    = {};
+        VkPipelineVertexInputStateCreateInfo m_vertexInputInfo = {};
 
-        VkPipelineVertexInputStateCreateInfo           m_vertexInputInfo{};
-        std::vector<VkVertexInputBindingDescription>   m_vertexInputBindings;
-        std::vector<VkVertexInputAttributeDescription> m_vertexAttribDescriptions;
+        VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo = {};
+        VkPipelineRasterizationStateCreateInfo m_rasterizationInfo = {};
+        VkPipelineMultisampleStateCreateInfo   m_msaaStateInfo     = {};
 
-        VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo{};
-        VkPipelineRasterizationStateCreateInfo m_rasterizationInfo{};
-        VkPipelineMultisampleStateCreateInfo   m_msaaStateInfo{};
+        VkPipelineDepthStencilStateCreateInfo m_depthStencilInfo = {};
 
-        VkPipelineDepthStencilStateCreateInfo m_depthStencilInfo{};
+        std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendStates = {};
+        VkPipelineColorBlendStateCreateInfo              m_colorBlendInfo   = {};
 
-        std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendStates;
-        VkPipelineColorBlendStateCreateInfo              m_colorBlendInfo{};
-
-        std::vector<VkPushConstantRange>   m_pushConstantRanges;
-        std::vector<VkDescriptorSetLayout> m_descriptorLayouts;
+        std::vector<VkPushConstantRange>   m_pushConstantRanges = {};
+        std::vector<VkDescriptorSetLayout> m_descriptorLayouts  = {};
 
         // We only need this pointer here temporarily
-        const Vk::Context* m_context = nullptr;
+        const Context* m_context = nullptr;
     };
 }
 

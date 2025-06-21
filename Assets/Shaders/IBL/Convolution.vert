@@ -21,7 +21,7 @@
 #extension GL_EXT_scalar_block_layout  : enable
 #extension GL_EXT_multiview            : enable
 
-#include "Constants/IBL/Convolution.glsl"
+#include "IBL/Convolution.h"
 
 layout(location = 0) out vec3 worldPos;
 

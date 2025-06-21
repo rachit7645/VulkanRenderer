@@ -17,7 +17,7 @@
 #ifndef DRAW_CALL_BUFFER_H
 #define DRAW_CALL_BUFFER_H
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Vulkan/Buffer.h"
 #include "Renderer/RenderObject.h"
 #include "Models/ModelManager.h"
@@ -49,8 +49,12 @@ namespace Renderer::Buffers
 
         u32 writtenDrawCount = 0;
 
-        Vk::Buffer drawCallBuffer;
-        Vk::Buffer meshIndexBuffer;
+        Vk::Buffer drawCallBuffer = {};
+
+        // CPU To GPU draw call buffers do not need a mesh index buffer
+        std::optional<Vk::Buffer> meshIndexBuffer = std::nullopt;
+    private:
+        [[nodiscard]] bool IsCPUWritable() const;
     };
 }
 

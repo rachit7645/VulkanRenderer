@@ -2,20 +2,23 @@
 
 * Soft RT Shadows for Directional Lights
 * RT Shadows for Point and Spot Lights
-* Try and improve TAA more
 * DLSS / FSR3
 * RTAO
-* Two-pass Occlusion culling
-* Settings
+* Two-Pass Occlusion culling
 * Shader Hot Reloading
 * Write a README
 * Pull all dependencies from git submodules
 * Render Graph
-* Multithreaded command buffer recording
 * Transparent / Translucent Meshes
-* Async Compute
 * Async Model Loading
-* Some form of Global Illumination
+* Global Illumination
 * Fog
 * Volumetric Lighting
-* IBL Cache
+* IBL Generation Caching
+* Staging Pool
+* Generic CPU -> GPU Uploader
+* Spot Light Shadows
+* Light Culling (Tiled / Clustered)
+* Shadow Caching
+* Auto Exposure
+* Mesh Shaders

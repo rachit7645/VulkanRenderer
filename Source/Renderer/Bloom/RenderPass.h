@@ -40,27 +40,30 @@ namespace Renderer::Bloom
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
 
         void Destroy(VkDevice device);
-
-        DownSample::Pipeline downsamplePipeline;
-        UpSample::Pipeline   upsamplePipeline;
     private:
         void RenderDownSamples
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
 
         void RenderUpSamples
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager
         );
+
+        DownSample::Pipeline m_downsamplePipeline;
+        UpSample::Pipeline   m_upsamplePipeline;
 
         f32 m_filterRadius = 0.005f;
     };

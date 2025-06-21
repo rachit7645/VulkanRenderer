@@ -65,11 +65,10 @@ namespace Util::Files
 
         if (!bin.is_open())
         {
-            Logger::Error("Failed to load shader binary {}!\n", path);
+            Logger::Error("Failed to load binary {}!\n", path);
         }
 
-        std::vector<u8> binary = {};
-        binary.resize(GetSize(path));
+        std::vector<u8> binary(Files::GetSize(path));
 
         bin.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
 

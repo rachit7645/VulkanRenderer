@@ -17,6 +17,7 @@
 #include "Pipeline.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
+#include "ImGui/DearImGui.h"
 
 namespace Renderer::DearImGui
 {
@@ -28,30 +29,18 @@ namespace Renderer::DearImGui
         VkFormat colorFormat
     )
     {
-        CreatePipeline(context, megaSet, colorFormat);
-        CreatePipelineData(context.device, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::MegaSet& megaSet,
-        VkFormat colorFormat
-    )
-    {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array COLOR_FORMATS = {colorFormat};
+        const std::array colorFormats = {colorFormat};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, COLOR_FORMATS, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("ImGui/ImGui.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("ImGui/ImGui.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
             .AddBlendAttachment(
                 VK_TRUE,
                 VK_BLEND_FACTOR_SRC_ALPHA,
@@ -65,27 +54,15 @@ namespace Renderer::DearImGui
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DearImGui::PushConstant))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DearImGui::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "ImGuiPipeline");
-        Vk::SetDebugName(context.device, layout, "ImGuiPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        VkDevice device,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        samplerIndex = textureManager.AddSampler
+        samplerID = textureManager.AddSampler
         (
             megaSet,
-            device,
-            {
+            context.device,
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -97,18 +74,19 @@ namespace Renderer::DearImGui
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = -1000.0f,
                 .maxLod                  = 1000.0f,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(samplerIndex).handle, "ImGuiPipeline/Sampler");
+        Vk::SetDebugName(context.device, handle, "ImGui/Pipeline");
+        Vk::SetDebugName(context.device, layout, "ImGui/Pipeline/Layout");
 
-        megaSet.Update(device);
+        megaSet.Update(context.device);
     }
 }

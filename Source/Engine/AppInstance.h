@@ -24,20 +24,8 @@ namespace Engine
     class AppInstance
     {
     public:
-         AppInstance();
-        ~AppInstance();
-
-        // No copying
-        AppInstance(const AppInstance&)            = delete;
-        AppInstance& operator=(const AppInstance&) = delete;
-
-        // Only moving
-        AppInstance(AppInstance&& other)            = default;
-        AppInstance& operator=(AppInstance&& other) = default;
-
         void Run();
     private:
-        Engine::Config          m_config;
         Renderer::RenderManager m_renderer;
     };
 }

@@ -19,7 +19,7 @@
 
 #include "DrawCallBuffer.h"
 #include "Renderer/RenderObject.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
 #include "Models/ModelManager.h"
@@ -41,9 +41,19 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> drawCallBuffers;
+        std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> writtenDrawCallBuffers;
 
-        DrawCallBuffer frustumCulledDrawCallBuffer;
+        struct CulledBuffers
+        {
+            CulledBuffers(VkDevice device, VmaAllocator allocator);
+
+            void Destroy(VmaAllocator allocator);
+
+            DrawCallBuffer opaqueBuffer;
+            DrawCallBuffer opaqueDoubleSidedBuffer;
+            DrawCallBuffer alphaMaskedBuffer;
+            DrawCallBuffer alphaMaskedDoubleSidedBuffer;
+        } frustumCulledBuffers;
     };
 }
 

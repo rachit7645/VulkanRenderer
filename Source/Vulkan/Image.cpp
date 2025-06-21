@@ -80,8 +80,6 @@ namespace Vk
             );
         }
         #endif
-
-        Logger::Debug("Created image! [handle={}]\n", std::bit_cast<void*>(handle));
     }
 
     Image::Image
@@ -114,7 +112,11 @@ namespace Vk
                allocation == rhs.allocation &&
                width  == rhs.width &&
                height == rhs.height &&
+               depth == rhs.depth &&
+               mipLevels == rhs.mipLevels &&
+               arrayLayers == rhs.arrayLayers &&
                format == rhs.format &&
+               usage == rhs.usage &&
                aspect == rhs.aspect;
     }
 
@@ -172,6 +174,8 @@ namespace Vk
                     .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = 0,
                     .levelCount     = mipLevels,
                     .baseArrayLayer = 0,
@@ -199,6 +203,8 @@ namespace Vk
                         .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
                         .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                        .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                         .baseMipLevel   = j - 1,
                         .levelCount     = 1,
                         .baseArrayLayer = i,
@@ -263,6 +269,8 @@ namespace Vk
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = mipLevels - 1,
                 .baseArrayLayer = 0,
@@ -278,6 +286,8 @@ namespace Vk
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = mipLevels - 1,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
@@ -293,13 +303,6 @@ namespace Vk
         {
             return;
         }
-
-        Logger::Debug
-        (
-            "Destroying image! [handle={}] [allocation={}]\n",
-            std::bit_cast<void*>(handle),
-            std::bit_cast<void*>(allocation)
-        );
 
         vmaDestroyImage(allocator, handle, allocation);
     }

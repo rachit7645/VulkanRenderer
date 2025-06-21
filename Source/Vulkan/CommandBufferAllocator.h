@@ -31,14 +31,12 @@ namespace Vk
     class CommandBufferAllocator
     {
     public:
-        explicit CommandBufferAllocator(VkDevice device, const Vk::QueueFamilyIndices& queueFamilies);
+        CommandBufferAllocator(VkDevice device, u32 queueFamilyIndex);
 
         [[nodiscard]] Vk::CommandBuffer AllocateGlobalCommandBuffer(VkDevice device, VkCommandBufferLevel level);
         void FreeGlobalCommandBuffer(const Vk::CommandBuffer& commandBuffer);
 
         [[nodiscard]] Vk::CommandBuffer AllocateCommandBuffer(usize FIF, VkDevice device, VkCommandBufferLevel level);
-
-        [[nodiscard]] std::vector<VkCommandBufferSubmitInfo> GetGraphicsQueueSubmits(usize FIF);
 
         void ResetPool(usize FIF, VkDevice device);
 
@@ -49,6 +47,8 @@ namespace Vk
             Vk::CommandBuffer commandBuffer = {};
             bool              isDirty       = false;
         };
+
+        u32 m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
         VkCommandPool                                   m_globalCommandPool = VK_NULL_HANDLE;
         std::array<VkCommandPool, Vk::FRAMES_IN_FLIGHT> m_commandPools      = {};

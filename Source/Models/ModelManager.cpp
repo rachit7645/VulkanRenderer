@@ -26,35 +26,92 @@ namespace Models
     {
     }
 
-    usize ModelManager::AddModel
+    Models::ModelID ModelManager::AddModel
     (
-        VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
     {
-        usize pathHash = std::hash<std::string_view>()(path);
+        const Models::ModelID id = std::hash<std::string_view>()(path);
 
-        if (!modelMap.contains(pathHash))
+        auto iter = m_modelMap.find(id);
+
+        if (iter != m_modelMap.end())
         {
-            modelMap.emplace(pathHash, Model(device, allocator, megaSet, geometryBuffer, textureManager, deletionQueue, path));
+            ++iter->second.referenceCount;
+        }
+        else
+        {
+            m_modelMap.emplace(id, ModelInfo{
+                .model = Model(
+                    allocator,
+                    geometryBuffer,
+                    textureManager,
+                    deletionQueue,
+                    path
+                ),
+                .referenceCount = 1
+            });
         }
 
-        return pathHash;
+        return id;
     }
 
-    const Model& ModelManager::GetModel(usize modelID) const
+    void ModelManager::DestroyModel
+    (
+        ModelID id,
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
     {
-        const auto iter = modelMap.find(modelID);
+        const auto iter = m_modelMap.find(id);
 
-        if (iter == modelMap.end())
+        if (iter == m_modelMap.end())
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", modelID);
+            Logger::Error("Invalid model ID! [ID={}]\n", id);
         }
 
-        return iter->second;
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Model already freed! [ID={}]\n", id);
+        }
+
+        --iter->second.referenceCount;
+
+        if (iter->second.referenceCount == 0)
+        {
+            iter->second.model.Destroy
+            (
+                device,
+                allocator,
+                megaSet,
+                textureManager,
+                geometryBuffer,
+                deletionQueue
+            );
+
+            m_modelMap.erase(iter);
+        }
+    }
+
+    const Model& ModelManager::GetModel(Models::ModelID id) const
+    {
+        const auto iter = m_modelMap.find(id);
+
+        if (iter == m_modelMap.end())
+        {
+            Logger::Error("Invalid model ID! [ID={}]\n", id);
+        }
+
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Model already freed! [ID={}]\n", id);
+        }
+
+        return iter->second.model;
     }
 
     void ModelManager::Update
@@ -62,6 +119,7 @@ namespace Models
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -73,7 +131,7 @@ namespace Models
         Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
         geometryBuffer.Update(cmdBuffer, device, allocator, deletionQueue);
-        textureManager.Update(cmdBuffer);
+        textureManager.Update(cmdBuffer, device, megaSet);
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -84,10 +142,14 @@ namespace Models
         {
             if (ImGui::BeginMenu("Model Manager"))
             {
-                for (const auto& [pathHash, model] : modelMap)
+                for (const auto& [id, info] : m_modelMap)
                 {
-                    if (ImGui::TreeNode(fmt::format("[{}]", pathHash).c_str()))
+                    const auto& [model, refCount] = info;
+
+                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", model.name.c_str()))
                     {
+                        ImGui::Text("Reference Count | %llu", refCount);
+
                         for (usize i = 0; i < model.meshes.size(); ++i)
                         {
                             if (ImGui::TreeNode(fmt::format("Mesh #{}", i).c_str()))
@@ -98,17 +160,18 @@ namespace Models
                                 ImGui::Text("Info Name | Offset/Count");
                                 ImGui::Separator();
 
-                                ImGui::Text("Indices   | %u/%u", mesh.indexInfo.offset,    mesh.indexInfo.count);
-                                ImGui::Text("Positions | %u/%u", mesh.positionInfo.offset, mesh.positionInfo.count);
-                                ImGui::Text("Vertices  | %u/%u", mesh.vertexInfo.offset,   mesh.vertexInfo.count);
+                                ImGui::Text("Indices   | %u/%u", mesh.surfaceInfo.indexInfo.offset,    mesh.surfaceInfo.indexInfo.count);
+                                ImGui::Text("Positions | %u/%u", mesh.surfaceInfo.positionInfo.offset, mesh.surfaceInfo.positionInfo.count);
+                                ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset,   mesh.surfaceInfo.vertexInfo.count);
 
                                 ImGui::Separator();
-                                ImGui::Text("Texture Name                  | ID");
+                                ImGui::Text("Texture Name              | UV Map ID | ID");
                                 ImGui::Separator();
 
-                                ImGui::Text("Albedo                        | %u", mesh.material.albedo);
-                                ImGui::Text("Normal Map                    | %u", mesh.material.normal);
-                                ImGui::Text("AO + Roughness + Metallic Map | %u", mesh.material.aoRghMtl);
+                                ImGui::Text("Albedo                    | %u         | %llu", mesh.material.albedoUVMapID,   mesh.material.albedoID);
+                                ImGui::Text("Normal                    | %u         | %llu", mesh.material.normalUVMapID,   mesh.material.normalID);
+                                ImGui::Text("AO + Roughness + Metallic | %u         | %llu", mesh.material.aoRghMtlUVMapID, mesh.material.aoRghMtlID);
+                                ImGui::Text("Emmisive                  | %u         | %llu", mesh.material.emmisiveUVMapID, mesh.material.emmisiveID);
 
                                 ImGui::Separator();
                                 ImGui::Text("Factor Name | Value");
@@ -124,10 +187,26 @@ namespace Models
                                 ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
                                 ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
 
+                                ImGui::Text("Emmisive    | [%.3f, %.3f, %.3f]",
+                                    mesh.material.emmisiveFactor.r,
+                                    mesh.material.emmisiveFactor.g,
+                                    mesh.material.emmisiveFactor.b
+                                );
+
+                                ImGui::Separator();
+                                ImGui::Text("Misc              | Value");
                                 ImGui::Separator();
 
-                                ImGui::Text("AABB Min    | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
-                                ImGui::Text("AABB Max    | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
+                                ImGui::Text("Emmisive Strength | %.3f", mesh.material.emmisiveStrength);
+                                ImGui::Text("Alpha Cutoff      | %.3f", mesh.material.alphaCutOff);
+                                ImGui::Text("IoR               | %.3f", mesh.material.ior);
+
+                                ImGui::Separator();
+                                ImGui::Text("Bounds   | Value");
+                                ImGui::Separator();
+
+                                ImGui::Text("AABB Min | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
+                                ImGui::Text("AABB Max | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
 
                                 ImGui::TreePop();
                             }

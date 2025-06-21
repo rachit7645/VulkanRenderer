@@ -2,8 +2,18 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Externals/VMA" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/fastgltf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/fmt" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/openexr" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/sdl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/simdjson" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/stb" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/taskflow" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/tracy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/unordered_dense" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/vma" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/volk" vcs="Git" />
   </component>
 </project>

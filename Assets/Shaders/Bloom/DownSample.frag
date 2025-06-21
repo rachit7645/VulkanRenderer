@@ -17,13 +17,12 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
-
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/Bloom/DownSample.glsl"
 #include "Constants.glsl"
 #include "Color.glsl"
 #include "MegaSet.glsl"
+#include "Bloom/DownSample.h"
 
 layout(location = 0) in vec2 fragUV;
 

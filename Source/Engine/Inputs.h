@@ -17,10 +17,8 @@
 #ifndef INPUTS_H
 #define INPUTS_H
 
-#include <SDL3/SDL.h>
-
 #include "Externals/GLM.h"
-#include "Util/Util.h"
+#include "Externals/SDL.h"
 
 namespace Engine
 {

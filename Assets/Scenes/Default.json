@@ -23,6 +23,48 @@
             "Position" : [ 50.0, 0.0,  12.0 ],
             "Rotation" : [-90.0, 0.0,  141.5],
             "Scale"    : [ 22.0, 22.0, 22.0 ]
+        },
+        {
+            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured_Complex_T.gltf",
+            "Position" : [50.0, 0.0, -50.0],
+            "Rotation" : [0.0,  0.0,  0.0],
+            "Scale"    : [1.0,  1.0,  1.0]
+        },
+        {
+            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured.glb",
+            "Position" : [100.0, 0.0, -50.0],
+            "Rotation" : [0.0,   0.0,  0.0],
+            "Scale"    : [1.0,   1.0,  1.0]
+        },
+        {
+            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured.glb",
+            "Position" : [50.0, 0.0, -100.0],
+            "Rotation" : [0.0,  0.0,  0.0],
+            "Scale"    : [1.0,  1.0,  1.0]
+        },
+        {
+            "Model"    : "DeccerCubes/SM_Deccer_Cubes_Textured_Complex_T.gltf",
+            "Position" : [100.0, 0.0, -100.0],
+            "Rotation" : [0.0,   0.0,  0.0],
+            "Scale"    : [1.0,   1.0,  1.0]
+        },
+        {
+            "Model"    : "IoRTest/IoRTestC.gltf",
+            "Position" : [-50.0, 0.0, 50.0],
+            "Rotation" : [ 0.0,  0.0, 0.0],
+            "Scale"    : [ 1.0,  1.0, 1.0]
+        },
+        {
+            "Model"    : "Fish/FishC.gltf",
+            "Position" : [ 0.0, 0.0, 50.0],
+            "Rotation" : [ 0.0, 0.0, 0.0],
+            "Scale"    : [ 2.0, 2.0, 2.0]
+        },
+        {
+            "Model"    : "Phx/PhxC.gltf",
+            "Position" : [ 0.0, 0.0, 65.0],
+            "Rotation" : [ 0.0, 0.0, 0.0],
+            "Scale"    : [ 2.0, 2.0, 2.0]
         }
     ],
     "Sun": {
@@ -32,34 +74,34 @@
     },
     "PointLights": [
         {
-            "Position"    : [0.0, 20.0, -3.0   ],
-            "Color"       : [0.0, 0.945, 0.945 ],
-            "Intensity"   : [1.0, 7.0,   5.0   ],
-            "Attenuation" : [1.0, 0.022, 0.0019]
+            "Position"  : [-5.0, 1.0,  -0.5  ],
+            "Color"     : [ 0.0, 0.945, 0.945],
+            "Intensity" : [ 0.0, 21.0,  15.0 ],
+            "Range"     : 10.0
         },
         {
-            "Position"    : [10.0, 15.0, -3.0   ],
-            "Color"       : [0.0,  0.031, 1.0   ],
-            "Intensity"   : [1.0,  6.0,   10.0  ],
-            "Attenuation" : [1.0,  0.027, 0.0028]
+            "Position"  : [5.0, 0.7,  -0.8 ],
+            "Color"     : [0.0, 0.031, 1.0 ],
+            "Intensity" : [0.0, 18.0,  30.0],
+            "Range"     : 2.4
         }
     ],
     "SpotLights" : [
         {
-            "Position"    : [ 25.0, 4.0,   6.0   ],
-            "Color"       : [ 1.0,  0.0,   0.0   ],
-            "Intensity"   : [ 15.0, 1.0,   1.0   ],
-            "Attenuation" : [ 1.0,  0.007, 0.0002],
-            "Direction"   : [-1.0,  0.0,  -0.3   ],
-            "CutOff"      : [ 10.0, 30.0]
+            "Position"  : [ 10.0,  2.0, -4.0],
+            "Color"     : [ 1.0,   0.0,  0.0],
+            "Intensity" : [ 80.0,  1.0,  1.0],
+            "Direction" : [-0.25, -0.1,  0.5],
+            "CutOff"    : [ 10.0, 30.0],
+            "Range"     : 30.0
         },
         {
-            "Position"    : [ 7.0,   2.0,  -2.0   ],
-            "Color"       : [ 0.941, 0.0,   1.0   ],
-            "Intensity"   : [ 10.0,  0.0,   10.0  ],
-            "Attenuation" : [ 1.0,   0.022, 0.0019],
-            "Direction"   : [-1.0,   0.3,  -0.1   ],
-            "CutOff"      : [ 10.0,  50.0]
+            "Position"   : [ 4.0,   1.0, -0.5 ],
+            "Color"      : [ 0.941, 0.0,  1.0 ],
+            "Intensity"  : [ 60.0,  0.0,  60.0],
+            "Direction"  : [-1.0,  -0.15, 0.0],
+            "CutOff"     : [ 10.0,  50.0],
+            "Range"      : 20.0
         }
     ],
     "Camera" : {
@@ -67,10 +109,11 @@
             "Position"    : [0.0, 2.0,   0.0],
             "Rotation"    : [0.0, 180.0, 0.0],
             "FOV"         : 80.0,
+            "Exposure"    : 0.7,
             "Speed"       : 0.000015,
             "Sensitivity" : 0.0001,
             "Zoom"        : 0.000045
         }
     },
-    "IBL" : "industrial_sunset_puresky_4k.hdr"
+    "IBL" : "industrial_sunset_puresky_4k.exr"
 }

@@ -18,10 +18,10 @@
 #define QUEUE_FAMILY_INDEX_H
 
 #include <optional>
-#include <set>
 #include <vulkan/vulkan.h>
 
-#include "Util/Util.h"
+#include "Util/Types.h"
+#include "Externals/UnorderedDense.h"
 
 namespace Vk
 {
@@ -30,11 +30,13 @@ namespace Vk
         QueueFamilyIndices() = default;
         QueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-        // Graphics + Presentation family
-        std::optional<u32> graphicsFamily;
+        std::optional<u32> graphicsFamily = std::nullopt;
+        std::optional<u32> computeFamily  = std::nullopt;
 
-        [[nodiscard]] std::set<u32> GetUniqueFamilies() const;
-        [[nodiscard]] bool IsComplete() const;
+        [[nodiscard]] ankerl::unordered_dense::set<u32> GetUniqueFamilies() const;
+
+        [[nodiscard]] bool HasRequiredFamilies() const;
+        [[nodiscard]] bool HasAllFamilies() const;
     };
 }
 

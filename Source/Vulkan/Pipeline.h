@@ -20,7 +20,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Context.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "CommandBuffer.h"
 
 namespace Vk
@@ -48,8 +48,44 @@ namespace Vk
             VkShaderStageFlags stages,
             u32 offset,
             u32 size,
-            void* pValues
+            const void* pValues
         ) const;
+
+        template<typename T>
+        void PushConstants
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkShaderStageFlags stages,
+            u32 offset,
+            const T& value
+        ) const
+        {
+            PushConstants
+            (
+                cmdBuffer,
+                stages,
+                offset,
+                sizeof(T),
+                &value
+            );
+        }
+
+        template<typename T>
+        void PushConstants
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkShaderStageFlags stages,
+            const T& value
+        ) const
+        {
+            PushConstants<T>
+            (
+                cmdBuffer,
+                stages,
+                0,
+                value
+            );
+        }
 
         void Destroy(VkDevice device) const;
 

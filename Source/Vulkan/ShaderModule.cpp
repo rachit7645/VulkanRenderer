@@ -22,7 +22,7 @@
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Files.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util.h"
 
 namespace Vk
@@ -40,7 +40,7 @@ namespace Vk
             .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             .pNext    = nullptr,
             .flags    = 0,
-            .codeSize = static_cast<u32>(shaderBinary.size()),
+            .codeSize = shaderBinary.size() * sizeof(u8),
             .pCode    = reinterpret_cast<const u32*>(shaderBinary.data())
         };
 
@@ -54,13 +54,11 @@ namespace Vk
 
         Vk::SetDebugName(device, handle, Util::Files::GetNameWithoutExtension(path));
 
-        Logger::Debug("Created shader module {} [handle={}]\n", path, std::bit_cast<void*>(handle));
+        Logger::Debug("Loaded shader! [Path={}] [Handle={}]\n", path, std::bit_cast<void*>(handle));
     }
 
     void ShaderModule::Destroy(VkDevice device) const
     {
-        Logger::Debug("Destroying shader module [handle={}]\n", std::bit_cast<void*>(handle));
-
         vkDestroyShaderModule(device, handle, nullptr);
     }
 }

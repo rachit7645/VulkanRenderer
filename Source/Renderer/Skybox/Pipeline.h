@@ -17,7 +17,6 @@
 #ifndef SKYBOX_PIPELINE_H
 #define SKYBOX_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
@@ -36,23 +35,7 @@ namespace Renderer::Skybox
             Vk::TextureManager& textureManager
         );
 
-        Skybox::PushConstant pushConstant = {};
-
-        u32 samplerIndex = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData
-        (
-            const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
+        Vk::SamplerID samplerID = 0;
     };
 }
 

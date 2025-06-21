@@ -25,11 +25,12 @@ namespace Renderer::Objects
         const glm::vec3& position,
         const glm::vec3& rotation,
         f32 FOV,
+        f32 exposure,
         f32 speed,
         f32 sensitivity,
         f32 zoom
     )
-        : Camera(position, rotation, FOV),
+        : Camera(position, rotation, FOV, exposure),
           m_speed(speed),
           m_sensitivity(sensitivity),
           m_zoom(zoom)
@@ -121,7 +122,7 @@ namespace Renderer::Objects
         if (inputs.WasMouseScrolled())
         {
             FOV -= inputs.GetMouseScroll().y * m_zoom * frameDelta;
-            FOV = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
+            FOV  = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
         }
     }
 

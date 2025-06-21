@@ -19,37 +19,94 @@
 #ifndef PBR_GLSL
 #define PBR_GLSL
 
-#include "Lights.glsl"
+#include "Lights.h"
 #include "Math.glsl"
+
+float IoRToReflectance(float ior)
+{
+    float r = (ior - 1.0f) / (ior + 1.0f);
+
+    return r * r;
+}
+
+vec3 CalculateF0(vec3 albedo, float metallic, float reflectance)
+{
+    return mix(vec3(reflectance), albedo, metallic);
+}
 
 // Trowbridge-Reitz Normal Distribution Function
 float DistributionGGX(float NdotH, float a)
 {
-	float a2     = a * a;
-	float NdotH2 = NdotH * NdotH;
-
+	float a2    = a * a;
 	float nom   = a2;
-	float denom = NdotH2 * (a2 - 1.0f) + 1.0f;
+	float denom = (NdotH * a2 - NdotH) * NdotH + 1.0f;
 	denom       = PI * denom * denom;
 
 	return nom / denom;
 }
 
 // Smith's Self Shadowing
-float GeometrySmith(float NdotL, float NdotV, float a)
+// V = G / (4 · NoL · NoV)
+float VisibilitySmithGGX(float NdotL, float NdotV, float a)
 {
     float a2 = a * a;
 
-    float ggxV = NdotL * sqrt(NdotV * NdotV * (1.0f - a2) + a2);
-    float ggxL = NdotV * sqrt(NdotL * NdotL * (1.0f - a2) + a2);
+    float ggxV = NdotL * sqrt((NdotV - a2 * NdotV) * NdotV + a2);
+    float ggxL = NdotV * sqrt((NdotL - a2 * NdotL) * NdotL + a2);
 
-    return 2.0f * NdotL * NdotV / max(ggxV + ggxL, 1e-5f);
+    return 0.5f / max(ggxV + ggxL, 1e-5f);
 }
 
-// Fresnel equation
-vec3 FresnelSchlick(float cosTheta, vec3 F0)
+// Schlick's Fresnel Approximation
+vec3 FresnelSchlick(vec3 F0, vec3 F90, float cosTheta)
 {
-    return F0 + (1.0f - F0) * pow5(clamp(1.0f - cosTheta, 0.0f, 1.0f));
+    return F0 + (F90 - F0) * pow5(saturate(1.0f - cosTheta));
+}
+
+// Schlick's Fresnel Approximation, F90 = vec3(1.0f)
+vec3 FresnelSchlick(vec3 F0, float cosTheta)
+{
+    return FresnelSchlick(F0, vec3(1.0f), cosTheta);
+}
+
+// Schlick's Fresnel Approximation
+float FresnelSchlick(float F0, float F90, float cosTheta)
+{
+    return F0 + (F90 - F0) * pow5(saturate(1.0f - cosTheta));
+}
+
+vec3 Lambert(vec3 albedo)
+{
+    return INVERSE_PI * albedo;
+}
+
+// Burley 2012, "Physically-Based Shading at Disney"
+vec3 Burley
+(
+    vec3 albedo,
+    float roughness,
+    float NdotV,
+    float NdotL,
+    float LdotH
+)
+{
+    float F90 = 0.5f + 2.0f * roughness * LdotH * LdotH;
+
+    float lightScatter = FresnelSchlick(1.0f, F90, NdotL);
+    float viewScatter  = FresnelSchlick(1.0f, F90, NdotV);
+
+    float factor = lightScatter * viewScatter * INVERSE_PI;
+
+    return factor * albedo;
+}
+
+vec3 DiffuseEnergyFactor(vec3 F, float metallic)
+{
+    vec3 kS = F;
+    vec3 kD = vec3(1.0f) - kS;
+    kD     *= 1.0f - metallic;
+
+    return kD;
 }
 
 vec3 CalculateLight
@@ -57,39 +114,38 @@ vec3 CalculateLight
     LightInfo lightInfo,
     vec3 N,
     vec3 V,
-    vec3 F0,
     vec3 albedo,
     float roughness,
     float metallic,
-    float NdotV
+    float reflectance
 )
 {
-    vec3 L = lightInfo.L;
+    vec3 F0 = CalculateF0(albedo, metallic, reflectance);
+
+    vec3 L        = lightInfo.L;
+    vec3 radiance = lightInfo.radiance;
+
     vec3 H = normalize(V + L);
 
-    float NdotL = max(dot(N, L), 0.0f);
-    float NdotH = max(dot(N, H), 0.0f);
-    float HdotV = max(dot(H, V), 0.0f);
+    float NdotV = abs(dot(N, V)) + 1e-5f;
+    float NdotL = saturate(dot(N, L));
+    float NdotH = saturate(dot(N, H));
+    float VdotH = saturate(dot(V, H));
 
-    // Squared Roughness as proposed by Disney
-    float a = roughness * roughness;
+    // Brent Burley (2012)
+    float r2 = roughness * roughness;
 
 	// Cook-Torrance BRDF
-	float NDF = DistributionGGX(NdotH, a);
-	float G   = GeometrySmith(NdotL, NdotV, a);
-	vec3  F   = FresnelSchlick(HdotV, F0);
+	float D = DistributionGGX(NdotH, r2);
+	float G = VisibilitySmithGGX(NdotL, NdotV, r2);
+	vec3  F = FresnelSchlick(F0, VdotH);
 
-	// Specular
-	vec3  numerator   = NDF * G * F;
-    float denominator = max(4.0f * NdotV * NdotL, 1e-5f);
-    vec3  specular    = numerator / denominator;
+    vec3 diffuse  = Lambert(albedo);
+    vec3 specular = D * G * F;
 
-	// Diffuse energy conservation
-	vec3 kS = F;
-	vec3 kD = vec3(1.0f) - kS;
-	kD     *= 1.0f - metallic;
+	vec3 kD = DiffuseEnergyFactor(F, metallic);
 
-	return (kD * (albedo / PI) + specular) * lightInfo.radiance * NdotL;
+	return (kD * diffuse + specular) * radiance * NdotL;
 }
 
 // Schlick's Approximation for IBL
@@ -116,32 +172,32 @@ float GeometrySmith_IBL(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-// Fresnel equation with injected roughness parameter
-vec3 FresnelSchlick_IBL(float cosTheta, vec3 F0, float roughness)
+// Schlick's Fresnel approximation with injected roughness parameter
+vec3 FresnelSchlick_IBL(vec3 F0, float roughness, float cosTheta)
 {
-    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(clamp(1.0f - cosTheta, 0.0f, 1.0f));
+    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(saturate(1.0f - cosTheta));
 }
 
 vec3 CalculateAmbient
 (
     vec3 N,
     vec3 V,
-    vec3 F0,
     vec3 albedo,
     float roughness,
     float metallic,
+    float reflectance,
     vec3 irradiance,
     vec3 preFilter,
-    vec2 brdf,
-    float NdotV
+    vec2 brdf
 )
 {
-    vec3 F = FresnelSchlick_IBL(NdotV, F0, roughness);
+    vec3 F0 = CalculateF0(albedo, metallic, reflectance);
 
-    // Energy conservation
-    vec3 kS = F;
-    vec3 kD = 1.0f - kS;
-    kD     *= 1.0f - metallic;
+    float NdotV = abs(dot(N, V)) + 1e-5f;
+
+    vec3 F = FresnelSchlick_IBL(F0, roughness, NdotV);
+
+    vec3 kD = DiffuseEnergyFactor(F, metallic);
 
     vec3 diffuse  = irradiance * albedo;
     vec3 specular = preFilter * (F * brdf.x + brdf.y);

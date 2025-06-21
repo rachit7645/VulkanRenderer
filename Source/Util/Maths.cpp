@@ -18,7 +18,7 @@
 
 namespace Maths
 {
-    glm::mat4 CreateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
+    glm::mat4 TransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
     {
         auto matrix = glm::identity<glm::mat4>();
 
@@ -33,7 +33,7 @@ namespace Maths
         return matrix;
     }
 
-    glm::mat4 CreateProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane)
+    glm::mat4 ProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane)
     {
         // Since we force a depth range of [0, 1], we don't need to convert to it
         auto projection = glm::perspectiveRH_ZO(FOV, aspectRatio, farPlane, nearPlane);
@@ -44,7 +44,7 @@ namespace Maths
         return projection;
     }
 
-    glm::mat4 CreateInfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane)
+    glm::mat4 InfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane)
     {
         const auto tanHalfFovY = std::tan(FOV / 2.0f);
 
@@ -59,7 +59,7 @@ namespace Maths
         return projection;
     }
 
-    glm::mat3 CreateNormalMatrix(const glm::mat4& transform)
+    glm::mat3 NormalMatrix(const glm::mat4& transform)
     {
         // https://www.shadertoy.com/view/3s33zj
         return

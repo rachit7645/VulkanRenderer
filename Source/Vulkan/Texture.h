@@ -21,6 +21,7 @@
 
 #include "Image.h"
 #include "ImageView.h"
+#include "DescriptorAllocator.h"
 
 namespace Vk
 {
@@ -31,20 +32,12 @@ namespace Vk
 
         bool operator==(const Texture& rhs) const;
 
-        Vk::Image     image;
-        Vk::ImageView imageView;
+        std::string      name;
+        Vk::Image        image;
+        Vk::ImageView    imageView;
+        Vk::DescriptorID descriptorID;
+        bool             isLoaded;
     };
 }
-
-// Don't nuke me for this
-template <>
-struct std::hash<Vk::Texture>
-{
-    std::size_t operator()(const Vk::Texture& texture) const noexcept
-    {
-        // Again not the best way but ehh it's fine don't worry about it
-        return hash<Vk::Image>()(texture.image) ^ hash<Vk::ImageView>()(texture.imageView);
-    }
-};
 
 #endif

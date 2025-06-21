@@ -1,9 +1,39 @@
 [submodule "Dear ImGui"]
 	path = Externals/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "Vulkan Memory Allocator"]
-	path = Externals/VMA
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "Volk"]
 	path = Externals/volk
 	url = https://github.com/zeux/volk.git
+[submodule "Vulkan Memory Allocator"]
+	path = Externals/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Taskflow"]
+	path = Externals/taskflow
+	url = https://github.com/taskflow/taskflow.git
+[submodule "Tracy Profiler"]
+	path = Externals/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "STB"]
+	path = Externals/stb
+	url = https://github.com/nothings/stb.git
+[submodule "GLM"]
+	path = Externals/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Simple DirectMedia Layer"]
+	path = Externals/sdl
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "fastgltf"]
+	path = Externals/fastgltf
+	url = https://github.com/spnda/fastgltf.git
+[submodule "simdjson"]
+	path = Externals/simdjson
+	url = https://github.com/simdjson/simdjson.git
+[submodule "{fmt}"]
+	path = Externals/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "OpenEXR"]
+	path = Externals/openexr
+	url = https://github.com/AcademySoftwareFoundation/openexr.git
+[submodule "unordered_dense"]
+	path = Externals/unordered_dense
+	url = https://github.com/martinus/unordered_dense.git

@@ -16,10 +16,11 @@
 
 #include "Pipeline.h"
 
-#include "Models/Vertex.h"
+#include "Renderer/IBL/IBLMaps.h"
 #include "Vulkan/PipelineBuilder.h"
 #include "Vulkan/DebugUtils.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
+#include "Deferred/Lighting.h"
 
 namespace Renderer::Lighting
 {
@@ -31,30 +32,18 @@ namespace Renderer::Lighting
         Vk::TextureManager& textureManager
     )
     {
-        CreatePipeline(context, formatHelper, megaSet);
-        CreatePipelineData(context.device, megaSet, textureManager);
-    }
-
-    void Pipeline::CreatePipeline
-    (
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
-    )
-    {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
         std::tie(handle, layout, bindPoint) = Vk::PipelineBuilder(context)
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Trongle.vert",      VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Deferred/Lighting.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetMSAAState()
             .AddBlendAttachment(
                 VK_FALSE,
                 VK_BLEND_FACTOR_ONE,
@@ -68,27 +57,15 @@ namespace Renderer::Lighting
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .SetBlendState()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<u32>(sizeof(PushConstant)))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Lighting::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
             .Build();
 
-        Vk::SetDebugName(context.device, handle, "LightingPipeline");
-        Vk::SetDebugName(context.device, layout, "LightingPipelineLayout");
-    }
-
-    void Pipeline::CreatePipelineData
-    (
-        VkDevice device,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
-    )
-    {
-        gBufferSamplerIndex = textureManager.AddSampler
+        gBufferSamplerID = textureManager.AddSampler
         (
             megaSet,
-            device,
-            {
+            context.device,
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -105,16 +82,16 @@ namespace Renderer::Lighting
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
-                .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        iblSamplerIndex = textureManager.AddSampler
+        iblSamplerID = textureManager.AddSampler
         (
             megaSet,
-            device,
-            {
+            context.device,
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -126,21 +103,21 @@ namespace Renderer::Lighting
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_FALSE,
                 .compareOp               = VK_COMPARE_OP_ALWAYS,
                 .minLod                  = 0.0f,
-                .maxLod                  = 5.0f,
-                .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+                .maxLod                  = static_cast<f32>(Renderer::IBL::PREFILTER_MIPMAP_LEVELS),
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
 
-        shadowSamplerIndex = textureManager.AddSampler
+        shadowSamplerID = textureManager.AddSampler
         (
             megaSet,
-            device,
-            {
+            context.device,
+            VkSamplerCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                 .pNext                   = nullptr,
                 .flags                   = 0,
@@ -152,9 +129,9 @@ namespace Renderer::Lighting
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
                 .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
-                .maxAnisotropy           = 1.0f,
+                .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_TRUE,
-                .compareOp               = VK_COMPARE_OP_LESS,
+                .compareOp               = VK_COMPARE_OP_LESS_OR_EQUAL,
                 .minLod                  = 0.0f,
                 .maxLod                  = VK_LOD_CLAMP_NONE,
                 .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
@@ -162,10 +139,9 @@ namespace Renderer::Lighting
             }
         );
 
-        Vk::SetDebugName(device, textureManager.GetSampler(gBufferSamplerIndex).handle, "LightingPipeline/GBufferSampler");
-        Vk::SetDebugName(device, textureManager.GetSampler(iblSamplerIndex).handle,     "LightingPipeline/IBLSampler");
-        Vk::SetDebugName(device, textureManager.GetSampler(shadowSamplerIndex).handle,  "LightingPipeline/ShadowSampler");
+        megaSet.Update(context.device);
 
-        megaSet.Update(device);
+        Vk::SetDebugName(context.device, handle, "Lighting/Pipeline");
+        Vk::SetDebugName(context.device, layout, "Lighting/Pipeline/Layout");
     }
 }

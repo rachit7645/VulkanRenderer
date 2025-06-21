@@ -18,13 +18,13 @@
 #define VK_CONTEXT_H
 
 #include <vulkan/vulkan.h>
-#include <SDL3/SDL.h>
 
 #include "DebugCallback.h"
 #include "QueueFamilyIndices.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 #include "Externals/VMA.h"
+#include "Externals/SDL.h"
 
 namespace Vk
 {
@@ -40,7 +40,6 @@ namespace Vk
         // Physical device
         VkPhysicalDevice                                physicalDevice                             = VK_NULL_HANDLE;
         VkPhysicalDeviceLimits                          physicalDeviceLimits                       = {};
-        VkPhysicalDeviceVulkan11Properties              physicalDeviceVulkan11Properties           = {};
         VkPhysicalDeviceVulkan12Properties              physicalDeviceVulkan12Properties           = {};
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR physicalDeviceRayTracingPipelineProperties = {};
         // Logical device
@@ -52,6 +51,7 @@ namespace Vk
         // Queues
         Vk::QueueFamilyIndices queueFamilies;
         VkQueue                graphicsQueue = VK_NULL_HANDLE;
+        VkQueue                computeQueue  = VK_NULL_HANDLE;
 
         // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
@@ -67,11 +67,11 @@ namespace Vk
             VkPhysicalDevice phyDevice,
             const VkPhysicalDeviceProperties2& propertySet,
             const VkPhysicalDeviceFeatures2& featureSet
-        );
+        ) const;
 
         void CreateAllocator();
 
-        void AddDebugNames();
+        void AddDebugNames() const;
 
         #ifdef ENGINE_DEBUG
         // Vulkan debug callback

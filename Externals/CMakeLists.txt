@@ -15,23 +15,114 @@
 cmake_minimum_required(VERSION 3.25)
 project(Externals)
 
+# Install location
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
+
 # C++ 20 is required
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Save current flags
+set(ORIGINAL_C_FLAGS   ${CMAKE_C_FLAGS})
+set(ORIGINAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+# Force Release flags w/ no warnings
+set(CMAKE_C_FLAGS   ${CMAKE_C_FLAGS_RELEASE})
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
+
+# Build shared libraries
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
+function(engine_add_external directory)
+    # Parse optional arguments
+    set(options EXCLUDE_FROM_ALL FORCE_RELEASE)
+    set(oneValueArgs INSTALL_TARGET)
+    set(multiValueArgs "")
+    cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
+    # Save current build type
+    set(ORIGINAL_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+
+    # Force Release
+    if(ARG_FORCE_RELEASE)
+        set(CMAKE_BUILD_TYPE Release)
+    endif()
+
+    # Add subdirectory
+    if(ARG_EXCLUDE_FROM_ALL)
+        add_subdirectory(${directory} EXCLUDE_FROM_ALL)
+    else()
+        add_subdirectory(${directory})
+    endif()
+
+    # Handle manual installation
+    if(ARG_INSTALL_TARGET)
+        install(
+            FILES $<TARGET_FILE:${ARG_INSTALL_TARGET}>
+            DESTINATION ${ENGINE_INSTALL_DIR}
+            COMPONENT Runtime
+        )
+
+        install(
+            FILES $<TARGET_RUNTIME_DLLS:${ARG_INSTALL_TARGET}>
+            DESTINATION ${ENGINE_INSTALL_DIR}
+            COMPONENT Runtime
+        )
+    endif()
+
+    # Restore original build type
+    if(ARG_FORCE_RELEASE)
+        set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
+    endif()
+endfunction()
+
 # Required packages
-find_package(SDL3   REQUIRED COMPONENTS SDL3-shared CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
-set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in VOLK" FORCE)
-set(VOLK_INSTALL        OFF CACHE BOOL "Enable volk installation"          FORCE)
+# Volk Config
+set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "Disable pulling in Vulkan in volk" FORCE)
+set(VOLK_INSTALL        OFF CACHE BOOL "Disable volk installation"         FORCE)
 
-# Libraries with CMake support
-add_subdirectory(VMA/)
-add_subdirectory(volk/)
+# GLM Config
+set(GLM_ENABLE_CXX_20    ON CACHE BOOL "Use C++20"   FORCE)
+set(GLM_ENABLE_SIMD_AVX2 ON CACHE BOOL "Enable AVX2" FORCE)
+
+# fmt Config
+set(FMT_INSTALL OFF CACHE BOOL "Disable fmt installation" FORCE)
+
+# fastgltf Config
+set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
+
+# OpenEXR Config
+set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FORCE)
+set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
+
+# External Libraries
+engine_add_external(vma             FORCE_RELEASE                                                   )
+engine_add_external(volk            FORCE_RELEASE                                                   )
+engine_add_external(unordered_dense FORCE_RELEASE                                                   )
+engine_add_external(glm             FORCE_RELEASE                  INSTALL_TARGET glm::glm          )
+engine_add_external(fmt                                            INSTALL_TARGET fmt::fmt          )
+engine_add_external(sdl                           EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(simdjson        FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
+engine_add_external(fastgltf        FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
+engine_add_external(openexr         FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET OpenEXR::OpenEXR  )
+
+# Profile config
+if (CMAKE_BUILD_TYPE STREQUAL Profile)
+    # Tracy Config
+    set(TRACY_ENABLE         ON CACHE BOOL "Enable Tracy"         FORCE)
+    set(TRACY_ON_DEMAND      ON CACHE BOOL "On-Demand Mode"       FORCE)
+    set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "Localhost Only Mode"  FORCE)
+    set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
+
+    # Add Tracy (Requires v0.11.1!)
+    engine_add_external(tracy FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
+endif()
 
 # ImGui source files
-add_library(imgui STATIC
+add_library(DearImGui SHARED
 	imgui/imgui.cpp
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
@@ -42,7 +133,7 @@ add_library(imgui STATIC
 )
 
 # ImGui precompiled headers
-target_precompile_headers(imgui PRIVATE
+target_precompile_headers(DearImGui PRIVATE
 	imgui/imconfig.h
 	imgui/imgui_internal.h
 	imgui/imgui.h
@@ -52,16 +143,28 @@ target_precompile_headers(imgui PRIVATE
 )
 
 # SDL2 Includes
-target_include_directories(imgui PRIVATE ${SDL3_INCLUDE_DIRS})
+target_include_directories(DearImGui PRIVATE sdl/include/)
 # ImGUI Includes
-target_include_directories(imgui PUBLIC imgui/ imgui/backends imgui/misc)
+target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
-target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
+target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
 # Disable warnings
-target_compile_options(imgui PRIVATE -w)
+target_compile_options(DearImGui PRIVATE -w)
 # -O3 optimisations
-target_compile_options(imgui PRIVATE -O3)
+target_compile_options(DearImGui PRIVATE -O3)
 # Enable CPU vectorisation
-target_compile_options(imgui PRIVATE -mavx2)
+target_compile_options(DearImGui PRIVATE -mavx2)
 # Link libraries
-target_link_libraries(imgui SDL3::SDL3)
+target_link_libraries(DearImGui SDL3::SDL3-shared)
+
+# Install Dear ImGui
+install(
+    TARGETS DearImGui
+    ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
+    LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
+    RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
+)
+
+# Restore original flags
+set(CMAKE_C_FLAGS   ${ORIGINAL_C_FLAGS})
+set(CMAKE_CXX_FLAGS ${ORIGINAL_CXX_FLAGS})

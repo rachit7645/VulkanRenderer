@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef EXT_VMA_H
-#define EXT_VMA_H
+#ifndef EXTERNALS_VMA_H
+#define EXTERNALS_VMA_H
 
 // Disable warnings
 #if defined(__GNUC__) && !defined(__clang__)
@@ -38,7 +38,7 @@
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
-#include "VMA/include/vk_mem_alloc.h"
+#include "vma/include/vk_mem_alloc.h"
 
 // Reset warning stack
 #if defined(__GNUC__) && !defined(__clang__)

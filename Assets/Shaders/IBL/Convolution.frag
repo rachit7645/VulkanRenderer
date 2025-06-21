@@ -20,9 +20,9 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/IBL/Convolution.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
+#include "IBL/Convolution.h"
 
 layout(location = 0) in vec3 worldPos;
 
@@ -39,7 +39,7 @@ void main()
     vec3 irradiance  = vec3(0.0f);
     uint sampleCount = 0u;
 
-    for (float phi = 0.0; phi < TWO_PI; phi += CONVOLUTION_SAMPLE_DELTA)
+    for (float phi = 0.0f; phi < TWO_PI; phi += CONVOLUTION_SAMPLE_DELTA)
     {
         float sinPhi = sin(phi);
         float cosPhi = cos(phi);

@@ -28,7 +28,7 @@ namespace Renderer::Culling
     public:
         FrustumBuffer(VkDevice device, VmaAllocator allocator);
 
-        void LoadPlanes(const Vk::CommandBuffer& cmdBuffer, const glm::mat4& projectionView);
+        void Load(const Vk::CommandBuffer& cmdBuffer, const glm::mat4& projectionView);
 
         void Destroy(VmaAllocator allocator);
 

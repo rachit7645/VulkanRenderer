@@ -17,7 +17,6 @@
 #ifndef POST_PROCESS_PIPELINE_H
 #define POST_PROCESS_PIPELINE_H
 
-#include "Constants.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
@@ -37,9 +36,7 @@ namespace Renderer::PostProcess
             Vk::TextureManager& textureManager
         );
 
-        PostProcess::PushConstant pushConstant = {};
-
-        u32 samplerIndex = 0;
+        Vk::SamplerID samplerID = 0;
     };
 }
 

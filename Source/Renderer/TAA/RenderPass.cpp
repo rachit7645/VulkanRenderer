@@ -20,6 +20,7 @@
 #include "Util/Ranges.h"
 #include "Renderer/RenderConstants.h"
 #include "Renderer/Depth/RenderPass.h"
+#include "Misc/TAA.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::TAA
@@ -34,7 +35,7 @@ namespace Renderer::TAA
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager
     )
-        : pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
         framebufferManager.AddFramebuffer
         (
@@ -110,8 +111,6 @@ namespace Renderer::TAA
                 }
             );
         }
-
-        Logger::Info("{}\n", "Created TAA pass!");
     }
 
     void RenderPass::Render
@@ -119,10 +118,11 @@ namespace Renderer::TAA
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager
     )
     {
-        Vk::BeginLabel(cmdBuffer, "TAAPass", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "TAA", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
 
         if (ImGui::BeginMainMenuBar())
         {
@@ -153,6 +153,8 @@ namespace Renderer::TAA
                     .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = 0,
                     .levelCount     = history.image.mipLevels,
                     .baseArrayLayer = 0,
@@ -160,7 +162,7 @@ namespace Renderer::TAA
                 }
             );
 
-            constexpr VkClearColorValue clearColor = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
+            constexpr VkClearColorValue BLACK = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}};
 
             const VkImageSubresourceRange subresourceRange =
             {
@@ -176,7 +178,7 @@ namespace Renderer::TAA
                 cmdBuffer.handle,
                 history.image.handle,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                &clearColor,
+                &BLACK,
                 1,
                 &subresourceRange
             );
@@ -191,6 +193,8 @@ namespace Renderer::TAA
                     .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = 0,
                     .levelCount     = history.image.mipLevels,
                     .baseArrayLayer = 0,
@@ -222,6 +226,8 @@ namespace Renderer::TAA
                 .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = resolved.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -237,6 +243,8 @@ namespace Renderer::TAA
                 .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = history.image.mipLevels,
                 .baseArrayLayer = static_cast<u32>(currentIndex),
@@ -294,7 +302,7 @@ namespace Renderer::TAA
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        pipeline.Bind(cmdBuffer);
+        m_pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -316,26 +324,25 @@ namespace Renderer::TAA
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        pipeline.pushConstant =
+        const auto constants = TAA::Constants
         {
-            .pointSamplerIndex  = pipeline.pointSamplerIndex,
-            .linearSamplerIndex = pipeline.linearSamplerIndex,
-            .currentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageIndex,
-            .historyBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageIndex,
-            .velocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageIndex,
-            .sceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageIndex
+            .PointSamplerIndex  = textureManager.GetSampler(m_pipeline.pointSamplerID).descriptorID,
+            .LinearSamplerIndex = textureManager.GetSampler(m_pipeline.linearSamplerID).descriptorID,
+            .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageID,
+            .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageID,
+            .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageID,
+            .SceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID
         };
 
-        pipeline.PushConstants
+        m_pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, sizeof(TAA::PushConstant),
-            &pipeline.pushConstant
+            constants
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -358,6 +365,8 @@ namespace Renderer::TAA
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = resolved.image.mipLevels,
                 .baseArrayLayer = 0,
@@ -373,6 +382,8 @@ namespace Renderer::TAA
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
                 .levelCount     = history.image.mipLevels,
                 .baseArrayLayer = static_cast<u32>(currentIndex),
@@ -391,8 +402,6 @@ namespace Renderer::TAA
 
     void RenderPass::Destroy(VkDevice device)
     {
-        Logger::Debug("{}\n", "Destroying TAA pass!");
-
-        pipeline.Destroy(device);
+        m_pipeline.Destroy(device);
     }
 }

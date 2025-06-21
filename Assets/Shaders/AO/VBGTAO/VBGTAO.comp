@@ -23,11 +23,11 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/AO/VBGTAO/VBGTAO.glsl"
 #include "Math.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
+#include "AO/VBGTAO/VBGTAO.h"
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 

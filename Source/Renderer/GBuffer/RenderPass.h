@@ -17,7 +17,8 @@
 #ifndef GBUFFER_PASS_H
 #define GBUFFER_PASS_H
 
-#include "Pipeline.h"
+#include "SingleSided/Pipeline.h"
+#include "DoubleSided/Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
@@ -45,17 +46,18 @@ namespace Renderer::GBuffer
         void Render
         (
             usize FIF,
-        usize frameIndex,
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::GeometryBuffer& geometryBuffer,
+            const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer
         );
-
-        GBuffer::Pipeline pipeline;
+    private:
+        SingleSided::Pipeline m_singleSidedPipeline;
+        DoubleSided::Pipeline m_doubleSidedPipeline;
     };
 }
 

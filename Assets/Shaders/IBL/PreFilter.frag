@@ -20,11 +20,11 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Constants/IBL/PreFilter.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
 #include "Sampling.glsl" 
 #include "PBR.glsl"
+#include "IBL/PreFilter.h"
 
 layout(location = 0) in vec3 worldPos;
 
@@ -48,6 +48,10 @@ void main()
     vec3  prefilteredColor = vec3(0.0f);
     float totalWeight      = 0.0f;
 
+    float saTexel     = 4.0f * PI / (6.0f * resolution.x * resolution.y);
+    float sampleCount = float(Constants.SampleCount);
+    float r2          = Constants.Roughness * Constants.Roughness;
+
     for (uint i = 0u; i < Constants.SampleCount; ++i)
     {
         vec2 Xi = Hammersley(i, Constants.SampleCount);
@@ -55,23 +59,21 @@ void main()
         vec3 L  = normalize(2.0f * dot(V, H) * H - V);
 
         float NdotL = max(dot(N, L), 0.0f);
+        float NdotH = max(dot(N, H), 0.0f);
+        float HdotV = max(dot(H, V), 0.0f);
 
-        // Avoids NaN
+        float D   = DistributionGGX(NdotH, r2);
+        float pdf = D * NdotH / (4.0f * HdotV) + 0.0001f;
+
+        // Fix for extremely bright spots
+        float saSample = 1.0f / max(sampleCount * pdf, 0.0001f);
+        float mipLevel = Constants.Roughness == 0.0f ? 0.0f : 0.5f * log2(saSample / saTexel);
+
+        vec3 color = NdotL * textureLod(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), L, mipLevel).rgb;
+
         if (NdotL > 0.0f)
         {
-            float NdotH = max(dot(N, H), 0.0f);
-            float HdotV = max(dot(H, V), 0.0f);
-            float a     = Constants.Roughness * Constants.Roughness;
-
-            float D   = DistributionGGX(NdotH, a);
-            float pdf = D * NdotH / (4.0f * HdotV) + 0.0001f;
-
-            // Fix for extremely bright spots
-            float saSample = 1.0f / (float(Constants.SampleCount) * pdf + 0.0001f);
-            float saTexel  = 4.0f * PI / (6.0f * resolution.x * resolution.y);
-            float mipLevel = Constants.Roughness == 0.0f ? 0.0f : 0.5f * log2(saSample / saTexel);
-
-            prefilteredColor += textureLod(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), L, mipLevel).rgb * NdotL;
+            prefilteredColor += color;
             totalWeight      += NdotL;
         }
     }

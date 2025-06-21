@@ -24,6 +24,14 @@
 
 namespace Vk
 {
+    enum DescriptorBinding : u32
+    {
+        MEGA_SET_SAMPLER_BINDING        = 0,
+        MEGA_SET_SAMPLED_IMAGES_BINDING = 1,
+        MEGA_SET_STORAGE_IMAGES_BINDING = 2,
+        MEGA_SET_BINDINGS_COUNT
+    };
+
     MegaSet::MegaSet(const Vk::Context& context)
     {
         constexpr u32 MAX_SAMPLERS       = 1 << 8;
@@ -157,11 +165,9 @@ namespace Vk
         Vk::SetDebugName(context.device, m_descriptorPool, "MegaSet/DescriptorPool");
         Vk::SetDebugName(context.device, descriptorLayout, "MegaSet/DescriptorLayout");
         Vk::SetDebugName(context.device, descriptorSet,    "MegaSet/DescriptorSet");
-
-        Logger::Info("{}\n", "Initialised mega set!");
     }
 
-    u32 MegaSet::WriteSampler(const Vk::Sampler& sampler)
+    Vk::DescriptorID MegaSet::WriteSampler(const Vk::Sampler& sampler)
     {
         const auto id = m_samplerAllocator.Allocate();
 
@@ -179,7 +185,7 @@ namespace Vk
         return id;
     }
 
-    u32 MegaSet::WriteSampledImage(const Vk::ImageView& imageView, VkImageLayout layout)
+    Vk::DescriptorID MegaSet::WriteSampledImage(const Vk::ImageView& imageView)
     {
         const auto id = m_sampledImageAllocator.Allocate();
 
@@ -190,14 +196,14 @@ namespace Vk
             id,
             VK_NULL_HANDLE,
             imageView.handle,
-            layout,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
         );
 
         return id;
     }
 
-    u32 MegaSet::WriteStorageImage(const Vk::ImageView& imageView)
+    Vk::DescriptorID MegaSet::WriteStorageImage(const Vk::ImageView& imageView)
     {
         const auto id = m_storageImageAllocator.Allocate();
 
@@ -215,17 +221,17 @@ namespace Vk
         return id;
     }
 
-    void MegaSet::FreeSampler(u32 id)
+    void MegaSet::FreeSampler(Vk::DescriptorID id)
     {
         m_samplerAllocator.Free(id);
     }
 
-    void MegaSet::FreeSampledImage(u32 id)
+    void MegaSet::FreeSampledImage(Vk::DescriptorID id)
     {
         m_sampledImageAllocator.Free(id);
     }
 
-    void MegaSet::FreeStorageImage(u32 id)
+    void MegaSet::FreeStorageImage(Vk::DescriptorID id)
     {
         m_storageImageAllocator.Free(id);
     }
@@ -302,7 +308,5 @@ namespace Vk
     {
         vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(device, descriptorLayout, nullptr);
-
-        Logger::Info("{}\n", "Destroyed mega set!");
     }
 }

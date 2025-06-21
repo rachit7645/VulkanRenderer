@@ -19,10 +19,12 @@
 #ifndef ACES_GLSL
 #define ACES_GLSL
 
+#include "Math.glsl"
+
 // https://github.com/dmnsgn/glsl-tone-map/blob/main/aces.glsl
 vec3 ACESFast(vec3 color)
 {
-    return clamp((color * (2.51f * color + 0.03f)) / (color * (2.43f * color + 0.59f) + 0.14f), 0.0f, 1.0f);
+    return saturate((color * (2.51f * color + 0.03f)) / (color * (2.43f * color + 0.59f) + 0.14f));
 }
 
 // Stephen Hill (@self_shadow)
@@ -30,6 +32,7 @@ vec3 RRTAndODTFit(vec3 v)
 {
     vec3 a = v * (v + 0.0245786f) - 0.000090537f;
     vec3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+
     return a / b;
 }
 
@@ -59,7 +62,7 @@ vec3 ACESFitted(vec3 color)
     color = color * ACESOutputMat;
 
     // Clamp to [0, 1]
-    color = clamp(color, 0.0f, 1.0f);
+    color = saturate(color);
 
     return color;
 }
@@ -86,13 +89,14 @@ vec3 Uchimura(vec3 x, float P, float a, float m, float l, float c, float b)
     return T * w0 + L * w1 + S * w2;
 }
 
-vec3 Uchimura(vec3 x) {
-    const float P = 1.0;  // Max display brightness
-    const float a = 1.0;  // Contrast
-    const float m = 0.22; // Linear section start
-    const float l = 0.4;  // Linear section length
-    const float c = 1.33; // Black
-    const float b = 0.0;  // Pedestal
+vec3 Uchimura(vec3 x)
+{
+    const float P = 1.0f;  // Max display brightness
+    const float a = 1.0f;  // Contrast
+    const float m = 0.22f; // Linear section start
+    const float l = 0.4f;  // Linear section length
+    const float c = 1.33f; // Black
+    const float b = 0.0f;  // Pedestal
 
     return Uchimura(x, P, a, m, l, c, b);
 }

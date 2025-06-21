@@ -19,17 +19,10 @@
 #include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 #include "Util/Log.h"
+#include "GPU/Mesh.h"
 
 namespace Renderer::Buffers
 {
-    struct GPUMesh
-    {
-        glm::mat4        transform    = glm::identity<glm::mat4>();
-        glm::mat3        normalMatrix = glm::identity<glm::mat4>();
-        Models::Material material     = {};
-        Maths::AABB      aabb         = {};
-    };
-
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
         for (usize i = 0; i < m_buffers.size(); ++i)
@@ -37,7 +30,7 @@ namespace Renderer::Buffers
             m_buffers[i] = Vk::Buffer
             (
                 allocator,
-                MAX_MESH_COUNT * sizeof(GPUMesh),
+                MAX_MESH_COUNT * sizeof(GPU::Mesh),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -58,11 +51,11 @@ namespace Renderer::Buffers
         const std::vector<Renderer::RenderObject>& renderObjects
     )
     {
-        std::vector<GPUMesh> meshes = {};
+        std::vector<GPU::Mesh> meshes = {};
 
         for (const auto& renderObject : renderObjects)
         {
-            const auto globalTransform = Maths::CreateTransformMatrix
+            const auto globalTransform = Maths::TransformMatrix
             (
                 renderObject.position,
                 renderObject.rotation,
@@ -72,12 +65,14 @@ namespace Renderer::Buffers
             for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
             {
                 const auto transform    = globalTransform * mesh.transform;
-                const auto normalMatrix = Maths::CreateNormalMatrix(transform);
+                const auto normalMatrix = Maths::NormalMatrix(transform);
 
-                meshes.emplace_back(
+                meshes.emplace_back
+                (
+                    mesh.surfaceInfo,
+                    mesh.material.Convert(modelManager.textureManager),
                     transform,
                     normalMatrix,
-                    mesh.material,
                     mesh.aabb
                 );
             }
@@ -85,7 +80,7 @@ namespace Renderer::Buffers
 
         const auto& buffer = GetCurrentBuffer(frameIndex);
 
-        const VkDeviceSize meshCopySize =  meshes.size() * sizeof(GPUMesh);
+        const VkDeviceSize meshCopySize =  meshes.size() * sizeof(GPU::Mesh);
 
         std::memcpy
         (

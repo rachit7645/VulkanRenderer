@@ -22,7 +22,6 @@
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/TextureManager.h"
-#include "Constants.h"
 
 namespace Renderer::IBL::PreFilter
 {
@@ -37,23 +36,7 @@ namespace Renderer::IBL::PreFilter
             Vk::TextureManager& textureManager
         );
 
-        PreFilter::PushConstant pushConstant = {};
-
-        u32 samplerIndex = 0;
-    private:
-        void CreatePipeline
-        (
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
-        );
-
-        void CreatePipelineData
-        (
-            VkDevice device,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
+        Vk::SamplerID samplerID = 0;
     };
 }
 

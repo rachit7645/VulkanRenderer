@@ -23,19 +23,31 @@
 namespace Renderer::Buffers
 {
     IndirectBuffer::IndirectBuffer(VkDevice device, VmaAllocator allocator)
+        : frustumCulledBuffers(device, allocator)
     {
-        for (usize i = 0; i < drawCallBuffers.size(); ++i)
+        for (usize i = 0; i < writtenDrawCallBuffers.size(); ++i)
         {
-            drawCallBuffers[i] = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::CPUToGPU);
+            writtenDrawCallBuffers[i] = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::CPUToGPU);
 
-            Vk::SetDebugName(device, drawCallBuffers[i].drawCallBuffer.handle,  fmt::format("IndirectBuffer/DrawCallBuffer/DrawCalls/{}",   i));
-            Vk::SetDebugName(device, drawCallBuffers[i].meshIndexBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/MeshIndices/{}", i));
+            Vk::SetDebugName(device, writtenDrawCallBuffers[i].drawCallBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/DrawCalls/{}", i));
         }
 
-        frustumCulledDrawCallBuffer = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly);
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,                   "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->handle,                 "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,        "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->handle,      "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,              "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->handle,            "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,   "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/MeshIndices");
+    }
 
-        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/FrustumCulled/DrawCalls");
-        Vk::SetDebugName(device, frustumCulledDrawCallBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/MeshIndices");
+    IndirectBuffer::CulledBuffers::CulledBuffers(VkDevice device, VmaAllocator allocator)
+        : opaqueBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly),
+          opaqueDoubleSidedBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly),
+          alphaMaskedBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly),
+          alphaMaskedDoubleSidedBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly)
+    {
     }
 
     void IndirectBuffer::WriteDrawCalls
@@ -46,16 +58,24 @@ namespace Renderer::Buffers
         const std::span<const Renderer::RenderObject> renderObjects
     )
     {
-        drawCallBuffers[FIF].WriteDrawCalls(allocator, modelManager, renderObjects);
+        writtenDrawCallBuffers[FIF].WriteDrawCalls(allocator, modelManager, renderObjects);
+    }
+
+    void IndirectBuffer::CulledBuffers::Destroy(VmaAllocator allocator)
+    {
+        opaqueBuffer.Destroy(allocator);
+        opaqueDoubleSidedBuffer.Destroy(allocator);
+        alphaMaskedBuffer.Destroy(allocator);
+        alphaMaskedDoubleSidedBuffer.Destroy(allocator);
     }
 
     void IndirectBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : drawCallBuffers)
+        for (auto& buffer : writtenDrawCallBuffers)
         {
             buffer.Destroy(allocator);
         }
 
-        frustumCulledDrawCallBuffer.Destroy(allocator);
+        frustumCulledBuffers.Destroy(allocator);
     }
 }

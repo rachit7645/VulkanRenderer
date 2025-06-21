@@ -19,7 +19,7 @@
 
 #include "Barrier.h"
 #include "CommandBuffer.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace Vk
 {
@@ -71,30 +71,5 @@ namespace Vk
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     };
 }
-
-// Hashing
-template<>
-struct std::hash<Vk::Image>
-{
-    std::size_t operator()(const Vk::Image& image) const noexcept
-    {
-        const std::size_t hash1 = std::hash<VkImage      >{}(image.handle);
-        const std::size_t hash2 = std::hash<VmaAllocation>{}(image.allocation);
-        const std::size_t hash3 = std::hash<u32          >{}(image.width);
-        const std::size_t hash4 = std::hash<u32          >{}(image.height);
-        const std::size_t hash5 = std::hash<VkFormat     >{}(image.format);
-        const std::size_t hash6 = std::hash<u32          >{}(image.mipLevels);
-        const std::size_t hash7 = std::hash<u32          >{}(image.arrayLayers);
-
-        // Mix hashes using std::rotl for better distribution
-        return hash1 ^
-               std::rotl(hash2, 1) ^
-               std::rotl(hash3, 2) ^
-               std::rotl(hash4, 3) ^
-               std::rotl(hash5, 4) ^
-               std::rotl(hash6, 5) ^
-               std::rotl(hash7, 6);
-    }
-};
 
 #endif

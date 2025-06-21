@@ -31,7 +31,7 @@ namespace Renderer::Buffers
             buffers[i] = Vk::Buffer
             (
                 allocator,
-                sizeof(SceneBuffer::GPUScene),
+                sizeof(GPU::SceneBuffer),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -49,7 +49,7 @@ namespace Renderer::Buffers
         usize FIF,
         usize frameIndex,
         VmaAllocator allocator,
-        VkExtent2D swapchainExtent,
+        VkExtent2D extent,
         const Engine::Scene& scene
     )
     {
@@ -57,24 +57,24 @@ namespace Renderer::Buffers
         (
             FIF,
             allocator,
-            {&scene.sun, 1},
+            scene.sun,
             scene.pointLights,
             scene.spotLights
         );
         
         gpuScene.previousMatrices = gpuScene.currentMatrices;
 
-        const auto projection = Maths::CreateInfiniteProjectionReverseZ
+        const auto projection = Maths::InfiniteProjectionReverseZ
         (
             scene.camera.FOV,
-            static_cast<f32>(swapchainExtent.width) /
-            static_cast<f32>(swapchainExtent.height),
+            static_cast<f32>(extent.width) /
+            static_cast<f32>(extent.height),
             Renderer::NEAR_PLANE
         );
 
         auto jitter = Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT];
         jitter     -= glm::vec2(0.5f);
-        jitter     /= glm::vec2(swapchainExtent.width, swapchainExtent.height);
+        jitter     /= glm::vec2(extent.width, extent.height);
 
         auto jitteredProjection = projection;
 
@@ -98,18 +98,16 @@ namespace Renderer::Buffers
 
         const auto lightsBufferAddress = lightsBuffer.buffers[FIF].deviceAddress;
 
-        gpuScene.commonLight         = lightsBufferAddress + 0;
-        gpuScene.dirLights           = lightsBufferAddress + lightsBuffer.GetDirLightOffset();
-        gpuScene.pointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
-        gpuScene.shadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
-        gpuScene.spotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();
-        gpuScene.shadowedSpotLights  = lightsBufferAddress + lightsBuffer.GetShadowedSpotLightOffset();
+        gpuScene.Sun                 = lightsBufferAddress + lightsBuffer.GetSunOffset();
+        gpuScene.PointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
+        gpuScene.ShadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
+        gpuScene.SpotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();
         
         std::memcpy
         (
             buffers[FIF].allocationInfo.pMappedData,
             &gpuScene,
-            sizeof(SceneBuffer::GPUScene)
+            sizeof(GPU::SceneBuffer)
         );
 
         if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
@@ -118,7 +116,7 @@ namespace Renderer::Buffers
                 allocator,
                 buffers[FIF].allocation,
                 0,
-                sizeof(SceneBuffer::GPUScene)),
+                sizeof(GPU::SceneBuffer)),
                 "Failed to flush allocation!"
             );
         }

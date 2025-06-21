@@ -20,12 +20,11 @@
 #include <vector>
 #include <string_view>
 
-#include <fastgltf/types.hpp>
-
 #include "Mesh.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
+#include "Externals/FastGLTF.h"
 
 namespace Models
 {
@@ -34,38 +33,43 @@ namespace Models
     public:
         Model
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
-        std::vector<Models::Mesh> meshes;
-    private:
-        void ProcessScenes
+        void Destroy
         (
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Vk::GeometryBuffer& geometryBuffer,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        std::string               name;
+        std::vector<Models::Mesh> meshes;
+    private:
+        void ProcessScenes
+        (
+            VmaAllocator allocator,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
             const fastgltf::Asset& asset
         );
 
         void ProcessNode
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
             const fastgltf::Asset& asset,
             usize nodeIndex,
             glm::mat4 nodeMatrix
@@ -73,21 +77,19 @@ namespace Models
 
         void LoadMesh
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
             const fastgltf::Asset& asset,
             const fastgltf::Mesh& mesh,
             const glm::mat4& nodeMatrix
         );
 
-        glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
+        [[nodiscard]] static glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
 
-        const fastgltf::Accessor& GetAccessor
+        [[nodiscard]] static const fastgltf::Accessor& GetAccessor
         (
             const fastgltf::Asset& asset,
             const fastgltf::Primitive& primitive,
@@ -95,14 +97,43 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        u32 LoadTexture
+        [[nodiscard]] static std::optional<usize> GetAccessorIndex
         (
-            VkDevice device,
+            const fastgltf::Asset& asset,
+            const fastgltf::Primitive& primitive,
+            const std::string_view attribute,
+            fastgltf::AccessorType type
+        );
+
+        // Texture ID, UV Map Index
+        [[nodiscard]] static std::pair<Vk::TextureID, u32> LoadTexture
+        (
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue,
-            const std::string& directory,
+            const std::string_view directory,
+            const fastgltf::Asset& asset,
+            const std::optional<fastgltf::TextureInfo>& textureInfo,
+            const std::string_view defaultTexture
+        );
+
+        // Texture ID, UV Map Index
+        [[nodiscard]] static std::pair<Vk::TextureID, u32> LoadTexture
+        (
+            VmaAllocator allocator,
+            Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view directory,
+            const fastgltf::Asset& asset,
+            const std::optional<fastgltf::NormalTextureInfo>& textureInfo
+        );
+
+        [[nodiscard]] static Vk::TextureID LoadTextureInternal
+        (
+            VmaAllocator allocator,
+            Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue,
+            const std::string_view directory,
             const fastgltf::Asset& asset,
             usize textureIndex
         );

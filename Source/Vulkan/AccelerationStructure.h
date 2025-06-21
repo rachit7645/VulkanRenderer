@@ -21,7 +21,7 @@
 #include "CommandBuffer.h"
 #include "Context.h"
 #include "Buffer.h"
-#include "Timeline.h"
+#include "GraphicsTimeline.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"
 
@@ -32,9 +32,9 @@ namespace Vk
     public:
         struct AS
         {
-            VkAccelerationStructureKHR as;
-            Vk::Buffer                 buffer;
-            VkDeviceAddress            deviceAddress;
+            VkAccelerationStructureKHR handle        = VK_NULL_HANDLE;
+            Vk::Buffer                 buffer        = {};
+            VkDeviceAddress            deviceAddress = 0;
         };
 
         void BuildBottomLevelAS
@@ -53,7 +53,7 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
-            const Vk::Timeline& timeline,
+            const Vk::GraphicsTimeline& timeline,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -63,20 +63,22 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
             Util::DeletionQueue& deletionQueue
         );
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        std::vector<AS>                      bottomLevelASes;
-        std::array<AS, Vk::FRAMES_IN_FLIGHT> topLevelASes;
+        std::array<AS, Vk::FRAMES_IN_FLIGHT> topLevelASes = {};
     private:
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_instanceBuffers;
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_scratchBuffers;
+        std::vector<AS> m_bottomLevelASes;
+
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_instanceBuffers = {};
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_scratchBuffers  = {};
 
         VkQueryPool m_compactionQueryPool        = VK_NULL_HANDLE;
-        usize       m_initialBLASBuildFrameIndex = 0;
+        usize       m_initialBLASBuildFrameIndex = std::numeric_limits<usize>::max();
     };
 }
 

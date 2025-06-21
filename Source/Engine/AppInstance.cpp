@@ -20,12 +20,6 @@
 
 namespace Engine
 {
-    AppInstance::AppInstance()
-        : m_renderer(m_config)
-    {
-        Logger::Info("{}\n", "App instance initialised!");
-    }
-
     void AppInstance::Run()
     {
         while (true)
@@ -37,10 +31,5 @@ namespace Engine
                 break;
             }
         }
-    }
-
-    AppInstance::~AppInstance()
-    {
-        Logger::Info("{}\n", "App instance destroyed!");
     }
 }

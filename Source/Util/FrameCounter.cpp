@@ -17,6 +17,7 @@
 #include "FrameCounter.h"
 
 #include "Externals/ImGui.h"
+#include "Externals/Tracy.h"
 
 namespace Util
 {
@@ -69,7 +70,12 @@ namespace Util
 
                 ImGui::EndMenu();
             }
+
             ImGui::EndMainMenuBar();
         }
+
+        #ifdef ENGINE_PROFILE
+        TracyPlot("Average Frame Time", avgFrameTime);
+        #endif
     }
 }

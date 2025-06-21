@@ -24,7 +24,7 @@
 #include "CommandBuffer.h"
 #include "BarrierWriter.h"
 #include "VertexBuffer.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
@@ -45,13 +45,19 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
+        void Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue);
+
         void ImGuiDisplay() const;
 
         [[nodiscard]] bool HasPendingUploads() const;
 
-        Vk::VertexBuffer<Models::Index>    indexBuffer;
-        Vk::VertexBuffer<Models::Position> positionBuffer;
-        Vk::VertexBuffer<Models::Vertex>   vertexBuffer;
+        [[nodiscard]] const Vk::Buffer& GetIndexBuffer()    const;
+        [[nodiscard]] const Vk::Buffer& GetPositionBuffer() const;
+        [[nodiscard]] const Vk::Buffer& GetVertexBuffer()   const;
+
+        Vk::VertexBuffer<GPU::Index>    indexBuffer;
+        Vk::VertexBuffer<GPU::Position> positionBuffer;
+        Vk::VertexBuffer<GPU::Vertex>   vertexBuffer;
 
         Vk::Buffer cubeBuffer;
     private:

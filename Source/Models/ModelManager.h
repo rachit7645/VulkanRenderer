@@ -17,47 +17,62 @@
 #ifndef MODEL_MANAGER_H
 #define MODEL_MANAGER_H
 
-#include <unordered_map>
-
 #include "Model.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/CommandBufferAllocator.h"
-#include "Util/Util.h"
+#include "Util/Types.h"
+#include "Externals/UnorderedDense.h"
 
 namespace Models
 {
+    using ModelID = u64;
+
     class ModelManager
     {
     public:
         ModelManager(VkDevice device, VmaAllocator allocator);
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        [[nodiscard]] usize AddModel
+        [[nodiscard]] Models::ModelID AddModel
         (
-            VkDevice device,
             VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
-        [[nodiscard]] const Model& GetModel(usize modelID) const;
+        void DestroyModel
+        (
+            ModelID id,
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        [[nodiscard]] const Model& GetModel(Models::ModelID id) const;
 
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
         );
 
         void ImGuiDisplay();
 
-        std::unordered_map<usize, Models::Model> modelMap;
-
         Vk::GeometryBuffer geometryBuffer;
         Vk::TextureManager textureManager;
+    private:
+        struct ModelInfo
+        {
+            Models::Model model;
+            u64           referenceCount = 0;
+        };
+
+        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelInfo> m_modelMap;
     };
 }
 

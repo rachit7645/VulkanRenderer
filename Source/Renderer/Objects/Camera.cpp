@@ -20,16 +20,23 @@
 
 namespace Renderer::Objects
 {
-    Camera::Camera(const glm::vec3& position, const glm::vec3& rotation, f32 FOV)
+    Camera::Camera
+    (
+        const glm::vec3& position,
+        const glm::vec3& rotation,
+        f32 FOV,
+        f32 exposure
+    )
         : position(position),
           rotation(rotation),
-          FOV(FOV)
+          FOV(FOV),
+          exposure(exposure)
     {
     }
 
     glm::mat4 Camera::GetViewMatrix() const
     {
-        return glm::lookAt(position, position + front, up);
+        return glm::lookAtRH(position, position + front, up);
     }
 
     void Camera::ImGuiDisplay()
@@ -40,6 +47,7 @@ namespace Renderer::Objects
             ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.2f");
             ImGui::DragFloat3("Rotation", &rotation[0], 1.0f, 0.0f, 0.0f, "%.2f");
             ImGui::DragFloat ("FOV",      &FOV,         1.0f, 0.0f, 0.0f, "%.2f");
+            ImGui::DragFloat ("Exposure", &exposure,    0.1f, 0.0f, 0.0f, "%.2f");
 
             ImGui::Separator();
 

@@ -16,22 +16,18 @@
 
 #include "GLM.h"
 
-#include "Util/Util.h"
+#include "Util/Types.h"
 
 namespace glm
 {
     vec3 fastgltf_cast(const fastgltf::math::nvec3& vector)
     {
-        vec3 ret = {};
-        std::memcpy(value_ptr(ret), vector.data(), vector.size_bytes());
-        return ret;
+        return {vector.x(), vector.y(), vector.z()};
     }
 
     vec4 fastgltf_cast(const fastgltf::math::nvec4& vector)
     {
-        vec4 ret = {};
-        std::memcpy(value_ptr(ret), vector.data(), vector.size_bytes());
-        return ret;
+        return {vector.x(), vector.y(), vector.z(), vector.w()};
     }
 
     mat4 fastgltf_cast(const fastgltf::math::fmat4x4& matrix)

@@ -21,38 +21,13 @@
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
 #include "Engine/Scene.h"
+#include "GPU/Scene.h"
 
 namespace Renderer::Buffers
 {
     class SceneBuffer
     {
     public:
-        struct GPUScene
-        {
-            struct SceneMatrices
-            {
-                glm::mat4 projection         = {};
-                glm::mat4 inverseProjection  = {};
-                glm::mat4 jitteredProjection = {};
-                glm::mat4 view               = {};
-                glm::mat4 inverseView        = {};
-            };
-
-            SceneMatrices currentMatrices  = {};
-            SceneMatrices previousMatrices = {};
-            glm::vec3     cameraPosition   = {};
-
-            f32 nearPlane = 0.0f;
-            f32 farPlane  = 0.0f;
-
-            VkDeviceAddress commonLight         = 0;
-            VkDeviceAddress dirLights           = 0;
-            VkDeviceAddress pointLights         = 0;
-            VkDeviceAddress shadowedPointLights = 0;
-            VkDeviceAddress spotLights          = 0;
-            VkDeviceAddress shadowedSpotLights  = 0;
-        };
-
         SceneBuffer(VkDevice device, VmaAllocator allocator);
 
         void WriteScene
@@ -60,13 +35,13 @@ namespace Renderer::Buffers
             usize FIF,
             usize frameIndex,
             VmaAllocator allocator,
-            VkExtent2D swapchainExtent,
+            VkExtent2D extent,
             const Engine::Scene& scene
         );
 
         void Destroy(VmaAllocator allocator);
 
-        SceneBuffer::GPUScene gpuScene = {};
+        GPU::SceneBuffer gpuScene = {};
 
         Buffers::LightsBuffer lightsBuffer;
 

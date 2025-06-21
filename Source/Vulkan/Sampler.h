@@ -17,24 +17,49 @@
 #ifndef SAMPLER_H
 #define SAMPLER_H
 
-#include <utility>
 #include <vulkan/vulkan.h>
 
-#include "Util/Util.h"
+#include "DescriptorAllocator.h"
+#include "Util/Hash.h"
 
 namespace Vk
 {
-    class Sampler
+    struct Sampler
     {
-    public:
-        Sampler() = default;
-
-        Sampler(VkDevice device, const VkSamplerCreateInfo& createInfo);
         void Destroy(VkDevice device) const;
 
-        // Vulkan handle
-        VkSampler handle = nullptr;
+        VkSampler        handle       = VK_NULL_HANDLE;
+        Vk::DescriptorID descriptorID = 0;
     };
 }
+
+template <>
+struct std::hash<VkSamplerCreateInfo>
+{
+    std::size_t operator()(const VkSamplerCreateInfo& sci) const noexcept
+    {
+        std::size_t hash = 0;
+
+        hash = Util::HashCombine(hash, sci.pNext);
+        hash = Util::HashCombine(hash, sci.flags);
+        hash = Util::HashCombine(hash, sci.magFilter);
+        hash = Util::HashCombine(hash, sci.minFilter);
+        hash = Util::HashCombine(hash, sci.mipmapMode);
+        hash = Util::HashCombine(hash, sci.addressModeU);
+        hash = Util::HashCombine(hash, sci.addressModeV);
+        hash = Util::HashCombine(hash, sci.addressModeW);
+        hash = Util::HashCombine(hash, sci.mipLodBias);
+        hash = Util::HashCombine(hash, sci.anisotropyEnable);
+        hash = Util::HashCombine(hash, sci.maxAnisotropy);
+        hash = Util::HashCombine(hash, sci.compareEnable);
+        hash = Util::HashCombine(hash, sci.compareOp);
+        hash = Util::HashCombine(hash, sci.minLod);
+        hash = Util::HashCombine(hash, sci.maxLod);
+        hash = Util::HashCombine(hash, sci.borderColor);
+        hash = Util::HashCombine(hash, sci.unnormalizedCoordinates);
+
+        return hash;
+    }
+};
 
 #endif
