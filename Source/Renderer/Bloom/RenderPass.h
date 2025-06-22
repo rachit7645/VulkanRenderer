@@ -19,9 +19,10 @@
 
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
-#include "DownSample/Pipeline.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "DownSample/Regular/Pipeline.h"
+#include "DownSample/FirstSample/Pipeline.h"
 #include "UpSample/Pipeline.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::Bloom
 {
@@ -65,8 +66,9 @@ namespace Renderer::Bloom
             const Objects::GlobalSamplers& samplers
         );
 
-        DownSample::Pipeline m_downsamplePipeline;
-        UpSample::Pipeline   m_upsamplePipeline;
+        DownSample::FirstSample::Pipeline m_downSampleFirstSamplePipeline;
+        DownSample::Regular::Pipeline     m_downsampleRegularPipeline;
+        UpSample::Pipeline                m_upsamplePipeline;
 
         f32 m_filterRadius = 0.005f;
     };

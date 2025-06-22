@@ -31,7 +31,8 @@ namespace Renderer::Bloom
         Vk::MegaSet& megaSet,
         Vk::FramebufferManager& framebufferManager
     )
-        : m_downsamplePipeline(context, formatHelper, megaSet),
+        : m_downSampleFirstSamplePipeline(context, formatHelper, megaSet),
+          m_downsampleRegularPipeline(context, formatHelper, megaSet),
           m_upsamplePipeline(context, formatHelper, megaSet)
     {
         framebufferManager.AddFramebuffer
@@ -203,8 +204,6 @@ namespace Renderer::Bloom
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            m_downsamplePipeline.Bind(cmdBuffer);
-
             const VkViewport viewport =
             {
                 .x        = 0.0f,
@@ -228,19 +227,40 @@ namespace Renderer::Bloom
             const auto constants = DownSample::Constants
             {
                 .SamplerIndex  = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
-                .ImageIndex    = srcView.sampledImageID,
-                .IsFirstSample = (mip == 0) ? 1u : 0u
+                .ImageIndex    = srcView.sampledImageID
             };
 
-            m_downsamplePipeline.PushConstants
-            (
-               cmdBuffer,
-               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               constants
-            );
+            if (mip == 0)
+            {
+                m_downSampleFirstSamplePipeline.Bind(cmdBuffer);
 
-            std::array descriptorSets = {megaSet.descriptorSet};
-            m_downsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                m_downSampleFirstSamplePipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                   constants
+                );
+
+                const std::array descriptorSets = {megaSet.descriptorSet};
+                m_downSampleFirstSamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            }
+            else
+            {
+                if (mip == 1)
+                {
+                    m_downsampleRegularPipeline.Bind(cmdBuffer);
+
+                    const std::array descriptorSets = {megaSet.descriptorSet};
+                    m_downsampleRegularPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                }
+
+                m_downsampleRegularPipeline.PushConstants
+                (
+                   cmdBuffer,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                   constants
+                );
+            }
 
             vkCmdDraw
             (
@@ -296,6 +316,11 @@ namespace Renderer::Bloom
         Vk::BeginLabel(cmdBuffer, "UpSample", {0.8736f, 0.2598f, 0.7548f, 1.0f});
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
+
+        m_upsamplePipeline.Bind(cmdBuffer);
+
+        const std::array descriptorSets = {megaSet.descriptorSet};
+        m_upsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         for (u32 mip = bloomBuffer.image.mipLevels - 1; mip > 0; --mip)
         {
@@ -359,8 +384,6 @@ namespace Renderer::Bloom
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            m_upsamplePipeline.Bind(cmdBuffer);
-
             const VkViewport viewport =
             {
                 .x        = 0.0f,
@@ -394,9 +417,6 @@ namespace Renderer::Bloom
                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                constants
             );
-
-            std::array descriptorSets = {megaSet.descriptorSet};
-            m_upsamplePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
             (
@@ -436,7 +456,8 @@ namespace Renderer::Bloom
 
     void RenderPass::Destroy(VkDevice device)
     {
-        m_downsamplePipeline.Destroy(device);
+        m_downSampleFirstSamplePipeline.Destroy(device);
+        m_downsampleRegularPipeline.Destroy(device);
         m_upsamplePipeline.Destroy(device);
     }
 }

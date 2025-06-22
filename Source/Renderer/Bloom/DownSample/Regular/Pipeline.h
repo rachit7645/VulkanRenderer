@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2025 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef DOWNSAMPLE_PUSH_CONSTANT
-#define DOWNSAMPLE_PUSH_CONSTANT
+#ifndef DOWNSAMPLE_REGULAR_PIPELINE_H
+#define DOWNSAMPLE_REGULAR_PIPELINE_H
 
-#include "GLSL.h"
+#include "Vulkan/Pipeline.h"
+#include "Vulkan/FormatHelper.h"
+#include "Vulkan/MegaSet.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::Bloom::DownSample)
-
-GLSL_PUSH_CONSTANT_BEGIN
+namespace Renderer::Bloom::DownSample::Regular
 {
-    u32 SamplerIndex;
-    u32 ImageIndex;
-} GLSL_PUSH_CONSTANT_END;
-
-GLSL_NAMESPACE_END
+    class Pipeline : public Vk::Pipeline
+    {
+    public:
+        Pipeline
+        (
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::MegaSet& megaSet
+        );
+    };
+}
 
 #endif

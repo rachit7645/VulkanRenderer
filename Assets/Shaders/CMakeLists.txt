@@ -56,7 +56,8 @@ file(GLOB SHADER_SOURCES
     IBL/PreFilter.frag
     Skybox/Skybox.frag
     Skybox/Skybox.vert
-    Bloom/DownSample.frag
+    Bloom/DownSample/Regular.frag
+    Bloom/DownSample/FirstSample.frag
     Bloom/UpSample.frag
     Shadows/PointShadow/Opaque.vert
     Shadows/PointShadow/Opaque.frag
