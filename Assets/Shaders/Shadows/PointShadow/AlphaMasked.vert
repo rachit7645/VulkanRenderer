@@ -31,8 +31,8 @@ void main()
     uint meshIndex = Constants.MeshIndices.indices[gl_DrawID];
     Mesh mesh      = Constants.Meshes.meshes[meshIndex];
 
-    vec3   position = Constants.Positions.positions[gl_VertexIndex];
-    Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
+    vec3 position = Constants.Positions.positions[gl_VertexIndex];
+    UV   uvs      = Constants.UVs.uvs[gl_VertexIndex];
 
     mat4 projectionView = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex];
 
@@ -40,6 +40,6 @@ void main()
     gl_Position  = projectionView * fragPos;
     fragPosition = fragPos.xyz;
 
-    fragUV     = vertex.uv[mesh.material.albedoUVMapID];
+    fragUV     = uvs.uv[mesh.material.albedoUVMapID];
     fragDrawID = meshIndex;
 }

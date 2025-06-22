@@ -89,6 +89,18 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
+        Vk::BeginLabel(cmdBuffer, "UV Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
+
+        uvBuffer.FlushUploads
+        (
+            cmdBuffer,
+            device,
+            allocator,
+            deletionQueue
+        );
+
+        Vk::EndLabel(cmdBuffer);
+
         Vk::BeginLabel(cmdBuffer, "Vertex Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
 
         vertexBuffer.FlushUploads
@@ -148,9 +160,10 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
-        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer"   );
+        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer");
         Vk::SetDebugName(device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer"  );
+        Vk::SetDebugName(device, GetUVBuffer().handle,       "GeometryBuffer/UVBuffer");
+        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
 
         if (m_pendingCubeUpload.has_value())
         {
@@ -169,6 +182,7 @@ namespace Vk
         {
             indexBuffer.Free(info.indexInfo);
             positionBuffer.Free(info.positionInfo);
+            uvBuffer.Free(info.uvInfo);
             vertexBuffer.Free(info.vertexInfo);
         });
     }
@@ -264,6 +278,15 @@ namespace Vk
 
                 ImGui::Text
                 (
+                    "UV Buffer       | %u | %llu/%llu/%llu",
+                    uvBuffer.count,
+                    uvBuffer.count * sizeof(GPU::UV),
+                    GetUVBuffer().allocationInfo.size - (uvBuffer.count * sizeof(GPU::UV)),
+                    GetUVBuffer().allocationInfo.size
+                );
+
+                ImGui::Text
+                (
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexBuffer.count,
                     vertexBuffer.count * sizeof(GPU::Vertex),
@@ -280,8 +303,9 @@ namespace Vk
 
     bool GeometryBuffer::HasPendingUploads() const
     {
-        return indexBuffer.HasPendingUploads()  || vertexBuffer.HasPendingUploads() ||
-               vertexBuffer.HasPendingUploads() || m_pendingCubeUpload.has_value();
+        return indexBuffer.HasPendingUploads() || positionBuffer.HasPendingUploads() ||
+               uvBuffer.HasPendingUploads() || vertexBuffer.HasPendingUploads() ||
+               m_pendingCubeUpload.has_value();
     }
 
     const Vk::Buffer& GeometryBuffer::GetIndexBuffer() const
@@ -294,6 +318,11 @@ namespace Vk
         return positionBuffer.GetBuffer();
     }
 
+    const Vk::Buffer& GeometryBuffer::GetUVBuffer() const
+    {
+        return uvBuffer.GetBuffer();
+    }
+
     const Vk::Buffer& GeometryBuffer::GetVertexBuffer() const
     {
         return vertexBuffer.GetBuffer();
@@ -303,6 +332,7 @@ namespace Vk
     {
         indexBuffer.Destroy(allocator);
         positionBuffer.Destroy(allocator);
+        uvBuffer.Destroy(allocator);
         vertexBuffer.Destroy(allocator);
         cubeBuffer.Destroy(allocator);
 

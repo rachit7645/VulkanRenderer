@@ -38,10 +38,11 @@ namespace Vk
         VkInstance instance = VK_NULL_HANDLE;
 
         // Physical device
-        VkPhysicalDevice                                physicalDevice                             = VK_NULL_HANDLE;
-        VkPhysicalDeviceLimits                          physicalDeviceLimits                       = {};
-        VkPhysicalDeviceVulkan12Properties              physicalDeviceVulkan12Properties           = {};
-        VkPhysicalDeviceRayTracingPipelinePropertiesKHR physicalDeviceRayTracingPipelineProperties = {};
+        VkPhysicalDevice                                   physicalDevice                                = VK_NULL_HANDLE;
+        VkPhysicalDeviceLimits                             physicalDeviceLimits                          = {};
+        VkPhysicalDeviceVulkan12Properties                 physicalDeviceVulkan12Properties              = {};
+        VkPhysicalDeviceAccelerationStructurePropertiesKHR physicalDeviceAccelerationStructureProperties = {};
+        VkPhysicalDeviceRayTracingPipelinePropertiesKHR    physicalDeviceRayTracingPipelineProperties    = {};
         // Logical device
         VkDevice device = VK_NULL_HANDLE;
 

@@ -313,7 +313,7 @@ namespace Renderer::Depth
                     .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
@@ -350,7 +350,7 @@ namespace Renderer::Depth
                     .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 

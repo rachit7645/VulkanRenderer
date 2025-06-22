@@ -161,6 +161,7 @@ namespace Vk
         auto properties           = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
         auto vk11Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
         auto vk12Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
+        auto asProperties         = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceAccelerationStructurePropertiesKHR>(deviceCount);
         auto rtPipelineProperties = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
 
         auto features = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
@@ -172,9 +173,13 @@ namespace Vk
             rtPipelinePropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
             rtPipelinePropertySet.pNext = nullptr;
 
+            VkPhysicalDeviceAccelerationStructurePropertiesKHR asPropertySet = {};
+            asPropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
+            asPropertySet.pNext = &rtPipelinePropertySet;
+
             VkPhysicalDeviceVulkan12Properties vk12PropertySet = {};
             vk12PropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
-            vk12PropertySet.pNext = &rtPipelinePropertySet;
+            vk12PropertySet.pNext = &asPropertySet;
 
             VkPhysicalDeviceVulkan11Properties vk11PropertySet = {};
             vk11PropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES;
@@ -232,6 +237,7 @@ namespace Vk
             properties.emplace(currentDevice, propertySet);
             vk11Properties.emplace(currentDevice, vk11PropertySet);
             vk12Properties.emplace(currentDevice, vk12PropertySet);
+            asProperties.emplace(currentDevice, asPropertySet);
             rtPipelineProperties.emplace(currentDevice, rtPipelinePropertySet);
 
             features.emplace(currentDevice, featureSet);
@@ -256,10 +262,11 @@ namespace Vk
             Logger::Error("Failed to find any suitable physical device!");
         }
 
-        physicalDevice                             = bestDevice;
-        physicalDeviceLimits                       = properties[physicalDevice].properties.limits;
-        physicalDeviceRayTracingPipelineProperties = rtPipelineProperties[physicalDevice];
-        physicalDeviceVulkan12Properties           = vk12Properties[physicalDevice];
+        physicalDevice                                = bestDevice;
+        physicalDeviceLimits                          = properties[physicalDevice].properties.limits;
+        physicalDeviceVulkan12Properties              = vk12Properties[physicalDevice];
+        physicalDeviceAccelerationStructureProperties = asProperties[physicalDevice];
+        physicalDeviceRayTracingPipelineProperties    = rtPipelineProperties[physicalDevice];
 
         Logger::Info("Selected GPU! [GPU={}]\n", properties[physicalDevice].properties.deviceName);
     }

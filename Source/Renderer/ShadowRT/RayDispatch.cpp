@@ -183,7 +183,7 @@ namespace Renderer::ShadowRT
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
             .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .Indices             = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress,
-            .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
+            .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
             .GBufferSamplerIndex = modelManager.textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,

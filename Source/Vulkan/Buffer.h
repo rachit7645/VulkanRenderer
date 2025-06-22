@@ -40,6 +40,17 @@ namespace Vk
             VmaMemoryUsage memoryUsage
         );
 
+        Buffer
+        (
+            VmaAllocator allocator,
+            VkDeviceSize size,
+            VkDeviceSize alignment,
+            VkBufferUsageFlags usage,
+            VkMemoryPropertyFlags properties,
+            VmaAllocationCreateFlags allocationFlags,
+            VmaMemoryUsage memoryUsage
+        );
+
         void GetDeviceAddress(VkDevice device);
 
         void Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::BufferBarrier& barrier) const;

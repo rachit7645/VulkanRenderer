@@ -27,8 +27,7 @@ namespace Vk
     (
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
+        const Vk::Context& context,
         const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects,
         Util::DeletionQueue& deletionQueue
@@ -55,7 +54,7 @@ namespace Vk
 
         auto transformBuffer = Vk::Buffer
         (
-            allocator,
+            context.allocator,
             transformsSize,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -63,7 +62,7 @@ namespace Vk
             VMA_MEMORY_USAGE_AUTO
         );
 
-        transformBuffer.GetDeviceAddress(device);
+        transformBuffer.GetDeviceAddress(context.device);
 
         std::memcpy
         (
@@ -75,7 +74,7 @@ namespace Vk
         if (!(transformBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                allocator,
+                context.allocator,
                 transformBuffer.allocation,
                 0,
                 transformsSize),
@@ -98,7 +97,7 @@ namespace Vk
             }
         );
 
-        deletionQueue.PushDeletor([allocator, buffer = transformBuffer] () mutable
+        deletionQueue.PushDeletor([allocator = context.allocator, buffer = transformBuffer] () mutable
         {
             buffer.Destroy(allocator);
         });
@@ -172,7 +171,7 @@ namespace Vk
 
                 vkGetAccelerationStructureBuildSizesKHR
                 (
-                    device,
+                    context.device,
                     VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
                     &blasBuildInfo,
                     &count,
@@ -181,7 +180,7 @@ namespace Vk
 
                 const auto buffer = Vk::Buffer
                 (
-                    allocator,
+                    context.allocator,
                     blasBuildSizes.accelerationStructureSize,
                     VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -203,7 +202,7 @@ namespace Vk
 
                 VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
                 Vk::CheckResult(vkCreateAccelerationStructureKHR(
-                    device,
+                    context.device,
                     &blasCreateInfo,
                     nullptr,
                     &blas),
@@ -212,15 +211,16 @@ namespace Vk
 
                 auto scratchBuffer = Vk::Buffer
                 (
-                    allocator,
+                    context.allocator,
                     blasBuildSizes.buildScratchSize,
+                    context.physicalDeviceAccelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment,
                     VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     0,
                     VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
                 );
 
-                scratchBuffer.GetDeviceAddress(device);
+                scratchBuffer.GetDeviceAddress(context.device);
 
                 blasBuildInfo.dstAccelerationStructure = blas;
                 blasBuildInfo.scratchData              = {.deviceAddress = scratchBuffer.deviceAddress};
@@ -230,7 +230,7 @@ namespace Vk
                 scratchBuffers.emplace_back(scratchBuffer);
                 blasBuildInfos.emplace_back(blasBuildInfo);
 
-                deletionQueue.PushDeletor([allocator, buffer = scratchBuffer] () mutable
+                deletionQueue.PushDeletor([allocator = context.allocator, buffer = scratchBuffer] () mutable
                 {
                     buffer.Destroy(allocator);
                 });
@@ -250,7 +250,7 @@ namespace Vk
 
         if (m_compactionQueryPool != VK_NULL_HANDLE)
         {
-            deletionQueue.PushDeletor([device, queryPool = m_compactionQueryPool] ()
+            deletionQueue.PushDeletor([device = context.device, queryPool = m_compactionQueryPool] ()
             {
                 vkDestroyQueryPool(device, queryPool, nullptr);
             });
@@ -267,7 +267,7 @@ namespace Vk
         };
 
         Vk::CheckResult(vkCreateQueryPool(
-            device,
+            context.device,
             &queryPoolInfo,
             nullptr,
             &m_compactionQueryPool),
@@ -303,10 +303,10 @@ namespace Vk
                 .accelerationStructure  = blas.handle
             };
 
-            blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
+            blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(context.device, &blasDAInfo);
 
-            Vk::SetDebugName(device, blas.handle,        fmt::format("BLAS/{}",       i));
-            Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/{}", i));
+            Vk::SetDebugName(context.device, blas.handle,        fmt::format("BLAS/{}",       i));
+            Vk::SetDebugName(context.device, blas.buffer.handle, fmt::format("BLASBuffer/{}", i));
         }
 
         m_initialBLASBuildFrameIndex = frameIndex;
@@ -451,8 +451,7 @@ namespace Vk
     (
         usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
+        const Vk::Context& context,
         const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects,
         Util::DeletionQueue& deletionQueue
@@ -460,7 +459,7 @@ namespace Vk
     {
         if (renderObjects.empty() || m_bottomLevelASes.empty())
         {
-            deletionQueue.PushDeletor([device, as = topLevelASes[FIF].handle] () mutable
+            deletionQueue.PushDeletor([device = context.device, as = topLevelASes[FIF].handle] () mutable
             {
                 if (as != VK_NULL_HANDLE)
                 {
@@ -518,14 +517,14 @@ namespace Vk
 
         if (m_instanceBuffers[FIF].size < instancesSize)
         {
-            deletionQueue.PushDeletor([allocator, oldBuffer = m_instanceBuffers[FIF]] () mutable
+            deletionQueue.PushDeletor([allocator = context.allocator, oldBuffer = m_instanceBuffers[FIF]] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
 
             m_instanceBuffers[FIF] = Vk::Buffer
             (
-                allocator,
+                context.allocator,
                 instancesSize,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -533,7 +532,7 @@ namespace Vk
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            m_instanceBuffers[FIF].GetDeviceAddress(device);
+            m_instanceBuffers[FIF].GetDeviceAddress(context.device);
         }
 
         std::memcpy
@@ -546,7 +545,7 @@ namespace Vk
         if (!(m_instanceBuffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                allocator,
+                context.allocator,
                 m_instanceBuffers[FIF].allocation,
                 0,
                 instancesSize),
@@ -613,7 +612,7 @@ namespace Vk
 
         vkGetAccelerationStructureBuildSizesKHR
         (
-            device,
+            context.device,
             VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
             &tlasBuildInfo,
             &count,
@@ -622,14 +621,14 @@ namespace Vk
 
         if (topLevelASes[FIF].buffer.size < tlasBuildSizes.accelerationStructureSize)
         {
-            deletionQueue.PushDeletor([allocator, oldBuffer = topLevelASes[FIF].buffer] () mutable
+            deletionQueue.PushDeletor([allocator = context.allocator, oldBuffer = topLevelASes[FIF].buffer] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
 
             topLevelASes[FIF].buffer = Vk::Buffer
             (
-                allocator,
+                context.allocator,
                 tlasBuildSizes.accelerationStructureSize,
                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -650,7 +649,7 @@ namespace Vk
             .deviceAddress = 0
         };
 
-        deletionQueue.PushDeletor([device, as = topLevelASes[FIF].handle] () mutable
+        deletionQueue.PushDeletor([device = context.device, as = topLevelASes[FIF].handle] () mutable
         {
             if (as != VK_NULL_HANDLE)
             {
@@ -659,7 +658,7 @@ namespace Vk
         });
 
         Vk::CheckResult(vkCreateAccelerationStructureKHR(
-            device,
+            context.device,
             &tlasCreateInfo,
             nullptr,
             &topLevelASes[FIF].handle),
@@ -668,22 +667,23 @@ namespace Vk
 
         if (m_scratchBuffers[FIF].size < tlasBuildSizes.buildScratchSize)
         {
-            deletionQueue.PushDeletor([allocator, oldBuffer = m_scratchBuffers[FIF]] () mutable
+            deletionQueue.PushDeletor([allocator = context.allocator, oldBuffer = m_scratchBuffers[FIF]] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
 
             m_scratchBuffers[FIF] = Vk::Buffer
             (
-                allocator,
+                context.allocator,
                 tlasBuildSizes.buildScratchSize,
+                context.physicalDeviceAccelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 0,
                 VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
             );
 
-            m_scratchBuffers[FIF].GetDeviceAddress(device);
+            m_scratchBuffers[FIF].GetDeviceAddress(context.device);
         }
 
         tlasBuildInfo.dstAccelerationStructure = topLevelASes[FIF].handle;
@@ -706,12 +706,12 @@ namespace Vk
             .accelerationStructure  = topLevelASes[FIF].handle
         };
 
-        topLevelASes[FIF].deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &tlasDAInfo);
+        topLevelASes[FIF].deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(context.device, &tlasDAInfo);
 
-        Vk::SetDebugName(device, topLevelASes[FIF].handle,            fmt::format("TLAS/{}",               FIF));
-        Vk::SetDebugName(device, topLevelASes[FIF].buffer.handle, fmt::format("TLASBuffer/{}",         FIF));
-        Vk::SetDebugName(device, m_instanceBuffers[FIF].handle,   fmt::format("TLASInstanceBuffer/{}", FIF));
-        Vk::SetDebugName(device, m_scratchBuffers[FIF].handle,    fmt::format("TLASScratchBuffer/{}",  FIF));
+        Vk::SetDebugName(context.device, topLevelASes[FIF].handle,            fmt::format("TLAS/{}",               FIF));
+        Vk::SetDebugName(context.device, topLevelASes[FIF].buffer.handle, fmt::format("TLASBuffer/{}",         FIF));
+        Vk::SetDebugName(context.device, m_instanceBuffers[FIF].handle,   fmt::format("TLASInstanceBuffer/{}", FIF));
+        Vk::SetDebugName(context.device, m_scratchBuffers[FIF].handle,    fmt::format("TLASScratchBuffer/{}",  FIF));
 
         Vk::EndLabel(cmdBuffer);
     }

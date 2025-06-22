@@ -71,6 +71,56 @@ namespace Vk
         vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
     }
 
+    Buffer::Buffer
+    (
+        VmaAllocator allocator,
+        VkDeviceSize size,
+        VkDeviceSize alignment,
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VmaAllocationCreateFlags allocationFlags,
+        VmaMemoryUsage memoryUsage
+    )
+        : size(size)
+    {
+        const VkBufferCreateInfo createInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .size                  = size,
+            .usage                 = usage,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr
+        };
+
+        const VmaAllocationCreateInfo allocCreateInfo =
+        {
+            .flags          = allocationFlags,
+            .usage          = memoryUsage,
+            .requiredFlags  = properties,
+            .preferredFlags = 0,
+            .memoryTypeBits = 0,
+            .pool           = VK_NULL_HANDLE,
+            .pUserData      = nullptr,
+            .priority       = 0.0f
+        };
+
+        Vk::CheckResult(vmaCreateBufferWithAlignment(
+            allocator,
+            &createInfo,
+            &allocCreateInfo,
+            alignment,
+            &handle,
+            &allocation,
+            &allocationInfo),
+            "Failed to create buffer!"
+        );
+
+        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
+    }
+
     void Buffer::GetDeviceAddress(VkDevice device)
     {
         if (handle == VK_NULL_HANDLE)

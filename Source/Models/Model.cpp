@@ -347,16 +347,16 @@ namespace Models
                 });
             }
 
-            // Vertices
-            {
-                const auto& normalAccessor = GetAccessor
-                (
-                    asset,
-                    primitive,
-                    "NORMAL",
-                    fastgltf::AccessorType::Vec3
-                );
+            const auto& normalAccessor = GetAccessor
+            (
+                asset,
+                primitive,
+                "NORMAL",
+                fastgltf::AccessorType::Vec3
+            );
 
+            // UV Maps
+            {
                 const auto uv0AccessorIndex = GetAccessorIndex
                 (
                     asset,
@@ -373,6 +373,41 @@ namespace Models
                     fastgltf::AccessorType::Vec2
                 );
 
+                const auto [writePointer, info] = geometryBuffer.uvBuffer.Allocate
+                (
+                   allocator,
+                   normalAccessor.count,
+                   deletionQueue
+                );
+
+                surfaceInfo.uvInfo = info;
+
+                for (usize i = 0; i < normalAccessor.count; ++i)
+                {
+                    GPU::UV uvs = {};
+
+                    std::optional<glm::vec2> uv0 = std::nullopt;
+                    std::optional<glm::vec2> uv1 = std::nullopt;
+
+                    if (uv0AccessorIndex.has_value())
+                    {
+                        uv0 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv0AccessorIndex], i);
+                    }
+
+                    if (uv1AccessorIndex.has_value())
+                    {
+                        uv1 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i);
+                    }
+
+                    uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::vec2(0.0f, 0.0f));
+                    uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::vec2(0.0f, 0.0f));
+
+                    writePointer[i] = uvs;
+                }
+            }
+
+            // Vertices
+            {
                 const auto& tangentAccessor = GetAccessor
                 (
                     asset,
@@ -392,28 +427,11 @@ namespace Models
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    GPU::Vertex vertex = {};
-
-                    vertex.normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
-                    vertex.tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
-
-                    std::optional<glm::vec2> uv0 = std::nullopt;
-                    std::optional<glm::vec2> uv1 = std::nullopt;
-
-                    if (uv0AccessorIndex.has_value())
+                    writePointer[i] = GPU::Vertex
                     {
-                        uv0 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv0AccessorIndex], i);
-                    }
-
-                    if (uv1AccessorIndex.has_value())
-                    {
-                        uv1 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i);
-                    }
-
-                    vertex.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::vec2(0.0f, 0.0f));
-                    vertex.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::vec2(0.0f, 0.0f));
-
-                    writePointer[i] = vertex;
+                        .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
+                        .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i)
+                    };
                 }
             }
 

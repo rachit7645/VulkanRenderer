@@ -22,9 +22,7 @@
 
 #include "Buffer.h"
 #include "CommandBuffer.h"
-#include "BarrierWriter.h"
 #include "VertexBuffer.h"
-#include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
@@ -53,10 +51,12 @@ namespace Vk
 
         [[nodiscard]] const Vk::Buffer& GetIndexBuffer()    const;
         [[nodiscard]] const Vk::Buffer& GetPositionBuffer() const;
+        [[nodiscard]] const Vk::Buffer& GetUVBuffer()       const;
         [[nodiscard]] const Vk::Buffer& GetVertexBuffer()   const;
 
         Vk::VertexBuffer<GPU::Index>    indexBuffer;
         Vk::VertexBuffer<GPU::Position> positionBuffer;
+        Vk::VertexBuffer<GPU::UV>       uvBuffer;
         Vk::VertexBuffer<GPU::Vertex>   vertexBuffer;
 
         Vk::Buffer cubeBuffer;

@@ -76,7 +76,7 @@ namespace Vk
                 bufferInfo.stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
                 bufferInfo.accessMask = VK_ACCESS_2_SHADER_READ_BIT;
             }
-            else if constexpr (std::is_same_v<T, GPU::Vertex>)
+            else if constexpr (std::is_same_v<T, GPU::UV>)
             {
                 bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -84,6 +84,16 @@ namespace Vk
                                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
                 bufferInfo.stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+                bufferInfo.accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+            }
+            else if constexpr (std::is_same_v<T, GPU::Vertex>)
+            {
+                bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+                bufferInfo.stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
                 bufferInfo.accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
             }
             else

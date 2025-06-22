@@ -226,5 +226,6 @@ namespace Vk
     // Explicit Instantiations
     template class Vk::VertexBuffer<GPU::Index>;
     template class Vk::VertexBuffer<GPU::Position>;
+    template class Vk::VertexBuffer<GPU::UV>;
     template class Vk::VertexBuffer<GPU::Vertex>;
 }

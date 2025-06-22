@@ -523,6 +523,7 @@ namespace Renderer::GBuffer
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
@@ -559,6 +560,7 @@ namespace Renderer::GBuffer
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
@@ -607,6 +609,7 @@ namespace Renderer::GBuffer
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
@@ -643,6 +646,7 @@ namespace Renderer::GBuffer
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };

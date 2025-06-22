@@ -34,7 +34,7 @@ GLSL_PUSH_CONSTANT_BEGIN
     GLSL_BUFFER_POINTER(MeshBuffer)      Meshes;
     GLSL_BUFFER_POINTER(MeshIndexBuffer) MeshIndices;
     GLSL_BUFFER_POINTER(PositionBuffer)  Positions;
-    GLSL_BUFFER_POINTER(VertexBuffer)    Vertices;
+    GLSL_BUFFER_POINTER(UVBuffer)        UVs;
 
     u32 TextureSamplerIndex;
     u32 LightIndex;

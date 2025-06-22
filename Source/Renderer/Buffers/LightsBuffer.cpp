@@ -154,7 +154,7 @@ namespace Renderer::Buffers
             offset        = GetSpotLightOffset();
             maxLightCount = GPU::MAX_SPOT_LIGHT_COUNT;
         }
-        else if constexpr (Util::AlwaysTrue<T>)
+        else
         {
             static_assert(Util::AlwaysFalse<T>, "Invalid light type!");
         }

@@ -41,8 +41,7 @@ namespace Vk
         (
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
             Util::DeletionQueue& deletionQueue
@@ -61,8 +60,7 @@ namespace Vk
         (
             usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
             Util::DeletionQueue& deletionQueue

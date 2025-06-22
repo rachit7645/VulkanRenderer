@@ -36,6 +36,7 @@ void main()
     Mesh previousMesh = Constants.PreviousMeshes.meshes[meshIndex];
 
     vec3   position = Constants.Positions.positions[gl_VertexIndex];
+    UV     uvs      = Constants.UVs.uvs[gl_VertexIndex];
     Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
 
     vec4 worldPosition       = currentMesh.transform                * vec4(position, 1.0f);
@@ -48,8 +49,8 @@ void main()
                            Constants.Scene.previousMatrices.view *
                            previousMesh.transform * vec4(position, 1.0f);
 
-    fragUV[0]  = vertex.uv[0];
-    fragUV[1]  = vertex.uv[1];
+    fragUV[0]  = uvs.uv[0];
+    fragUV[1]  = uvs.uv[1];
     fragDrawID = meshIndex;
 
     vec3 N = normalize(currentMesh.normalMatrix * vertex.normal);
