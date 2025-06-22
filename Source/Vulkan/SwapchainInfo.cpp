@@ -61,7 +61,7 @@ namespace Vk
         {
             Logger::Error
             (
-                "Failed to find any presentation modes! [device={}] [surface={}]\n",
+                "Failed to find any presentation modes! [Device={}] [Surface={}]\n",
                 std::bit_cast<void*>(device),
                 std::bit_cast<void*>(surface)
             );
@@ -92,7 +92,7 @@ namespace Vk
         {
             Logger::Error
             (
-                "Failed to find any surface formats! [device={}] [surface={}]\n",
+                "Failed to find any surface formats! [Device={}] [Surface={}]\n",
                 std::bit_cast<void*>(device),
                 std::bit_cast<void*>(surface)
             );

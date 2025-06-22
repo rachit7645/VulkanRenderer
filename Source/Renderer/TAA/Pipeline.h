@@ -20,7 +20,6 @@
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
-#include "Vulkan/TextureManager.h"
 
 namespace Renderer::TAA
 {
@@ -31,12 +30,8 @@ namespace Renderer::TAA
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet
         );
-
-        Vk::SamplerID pointSamplerID  = 0;
-        Vk::SamplerID linearSamplerID = 0;
     };
 }
 

@@ -26,12 +26,11 @@ namespace Renderer::GBuffer
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_singleSidedPipeline(context, formatHelper, megaSet, textureManager),
-          m_doubleSidedPipeline(context, formatHelper, megaSet, textureManager)
+        : m_singleSidedPipeline(context, formatHelper, megaSet),
+          m_doubleSidedPipeline(context, formatHelper, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -260,7 +259,8 @@ namespace Renderer::GBuffer
         const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Buffers::IndirectBuffer& indirectBuffer
+        const Buffers::IndirectBuffer& indirectBuffer,
+        const Objects::GlobalSamplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "GBuffer Generation", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
@@ -524,7 +524,7 @@ namespace Renderer::GBuffer
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_singleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 m_singleSidedPipeline.PushConstants
@@ -560,7 +560,7 @@ namespace Renderer::GBuffer
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_singleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 m_singleSidedPipeline.PushConstants
@@ -608,7 +608,7 @@ namespace Renderer::GBuffer
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_doubleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 m_doubleSidedPipeline.PushConstants
@@ -644,7 +644,7 @@ namespace Renderer::GBuffer
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_doubleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 m_doubleSidedPipeline.PushConstants

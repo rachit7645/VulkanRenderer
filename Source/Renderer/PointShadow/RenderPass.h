@@ -25,6 +25,7 @@
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::PointShadow
 {
@@ -35,9 +36,8 @@ namespace Renderer::PointShadow
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Render
@@ -51,6 +51,7 @@ namespace Renderer::PointShadow
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            const Objects::GlobalSamplers& samplers,
             Culling::Dispatch& culling
         ) const;
 

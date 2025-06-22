@@ -19,21 +19,13 @@
 
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/TextureManager.h"
 
 namespace Renderer::AO::VBGTAO::DepthPreFilter
 {
     class Pipeline : public Vk::Pipeline
     {
     public:
-        Pipeline
-        (
-            const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
-        Vk::SamplerID pointSamplerID = 0;
+        Pipeline(const Vk::Context& context, const Vk::MegaSet& megaSet);
     };
 }
 

@@ -21,7 +21,6 @@
 #include "Vulkan/Context.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/TextureManager.h"
 
 namespace Renderer::IBL::Converter
 {
@@ -32,11 +31,8 @@ namespace Renderer::IBL::Converter
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet
         );
-
-        Vk::SamplerID samplerID = 0;
     };
 }
 

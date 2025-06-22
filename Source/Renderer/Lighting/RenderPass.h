@@ -23,6 +23,7 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::Lighting
 {
@@ -33,9 +34,8 @@ namespace Renderer::Lighting
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Destroy(VkDevice device);
@@ -48,6 +48,7 @@ namespace Renderer::Lighting
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
+            const Objects::GlobalSamplers& samplers,
             const IBL::IBLMaps& iblMaps
         );
     private:

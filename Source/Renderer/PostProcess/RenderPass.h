@@ -21,6 +21,7 @@
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Objects/Camera.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::PostProcess
 {
@@ -31,9 +32,8 @@ namespace Renderer::PostProcess
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Destroy(VkDevice device);
@@ -44,7 +44,8 @@ namespace Renderer::PostProcess
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Renderer::Objects::Camera& camera
+            const Objects::Camera& camera,
+            const Objects::GlobalSamplers& samplers
         );
     private:
         PostProcess::Pipeline m_pipeline;

@@ -18,6 +18,8 @@
 #define IMGUI_PASS_H
 
 #include "Pipeline.h"
+#include "Renderer/Objects/Camera.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/Swapchain.h"
 
@@ -30,8 +32,7 @@ namespace Renderer::DearImGui
         (
             const Vk::Context& context,
             const Vk::Swapchain& swapchain,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet
         );
 
         void Destroy(VkDevice device, VmaAllocator allocator);
@@ -45,6 +46,7 @@ namespace Renderer::DearImGui
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Vk::Swapchain& swapchain,
+            const Objects::GlobalSamplers& samplers,
             Util::DeletionQueue& deletionQueue
         );
     private:
@@ -57,6 +59,7 @@ namespace Renderer::DearImGui
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Vk::Swapchain& swapchain,
+            const Objects::GlobalSamplers& samplers,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );

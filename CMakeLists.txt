@@ -94,6 +94,7 @@ add_executable(VulkanRenderer
     # Object sources
     Source/Renderer/Objects/FreeCamera.cpp
     Source/Renderer/Objects/Camera.cpp
+    Source/Renderer/Objects/GlobalSamplers.cpp
     # Renderer Buffer sources
     Source/Renderer/Buffers/IndirectBuffer.cpp
     Source/Renderer/Buffers/MeshBuffer.cpp

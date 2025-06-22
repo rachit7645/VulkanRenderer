@@ -14,24 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef LIGHTING_PIPELINE_H
-#define LIGHTING_PIPELINE_H
+#ifndef OBJECTS_SAMPLERS_H
+#define OBJECTS_SAMPLERS_H
 
-#include "Vulkan/Pipeline.h"
-#include "Vulkan/MegaSet.h"
-#include "Vulkan/FormatHelper.h"
+#include "Vulkan/TextureManager.h"
 
-namespace Renderer::Lighting
+namespace Renderer::Objects
 {
-    class Pipeline : public Vk::Pipeline
+    class GlobalSamplers
     {
     public:
-        Pipeline
+        GlobalSamplers
         (
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager
         );
+
+        Vk::SamplerID pointSamplerID       = 0;
+        Vk::SamplerID linearSamplerID      = 0;
+        Vk::SamplerID textureSamplerID     = 0;
+        Vk::SamplerID iblSamplerID         = 0;
+        Vk::SamplerID pointShadowSamplerID = 0;
+        Vk::SamplerID imguiSamplerID       = 0;
     };
 }
 

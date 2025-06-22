@@ -29,11 +29,10 @@ namespace Renderer::Lighting
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -80,6 +79,7 @@ namespace Renderer::Lighting
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
+        const Objects::GlobalSamplers& samplers,
         const IBL::IBLMaps& iblMaps
     )
     {
@@ -165,9 +165,9 @@ namespace Renderer::Lighting
         const auto constants = Lighting::Constants
         {
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .GBufferSamplerIndex = textureManager.GetSampler(m_pipeline.gBufferSamplerID).descriptorID,
-            .IBLSamplerIndex     = textureManager.GetSampler(m_pipeline.iblSamplerID).descriptorID,
-            .ShadowSamplerIndex  = textureManager.GetSampler(m_pipeline.shadowSamplerID).descriptorID,
+            .GBufferSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .IBLSamplerIndex     = textureManager.GetSampler(samplers.iblSamplerID).descriptorID,
+            .ShadowSamplerIndex  = textureManager.GetSampler(samplers.pointShadowSamplerID).descriptorID,
             .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView").sampledImageID,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .GRghMtlIndex        = framebufferManager.GetFramebufferView("GRoughnessMetallicView").sampledImageID,

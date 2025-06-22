@@ -25,7 +25,7 @@ namespace Vk
     DebugCallback::DebugCallback()
     {
         messengerInfo =
-           {
+        {
             .sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
             .pNext           = nullptr,
             .flags           = 0,

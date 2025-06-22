@@ -36,12 +36,11 @@ namespace Renderer::IBL
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet
     )
-        : m_converterPipeline(context, formatHelper, megaSet, textureManager),
-          m_convolutionPipeline(context, formatHelper, megaSet, textureManager),
-          m_preFilterPipeline(context, formatHelper, megaSet, textureManager),
+        : m_converterPipeline(context, formatHelper, megaSet),
+          m_convolutionPipeline(context, formatHelper, megaSet),
+          m_preFilterPipeline(context, formatHelper, megaSet),
           m_brdfLutPipeline(context)
     {
         const auto projection = glm::perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -94,6 +93,7 @@ namespace Renderer::IBL
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
+        const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue,
@@ -118,6 +118,7 @@ namespace Renderer::IBL
             hdrMapID,
             context,
             formatHelper,
+            samplers,
             modelManager,
             megaSet,
             deletionQueue
@@ -140,6 +141,7 @@ namespace Renderer::IBL
             skyboxID,
             context,
             formatHelper,
+            samplers,
             modelManager,
             megaSet
         );
@@ -150,6 +152,7 @@ namespace Renderer::IBL
             skyboxID,
             context,
             formatHelper,
+            samplers,
             modelManager,
             megaSet,
             deletionQueue
@@ -236,6 +239,7 @@ namespace Renderer::IBL
         Vk::TextureID hdrMapID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
+        const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
@@ -358,7 +362,7 @@ namespace Renderer::IBL
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
-            .SamplerIndex = modelManager.textureManager.GetSampler(m_converterPipeline.samplerID).descriptorID,
+            .SamplerIndex = modelManager.textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .TextureIndex = modelManager.textureManager.GetTexture(hdrMapID).descriptorID
         };
 
@@ -448,6 +452,7 @@ namespace Renderer::IBL
         Vk::TextureID skyboxID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
+        const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet
     )
@@ -569,7 +574,7 @@ namespace Renderer::IBL
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
-            .SamplerIndex = modelManager.textureManager.GetSampler(m_convolutionPipeline.samplerID).descriptorID,
+            .SamplerIndex = modelManager.textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID
         };
 
@@ -632,6 +637,7 @@ namespace Renderer::IBL
         Vk::TextureID skyboxID,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
+        const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
@@ -766,7 +772,7 @@ namespace Renderer::IBL
             {
                 .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
                 .Matrices     = m_matrixBuffer.deviceAddress,
-                .SamplerIndex = modelManager.textureManager.GetSampler(m_preFilterPipeline.samplerID).descriptorID,
+                .SamplerIndex = modelManager.textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
                 .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID ,
                 .Roughness    = roughness,
                 .SampleCount  = sampleCount

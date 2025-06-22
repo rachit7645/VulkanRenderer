@@ -19,7 +19,6 @@
 
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/Context.h"
-#include "Vulkan/FormatHelper.h"
 
 namespace Renderer::IBL::BRDF
 {

@@ -25,6 +25,7 @@
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::Depth
 {
@@ -35,9 +36,8 @@ namespace Renderer::Depth
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Destroy(VkDevice device);
@@ -53,6 +53,7 @@ namespace Renderer::Depth
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            const Objects::GlobalSamplers& samplers,
             Culling::Dispatch& culling
         );
     private:

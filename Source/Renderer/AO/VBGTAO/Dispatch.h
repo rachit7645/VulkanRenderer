@@ -25,6 +25,7 @@
 #include "Vulkan/TextureManager.h"
 #include "Models/ModelManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::AO::VBGTAO
 {
@@ -34,9 +35,8 @@ namespace Renderer::AO::VBGTAO
         Dispatch
         (
             const Vk::Context& context,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Execute
@@ -45,11 +45,12 @@ namespace Renderer::AO::VBGTAO
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Buffers::SceneBuffer& sceneBuffer,
-            const std::string_view sceneDepthID,
-            const std::string_view gNormalID,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const Buffers::SceneBuffer& sceneBuffer,
+            const Objects::GlobalSamplers& samplers,
+            const std::string_view sceneDepthID,
+            const std::string_view gNormalID
         );
 
         void Destroy(VkDevice device);
@@ -62,6 +63,7 @@ namespace Renderer::AO::VBGTAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
+            const Objects::GlobalSamplers& samplers,
             const std::string_view sceneDepthID
         );
 
@@ -74,6 +76,7 @@ namespace Renderer::AO::VBGTAO
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
+            const Objects::GlobalSamplers& samplers,
             const std::string_view gNormalID
         );
 
@@ -82,7 +85,8 @@ namespace Renderer::AO::VBGTAO
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const Objects::GlobalSamplers& samplers
         );
 
         DepthPreFilter::Pipeline m_depthPreFilterPipeline;

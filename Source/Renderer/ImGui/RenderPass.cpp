@@ -27,10 +27,9 @@ namespace Renderer::DearImGui
     (
         const Vk::Context& context,
         const Vk::Swapchain& swapchain,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet
     )
-        : m_pipeline(context, megaSet, textureManager, swapchain.imageFormat)
+        : m_pipeline(context, megaSet, swapchain.imageFormat)
     {
     }
 
@@ -43,6 +42,7 @@ namespace Renderer::DearImGui
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
+        const Objects::GlobalSamplers& samplers,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -63,6 +63,7 @@ namespace Renderer::DearImGui
                 megaSet,
                 textureManager,
                 swapchain,
+                samplers,
                 deletionQueue,
                 drawData
             );
@@ -101,6 +102,7 @@ namespace Renderer::DearImGui
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
+        const Objects::GlobalSamplers& samplers,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
@@ -188,7 +190,7 @@ namespace Renderer::DearImGui
         constants.Vertices     = currentVertexBuffer.deviceAddress;
         constants.Scale        = glm::vec2(2.0f) / displaySize;
         constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
-        constants.SamplerIndex = textureManager.GetSampler(m_pipeline.samplerID).descriptorID;
+        constants.SamplerIndex = textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
 
         m_pipeline.PushConstants
         (

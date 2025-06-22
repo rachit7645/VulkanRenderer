@@ -28,12 +28,11 @@ namespace Renderer::Bloom
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
         Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_downsamplePipeline(context, formatHelper, megaSet, textureManager),
-          m_upsamplePipeline(context, formatHelper, megaSet, textureManager)
+        : m_downsamplePipeline(context, formatHelper, megaSet),
+          m_upsamplePipeline(context, formatHelper, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -90,7 +89,8 @@ namespace Renderer::Bloom
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -112,7 +112,8 @@ namespace Renderer::Bloom
             cmdBuffer,
             framebufferManager,
             megaSet,
-            textureManager
+            textureManager,
+            samplers
         );
 
         RenderUpSamples
@@ -120,7 +121,8 @@ namespace Renderer::Bloom
             cmdBuffer,
             framebufferManager,
             megaSet,
-            textureManager
+            textureManager,
+            samplers
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -131,7 +133,8 @@ namespace Renderer::Bloom
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "DownSample", {0.7796f, 0.3588f, 0.5518f, 1.0f});
@@ -224,7 +227,7 @@ namespace Renderer::Bloom
 
             const auto constants = DownSample::Constants
             {
-                .SamplerIndex  = textureManager.GetSampler(m_downsamplePipeline.samplerID).descriptorID,
+                .SamplerIndex  = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
                 .ImageIndex    = srcView.sampledImageID,
                 .IsFirstSample = (mip == 0) ? 1u : 0u
             };
@@ -286,7 +289,8 @@ namespace Renderer::Bloom
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "UpSample", {0.8736f, 0.2598f, 0.7548f, 1.0f});
@@ -379,7 +383,7 @@ namespace Renderer::Bloom
 
             const auto constants = UpSample::Constants
             {
-                .SamplerIndex  = textureManager.GetSampler(m_upsamplePipeline.samplerID).descriptorID,
+                .SamplerIndex  = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
                 .ImageIndex    = srcView.sampledImageID,
                 .FilterRadius  = m_filterRadius
             };

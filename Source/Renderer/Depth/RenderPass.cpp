@@ -27,12 +27,11 @@ namespace Renderer::Depth
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::FramebufferManager& framebufferManager
     )
         : m_opaquePipeline(context, formatHelper),
-          m_alphaMaskedPipeline(context, formatHelper, megaSet, textureManager)
+          m_alphaMaskedPipeline(context, formatHelper, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -118,6 +117,7 @@ namespace Renderer::Depth
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
+        const Objects::GlobalSamplers& samplers,
         Culling::Dispatch& culling
     )
     {
@@ -314,7 +314,7 @@ namespace Renderer::Depth
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 m_alphaMaskedPipeline.PushConstants
@@ -351,7 +351,7 @@ namespace Renderer::Depth
                     .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 m_alphaMaskedPipeline.PushConstants

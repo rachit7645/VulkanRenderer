@@ -29,12 +29,11 @@ namespace Renderer::ShadowRT
     RayDispatch::RayDispatch
     (
         const Vk::Context& context,
+        const Vk::MegaSet& megaSet,
         Vk::CommandBufferAllocator& cmdBufferAllocator,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, megaSet, textureManager),
+        : m_pipeline(context, megaSet),
           m_shaderBindingTable(context, cmdBufferAllocator, m_pipeline, MISS_SHADER_GROUP_COUNT, HIT_SHADER_GROUP_COUNT)
     {
         framebufferManager.AddFramebuffer
@@ -84,6 +83,7 @@ namespace Renderer::ShadowRT
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
+        const Objects::GlobalSamplers& samplers,
         const Vk::AccelerationStructure& accelerationStructure
     )
     {
@@ -184,8 +184,8 @@ namespace Renderer::ShadowRT
             .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
             .Indices             = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress,
             .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-            .GBufferSamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.gBufferSamplerID).descriptorID,
-            .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.textureSamplerID).descriptorID,
+            .GBufferSamplerIndex = modelManager.textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .OutputImage         = shadowMapView.storageImageID

@@ -19,7 +19,6 @@
 
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/TextureManager.h"
 
 namespace Renderer::DearImGui
 {
@@ -29,12 +28,9 @@ namespace Renderer::DearImGui
         Pipeline
         (
             const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
+            const Vk::MegaSet& megaSet,
             VkFormat colorFormat
         );
-
-        Vk::SamplerID samplerID = 0;
     };
 }
 

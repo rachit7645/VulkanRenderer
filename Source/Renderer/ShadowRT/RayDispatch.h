@@ -24,6 +24,7 @@
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/ShaderBindingTable.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::ShadowRT
 {
@@ -33,10 +34,9 @@ namespace Renderer::ShadowRT
         RayDispatch
         (
             const Vk::Context& context,
+            const Vk::MegaSet& megaSet,
             Vk::CommandBufferAllocator& cmdBufferAllocator,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Destroy(VkDevice device, VmaAllocator allocator);
@@ -51,6 +51,7 @@ namespace Renderer::ShadowRT
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
+            const Objects::GlobalSamplers& samplers,
             const Vk::AccelerationStructure& accelerationStructure
         );
     private:

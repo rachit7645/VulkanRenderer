@@ -27,13 +27,12 @@ namespace Renderer::AO::VBGTAO
     Dispatch::Dispatch
     (
         const Vk::Context& context,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_depthPreFilterPipeline(context, megaSet, textureManager),
-          m_occlusionPipeline(context, megaSet, textureManager),
-          m_denoisePipeline(context, megaSet, textureManager)
+        : m_depthPreFilterPipeline(context, megaSet),
+          m_occlusionPipeline(context, megaSet),
+          m_denoisePipeline(context, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -202,11 +201,12 @@ namespace Renderer::AO::VBGTAO
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Buffers::SceneBuffer& sceneBuffer,
-        const std::string_view sceneDepthID,
-        const std::string_view gNormalID,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Buffers::SceneBuffer& sceneBuffer,
+        const Objects::GlobalSamplers& samplers,
+        const std::string_view sceneDepthID,
+        const std::string_view gNormalID
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -230,6 +230,7 @@ namespace Renderer::AO::VBGTAO
             framebufferManager,
             megaSet,
             textureManager,
+            samplers,
             sceneDepthID
         );
 
@@ -242,6 +243,7 @@ namespace Renderer::AO::VBGTAO
             megaSet,
             textureManager,
             sceneBuffer,
+            samplers,
             gNormalID
         );
 
@@ -250,7 +252,8 @@ namespace Renderer::AO::VBGTAO
             cmdBuffer,
             framebufferManager,
             megaSet,
-            textureManager
+            textureManager,
+            samplers
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -262,6 +265,7 @@ namespace Renderer::AO::VBGTAO
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers,
         const std::string_view sceneDepthID
     )
     {
@@ -292,7 +296,7 @@ namespace Renderer::AO::VBGTAO
 
         const auto constants = DepthPreFilter::Constants
         {
-            .PointSamplerIndex = textureManager.GetSampler(m_depthPreFilterPipeline.pointSamplerID).descriptorID,
+            .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .SceneDepthIndex   = framebufferManager.GetFramebufferView(sceneDepthID).sampledImageID,
             .OutDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageID,
             .OutDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageID,
@@ -350,6 +354,7 @@ namespace Renderer::AO::VBGTAO
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
+        const Objects::GlobalSamplers& samplers,
         const std::string_view gNormalID
     )
     {
@@ -402,8 +407,8 @@ namespace Renderer::AO::VBGTAO
         const auto constants = Occlusion::Constants
         {
             .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
-            .PointSamplerIndex        = textureManager.GetSampler(m_occlusionPipeline.pointSamplerID).descriptorID,
-            .LinearSamplerIndex       = textureManager.GetSampler(m_occlusionPipeline.linearSamplerID).descriptorID,
+            .PointSamplerIndex        = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .LinearSamplerIndex       = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .HilbertLUTIndex          = textureManager.GetTexture(hilbertLUT).descriptorID,
             .GNormalIndex             = framebufferManager.GetFramebufferView(gNormalID).sampledImageID,
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageID,
@@ -476,7 +481,8 @@ namespace Renderer::AO::VBGTAO
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));
@@ -487,7 +493,7 @@ namespace Renderer::AO::VBGTAO
 
         const auto constants = Denoise::Constants
         {
-            .PointSamplerIndex     = textureManager.GetSampler(m_denoisePipeline.pointSamplerID).descriptorID,
+            .PointSamplerIndex     = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .DepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageID,
             .NoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").sampledImageID,
             .OutAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageID,

@@ -20,7 +20,6 @@
 #include "Vulkan/Pipeline.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
-#include "Vulkan/TextureManager.h"
 
 namespace Renderer::GBuffer::SingleSided
 {
@@ -31,11 +30,8 @@ namespace Renderer::GBuffer::SingleSided
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet
         );
-
-        Vk::SamplerID textureSamplerID = 0;
     };
 }
 

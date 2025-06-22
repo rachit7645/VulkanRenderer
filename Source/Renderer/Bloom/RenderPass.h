@@ -20,6 +20,7 @@
 #include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
 #include "DownSample/Pipeline.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 #include "UpSample/Pipeline.h"
 
 namespace Renderer::Bloom
@@ -31,9 +32,8 @@ namespace Renderer::Bloom
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
             Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Render
@@ -41,7 +41,8 @@ namespace Renderer::Bloom
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const Objects::GlobalSamplers& samplers
         );
 
         void Destroy(VkDevice device);
@@ -51,7 +52,8 @@ namespace Renderer::Bloom
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const Objects::GlobalSamplers& samplers
         );
 
         void RenderUpSamples
@@ -59,7 +61,8 @@ namespace Renderer::Bloom
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const Objects::GlobalSamplers& samplers
         );
 
         DownSample::Pipeline m_downsamplePipeline;

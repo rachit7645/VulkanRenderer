@@ -27,11 +27,10 @@ namespace Renderer::PostProcess
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -49,7 +48,7 @@ namespace Renderer::PostProcess
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -76,7 +75,8 @@ namespace Renderer::PostProcess
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Renderer::Objects::Camera& camera
+        const Objects::Camera& camera,
+        const Objects::GlobalSamplers& samplers
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -171,7 +171,7 @@ namespace Renderer::PostProcess
 
         const auto constants = PostProcess::Constants
         {
-            .SamplerIndex  = textureManager.GetSampler(m_pipeline.samplerID).descriptorID,
+            .SamplerIndex  = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
             .BloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
             .BloomStrength = m_bloomStrength,

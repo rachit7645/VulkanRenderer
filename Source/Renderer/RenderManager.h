@@ -20,6 +20,7 @@
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
+#include "Objects/GlobalSamplers.h"
 #include "PostProcess/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
@@ -113,12 +114,14 @@ namespace Renderer
         Vk::GraphicsTimeline               m_graphicsTimeline;
         std::optional<Vk::ComputeTimeline> m_computeTimeline = std::nullopt;
 
-        Vk::FormatHelper m_formatHelper;
+        Vk::FormatHelper  m_formatHelper;
 
         Vk::MegaSet               m_megaSet;
         Vk::FramebufferManager    m_framebufferManager;
         Vk::AccelerationStructure m_accelerationStructure;
         Models::ModelManager      m_modelManager;
+
+        Objects::GlobalSamplers m_samplers;
 
         PostProcess::RenderPass m_postProcess;
         Depth::RenderPass       m_depth;

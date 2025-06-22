@@ -23,6 +23,7 @@
 #include "Converter/Pipeline.h"
 #include "PreFilter/Pipeline.h"
 #include "Models/ModelManager.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::IBL
 {
@@ -33,8 +34,7 @@ namespace Renderer::IBL
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet
         );
 
         IBL::IBLMaps Generate
@@ -42,6 +42,7 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue,
@@ -66,6 +67,7 @@ namespace Renderer::IBL
             Vk::TextureID hdrMapID,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
@@ -77,6 +79,7 @@ namespace Renderer::IBL
             Vk::TextureID skyboxID,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet
         );
@@ -87,6 +90,7 @@ namespace Renderer::IBL
             Vk::TextureID skyboxID,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue

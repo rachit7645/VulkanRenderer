@@ -26,6 +26,7 @@
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::GBuffer
 {
@@ -36,9 +37,8 @@ namespace Renderer::GBuffer
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Destroy(VkDevice device);
@@ -53,7 +53,8 @@ namespace Renderer::GBuffer
             const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
+            const Buffers::IndirectBuffer& indirectBuffer,
+            const Objects::GlobalSamplers& samplers
         );
     private:
         SingleSided::Pipeline m_singleSidedPipeline;

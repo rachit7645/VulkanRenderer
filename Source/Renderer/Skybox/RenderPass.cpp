@@ -27,10 +27,9 @@ namespace Renderer::Skybox
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet
     )
-        : m_pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet)
     {
     }
 
@@ -42,6 +41,7 @@ namespace Renderer::Skybox
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
+        const Objects::GlobalSamplers& samplers,
         const IBL::IBLMaps& iblMaps
     )
     {
@@ -145,7 +145,7 @@ namespace Renderer::Skybox
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
-            .SamplerIndex = modelManager.textureManager.GetSampler(m_pipeline.samplerID).descriptorID,
+            .SamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
             .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };
 

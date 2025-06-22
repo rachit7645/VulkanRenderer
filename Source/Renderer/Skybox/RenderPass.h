@@ -23,6 +23,7 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::Skybox
 {
@@ -33,8 +34,7 @@ namespace Renderer::Skybox
         (
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet
         );
 
         void Destroy(VkDevice device);
@@ -47,6 +47,7 @@ namespace Renderer::Skybox
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
+            const Objects::GlobalSamplers& samplers,
             const IBL::IBLMaps& iblMaps
         );
     private:

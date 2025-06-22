@@ -31,11 +31,10 @@ namespace Renderer::TAA
     (
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, formatHelper, megaSet, textureManager)
+        : m_pipeline(context, formatHelper, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -119,7 +118,8 @@ namespace Renderer::TAA
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "TAA", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
@@ -326,8 +326,8 @@ namespace Renderer::TAA
 
         const auto constants = TAA::Constants
         {
-            .PointSamplerIndex  = textureManager.GetSampler(m_pipeline.pointSamplerID).descriptorID,
-            .LinearSamplerIndex = textureManager.GetSampler(m_pipeline.linearSamplerID).descriptorID,
+            .PointSamplerIndex  = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .LinearSamplerIndex = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageID,
             .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageID,
             .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageID,

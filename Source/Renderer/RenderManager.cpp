@@ -35,19 +35,20 @@ namespace Renderer
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
           m_modelManager(m_context.device, m_context.allocator),
-          m_postProcess(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_depth(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_imGui(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_skybox(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
-          m_bloom(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_pointShadow(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_gBuffer(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_lighting(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_shadowRT(m_context, m_graphicsCmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_taa(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
+          m_samplers(m_context, m_megaSet, m_modelManager.textureManager),
+          m_postProcess(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
+          m_depth(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
+          m_imGui(m_context, m_swapchain, m_megaSet),
+          m_skybox(m_context, m_formatHelper, m_megaSet),
+          m_bloom(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
+          m_pointShadow(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
+          m_gBuffer(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
+          m_lighting(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
+          m_shadowRT(m_context, m_megaSet, m_graphicsCmdBufferAllocator, m_framebufferManager),
+          m_taa(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_culling(m_context),
-          m_vbgtao(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_iblGenerator(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
+          m_vbgtao(m_context, m_megaSet, m_framebufferManager),
+          m_iblGenerator(m_context, m_formatHelper, m_megaSet),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
@@ -557,6 +558,7 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            m_samplers,
             m_culling
         );
 
@@ -571,6 +573,7 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            m_samplers,
             m_culling
         );
 
@@ -584,7 +587,8 @@ namespace Renderer
             m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
-            m_indirectBuffer
+            m_indirectBuffer,
+            m_samplers
         );
     }
 
@@ -602,11 +606,12 @@ namespace Renderer
             m_frameIndex,
             cmdBuffer,
             m_framebufferManager,
-            sceneBuffer,
-            sceneDepthID,
-            gNormalID,
             m_megaSet,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            sceneBuffer,
+            m_samplers,
+            sceneDepthID,
+            gNormalID
         );
     }
 
@@ -622,6 +627,7 @@ namespace Renderer
             m_framebufferManager,
             m_sceneBuffer,
             m_meshBuffer,
+            m_samplers,
             m_accelerationStructure
         );
     }
@@ -636,6 +642,7 @@ namespace Renderer
             m_megaSet,
             m_modelManager.textureManager,
             m_sceneBuffer,
+            m_samplers,
             m_scene->iblMaps
         );
 
@@ -647,6 +654,7 @@ namespace Renderer
             m_megaSet,
             m_modelManager,
             m_sceneBuffer,
+            m_samplers,
             m_scene->iblMaps
         );
 
@@ -656,7 +664,8 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            m_samplers
         );
 
         m_bloom.Render
@@ -664,7 +673,8 @@ namespace Renderer
             cmdBuffer,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            m_samplers
         );
 
         m_postProcess.Render
@@ -673,7 +683,8 @@ namespace Renderer
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
-            m_scene->camera
+            m_scene->camera,
+            m_samplers
         );
 
         m_swapchain.Blit(cmdBuffer, m_framebufferManager);
@@ -687,6 +698,7 @@ namespace Renderer
             m_megaSet,
             m_modelManager.textureManager,
             m_swapchain,
+            m_samplers,
             m_deletionQueues[m_FIF]
         );
     }
@@ -1464,6 +1476,7 @@ namespace Renderer
                 cmdBuffer,
                 m_context,
                 m_formatHelper,
+                m_samplers,
                 m_modelManager,
                 m_megaSet,
                 m_iblGenerator,
@@ -1534,6 +1547,7 @@ namespace Renderer
                         cmdBuffer,
                         m_context,
                         m_formatHelper,
+                        m_samplers,
                         m_modelManager,
                         m_megaSet,
                         m_iblGenerator,
@@ -1578,6 +1592,7 @@ namespace Renderer
             m_window.inputs,
             m_context,
             m_formatHelper,
+            m_samplers,
             m_modelManager,
             m_megaSet,
             m_iblGenerator,
@@ -1850,7 +1865,7 @@ namespace Renderer
 
         auto& io = ImGui::GetIO();
 
-        io.BackendRendererName = "Rachit_DearImGui_Backend_Vulkan";
+        io.BackendRendererName = "Rachit's Dear ImGui Backend (Vulkan)";
         io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset;
         io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 

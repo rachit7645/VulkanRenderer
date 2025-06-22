@@ -18,7 +18,6 @@
 #define SHADOW_RT_PIPELINE_H
 
 #include "Vulkan/Pipeline.h"
-#include "Vulkan/TextureManager.h"
 #include "Vulkan/MegaSet.h"
 
 namespace Renderer::ShadowRT
@@ -26,15 +25,7 @@ namespace Renderer::ShadowRT
     class Pipeline : public Vk::Pipeline
     {
     public:
-        Pipeline
-        (
-            const Vk::Context& context,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
-        );
-
-        Vk::SamplerID gBufferSamplerID = 0;
-        Vk::SamplerID textureSamplerID = 0;
+        Pipeline(const Vk::Context& context, const Vk::MegaSet& megaSet);
     };
 }
 
