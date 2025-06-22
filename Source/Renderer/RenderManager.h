@@ -78,6 +78,7 @@ namespace Renderer
 
         void TraceRays(const Vk::CommandBuffer& cmdBuffer);
         void Lighting(const Vk::CommandBuffer& cmdBuffer);
+        void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer);
 
         void GraphicsToAsyncComputeRelease(const Vk::CommandBuffer& cmdBuffer);
         void GraphicsToAsyncComputeAcquire(const Vk::CommandBuffer& cmdBuffer);

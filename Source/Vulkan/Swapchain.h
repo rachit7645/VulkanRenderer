@@ -45,8 +45,6 @@ namespace Vk
         VkResult Present(VkDevice device, VkQueue queue);
         VkResult AcquireSwapChainImage(VkDevice device, usize FIF);
 
-        void Blit(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager);
-
         VkSwapchainKHR handle = VK_NULL_HANDLE;
         VkExtent2D     extent = {};
 

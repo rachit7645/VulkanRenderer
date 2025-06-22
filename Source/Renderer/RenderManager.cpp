@@ -687,7 +687,7 @@ namespace Renderer
             m_samplers
         );
 
-        m_swapchain.Blit(cmdBuffer, m_framebufferManager);
+        BlitToSwapchain(cmdBuffer);
 
         m_imGui.Render
         (
@@ -701,6 +701,133 @@ namespace Renderer
             m_samplers,
             m_deletionQueues[m_FIF]
         );
+    }
+
+    void RenderManager::BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer)
+    {
+        const auto& finalColor     = m_framebufferManager.GetFramebuffer("FinalColor");
+        const auto& swapchainImage = m_swapchain.images[m_swapchain.imageIndex];
+
+        Vk::BeginLabel(cmdBuffer, "Blit To Swapchain", glm::vec4(0.4098f, 0.2843f, 0.7529f, 1.0f));
+
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
+
+        const VkImageBlit2 blitRegion =
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+            .pNext = nullptr,
+            .srcSubresource = {
+                .aspectMask     = finalColor.image.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            },
+            .srcOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(finalColor.image.width), static_cast<s32>(finalColor.image.height), 1}
+            },
+            .dstSubresource = {
+                .aspectMask     = swapchainImage.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            },
+            .dstOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(swapchainImage.width), static_cast<s32>(swapchainImage.height), 1}
+            }
+        };
+
+        const VkBlitImageInfo2 blitImageInfo =
+        {
+            .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+            .pNext          = nullptr,
+            .srcImage       = finalColor.image.handle,
+            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .dstImage       = swapchainImage.handle,
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = 1,
+            .pRegions       = &blitRegion,
+            .filter         = VK_FILTER_LINEAR
+        };
+
+        vkCmdBlitImage2(cmdBuffer.handle, &blitImageInfo);
+
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void RenderManager::GraphicsToAsyncComputeRelease(const Vk::CommandBuffer& cmdBuffer)
