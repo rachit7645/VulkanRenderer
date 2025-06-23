@@ -35,7 +35,6 @@ namespace Renderer::ShadowRT
         (
             const Vk::Context& context,
             const Vk::MegaSet& megaSet,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             Vk::FramebufferManager& framebufferManager
         );
 
@@ -46,17 +45,20 @@ namespace Renderer::ShadowRT
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Objects::GlobalSamplers& samplers,
-            const Vk::AccelerationStructure& accelerationStructure
+            const Vk::AccelerationStructure& accelerationStructure,
+            Util::DeletionQueue& deletionQueue
         );
     private:
-        ShadowRT::Pipeline     m_pipeline;
-        Vk::ShaderBindingTable m_shaderBindingTable;
+        ShadowRT::Pipeline m_pipeline;
+
+        std::optional<Vk::ShaderBindingTable> m_shaderBindingTable = std::nullopt;
     };
 }
 

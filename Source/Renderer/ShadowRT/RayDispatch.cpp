@@ -30,11 +30,9 @@ namespace Renderer::ShadowRT
     (
         const Vk::Context& context,
         const Vk::MegaSet& megaSet,
-        Vk::CommandBufferAllocator& cmdBufferAllocator,
         Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, megaSet),
-          m_shaderBindingTable(context, cmdBufferAllocator, m_pipeline, MISS_SHADER_GROUP_COUNT, HIT_SHADER_GROUP_COUNT)
+        : m_pipeline(context, megaSet)
     {
         framebufferManager.AddFramebuffer
         (
@@ -78,16 +76,31 @@ namespace Renderer::ShadowRT
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Objects::GlobalSamplers& samplers,
-        const Vk::AccelerationStructure& accelerationStructure
+        const Vk::AccelerationStructure& accelerationStructure,
+        Util::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
+
+        if (!m_shaderBindingTable.has_value())
+        {
+            m_shaderBindingTable = Vk::ShaderBindingTable
+            (
+                cmdBuffer,
+                context,
+                m_pipeline,
+                MISS_SHADER_GROUP_COUNT,
+                HIT_SHADER_GROUP_COUNT,
+                deletionQueue
+            );
+        }
 
         const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
         const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);
@@ -153,6 +166,8 @@ namespace Renderer::ShadowRT
                 }
             );
 
+            Vk::EndLabel(cmdBuffer);
+
             return;
         }
 
@@ -202,15 +217,15 @@ namespace Renderer::ShadowRT
         m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         // You still need an empty callable region for some reason
-        constexpr VkStridedDeviceAddressRegionKHR emptyCallableRegion = {};
+        constexpr VkStridedDeviceAddressRegionKHR EMPTY_CALLABLE_REGION = {};
 
         vkCmdTraceRaysKHR
         (
             cmdBuffer.handle,
-            &m_shaderBindingTable.raygenRegion,
-            &m_shaderBindingTable.missRegion,
-            &m_shaderBindingTable.hitRegion,
-            &emptyCallableRegion,
+            &m_shaderBindingTable->raygenRegion,
+            &m_shaderBindingTable->missRegion,
+            &m_shaderBindingTable->hitRegion,
+            &EMPTY_CALLABLE_REGION,
             shadowMap.image.width,
             shadowMap.image.height,
             1
@@ -240,7 +255,11 @@ namespace Renderer::ShadowRT
 
     void RayDispatch::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        m_shaderBindingTable.Destroy(allocator);
+        if (m_shaderBindingTable.has_value())
+        {
+            m_shaderBindingTable->Destroy(allocator);
+        }
+
         m_pipeline.Destroy(device);
     }
 }

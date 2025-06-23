@@ -44,7 +44,7 @@ namespace Renderer
           m_pointShadow(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_gBuffer(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_lighting(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_shadowRT(m_context, m_megaSet, m_graphicsCmdBufferAllocator, m_framebufferManager),
+          m_shadowRT(m_context, m_megaSet, m_framebufferManager),
           m_taa(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
           m_culling(m_context),
           m_vbgtao(m_context, m_megaSet, m_framebufferManager),
@@ -620,13 +620,15 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_context,
             m_megaSet,
             m_modelManager,
             m_framebufferManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_samplers,
-            m_accelerationStructure
+            m_accelerationStructure,
+            m_deletionQueues[m_FIF]
         );
     }
 

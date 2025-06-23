@@ -28,11 +28,12 @@ namespace Vk
     public:
         ShaderBindingTable
         (
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::Pipeline& pipeline,
             u32 missCount,
-            u32 hitCount
+            u32 hitCount,
+            Util::DeletionQueue& deletionQueue
         );
 
         void Destroy(VmaAllocator allocator);
