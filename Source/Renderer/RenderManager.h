@@ -42,6 +42,7 @@
 #include "Vulkan/CommandBufferAllocator.h"
 #include "Vulkan/GraphicsTimeline.h"
 #include "Vulkan/ComputeTimeline.h"
+#include "Vulkan/PipelineManager.h"
 #include "Util/Types.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -121,6 +122,7 @@ namespace Renderer
         Vk::FramebufferManager    m_framebufferManager;
         Vk::AccelerationStructure m_accelerationStructure;
         Models::ModelManager      m_modelManager;
+        Vk::PipelineManager       m_pipelineManager;
 
         Objects::GlobalSamplers m_samplers;
 

@@ -17,11 +17,11 @@
 #ifndef POST_PROCESS_PASS_H
 #define POST_PROCESS_PASS_H
 
-#include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Objects/Camera.h"
 #include "Renderer/Objects/GlobalSamplers.h"
+#include "Vulkan/PipelineManager.h"
 
 namespace Renderer::PostProcess
 {
@@ -30,17 +30,16 @@ namespace Renderer::PostProcess
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
-
-        void Destroy(VkDevice device);
 
         void Render
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
@@ -48,8 +47,6 @@ namespace Renderer::PostProcess
             const Objects::GlobalSamplers& samplers
         );
     private:
-        PostProcess::Pipeline m_pipeline;
-
         f32 m_bloomStrength = 0.031f;
     };
 }

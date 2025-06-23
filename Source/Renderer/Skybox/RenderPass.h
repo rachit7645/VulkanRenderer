@@ -17,7 +17,6 @@
 #ifndef SKYBOX_PASS_H
 #define SKYBOX_PASS_H
 
-#include "Pipeline.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
@@ -32,17 +31,16 @@ namespace Renderer::Skybox
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager
         );
-
-        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
@@ -50,8 +48,6 @@ namespace Renderer::Skybox
             const Objects::GlobalSamplers& samplers,
             const IBL::IBLMaps& iblMaps
         );
-    private:
-        Skybox::Pipeline m_pipeline;
     };
 }
 

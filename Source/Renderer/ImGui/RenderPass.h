@@ -17,10 +17,9 @@
 #ifndef IMGUI_PASS_H
 #define IMGUI_PASS_H
 
-#include "Pipeline.h"
-#include "Renderer/Objects/Camera.h"
 #include "Renderer/Objects/GlobalSamplers.h"
 #include "Vulkan/Constants.h"
+#include "Vulkan/PipelineManager.h"
 #include "Vulkan/Swapchain.h"
 
 namespace Renderer::DearImGui
@@ -30,12 +29,10 @@ namespace Renderer::DearImGui
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::Swapchain& swapchain,
-            const Vk::MegaSet& megaSet
+            const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager
         );
-
-        void Destroy(VkDevice device, VmaAllocator allocator);
 
         void Render
         (
@@ -43,12 +40,15 @@ namespace Renderer::DearImGui
             VkDevice device,
             VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Vk::Swapchain& swapchain,
             const Objects::GlobalSamplers& samplers,
             Util::DeletionQueue& deletionQueue
         );
+
+        void Destroy(VmaAllocator allocator);
     private:
         void RenderGui
         (
@@ -56,6 +56,7 @@ namespace Renderer::DearImGui
             VkDevice device,
             VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Vk::Swapchain& swapchain,
@@ -75,8 +76,6 @@ namespace Renderer::DearImGui
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
-
-        DearImGui::Pipeline m_pipeline;
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_vertexBuffers;
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_indexBuffers;

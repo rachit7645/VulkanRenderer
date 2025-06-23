@@ -18,19 +18,23 @@
 #define CULLING_DISPATCH_H
 
 #include "FrustumBuffer.h"
-#include "Frustum/Pipeline.h"
-#include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
+#include "Vulkan/PipelineManager.h"
 
 namespace Renderer::Culling
 {
     class Dispatch
     {
     public:
-        explicit Dispatch(const Vk::Context& context);
+        Dispatch
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::PipelineManager& pipelineManager
+        );
 
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Destroy(VmaAllocator allocator);
 
         void Frustum
         (
@@ -38,6 +42,7 @@ namespace Renderer::Culling
             usize frameIndex,
             const glm::mat4& projectionView,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer
         );
@@ -73,7 +78,6 @@ namespace Renderer::Culling
 
         static u32 GetWorkGroupCount(usize FIF, const Buffers::IndirectBuffer& indirectBuffer);
 
-        Frustum::Pipeline      m_frustumPipeline;
         Culling::FrustumBuffer m_frustumBuffer;
 
         Vk::BarrierWriter m_barrierWriter = {};

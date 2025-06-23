@@ -17,7 +17,6 @@
 #ifndef SHADOW_RT_PASS_H
 #define SHADOW_RT_PASS_H
 
-#include "Pipeline.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
@@ -33,12 +32,10 @@ namespace Renderer::ShadowRT
     public:
         RayDispatch
         (
-            const Vk::Context& context,
             const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
-
-        void Destroy(VkDevice device, VmaAllocator allocator);
 
         void TraceRays
         (
@@ -48,6 +45,7 @@ namespace Renderer::ShadowRT
             const Vk::Context& context,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
@@ -55,9 +53,9 @@ namespace Renderer::ShadowRT
             const Vk::AccelerationStructure& accelerationStructure,
             Util::DeletionQueue& deletionQueue
         );
-    private:
-        ShadowRT::Pipeline m_pipeline;
 
+        void Destroy(VmaAllocator allocator);
+    private:
         std::optional<Vk::ShaderBindingTable> m_shaderBindingTable = std::nullopt;
     };
 }

@@ -36,19 +36,19 @@ namespace Renderer
           m_megaSet(m_context),
           m_modelManager(m_context.device, m_context.allocator),
           m_samplers(m_context, m_megaSet, m_modelManager.textureManager),
-          m_postProcess(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_depth(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_imGui(m_context, m_swapchain, m_megaSet),
-          m_skybox(m_context, m_formatHelper, m_megaSet),
-          m_bloom(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_pointShadow(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_gBuffer(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_lighting(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_shadowRT(m_context, m_megaSet, m_framebufferManager),
-          m_taa(m_context, m_formatHelper, m_megaSet, m_framebufferManager),
-          m_culling(m_context),
-          m_vbgtao(m_context, m_megaSet, m_framebufferManager),
-          m_iblGenerator(m_context, m_formatHelper, m_megaSet),
+          m_postProcess(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_depth(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_imGui(m_swapchain, m_megaSet, m_pipelineManager),
+          m_skybox(m_formatHelper, m_megaSet, m_pipelineManager),
+          m_bloom(m_context.device, m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_pointShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_gBuffer(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_lighting(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_shadowRT(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_taa(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_culling(m_context.device, m_context.allocator, m_pipelineManager),
+          m_vbgtao(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_iblGenerator(m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
@@ -71,24 +71,16 @@ namespace Renderer
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
-            m_iblGenerator.Destroy(m_context.device, m_context.allocator);
-            m_vbgtao.Destroy(m_context.device);
-            m_culling.Destroy(m_context.device, m_context.allocator);
-            m_taa.Destroy(m_context.device);
-            m_shadowRT.Destroy(m_context.device, m_context.allocator);
-            m_lighting.Destroy(m_context.device);
-            m_gBuffer.Destroy(m_context.device);
-            m_pointShadow.Destroy(m_context.device);
-            m_bloom.Destroy(m_context.device);
-            m_skybox.Destroy(m_context.device);
-            m_imGui.Destroy(m_context.device, m_context.allocator);
-            m_depth.Destroy(m_context.device);
-            m_postProcess.Destroy(m_context.device);
+            m_iblGenerator.Destroy(m_context.allocator);
+            m_culling.Destroy(m_context.allocator);
+            m_shadowRT.Destroy(m_context.allocator);
+            m_imGui.Destroy(m_context.allocator);
 
             m_megaSet.Destroy(m_context.device);
             m_accelerationStructure.Destroy(m_context.device, m_context.allocator);
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
+            m_pipelineManager.Destroy(m_context.device);
 
             m_graphicsTimeline.Destroy(m_context.device);
             m_swapchain.Destroy(m_context.device);
@@ -550,6 +542,7 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
@@ -565,6 +558,7 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
@@ -580,6 +574,7 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
@@ -603,6 +598,7 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
@@ -623,6 +619,7 @@ namespace Renderer
             m_context,
             m_megaSet,
             m_modelManager,
+            m_pipelineManager,
             m_framebufferManager,
             m_sceneBuffer,
             m_meshBuffer,
@@ -638,6 +635,7 @@ namespace Renderer
         (
             m_FIF,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
@@ -650,6 +648,7 @@ namespace Renderer
         (
             m_FIF,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
@@ -662,6 +661,7 @@ namespace Renderer
         (
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
@@ -671,6 +671,7 @@ namespace Renderer
         m_bloom.Render
         (
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
@@ -680,6 +681,7 @@ namespace Renderer
         m_postProcess.Render
         (
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
@@ -695,6 +697,7 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             cmdBuffer,
+            m_pipelineManager,
             m_megaSet,
             m_modelManager.textureManager,
             m_swapchain,
@@ -1595,12 +1598,15 @@ namespace Renderer
     {
         m_frameCounter.Update();
 
+        m_pipelineManager.Update(m_context.device);
+
         if (!m_scene.has_value())
         {
             m_scene = Engine::Scene
             (
                 m_config,
                 cmdBuffer,
+                m_pipelineManager,
                 m_context,
                 m_formatHelper,
                 m_samplers,
@@ -1672,6 +1678,7 @@ namespace Renderer
                     (
                         m_config,
                         cmdBuffer,
+                        m_pipelineManager,
                         m_context,
                         m_formatHelper,
                         m_samplers,
@@ -1715,6 +1722,7 @@ namespace Renderer
         m_scene->Update
         (
             cmdBuffer,
+            m_pipelineManager,
             m_frameCounter,
             m_window.inputs,
             m_context,

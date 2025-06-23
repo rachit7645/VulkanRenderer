@@ -25,14 +25,48 @@ namespace Renderer::PointShadow
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
-        : m_opaquePipeline(context, formatHelper),
-          m_alphaMaskedPipeline(context, formatHelper, megaSet)
     {
+        constexpr std::array DYNAMIC_STATES =
+        {
+            VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
+            VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
+            VK_DYNAMIC_STATE_CULL_MODE
+        };
+
+        constexpr std::array COLOR_FORMATS = {VK_FORMAT_R32_SFLOAT};
+        
+        pipelineManager.AddPipeline("PointShadow/Opaque", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
+            .AttachShader("Shadows/PointShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Shadows/PointShadow/Opaque.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Opaque::Constants))
+        );
+
+        pipelineManager.AddPipeline("PointShadow/AlphaMasked", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
+            .AttachShader("Shadows/PointShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Shadows/PointShadow/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+            
         framebufferManager.AddFramebuffer
         (
             "PointShadowMap",
@@ -122,6 +156,7 @@ namespace Renderer::PointShadow
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
@@ -138,6 +173,9 @@ namespace Renderer::PointShadow
         }
 
         Vk::BeginLabel(cmdBuffer, "Point Light Shadows", glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
+
+        const auto& opaquePipeline      = pipelineManager.GetPipeline("PointShadow/Opaque");
+        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline("PointShadow/AlphaMasked");
 
         const auto& depthView = framebufferManager.GetFramebufferView("PointShadowDepthView");
 
@@ -199,6 +237,7 @@ namespace Renderer::PointShadow
                     frameIndex,
                     sceneBuffer.lightsBuffer.shadowedPointLights[i].matrices[face],
                     cmdBuffer,
+                    pipelineManager,
                     meshBuffer,
                     indirectBuffer
                 );
@@ -278,7 +317,7 @@ namespace Renderer::PointShadow
                 {
                     Vk::BeginLabel(cmdBuffer, "Opaque", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
-                    m_opaquePipeline.Bind(cmdBuffer);
+                    opaquePipeline.Bind(cmdBuffer);
 
                     // Single Sided
                     {
@@ -296,7 +335,7 @@ namespace Renderer::PointShadow
                             .FaceIndex   = static_cast<u32>(face)
                         };
 
-                        m_opaquePipeline.PushConstants
+                        opaquePipeline.PushConstants
                         (
                            cmdBuffer,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -333,7 +372,7 @@ namespace Renderer::PointShadow
                             .FaceIndex   = static_cast<u32>(face)
                         };
 
-                        m_opaquePipeline.PushConstants
+                        opaquePipeline.PushConstants
                         (
                            cmdBuffer,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -361,10 +400,10 @@ namespace Renderer::PointShadow
                 {
                     Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
-                    m_alphaMaskedPipeline.Bind(cmdBuffer);
+                    alphaMaskedPipeline.Bind(cmdBuffer);
 
                     const std::array descriptorSets = {megaSet.descriptorSet};
-                    m_alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                    alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
                     // Single Sided
                     {
@@ -384,7 +423,7 @@ namespace Renderer::PointShadow
                             .FaceIndex           = static_cast<u32>(face)
                         };
 
-                        m_alphaMaskedPipeline.PushConstants
+                        alphaMaskedPipeline.PushConstants
                         (
                            cmdBuffer,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -423,7 +462,7 @@ namespace Renderer::PointShadow
                             .FaceIndex           = static_cast<u32>(face)
                         };
 
-                        m_alphaMaskedPipeline.PushConstants
+                        alphaMaskedPipeline.PushConstants
                         (
                            cmdBuffer,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -495,11 +534,5 @@ namespace Renderer::PointShadow
         .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_opaquePipeline.Destroy(device);
-        m_alphaMaskedPipeline.Destroy(device);
     }
 }

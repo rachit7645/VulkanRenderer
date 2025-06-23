@@ -17,12 +17,9 @@
 #ifndef BLOOM_PASS_H
 #define BLOOM_PASS_H
 
-#include "Vulkan/Constants.h"
 #include "Vulkan/FramebufferManager.h"
-#include "DownSample/Regular/Pipeline.h"
-#include "DownSample/FirstSample/Pipeline.h"
-#include "UpSample/Pipeline.h"
 #include "Renderer/Objects/GlobalSamplers.h"
+#include "Vulkan/PipelineManager.h"
 
 namespace Renderer::Bloom
 {
@@ -31,26 +28,27 @@ namespace Renderer::Bloom
     public:
         RenderPass
         (
-            const Vk::Context& context,
+            VkDevice device,
             const Vk::FormatHelper& formatHelper,
             Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
 
         void Render
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Objects::GlobalSamplers& samplers
         );
-
-        void Destroy(VkDevice device);
     private:
         void RenderDownSamples
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
@@ -60,15 +58,12 @@ namespace Renderer::Bloom
         void RenderUpSamples
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Objects::GlobalSamplers& samplers
         );
-
-        DownSample::FirstSample::Pipeline m_downSampleFirstSamplePipeline;
-        DownSample::Regular::Pipeline     m_downsampleRegularPipeline;
-        UpSample::Pipeline                m_upsamplePipeline;
 
         f32 m_filterRadius = 0.005f;
     };

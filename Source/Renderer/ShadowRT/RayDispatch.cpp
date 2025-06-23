@@ -28,12 +28,24 @@ namespace Renderer::ShadowRT
 
     RayDispatch::RayDispatch
     (
-        const Vk::Context& context,
         const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, megaSet)
     {
+        pipelineManager.AddPipeline("ShadowRT", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
+            .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rahit", VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
+            .SetMaxRayRecursionDepth(1)
+            .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+        
         framebufferManager.AddFramebuffer
         (
             "ShadowRT",
@@ -79,6 +91,7 @@ namespace Renderer::ShadowRT
         const Vk::Context& context,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
@@ -89,13 +102,15 @@ namespace Renderer::ShadowRT
     {
         Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
 
+        const auto& pipeline = pipelineManager.GetPipeline("ShadowRT");
+
         if (!m_shaderBindingTable.has_value())
         {
             m_shaderBindingTable = Vk::ShaderBindingTable
             (
                 cmdBuffer,
                 context,
-                m_pipeline,
+                pipeline,
                 MISS_SHADER_GROUP_COUNT,
                 HIT_SHADER_GROUP_COUNT,
                 deletionQueue
@@ -190,7 +205,7 @@ namespace Renderer::ShadowRT
             }
         );
 
-        m_pipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const auto constants = ShadowRT::Constants
         {
@@ -206,7 +221,7 @@ namespace Renderer::ShadowRT
             .OutputImage         = shadowMapView.storageImageID
         };
 
-        m_pipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
@@ -214,7 +229,7 @@ namespace Renderer::ShadowRT
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         // You still need an empty callable region for some reason
         constexpr VkStridedDeviceAddressRegionKHR EMPTY_CALLABLE_REGION = {};
@@ -253,13 +268,11 @@ namespace Renderer::ShadowRT
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RayDispatch::Destroy(VkDevice device, VmaAllocator allocator)
+    void RayDispatch::Destroy( VmaAllocator allocator)
     {
         if (m_shaderBindingTable.has_value())
         {
             m_shaderBindingTable->Destroy(allocator);
         }
-
-        m_pipeline.Destroy(device);
     }
 }

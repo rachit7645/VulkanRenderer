@@ -34,15 +34,69 @@ namespace Renderer::IBL
     
     Generator::Generator
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager
     )
-        : m_converterPipeline(context, formatHelper, megaSet),
-          m_convolutionPipeline(context, formatHelper, megaSet),
-          m_preFilterPipeline(context, formatHelper, megaSet),
-          m_brdfLutPipeline(context)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+
+        pipelineManager.AddPipeline("IBL/Converter", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("IBL/Converter.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/Converter.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Converter::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        pipelineManager.AddPipeline("IBL/Convolution", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("IBL/Convolution.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/Convolution.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Convolution::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        pipelineManager.AddPipeline("IBL/PreFilter", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("IBL/PreFilter.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/PreFilter.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PreFilter::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        constexpr std::array BRDF_COLOR_FORMATS = {VK_FORMAT_R16G16_SFLOAT};
+
+        pipelineManager.AddPipeline("IBL/BRDF", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, BRDF_COLOR_FORMATS, VK_FORMAT_UNDEFINED)
+            .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/BRDF.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+        );
+
         const auto projection = glm::perspectiveRH_ZO(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
         const std::array matrices =
@@ -57,7 +111,7 @@ namespace Renderer::IBL
 
         m_matrixBuffer = Vk::Buffer
         (
-            context.allocator,
+            allocator,
             matrices.size() * sizeof(glm::mat4),
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -72,14 +126,14 @@ namespace Renderer::IBL
             matrices.size() * sizeof(glm::mat4)
         );
 
-        m_matrixBuffer.GetDeviceAddress(context.device);
+        m_matrixBuffer.GetDeviceAddress(device);
 
-        Vk::SetDebugName(context.device, m_matrixBuffer.handle, "IBLMaps/MatrixBuffer");
+        Vk::SetDebugName(device, m_matrixBuffer.handle, "IBLMaps/MatrixBuffer");
 
         if (!(m_matrixBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
         {
             Vk::CheckResult(vmaFlushAllocation(
-                context.allocator,
+                allocator,
                 m_matrixBuffer.allocation,
                 0,
                 matrices.size() * sizeof(glm::mat4)),
@@ -91,6 +145,7 @@ namespace Renderer::IBL
     IBL::IBLMaps Generator::Generate
     (
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::GlobalSamplers& samplers,
@@ -115,12 +170,13 @@ namespace Renderer::IBL
         const auto skyboxID = GenerateSkybox
         (
             cmdBuffer,
-            hdrMapID,
+            pipelineManager,
             context,
             formatHelper,
             samplers,
             modelManager,
             megaSet,
+            hdrMapID,
             deletionQueue
         );
 
@@ -138,29 +194,32 @@ namespace Renderer::IBL
         const auto irradianceMapID = GenerateIrradianceMap
         (
             cmdBuffer,
-            skyboxID,
-            context,
-            formatHelper,
-            samplers,
-            modelManager,
-            megaSet
-        );
-
-        const auto preFilterMapID = GeneratePreFilterMap
-        (
-            cmdBuffer,
-            skyboxID,
+            pipelineManager,
             context,
             formatHelper,
             samplers,
             modelManager,
             megaSet,
+            skyboxID
+        );
+
+        const auto preFilterMapID = GeneratePreFilterMap
+        (
+            cmdBuffer,
+            pipelineManager,
+            context,
+            formatHelper,
+            samplers,
+            modelManager,
+            megaSet,
+            skyboxID,
             deletionQueue
         );
 
         const auto brdfLutID = GenerateBRDFLUT
         (
             cmdBuffer,
+            pipelineManager,
             context,
             modelManager.textureManager,
             megaSet
@@ -236,16 +295,19 @@ namespace Renderer::IBL
     Vk::TextureID Generator::GenerateSkybox
     (
         const Vk::CommandBuffer& cmdBuffer,
-        Vk::TextureID hdrMapID,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Vk::TextureID hdrMapID,
         Util::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Equirectangular To Cubemap Conversion", {0.2588f, 0.5294f, 0.9607f, 1.0f});
+
+        const auto& converterPipeline = pipelineManager.GetPipeline("IBL/Converter");
 
         const auto skybox = Vk::Image
         (
@@ -336,7 +398,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_converterPipeline.Bind(cmdBuffer);
+        converterPipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -366,7 +428,7 @@ namespace Renderer::IBL
             .TextureIndex = modelManager.textureManager.GetTexture(hdrMapID).descriptorID
         };
 
-        m_converterPipeline.PushConstants
+        converterPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -375,7 +437,7 @@ namespace Renderer::IBL
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_converterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        converterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -449,15 +511,18 @@ namespace Renderer::IBL
     Vk::TextureID Generator::GenerateIrradianceMap
     (
         const Vk::CommandBuffer& cmdBuffer,
-        Vk::TextureID skyboxID,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Vk::TextureID skyboxID
     )
     {
         Vk::BeginLabel(cmdBuffer, "Irradiance Map Generation", {0.2988f, 0.2294f, 0.6607f, 1.0f});
+
+        const auto& convolutionPipeline = pipelineManager.GetPipeline("IBL/Convolution");
 
         const auto irradianceMap = Vk::Image
         (
@@ -548,7 +613,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_convolutionPipeline.Bind(cmdBuffer);
+        convolutionPipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -578,7 +643,7 @@ namespace Renderer::IBL
             .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID
         };
 
-        m_convolutionPipeline.PushConstants
+        convolutionPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -587,7 +652,7 @@ namespace Renderer::IBL
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_convolutionPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        convolutionPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -634,16 +699,19 @@ namespace Renderer::IBL
     [[nodiscard]] Vk::TextureID Generator::GeneratePreFilterMap
     (
         const Vk::CommandBuffer& cmdBuffer,
-        Vk::TextureID skyboxID,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Vk::TextureID skyboxID,
         Util::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "PreFilter Map Generation", {0.2928f, 0.4794f, 0.6607f, 1.0f});
+
+        const auto& preFilterPipeline = pipelineManager.GetPipeline("IBL/PreFilter");
 
         const auto preFilterMap = Vk::Image
         (
@@ -746,7 +814,7 @@ namespace Renderer::IBL
 
             vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-            m_preFilterPipeline.Bind(cmdBuffer);
+            preFilterPipeline.Bind(cmdBuffer);
 
             const VkViewport viewport =
             {
@@ -778,7 +846,7 @@ namespace Renderer::IBL
                 .SampleCount  = sampleCount
             };
 
-            m_preFilterPipeline.PushConstants
+            preFilterPipeline.PushConstants
             (
                 cmdBuffer,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -787,7 +855,7 @@ namespace Renderer::IBL
 
             // Mega set
             const std::array descriptorSets = {megaSet.descriptorSet};
-            m_preFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            preFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             vkCmdDraw
             (
@@ -861,6 +929,7 @@ namespace Renderer::IBL
     [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLUT
     (
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet
@@ -872,6 +941,8 @@ namespace Renderer::IBL
         }
 
         Vk::BeginLabel(cmdBuffer, "BRDF LUT Generation", {0.9215f, 0.0274f, 0.8588f, 1.0f});
+
+        const auto& brdfLutPipeline = pipelineManager.GetPipeline("IBL/BRDF");
 
         const auto brdfLut = Vk::Image
         (
@@ -962,7 +1033,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_brdfLutPipeline.Bind(cmdBuffer);
+        brdfLutPipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -1028,13 +1099,8 @@ namespace Renderer::IBL
         return m_brdfLutID.value();
     }
 
-    void Generator::Destroy(VkDevice device, VmaAllocator allocator)
+    void Generator::Destroy(VmaAllocator allocator)
     {
-        m_converterPipeline.Destroy(device);
-        m_convolutionPipeline.Destroy(device);
-        m_preFilterPipeline.Destroy(device);
-        m_brdfLutPipeline.Destroy(device);
-
         m_matrixBuffer.Destroy(allocator);
     }
 }

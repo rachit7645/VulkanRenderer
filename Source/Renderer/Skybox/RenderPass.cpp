@@ -25,18 +25,35 @@ namespace Renderer::Skybox
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager
     )
-        : m_pipeline(context, formatHelper, megaSet)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+
+        pipelineManager.AddPipeline("Skybox", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
+            .AttachShader("Skybox/Skybox.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Skybox/Skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Skybox::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
     }
 
     void RenderPass::Render
     (
         usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
@@ -46,6 +63,8 @@ namespace Renderer::Skybox
     )
     {
         Vk::BeginLabel(cmdBuffer, "Skybox", {0.2796f, 0.8588f, 0.3548f, 1.0f});
+
+        const auto& pipeline = pipelineManager.GetPipeline("Skybox");
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
@@ -119,7 +138,7 @@ namespace Renderer::Skybox
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_pipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -149,7 +168,7 @@ namespace Renderer::Skybox
             .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };
 
-        m_pipeline.PushConstants
+        pipeline.PushConstants
         (
            cmdBuffer,
            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -157,7 +176,7 @@ namespace Renderer::Skybox
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -208,10 +227,5 @@ namespace Renderer::Skybox
         .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_pipeline.Destroy(device);
     }
 }

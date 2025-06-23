@@ -26,14 +26,32 @@ namespace Renderer::AO::VBGTAO
 {
     Dispatch::Dispatch
     (
-        const Vk::Context& context,
         const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
-        : m_depthPreFilterPipeline(context, megaSet),
-          m_occlusionPipeline(context, megaSet),
-          m_denoisePipeline(context, megaSet)
     {
+        pipelineManager.AddPipeline("VBGTAO/DepthPreFilter", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
+            .AttachShader("AO/VBGTAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        pipelineManager.AddPipeline("VBGTAO/Occlusion", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
+            .AttachShader("AO/VBGTAO/VBGTAO.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Occlusion::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        pipelineManager.AddPipeline("VBGTAO/Denoise", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
+            .AttachShader("AO/VBGTAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
         framebufferManager.AddFramebuffer
         (
             "VBGTAO/DepthMipChain",
@@ -50,7 +68,7 @@ namespace Renderer::AO::VBGTAO
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -102,7 +120,7 @@ namespace Renderer::AO::VBGTAO
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -138,7 +156,7 @@ namespace Renderer::AO::VBGTAO
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -174,7 +192,7 @@ namespace Renderer::AO::VBGTAO
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -200,6 +218,7 @@ namespace Renderer::AO::VBGTAO
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
@@ -227,6 +246,7 @@ namespace Renderer::AO::VBGTAO
         PreFilterDepth
         (
             cmdBuffer,
+            pipelineManager,
             framebufferManager,
             megaSet,
             textureManager,
@@ -239,6 +259,7 @@ namespace Renderer::AO::VBGTAO
             FIF,
             frameIndex,
             cmdBuffer,
+            pipelineManager,
             framebufferManager,
             megaSet,
             textureManager,
@@ -250,6 +271,7 @@ namespace Renderer::AO::VBGTAO
         Denoise
         (
             cmdBuffer,
+            pipelineManager,
             framebufferManager,
             megaSet,
             textureManager,
@@ -262,6 +284,7 @@ namespace Renderer::AO::VBGTAO
     void Dispatch::PreFilterDepth
     (
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
@@ -270,6 +293,8 @@ namespace Renderer::AO::VBGTAO
     )
     {
         Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
+
+        const auto& depthPreFilterPipeline = pipelineManager.GetPipeline("VBGTAO/DepthPreFilter");
 
         const auto& depthMipChain = framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
 
@@ -292,7 +317,7 @@ namespace Renderer::AO::VBGTAO
             }
         );
 
-        m_depthPreFilterPipeline.Bind(cmdBuffer);
+        depthPreFilterPipeline.Bind(cmdBuffer);
 
         const auto constants = DepthPreFilter::Constants
         {
@@ -305,7 +330,7 @@ namespace Renderer::AO::VBGTAO
             .OutDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageID,
         };
 
-        m_depthPreFilterPipeline.PushConstants
+        depthPreFilterPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
@@ -313,7 +338,7 @@ namespace Renderer::AO::VBGTAO
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_depthPreFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        depthPreFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDispatch
         (
@@ -350,6 +375,7 @@ namespace Renderer::AO::VBGTAO
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
@@ -359,6 +385,8 @@ namespace Renderer::AO::VBGTAO
     )
     {
         Vk::BeginLabel(cmdBuffer, "Occlusion", glm::vec4(0.6098f, 0.7143f, 0.4529f, 1.0f));
+
+        const auto& occlusionPipeline = pipelineManager.GetPipeline("VBGTAO/Occlusion");
 
         const auto& noisyAO          = framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
         const auto& depthDifferences = framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
@@ -402,7 +430,7 @@ namespace Renderer::AO::VBGTAO
         )
         .Execute(cmdBuffer);
 
-        m_occlusionPipeline.Bind(cmdBuffer);
+        occlusionPipeline.Bind(cmdBuffer);
 
         const auto constants = Occlusion::Constants
         {
@@ -418,7 +446,7 @@ namespace Renderer::AO::VBGTAO
             .Thickness                = m_thickness
         };
 
-        m_occlusionPipeline.PushConstants
+        occlusionPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
@@ -426,7 +454,7 @@ namespace Renderer::AO::VBGTAO
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_occlusionPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        occlusionPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDispatch
         (
@@ -479,6 +507,7 @@ namespace Renderer::AO::VBGTAO
     void Dispatch::Denoise
     (
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
@@ -487,9 +516,11 @@ namespace Renderer::AO::VBGTAO
     {
         Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));
 
+        const auto& denoisePipeline = pipelineManager.GetPipeline("VBGTAO/Denoise");
+
         const auto& occlusion = framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
 
-        m_denoisePipeline.Bind(cmdBuffer);
+        denoisePipeline.Bind(cmdBuffer);
 
         const auto constants = Denoise::Constants
         {
@@ -500,7 +531,7 @@ namespace Renderer::AO::VBGTAO
             .FinalValuePower       = m_finalValuePower
         };
 
-        m_denoisePipeline.PushConstants
+        denoisePipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
@@ -508,7 +539,7 @@ namespace Renderer::AO::VBGTAO
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_denoisePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        denoisePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         occlusion.image.Barrier
         (
@@ -557,12 +588,5 @@ namespace Renderer::AO::VBGTAO
         );
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void Dispatch::Destroy(VkDevice device)
-    {
-        m_depthPreFilterPipeline.Destroy(device);
-        m_occlusionPipeline.Destroy(device);
-        m_denoisePipeline.Destroy(device);
     }
 }

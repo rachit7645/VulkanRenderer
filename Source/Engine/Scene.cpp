@@ -28,6 +28,7 @@ namespace Engine
     (
         const Engine::Config& config,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Renderer::Objects::GlobalSamplers& samplers,
@@ -131,6 +132,7 @@ namespace Engine
                 iblMaps = iblGenerator.Generate
                 (
                     cmdBuffer,
+                    pipelineManager,
                     context,
                     formatHelper,
                     samplers,
@@ -152,6 +154,7 @@ namespace Engine
     void Scene::Update
     (
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Util::FrameCounter& frameCounter,
         Engine::Inputs& inputs,
         const Vk::Context& context,
@@ -347,6 +350,7 @@ namespace Engine
                             iblMaps = iblGenerator.Generate
                             (
                                 cmdBuffer,
+                                pipelineManager,
                                 context,
                                 formatHelper,
                                 samplers,

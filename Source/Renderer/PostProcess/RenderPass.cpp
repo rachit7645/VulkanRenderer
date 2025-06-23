@@ -25,13 +25,29 @@ namespace Renderer::PostProcess
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, formatHelper, megaSet)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatLDR};
+
+        pipelineManager.AddPipeline("PostProcess", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("Misc/Trongle.vert",     VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/PostProcess.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
         framebufferManager.AddFramebuffer
         (
             "FinalColor",
@@ -72,6 +88,7 @@ namespace Renderer::PostProcess
     void RenderPass::Render
     (
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
@@ -89,6 +106,8 @@ namespace Renderer::PostProcess
             }
             ImGui::EndMainMenuBar();
         }
+
+        const auto& pipeline = pipelineManager.GetPipeline("PostProcess");
 
         const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
         const auto& finalColor     = framebufferManager.GetFramebuffer(finalColorView.framebuffer);
@@ -147,7 +166,7 @@ namespace Renderer::PostProcess
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_pipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -178,7 +197,7 @@ namespace Renderer::PostProcess
             .Exposure      = camera.exposure
         };
 
-        m_pipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -187,7 +206,7 @@ namespace Renderer::PostProcess
 
         // Mega set
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         vkCmdDraw
         (
@@ -201,10 +220,5 @@ namespace Renderer::PostProcess
         vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_pipeline.Destroy(device);
     }
 }

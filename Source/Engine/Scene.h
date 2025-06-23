@@ -35,6 +35,7 @@ namespace Engine
         (
             const Engine::Config& config,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Renderer::Objects::GlobalSamplers& samplers,
@@ -47,6 +48,7 @@ namespace Engine
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Util::FrameCounter& frameCounter,
             Engine::Inputs& inputs,
             const Vk::Context& context,

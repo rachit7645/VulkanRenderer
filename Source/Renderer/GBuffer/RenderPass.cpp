@@ -24,14 +24,59 @@ namespace Renderer::GBuffer
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
-        : m_singleSidedPipeline(context, formatHelper, megaSet),
-          m_doubleSidedPipeline(context, formatHelper, megaSet)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        constexpr std::array COLOR_FORMATS =
+        {
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_R16G16_UNORM,
+            VK_FORMAT_R8G8_UNORM,
+            VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+            VK_FORMAT_R16G16_SFLOAT
+        };
+
+        pipelineManager.AddPipeline("GBuffer/SingleSided", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
+            .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/GBuffer/SingleSided.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        pipelineManager.AddPipeline("GBuffer/DoubleSided", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
+            .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/GBuffer/DoubleSided.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
         framebufferManager.AddFramebuffer
         (
             "GAlbedoReflectance",
@@ -254,6 +299,7 @@ namespace Renderer::GBuffer
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
@@ -265,6 +311,9 @@ namespace Renderer::GBuffer
     {
         Vk::BeginLabel(cmdBuffer, "GBuffer Generation", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
+        const auto& singleSidedPipeline = pipelineManager.GetPipeline("GBuffer/SingleSided");
+        const auto& doubleSidedPipeline = pipelineManager.GetPipeline("GBuffer/DoubleSided");
+        
         const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView");
         const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");
         const auto& gRghMtlView        = framebufferManager.GetFramebufferView("GRoughnessMetallicView");
@@ -507,10 +556,10 @@ namespace Renderer::GBuffer
         {
             Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
-            m_singleSidedPipeline.Bind(cmdBuffer);
+            singleSidedPipeline.Bind(cmdBuffer);
 
             const std::array descriptorSets = {megaSet.descriptorSet};
-            m_singleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            singleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             // Opaque
             {
@@ -528,7 +577,7 @@ namespace Renderer::GBuffer
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_singleSidedPipeline.PushConstants
+                singleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -565,7 +614,7 @@ namespace Renderer::GBuffer
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_singleSidedPipeline.PushConstants
+                singleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -593,10 +642,10 @@ namespace Renderer::GBuffer
         {
             Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
-            m_doubleSidedPipeline.Bind(cmdBuffer);
+            doubleSidedPipeline.Bind(cmdBuffer);
 
             const std::array descriptorSets = {megaSet.descriptorSet};
-            m_doubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            doubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
             // Opaque
             {
@@ -614,7 +663,7 @@ namespace Renderer::GBuffer
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_doubleSidedPipeline.PushConstants
+                doubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -651,7 +700,7 @@ namespace Renderer::GBuffer
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_doubleSidedPipeline.PushConstants
+                doubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -783,11 +832,5 @@ namespace Renderer::GBuffer
         .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_singleSidedPipeline.Destroy(device);
-        m_doubleSidedPipeline.Destroy(device);
     }
 }

@@ -17,8 +17,6 @@
 #ifndef POINT_SHADOW_PASS_H
 #define POINT_SHADOW_PASS_H
 
-#include "Opaque/Pipeline.h"
-#include "AlphaMasked/Pipeline.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
@@ -34,9 +32,9 @@ namespace Renderer::PointShadow
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
 
@@ -45,6 +43,7 @@ namespace Renderer::PointShadow
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
@@ -54,11 +53,6 @@ namespace Renderer::PointShadow
             const Objects::GlobalSamplers& samplers,
             Culling::Dispatch& culling
         ) const;
-
-        void Destroy(VkDevice device);
-    private:
-        Opaque::Pipeline      m_opaquePipeline;
-        AlphaMasked::Pipeline m_alphaMaskedPipeline;
     };
 }
 

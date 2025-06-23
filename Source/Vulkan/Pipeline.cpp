@@ -23,13 +23,6 @@
 
 namespace Vk
 {
-    Pipeline::Pipeline(VkPipeline pipeline, VkPipelineLayout layout, VkPipelineBindPoint bindPoint)
-        : handle(pipeline),
-          layout(layout),
-          bindPoint(bindPoint)
-    {
-    }
-
     void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
         vkCmdBindPipeline(cmdBuffer.handle, bindPoint, handle);

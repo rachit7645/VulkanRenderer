@@ -27,36 +27,36 @@
 
 namespace Vk
 {
-    class PipelineBuilder
+    struct PipelineShader
+    {
+        std::string           path;
+        VkShaderStageFlagBits stage = VK_SHADER_STAGE_ALL;
+    };
+
+    class PipelineConfig
     {
     public:
-        using Products = std::tuple<VkPipeline, VkPipelineLayout, VkPipelineBindPoint>;
+        void Build(VkDevice device);
 
-        explicit PipelineBuilder(const Vk::Context& context);
-        ~PipelineBuilder();
+        [[nodiscard]] VkPipelineLayout BuildLayout(VkDevice device);
 
-        // No copying
-        PipelineBuilder(const PipelineBuilder&) = delete;
-        PipelineBuilder& operator=(const PipelineBuilder&) = delete;
+        [[nodiscard]] VkGraphicsPipelineCreateInfo BuildGraphicsPipelineCreateInfo(VkPipelineLayout pipelineLayout);
+        [[nodiscard]] VkComputePipelineCreateInfo BuildComputePipelineCreateInfo(VkPipelineLayout pipelineLayout);
+        [[nodiscard]] VkRayTracingPipelineCreateInfoKHR BuildRayTracingPipelineCreateInfo(VkPipelineLayout pipelineLayout);
 
-        // Only moving
-        PipelineBuilder(PipelineBuilder&&) = default;
-        PipelineBuilder& operator=(PipelineBuilder&&) = default;
+        [[nodiscard]] PipelineConfig& SetPipelineType(VkPipelineBindPoint bindPoint);
+        [[nodiscard]] VkPipelineBindPoint GetPipelineType() const;
 
-        Products Build();
-
-        [[nodiscard]] PipelineBuilder& SetPipelineType(VkPipelineBindPoint bindPoint);
-
-        [[nodiscard]] PipelineBuilder& SetRenderingInfo
+        [[nodiscard]] PipelineConfig& SetRenderingInfo
         (
             u32 viewMask,
             const std::span<const VkFormat> colorFormats,
             VkFormat depthFormat
         );
 
-        [[nodiscard]] PipelineBuilder& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
+        [[nodiscard]] PipelineConfig& AttachShader(const std::string_view path, VkShaderStageFlagBits shaderStage);
 
-        [[nodiscard]] PipelineBuilder& AttachShaderGroup
+        [[nodiscard]] PipelineConfig& AttachShaderGroup
         (
             VkRayTracingShaderGroupTypeKHR groupType,
             u32 generalShader,
@@ -64,13 +64,13 @@ namespace Vk
             u32 anyHitShader
         );
 
-        [[nodiscard]] PipelineBuilder& SetMaxRayRecursionDepth(u32 maxRayRecursionDepth);
+        [[nodiscard]] PipelineConfig& SetMaxRayRecursionDepth(u32 maxRayRecursionDepth);
 
-        [[nodiscard]] PipelineBuilder& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
+        [[nodiscard]] PipelineConfig& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
 
-        [[nodiscard]] PipelineBuilder& SetIAState(VkPrimitiveTopology topology);
+        [[nodiscard]] PipelineConfig& SetIAState(VkPrimitiveTopology topology);
 
-        [[nodiscard]] PipelineBuilder& SetRasterizerState
+        [[nodiscard]] PipelineConfig& SetRasterizerState
         (
             VkBool32 depthClampEnable,
             VkCullModeFlags cullMode,
@@ -78,14 +78,16 @@ namespace Vk
             VkPolygonMode polygonMode
         );
 
-        [[nodiscard]] PipelineBuilder& SetDepthStencilState
+        [[nodiscard]] PipelineConfig& SetDepthStencilState
         (
             VkBool32 depthTestEnable,
             VkBool32 depthWriteEnable,
             VkCompareOp depthCompareOp
         );
 
-        [[nodiscard]] PipelineBuilder& AddBlendAttachment
+        [[nodiscard]] PipelineConfig& AddDefaultBlendAttachment();
+
+        [[nodiscard]] PipelineConfig& AddBlendAttachment
         (
             VkBool32 blendEnable,
             VkBlendFactor srcColorBlendFactor,
@@ -97,16 +99,19 @@ namespace Vk
             VkColorComponentFlags colorWriteMask
         );
 
-        [[nodiscard]] PipelineBuilder& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
-        [[nodiscard]] PipelineBuilder& AddDescriptorLayout(VkDescriptorSetLayout layout);
-    private:
-        void Validate();
+        [[nodiscard]] PipelineConfig& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
+        [[nodiscard]] PipelineConfig& AddDescriptorLayout(VkDescriptorSetLayout layout);
 
+        void Destroy(VkDevice device);
+    private:
         VkPipelineBindPoint m_pipelineType = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
         VkPipelineRenderingCreateInfo m_renderingCreateInfo   = {};
         std::vector<VkFormat>         m_renderingColorFormats = {};
+        VkFormat                      m_renderingDepthFormat  = VK_FORMAT_UNDEFINED;
+        u32                           m_renderingViewMask     = 0;
 
+        std::vector<PipelineShader>                       m_shaders                = {};
         std::vector<Vk::ShaderModule>                     m_shaderModules          = {};
         std::vector<VkPipelineShaderStageCreateInfo>      m_shaderStageCreateInfos = {};
         std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups           = {};
@@ -130,9 +135,6 @@ namespace Vk
 
         std::vector<VkPushConstantRange>   m_pushConstantRanges = {};
         std::vector<VkDescriptorSetLayout> m_descriptorLayouts  = {};
-
-        // We only need this pointer here temporarily
-        const Context* m_context = nullptr;
     };
 }
 

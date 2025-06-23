@@ -25,12 +25,39 @@ namespace Renderer::DearImGui
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::Swapchain& swapchain,
-        const Vk::MegaSet& megaSet
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager
     )
-        : m_pipeline(context, megaSet, swapchain.imageFormat)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {swapchain.imageFormat};
+        
+        pipelineManager.AddPipeline("DearImGui", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("ImGui/ImGui.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("ImGui/ImGui.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddBlendAttachment(
+                VK_TRUE,
+                VK_BLEND_FACTOR_SRC_ALPHA,
+                VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                VK_BLEND_OP_ADD,
+                VK_COLOR_COMPONENT_R_BIT |
+                VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT
+            )
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DearImGui::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
     }
 
     void RenderPass::Render
@@ -39,6 +66,7 @@ namespace Renderer::DearImGui
         VkDevice device,
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
@@ -60,6 +88,7 @@ namespace Renderer::DearImGui
                 device,
                 allocator,
                 cmdBuffer,
+                pipelineManager,
                 megaSet,
                 textureManager,
                 swapchain,
@@ -99,6 +128,7 @@ namespace Renderer::DearImGui
         VkDevice device,
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
@@ -107,6 +137,8 @@ namespace Renderer::DearImGui
         const ImDrawData* drawData
     )
     {
+        const auto& pipeline = pipelineManager.GetPipeline("DearImGui");
+        
         const auto displaySize      = glm::vec2(drawData->DisplaySize.x,      drawData->DisplaySize.y);
         const auto displayPos       = glm::vec2(drawData->DisplayPos.x,       drawData->DisplayPos.y);
         const auto framebufferScale = glm::vec2(drawData->FramebufferScale.x, drawData->FramebufferScale.y);
@@ -163,7 +195,7 @@ namespace Renderer::DearImGui
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_pipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         vkCmdBindIndexBuffer
         (
@@ -192,7 +224,7 @@ namespace Renderer::DearImGui
         constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
         constants.SamplerIndex = textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
 
-        m_pipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -202,7 +234,7 @@ namespace Renderer::DearImGui
         );
 
         const std::array descriptorSets = {megaSet.descriptorSet};
-        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
 
         s32 globalVertexOffset = 0;
         s32 globalIndexOffset  = 0;
@@ -231,7 +263,7 @@ namespace Renderer::DearImGui
 
                 constants.TextureIndex = cmd.GetTexID();
 
-                m_pipeline.PushConstants
+                pipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -381,10 +413,8 @@ namespace Renderer::DearImGui
         }
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
+    void RenderPass::Destroy(VmaAllocator allocator)
     {
-        m_pipeline.Destroy(device);
-
         for (auto& buffer : m_vertexBuffers)
         {
             buffer.Destroy(allocator);

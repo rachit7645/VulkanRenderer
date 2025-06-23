@@ -17,7 +17,6 @@
 #ifndef LIGHTING_PASS_H
 #define LIGHTING_PASS_H
 
-#include "Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
@@ -32,18 +31,17 @@ namespace Renderer::Lighting
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
-
-        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
@@ -51,8 +49,6 @@ namespace Renderer::Lighting
             const Objects::GlobalSamplers& samplers,
             const IBL::IBLMaps& iblMaps
         );
-    private:
-        Lighting::Pipeline m_pipeline;
     };
 }
 

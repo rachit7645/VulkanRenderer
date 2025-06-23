@@ -23,10 +23,19 @@ namespace Renderer::Culling
 {
     constexpr auto CULLING_WORKGROUP_SIZE = 64;
 
-    Dispatch::Dispatch(const Vk::Context& context)
-        : m_frustumPipeline(context),
-          m_frustumBuffer(context.device, context.allocator)
+    Dispatch::Dispatch
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::PipelineManager& pipelineManager
+    )
+        : m_frustumBuffer(device, allocator)
     {
+        pipelineManager.AddPipeline("Culling/Frustum", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
+            .AttachShader("Culling/Frustum.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Frustum::Constants))
+        );
     }
 
     void Dispatch::Frustum
@@ -35,6 +44,7 @@ namespace Renderer::Culling
         usize frameIndex,
         const glm::mat4& projectionView,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer
     )
@@ -56,7 +66,9 @@ namespace Renderer::Culling
             indirectBuffer
         );
 
-        m_frustumPipeline.Bind(cmdBuffer);
+        const auto& frustumPipeline = pipelineManager.GetPipeline("Culling/Frustum");
+
+        frustumPipeline.Bind(cmdBuffer);
 
         const auto constants = Frustum::Constants
         {
@@ -73,7 +85,7 @@ namespace Renderer::Culling
             .Frustum                                 = m_frustumBuffer.buffer.deviceAddress
         };
 
-        m_frustumPipeline.PushConstants
+        frustumPipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_COMPUTE_BIT,
@@ -514,9 +526,8 @@ namespace Renderer::Culling
         return (indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount + CULLING_WORKGROUP_SIZE - 1) / CULLING_WORKGROUP_SIZE;
     }
 
-    void Dispatch::Destroy(VkDevice device, VmaAllocator allocator)
+    void Dispatch::Destroy(VmaAllocator allocator)
     {
         m_frustumBuffer.Destroy(allocator);
-        m_frustumPipeline.Destroy(device);
     }
 }

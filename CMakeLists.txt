@@ -83,11 +83,12 @@ add_executable(VulkanRenderer
     Source/Vulkan/ImmediateSubmit.cpp
     Source/Vulkan/GraphicsTimeline.cpp
     Source/Vulkan/ImageUploader.cpp
-    Source/Vulkan/PipelineBuilder.cpp
+    Source/Vulkan/PipelineConfig.cpp
     Source/Vulkan/BarrierWriter.cpp
     Source/Vulkan/VertexBuffer.cpp
     Source/Vulkan/BlockAllocator.cpp
     Source/Vulkan/ComputeTimeline.cpp
+    Source/Vulkan/PipelineManager.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderObject.cpp
@@ -101,57 +102,25 @@ add_executable(VulkanRenderer
     Source/Renderer/Buffers/SceneBuffer.cpp
     Source/Renderer/Buffers/LightsBuffer.cpp
     Source/Renderer/Buffers/DrawCallBuffer.cpp
-	# Post Process Pass Sources
-	Source/Renderer/PostProcess/Pipeline.cpp
+	# Graphics Pass Sources
 	Source/Renderer/PostProcess/RenderPass.cpp
-    # Depth Pass Sources
-    Source/Renderer/Depth/Opaque/Pipeline.cpp
-    Source/Renderer/Depth/AlphaMasked/Pipeline.cpp
     Source/Renderer/Depth/RenderPass.cpp
-    # ImGui Pass Sources
-    Source/Renderer/ImGui/Pipeline.cpp
     Source/Renderer/ImGui/RenderPass.cpp
-    # Skybox Pass Sources
-    Source/Renderer/Skybox/Pipeline.cpp
     Source/Renderer/Skybox/RenderPass.cpp
+    Source/Renderer/Bloom/RenderPass.cpp
+    Source/Renderer/PointShadow/RenderPass.cpp
+    Source/Renderer/GBuffer/RenderPass.cpp
+    Source/Renderer/Lighting/RenderPass.cpp
+    Source/Renderer/TAA/RenderPass.cpp
+    # Compute Pass Sources
+    Source/Renderer/Culling/Dispatch.cpp
+    Source/Renderer/Culling/FrustumBuffer.cpp
+    Source/Renderer/AO/VBGTAO/Dispatch.cpp
+    # Ray Tracing Pass Sources
+    Source/Renderer/ShadowRT/RayDispatch.cpp
     # IBL Sources
     Source/Renderer/IBL/IBLMaps.cpp
     Source/Renderer/IBL/Generator.cpp
-    Source/Renderer/IBL/BRDF/Pipeline.cpp
-    Source/Renderer/IBL/Converter/Pipeline.cpp
-    Source/Renderer/IBL/Convolution/Pipeline.cpp
-    Source/Renderer/IBL/PreFilter/Pipeline.cpp
-    # Bloom Pass sources
-    Source/Renderer/Bloom/RenderPass.cpp
-    Source/Renderer/Bloom/DownSample/FirstSample/Pipeline.cpp
-    Source/Renderer/Bloom/DownSample/Regular/Pipeline.cpp
-    Source/Renderer/Bloom/UpSample/Pipeline.cpp
-    # Point Shadow Pass Sources
-    Source/Renderer/PointShadow/Opaque/Pipeline.cpp
-    Source/Renderer/PointShadow/AlphaMasked/Pipeline.cpp
-    Source/Renderer/PointShadow/RenderPass.cpp
-    # Culling Dispatch Sources
-    Source/Renderer/Culling/Frustum/Pipeline.cpp
-    Source/Renderer/Culling/Dispatch.cpp
-    Source/Renderer/Culling/FrustumBuffer.cpp
-    # GBuffer Pass Sources
-    Source/Renderer/GBuffer/SingleSided/Pipeline.cpp
-    Source/Renderer/GBuffer/DoubleSided/Pipeline.cpp
-    Source/Renderer/GBuffer/RenderPass.cpp
-    # Lighting Pass Sources
-    Source/Renderer/Lighting/Pipeline.cpp
-    Source/Renderer/Lighting/RenderPass.cpp
-    # VBGTAO Pass Sources
-    Source/Renderer/AO/VBGTAO/Dispatch.cpp
-    Source/Renderer/AO/VBGTAO/DepthPreFilter/Pipeline.cpp
-    Source/Renderer/AO/VBGTAO/Occlusion/Pipeline.cpp
-    Source/Renderer/AO/VBGTAO/Denoise/Pipeline.cpp
-    # Shadow RT sources
-    Source/Renderer/ShadowRT/Pipeline.cpp
-    Source/Renderer/ShadowRT/RayDispatch.cpp
-    # TAA Sources
-    Source/Renderer/TAA/Pipeline.cpp
-    Source/Renderer/TAA/RenderPass.cpp
 	# Model sources
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp

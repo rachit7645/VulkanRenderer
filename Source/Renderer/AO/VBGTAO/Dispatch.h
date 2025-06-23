@@ -17,15 +17,12 @@
 #ifndef VBGTAO_RENDER_PASS_H
 #define VBGTAO_RENDER_PASS_H
 
-#include "DepthPreFilter/Pipeline.h"
-#include "Occlusion/Pipeline.h"
-#include "Denoise/Pipeline.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/TextureManager.h"
-#include "Models/ModelManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Objects/GlobalSamplers.h"
+#include "Vulkan/PipelineManager.h"
 
 namespace Renderer::AO::VBGTAO
 {
@@ -34,8 +31,8 @@ namespace Renderer::AO::VBGTAO
     public:
         Dispatch
         (
-            const Vk::Context& context,
             const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
 
@@ -44,6 +41,7 @@ namespace Renderer::AO::VBGTAO
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
@@ -53,13 +51,12 @@ namespace Renderer::AO::VBGTAO
             const std::string_view gNormalID
         );
 
-        void Destroy(VkDevice device);
-
         Vk::TextureID hilbertLUT = 0;
     private:
         void PreFilterDepth
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
@@ -72,6 +69,7 @@ namespace Renderer::AO::VBGTAO
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
@@ -83,15 +81,12 @@ namespace Renderer::AO::VBGTAO
         void Denoise
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Objects::GlobalSamplers& samplers
         );
-
-        DepthPreFilter::Pipeline m_depthPreFilterPipeline;
-        Occlusion::Pipeline      m_occlusionPipeline;
-        Denoise::Pipeline        m_denoisePipeline;
 
         f32 m_finalValuePower = 1.0f;
         f32 m_thickness       = 0.25f;

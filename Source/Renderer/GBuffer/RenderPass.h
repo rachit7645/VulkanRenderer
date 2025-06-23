@@ -17,10 +17,7 @@
 #ifndef GBUFFER_PASS_H
 #define GBUFFER_PASS_H
 
-#include "SingleSided/Pipeline.h"
-#include "DoubleSided/Pipeline.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
@@ -35,19 +32,18 @@ namespace Renderer::GBuffer
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
-
-        void Destroy(VkDevice device);
 
         void Render
         (
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
@@ -56,9 +52,6 @@ namespace Renderer::GBuffer
             const Buffers::IndirectBuffer& indirectBuffer,
             const Objects::GlobalSamplers& samplers
         );
-    private:
-        SingleSided::Pipeline m_singleSidedPipeline;
-        DoubleSided::Pipeline m_doubleSidedPipeline;
     };
 }
 
