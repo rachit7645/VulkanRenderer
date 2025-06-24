@@ -447,5 +447,8 @@ namespace Vk
         {
             shaderModule.Destroy(device);
         }
+
+        m_shaderModules.clear();
+        m_shaderStageCreateInfos.clear();
     }
 }

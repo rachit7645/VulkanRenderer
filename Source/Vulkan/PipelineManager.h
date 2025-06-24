@@ -30,15 +30,19 @@ namespace Vk
     public:
         void AddPipeline(const std::string_view id, const Vk::PipelineConfig& config);
 
-        void Update(VkDevice device);
+        void Update(VkDevice device, Util::DeletionQueue& deletionQueue);
+        void Reload();
 
         [[nodiscard]] Vk::Pipeline& GetPipeline(const std::string_view id);
         [[nodiscard]] const Vk::Pipeline& GetPipeline(const std::string_view id) const;
 
+        void ImGuiDisplay();
+
         void Destroy(VkDevice device);
     private:
-        ankerl::unordered_dense::map<std::string, Vk::Pipeline>        m_pipelines;
+        ankerl::unordered_dense::map<std::string, Vk::Pipeline>       m_pipelines;
         ankerl::unordered_dense::map<std::string, Vk::PipelineConfig> m_pipelineConfigs;
+        ankerl::unordered_dense::map<std::string, Vk::PipelineConfig> m_dirtyPipelineConfigs;
     };
 }
 

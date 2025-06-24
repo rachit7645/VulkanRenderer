@@ -24,12 +24,13 @@ namespace Vk
 {
     void PipelineManager::AddPipeline(const std::string_view id, const Vk::PipelineConfig& config)
     {
+        m_dirtyPipelineConfigs.emplace(id, config);
         m_pipelineConfigs.emplace(id, config);
     }
 
-    void PipelineManager::Update(VkDevice device)
+    void PipelineManager::Update(VkDevice device, Util::DeletionQueue& deletionQueue)
     {
-        if (m_pipelineConfigs.empty())
+        if (m_dirtyPipelineConfigs.empty())
         {
             return;
         }
@@ -43,11 +44,19 @@ namespace Vk
         std::vector<VkRayTracingPipelineCreateInfoKHR> rayTracingPipelineCreateInfos;
         std::vector<std::string>                       rayTracingPipelinesIDs;
 
-        for (auto& [id, config] : m_pipelineConfigs)
+        for (auto& [id, config] : m_dirtyPipelineConfigs)
         {
             config.Build(device);
 
             auto& pipeline = m_pipelines.emplace(id, Vk::Pipeline{}).first->second;
+
+            if (pipeline.handle != VK_NULL_HANDLE)
+            {
+                deletionQueue.PushDeletor([device, _pipeline = pipeline] ()
+                {
+                    _pipeline.Destroy(device);
+                });
+            }
 
             pipeline.bindPoint = config.GetPipelineType();
             pipeline.layout    = config.BuildLayout(device);
@@ -79,7 +88,7 @@ namespace Vk
         Logger::Debug
         (
             "Compiling pipelines! [Total={}] [Graphics={}] [Compute={}] [RayTracing={}]\n",
-            m_pipelineConfigs.size(),
+            m_dirtyPipelineConfigs.size(),
             graphicsPipelineCreateInfos.size(),
             computePipelineCreateInfos.size(),
             rayTracingPipelineCreateInfos.size()
@@ -167,12 +176,17 @@ namespace Vk
             }
         }
 
-        for (auto& config : m_pipelineConfigs | std::views::values)
+        for (auto& config : m_dirtyPipelineConfigs | std::views::values)
         {
             config.Destroy(device);
         }
 
-        m_pipelineConfigs.clear();
+        m_dirtyPipelineConfigs.clear();
+    }
+
+    void PipelineManager::Reload()
+    {
+        m_dirtyPipelineConfigs.insert(m_pipelineConfigs.begin(), m_pipelineConfigs.end());
     }
 
     Vk::Pipeline& PipelineManager::GetPipeline(const std::string_view id)
@@ -199,6 +213,45 @@ namespace Vk
         return iter->second;
     }
 
+    void PipelineManager::ImGuiDisplay()
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Pipeline Manager"))
+            {
+                if (ImGui::TreeNode("Reload"))
+                {
+                    if (ImGui::Button("Reload Pipelines"))
+                    {
+                        Reload();
+                    }
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::Separator();
+
+                for (const auto& [id, pipeline] : m_pipelines)
+                {
+                    if (ImGui::TreeNode(std::bit_cast<void*>(pipeline.handle), "%s", id.c_str()))
+                    {
+                        ImGui::Text("Handle     | %p", std::bit_cast<void*>(pipeline.handle));
+                        ImGui::Text("Layout     | %p", std::bit_cast<void*>(pipeline.layout));
+                        ImGui::Text("Bind Point | %s", string_VkPipelineBindPoint(pipeline.bindPoint));
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::Separator();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+    }
+
     void PipelineManager::Destroy(VkDevice device)
     {
         for (const auto& pipeline : m_pipelines | std::views::values)
@@ -207,6 +260,6 @@ namespace Vk
         }
 
         m_pipelines.clear();
-        m_pipelineConfigs.clear();
+        m_dirtyPipelineConfigs.clear();
     }
 }

@@ -1598,7 +1598,7 @@ namespace Renderer
     {
         m_frameCounter.Update();
 
-        m_pipelineManager.Update(m_context.device);
+        m_pipelineManager.Update(m_context.device, m_deletionQueues[m_FIF]);
 
         if (!m_scene.has_value())
         {
@@ -1791,6 +1791,7 @@ namespace Renderer
         m_modelManager.ImGuiDisplay();
         m_framebufferManager.ImGuiDisplay();
         m_megaSet.ImGuiDisplay();
+        m_pipelineManager.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {
