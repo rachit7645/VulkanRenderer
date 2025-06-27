@@ -31,7 +31,9 @@ namespace Vk
         void AddPipeline(const std::string_view id, const Vk::PipelineConfig& config);
 
         void Update(VkDevice device, Util::DeletionQueue& deletionQueue);
-        void Reload();
+
+        void Reload(const std::string_view id);
+        void ReloadAll();
 
         [[nodiscard]] Vk::Pipeline& GetPipeline(const std::string_view id);
         [[nodiscard]] const Vk::Pipeline& GetPipeline(const std::string_view id) const;

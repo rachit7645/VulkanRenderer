@@ -184,7 +184,19 @@ namespace Vk
         m_dirtyPipelineConfigs.clear();
     }
 
-    void PipelineManager::Reload()
+    void PipelineManager::Reload(const std::string_view id)
+    {
+        const auto iter = m_pipelineConfigs.find(id.data());
+
+        if (iter == m_pipelineConfigs.cend())
+        {
+            Logger::Error("Can't reload invalid pipeline! [ID={}]\n", id);
+        }
+
+        m_dirtyPipelineConfigs.emplace(iter->first, iter->second);
+    }
+
+    void PipelineManager::ReloadAll()
     {
         m_dirtyPipelineConfigs.insert(m_pipelineConfigs.begin(), m_pipelineConfigs.end());
     }
@@ -221,9 +233,9 @@ namespace Vk
             {
                 if (ImGui::TreeNode("Reload"))
                 {
-                    if (ImGui::Button("Reload Pipelines"))
+                    if (ImGui::Button("Reload All Pipelines"))
                     {
-                        Reload();
+                        ReloadAll();
                     }
 
                     ImGui::TreePop();
@@ -238,6 +250,11 @@ namespace Vk
                         ImGui::Text("Handle     | %p", std::bit_cast<void*>(pipeline.handle));
                         ImGui::Text("Layout     | %p", std::bit_cast<void*>(pipeline.layout));
                         ImGui::Text("Bind Point | %s", string_VkPipelineBindPoint(pipeline.bindPoint));
+
+                        if (ImGui::Button("Reload Pipeline"))
+                        {
+                            Reload(id);
+                        }
 
                         ImGui::TreePop();
                     }
