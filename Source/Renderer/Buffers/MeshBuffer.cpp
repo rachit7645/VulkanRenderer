@@ -80,7 +80,7 @@ namespace Renderer::Buffers
 
         const auto& buffer = GetCurrentBuffer(frameIndex);
 
-        const VkDeviceSize meshCopySize =  meshes.size() * sizeof(GPU::Mesh);
+        const VkDeviceSize meshCopySize = meshes.size() * sizeof(GPU::Mesh);
 
         std::memcpy
         (

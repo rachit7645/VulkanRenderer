@@ -27,34 +27,13 @@ namespace Renderer::Buffers
     class DrawCallBuffer
     {
     public:
-        enum class Type
-        {
-            CPUToGPU,
-            GPUOnly
-        };
-
         DrawCallBuffer() = default;
-        DrawCallBuffer(VkDevice device, VmaAllocator allocator, Type type);
-
-        void WriteDrawCalls
-        (
-            VmaAllocator allocator,
-            const Models::ModelManager& modelManager,
-            const std::span<const Renderer::RenderObject> renderObjects
-        );
+        DrawCallBuffer(VkDevice device, VmaAllocator allocator);
 
         void Destroy(VmaAllocator allocator);
 
-        Type type = Type::CPUToGPU;
-
-        u32 writtenDrawCount = 0;
-
-        Vk::Buffer drawCallBuffer = {};
-
-        // CPU To GPU draw call buffers do not need a mesh index buffer
-        std::optional<Vk::Buffer> meshIndexBuffer = std::nullopt;
-    private:
-        [[nodiscard]] bool IsCPUWritable() const;
+        Vk::Buffer drawCallBuffer  = {};
+        Vk::Buffer meshIndexBuffer = {};
     };
 }
 

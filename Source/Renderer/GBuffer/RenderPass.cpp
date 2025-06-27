@@ -570,7 +570,7 @@ namespace Renderer::GBuffer
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -591,7 +591,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -607,7 +607,7 @@ namespace Renderer::GBuffer
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -628,7 +628,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -656,7 +656,7 @@ namespace Renderer::GBuffer
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -677,7 +677,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -693,7 +693,7 @@ namespace Renderer::GBuffer
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -714,7 +714,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 

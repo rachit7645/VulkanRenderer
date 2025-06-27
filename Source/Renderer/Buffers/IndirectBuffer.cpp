@@ -25,40 +25,32 @@ namespace Renderer::Buffers
     IndirectBuffer::IndirectBuffer(VkDevice device, VmaAllocator allocator)
         : frustumCulledBuffers(device, allocator)
     {
-        for (usize i = 0; i < writtenDrawCallBuffers.size(); ++i)
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,                  "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueBuffer.meshIndexBuffer.handle,                 "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,       "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer.handle,      "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,             "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer.handle,            "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/MeshIndices");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,  "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/DrawCalls");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/MeshIndices");
+    }
+
+    void IndirectBuffer::ComputeDrawCount(const Models::ModelManager& modelManager, const std::span<const Renderer::RenderObject> renderObjects)
+    {
+        drawCount = 0;
+
+        for (const auto& renderObject : renderObjects)
         {
-            writtenDrawCallBuffers[i] = DrawCallBuffer(device, allocator, DrawCallBuffer::Type::CPUToGPU);
-
-            Vk::SetDebugName(device, writtenDrawCallBuffers[i].drawCallBuffer.handle, fmt::format("IndirectBuffer/DrawCallBuffer/DrawCalls/{}", i));
+            drawCount += modelManager.GetModel(renderObject.modelID).meshes.size();
         }
-
-        Vk::SetDebugName(device, frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,                   "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DrawCalls");
-        Vk::SetDebugName(device, frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->handle,                 "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/MeshIndices");
-        Vk::SetDebugName(device, frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,        "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/DrawCalls");
-        Vk::SetDebugName(device, frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->handle,      "IndirectBuffer/DrawCallBuffer/FrustumCulled/Opaque/DoubleSided/MeshIndices");
-        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,              "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DrawCalls");
-        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->handle,            "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/MeshIndices");
-        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,   "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/DrawCalls");
-        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/MeshIndices");
     }
 
     IndirectBuffer::CulledBuffers::CulledBuffers(VkDevice device, VmaAllocator allocator)
-        : opaqueBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly),
-          opaqueDoubleSidedBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly),
-          alphaMaskedBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly),
-          alphaMaskedDoubleSidedBuffer(device, allocator, DrawCallBuffer::Type::GPUOnly)
+        : opaqueBuffer(device, allocator),
+          opaqueDoubleSidedBuffer(device, allocator),
+          alphaMaskedBuffer(device, allocator),
+          alphaMaskedDoubleSidedBuffer(device, allocator)
     {
-    }
-
-    void IndirectBuffer::WriteDrawCalls
-    (
-        usize FIF,
-        VmaAllocator allocator,
-        const Models::ModelManager& modelManager,
-        const std::span<const Renderer::RenderObject> renderObjects
-    )
-    {
-        writtenDrawCallBuffers[FIF].WriteDrawCalls(allocator, modelManager, renderObjects);
     }
 
     void IndirectBuffer::CulledBuffers::Destroy(VmaAllocator allocator)
@@ -71,11 +63,6 @@ namespace Renderer::Buffers
 
     void IndirectBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : writtenDrawCallBuffers)
-        {
-            buffer.Destroy(allocator);
-        }
-
         frustumCulledBuffers.Destroy(allocator);
     }
 }

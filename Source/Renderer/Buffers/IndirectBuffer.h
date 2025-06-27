@@ -31,17 +31,11 @@ namespace Renderer::Buffers
     public:
         IndirectBuffer(VkDevice device, VmaAllocator allocator);
 
-        void WriteDrawCalls
-        (
-            usize FIF,
-            VmaAllocator allocator,
-            const Models::ModelManager& modelManager,
-            const std::span<const Renderer::RenderObject> renderObjects
-        );
+        void ComputeDrawCount(const Models::ModelManager& modelManager, const std::span<const Renderer::RenderObject> renderObjects);
 
         void Destroy(VmaAllocator allocator);
 
-        std::array<Buffers::DrawCallBuffer, Vk::FRAMES_IN_FLIGHT> writtenDrawCallBuffers;
+        u32 drawCount = 0;
 
         struct CulledBuffers
         {

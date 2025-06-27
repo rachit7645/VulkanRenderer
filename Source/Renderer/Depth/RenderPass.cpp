@@ -159,7 +159,6 @@ namespace Renderer::Depth
 
         culling.Frustum
         (
-            FIF,
             frameIndex,
             projectionView,
             cmdBuffer,
@@ -264,7 +263,7 @@ namespace Renderer::Depth
                 {
                     .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer.deviceAddress,
                     .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
@@ -282,7 +281,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -299,7 +298,7 @@ namespace Renderer::Depth
                 {
                     .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
                     .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
@@ -317,7 +316,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -346,7 +345,7 @@ namespace Renderer::Depth
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
@@ -366,7 +365,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -383,7 +382,7 @@ namespace Renderer::Depth
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
@@ -403,7 +402,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.drawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 

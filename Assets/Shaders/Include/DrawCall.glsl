@@ -17,6 +17,8 @@
 #ifndef DRAW_CALL_GLSL
 #define DRAW_CALL_GLSL
 
+#include "GPU/Surface.h"
+
 struct DrawCall
 {
     uint indexCount;
@@ -26,7 +28,7 @@ struct DrawCall
     uint firstInstance;
 };
 
-layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer DrawCallBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) buffer DrawCallBuffer
 {
     uint     count;
     DrawCall drawCalls[];
@@ -36,5 +38,18 @@ layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer Mes
 {
     uint indices[];
 };
+
+DrawCall GenerateDrawCall(SurfaceInfo surfaceInfo)
+{
+    DrawCall drawCall;
+
+    drawCall.indexCount    = surfaceInfo.indexInfo.count;
+    drawCall.instanceCount = 1;
+    drawCall.firstIndex    = surfaceInfo.indexInfo.offset;
+    drawCall.vertexOffset  = int(surfaceInfo.vertexInfo.offset);
+    drawCall.firstInstance = 0;
+
+    return drawCall;
+}
 
 #endif

@@ -1774,13 +1774,7 @@ namespace Renderer
             m_scene->renderObjects
         );
 
-        m_indirectBuffer.WriteDrawCalls
-        (
-            m_FIF,
-            m_context.allocator,
-            m_modelManager,
-            m_scene->renderObjects
-        );
+        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_scene->renderObjects);
 
         ImGuiDisplay();
     }
@@ -2001,6 +1995,7 @@ namespace Renderer
 
         auto& io = ImGui::GetIO();
 
+        // TODO: Add support for ImGuiBackendFlags_RendererHasTextures
         io.BackendRendererName = "Rachit's Dear ImGui Backend (Vulkan)";
         io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset;
         io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
@@ -2071,7 +2066,7 @@ namespace Renderer
 
                 m_megaSet.Update(m_context.device);
 
-                io.Fonts->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTexture(fontID).descriptorID));
+                io.Fonts->TexData->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTexture(fontID).descriptorID));
             }
         );
 

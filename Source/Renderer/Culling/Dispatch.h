@@ -38,7 +38,6 @@ namespace Renderer::Culling
 
         void Frustum
         (
-            usize FIF,
             usize frameIndex,
             const glm::mat4& projectionView,
             const Vk::CommandBuffer& cmdBuffer,
@@ -47,36 +46,20 @@ namespace Renderer::Culling
             const Buffers::IndirectBuffer& indirectBuffer
         );
     private:
-        bool NeedsDispatch
-        (
-            usize FIF,
-            const Vk::CommandBuffer& cmdBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
-        );
+        bool NeedsDispatch(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer);
 
         void PreDispatch
         (
-            usize FIF,
             const glm::mat4& projectionView,
             const Vk::CommandBuffer& cmdBuffer,
             const Buffers::IndirectBuffer& indirectBuffer
         );
 
-        void Execute
-        (
-            usize FIF,
-            const Vk::CommandBuffer& cmdBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
-        );
+        void Execute(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer);
 
-        void PostDispatch
-        (
-            usize FIF,
-            const Vk::CommandBuffer& cmdBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
-        );
+        void PostDispatch(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer);
 
-        static u32 GetWorkGroupCount(usize FIF, const Buffers::IndirectBuffer& indirectBuffer);
+        static u32 GetWorkGroupCount(const Buffers::IndirectBuffer& indirectBuffer);
 
         Culling::FrustumBuffer m_frustumBuffer;
 

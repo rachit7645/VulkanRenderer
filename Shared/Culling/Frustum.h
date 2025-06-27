@@ -30,7 +30,6 @@ GLSL_NAMESPACE_BEGIN(Renderer::Culling::Frustum)
 GLSL_PUSH_CONSTANT_BEGIN
 {
     GLSL_BUFFER_POINTER(MeshBuffer)      Meshes;
-    GLSL_BUFFER_POINTER(DrawCallBuffer)  DrawCalls;
     GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledOpaqueDrawCalls;
     GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledOpaqueMeshIndices;
     GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledOpaqueDoubleSidedDrawCalls;
@@ -40,6 +39,8 @@ GLSL_PUSH_CONSTANT_BEGIN
     GLSL_BUFFER_POINTER(DrawCallBuffer)  CulledAlphaMaskedDoubleSidedDrawCalls;
     GLSL_BUFFER_POINTER(MeshIndexBuffer) CulledAlphaMaskedDoubleSidedMeshIndices;
     GLSL_BUFFER_POINTER(FrustumBuffer)   Frustum;
+
+    u32 DrawCount;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

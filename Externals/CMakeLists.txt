@@ -147,7 +147,7 @@ target_include_directories(DearImGui PRIVATE sdl/include/)
 # ImGUI Includes
 target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
-target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1)
+target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFF)
 # Disable warnings
 target_compile_options(DearImGui PRIVATE -w)
 # -O3 optimisations
