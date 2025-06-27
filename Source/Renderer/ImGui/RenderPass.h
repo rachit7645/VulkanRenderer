@@ -17,6 +17,7 @@
 #ifndef IMGUI_PASS_H
 #define IMGUI_PASS_H
 
+#include "Models/ModelManager.h"
 #include "Renderer/Objects/GlobalSamplers.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/PipelineManager.h"
@@ -41,10 +42,10 @@ namespace Renderer::DearImGui
             VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
-            const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager,
             const Vk::Swapchain& swapchain,
             const Objects::GlobalSamplers& samplers,
+            Vk::MegaSet& megaSet,
+            Models::ModelManager& modelManager,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -57,10 +58,10 @@ namespace Renderer::DearImGui
             VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
-            const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager,
             const Vk::Swapchain& swapchain,
             const Objects::GlobalSamplers& samplers,
+            Vk::MegaSet& megaSet,
+            Models::ModelManager& modelManager,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
@@ -73,6 +74,17 @@ namespace Renderer::DearImGui
             const Vk::CommandBuffer& cmdBuffer,
             Vk::Buffer& vertexBuffer,
             Vk::Buffer& indexBuffer,
+            Util::DeletionQueue& deletionQueue,
+            const ImDrawData* drawData
+        );
+
+        void UpdateTextures
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            const Vk::CommandBuffer& cmdBuffer,
+            Vk::MegaSet& megaSet,
+            Models::ModelManager& modelManager,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );

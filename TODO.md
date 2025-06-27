@@ -5,7 +5,6 @@
 * DLSS / FSR3
 * RTAO
 * Two-Pass Occlusion culling
-* Shader Hot Reloading
 * Write a README
 * Pull all dependencies from git submodules
 * Render Graph

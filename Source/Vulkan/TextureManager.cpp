@@ -221,6 +221,25 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
+    void TextureManager::UpdateTexture
+    (
+        Vk::TextureID id,
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        const Vk::ImageUpdateRawMemory& updateRawMemory
+    )
+    {
+        const auto& texture = GetTexture(id);
+
+        m_imageUploader.UpdateImage
+        (
+            allocator,
+            deletionQueue,
+            texture.image,
+            updateRawMemory
+        );
+    }
+
     Vk::Texture& TextureManager::GetTexture(Vk::TextureID id)
     {
         auto iter = m_textureMap.find(id);

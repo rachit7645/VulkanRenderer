@@ -67,10 +67,10 @@ namespace Renderer::DearImGui
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
-        const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
         const Objects::GlobalSamplers& samplers,
+        Vk::MegaSet& megaSet,
+        Models::ModelManager& modelManager,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -89,10 +89,10 @@ namespace Renderer::DearImGui
                 allocator,
                 cmdBuffer,
                 pipelineManager,
-                megaSet,
-                textureManager,
                 swapchain,
                 samplers,
+                megaSet,
+                modelManager,
                 deletionQueue,
                 drawData
             );
@@ -129,10 +129,10 @@ namespace Renderer::DearImGui
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
-        const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
         const Vk::Swapchain& swapchain,
         const Objects::GlobalSamplers& samplers,
+        Vk::MegaSet& megaSet,
+        Models::ModelManager& modelManager,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
@@ -156,6 +156,17 @@ namespace Renderer::DearImGui
             cmdBuffer,
             currentVertexBuffer,
             currentIndexBuffer,
+            deletionQueue,
+            drawData
+        );
+
+        UpdateTextures
+        (
+            device,
+            allocator,
+            cmdBuffer,
+            megaSet,
+            modelManager,
             deletionQueue,
             drawData
         );
@@ -222,7 +233,7 @@ namespace Renderer::DearImGui
         constants.Vertices     = currentVertexBuffer.deviceAddress;
         constants.Scale        = glm::vec2(2.0f) / displaySize;
         constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
-        constants.SamplerIndex = textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
+        constants.SamplerIndex = modelManager.textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
 
         pipeline.PushConstants
         (
@@ -410,6 +421,140 @@ namespace Renderer::DearImGui
                 sizes.data()),
                 "Failed to flush allocations!"
             );
+        }
+    }
+
+    void RenderPass::UpdateTextures
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::CommandBuffer& cmdBuffer,
+        Vk::MegaSet& megaSet,
+        Models::ModelManager& modelManager,
+        Util::DeletionQueue& deletionQueue,
+        const ImDrawData* drawData
+    )
+    {
+        if (drawData->Textures == nullptr)
+        {
+            return;
+        }
+
+        for (auto* texture : *drawData->Textures)
+        {
+            if (texture->Status == ImTextureStatus_OK)
+            {
+                continue;
+            }
+
+            if (texture->Status == ImTextureStatus_WantCreate)
+            {
+                if (texture->TexID != ImTextureID_Invalid || texture->BackendUserData != nullptr)
+                {
+                    Logger::Error("Texture already created! [ID={}]", texture->UniqueID);
+                }
+
+                if (texture->Format != ImTextureFormat_RGBA32)
+                {
+                    Logger::Error("Unsupported texture format! [ID={}]", texture->UniqueID);
+                }
+
+                const auto pixels = static_cast<u8*>(texture->GetPixels());
+
+                const auto id = modelManager.textureManager.AddTexture
+                (
+                    allocator,
+                    deletionQueue,
+                    Vk::ImageUpload{
+                        .type   = Vk::ImageUploadType::RAW,
+                        .flags  = Vk::ImageUploadFlags::None,
+                        .source = Vk::ImageUploadRawMemory{
+                            .name   = fmt::format("DearImGui/Texture/{}", texture->UniqueID),
+                            .width  = static_cast<u32>(texture->Width),
+                            .height = static_cast<u32>(texture->Height),
+                            .format = VK_FORMAT_R8G8B8A8_UNORM,
+                            .data   = std::vector(pixels, pixels + texture->GetSizeInBytes()),
+                        }
+                    }
+                );
+
+                texture->BackendUserData = std::bit_cast<void*>(id);
+            }
+
+            if (texture->Status == ImTextureStatus_WantUpdates)
+            {
+                const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
+
+                const VkDeviceSize rowPitch = texture->UpdateRect.w * texture->BytesPerPixel;
+
+                auto data = std::vector<u8>(texture->UpdateRect.h * rowPitch);
+
+                for (u32 row = 0; row < texture->UpdateRect.h; ++row)
+                {
+                    const void* srcRow = texture->GetPixelsAt(texture->UpdateRect.x, texture->UpdateRect.y + row);
+                          void* dstRow = data.data() + (row * rowPitch);
+
+                    std::memcpy(dstRow, srcRow, rowPitch);
+                }
+
+                modelManager.textureManager.UpdateTexture
+                (
+                    id,
+                    allocator,
+                    deletionQueue,
+                    Vk::ImageUpdateRawMemory{
+                        .update = {
+                            .offset = {texture->UpdateRect.x, texture->UpdateRect.y},
+                            .extent = {texture->UpdateRect.w, texture->UpdateRect.h}
+                        },
+                        .data = data
+                    }
+                );
+
+                texture->SetStatus(ImTextureStatus_OK);
+            }
+
+            if (texture->Status == ImTextureStatus_WantDestroy)
+            {
+                const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
+
+                modelManager.textureManager.DestroyTexture
+                (
+                    id,
+                    device,
+                    allocator,
+                    megaSet,
+                    deletionQueue
+                );
+
+                texture->SetTexID(ImTextureID_Invalid);
+                texture->SetStatus(ImTextureStatus_Destroyed);
+                texture->BackendUserData = nullptr;
+            }
+        }
+
+        modelManager.Update
+        (
+            cmdBuffer,
+            device,
+            allocator,
+            megaSet,
+            deletionQueue
+        );
+
+        megaSet.Update(device);
+
+        for (auto* texture : *drawData->Textures)
+        {
+            if (texture->Status != ImTextureStatus_WantCreate)
+            {
+                continue;
+            }
+
+            const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
+
+            texture->SetTexID(modelManager.textureManager.GetTexture(id).descriptorID);
+            texture->SetStatus(ImTextureStatus_OK);
         }
     }
 

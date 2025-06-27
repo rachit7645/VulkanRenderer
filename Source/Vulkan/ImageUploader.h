@@ -59,7 +59,13 @@ namespace Vk
         u32             width  = 0;
         u32             height = 0;
         VkFormat        format = VK_FORMAT_UNDEFINED;
-        std::vector<u8> data = {};
+        std::vector<u8> data   = {};
+    };
+
+    struct ImageUpdateRawMemory
+    {
+        VkRect2D        update = {};
+        std::vector<u8> data   = {};
     };
 
     using ImageUploadSource = std::variant<ImageUploadFile, ImageUploadMemory, ImageUploadRawMemory>;
@@ -81,6 +87,14 @@ namespace Vk
             const Vk::ImageUpload& upload
         );
 
+        void UpdateImage
+        (
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const Vk::Image& image,
+            const Vk::ImageUpdateRawMemory& updateRawMemory
+        );
+
         void FlushUploads(const Vk::CommandBuffer& cmdBuffer);
 
         [[nodiscard]] bool HasPendingUploads();
@@ -89,9 +103,12 @@ namespace Vk
     private:
         struct Upload
         {
-            Vk::Image                       image;
-            Vk::Buffer                      buffer;
-            std::vector<VkBufferImageCopy2> copyRegions;
+            Vk::Image                       image         = {};
+            Vk::Buffer                      buffer        = {};
+            std::vector<VkBufferImageCopy2> copyRegions   = {};
+            VkPipelineStageFlags2           srcStageMask  = VK_PIPELINE_STAGE_2_NONE;
+            VkAccessFlags2                  srcAccessMask = VK_ACCESS_2_NONE;
+            VkImageLayout                   oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
         };
 
         [[nodiscard]] Vk::Image LoadFromFile

@@ -222,7 +222,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Shared/)
 # No vulkan prototypes
-target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFF)
+target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
 # -O3 optimisations (Set to -Og when debugging)
 target_compile_options(VulkanRenderer PRIVATE -O3)
 # Enable all warnings

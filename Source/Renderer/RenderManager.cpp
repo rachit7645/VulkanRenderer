@@ -698,10 +698,10 @@ namespace Renderer
             m_context.allocator,
             cmdBuffer,
             m_pipelineManager,
-            m_megaSet,
-            m_modelManager.textureManager,
             m_swapchain,
             m_samplers,
+            m_megaSet,
+            m_modelManager,
             m_deletionQueues[m_FIF]
         );
     }
@@ -1995,9 +1995,8 @@ namespace Renderer
 
         auto& io = ImGui::GetIO();
 
-        // TODO: Add support for ImGuiBackendFlags_RendererHasTextures
         io.BackendRendererName = "Rachit's Dear ImGui Backend (Vulkan)";
-        io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset;
+        io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
         io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
         Vk::ImmediateSubmit
@@ -2007,31 +2006,6 @@ namespace Renderer
             m_graphicsCmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                u8* pixels = nullptr;
-                s32 width  = 0;
-                s32 height = 0;
-
-                io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-                const usize count = 4ull * static_cast<usize>(width) * static_cast<usize>(height);
-
-                const auto fontID = m_modelManager.textureManager.AddTexture
-                (
-                    m_context.allocator,
-                    m_deletionQueues[m_FIF],
-                    Vk::ImageUpload{
-                        .type   = Vk::ImageUploadType::RAW,
-                        .flags  = Vk::ImageUploadFlags::None,
-                        .source = Vk::ImageUploadRawMemory{
-                            .name   = "DearImGui/Font",
-                            .width  = static_cast<u32>(width),
-                            .height = static_cast<u32>(height),
-                            .format = VK_FORMAT_R8G8B8A8_UNORM,
-                            .data   = std::vector(pixels, pixels + count),
-                        }
-                    }
-                );
-
                 constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<AO::VBGTAO::Occlusion::GTAO_HILBERT_LEVEL>();
 
                 // A bit hacky but what can you do :(
@@ -2065,8 +2039,6 @@ namespace Renderer
                 );
 
                 m_megaSet.Update(m_context.device);
-
-                io.Fonts->TexData->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTexture(fontID).descriptorID));
             }
         );
 

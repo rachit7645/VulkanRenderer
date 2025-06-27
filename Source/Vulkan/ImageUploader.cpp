@@ -71,6 +71,67 @@ namespace Vk
         }, upload.source);
     }
 
+    void ImageUploader::UpdateImage
+    (
+        VmaAllocator allocator,
+        Util::DeletionQueue& deletionQueue,
+        const Vk::Image& image,
+        const Vk::ImageUpdateRawMemory& updateRawMemory
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        const auto pixelCount = static_cast<usize>(updateRawMemory.update.extent.width) * static_cast<usize>(updateRawMemory.update.extent.height);
+        const auto texelSize  = vkuFormatTexelSize(image.format);
+        const auto updateSize = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
+
+        auto buffer = Vk::Buffer
+        (
+            allocator,
+            updateSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO
+        );
+
+        std::memcpy(buffer.allocationInfo.pMappedData, updateRawMemory.data.data(), updateSize);
+
+        std::vector<VkBufferImageCopy2> copyRegions = {};
+
+        copyRegions.emplace_back(VkBufferImageCopy2{
+            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+            .pNext             = nullptr,
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource  = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            },
+            .imageOffset       = {updateRawMemory.update.offset.x,     updateRawMemory.update.offset.y,      0},
+            .imageExtent       = {updateRawMemory.update.extent.width, updateRawMemory.update.extent.height, 1}
+        });
+
+        AppendUpload(Upload{
+            .image         = image,
+            .buffer        = buffer,
+            .copyRegions   = copyRegions,
+            .srcStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            .oldLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        });
+
+        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        {
+            buffer.Destroy(allocator);
+        });
+    }
+
     void ImageUploader::FlushUploads(const Vk::CommandBuffer& cmdBuffer)
     {
         if (!HasPendingUploads())
@@ -80,7 +141,7 @@ namespace Vk
 
         std::lock_guard lock(m_uploadMutex);
 
-        // Undefined -> Transfer Destination
+        // ? -> Transfer Destination
         {
             for (const auto& upload : m_pendingUploads)
             {
@@ -88,11 +149,11 @@ namespace Vk
                 (
                     upload.image,
                     Vk::ImageBarrier{
-                        .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                        .srcAccessMask  = VK_ACCESS_2_NONE,
+                        .srcStageMask   = upload.srcStageMask,
+                        .srcAccessMask  = upload.srcAccessMask,
                         .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
                         .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
+                        .oldLayout      = upload.oldLayout,
                         .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                         .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
@@ -109,17 +170,17 @@ namespace Vk
 
         // Buffer to Image Copy
         {
-            for (const auto& [image, buffer, copyRegions] : m_pendingUploads)
+            for (const auto& upload : m_pendingUploads)
             {
                 const VkCopyBufferToImageInfo2 copyInfo =
                 {
                     .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
                     .pNext          = nullptr,
-                    .srcBuffer      = buffer.handle,
-                    .dstImage       = image.handle,
+                    .srcBuffer      = upload.buffer.handle,
+                    .dstImage       = upload.image.handle,
                     .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .regionCount    = static_cast<u32>(copyRegions.size()),
-                    .pRegions       = copyRegions.data()
+                    .regionCount    = static_cast<u32>(upload.copyRegions.size()),
+                    .pRegions       = upload.copyRegions.data()
                 };
 
                 vkCmdCopyBufferToImage2(cmdBuffer.handle, &copyInfo);
@@ -398,7 +459,14 @@ namespace Vk
             VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        AppendUpload(Upload{image, buffer, copyRegions});
+        AppendUpload(Upload{
+            .image         = image,
+            .buffer        = buffer,
+            .copyRegions   = copyRegions,
+            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+        });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
         {
@@ -587,7 +655,14 @@ namespace Vk
             VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        AppendUpload(Upload{image, buffer, copyRegions});
+        AppendUpload(Upload{
+            .image         = image,
+            .buffer        = buffer,
+            .copyRegions   = copyRegions,
+            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+        });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
         {
@@ -688,7 +763,14 @@ namespace Vk
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
 
-            AppendUpload(Upload{image, buffer, copyRegions});
+            AppendUpload(Upload{
+                .image         = image,
+                .buffer        = buffer,
+                .copyRegions   = copyRegions,
+                .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask = VK_ACCESS_2_NONE,
+                .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+            });
 
             deletionQueue.PushDeletor([allocator, buffer] () mutable
             {
@@ -869,7 +951,14 @@ namespace Vk
 
         ktxTexture2_Destroy(pTexture);
 
-        AppendUpload(Upload{image, buffer, copyRegions});
+        AppendUpload(Upload{
+            .image         = image,
+            .buffer        = buffer,
+            .copyRegions   = copyRegions,
+            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+        });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
         {
@@ -890,12 +979,22 @@ namespace Vk
         ZoneScoped;
         #endif
 
-        if (rawMemory.data.empty() || rawMemory.width == 0 || rawMemory.height == 0 || rawMemory.format == VK_FORMAT_UNDEFINED)
+        #ifdef ENGINE_DEBUG
+        if
+        (
+            rawMemory.data.empty() ||
+            rawMemory.width == 0 ||
+            rawMemory.height == 0 ||
+            rawMemory.format == VK_FORMAT_UNDEFINED
+        )
         {
             Logger::Error("{}\n", "Invalid parameters!");
         }
+        #endif
 
-        const auto dataSize = static_cast<VkDeviceSize>(static_cast<f64>(static_cast<usize>(rawMemory.width) * rawMemory.height) * vkuFormatTexelSize(rawMemory.format));
+        const auto pixelCount = static_cast<usize>(rawMemory.width) * static_cast<usize>(rawMemory.height);
+        const auto texelSize  = vkuFormatTexelSize(rawMemory.format);
+        const auto dataSize   = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
 
         auto buffer = Vk::Buffer
         (
@@ -950,7 +1049,14 @@ namespace Vk
             VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        AppendUpload(Upload{image, buffer, copyRegions});
+        AppendUpload(Upload{
+            .image         = image,
+            .buffer        = buffer,
+            .copyRegions   = copyRegions,
+            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+        });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
         {

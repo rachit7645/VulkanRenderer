@@ -59,6 +59,14 @@ namespace Vk
         // WARNING! Blocks this thread!
         void Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet);
 
+        void UpdateTexture
+        (
+            Vk::TextureID id,
+            VmaAllocator allocator,
+            Util::DeletionQueue& deletionQueue,
+            const Vk::ImageUpdateRawMemory& updateRawMemory
+        );
+
         [[nodiscard]] Vk::Texture& GetTexture(Vk::TextureID id);
         [[nodiscard]] Vk::Sampler& GetSampler(Vk::SamplerID id);
 

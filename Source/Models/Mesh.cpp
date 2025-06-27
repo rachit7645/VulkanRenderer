@@ -86,6 +86,15 @@ namespace Models
             megaSet,
             deletionQueue
         );
+
+        textureManager.DestroyTexture
+        (
+            emmisiveID,
+            device,
+            allocator,
+            megaSet,
+            deletionQueue
+        );
     }
 
     void Mesh::Destroy
