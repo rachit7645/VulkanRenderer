@@ -24,8 +24,15 @@ namespace Vk
 {
     void PipelineManager::AddPipeline(const std::string_view id, const Vk::PipelineConfig& config)
     {
-        m_dirtyPipelineConfigs.emplace(id, config);
-        m_pipelineConfigs.emplace(id, config);
+        if (!m_dirtyPipelineConfigs.contains(id.data()))
+        {
+            m_dirtyPipelineConfigs.emplace(id, config);
+        }
+
+        if (!m_pipelineConfigs.contains(id.data()))
+        {
+            m_pipelineConfigs.emplace(id, config);
+        }
     }
 
     void PipelineManager::Update(VkDevice device, Util::DeletionQueue& deletionQueue)

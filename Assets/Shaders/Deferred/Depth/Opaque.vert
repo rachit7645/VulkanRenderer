@@ -24,10 +24,12 @@
 
 void main()
 {
-    uint meshIndex = Constants.MeshIndices.indices[gl_DrawID];
-    Mesh mesh      = Constants.Meshes.meshes[meshIndex];
-    vec3 position  = Constants.Positions.positions[gl_VertexIndex];
+    uint     instanceIndex = Constants.InstanceIndices.indices[gl_DrawID];
+    Instance instance      = Constants.Instances.instances[instanceIndex];
+    Mesh     mesh          = Constants.Meshes.meshes[instance.meshIndex];
 
-    vec4 fragPos = mesh.transform * vec4(position, 1.0f);
+    vec3 position = Constants.Positions.positions[gl_VertexIndex];
+
+    vec4 fragPos = instance.transform * vec4(position, 1.0f);
     gl_Position  = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * fragPos;
 }

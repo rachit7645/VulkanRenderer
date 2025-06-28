@@ -568,9 +568,11 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer.deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -591,7 +593,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.drawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -605,9 +607,11 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer.deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -628,7 +632,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.drawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -654,9 +658,11 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -677,7 +683,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.drawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -691,9 +697,11 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                     .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
@@ -714,7 +722,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.drawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 

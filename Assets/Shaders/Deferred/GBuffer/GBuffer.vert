@@ -31,15 +31,17 @@ layout(location = 7) out flat uint fragDrawID;
 
 void main()
 {
-    uint meshIndex    = Constants.MeshIndices.indices[gl_DrawID];
-    Mesh currentMesh  = Constants.CurrentMeshes.meshes[meshIndex];
-    Mesh previousMesh = Constants.PreviousMeshes.meshes[meshIndex];
+    uint     instanceIndex    = Constants.InstanceIndices.indices[gl_DrawID];
+    Instance currentInstance  = Constants.CurrentInstances.instances[instanceIndex];
+    Instance previousInstance = Constants.PreviousInstances.instances[instanceIndex];
+    Mesh     currentMesh      = Constants.CurrentMeshes.meshes[currentInstance.meshIndex];
+    Mesh     previousMesh     = Constants.PreviousMeshes.meshes[previousInstance.meshIndex];
 
     vec3   position = Constants.Positions.positions[gl_VertexIndex];
     UV     uvs      = Constants.UVs.uvs[gl_VertexIndex];
     Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 worldPosition       = currentMesh.transform                * vec4(position, 1.0f);
+    vec4 worldPosition       = currentInstance.transform            * vec4(position, 1.0f);
     vec4 currentViewPosition = Constants.Scene.currentMatrices.view * worldPosition;
 
     fragCurrentPosition = Constants.Scene.currentMatrices.projection         * currentViewPosition;
@@ -47,14 +49,14 @@ void main()
 
     fragPreviousPosition = Constants.Scene.previousMatrices.projection *
                            Constants.Scene.previousMatrices.view *
-                           previousMesh.transform * vec4(position, 1.0f);
+                           previousInstance.transform * vec4(position, 1.0f);
 
     fragUV[0]  = uvs.uv[0];
     fragUV[1]  = uvs.uv[1];
-    fragDrawID = meshIndex;
+    fragDrawID = currentInstance.meshIndex;
 
-    vec3 N = normalize(currentMesh.normalMatrix * vertex.normal);
-    vec3 T = normalize(currentMesh.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
+    vec3 N = normalize(currentInstance.normalMatrix * vertex.normal);
+    vec3 T = normalize(currentInstance.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
          T = normalize(T - dot(T, N) * N);
     vec3 B = normalize(cross(N, T)) * vertex.tangent.w;
 

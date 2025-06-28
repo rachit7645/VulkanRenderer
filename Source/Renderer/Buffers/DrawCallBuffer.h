@@ -32,8 +32,8 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        Vk::Buffer drawCallBuffer  = {};
-        Vk::Buffer meshIndexBuffer = {};
+        Vk::Buffer drawCallBuffer      = {};
+        Vk::Buffer instanceIndexBuffer = {};
     };
 }
 

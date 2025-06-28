@@ -34,7 +34,7 @@ namespace Renderer::Buffers
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        meshIndexBuffer = Vk::Buffer
+        instanceIndexBuffer = Vk::Buffer
         (
             allocator,
             MAX_MESH_COUNT * sizeof(u32),
@@ -45,12 +45,12 @@ namespace Renderer::Buffers
         );
 
         drawCallBuffer.GetDeviceAddress(device);
-        meshIndexBuffer.GetDeviceAddress(device);
+        instanceIndexBuffer.GetDeviceAddress(device);
     }
 
     void DrawCallBuffer::Destroy(VmaAllocator allocator)
     {
         drawCallBuffer.Destroy(allocator);
-        meshIndexBuffer.Destroy(allocator);
+        instanceIndexBuffer.Destroy(allocator);
     }
 }

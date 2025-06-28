@@ -35,7 +35,7 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        u32 drawCount = 0;
+        u32 maxDrawCount = 0;
 
         struct CulledBuffers
         {

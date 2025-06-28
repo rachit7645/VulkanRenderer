@@ -34,7 +34,7 @@ layout(buffer_reference, scalar, buffer_reference_align = 4) buffer DrawCallBuff
     DrawCall drawCalls[];
 };
 
-layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer MeshIndexBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) buffer InstanceIndexBuffer
 {
     uint indices[];
 };

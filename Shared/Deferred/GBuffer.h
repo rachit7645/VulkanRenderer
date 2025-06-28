@@ -30,13 +30,15 @@ GLSL_NAMESPACE_BEGIN(Renderer::GBuffer)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
-    GLSL_BUFFER_POINTER(SceneBuffer)     Scene;
-    GLSL_BUFFER_POINTER(MeshBuffer)      CurrentMeshes;
-    GLSL_BUFFER_POINTER(MeshBuffer)      PreviousMeshes;
-    GLSL_BUFFER_POINTER(MeshIndexBuffer) MeshIndices;
-    GLSL_BUFFER_POINTER(PositionBuffer)  Positions;
-    GLSL_BUFFER_POINTER(UVBuffer)        UVs;
-    GLSL_BUFFER_POINTER(VertexBuffer)    Vertices;
+    GLSL_BUFFER_POINTER(SceneBuffer)         Scene;
+    GLSL_BUFFER_POINTER(MeshBuffer)          CurrentMeshes;
+    GLSL_BUFFER_POINTER(MeshBuffer)          PreviousMeshes;
+    GLSL_BUFFER_POINTER(InstanceBuffer)      CurrentInstances;
+    GLSL_BUFFER_POINTER(InstanceBuffer)      PreviousInstances;
+    GLSL_BUFFER_POINTER(InstanceIndexBuffer) InstanceIndices;
+    GLSL_BUFFER_POINTER(PositionBuffer)      Positions;
+    GLSL_BUFFER_POINTER(UVBuffer)            UVs;
+    GLSL_BUFFER_POINTER(VertexBuffer)        Vertices;
 
     u32 TextureSamplerIndex;
 } GLSL_PUSH_CONSTANT_END;

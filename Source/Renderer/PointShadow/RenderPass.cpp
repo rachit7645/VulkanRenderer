@@ -326,12 +326,13 @@ namespace Renderer::PointShadow
 
                         const auto constants = Opaque::Constants
                         {
-                            .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                            .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer.deviceAddress,
-                            .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                            .LightIndex  = static_cast<u32>(i),
-                            .FaceIndex   = static_cast<u32>(face)
+                            .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                            .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                            .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
+                            .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .LightIndex      = static_cast<u32>(i),
+                            .FaceIndex       = static_cast<u32>(face)
                         };
 
                         opaquePipeline.PushConstants
@@ -348,7 +349,7 @@ namespace Renderer::PointShadow
                             sizeof(u32),
                             indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
                             0,
-                            indirectBuffer.drawCount,
+                            indirectBuffer.maxDrawCount,
                             sizeof(VkDrawIndexedIndirectCommand)
                         );
 
@@ -363,12 +364,13 @@ namespace Renderer::PointShadow
 
                         const auto constants = Opaque::Constants
                         {
-                            .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                            .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
-                            .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                            .LightIndex  = static_cast<u32>(i),
-                            .FaceIndex   = static_cast<u32>(face)
+                            .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                            .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                            .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+                            .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .LightIndex      = static_cast<u32>(i),
+                            .FaceIndex       = static_cast<u32>(face)
                         };
 
                         opaquePipeline.PushConstants
@@ -385,7 +387,7 @@ namespace Renderer::PointShadow
                             sizeof(u32),
                             indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
                             0,
-                            indirectBuffer.drawCount,
+                            indirectBuffer.maxDrawCount,
                             sizeof(VkDrawIndexedIndirectCommand)
                         );
 
@@ -413,8 +415,9 @@ namespace Renderer::PointShadow
                         const auto constants = AlphaMasked::Constants
                         {
                             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                            .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer.deviceAddress,
+                            .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                            .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
                             .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                             .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                             .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
@@ -436,7 +439,7 @@ namespace Renderer::PointShadow
                             sizeof(u32),
                             indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
                             0,
-                            indirectBuffer.drawCount,
+                            indirectBuffer.maxDrawCount,
                             sizeof(VkDrawIndexedIndirectCommand)
                         );
 
@@ -452,8 +455,9 @@ namespace Renderer::PointShadow
                         const auto constants = AlphaMasked::Constants
                         {
                             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                            .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
+                            .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                            .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                             .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
                             .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                             .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
@@ -475,7 +479,7 @@ namespace Renderer::PointShadow
                             sizeof(u32),
                             indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
                             0,
-                            indirectBuffer.drawCount,
+                            indirectBuffer.maxDrawCount,
                             sizeof(VkDrawIndexedIndirectCommand)
                         );
 

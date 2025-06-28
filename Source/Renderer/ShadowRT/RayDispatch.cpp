@@ -211,7 +211,7 @@ namespace Renderer::ShadowRT
         {
             .TLAS                = accelerationStructure.topLevelASes[FIF].deviceAddress,
             .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
+            .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
             .Indices             = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress,
             .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
             .GBufferSamplerIndex = modelManager.textureManager.GetSampler(samplers.pointSamplerID).descriptorID,

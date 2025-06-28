@@ -65,17 +65,17 @@ namespace Renderer::Culling
 
         const auto constants = Frustum::Constants
         {
-            .Meshes                                  = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-            .CulledOpaqueDrawCalls                   = indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.deviceAddress,
-            .CulledOpaqueMeshIndices                 = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer.deviceAddress,
-            .CulledOpaqueDoubleSidedDrawCalls        = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.deviceAddress,
-            .CulledOpaqueDoubleSidedMeshIndices      = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
-            .CulledAlphaMaskedDrawCalls              = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.deviceAddress,
-            .CulledAlphaMaskedMeshIndices            = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer.deviceAddress,
-            .CulledAlphaMaskedDoubleSidedDrawCalls   = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.deviceAddress,
-            .CulledAlphaMaskedDoubleSidedMeshIndices = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer.deviceAddress,
-            .Frustum                                 = m_frustumBuffer.buffer.deviceAddress,
-            .DrawCount                               = indirectBuffer.drawCount
+            .Meshes                                      = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+            .Instances                                   = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+            .CulledOpaqueDrawCalls                       = indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.deviceAddress,
+            .CulledOpaqueInstanceIndices                 = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
+            .CulledOpaqueDoubleSidedDrawCalls            = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.deviceAddress,
+            .CulledOpaqueDoubleSidedInstanceIndices      = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+            .CulledAlphaMaskedDrawCalls                  = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.deviceAddress,
+            .CulledAlphaMaskedInstanceIndices            = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
+            .CulledAlphaMaskedDoubleSidedDrawCalls       = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.deviceAddress,
+            .CulledAlphaMaskedDoubleSidedInstanceIndices = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+            .Frustum                                     = m_frustumBuffer.buffer.deviceAddress
         };
 
         frustumPipeline.PushConstants
@@ -94,7 +94,7 @@ namespace Renderer::Culling
 
     bool Dispatch::NeedsDispatch(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer)
     {
-        const u32 drawCallCount = indirectBuffer.drawCount;
+        const u32 drawCallCount = indirectBuffer.maxDrawCount;
 
         if (drawCallCount != 0)
         {
@@ -261,9 +261,9 @@ namespace Renderer::Culling
     {
         m_frustumBuffer.Load(cmdBuffer, projectionView);
 
-        const u32 drawCallCount            = indirectBuffer.drawCount;
-        const VkDeviceSize drawCallsSize   = sizeof(u32) + drawCallCount * sizeof(VkDrawIndexedIndirectCommand);
-        const VkDeviceSize meshIndicesSize = drawCallCount * sizeof(u32);
+        const u32          drawCallCount       = indirectBuffer.maxDrawCount;
+        const VkDeviceSize drawCallsSize       = sizeof(u32) + drawCallCount * sizeof(VkDrawIndexedIndirectCommand);
+        const VkDeviceSize instanceIndicesSize = drawCallCount * sizeof(u32);
 
         m_barrierWriter
         .WriteBufferBarrier(
@@ -280,7 +280,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -289,7 +289,7 @@ namespace Renderer::Culling
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = meshIndicesSize
+                .size           = instanceIndicesSize
             }
         )
         .WriteBufferBarrier(
@@ -306,7 +306,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -315,7 +315,7 @@ namespace Renderer::Culling
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = meshIndicesSize
+                .size           = instanceIndicesSize
             }
         )
         .WriteBufferBarrier(
@@ -332,7 +332,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -341,7 +341,7 @@ namespace Renderer::Culling
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = meshIndicesSize
+                .size           = instanceIndicesSize
             }
         )
         .WriteBufferBarrier(
@@ -358,7 +358,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -367,7 +367,7 @@ namespace Renderer::Culling
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = meshIndicesSize
+                .size           = instanceIndicesSize
             }
         )
         .Execute(cmdBuffer);
@@ -386,7 +386,7 @@ namespace Renderer::Culling
 
     void Dispatch::PostDispatch(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer)
     {
-        const u32 drawCallCount            = indirectBuffer.drawCount;
+        const u32 drawCallCount            = indirectBuffer.maxDrawCount;
         const VkDeviceSize drawCallsSize   = sizeof(u32) + drawCallCount * sizeof(VkDrawIndexedIndirectCommand);
         const VkDeviceSize meshIndicesSize = drawCallCount * sizeof(u32);
 
@@ -405,7 +405,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -431,7 +431,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -457,7 +457,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -483,7 +483,7 @@ namespace Renderer::Culling
             }
         )
         .WriteBufferBarrier(
-            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer,
+            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -500,7 +500,7 @@ namespace Renderer::Culling
 
     u32 Dispatch::GetWorkGroupCount(const Buffers::IndirectBuffer& indirectBuffer)
     {
-        return (indirectBuffer.drawCount + CULLING_WORKGROUP_SIZE - 1) / CULLING_WORKGROUP_SIZE;
+        return (indirectBuffer.maxDrawCount + CULLING_WORKGROUP_SIZE - 1) / CULLING_WORKGROUP_SIZE;
     }
 
     void Dispatch::Destroy(VmaAllocator allocator)
