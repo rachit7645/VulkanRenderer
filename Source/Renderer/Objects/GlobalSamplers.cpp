@@ -185,6 +185,32 @@ namespace Renderer::Objects
             }
         );
 
+        spotShadowSamplerID = textureManager.AddSampler
+        (
+            megaSet,
+            context.device,
+            VkSamplerCreateInfo{
+                .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                .pNext                   = nullptr,
+                .flags                   = 0,
+                .magFilter               = VK_FILTER_LINEAR,
+                .minFilter               = VK_FILTER_LINEAR,
+                .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                .mipLodBias              = 0.0f,
+                .anisotropyEnable        = VK_FALSE,
+                .maxAnisotropy           = 0.0f,
+                .compareEnable           = VK_TRUE,
+                .compareOp               = VK_COMPARE_OP_GREATER_OR_EQUAL,
+                .minLod                  = 0.0f,
+                .maxLod                  = VK_LOD_CLAMP_NONE,
+                .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+                .unnormalizedCoordinates = VK_FALSE
+            }
+        );
+
         megaSet.Update(context.device);
     }
 }

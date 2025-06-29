@@ -223,6 +223,28 @@ namespace Renderer::PointShadow
         )
         .Execute(cmdBuffer);
 
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(shadowMap.image.width),
+            .height   = static_cast<f32>(shadowMap.image.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {0, 0},
+            .extent = {shadowMap.image.width, shadowMap.image.height}
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+        modelManager.geometryBuffer.Bind(cmdBuffer);
+
         for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedPointLights.size(); ++i)
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
@@ -289,28 +311,6 @@ namespace Renderer::PointShadow
                 };
 
                 vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
-
-                const VkViewport viewport =
-                {
-                    .x        = 0.0f,
-                    .y        = 0.0f,
-                    .width    = static_cast<f32>(shadowMap.image.width),
-                    .height   = static_cast<f32>(shadowMap.image.height),
-                    .minDepth = 0.0f,
-                    .maxDepth = 1.0f
-                };
-
-                vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-                const VkRect2D scissor =
-                {
-                    .offset = {0, 0},
-                    .extent = {shadowMap.image.width, shadowMap.image.height}
-                };
-
-                vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
-
-                modelManager.geometryBuffer.Bind(cmdBuffer);
 
                 // Opaque
                 {

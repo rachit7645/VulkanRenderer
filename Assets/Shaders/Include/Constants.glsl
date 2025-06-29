@@ -38,8 +38,8 @@ const uint  BRDF_LUT_SAMPLE_COUNT    = 1024u;
 const float POINT_SHADOW_BIAS = 0.15f;
 
 // Spot shadow constants
-const float MIN_SPOT_SHADOW_BIAS = 0.000005f;
-const float MAX_SPOT_SHADOW_BIAS = 0.00025f;
+const float SPOT_SHADOW_MIN_BIAS = 0.0001f;
+const float SPOT_SHADOW_MAX_BIAS = 0.001f;
 
 // RT Shadow Constants
 const float RT_SHADOW_MIN_BIAS = 0.0005f;

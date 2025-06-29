@@ -24,6 +24,7 @@
 #include "MegaSet.glsl"
 #include "Packing.glsl"
 #include "PointShadowMap.glsl"
+#include "SpotShadowMap.glsl"
 #include "Deferred/Lighting.h"
 
 layout(location = 0) in vec2 fragUV;
@@ -98,7 +99,7 @@ void main()
             light,
             worldPosition,
             CubemapArrays[Constants.PointShadowMapIndex],
-            Samplers[Constants.ShadowSamplerIndex]
+            Samplers[Constants.PointShadowSamplerIndex]
         );
 
         Lo += shadow * CalculateLight
@@ -119,6 +120,33 @@ void main()
         LightInfo lightInfo = GetLightInfo(light, worldPosition);
 
         Lo += CalculateLight
+        (
+            lightInfo,
+            normal,
+            toCamera,
+            albedo,
+            roughness,
+            metallic,
+            reflectance
+        );
+    }
+
+    for (uint i = 0; i < Constants.Scene.ShadowedSpotLights.count; ++i)
+    {
+        ShadowedSpotLight light     = Constants.Scene.ShadowedSpotLights.lights[i];
+        LightInfo         lightInfo = GetLightInfo(light, worldPosition);
+
+        float shadow = CalculateSpotShadow
+        (
+            i,
+            light,
+            worldPosition,
+            normal,
+            TextureArrays[Constants.SpotShadowMapIndex],
+            Samplers[Constants.SpotShadowSamplerIndex]
+        );
+
+        Lo += shadow * CalculateLight
         (
             lightInfo,
             normal,
@@ -152,6 +180,21 @@ void main()
     vec3 emmisive = texture(sampler2D(Textures[Constants.GEmmisiveIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).rgb;
 
     Lo += emmisive;
+
+    ShadowedSpotLight light     = Constants.Scene.ShadowedSpotLights.lights[0];
+    LightInfo         lightInfo = GetLightInfo(light, worldPosition);
+
+    float shadow = CalculateSpotShadow
+    (
+        0,
+        light,
+        worldPosition,
+        normal,
+        TextureArrays[Constants.SpotShadowMapIndex],
+        Samplers[Constants.SpotShadowSamplerIndex]
+    );
+
+    outColor = vec3(shadow);
 
     outColor = Lo;
 }

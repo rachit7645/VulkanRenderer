@@ -183,21 +183,23 @@ namespace Renderer::Lighting
 
         const auto constants = Lighting::Constants
         {
-            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .GBufferSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .IBLSamplerIndex     = textureManager.GetSampler(samplers.iblSamplerID).descriptorID,
-            .ShadowSamplerIndex  = textureManager.GetSampler(samplers.pointShadowSamplerID).descriptorID,
-            .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView").sampledImageID,
-            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
-            .GRghMtlIndex        = framebufferManager.GetFramebufferView("GRoughnessMetallicView").sampledImageID,
-            .GEmmisiveIndex      = framebufferManager.GetFramebufferView("GEmmisiveView").sampledImageID,
-            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
-            .IrradianceIndex     = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
-            .PreFilterIndex      = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,
-            .BRDFLUTIndex        = textureManager.GetTexture(iblMaps.brdfLutID).descriptorID,
-            .ShadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
-            .PointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
-            .AOIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID
+            .Scene                   = sceneBuffer.buffers[FIF].deviceAddress,
+            .GBufferSamplerIndex     = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .IBLSamplerIndex         = textureManager.GetSampler(samplers.iblSamplerID).descriptorID,
+            .PointShadowSamplerIndex = textureManager.GetSampler(samplers.pointShadowSamplerID).descriptorID,
+            .SpotShadowSamplerIndex  = textureManager.GetSampler(samplers.spotShadowSamplerID).descriptorID,
+            .GAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoReflectanceView").sampledImageID,
+            .GNormalIndex            = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
+            .GRghMtlIndex            = framebufferManager.GetFramebufferView("GRoughnessMetallicView").sampledImageID,
+            .GEmmisiveIndex          = framebufferManager.GetFramebufferView("GEmmisiveView").sampledImageID,
+            .SceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
+            .IrradianceIndex         = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
+            .PreFilterIndex          = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,
+            .BRDFLUTIndex            = textureManager.GetTexture(iblMaps.brdfLutID).descriptorID,
+            .ShadowMapIndex          = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
+            .PointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
+            .SpotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
+            .AOIndex                 = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID
         };
 
         pipeline.PushConstants

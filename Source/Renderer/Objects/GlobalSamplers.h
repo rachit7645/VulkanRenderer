@@ -37,6 +37,7 @@ namespace Renderer::Objects
         Vk::SamplerID iblSamplerID         = 0;
         Vk::SamplerID pointShadowSamplerID = 0;
         Vk::SamplerID imguiSamplerID       = 0;
+        Vk::SamplerID spotShadowSamplerID  = 0;
     };
 }
 

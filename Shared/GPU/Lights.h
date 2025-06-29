@@ -31,9 +31,11 @@ GLSL_NAMESPACE_BEGIN(GPU)
 constexpr u32 MAX_POINT_LIGHT_COUNT          = 16;
 constexpr u32 MAX_SHADOWED_POINT_LIGHT_COUNT = 4;
 
-constexpr u32 MAX_SPOT_LIGHT_COUNT = 16;
+constexpr u32 MAX_SPOT_LIGHT_COUNT          = 16;
+constexpr u32 MAX_SHADOWED_SPOT_LIGHT_COUNT = 4;
 
 constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
+constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
 
 #endif
 
@@ -101,13 +103,58 @@ struct SpotLight
     f32       range;
 };
 
+struct ShadowedSpotLight
+{
+    #ifdef __cplusplus
+    ShadowedSpotLight() = default;
+
+    explicit ShadowedSpotLight(const SpotLight& spotLight)
+        : position(spotLight.position),
+          color(spotLight.color),
+          intensity(spotLight.intensity),
+          direction(spotLight.direction),
+          cutOff(spotLight.cutOff),
+          range(spotLight.range),
+          matrix(glm::identity<glm::mat4>())
+    {
+        auto projection = Maths::InfiniteProjectionReverseZ
+        (
+            2.0f * cutOff.y,
+            static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.x) /
+            static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.y),
+            Renderer::NEAR_PLANE
+        );
+
+        projection[1][1] *= -1;
+
+        const auto view = glm::lookAtRH
+        (
+            position,
+            position + glm::normalize(direction),
+            Renderer::WORLD_UP
+        );
+
+        matrix = projection * view;
+    }
+    #endif
+
+    GLSL_VEC3 position;
+    GLSL_VEC3 color;
+    GLSL_VEC3 intensity;
+    GLSL_VEC3 direction;
+    GLSL_VEC2 cutOff;
+    f32       range;
+    GLSL_MAT4 matrix;
+};
+
 #ifdef __cplusplus
 
 template<typename T>
 concept IsLightType = std::is_same_v<T, DirLight> ||
                       std::is_same_v<T, PointLight> ||
                       std::is_same_v<T, ShadowedPointLight> ||
-                      std::is_same_v<T, SpotLight>;
+                      std::is_same_v<T, SpotLight> ||
+                      std::is_same_v<T, ShadowedSpotLight>;
 
 #endif
 
@@ -137,6 +184,12 @@ layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer Spo
 {
     uint      count;
     SpotLight lights[];
+};
+
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer ShadowedSpotLightBuffer
+{
+    uint              count;
+    ShadowedSpotLight lights[];
 };
 
 struct LightInfo
@@ -200,6 +253,18 @@ LightInfo GetLightInfo(ShadowedPointLight light, vec3 fragPosition)
 }
 
 LightInfo GetLightInfo(SpotLight light, vec3 fragPosition)
+{
+    LightInfo info;
+
+    info.L            = normalize(light.position - fragPosition);
+    float attenuation = CalculateAttenuation(light.position, light.range, fragPosition);
+    float intensity   = CalculateSpotIntensity(info.L, light.direction, light.cutOff);
+    info.radiance     = light.color * light.intensity * attenuation * intensity;
+
+    return info;
+}
+
+LightInfo GetLightInfo(ShadowedSpotLight light, vec3 fragPosition)
 {
     LightInfo info;
 

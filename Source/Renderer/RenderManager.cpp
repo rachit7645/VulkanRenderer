@@ -46,6 +46,7 @@ namespace Renderer
           m_lighting(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_shadowRT(m_megaSet, m_pipelineManager, m_framebufferManager),
           m_taa(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_spotShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_culling(m_context.device, m_context.allocator, m_pipelineManager),
           m_vbgtao(m_megaSet, m_pipelineManager, m_framebufferManager),
           m_iblGenerator(m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager),
@@ -538,6 +539,22 @@ namespace Renderer
         );
 
         m_pointShadow.Render
+        (
+            m_FIF,
+            m_frameIndex,
+            cmdBuffer,
+            m_pipelineManager,
+            m_framebufferManager,
+            m_megaSet,
+            m_modelManager,
+            m_sceneBuffer,
+            m_meshBuffer,
+            m_indirectBuffer,
+            m_samplers,
+            m_culling
+        );
+
+        m_spotShadow.Render
         (
             m_FIF,
             m_frameIndex,

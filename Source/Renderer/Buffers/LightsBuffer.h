@@ -41,6 +41,7 @@ namespace Renderer::Buffers
         [[nodiscard]] static VkDeviceSize GetPointLightOffset();
         [[nodiscard]] static VkDeviceSize GetShadowedPointLightOffset();
         [[nodiscard]] static VkDeviceSize GetSpotLightOffset();
+        [[nodiscard]] static VkDeviceSize GetShadowedSpotLightOffset();
 
         void Destroy(VmaAllocator allocator);
 
@@ -50,6 +51,7 @@ namespace Renderer::Buffers
         std::vector<GPU::PointLight>         pointLights;
         std::vector<GPU::ShadowedPointLight> shadowedPointLights;
         std::vector<GPU::SpotLight>          spotLights;
+        std::vector<GPU::ShadowedSpotLight>  shadowedSpotLights;
     private:
         void WriteSunLight(usize FIF, const GPU::DirLight& inSun);
 

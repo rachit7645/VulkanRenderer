@@ -14,38 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef LIGHTING_PUSH_CONSTANT
-#define LIGHTING_PUSH_CONSTANT
+#ifndef SPOT_SHADOW_ALPHA_MASKED_PUSH_CONSTANT
+#define SPOT_SHADOW_ALPHA_MASKED_PUSH_CONSTANT
 
 #include "GLSL.h"
+#include "GPU/Mesh.h"
+#include "GPU/Vertex.h"
 #include "GPU/Scene.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::Lighting)
+#ifndef __cplusplus
+#include "DrawCall.glsl"
+#endif
+
+GLSL_NAMESPACE_BEGIN(Renderer::SpotShadow::AlphaMasked)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
-    GLSL_BUFFER_POINTER(SceneBuffer) Scene;
+    GLSL_BUFFER_POINTER(SceneBuffer)         Scene;
+    GLSL_BUFFER_POINTER(MeshBuffer)          Meshes;
+    GLSL_BUFFER_POINTER(InstanceBuffer)      Instances;
+    GLSL_BUFFER_POINTER(InstanceIndexBuffer) InstanceIndices;
+    GLSL_BUFFER_POINTER(PositionBuffer)      Positions;
+    GLSL_BUFFER_POINTER(UVBuffer)            UVs;
 
-    u32 GBufferSamplerIndex;
-    u32 IBLSamplerIndex;
-    u32 PointShadowSamplerIndex;
-    u32 SpotShadowSamplerIndex;
-
-    u32 GAlbedoIndex;
-    u32 GNormalIndex;
-    u32 GRghMtlIndex;
-    u32 GEmmisiveIndex;
-    u32 SceneDepthIndex;
-
-    u32 IrradianceIndex;
-    u32 PreFilterIndex;
-    u32 BRDFLUTIndex;
-
-    u32 ShadowMapIndex;
-    u32 PointShadowMapIndex;
-    u32 SpotShadowMapIndex;
-
-    u32 AOIndex;
+    u32 LightIndex;
+    u32 TextureSamplerIndex;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

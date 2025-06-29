@@ -16,7 +16,6 @@
 * IBL Generation Caching
 * Staging Pool
 * Generic CPU -> GPU Uploader
-* Spot Light Shadows
 * Light Culling (Tiled / Clustered)
 * Shadow Caching
 * Auto Exposure

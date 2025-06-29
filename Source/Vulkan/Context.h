@@ -43,6 +43,7 @@ namespace Vk
         VkPhysicalDeviceVulkan12Properties                 physicalDeviceVulkan12Properties              = {};
         VkPhysicalDeviceAccelerationStructurePropertiesKHR physicalDeviceAccelerationStructureProperties = {};
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR    physicalDeviceRayTracingPipelineProperties    = {};
+
         // Logical device
         VkDevice device = VK_NULL_HANDLE;
 

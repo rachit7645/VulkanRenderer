@@ -34,6 +34,7 @@
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "IBL/Generator.h"
+#include "SpotShadow/RenderPass.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -136,6 +137,7 @@ namespace Renderer
         Lighting::RenderPass    m_lighting;
         ShadowRT::RayDispatch   m_shadowRT;
         TAA::RenderPass         m_taa;
+        SpotShadow::RenderPass  m_spotShadow;
 
         Culling::Dispatch    m_culling;
         AO::VBGTAO::Dispatch m_vbgtao;
