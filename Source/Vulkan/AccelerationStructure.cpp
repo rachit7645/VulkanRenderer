@@ -40,11 +40,18 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "BLAS Build", {0.7117f, 0.8136f, 0.7313f, 1.0f});
 
-        std::vector<VkTransformMatrixKHR> transforms = {};
+        ankerl::unordered_dense::set<Models::ModelID> uniqueModelIDs = {};
 
         for (const auto& renderObject : renderObjects)
         {
-            for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
+            uniqueModelIDs.insert(renderObject.modelID);
+        }
+
+        std::vector<VkTransformMatrixKHR> transforms = {};
+
+        for (const auto modelID : uniqueModelIDs)
+        {
+            for (const auto& mesh : modelManager.GetModel(modelID).meshes)
             {
                 transforms.emplace_back(glm::vk_cast(mesh.transform));
             }
@@ -110,9 +117,9 @@ namespace Vk
         std::list<VkAccelerationStructureBuildRangeInfoKHR>          ranges         = {};
         std::vector<const VkAccelerationStructureBuildRangeInfoKHR*> pRangeInfos    = {};
 
-        for (usize meshIndex = 0; const auto& renderObject : renderObjects)
+        for (usize meshIndex = 0; const auto modelID : uniqueModelIDs)
         {
-            for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
+            for (const auto& mesh : modelManager.GetModel(modelID).meshes)
             {
                 VkGeometryFlagsKHR geometryFlags = 0;
 
@@ -434,7 +441,7 @@ namespace Vk
 
             blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
 
-            Vk::SetDebugName(device, blas.handle,            fmt::format("BLAS/Compacted/{}",       i));
+            Vk::SetDebugName(device, blas.handle,        fmt::format("BLAS/Compacted/{}",       i));
             Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/Compacted/{}", i));
         }
 
@@ -474,12 +481,36 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "TLAS Build", {0.2117f, 0.8136f, 0.7313f, 1.0f});
 
+        ankerl::unordered_dense::set<Models::ModelID> uniqueModelIDs = {};
+
+        for (const auto& renderObject : renderObjects)
+        {
+            uniqueModelIDs.insert(renderObject.modelID);
+        }
+
+        ankerl::unordered_dense::map<std::pair<Models::ModelID, usize>, usize> meshIndexMap = {};
+
+        for (usize meshIndex = 0; const auto modelID : uniqueModelIDs)
+        {
+            const auto& model = modelManager.GetModel(modelID);
+
+            for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
+            {
+                // (modelID, localMeshIndex) -> globalMeshIndex
+                meshIndexMap[{modelID, localMeshIndex}] = meshIndex++;
+            }
+        }
+
         std::vector<VkAccelerationStructureInstanceKHR> instances = {};
 
-        for (usize meshIndex = 0; const auto& renderObject : renderObjects)
+        for (const auto& renderObject : renderObjects)
         {
-            for (const auto& mesh : modelManager.GetModel(renderObject.modelID).meshes)
+            const auto& model = modelManager.GetModel(renderObject.modelID);
+
+            for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
             {
+                const auto& mesh = model.meshes[localMeshIndex];
+
                 VkGeometryInstanceFlagsKHR instanceFlags = 0;
 
                 if (mesh.material.IsAlphaMasked())
@@ -496,20 +527,20 @@ namespace Vk
                     instanceFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
                 }
 
+                const auto globalMeshIndex = meshIndexMap.at({renderObject.modelID, localMeshIndex});
+
                 instances.emplace_back(VkAccelerationStructureInstanceKHR{
                     .transform                              = glm::vk_cast(Maths::TransformMatrix(
                         renderObject.position,
                         renderObject.rotation,
                         renderObject.scale
                     )),
-                    .instanceCustomIndex                    = static_cast<u32>(meshIndex),
+                    .instanceCustomIndex                    = static_cast<u32>(globalMeshIndex),
                     .mask                                   = 0xFF,
                     .instanceShaderBindingTableRecordOffset = 0,
                     .flags                                  = instanceFlags,
-                    .accelerationStructureReference         = m_bottomLevelASes[meshIndex].deviceAddress
+                    .accelerationStructureReference         = m_bottomLevelASes[globalMeshIndex].deviceAddress
                 });
-
-                ++meshIndex;
             }
         }
 

@@ -440,6 +440,7 @@ namespace Vk
             if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
                 presentMode = availablePresentMode;
+                break;
             }
         }
 
