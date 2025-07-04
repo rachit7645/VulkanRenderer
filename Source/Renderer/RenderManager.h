@@ -94,7 +94,7 @@ namespace Renderer
 
         void Resize();
 
-        void Init();
+        void Initialize();
 
         Engine::Config m_config;
 

@@ -39,7 +39,6 @@ namespace Vk
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME,
-        VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
         #ifdef ENGINE_DEBUG
         VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
         #endif
@@ -82,6 +81,11 @@ namespace Vk
             extensions.emplace_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
         }
 
+        if (HasMemoryBudget())
+        {
+            extensions.emplace_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+        }
+
         return extensions;
     }
 
@@ -112,6 +116,11 @@ namespace Vk
         const bool hasRayTracingMaintenance          = hasRayTracingMaintenanceExtension && hasRayTracingMaintenanceFeature;
 
         return hasAS && hasDeferredHostOperations && hasRayTracingPipeline && hasRayTracingMaintenance;
+    }
+
+    bool Extensions::HasMemoryBudget() const
+    {
+        return HasExtension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     }
 
     bool Extensions::HasExtension(const std::string_view name) const

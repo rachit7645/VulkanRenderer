@@ -84,9 +84,7 @@ file(GLOB SHADER_SOURCES
 # Shader headers
 file(GLOB_RECURSE SHADER_HEADERS
     ${SHADER_SOURCE_DIR}/Include/*.glsl
-    ${SHADER_SOURCE_DIR}/Include/Constants/*.glsl
     ${CMAKE_SOURCE_DIR}/Shared/*.h
-    ${CMAKE_SOURCE_DIR}/Shared/Include/*.h
 )
 
 # Ensure CMake reconfigures when new includes are added

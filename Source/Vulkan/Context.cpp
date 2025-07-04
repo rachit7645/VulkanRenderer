@@ -545,11 +545,16 @@ namespace Vk
             .vkGetMemoryWin32HandleKHR               = nullptr
         };
 
+        VmaAllocatorCreateFlags flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT;
+
+        if (extensions.HasMemoryBudget())
+        {
+            flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+        }
+
         const VmaAllocatorCreateInfo createInfo =
         {
-            .flags                       = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT |
-                                           VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT |
-                                           VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT,
+            .flags                       = flags,
             .physicalDevice              = physicalDevice,
             .device                      = device,
             .preferredLargeHeapBlockSize = 0,

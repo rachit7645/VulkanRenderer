@@ -38,6 +38,7 @@ namespace Vk
 
         [[nodiscard]] bool HasRequiredExtensions() const;
         [[nodiscard]] bool HasRayTracing()         const;
+        [[nodiscard]] bool HasMemoryBudget()       const;
     private:
         [[nodiscard]] bool HasExtension(const std::string_view name) const;
 

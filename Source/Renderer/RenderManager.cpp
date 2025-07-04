@@ -61,8 +61,7 @@ namespace Renderer
             m_sceneBufferCompute        = Buffers::SceneBuffer(m_context.device, m_context.allocator);
         }
 
-        // ImGui Yoy
-        Init();
+        Initialize();
 
         m_frameCounter.Reset();
 
@@ -2024,7 +2023,7 @@ namespace Renderer
         Render();
     }
 
-    void RenderManager::Init()
+    void RenderManager::Initialize()
     {
         Logger::Debug("Initializing Dear ImGui [Version = {}]\n", ImGui::GetVersion());
 

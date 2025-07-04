@@ -68,14 +68,14 @@ void main()
         accelerationStructureEXT(Constants.TLAS),
         rayFlags,
         cullMask,
-        0,
-        0,
-        0,
+        0, // SBT Record Offset
+        0, // SBT Record Stride
+        0, // Miss Index
         origin,
         tmin,
         direction,
         tmax,
-        0
+        0 // Payload Location
     );
 
     imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f - shadowAmount, 0.0f, 0.0f, 0.0f));
