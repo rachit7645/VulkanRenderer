@@ -22,89 +22,17 @@
 #include "Buffer.h"
 #include "BarrierWriter.h"
 #include "BlockAllocator.h"
+#include "Extensions.h"
 #include "Externals/VMA.h"
 #include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 #include "Util/Concept.h"
 #include "GPU/Vertex.h"
 #include "GPU/Surface.h"
+#include "Vulkan/Context.h"
 
 namespace Vk
 {
-    namespace Detail
-    {
-        struct GeometryUpload
-        {
-            GPU::GeometryInfo info   = {};
-            Vk::Buffer        buffer = {};
-        };
-
-        struct VertexBufferInfo
-        {
-            VkBufferUsageFlags    usage      = 0;
-            VkPipelineStageFlags2 stageMask  = VK_PIPELINE_STAGE_2_NONE;
-            VkAccessFlags2        accessMask = VK_ACCESS_2_NONE;
-        };
-
-        template <typename T> requires GPU::IsVertexType<T>
-        consteval Detail::VertexBufferInfo GetVertexBufferInfo()
-        {
-            Detail::VertexBufferInfo bufferInfo = {};
-
-            if constexpr (std::is_same_v<T, GPU::Index>)
-            {
-                bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-                                   VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-
-                bufferInfo.stageMask = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT |
-                                       VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR |
-                                       VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
-
-                bufferInfo.accessMask = VK_ACCESS_2_INDEX_READ_BIT | VK_ACCESS_2_SHADER_READ_BIT;
-            }
-            else if constexpr (std::is_same_v<T, GPU::Position>)
-            {
-                bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                   VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
-
-                bufferInfo.stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-                bufferInfo.accessMask = VK_ACCESS_2_SHADER_READ_BIT;
-            }
-            else if constexpr (std::is_same_v<T, GPU::UV>)
-            {
-                bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-                bufferInfo.stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
-                bufferInfo.accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-            }
-            else if constexpr (std::is_same_v<T, GPU::Vertex>)
-            {
-                bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-                bufferInfo.stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
-                bufferInfo.accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-            }
-            else
-            {
-                static_assert(Util::AlwaysFalse<T>, "Unsupported vertex type!");
-            }
-
-            return bufferInfo;
-        }
-    }
-
     template<typename T> requires GPU::IsVertexType<T>
     class VertexBuffer
     {
@@ -115,7 +43,7 @@ namespace Vk
             GPU::GeometryInfo info;
         };
 
-        VertexBuffer();
+        VertexBuffer(const Vk::Extensions& extensions);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>;
 
@@ -144,9 +72,19 @@ namespace Vk
 
         u32 count = 0;
     private:
+        struct GeometryUpload
+        {
+            GPU::GeometryInfo info   = {};
+            Vk::Buffer        buffer = {};
+        };
+
+        VkBufferUsageFlags    m_usage      = 0;
+        VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
+        VkAccessFlags2        m_accessMask = VK_ACCESS_2_NONE;
+
         Vk::BlockAllocator m_allocator = {};
 
-        std::vector<Detail::GeometryUpload> m_pendingUploads = {};
+        std::vector<GeometryUpload> m_pendingUploads = {};
 
         Vk::BarrierWriter m_barrierWriter = {};
     };

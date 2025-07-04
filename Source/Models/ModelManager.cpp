@@ -21,8 +21,8 @@
 
 namespace Models
 {
-    ModelManager::ModelManager(VkDevice device, VmaAllocator allocator)
-        : geometryBuffer(device, allocator)
+    ModelManager::ModelManager(const Vk::Context& context)
+        : geometryBuffer(context)
     {
     }
 

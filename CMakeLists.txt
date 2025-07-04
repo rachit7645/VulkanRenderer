@@ -57,7 +57,7 @@ add_executable(VulkanRenderer
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
 	Source/Vulkan/Context.cpp
-	Source/Vulkan/QueueFamilyIndices.cpp
+	Source/Vulkan/QueueFamilies.cpp
 	Source/Vulkan/SwapchainInfo.cpp
 	Source/Vulkan/ShaderModule.cpp
 	Source/Vulkan/Buffer.cpp

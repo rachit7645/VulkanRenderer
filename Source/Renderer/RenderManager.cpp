@@ -34,7 +34,7 @@ namespace Renderer
           m_graphicsTimeline(m_context.device),
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
-          m_modelManager(m_context.device, m_context.allocator),
+          m_modelManager(m_context),
           m_samplers(m_context, m_megaSet, m_modelManager.textureManager),
           m_postProcess(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_depth(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
@@ -44,7 +44,7 @@ namespace Renderer
           m_pointShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_gBuffer(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_lighting(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_shadowRT(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_shadowRT(m_megaSet, m_context.extensions, m_pipelineManager, m_framebufferManager),
           m_taa(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_spotShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_culling(m_context.device, m_context.allocator, m_pipelineManager),
@@ -54,7 +54,7 @@ namespace Renderer
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
     {
-        if (m_context.queueFamilies.computeFamily.has_value())
+        if (m_context.queueFamilies.computeFamily.has_value() && m_context.extensions.HasRayTracing())
         {
             m_computeCmdBufferAllocator = Vk::CommandBufferAllocator(m_context.device, *m_context.queueFamilies.computeFamily);
             m_computeTimeline           = Vk::ComputeTimeline(m_context.device);
@@ -78,7 +78,6 @@ namespace Renderer
             m_imGui.Destroy(m_context.allocator);
 
             m_megaSet.Destroy(m_context.device);
-            m_accelerationStructure.Destroy(m_context.device, m_context.allocator);
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
             m_pipelineManager.Destroy(m_context.device);
@@ -86,6 +85,11 @@ namespace Renderer
             m_graphicsTimeline.Destroy(m_context.device);
             m_swapchain.Destroy(m_context.device);
             m_graphicsCmdBufferAllocator.Destroy(m_context.device);
+
+            if (m_accelerationStructure.has_value())
+            {
+                m_accelerationStructure->Destroy(m_context.device, m_context.allocator);
+            }
 
             if (m_computeCmdBufferAllocator.has_value())
             {
@@ -119,7 +123,7 @@ namespace Renderer
         AcquireSwapchainImage();
         BeginFrame();
 
-        if (m_context.queueFamilies.HasAllFamilies())
+        if (m_context.queueFamilies.HasAllFamilies() && m_context.extensions.HasRayTracing())
         {
             RenderMultiQueue();
         }
@@ -499,44 +503,53 @@ namespace Renderer
 
         if (m_scene->haveRenderObjectsChanged)
         {
-            m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = m_accelerationStructure] () mutable
+            if (m_context.extensions.HasRayTracing())
             {
-                as.Destroy(device, allocator);
-            });
+                if (m_accelerationStructure.has_value())
+                {
+                    m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
+                    {
+                        as.Destroy(device, allocator);
+                    });
+                }
 
-            m_accelerationStructure = {};
+                m_accelerationStructure = Vk::AccelerationStructure{};
 
-            m_accelerationStructure.BuildBottomLevelAS
+                m_accelerationStructure->BuildBottomLevelAS
+                (
+                    m_frameIndex,
+                    cmdBuffer,
+                    m_context,
+                    m_modelManager,
+                    m_scene->renderObjects,
+                    m_deletionQueues[m_FIF]
+                );
+            }
+
+            m_scene->haveRenderObjectsChanged = false;
+        }
+
+        if (m_context.extensions.HasRayTracing())
+        {
+            m_accelerationStructure->TryCompactBottomLevelAS
             (
-                m_frameIndex,
+                cmdBuffer,
+                m_context.device,
+                m_context.allocator,
+                m_graphicsTimeline,
+                m_deletionQueues[m_FIF]
+            );
+
+            m_accelerationStructure->BuildTopLevelAS
+            (
+                m_FIF,
                 cmdBuffer,
                 m_context,
                 m_modelManager,
                 m_scene->renderObjects,
                 m_deletionQueues[m_FIF]
             );
-
-            m_scene->haveRenderObjectsChanged = false;
         }
-
-        m_accelerationStructure.TryCompactBottomLevelAS
-        (
-            cmdBuffer,
-            m_context.device,
-            m_context.allocator,
-            m_graphicsTimeline,
-            m_deletionQueues[m_FIF]
-        );
-
-        m_accelerationStructure.BuildTopLevelAS
-        (
-            m_FIF,
-            cmdBuffer,
-            m_context,
-            m_modelManager,
-            m_scene->renderObjects,
-            m_deletionQueues[m_FIF]
-        );
 
         m_pointShadow.Render
         (
@@ -628,22 +641,33 @@ namespace Renderer
 
     void RenderManager::TraceRays(const Vk::CommandBuffer& cmdBuffer)
     {
-        m_shadowRT.TraceRays
-        (
-            m_FIF,
-            m_frameIndex,
-            cmdBuffer,
-            m_context,
-            m_megaSet,
-            m_modelManager,
-            m_pipelineManager,
-            m_framebufferManager,
-            m_sceneBuffer,
-            m_meshBuffer,
-            m_samplers,
-            m_accelerationStructure,
-            m_deletionQueues[m_FIF]
-        );
+        if (m_context.extensions.HasRayTracing())
+        {
+            m_shadowRT.TraceRays
+            (
+                m_FIF,
+                m_frameIndex,
+                cmdBuffer,
+                m_context,
+                m_megaSet,
+                m_modelManager,
+                m_pipelineManager,
+                m_framebufferManager,
+                m_sceneBuffer,
+                m_meshBuffer,
+                m_samplers,
+                *m_accelerationStructure,
+                m_deletionQueues[m_FIF]
+            );
+        }
+        else
+        {
+            Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
+
+            m_shadowRT.Clear(cmdBuffer, m_framebufferManager);
+
+            Vk::EndLabel(cmdBuffer);
+        }
     }
 
     void RenderManager::Lighting(const Vk::CommandBuffer& cmdBuffer)

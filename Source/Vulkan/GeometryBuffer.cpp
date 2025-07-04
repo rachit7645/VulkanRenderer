@@ -24,25 +24,28 @@
 
 namespace Vk
 {
-    constexpr f64 BUFFER_GROWTH_FACTOR = 1.5;
-
-    GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
+    GeometryBuffer::GeometryBuffer(const Vk::Context& context)
+        : indexBuffer(context.extensions),
+          positionBuffer(context.extensions),
+          uvBuffer(context.extensions),
+          vertexBuffer(context.extensions)
     {
         cubeBuffer = Vk::Buffer
         (
-            allocator,
+            context.allocator,
             36 * sizeof(GPU::Position),
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        cubeBuffer.GetDeviceAddress(device);
+        cubeBuffer.GetDeviceAddress(context.device);
 
-        SetupCubeUpload(allocator);
+        SetupCubeUpload(context.allocator);
 
-        Vk::SetDebugName(device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
+        Vk::SetDebugName(context.device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const

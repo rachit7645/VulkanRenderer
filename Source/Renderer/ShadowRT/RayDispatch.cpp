@@ -29,22 +29,26 @@ namespace Renderer::ShadowRT
     RayDispatch::RayDispatch
     (
         const Vk::MegaSet& megaSet,
+        const Vk::Extensions& extensions,
         Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("ShadowRT", Vk::PipelineConfig{}
-            .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
-            .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-            .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
-            .AttachShader("Shadows/RT/Shadow.rahit", VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
-            .SetMaxRayRecursionDepth(1)
-            .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
-        );
+        if (extensions.HasRayTracing())
+        {
+            pipelineManager.AddPipeline("ShadowRT", Vk::PipelineConfig{}
+                .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
+                .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+                .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
+                .AttachShader("Shadows/RT/Shadow.rahit", VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
+                .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+                .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+                .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
+                .SetMaxRayRecursionDepth(1)
+                .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
+                .AddDescriptorLayout(megaSet.descriptorLayout)
+            );
+        }
         
         framebufferManager.AddFramebuffer
         (
@@ -122,64 +126,7 @@ namespace Renderer::ShadowRT
 
         if (accelerationStructure.topLevelASes[FIF].handle == VK_NULL_HANDLE)
         {
-            shadowMap.image.Barrier
-            (
-                cmdBuffer,
-                Vk::ImageBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .baseMipLevel   = 0,
-                    .levelCount     = shadowMap.image.mipLevels,
-                    .baseArrayLayer = 0,
-                    .layerCount     = shadowMap.image.arrayLayers
-                }
-            );
-
-            constexpr VkClearColorValue WHITE = {.float32 = {1.0f, 1.0f, 1.0f, 1.0f}};
-
-            const VkImageSubresourceRange subresourceRange =
-            {
-                .aspectMask     = shadowMap.image.aspect,
-                .baseMipLevel   = 0,
-                .levelCount     = shadowMap.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = shadowMap.image.arrayLayers
-            };
-
-            vkCmdClearColorImage
-            (
-                cmdBuffer.handle,
-                shadowMap.image.handle,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                &WHITE,
-                1,
-                &subresourceRange
-            );
-
-            shadowMap.image.Barrier
-            (
-                cmdBuffer,
-                Vk::ImageBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .baseMipLevel   = 0,
-                    .levelCount     = shadowMap.image.mipLevels,
-                    .baseArrayLayer = 0,
-                    .layerCount     = shadowMap.image.arrayLayers
-                }
-            );
+            Clear(cmdBuffer, framebufferManager);
 
             Vk::EndLabel(cmdBuffer);
 
@@ -266,6 +213,71 @@ namespace Renderer::ShadowRT
         );
 
         Vk::EndLabel(cmdBuffer);
+    }
+
+    void RayDispatch::Clear(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager)
+    {
+        const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
+        const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);
+
+        shadowMap.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = shadowMap.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = shadowMap.image.arrayLayers
+            }
+        );
+
+        constexpr VkClearColorValue WHITE = {.float32 = {1.0f, 1.0f, 1.0f, 1.0f}};
+
+        const VkImageSubresourceRange subresourceRange =
+        {
+            .aspectMask     = shadowMap.image.aspect,
+            .baseMipLevel   = 0,
+            .levelCount     = shadowMap.image.mipLevels,
+            .baseArrayLayer = 0,
+            .layerCount     = shadowMap.image.arrayLayers
+        };
+
+        vkCmdClearColorImage
+        (
+            cmdBuffer.handle,
+            shadowMap.image.handle,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            &WHITE,
+            1,
+            &subresourceRange
+        );
+
+        shadowMap.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = shadowMap.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = shadowMap.image.arrayLayers
+            }
+        );
     }
 
     void RayDispatch::Destroy( VmaAllocator allocator)

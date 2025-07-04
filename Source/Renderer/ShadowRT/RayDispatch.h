@@ -33,6 +33,7 @@ namespace Renderer::ShadowRT
         RayDispatch
         (
             const Vk::MegaSet& megaSet,
+            const Vk::Extensions& extensions,
             Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
@@ -53,6 +54,8 @@ namespace Renderer::ShadowRT
             const Vk::AccelerationStructure& accelerationStructure,
             Util::DeletionQueue& deletionQueue
         );
+
+        void Clear(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager);
 
         void Destroy(VmaAllocator allocator);
     private:

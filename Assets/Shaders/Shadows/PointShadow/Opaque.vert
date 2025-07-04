@@ -24,10 +24,16 @@
 
 layout(location = 0) out vec3 fragPosition;
 
-// Note: Writing the shader in this way reduces register pressure a lot (for some reason)
 void main()
 {
-    vec4 fragPos = Constants.Instances.instances[Constants.InstanceIndices.indices[gl_DrawID]].transform * vec4(Constants.Positions.positions[gl_VertexIndex], 1.0f);
+    uint     instanceIndex = Constants.InstanceIndices.indices[gl_DrawID];
+    Instance instance      = Constants.Instances.instances[instanceIndex];
+    Mesh     mesh          = Constants.Meshes.meshes[instance.meshIndex];
+
+    vec3 position = Constants.Positions.positions[gl_VertexIndex];
+    mat4 matrix   = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex];
+
+    vec4 fragPos = instance.transform * vec4(position, 1.0f);
+    gl_Position  = matrix * fragPos;
     fragPosition = fragPos.xyz;
-    gl_Position  = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex] * fragPos;
 }

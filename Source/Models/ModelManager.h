@@ -31,7 +31,8 @@ namespace Models
     class ModelManager
     {
     public:
-        ModelManager(VkDevice device, VmaAllocator allocator);
+        explicit ModelManager(const Vk::Context& context);
+
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         [[nodiscard]] Models::ModelID AddModel

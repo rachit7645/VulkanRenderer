@@ -20,7 +20,8 @@
 #include <vulkan/vulkan.h>
 
 #include "DebugCallback.h"
-#include "QueueFamilyIndices.h"
+#include "QueueFamilies.h"
+    #include "Extensions.h"
 #include "Util/Types.h"
 #include "Util/DeletionQueue.h"
 #include "Externals/VMA.h"
@@ -32,30 +33,26 @@ namespace Vk
     {
     public:
         explicit Context(SDL_Window* window);
+
         void Destroy();
 
-        // Vulkan instance
-        VkInstance instance = VK_NULL_HANDLE;
+        VkInstance   instance = VK_NULL_HANDLE;
+        VkSurfaceKHR surface  = VK_NULL_HANDLE;
 
-        // Physical device
         VkPhysicalDevice                                   physicalDevice                                = VK_NULL_HANDLE;
         VkPhysicalDeviceLimits                             physicalDeviceLimits                          = {};
         VkPhysicalDeviceVulkan12Properties                 physicalDeviceVulkan12Properties              = {};
         VkPhysicalDeviceAccelerationStructurePropertiesKHR physicalDeviceAccelerationStructureProperties = {};
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR    physicalDeviceRayTracingPipelineProperties    = {};
 
-        // Logical device
         VkDevice device = VK_NULL_HANDLE;
 
-        // Surface
-        VkSurfaceKHR surface = VK_NULL_HANDLE;
+        Vk::QueueFamilies queueFamilies;
+        Vk::Extensions         extensions;
 
-        // Queues
-        Vk::QueueFamilyIndices queueFamilies;
-        VkQueue                graphicsQueue = VK_NULL_HANDLE;
-        VkQueue                computeQueue  = VK_NULL_HANDLE;
+        VkQueue graphicsQueue = VK_NULL_HANDLE;
+        VkQueue computeQueue  = VK_NULL_HANDLE;
 
-        // Memory allocator
         VmaAllocator allocator = VK_NULL_HANDLE;
     private:
         void CreateInstance();
@@ -76,11 +73,9 @@ namespace Vk
         void AddDebugNames() const;
 
         #ifdef ENGINE_DEBUG
-        // Vulkan debug callback
         Vk::DebugCallback m_debugCallback;
         #endif
 
-        // Deletion queue
         Util::DeletionQueue m_deletionQueue = {};
     };
 }

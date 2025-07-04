@@ -17,13 +17,43 @@
 #ifndef EXTENSIONS_H
 #define EXTENSIONS_H
 
-#include <span>
+#include <vector>
+#include <string>
 #include <vulkan/vulkan.h>
+
+#include "Externals/UnorderedDense.h"
 
 namespace Vk
 {
-    [[nodiscard]] std::vector<const char*> LoadInstanceExtensions(const std::span<const char* const> requiredExtensions);
-    [[nodiscard]] bool CheckDeviceExtensionSupport(VkPhysicalDevice device, const std::span<const char* const> requiredExtensions);;
+    class Extensions
+    {
+    public:
+        Extensions() = default;
+
+        explicit Extensions(VkPhysicalDevice device);
+
+        [[nodiscard]] static std::vector<const char*> GetInstanceExtensions();
+
+        [[nodiscard]] std::vector<const char*> GetDeviceExtensions() const;
+
+        [[nodiscard]] bool HasRequiredExtensions() const;
+        [[nodiscard]] bool HasRayTracing()         const;
+    private:
+        [[nodiscard]] bool HasExtension(const std::string_view name) const;
+
+        void QueryInstanceExtensions();
+        void QueryDeviceExtensions(VkPhysicalDevice device);
+        void QueryDeviceFeatures(VkPhysicalDevice device);
+
+        std::vector<VkExtensionProperties> m_instanceExtensions;
+        std::vector<VkExtensionProperties> m_deviceExtensions;
+
+        ankerl::unordered_dense::map<std::string, bool> m_extensionTable;
+
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR  m_accelerationStructureFeatures = {};
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR     m_rayTracingPipelineFeatures    = {};
+        VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR m_rayTracingMaintenanceFeatures = {};
+    };
 }
 
 #endif

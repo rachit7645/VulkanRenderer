@@ -119,11 +119,12 @@ namespace Renderer
 
         Vk::FormatHelper  m_formatHelper;
 
-        Vk::MegaSet               m_megaSet;
-        Vk::FramebufferManager    m_framebufferManager;
-        Vk::AccelerationStructure m_accelerationStructure;
-        Models::ModelManager      m_modelManager;
-        Vk::PipelineManager       m_pipelineManager;
+        Vk::MegaSet            m_megaSet;
+        Vk::FramebufferManager m_framebufferManager;
+        Models::ModelManager   m_modelManager;
+        Vk::PipelineManager    m_pipelineManager;
+
+        std::optional<Vk::AccelerationStructure> m_accelerationStructure;
 
         Objects::GlobalSamplers m_samplers;
 
@@ -148,7 +149,7 @@ namespace Renderer
         Buffers::IndirectBuffer m_indirectBuffer;
 
         Buffers::SceneBuffer                m_sceneBuffer;
-        std::optional<Buffers::SceneBuffer> m_sceneBufferCompute;
+        std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;
 
         std::optional<Engine::Scene> m_scene = std::nullopt;
 

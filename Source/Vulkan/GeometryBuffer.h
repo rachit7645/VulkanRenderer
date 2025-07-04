@@ -30,7 +30,7 @@ namespace Vk
     class GeometryBuffer
     {
     public:
-        GeometryBuffer(VkDevice device, VmaAllocator allocator);
+        explicit GeometryBuffer(const Vk::Context& context);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator);

@@ -35,10 +35,10 @@ void main()
     vec3 position = Constants.Positions.positions[gl_VertexIndex];
     UV   uvs      = Constants.UVs.uvs[gl_VertexIndex];
 
-    mat4 projectionView = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex];
+    mat4 matrix = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex];
 
     vec4 fragPos = instance.transform * vec4(position, 1.0f);
-    gl_Position  = projectionView * fragPos;
+    gl_Position  = matrix * fragPos;
     fragPosition = fragPos.xyz;
 
     fragUV     = uvs.uv[mesh.material.albedoUVMapID];

@@ -225,7 +225,7 @@ namespace Vk
 
     void BlockAllocator::QueueResize(VkDeviceSize minRequiredCapacity)
     {
-        constexpr f64 BUFFER_GROWTH_FACTOR = 1.3;
+        constexpr f64 BUFFER_GROWTH_FACTOR = 1.2;
 
         m_capacity = static_cast<VkDeviceSize>(BUFFER_GROWTH_FACTOR * static_cast<f64>(minRequiredCapacity));
 
