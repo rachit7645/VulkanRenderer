@@ -33,9 +33,9 @@ layout(location = 0) out vec3 outColor;
 
 void main()
 {
-    vec4  gAlbedo_Reflectance = texture(sampler2D(Textures[Constants.GAlbedoIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    vec3  albedo              = gAlbedo_Reflectance.rgb;
-    float reflectance         = gAlbedo_Reflectance.a;
+    vec4  gAlbedoIoR  = texture(sampler2D(Textures[Constants.GAlbedoIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
+    vec3  albedo      = gAlbedoIoR.rgb;
+    float reflectance = IoRToReflectance(UnpackIoR(gAlbedoIoR.a));
 
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
     vec3 normal  = UnpackNormal(gNormal.rg);

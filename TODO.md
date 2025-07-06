@@ -21,4 +21,3 @@
 * Auto Exposure
 * Mesh Shaders
 * Improve PBR (See DevSH's Discussion)
-* Better Reflectance Storage 

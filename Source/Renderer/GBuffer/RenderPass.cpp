@@ -79,7 +79,7 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebuffer
         (
-            "GAlbedoReflectance",
+            "GAlbedoIoR",
             Vk::FramebufferType::ColorRGBA_UNorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
@@ -217,8 +217,8 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
-            "GAlbedoReflectance",
-            "GAlbedoReflectanceView",
+            "GAlbedoIoR",
+            "GAlbedoIoRView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -314,7 +314,7 @@ namespace Renderer::GBuffer
         const auto& singleSidedPipeline = pipelineManager.GetPipeline("GBuffer/SingleSided");
         const auto& doubleSidedPipeline = pipelineManager.GetPipeline("GBuffer/DoubleSided");
         
-        const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView");
+        const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoIoRView");
         const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");
         const auto& gRghMtlView        = framebufferManager.GetFramebufferView("GRoughnessMetallicView");
         const auto& gEmmisiveView      = framebufferManager.GetFramebufferView("GEmmisiveView");

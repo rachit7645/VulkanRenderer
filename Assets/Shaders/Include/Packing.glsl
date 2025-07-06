@@ -58,6 +58,19 @@ vec3 UnpackNormal(vec2 pNormal)
     return normalize(normal);
 }
 
+float PackIoR(float ior)
+{
+    // Assume that IoR is between 1.0 and 3.0
+    ior = clamp(ior, 1.0f, 3.0f);
+
+    return 0.5f * (ior - 1.0f);
+}
+
+float UnpackIoR(float ior)
+{
+    return 2.0f * ior + 1.0f;
+}
+
 float PackU8ToUNorm(uint value)
 {
     return (float(value & 0xFF) + 0.5f) / 255.0f;

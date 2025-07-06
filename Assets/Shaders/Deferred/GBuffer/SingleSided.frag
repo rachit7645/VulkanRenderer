@@ -31,7 +31,7 @@ layout(location = 2) in      vec2 fragUV[2];
 layout(location = 4) in      mat3 fragTBNMatrix;
 layout(location = 7) in flat uint fragDrawID;
 
-layout(location = 0) out vec4 gAlbedoReflectance;
+layout(location = 0) out vec4 gAlbedoIoR;
 layout(location = 1) out vec2 gNormal;
 layout(location = 2) out vec2 gRoughnessMetallic;
 layout(location = 3) out vec3 gEmmisive;
@@ -44,8 +44,8 @@ void main()
     vec3 albedo  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.albedoUVMapID]).rgb;
          albedo *= mesh.material.albedoFactor.rgb;
 
-    gAlbedoReflectance.rgb = albedo.rgb;
-    gAlbedoReflectance.a   = IoRToReflectance(mesh.material.ior);
+    gAlbedoIoR.rgb = albedo.rgb;
+    gAlbedoIoR.a   = PackIoR(mesh.material.ior);
 
     vec3 normal = texture(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.normalUVMapID]).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);
