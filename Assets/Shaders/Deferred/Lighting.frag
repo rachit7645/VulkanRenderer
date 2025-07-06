@@ -181,20 +181,5 @@ void main()
 
     Lo += emmisive;
 
-    ShadowedSpotLight light     = Constants.Scene.ShadowedSpotLights.lights[0];
-    LightInfo         lightInfo = GetLightInfo(light, worldPosition);
-
-    float shadow = CalculateSpotShadow
-    (
-        0,
-        light,
-        worldPosition,
-        normal,
-        TextureArrays[Constants.SpotShadowMapIndex],
-        Samplers[Constants.SpotShadowSamplerIndex]
-    );
-
-    outColor = vec3(shadow);
-
     outColor = Lo;
 }

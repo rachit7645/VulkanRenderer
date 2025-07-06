@@ -205,6 +205,21 @@ namespace Vk
 
     void PipelineManager::ReloadAll()
     {
+        #ifdef ENGINE_DEBUG
+        const auto result = std::system("python ../Assets/Shaders/CompileShaders.py");
+        #else
+        const auto result = std::system("python ../Assets/Shaders/CompileShaders.py --release");
+        #endif
+
+        if (result != 0)
+        {
+            Logger::Warning("Pipeline Reload Failed! [Result={}]\n", result);
+
+            #ifdef ENGINE_DEBUG
+            return;
+            #endif
+        }
+
         m_dirtyPipelineConfigs.insert(m_pipelineConfigs.begin(), m_pipelineConfigs.end());
     }
 

@@ -20,6 +20,5 @@
 * Shadow Caching
 * Auto Exposure
 * Mesh Shaders
-* Python Script for Shader Builds
 * Improve PBR (See DevSH's Discussion)
 * Better Reflectance Storage 

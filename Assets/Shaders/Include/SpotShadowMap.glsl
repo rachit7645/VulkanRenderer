@@ -17,7 +17,7 @@
 #ifndef SPOT_SHADOW_MAP_GLSL
 #define SPOT_SHADOW_MAP_GLSL
 
-#include "Lights.h"
+#include "GPU/Lights.h"
 #include "Math.glsl"
 
 float CalculateSpotShadow

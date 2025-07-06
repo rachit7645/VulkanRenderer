@@ -19,7 +19,7 @@
 #ifndef PBR_GLSL
 #define PBR_GLSL
 
-#include "Lights.h"
+#include "GPU/Lights.h"
 #include "Math.glsl"
 
 float IoRToReflectance(float ior)
