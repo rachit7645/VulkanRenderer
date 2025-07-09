@@ -737,18 +737,21 @@ namespace Models
     {
         const auto& texture = asset.textures[textureIndex];
 
-        usize imageIndex         = 0;
-        Vk::ImageUploadType type = Vk::ImageUploadType::KTX2;
+        usize                imageIndex = 0;
+        Vk::ImageUploadType  type       = Vk::ImageUploadType::KTX2;
+        Vk::ImageUploadFlags flags      = Vk::ImageUploadFlags::None;
 
         if (texture.basisuImageIndex.has_value())
         {
             imageIndex = texture.basisuImageIndex.value();
             type       = Vk::ImageUploadType::KTX2;
+            flags      = Vk::ImageUploadFlags::None;
         }
         else if (texture.imageIndex.has_value())
         {
             imageIndex = texture.imageIndex.value();
             type       = Vk::ImageUploadType::SDR;
+            flags      = Vk::ImageUploadFlags::Mipmaps;
         }
         else
         {
@@ -797,7 +800,7 @@ namespace Models
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
-                        .flags  = Vk::ImageUploadFlags::None,
+                        .flags  = flags,
                         .source = Vk::ImageUploadFile{
                             .path = fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
                         }
@@ -815,7 +818,7 @@ namespace Models
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
-                        .flags  = Vk::ImageUploadFlags::None,
+                        .flags  = flags,
                         .source = Vk::ImageUploadMemory{
                             .name = std::string(image.name),
                             .data = std::vector(arrayBegin, arrayEnd)
@@ -852,7 +855,7 @@ namespace Models
                             deletionQueue,
                             Vk::ImageUpload{
                                 .type   = type,
-                                .flags  = Vk::ImageUploadFlags::None,
+                                .flags  = flags,
                                 .source = Vk::ImageUploadMemory{
                                     .name = std::string(image.name),
                                     .data = std::vector(arrayBegin, arrayEnd)

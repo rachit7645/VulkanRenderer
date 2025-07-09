@@ -247,7 +247,7 @@ namespace Renderer
 
     void RenderManager::RenderMultiQueue()
     {
-        // GBuffer Generation Submit
+        // GBuffer Generation
         {
             const auto gBufferGenerationCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -306,7 +306,7 @@ namespace Renderer
             );
         }
 
-        // Async Compute Submit
+        // Async Compute
         {
             const auto asyncComputeCmdBuffer = m_computeCmdBufferAllocator->AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -366,7 +366,7 @@ namespace Renderer
             );
         }
 
-        // Ray Dispatch Submit
+        // Ray Dispatch
         {
             const auto rayDispatchCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -424,7 +424,7 @@ namespace Renderer
             );
         }
 
-        // Lighting Submit
+        // Lighting
         {
             const auto lightingCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 

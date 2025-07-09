@@ -42,13 +42,8 @@ namespace Vk
         {
             .flags          = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
             .usage          = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-            #ifdef ENGINE_DEBUG
-            .requiredFlags  = 0,
-            .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            #else
             .requiredFlags  = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             .preferredFlags = 0,
-            #endif
             .memoryTypeBits = 0,
             .pool           = VK_NULL_HANDLE,
             .pUserData      = nullptr,
@@ -64,22 +59,6 @@ namespace Vk
             &allocationInfo),
             "Failed to create image!"
         );
-
-        #ifdef ENGINE_DEBUG
-        VkMemoryPropertyFlags flags;
-        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &flags);
-
-        if (!(flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
-        {
-            Logger::Warning
-            (
-                "Image not allocated from device local memory! May harm performance. [handle={}] [allocation={}] [flags={}]\n",
-                std::bit_cast<void*>(handle),
-                std::bit_cast<void*>(allocation),
-                string_VkMemoryPropertyFlags(flags)
-            );
-        }
-        #endif
     }
 
     Image::Image
@@ -168,9 +147,9 @@ namespace Vk
             (
                 cmdBuffer,
                 Vk::ImageBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
                     .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                     .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                     .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -265,7 +244,7 @@ namespace Vk
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -282,7 +261,7 @@ namespace Vk
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

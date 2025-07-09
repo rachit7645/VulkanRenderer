@@ -40,6 +40,7 @@ namespace Vk
         None    = 0,
         Flipped = 1 << 0,
         F16     = 1 << 1,
+        Mipmaps = 1 << 2
     };
 
     struct ImageUploadFile
@@ -103,12 +104,13 @@ namespace Vk
     private:
         struct Upload
         {
-            Vk::Image                       image         = {};
-            Vk::Buffer                      buffer        = {};
-            std::vector<VkBufferImageCopy2> copyRegions   = {};
-            VkPipelineStageFlags2           srcStageMask  = VK_PIPELINE_STAGE_2_NONE;
-            VkAccessFlags2                  srcAccessMask = VK_ACCESS_2_NONE;
-            VkImageLayout                   oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+            Vk::Image                       image           = {};
+            Vk::Buffer                      buffer          = {};
+            std::vector<VkBufferImageCopy2> copyRegions     = {};
+            VkPipelineStageFlags2           srcStageMask    = VK_PIPELINE_STAGE_2_NONE;
+            VkAccessFlags2                  srcAccessMask   = VK_ACCESS_2_NONE;
+            VkImageLayout                   oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED;
+            bool                            generateMipmaps = false;
         };
 
         [[nodiscard]] Vk::Image LoadFromFile
@@ -151,7 +153,8 @@ namespace Vk
             Util::DeletionQueue& deletionQueue,
             const u8* data,
             u32 width,
-            u32 height
+            u32 height,
+            ImageUploadFlags flags
         );
 
         [[nodiscard]] Vk::Image LoadHDRFile
@@ -213,7 +216,8 @@ namespace Vk
         (
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue,
-            const ImageUploadRawMemory& rawMemory
+            const ImageUploadRawMemory& rawMemory,
+            ImageUploadFlags flags
         );
 
         void AppendUpload(Upload&& upload);

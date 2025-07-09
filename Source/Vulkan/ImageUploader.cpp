@@ -65,7 +65,8 @@ namespace Vk
                 (
                     allocator,
                     deletionQueue,
-                    rawMemory
+                    rawMemory,
+                    upload.flags
                 );
             }
         }, upload.source);
@@ -118,12 +119,13 @@ namespace Vk
         });
 
         AppendUpload(Upload{
-            .image         = image,
-            .buffer        = buffer,
-            .copyRegions   = copyRegions,
-            .srcStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-            .oldLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            .image           = image,
+            .buffer          = buffer,
+            .copyRegions     = copyRegions,
+            .srcStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+            .oldLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            .generateMipmaps = false
         });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
@@ -187,10 +189,60 @@ namespace Vk
             }
         }
 
+        // Mipmap Generation Barriers
+        {
+            for (const auto& upload : m_pendingUploads)
+            {
+                if (!upload.generateMipmaps || upload.image.mipLevels <= 1)
+                {
+                    continue;
+                }
+
+                m_barrierWriter.WriteImageBarrier
+                (
+                    upload.image,
+                    Vk::ImageBarrier{
+                        .srcStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
+                        .srcAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask    = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                        .dstAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .oldLayout       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        .newLayout       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                        .baseMipLevel    = 0,
+                        .levelCount      = upload.image.mipLevels,
+                        .baseArrayLayer  = 0,
+                        .layerCount      = upload.image.arrayLayers
+                    }
+                );
+            }
+
+            m_barrierWriter.Execute(cmdBuffer);
+        }
+
+        // Mipmap Generation
+        {
+            for (const auto& upload : m_pendingUploads)
+            {
+                if (!upload.generateMipmaps || upload.image.mipLevels <= 1)
+                {
+                    continue;
+                }
+
+                upload.image.GenerateMipmaps(cmdBuffer);
+            }
+        }
+
         // Transfer Destination -> Shader Read Only
         {
             for (const auto& upload : m_pendingUploads)
             {
+                if (upload.generateMipmaps && upload.image.mipLevels > 1)
+                {
+                    continue;
+                }
+
                 m_barrierWriter.WriteImageBarrier
                 (
                     upload.image,
@@ -306,7 +358,6 @@ namespace Vk
         ZoneScoped;
         #endif
 
-        // Flags
         const bool toFlip = (flags & ImageUploadFlags::Flipped) == ImageUploadFlags::Flipped;
 
         s32 _width  = 0;
@@ -337,7 +388,8 @@ namespace Vk
             deletionQueue,
             data,
             width,
-            height
+            height,
+            flags
         );
     }
 
@@ -353,7 +405,6 @@ namespace Vk
         ZoneScoped;
         #endif
 
-        // Flags
         const bool toFlip = (flags & ImageUploadFlags::Flipped) == ImageUploadFlags::Flipped;
 
         s32 _width  = 0;
@@ -385,7 +436,8 @@ namespace Vk
             deletionQueue,
             data,
             width,
-            height
+            height,
+            flags
         );
     }
 
@@ -395,12 +447,15 @@ namespace Vk
         Util::DeletionQueue& deletionQueue,
         const u8* data,
         u32 width,
-        u32 height
+        u32 height,
+        ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
         #endif
+
+        const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
         const usize        texelCount = static_cast<usize>(width) * height;
         const usize        elemCount  = texelCount * STBI_rgb_alpha;
@@ -436,36 +491,41 @@ namespace Vk
             .imageExtent = {width, height, 1}
         }};
 
-        const auto image = Vk::Image
-        (
-            allocator,
-            VkImageCreateInfo{
-                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext                 = nullptr,
-                .flags                 = 0,
-                .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = VK_FORMAT_R8G8B8A8_SRGB,
-                .extent                = {width, height, 1},
-                .mipLevels             = 1,
-                .arrayLayers           = 1,
-                .samples               = VK_SAMPLE_COUNT_1_BIT,
-                .tiling                = VK_IMAGE_TILING_OPTIMAL,
-                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices   = nullptr,
-                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-            },
-            VK_IMAGE_ASPECT_COLOR_BIT
-        );
+        VkImageCreateInfo createInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = VK_FORMAT_R8G8B8A8_SRGB,
+            .extent                = {width, height, 1},
+            .mipLevels             = 1,
+            .arrayLayers           = 1,
+            .samples               = VK_SAMPLE_COUNT_1_BIT,
+            .tiling                = VK_IMAGE_TILING_OPTIMAL,
+            .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr,
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        if (generateMipmaps)
+        {
+            createInfo.mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
+            createInfo.usage    |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        }
+
+        const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
         AppendUpload(Upload{
-            .image         = image,
-            .buffer        = buffer,
-            .copyRegions   = copyRegions,
-            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
-            .srcAccessMask = VK_ACCESS_2_NONE,
-            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+            .image           = image,
+            .buffer          = buffer,
+            .copyRegions     = copyRegions,
+            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask   = VK_ACCESS_2_NONE,
+            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+            .generateMipmaps = generateMipmaps
         });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
@@ -587,8 +647,8 @@ namespace Vk
         ZoneScoped;
         #endif
 
-        // Flags
-        const bool toF16 = (flags & ImageUploadFlags::F16) == ImageUploadFlags::F16;
+        const bool toF16           = (flags & ImageUploadFlags::F16    ) == ImageUploadFlags::F16;
+        const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
         const usize        texelCount = static_cast<usize>(width) * height;
         const usize        elemCount  = texelCount * STBI_rgb_alpha;
@@ -632,36 +692,43 @@ namespace Vk
             .imageExtent = {width, height, 1}
         }};
 
-        const auto image = Vk::Image
-        (
-            allocator,
-            VkImageCreateInfo{
-                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext                 = nullptr,
-                .flags                 = 0,
-                .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT,
-                .extent                = {width, height, 1},
-                .mipLevels             = 1,
-                .arrayLayers           = 1,
-                .samples               = VK_SAMPLE_COUNT_1_BIT,
-                .tiling                = VK_IMAGE_TILING_OPTIMAL,
-                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices   = nullptr,
-                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-            },
-            VK_IMAGE_ASPECT_COLOR_BIT
-        );
+        VkImageCreateInfo createInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = VK_FORMAT_UNDEFINED,
+            .extent                = {width, height, 1},
+            .mipLevels             = 1,
+            .arrayLayers           = 1,
+            .samples               = VK_SAMPLE_COUNT_1_BIT,
+            .tiling                = VK_IMAGE_TILING_OPTIMAL,
+            .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr,
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        createInfo.format = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
+
+        if (generateMipmaps)
+        {
+            createInfo.mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
+            createInfo.usage    |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        }
+
+        const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
         AppendUpload(Upload{
-            .image         = image,
-            .buffer        = buffer,
-            .copyRegions   = copyRegions,
-            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
-            .srcAccessMask = VK_ACCESS_2_NONE,
-            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+            .image           = image,
+            .buffer          = buffer,
+            .copyRegions     = copyRegions,
+            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask   = VK_ACCESS_2_NONE,
+            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+            .generateMipmaps = generateMipmaps
         });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
@@ -697,8 +764,8 @@ namespace Vk
             file.setFrameBuffer(&pixels[0][0], 1, width);
             file.readPixels(dataWindow.min.y, dataWindow.max.y);
 
-            // Flags
-            const bool toF16  = (flags & ImageUploadFlags::F16)     == ImageUploadFlags::F16;
+            const bool toF16           = (flags & ImageUploadFlags::F16)     == ImageUploadFlags::F16;
+            const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
             const usize        texelCount = static_cast<usize>(width) * height;
             const usize        elemCount  = 4 * texelCount;
@@ -740,36 +807,43 @@ namespace Vk
                 .imageExtent = {static_cast<u32>(width), static_cast<u32>(height), 1}
             }};
 
-            const auto image = Vk::Image
-            (
-                allocator,
-                VkImageCreateInfo{
-                    .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                    .pNext                 = nullptr,
-                    .flags                 = 0,
-                    .imageType             = VK_IMAGE_TYPE_2D,
-                    .format                = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT,
-                    .extent                = {static_cast<u32>(width), static_cast<u32>(height), 1},
-                    .mipLevels             = 1,
-                    .arrayLayers           = 1,
-                    .samples               = VK_SAMPLE_COUNT_1_BIT,
-                    .tiling                = VK_IMAGE_TILING_OPTIMAL,
-                    .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-                    .queueFamilyIndexCount = 0,
-                    .pQueueFamilyIndices   = nullptr,
-                    .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-                },
-                VK_IMAGE_ASPECT_COLOR_BIT
-            );
+            VkImageCreateInfo createInfo =
+            {
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = 0,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = VK_FORMAT_UNDEFINED,
+                .extent                = {static_cast<u32>(width), static_cast<u32>(height), 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 1,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            };
+
+            createInfo.format = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
+
+            if (generateMipmaps)
+            {
+                createInfo.mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
+                createInfo.usage    |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            }
+
+            const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
             AppendUpload(Upload{
-                .image         = image,
-                .buffer        = buffer,
-                .copyRegions   = copyRegions,
-                .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask = VK_ACCESS_2_NONE,
-                .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+                .image           = image,
+                .buffer          = buffer,
+                .copyRegions     = copyRegions,
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .generateMipmaps = generateMipmaps
             });
 
             deletionQueue.PushDeletor([allocator, buffer] () mutable
@@ -952,12 +1026,13 @@ namespace Vk
         ktxTexture2_Destroy(pTexture);
 
         AppendUpload(Upload{
-            .image         = image,
-            .buffer        = buffer,
-            .copyRegions   = copyRegions,
-            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
-            .srcAccessMask = VK_ACCESS_2_NONE,
-            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+            .image           = image,
+            .buffer          = buffer,
+            .copyRegions     = copyRegions,
+            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask   = VK_ACCESS_2_NONE,
+            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+            .generateMipmaps = false
         });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
@@ -972,25 +1047,15 @@ namespace Vk
     (
         VmaAllocator allocator,
         Util::DeletionQueue& deletionQueue,
-        const ImageUploadRawMemory& rawMemory
+        const ImageUploadRawMemory& rawMemory,
+        ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
         #endif
 
-        #ifdef ENGINE_DEBUG
-        if
-        (
-            rawMemory.data.empty() ||
-            rawMemory.width == 0 ||
-            rawMemory.height == 0 ||
-            rawMemory.format == VK_FORMAT_UNDEFINED
-        )
-        {
-            Logger::Error("{}\n", "Invalid parameters!");
-        }
-        #endif
+        const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
         const auto pixelCount = static_cast<usize>(rawMemory.width) * static_cast<usize>(rawMemory.height);
         const auto texelSize  = vkuFormatTexelSize(rawMemory.format);
@@ -1026,36 +1091,41 @@ namespace Vk
             .imageExtent       = {rawMemory.width, rawMemory.height, 1}
         });
 
-        const auto image = Vk::Image
-        (
-            allocator,
-            {
-                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext                 = nullptr,
-                .flags                 = 0,
-                .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = rawMemory.format,
-                .extent                = {rawMemory.width, rawMemory.height, 1},
-                .mipLevels             = 1,
-                .arrayLayers           = 1,
-                .samples               = VK_SAMPLE_COUNT_1_BIT,
-                .tiling                = VK_IMAGE_TILING_OPTIMAL,
-                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices   = nullptr,
-                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-            },
-            VK_IMAGE_ASPECT_COLOR_BIT
-        );
+        VkImageCreateInfo createInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = rawMemory.format,
+            .extent                = {rawMemory.width, rawMemory.height, 1},
+            .mipLevels             = 1,
+            .arrayLayers           = 1,
+            .samples               = VK_SAMPLE_COUNT_1_BIT,
+            .tiling                = VK_IMAGE_TILING_OPTIMAL,
+            .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr,
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        if (generateMipmaps)
+        {
+            createInfo.mipLevels = static_cast<u32>(std::floor(std::log2(std::max(rawMemory.width, rawMemory.height))) + 1);
+            createInfo.usage    |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        }
+
+        const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
         AppendUpload(Upload{
-            .image         = image,
-            .buffer        = buffer,
-            .copyRegions   = copyRegions,
-            .srcStageMask  = VK_PIPELINE_STAGE_2_NONE,
-            .srcAccessMask = VK_ACCESS_2_NONE,
-            .oldLayout     = VK_IMAGE_LAYOUT_UNDEFINED
+            .image           = image,
+            .buffer          = buffer,
+            .copyRegions     = copyRegions,
+            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask   = VK_ACCESS_2_NONE,
+            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+            .generateMipmaps = generateMipmaps
         });
 
         deletionQueue.PushDeletor([allocator, buffer] () mutable
