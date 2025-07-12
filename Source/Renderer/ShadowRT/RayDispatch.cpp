@@ -124,15 +124,6 @@ namespace Renderer::ShadowRT
         const auto& shadowMapView = framebufferManager.GetFramebufferView("ShadowRTView");
         const auto& shadowMap     = framebufferManager.GetFramebuffer(shadowMapView.framebuffer);
 
-        if (accelerationStructure.topLevelASes[FIF].handle == VK_NULL_HANDLE)
-        {
-            Clear(cmdBuffer, framebufferManager);
-
-            Vk::EndLabel(cmdBuffer);
-
-            return;
-        }
-
         shadowMap.image.Barrier
         (
             cmdBuffer,

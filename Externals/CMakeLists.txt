@@ -15,6 +15,10 @@
 cmake_minimum_required(VERSION 3.25)
 project(Externals)
 
+# Check if LTO is supported
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
+
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
@@ -36,7 +40,7 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
 function(engine_add_external directory)
     # Parse optional arguments
-    set(options EXCLUDE_FROM_ALL FORCE_RELEASE)
+    set(options EXCLUDE_FROM_ALL FORCE_RELEASE ENABLE_LTO)
     set(oneValueArgs INSTALL_TARGET)
     set(multiValueArgs "")
     cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
@@ -45,19 +49,35 @@ function(engine_add_external directory)
     set(ORIGINAL_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 
     # Force Release
-    if(ARG_FORCE_RELEASE)
+    if (ARG_FORCE_RELEASE)
         set(CMAKE_BUILD_TYPE Release)
     endif()
 
     # Add subdirectory
-    if(ARG_EXCLUDE_FROM_ALL)
+    if (ARG_EXCLUDE_FROM_ALL)
         add_subdirectory(${directory} EXCLUDE_FROM_ALL)
     else()
         add_subdirectory(${directory})
     endif()
 
+    # Enable LTO
+    if (ARG_ENABLE_LTO AND ARG_INSTALL_TARGET)
+        if (LTOSupported)
+            # Get the actual target if it's an ALIAS
+            get_target_property(AliasedTarget ${ARG_INSTALL_TARGET} ALIASED_TARGET)
+
+            if (AliasedTarget)
+                set(ActualTarget ${AliasedTarget})
+            else()
+                set(ActualTarget ${ARG_INSTALL_TARGET})
+            endif()
+
+            set_target_properties(${ActualTarget} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+        endif()
+    endif()
+
     # Handle manual installation
-    if(ARG_INSTALL_TARGET)
+    if (ARG_INSTALL_TARGET)
         install(
             FILES $<TARGET_FILE:${ARG_INSTALL_TARGET}>
             DESTINATION ${ENGINE_INSTALL_DIR}
@@ -72,7 +92,7 @@ function(engine_add_external directory)
     endif()
 
     # Restore original build type
-    if(ARG_FORCE_RELEASE)
+    if (ARG_FORCE_RELEASE)
         set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
     endif()
 endfunction()
@@ -99,15 +119,15 @@ set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FO
 set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
 
 # External Libraries
-engine_add_external(vma             FORCE_RELEASE                                                   )
-engine_add_external(volk            FORCE_RELEASE                                                   )
-engine_add_external(unordered_dense FORCE_RELEASE                                                   )
-engine_add_external(glm             FORCE_RELEASE                  INSTALL_TARGET glm::glm          )
-engine_add_external(fmt                                            INSTALL_TARGET fmt::fmt          )
-engine_add_external(sdl                           EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
-engine_add_external(simdjson        FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
-engine_add_external(fastgltf        FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
-engine_add_external(openexr         FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET OpenEXR::OpenEXR  )
+engine_add_external(vma             FORCE_RELEASE                                                              )
+engine_add_external(volk            FORCE_RELEASE                                                              )
+engine_add_external(unordered_dense FORCE_RELEASE                                                              )
+engine_add_external(glm             FORCE_RELEASE                  ENABLE_LTO INSTALL_TARGET glm::glm          )
+engine_add_external(fmt                                            ENABLE_LTO INSTALL_TARGET fmt::fmt          )
+engine_add_external(sdl                           EXCLUDE_FROM_ALL            INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(simdjson        FORCE_RELEASE EXCLUDE_FROM_ALL            INSTALL_TARGET simdjson::simdjson)
+engine_add_external(fastgltf        FORCE_RELEASE EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
+engine_add_external(openexr         FORCE_RELEASE EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)

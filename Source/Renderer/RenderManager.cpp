@@ -640,7 +640,17 @@ namespace Renderer
 
     void RenderManager::TraceRays(const Vk::CommandBuffer& cmdBuffer)
     {
+        bool canPerformRayDispatch = false;
+
         if (m_context.extensions.HasRayTracing())
+        {
+            if (m_accelerationStructure.has_value())
+            {
+                canPerformRayDispatch = m_accelerationStructure->topLevelASes[m_FIF].handle != VK_NULL_HANDLE;
+            }
+        }
+
+        if (canPerformRayDispatch)
         {
             m_shadowRT.TraceRays
             (
