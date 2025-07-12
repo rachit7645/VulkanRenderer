@@ -32,8 +32,13 @@ float rcp(float x)
     return 1.0f / x;
 }
 
+// x^2 in 1 multiplication
+float square(float x)
+{
+    return x * x;
+}
+
 // x^4 in 2 multiplications
-// I assume pow(x, y) uses an exp and log implementation for this because it has to handle floating point values of y
 float pow4(float x)
 {
     float x2 = x  * x;
@@ -43,7 +48,6 @@ float pow4(float x)
 }
 
 // x^5 in 3 multiplications
-// I assume pow(x, y) uses an exp and log implementation for this because it has to handle floating point values of y
 float pow5(float x)
 {
     float x2 = x * x;

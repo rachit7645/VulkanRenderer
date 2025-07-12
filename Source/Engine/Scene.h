@@ -79,9 +79,11 @@ namespace Engine
         // Only addition/deletion of render objects will update this
         bool haveRenderObjectsChanged = false;
     private:
-        std::string            m_hdrMap;
-        std::string            m_modelPath          = {};
+        std::string            m_loadedHDRMapPath   = {};
+        std::string            m_loadedModelPath    = {};
         Renderer::RenderObject m_loadedRenderObject = {};
+        GPU::PointLight        m_loadedPointLight   = {};
+        GPU::SpotLight         m_loadedSpotLight    = {};
     };
 }
 

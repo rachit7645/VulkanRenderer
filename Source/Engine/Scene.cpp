@@ -123,9 +123,9 @@ namespace Engine
             JSON::CheckError(document["Camera"]["FreeCamera"].get<Renderer::Objects::FreeCamera>(camera), "Failed to load free camera!");
 
             // HDR Map
-            JSON::CheckError(document["IBL"].get_string(m_hdrMap), "Failed to load IBL!");
+            JSON::CheckError(document["IBL"].get_string(m_loadedHDRMapPath), "Failed to load IBL!");
 
-            const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
+            const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
 
             if (Util::Files::Exists(hdrMapAssetPath))
             {
@@ -143,7 +143,7 @@ namespace Engine
                 );
             }
 
-            m_hdrMap.clear();
+            m_loadedHDRMapPath.clear();
         }
         catch (const std::exception& e)
         {
@@ -176,19 +176,19 @@ namespace Engine
                 {
                     if (ImGui::TreeNode("Load"))
                     {
-                        ImGui::InputText("Model Path", &m_modelPath);
+                        ImGui::InputText("Model Path", &m_loadedModelPath);
 
                         ImGui::DragFloat3("Position", &m_loadedRenderObject.position[0], 1.0f,                      0.0f, 0.0f, "%.2f");
                         ImGui::DragFloat3("Rotation", &m_loadedRenderObject.rotation[0], glm::radians(1.0f), 0.0f, 0.0f, "%.2f");
                         ImGui::DragFloat3("Scale",    &m_loadedRenderObject.scale[0],    1.0f,                      0.0f, 0.0f, "%.2f");
 
-                        if (ImGui::Button("Load") && !m_modelPath.empty())
+                        if (ImGui::Button("Load") && !m_loadedModelPath.empty())
                         {
-                            const auto modelAssetPath = Util::Files::GetAssetPath("GFX/", m_modelPath);
+                            const auto modelAssetPath = Util::Files::GetAssetPath("GFX/", m_loadedModelPath);
 
                             if (Util::Files::Exists(modelAssetPath))
                             {
-                                m_loadedRenderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, m_modelPath);
+                                m_loadedRenderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, m_loadedModelPath);
 
                                 renderObjects.emplace_back(m_loadedRenderObject);
 
@@ -196,7 +196,15 @@ namespace Engine
                             }
 
                             m_loadedRenderObject = {};
-                            m_modelPath.clear();
+                            m_loadedModelPath.clear();
+                        }
+
+                        ImGui::SameLine();
+
+                        if (ImGui::Button("Cancel"))
+                        {
+                            m_loadedRenderObject = {};
+                            m_loadedModelPath.clear();
                         }
 
                         ImGui::TreePop();
@@ -271,18 +279,60 @@ namespace Engine
 
                     if (ImGui::BeginMenu("Point"))
                     {
-                        for (usize i = 0; i < pointLights.size(); ++i)
+                        if (ImGui::TreeNode("Add"))
                         {
+                            ImGui::DragFloat3("Position",  &m_loadedPointLight.position[0],  1.0f,  0.0f, 0.0f, "%.2f");
+                            ImGui::ColorEdit3("Color",     &m_loadedPointLight.color[0]);
+                            ImGui::DragFloat3("Intensity", &m_loadedPointLight.intensity[0], 0.5f,  0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat( "Range",     &m_loadedPointLight.range,        0.01f, 0.0f, 0.0f, "%.3f");
+
+                            if (ImGui::Button("Add"))
+                            {
+                                pointLights.emplace_back(m_loadedPointLight);
+
+                                m_loadedPointLight = {};
+                            }
+
+                            ImGui::SameLine();
+
+                            if (ImGui::Button("Cancel"))
+                            {
+                                m_loadedPointLight = {};
+                            }
+
+                            ImGui::TreePop();
+                        }
+
+                        ImGui::Separator();
+
+                        usize i = 0;
+
+                        for (auto iter = pointLights.begin(); iter != pointLights.end(); ++i)
+                        {
+                            bool toDelete = false;
+
                             if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                             {
-                                auto& light = pointLights[i];
+                                ImGui::DragFloat3("Position",  &iter->position[0],  1.0f,  0.0f, 0.0f, "%.2f");
+                                ImGui::ColorEdit3("Color",     &iter->color[0]);
+                                ImGui::DragFloat3("Intensity", &iter->intensity[0], 0.5f,  0.0f, 0.0f, "%.2f");
+                                ImGui::DragFloat( "Range",     &iter->range,        0.01f, 0.0f, 0.0f, "%.3f");
 
-                                ImGui::DragFloat3("Position",  &light.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
-                                ImGui::ColorEdit3("Color",     &light.color[0]);
-                                ImGui::DragFloat3("Intensity", &light.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
-                                ImGui::DragFloat( "Range",     &light.range,        1.0f, 0.0f, 0.0f, "%.3f");
+                                if (ImGui::Button("Delete"))
+                                {
+                                    toDelete = true;
+                                }
 
                                 ImGui::TreePop();
+                            }
+
+                            if (toDelete)
+                            {
+                                iter = pointLights.erase(iter);
+                            }
+                            else
+                            {
+                                ++iter;
                             }
 
                             ImGui::Separator();
@@ -295,23 +345,67 @@ namespace Engine
 
                     if (ImGui::BeginMenu("Spot"))
                     {
-                        for (usize i = 0; i < spotLights.size(); ++i)
+                        constexpr auto ONE_DEGREE    = glm::radians(1.0f);
+                        constexpr auto HALF_ROTATION = std::numbers::pi;
+
+                        if (ImGui::TreeNode("Add"))
                         {
+                            ImGui::DragFloat3("Position",  &m_loadedSpotLight.position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
+                            ImGui::ColorEdit3("Color",     &m_loadedSpotLight.color[0]);
+                            ImGui::DragFloat3("Intensity", &m_loadedSpotLight.intensity[0], 0.5f,       0.0f, 0.0f,          "%.2f");
+                            ImGui::DragFloat3("Direction", &m_loadedSpotLight.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
+                            ImGui::DragFloat2("Cut Off",   &m_loadedSpotLight.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
+                            ImGui::DragFloat( "Range",     &m_loadedSpotLight.range,        0.01f,      0.0f, 0.0f,          "%.3f");
+
+                            if (ImGui::Button("Add"))
+                            {
+                                spotLights.emplace_back(m_loadedSpotLight);
+
+                                m_loadedSpotLight = {};
+                            }
+
+                            ImGui::SameLine();
+
+                            if (ImGui::Button("Cancel"))
+                            {
+                                m_loadedSpotLight = {};
+                            }
+
+                            ImGui::TreePop();
+                        }
+
+                        ImGui::Separator();
+
+                        usize i = 0;
+
+                        for (auto iter = spotLights.begin(); iter != spotLights.end(); ++i)
+                        {
+                            bool toDelete = false;
+
                             if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                             {
-                                auto& light = spotLights[i];
+                                ImGui::DragFloat3("Position",  &iter->position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::ColorEdit3("Color",     &iter->color[0]);
+                                ImGui::DragFloat3("Intensity", &iter->intensity[0], 0.5f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::DragFloat3("Direction", &iter->direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
+                                ImGui::DragFloat2("Cut Off",   &iter->cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
+                                ImGui::DragFloat( "Range",     &iter->range,        0.01f,      0.0f, 0.0f,          "%.3f");
 
-                                constexpr auto ONE_DEGREE    = glm::radians(1.0f);
-                                constexpr auto HALF_ROTATION = std::numbers::pi;
-
-                                ImGui::DragFloat3("Position",  &light.position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
-                                ImGui::ColorEdit3("Color",     &light.color[0]                                             );
-                                ImGui::DragFloat3("Intensity", &light.intensity[0], 0.5f,       0.0f, 0.0f,          "%.2f");
-                                ImGui::DragFloat3("Direction", &light.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
-                                ImGui::DragFloat2("Cut Off",   &light.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
-                                ImGui::DragFloat( "Range",     &light.range,        1.0f,       0.0f, 0.0f,          "%.3f");
+                                if (ImGui::Button("Delete"))
+                                {
+                                    toDelete = true;
+                                }
 
                                 ImGui::TreePop();
+                            }
+
+                            if (toDelete)
+                            {
+                                iter = spotLights.erase(iter);
+                            }
+                            else
+                            {
+                                ++iter;
                             }
 
                             ImGui::Separator();
@@ -331,11 +425,11 @@ namespace Engine
 
                 if (ImGui::BeginMenu("IBL"))
                 {
-                    ImGui::InputText("HDR Map Path", &m_hdrMap);
+                    ImGui::InputText("HDR Map Path", &m_loadedHDRMapPath);
 
-                    if (ImGui::Button("Load") && !m_hdrMap.empty())
+                    if (ImGui::Button("Load") && !m_loadedHDRMapPath.empty())
                     {
-                        const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_hdrMap);
+                        const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
 
                         if (Util::Files::Exists(hdrMapAssetPath))
                         {
@@ -361,7 +455,7 @@ namespace Engine
                             );
                         }
 
-                        m_hdrMap.clear();
+                        m_loadedHDRMapPath.clear();
                     }
 
                     ImGui::EndMenu();
