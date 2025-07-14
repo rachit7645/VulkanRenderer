@@ -31,6 +31,7 @@ namespace Renderer::Buffers
             (
                 allocator,
                 MAX_MESH_COUNT * sizeof(GPU::Mesh),
+                0,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -48,6 +49,7 @@ namespace Renderer::Buffers
             (
                 allocator,
                 sizeof(u32) + MAX_MESH_COUNT * sizeof(GPU::Instance),
+                0,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -56,7 +58,7 @@ namespace Renderer::Buffers
 
             constexpr u32 ZERO = 0;
 
-            std::memcpy(m_instanceBuffers[i].allocationInfo.pMappedData, &ZERO, sizeof(u32));
+            std::memcpy(m_instanceBuffers[i].hostAddress, &ZERO, sizeof(u32));
 
             if (!(m_instanceBuffers[i].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
             {
@@ -152,7 +154,7 @@ namespace Renderer::Buffers
 
         std::memcpy
         (
-            meshBuffer.allocationInfo.pMappedData,
+            meshBuffer.hostAddress,
             meshes.data(),
             meshCopySize
         );
@@ -161,14 +163,14 @@ namespace Renderer::Buffers
 
         std::memcpy
         (
-            instanceBuffer.allocationInfo.pMappedData,
+            instanceBuffer.hostAddress,
             &instanceCount,
             sizeof(u32)
         );
 
         std::memcpy
         (
-            static_cast<u8*>(instanceBuffer.allocationInfo.pMappedData) + sizeof(u32),
+            static_cast<u8*>(instanceBuffer.hostAddress) + sizeof(u32),
             instances.data(),
             instanceCopySize
         );

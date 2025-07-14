@@ -27,54 +27,6 @@ namespace Vk
     (
         VmaAllocator allocator,
         VkDeviceSize size,
-        VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties,
-        VmaAllocationCreateFlags allocationFlags,
-        VmaMemoryUsage memoryUsage
-    )
-        : size(size)
-    {
-        const VkBufferCreateInfo createInfo =
-        {
-            .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = 0,
-            .size                  = size,
-            .usage                 = usage,
-            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices   = nullptr
-        };
-
-        const VmaAllocationCreateInfo allocCreateInfo =
-        {
-            .flags          = allocationFlags,
-            .usage          = memoryUsage,
-            .requiredFlags  = properties,
-            .preferredFlags = 0,
-            .memoryTypeBits = 0,
-            .pool           = VK_NULL_HANDLE,
-            .pUserData      = nullptr,
-            .priority       = 0.0f
-        };
-
-        Vk::CheckResult(vmaCreateBuffer(
-            allocator,
-            &createInfo,
-            &allocCreateInfo,
-            &handle,
-            &allocation,
-            &allocationInfo),
-            "Failed to create buffer!"
-        );
-
-        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
-    }
-
-    Buffer::Buffer
-    (
-        VmaAllocator allocator,
-        VkDeviceSize size,
         VkDeviceSize alignment,
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties,
@@ -107,16 +59,36 @@ namespace Vk
             .priority       = 0.0f
         };
 
-        Vk::CheckResult(vmaCreateBufferWithAlignment(
-            allocator,
-            &createInfo,
-            &allocCreateInfo,
-            alignment,
-            &handle,
-            &allocation,
-            &allocationInfo),
-            "Failed to create buffer!"
-        );
+        VmaAllocationInfo allocationInfo = {};
+
+        // Special Case: Use default alignment
+        if (alignment == 0)
+        {
+            Vk::CheckResult(vmaCreateBuffer(
+                allocator,
+                &createInfo,
+                &allocCreateInfo,
+                &handle,
+                &allocation,
+                &allocationInfo),
+                "Failed to create buffer!"
+            );
+        }
+        else
+        {
+            Vk::CheckResult(vmaCreateBufferWithAlignment(
+                allocator,
+                &createInfo,
+                &allocCreateInfo,
+                alignment,
+                &handle,
+                &allocation,
+                &allocationInfo),
+                "Failed to create buffer!"
+            );
+        }
+
+        hostAddress = allocationInfo.pMappedData;
 
         vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
     }
@@ -125,6 +97,7 @@ namespace Vk
     {
         if (handle == VK_NULL_HANDLE)
         {
+            deviceAddress = 0;
             return;
         }
 
@@ -186,10 +159,10 @@ namespace Vk
         vmaDestroyBuffer(allocator, handle, allocation);
 
         handle           = VK_NULL_HANDLE;
-        allocation       = {};
+        allocation       = VK_NULL_HANDLE;
+        hostAddress      = nullptr;
         deviceAddress    = 0;
         size             = 0;
-        allocationInfo   = {};
         memoryProperties = {};
     }
 }

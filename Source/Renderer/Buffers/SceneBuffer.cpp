@@ -32,6 +32,7 @@ namespace Renderer::Buffers
             (
                 allocator,
                 sizeof(GPU::SceneBuffer),
+                0,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -61,8 +62,6 @@ namespace Renderer::Buffers
             scene.pointLights,
             scene.spotLights
         );
-        
-        gpuScene.previousMatrices = gpuScene.currentMatrices;
 
         const auto projection = Maths::InfiniteProjectionReverseZ
         (
@@ -83,7 +82,9 @@ namespace Renderer::Buffers
 
         const auto view = scene.camera.GetViewMatrix();
 
-        gpuScene.currentMatrices  =
+        const auto previousMatrices = matrices;
+
+        matrices = GPU::SceneMatrices
         {
             .projection         = projection,
             .inverseProjection  = glm::inverse(jitteredProjection),
@@ -92,22 +93,26 @@ namespace Renderer::Buffers
             .inverseView        = glm::inverse(view)
         };
 
-        gpuScene.cameraPosition = scene.camera.position;
-        gpuScene.nearPlane      = Renderer::NEAR_PLANE;
-        gpuScene.farPlane       = Renderer::FAR_PLANE; // There isn't actually a far plane right now lol
+        const auto lightsBufferBaseAddress = lightsBuffer.buffers[FIF].deviceAddress;
 
-        const auto lightsBufferAddress = lightsBuffer.buffers[FIF].deviceAddress;
-
-        gpuScene.Sun                 = lightsBufferAddress + lightsBuffer.GetSunOffset();
-        gpuScene.PointLights         = lightsBufferAddress + lightsBuffer.GetPointLightOffset();
-        gpuScene.ShadowedPointLights = lightsBufferAddress + lightsBuffer.GetShadowedPointLightOffset();
-        gpuScene.SpotLights          = lightsBufferAddress + lightsBuffer.GetSpotLightOffset();
-        gpuScene.ShadowedSpotLights  = lightsBufferAddress + lightsBuffer.GetShadowedSpotLightOffset();
+        const GPU::SceneBuffer sceneBuffer =
+        {
+            .currentMatrices     = matrices,
+            .previousMatrices    = previousMatrices,
+            .cameraPosition      = scene.camera.position,
+            .nearPlane           = Renderer::NEAR_PLANE,
+            .farPlane            = Renderer::FAR_PLANE,
+            .Sun                 = lightsBufferBaseAddress + lightsBuffer.GetSunOffset(),
+            .PointLights         = lightsBufferBaseAddress + lightsBuffer.GetPointLightOffset(),
+            .ShadowedPointLights = lightsBufferBaseAddress + lightsBuffer.GetShadowedPointLightOffset(),
+            .SpotLights          = lightsBufferBaseAddress + lightsBuffer.GetSpotLightOffset(),
+            .ShadowedSpotLights  = lightsBufferBaseAddress + lightsBuffer.GetShadowedSpotLightOffset()
+        };
         
         std::memcpy
         (
-            buffers[FIF].allocationInfo.pMappedData,
-            &gpuScene,
+            buffers[FIF].hostAddress,
+            &sceneBuffer,
             sizeof(GPU::SceneBuffer)
         );
 

@@ -330,6 +330,7 @@ namespace Renderer::DearImGui
             (
                 allocator,
                 vertexSize,
+                0,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
@@ -354,6 +355,7 @@ namespace Renderer::DearImGui
             (
                 allocator,
                 indexSize,
+                0,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
@@ -363,8 +365,8 @@ namespace Renderer::DearImGui
             Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
         }
 
-        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.allocationInfo.pMappedData);
-        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.allocationInfo.pMappedData);
+        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.hostAddress);
+        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.hostAddress);
 
         for (const auto drawList : drawData->CmdLists)
         {

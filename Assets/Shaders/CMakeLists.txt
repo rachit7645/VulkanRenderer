@@ -28,7 +28,7 @@ set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPIRV_BINARY_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 # Compilation script
-set(SHADER_COMPILE_SCRIPT ${SHADER_SOURCE_DIR}/CompileShaders.py)
+set(SHADER_COMPILE_SCRIPT ${SHADER_SOURCE_DIR}/CompileShader.py)
 
 # Shader files
 file(GLOB_RECURSE SHADER_SOURCES
@@ -46,17 +46,6 @@ file(GLOB_RECURSE SHADER_HEADERS
     ${CMAKE_SOURCE_DIR}/Shared/*.h
 )
 
-# Generate list of SPIR-V binary files
-set(SPIRV_BINARY_FILES)
-foreach(Shader ${SHADER_SOURCES})
-    # Get relative path
-    file(RELATIVE_PATH REL_PATH ${SHADER_SOURCE_DIR} ${Shader})
-    # Create output path
-    set(SPIRV_BINARY ${SHADERS_INSTALL_DIR}/${REL_PATH}.spv)
-    # Append
-    list(APPEND SPIRV_BINARY_FILES ${SPIRV_BINARY})
-endforeach()
-
 # Ensure CMake reconfigures
 set_property(GLOBAL PROPERTY CMAKE_CONFIGURE_DEPENDS ${SHADER_HEADERS} ${SHADER_SOURCES})
 
@@ -66,14 +55,23 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "Profile")
     list(APPEND SHADER_COMPILE_ARGS --release)
 endif()
 
-# Build Command
-add_custom_command(
-    OUTPUT ${SPIRV_BINARY_FILES}
-    COMMAND ${Python3_EXECUTABLE} ${SHADER_COMPILE_SCRIPT} ${SHADER_COMPILE_ARGS}
-    DEPENDS ${SHADER_COMPILE_SCRIPT} ${SHADER_SOURCES} ${SHADER_HEADERS}
-    WORKING_DIRECTORY ${SHADER_SOURCE_DIR}
-    COMMENT "Compiling Shaders...."
-)
+# Generate commands
+set(SPIRV_BINARY_FILES)
+foreach(Shader ${SHADER_SOURCES})
+    # Get relative path
+    file(RELATIVE_PATH REL_PATH ${SHADER_SOURCE_DIR} ${Shader})
+    # Create output path
+    set(SPIRV_BINARY ${SHADERS_INSTALL_DIR}/${REL_PATH}.spv)
+    # Append to list
+    list(APPEND SPIRV_BINARY_FILES ${SPIRV_BINARY})
+    # Build Command
+    add_custom_command(
+        OUTPUT ${SPIRV_BINARY}
+        COMMAND ${Python3_EXECUTABLE} ${SHADER_COMPILE_SCRIPT} ${Shader} ${SHADER_COMPILE_ARGS}
+        DEPENDS ${SHADER_COMPILE_SCRIPT} ${Shader} ${SHADER_HEADERS}
+        COMMENT "Compiling Shader ${REL_PATH}"
+    )
+endforeach()
 
 # Shaders Target
 add_custom_target(Shaders ALL DEPENDS ${SPIRV_BINARY_FILES})

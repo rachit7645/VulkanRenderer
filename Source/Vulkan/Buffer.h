@@ -27,18 +27,7 @@ namespace Vk
     class Buffer
     {
     public:
-        // WARNING: INVALID STATE!
         Buffer() = default;
-
-        Buffer
-        (
-            VmaAllocator allocator,
-            VkDeviceSize size,
-            VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties,
-            VmaAllocationCreateFlags allocationFlags,
-            VmaMemoryUsage memoryUsage
-        );
 
         Buffer
         (
@@ -57,14 +46,11 @@ namespace Vk
 
         void Destroy(VmaAllocator allocator);
 
-        // Vulkan handles
-        VkBuffer        handle        = VK_NULL_HANDLE;
-        VmaAllocation   allocation    = {};
-        VkDeviceAddress deviceAddress = 0;
-
-        // Buffer allocation info
+        VkBuffer              handle           = VK_NULL_HANDLE;
+        VmaAllocation         allocation       = VK_NULL_HANDLE;
+        void*                 hostAddress      = nullptr;
+        VkDeviceAddress       deviceAddress    = 0;
         VkDeviceSize          size             = 0;
-        VmaAllocationInfo     allocationInfo   = {};
         VkMemoryPropertyFlags memoryProperties = {};
     };
 }

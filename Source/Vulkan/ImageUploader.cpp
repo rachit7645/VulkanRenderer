@@ -92,13 +92,14 @@ namespace Vk
         (
             allocator,
             updateSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(buffer.allocationInfo.pMappedData, updateRawMemory.data.data(), updateSize);
+        std::memcpy(buffer.hostAddress, updateRawMemory.data.data(), updateSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 
@@ -465,13 +466,14 @@ namespace Vk
         (
             allocator,
             dataSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(buffer.allocationInfo.pMappedData, data, dataSize);
+        std::memcpy(buffer.hostAddress, data, dataSize);
 
         stbi_image_free(std::bit_cast<void*>(data));
 
@@ -659,6 +661,7 @@ namespace Vk
         (
             allocator,
             dataSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -667,11 +670,11 @@ namespace Vk
 
         if (toF16)
         {
-            Util::ConvertF32ToF16(data, static_cast<f16*>(buffer.allocationInfo.pMappedData), elemCount);
+            Util::ConvertF32ToF16(data, static_cast<f16*>(buffer.hostAddress), elemCount);
         }
         else
         {
-            std::memcpy(buffer.allocationInfo.pMappedData, data, dataSize);
+            std::memcpy(buffer.hostAddress, data, dataSize);
         }
 
         stbi_image_free(std::bit_cast<void*>(data));
@@ -776,6 +779,7 @@ namespace Vk
             (
                 allocator,
                 dataSize,
+                0,
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -784,11 +788,11 @@ namespace Vk
 
             if (toF16)
             {
-                std::memcpy(buffer.allocationInfo.pMappedData, &pixels[0][0], dataSize);
+                std::memcpy(buffer.hostAddress, &pixels[0][0], dataSize);
             }
             else
             {
-                Util::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(buffer.allocationInfo.pMappedData), elemCount);
+                Util::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(buffer.hostAddress), elemCount);
             }
 
             const std::vector copyRegions = {VkBufferImageCopy2{
@@ -955,6 +959,7 @@ namespace Vk
         (
             allocator,
             pTexture->dataSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -969,7 +974,7 @@ namespace Vk
             ZoneScopedN("Copy");
             #endif
 
-            std::memcpy(buffer.allocationInfo.pMappedData, pTexture->pData, pTexture->dataSize);
+            std::memcpy(buffer.hostAddress, pTexture->pData, pTexture->dataSize);
 
             for (u32 mipLevel = 0; mipLevel < pTexture->numLevels; ++mipLevel)
             {
@@ -1065,13 +1070,14 @@ namespace Vk
         (
             allocator,
             dataSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(buffer.allocationInfo.pMappedData, rawMemory.data.data(), dataSize);
+        std::memcpy(buffer.hostAddress, rawMemory.data.data(), dataSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 

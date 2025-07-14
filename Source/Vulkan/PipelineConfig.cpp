@@ -441,6 +441,11 @@ namespace Vk
         return *this;
     }
 
+    std::span<const PipelineShader> PipelineConfig::GetShaders() const
+    {
+        return m_shaders;
+    }
+
     void PipelineConfig::Destroy(VkDevice device)
     {
         for (const auto& shaderModule : m_shaderModules)

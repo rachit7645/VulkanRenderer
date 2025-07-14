@@ -154,8 +154,7 @@ namespace Renderer::Depth
     {
         Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
-        const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
+        const auto projectionView = sceneBuffer.matrices.jitteredProjection * sceneBuffer.matrices.view;
 
         culling.Frustum
         (

@@ -69,6 +69,7 @@ namespace Vk
         (
             context.allocator,
             sbtSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -80,7 +81,7 @@ namespace Vk
             buffer.Destroy(allocator);
         });
 
-        const auto pMappedData = static_cast<u8*>(stagingBuffer.allocationInfo.pMappedData);
+        const auto pMappedData = static_cast<u8*>(stagingBuffer.hostAddress);
 
         const usize raygenOffset = 0;
         const usize missOffset   = raygenOffset + 1         * shaderGroupHandleSize;
@@ -131,6 +132,7 @@ namespace Vk
         (
             context.allocator,
             sbtSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,

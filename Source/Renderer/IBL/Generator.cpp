@@ -113,6 +113,7 @@ namespace Renderer::IBL
         (
             allocator,
             matrices.size() * sizeof(glm::mat4),
+            0,
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
@@ -121,7 +122,7 @@ namespace Renderer::IBL
 
         std::memcpy
         (
-            m_matrixBuffer.allocationInfo.pMappedData,
+            m_matrixBuffer.hostAddress,
             matrices.data(),
             matrices.size() * sizeof(glm::mat4)
         );

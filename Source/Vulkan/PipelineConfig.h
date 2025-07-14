@@ -102,6 +102,8 @@ namespace Vk
         [[nodiscard]] PipelineConfig& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         [[nodiscard]] PipelineConfig& AddDescriptorLayout(VkDescriptorSetLayout layout);
 
+        std::span<const PipelineShader> GetShaders() const;
+
         void Destroy(VkDevice device);
     private:
         VkPipelineBindPoint m_pipelineType = VK_PIPELINE_BIND_POINT_GRAPHICS;

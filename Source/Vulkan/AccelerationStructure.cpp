@@ -63,6 +63,7 @@ namespace Vk
         (
             context.allocator,
             transformsSize,
+            0,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
@@ -73,7 +74,7 @@ namespace Vk
 
         std::memcpy
         (
-            transformBuffer.allocationInfo.pMappedData,
+            transformBuffer.hostAddress,
             transforms.data(),
             transformsSize
         );
@@ -189,6 +190,7 @@ namespace Vk
                 (
                     context.allocator,
                     blasBuildSizes.accelerationStructureSize,
+                    0,
                     VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     0,
@@ -395,6 +397,7 @@ namespace Vk
             (
                 allocator,
                 compactedSizes[i],
+                0,
                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 0,
@@ -557,6 +560,7 @@ namespace Vk
             (
                 context.allocator,
                 instancesSize,
+                0,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
@@ -568,7 +572,7 @@ namespace Vk
 
         std::memcpy
         (
-            m_instanceBuffers[FIF].allocationInfo.pMappedData,
+            m_instanceBuffers[FIF].hostAddress,
             instances.data(),
             instancesSize
         );
@@ -661,6 +665,7 @@ namespace Vk
             (
                 context.allocator,
                 tlasBuildSizes.accelerationStructureSize,
+                0,
                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 0,

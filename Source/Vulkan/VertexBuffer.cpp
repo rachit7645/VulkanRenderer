@@ -125,6 +125,7 @@ namespace Vk
         (
             allocator,
             writeSize,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -150,7 +151,7 @@ namespace Vk
 
         return Vk::WriteHandle<T>
         {
-            .pointer = static_cast<T*>(stagingBuffer.allocationInfo.pMappedData),
+            .pointer = static_cast<T*>(stagingBuffer.hostAddress),
             .info    = info
         };
     }

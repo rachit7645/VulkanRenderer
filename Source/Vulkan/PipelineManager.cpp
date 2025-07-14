@@ -22,6 +22,8 @@
 
 namespace Vk
 {
+    constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
+
     void PipelineManager::AddPipeline(const std::string_view id, const Vk::PipelineConfig& config)
     {
         if (!m_dirtyPipelineConfigs.contains(id.data()))
@@ -197,7 +199,27 @@ namespace Vk
 
         if (iter == m_pipelineConfigs.cend())
         {
-            Logger::Error("Can't reload invalid pipeline! [ID={}]\n", id);
+            Logger::Error("Can't reload an invalid pipeline! [ID={}]\n", id);
+        }
+
+        for (const auto& [path, _] : iter->second.GetShaders())
+        {
+            const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
+
+            #ifdef ENGINE_DEBUG
+            const auto result = std::system(fmt::format("python ../Assets/Shaders/CompileShader.py {}", shaderAssetPath).c_str());
+            #else
+            const auto result = std::system(fmt::format("python ../Assets/Shaders/CompileShader.py {} --release", shaderAssetPath).c_str());
+            #endif
+
+            if (result != 0)
+            {
+                Logger::Warning("Pipeline Reload Failed! [Result={}]\n", result);
+
+                #ifdef ENGINE_DEBUG
+                return;
+                #endif
+            }
         }
 
         m_dirtyPipelineConfigs.emplace(iter->first, iter->second);

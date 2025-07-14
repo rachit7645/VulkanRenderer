@@ -16,30 +16,12 @@
 
 import os
 import sys
-import subprocess
 import argparse
 import threading
 from pathlib import Path
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-def find_glsl_compiler() -> str:
-    vulkan_sdk = os.getenv('VULKAN_SDK')
-
-    if vulkan_sdk:
-        # Linux
-        compiler_path = Path(vulkan_sdk) / 'bin' / 'glslangValidator'
-
-        if compiler_path.exists():
-            return str(compiler_path)
-
-        # Windows
-        compiler_path = Path(vulkan_sdk) / 'Bin' / 'glslangValidator.exe'
-
-        if compiler_path.exists():
-            return str(compiler_path)
-
-    raise RuntimeError("glslangValidator not found!")
+from CompileShader import find_glsl_compiler, compile_shader
 
 def get_shader_files(shader_dir: Path) -> List[Path]:
     shader_files = []
@@ -53,25 +35,8 @@ def get_shader_files(shader_dir: Path) -> List[Path]:
 
     return sorted(shader_files)
 
-def compile_shader(shader_file: Path, output_file: Path, compiler: str, includes: List[str], flags: List[str]) -> tuple[bool, str]:
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-
-    cmd = [compiler, str(shader_file)] + flags + includes + ['-o', str(output_file)]
-
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
-
-        if result.returncode != 0:
-            error_msg = f"Error compiling {shader_file}!\n{result.stdout}\n{result.stderr}"
-            return False, error_msg
-
-        return True, ""
-    except Exception as e:
-        error_msg = f"Failed to compile {shader_file}! [Error={e}]"
-        return False, error_msg
-
 def main():
-    parser = argparse.ArgumentParser(description='Compile Shaders')
+    parser = argparse.ArgumentParser(description='Compile All Shaders')
 
     parser.add_argument('--release', action='store_true')
 
@@ -115,7 +80,6 @@ def main():
     print_lock = threading.Lock()
 
     tasks = []
-
     for shader_file in shader_files:
         rel_path = shader_file.relative_to(shader_dir)
         spirv_file = output_dir / f"{rel_path}.spv"
@@ -132,10 +96,7 @@ def main():
                 success, message = future.result()
 
                 with print_lock:
-                    if success:
-                        rel_path = shader_file.relative_to(shader_dir)
-                        print(f"Compiling SPIR-V Binary {rel_path}.spv")
-                    else:
+                    if not success:
                         failed_count += 1
                         print(message)
 

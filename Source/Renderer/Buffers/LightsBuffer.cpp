@@ -43,6 +43,7 @@ namespace Renderer::Buffers
             (
                 allocator,
                 sizeof(GPULights),
+                0,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -51,7 +52,7 @@ namespace Renderer::Buffers
 
             constexpr u32 ZERO = 0;
 
-            const auto pMappedData = static_cast<u8*>(buffers[i].allocationInfo.pMappedData);
+            const auto pMappedData = static_cast<u8*>(buffers[i].hostAddress);
 
             std::memcpy(pMappedData + GetPointLightOffset(),         &ZERO, sizeof(u32));
             std::memcpy(pMappedData + GetShadowedPointLightOffset(), &ZERO, sizeof(u32));
@@ -144,7 +145,7 @@ namespace Renderer::Buffers
         sun = inSun;
 
         const auto offset  = GetSunOffset();
-        const auto pointer = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData) + offset;
+        const auto pointer = static_cast<u8*>(buffers[FIF].hostAddress) + offset;
 
         std::memcpy
         (
@@ -191,7 +192,7 @@ namespace Renderer::Buffers
         const VkDeviceSize size  = std::min(requiredSize, maxAllowedSize);
         const u32          count = size / sizeof(T);
 
-        const auto pointer = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData) + offset;
+        const auto pointer = static_cast<u8*>(buffers[FIF].hostAddress) + offset;
 
         std::memcpy
         (

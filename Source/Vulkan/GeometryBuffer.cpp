@@ -34,6 +34,7 @@ namespace Vk
         (
             context.allocator,
             36 * sizeof(GPU::Position),
+            0,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -243,13 +244,14 @@ namespace Vk
         (
             allocator,
             VERTICES_SIZE,
+            0,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
 
-        std::memcpy(m_pendingCubeUpload->allocationInfo.pMappedData, CUBE_VERTICES.data(), VERTICES_SIZE);
+        std::memcpy(m_pendingCubeUpload->hostAddress, CUBE_VERTICES.data(), VERTICES_SIZE);
     }
 
     void GeometryBuffer::ImGuiDisplay() const
@@ -266,8 +268,8 @@ namespace Vk
                     "Index Buffer    | %u | %llu/%llu/%llu",
                     indexBuffer.count,
                     indexBuffer.count * sizeof(GPU::Index),
-                    GetIndexBuffer().allocationInfo.size - (indexBuffer.count * sizeof(GPU::Index)),
-                    GetIndexBuffer().allocationInfo.size
+                    GetIndexBuffer().size - (indexBuffer.count * sizeof(GPU::Index)),
+                    GetIndexBuffer().size
                 );
 
                 ImGui::Text
@@ -275,8 +277,8 @@ namespace Vk
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionBuffer.count,
                     positionBuffer.count * sizeof(GPU::Position),
-                    GetPositionBuffer().allocationInfo.size - (positionBuffer.count * sizeof(GPU::Position)),
-                    GetPositionBuffer().allocationInfo.size
+                    GetPositionBuffer().size - (positionBuffer.count * sizeof(GPU::Position)),
+                    GetPositionBuffer().size
                 );
 
                 ImGui::Text
@@ -284,8 +286,8 @@ namespace Vk
                     "UV Buffer       | %u | %llu/%llu/%llu",
                     uvBuffer.count,
                     uvBuffer.count * sizeof(GPU::UV),
-                    GetUVBuffer().allocationInfo.size - (uvBuffer.count * sizeof(GPU::UV)),
-                    GetUVBuffer().allocationInfo.size
+                    GetUVBuffer().size - (uvBuffer.count * sizeof(GPU::UV)),
+                    GetUVBuffer().size
                 );
 
                 ImGui::Text
@@ -293,8 +295,8 @@ namespace Vk
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexBuffer.count,
                     vertexBuffer.count * sizeof(GPU::Vertex),
-                    GetVertexBuffer().allocationInfo.size - (vertexBuffer.count * sizeof(GPU::Vertex)),
-                    GetVertexBuffer().allocationInfo.size
+                    GetVertexBuffer().size - (vertexBuffer.count * sizeof(GPU::Vertex)),
+                    GetVertexBuffer().size
                 );
 
                 ImGui::EndMenu();

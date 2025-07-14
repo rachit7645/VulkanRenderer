@@ -28,6 +28,7 @@ namespace Renderer::Buffers
         (
             allocator,
             sizeof(u32) + MAX_MESH_COUNT * sizeof(VkDrawIndexedIndirectCommand),
+            0,
             VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
@@ -38,6 +39,7 @@ namespace Renderer::Buffers
         (
             allocator,
             MAX_MESH_COUNT * sizeof(u32),
+            0,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,

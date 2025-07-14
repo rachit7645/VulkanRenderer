@@ -121,6 +121,7 @@ namespace Vk
         (
             allocator,
             m_capacity,
+            0,
             m_usage,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
