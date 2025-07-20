@@ -34,7 +34,7 @@ void main()
     float roughness = fragUV.y;
 
     // Tangent to World space
-    const vec3 N = vec3(0.0f,  0.0f, 1.0f); // UP = (1, 0, 0)
+    const vec3 N = vec3(0.0f,  0.0f, 1.0f); // UP = (0, 0, 1)
     const vec3 T = vec3(0.0f, -1.0f, 0.0f); // normalize(UP x N)
     const vec3 B = vec3(1.0f,  0.0f, 0.0f); // cross(N, T)
 

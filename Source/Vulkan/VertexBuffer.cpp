@@ -17,6 +17,7 @@
 #include "VertexBuffer.h"
 
 #include "Util/Log.h"
+#include "Util/Concept.h"
 
 namespace Vk
 {
@@ -90,7 +91,7 @@ namespace Vk
             static_assert(Util::AlwaysFalse<T>, "Unsupported vertex type!");
         }
 
-        m_allocator = Vk::BlockAllocator(m_usage, m_stageMask, m_accessMask);
+        m_allocator = Vk::ResizableAllocator(m_usage, m_stageMask, m_accessMask);
     }
 
     template <typename T> requires GPU::IsVertexType<T>
@@ -159,7 +160,7 @@ namespace Vk
     template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::Free(const GPU::GeometryInfo& info)
     {
-        const auto block = BlockAllocator::Block
+        const Vk::MemoryBlock block =
         {
             .offset = info.offset * sizeof(T),
             .size   = info.count  * sizeof(T)

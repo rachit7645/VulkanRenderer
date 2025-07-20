@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "BlockAllocator.h"
+#include "ResizableAllocator.h"
 #include "Util/Log.h"
 #include "Util/Scope.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Vk
 {
-    BlockAllocator::BlockAllocator
+    ResizableAllocator::ResizableAllocator
     (
         VkBufferUsageFlags usage,
         VkPipelineStageFlags2 stageMask,
@@ -33,7 +33,7 @@ namespace Vk
     {
     }
 
-    BlockAllocator::Block BlockAllocator::Allocate(VkDeviceSize size)
+    Vk::MemoryBlock ResizableAllocator::Allocate(VkDeviceSize size)
     {
         if (size == 0)
         {
@@ -45,12 +45,12 @@ namespace Vk
             return block.value();
         }
 
-        const auto lastUsedBlock = m_usedBlocks.empty() ? Block{} : *m_usedBlocks.rbegin();
-        const auto lastFreeBlock = m_freeBlocks.empty() ? Block{} : *m_freeBlocks.rbegin();
+        const auto lastUsedBlock = m_usedBlocks.empty() ? Vk::MemoryBlock{} : *m_usedBlocks.rbegin();
+        const auto lastFreeBlock = m_freeBlocks.empty() ? Vk::MemoryBlock{} : *m_freeBlocks.rbegin();
 
         const auto lastBlock = std::max(lastUsedBlock, lastFreeBlock);
 
-        const auto block = Block
+        const Vk::MemoryBlock block =
         {
             .offset = lastBlock.offset + lastBlock.size,
             .size   = size,
@@ -68,7 +68,7 @@ namespace Vk
         return block;
     }
 
-    void BlockAllocator::Free(const Block& block)
+    void ResizableAllocator::Free(const Vk::MemoryBlock& block)
     {
         if (m_freeBlocks.contains(block))
         {
@@ -86,7 +86,7 @@ namespace Vk
         MergeFreeBlocks();
     }
 
-    void BlockAllocator::Update
+    void ResizableAllocator::Update
     (
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
@@ -224,7 +224,7 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
-    void BlockAllocator::QueueResize(VkDeviceSize minRequiredCapacity)
+    void ResizableAllocator::QueueResize(VkDeviceSize minRequiredCapacity)
     {
         constexpr f64 BUFFER_GROWTH_FACTOR = 1.2;
 
@@ -236,7 +236,7 @@ namespace Vk
         }
     }
 
-    std::optional<BlockAllocator::Block> BlockAllocator::FindFreeBlock(VkDeviceSize size)
+    std::optional<Vk::MemoryBlock> ResizableAllocator::FindFreeBlock(VkDeviceSize size)
     {
         for (const auto& block : m_freeBlocks)
         {
@@ -257,13 +257,13 @@ namespace Vk
 
             if (block.size > size)
             {
-                const auto free = Block
+                const Vk::MemoryBlock free =
                 {
                     .offset = block.offset,
                     .size   = size
                 };
 
-                const auto remaining = Block
+                const Vk::MemoryBlock remaining =
                 {
                     .offset = block.offset + free.size,
                     .size   = block.size   - free.size
@@ -280,22 +280,22 @@ namespace Vk
         return std::nullopt;
     }
 
-    void BlockAllocator::MergeFreeBlocks()
+    void ResizableAllocator::MergeFreeBlocks()
     {
         if (m_freeBlocks.size() <= 1)
         {
             return;
         }
 
-        std::set<Block> mergedBlocks;
+        std::set<Vk::MemoryBlock> mergedBlocks;
 
         auto it = m_freeBlocks.begin();
-        Block currentBlock = *it;
+        Vk::MemoryBlock currentBlock = *it;
         ++it;
 
         while (it != m_freeBlocks.end())
         {
-            const Block& nextBlock = *it;
+            const auto& nextBlock = *it;
 
             if (currentBlock.offset + currentBlock.size == nextBlock.offset)
             {
@@ -315,18 +315,8 @@ namespace Vk
         m_freeBlocks = std::move(mergedBlocks);
     }
 
-    void BlockAllocator::Destroy(VmaAllocator allocator)
+    void ResizableAllocator::Destroy(VmaAllocator allocator)
     {
         buffer.Destroy(allocator);
-    }
-
-    bool BlockAllocator::Block::operator==(const Block& other) const noexcept
-    {
-        return offset == other.offset && size == other.size;
-    }
-
-    bool BlockAllocator::Block::operator<(const Block& other) const noexcept
-    {
-        return offset < other.offset;
     }
 }

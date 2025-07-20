@@ -32,7 +32,6 @@ float rcp(float x)
     return 1.0f / x;
 }
 
-// x^2 in 1 multiplication
 float square(float x)
 {
     return x * x;

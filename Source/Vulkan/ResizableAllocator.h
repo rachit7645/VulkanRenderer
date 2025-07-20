@@ -23,33 +23,25 @@
 #include "Buffer.h"
 #include "Util/DeletionQueue.h"
 #include "Vulkan/BarrierWriter.h"
+#include "Vulkan/MemoryBlock.h"
 
 namespace Vk
 {
-    class BlockAllocator
+    class ResizableAllocator
     {
     public:
-        struct Block
-        {
-            bool operator==(const Block& other) const noexcept;
-            bool operator< (const Block& other) const noexcept;
+        ResizableAllocator() = default;
 
-            VkDeviceSize offset = 0;
-            VkDeviceSize size   = 0;
-        };
-
-        BlockAllocator() = default;
-
-        BlockAllocator
+        ResizableAllocator
         (
             VkBufferUsageFlags usage,
             VkPipelineStageFlags2 stageMask,
             VkAccessFlags2 accessMask
         );
 
-        Block Allocate(VkDeviceSize size);
+        Vk::MemoryBlock Allocate(VkDeviceSize size);
 
-        void Free(const Block& block);
+        void Free(const Vk::MemoryBlock& block);
 
         void Update
         (
@@ -65,7 +57,7 @@ namespace Vk
     private:
         void QueueResize(VkDeviceSize minRequiredCapacity);
 
-        std::optional<Block> FindFreeBlock(VkDeviceSize size);
+        std::optional<Vk::MemoryBlock> FindFreeBlock(VkDeviceSize size);
 
         void MergeFreeBlocks();
 
@@ -76,10 +68,10 @@ namespace Vk
         VkDeviceSize m_capacity    = 0;
         VkDeviceSize m_oldCapacity = 0;
 
-        std::optional<std::set<Block>> m_resizeCopyBlocks = std::nullopt;
+        std::optional<std::set<Vk::MemoryBlock>> m_resizeCopyBlocks = std::nullopt;
 
-        std::set<Block> m_usedBlocks = {};
-        std::set<Block> m_freeBlocks = {};
+        std::set<Vk::MemoryBlock> m_usedBlocks = {};
+        std::set<Vk::MemoryBlock> m_freeBlocks = {};
 
         Vk::BarrierWriter m_barrierWriterOld = {};
         Vk::BarrierWriter m_barrierWriterNew = {};

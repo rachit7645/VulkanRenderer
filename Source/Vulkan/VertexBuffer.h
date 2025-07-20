@@ -21,15 +21,13 @@
 
 #include "Buffer.h"
 #include "BarrierWriter.h"
-#include "BlockAllocator.h"
+#include "ResizableAllocator.h"
 #include "Extensions.h"
 #include "Externals/VMA.h"
 #include "Util/Types.h"
 #include "Util/DeletionQueue.h"
-#include "Util/Concept.h"
 #include "GPU/Vertex.h"
 #include "GPU/Surface.h"
-#include "Vulkan/Context.h"
 
 namespace Vk
 {
@@ -43,7 +41,7 @@ namespace Vk
             GPU::GeometryInfo info;
         };
 
-        VertexBuffer(const Vk::Extensions& extensions);
+        explicit VertexBuffer(const Vk::Extensions& extensions);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>;
 
@@ -82,7 +80,7 @@ namespace Vk
         VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
         VkAccessFlags2        m_accessMask = VK_ACCESS_2_NONE;
 
-        Vk::BlockAllocator m_allocator = {};
+        Vk::ResizableAllocator m_allocator = {};
 
         std::vector<GeometryUpload> m_pendingUploads = {};
 

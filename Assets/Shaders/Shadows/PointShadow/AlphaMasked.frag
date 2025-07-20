@@ -33,7 +33,7 @@ void main()
 {
     Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
-    float alpha  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV).a;
+    float alpha  = texture(sampler2D(Textures[nonuniformEXT(mesh.material.albedoID)], Samplers[Constants.TextureSamplerIndex]), fragUV).a;
           alpha *= mesh.material.albedoFactor.a;
 
     if (alpha < mesh.material.alphaCutOff)

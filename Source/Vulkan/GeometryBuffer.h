@@ -17,12 +17,12 @@
 #ifndef GEOMETRY_BUFFER_H
 #define GEOMETRY_BUFFER_H
 
-#include <span>
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "VertexBuffer.h"
+#include "Context.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk

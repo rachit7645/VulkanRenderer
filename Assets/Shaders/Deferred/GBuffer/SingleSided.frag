@@ -41,25 +41,25 @@ void main()
 {
     Mesh mesh = Constants.CurrentMeshes.meshes[fragDrawID];
 
-    vec3 albedo  = texture(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.albedoUVMapID]).rgb;
+    vec3 albedo  = texture(sampler2D(Textures[nonuniformEXT(mesh.material.albedoID)], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.albedoUVMapID]).rgb;
          albedo *= mesh.material.albedoFactor.rgb;
 
     gAlbedoIoR.rgb = albedo.rgb;
     gAlbedoIoR.a   = PackIoR(mesh.material.ior);
 
-    vec3 normal = texture(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.normalUVMapID]).rgb;
+    vec3 normal = texture(sampler2D(Textures[nonuniformEXT(mesh.material.normalID)], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.normalUVMapID]).rgb;
          normal = GetNormalFromMap(normal, fragTBNMatrix);
 
     gNormal = PackNormal(normal);
 
-    vec3 aoRghMtl    = texture(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.aoRghMtlUVMapID]).rgb;
+    vec3 aoRghMtl    = texture(sampler2D(Textures[nonuniformEXT(mesh.material.aoRghMtlID)], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.aoRghMtlUVMapID]).rgb;
          aoRghMtl.g *= mesh.material.roughnessFactor;
          aoRghMtl.b *= mesh.material.metallicFactor;
 
     gRoughnessMetallic.r = aoRghMtl.g;
     gRoughnessMetallic.g = aoRghMtl.b;
 
-    vec3 emmisive  = texture(sampler2D(Textures[mesh.material.emmisiveID], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.emmisiveUVMapID]).rgb;
+    vec3 emmisive  = texture(sampler2D(Textures[nonuniformEXT(mesh.material.emmisiveID)], Samplers[Constants.TextureSamplerIndex]), fragUV[mesh.material.emmisiveUVMapID]).rgb;
          emmisive *= mesh.material.emmisiveFactor;
          emmisive *= mesh.material.emmisiveStrength;
 
