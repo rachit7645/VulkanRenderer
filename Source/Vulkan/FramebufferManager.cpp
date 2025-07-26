@@ -413,36 +413,31 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (!m_framebuffers.contains(framebufferName.data()))
-        {
-            Logger::Error("Framebuffer not found! [Name={}]\n", framebufferName);
-        }
-
-        const auto& framebuffer = m_framebuffers.at(framebufferName.data());
+        const auto& framebuffer = GetFramebuffer(framebufferName);
 
         std::erase_if(m_framebufferViews, [&] (const auto& pair) -> bool
         {
             const Vk::FramebufferView& framebufferView = pair.second;
 
-            if (framebufferView.framebuffer == framebufferName)
+            if (framebufferView.framebuffer != framebufferName)
             {
-                FreeDescriptors
-                (
-                    framebufferView,
-                    framebuffer.usage,
-                    megaSet,
-                    deletionQueue
-                );
-
-                deletionQueue.PushDeletor([device, view = framebufferView.view] ()
-                {
-                    view.Destroy(device);
-                });
-
-                return true;
+                return false;
             }
 
-            return false;
+            FreeDescriptors
+            (
+                framebufferView,
+                framebuffer.usage,
+                megaSet,
+                deletionQueue
+            );
+
+            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            {
+                view.Destroy(device);
+            });
+
+            return true;
         });
     }
 
@@ -598,7 +593,6 @@ namespace Vk
                         ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
                         ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.baseArrayLayer + framebufferView.size.layerCount);
                         ImGui::Text("Format           | %s",        string_VkFormat(framebuffer.image.format));
-                        ImGui::Text("Usage            | %s",        string_VkImageUsageFlags(framebuffer.image.usage).c_str());
 
                         ImGui::Separator();
 

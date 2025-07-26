@@ -122,7 +122,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Position"].get<glm::vec3>(light.position); error != error_code::SUCCESS)
+        if (const auto error = object["Direction"].get<glm::vec3>(light.direction); error != error_code::SUCCESS)
         {
             return error;
         }

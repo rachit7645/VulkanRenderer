@@ -244,8 +244,7 @@ namespace Renderer::DearImGui
             &constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         s32 globalVertexOffset = 0;
         s32 globalIndexOffset  = 0;

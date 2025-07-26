@@ -557,9 +557,7 @@ namespace Renderer::GBuffer
             Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
             singleSidedPipeline.Bind(cmdBuffer);
-
-            const std::array descriptorSets = {megaSet.descriptorSet};
-            singleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            singleSidedPipeline.BindDescriptors(cmdBuffer, megaSet);
 
             // Opaque
             {
@@ -647,9 +645,7 @@ namespace Renderer::GBuffer
             Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
             doubleSidedPipeline.Bind(cmdBuffer);
-
-            const std::array descriptorSets = {megaSet.descriptorSet};
-            doubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            doubleSidedPipeline.BindDescriptors(cmdBuffer, megaSet);
 
             // Opaque
             {

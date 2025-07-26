@@ -65,7 +65,7 @@ namespace Vk
         VkDescriptorType type
     )
     {
-        auto& info = bufferInfos.emplace_back(VkDescriptorBufferInfo
+        const auto& info = bufferInfos.emplace_back(VkDescriptorBufferInfo
         {
             .buffer = buffer,
             .offset = offset,

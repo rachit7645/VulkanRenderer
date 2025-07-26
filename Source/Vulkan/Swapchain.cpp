@@ -122,7 +122,7 @@ namespace Vk
         const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
               u32                 imageCount    = GetImageCount();
 
-        const VkSwapchainPresentScalingCreateInfoEXT presentScalingCreateInfo =
+        constexpr VkSwapchainPresentScalingCreateInfoEXT presentScalingCreateInfo =
         {
             .sType           = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
             .pNext           = nullptr,
@@ -219,7 +219,6 @@ namespace Vk
                 1,
                 1,
                 imageFormat,
-                createInfo.imageUsage,
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
 
@@ -282,7 +281,7 @@ namespace Vk
 
     void Swapchain::CreateStaticSyncObjects(VkDevice device)
     {
-        const VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
+        constexpr VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
             .pNext         = nullptr,
@@ -313,14 +312,14 @@ namespace Vk
 
     void Swapchain::CreateSyncObjects(VkDevice device)
     {
-        const VkFenceCreateInfo fenceInfo =
+        constexpr VkFenceCreateInfo fenceInfo =
         {
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = nullptr,
             .flags = VK_FENCE_CREATE_SIGNALED_BIT
         };
 
-        const VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
+        constexpr VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
             .pNext         = nullptr,

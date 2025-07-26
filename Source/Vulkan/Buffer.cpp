@@ -29,7 +29,7 @@ namespace Vk
         VkDeviceSize size,
         VkDeviceSize alignment,
         VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties,
+        VkMemoryPropertyFlags memoryProperties,
         VmaAllocationCreateFlags allocationFlags,
         VmaMemoryUsage memoryUsage
     )
@@ -51,7 +51,7 @@ namespace Vk
         {
             .flags          = allocationFlags,
             .usage          = memoryUsage,
-            .requiredFlags  = properties,
+            .requiredFlags  = memoryProperties,
             .preferredFlags = 0,
             .memoryTypeBits = 0,
             .pool           = VK_NULL_HANDLE,

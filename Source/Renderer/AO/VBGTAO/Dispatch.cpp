@@ -337,8 +337,7 @@ namespace Renderer::AO::VBGTAO
             constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        depthPreFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        depthPreFilterPipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDispatch
         (
@@ -453,8 +452,7 @@ namespace Renderer::AO::VBGTAO
             constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        occlusionPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        occlusionPipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDispatch
         (
@@ -538,8 +536,7 @@ namespace Renderer::AO::VBGTAO
             constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        denoisePipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        denoisePipeline.BindDescriptors(cmdBuffer, megaSet);
 
         occlusion.image.Barrier
         (

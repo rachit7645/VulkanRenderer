@@ -41,14 +41,12 @@ void main()
     UV     uvs      = Constants.UVs.uvs[gl_VertexIndex];
     Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
 
-    vec4 worldPosition       = currentInstance.transform            * vec4(position, 1.0f);
-    vec4 currentViewPosition = Constants.Scene.currentMatrices.view * worldPosition;
+    vec4 worldPosition = currentInstance.transform * vec4(position, 1.0f);
 
-    fragCurrentPosition = Constants.Scene.currentMatrices.projection         * currentViewPosition;
-    gl_Position         = Constants.Scene.currentMatrices.jitteredProjection * currentViewPosition;
+    fragCurrentPosition = Constants.Scene.currentMatrices.projectionView         * worldPosition;
+    gl_Position         = Constants.Scene.currentMatrices.jitteredProjectionView * worldPosition;
 
-    fragPreviousPosition = Constants.Scene.previousMatrices.projection *
-                           Constants.Scene.previousMatrices.view *
+    fragPreviousPosition = Constants.Scene.previousMatrices.projectionView *
                            previousInstance.transform * vec4(position, 1.0f);
 
     fragUV[0]  = uvs.uv[0];

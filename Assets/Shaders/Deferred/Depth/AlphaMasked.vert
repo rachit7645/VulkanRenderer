@@ -35,7 +35,7 @@ void main()
     UV   uvs      = Constants.UVs.uvs[gl_VertexIndex];
 
     vec4 fragPos = instance.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * fragPos;
+    gl_Position  = Constants.Scene.currentMatrices.jitteredProjectionView * fragPos;
 
     fragUV     = uvs.uv[mesh.material.albedoUVMapID];
     fragDrawID = instance.meshIndex;

@@ -27,8 +27,13 @@ struct SceneMatrices
     GLSL_MAT4 projection;
     GLSL_MAT4 inverseProjection;
     GLSL_MAT4 jitteredProjection;
+    GLSL_MAT4 inverseJitteredProjection;
     GLSL_MAT4 view;
     GLSL_MAT4 inverseView;
+    GLSL_MAT4 projectionView;
+    GLSL_MAT4 inverseProjectionView;
+    GLSL_MAT4 jitteredProjectionView;
+    GLSL_MAT4 inverseJitteredProjectionView;
 };
 
 GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
@@ -40,6 +45,9 @@ GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
     f32 nearPlane;
     f32 farPlane;
 
+    u32 FIF;
+    u64 frameIndex;
+
     GLSL_BUFFER_POINTER(SunBuffer)                Sun;
     GLSL_BUFFER_POINTER(PointLightBuffer)         PointLights;
     GLSL_BUFFER_POINTER(ShadowedPointLightBuffer) ShadowedPointLights;
@@ -49,7 +57,7 @@ GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
 
 #ifndef __cplusplus
 
-vec4 GetClipPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
+vec4 GetClipPosition(vec2 screenUV, float depth)
 {
     vec4 clipPosition = vec4(screenUV * 2.0f - 1.0f, depth, 1.0f);
 
@@ -58,7 +66,7 @@ vec4 GetClipPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
 
 vec3 GetViewPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
 {
-    vec4 projectedPosition = sceneMatrices.inverseProjection * GetClipPosition(sceneMatrices, screenUV, depth);
+    vec4 projectedPosition = sceneMatrices.inverseJitteredProjection * GetClipPosition(screenUV, depth);
     vec3 viewPosition      = projectedPosition.xyz / projectedPosition.w;
 
     return viewPosition;
@@ -66,8 +74,8 @@ vec3 GetViewPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
 
 vec3 GetWorldPosition(SceneMatrices sceneMatrices, vec2 screenUV, float depth)
 {
-    vec3 viewPosition  = GetViewPosition(sceneMatrices, screenUV, depth);
-    vec3 worldPosition = vec3(sceneMatrices.inverseView * vec4(viewPosition, 1.0f));
+    vec4 projectedPosition = sceneMatrices.inverseJitteredProjectionView * GetClipPosition(screenUV, depth);
+    vec3 worldPosition     = projectedPosition.xyz / projectedPosition.w;
 
     return worldPosition;
 }

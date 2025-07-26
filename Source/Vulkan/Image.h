@@ -26,12 +26,10 @@ namespace Vk
     class Image
     {
     public:
-        // Default constructor to make C++ happy
         Image() = default;
 
         Image(VmaAllocator allocator, const VkImageCreateInfo& createInfo, VkImageAspectFlags aspect);
 
-        // Basic constructor for copying
         Image
         (
             VkImage image,
@@ -41,7 +39,6 @@ namespace Vk
             u32 mipLevels,
             u32 arrayLayers,
             VkFormat format,
-            VkImageUsageFlags usage,
             VkImageAspectFlags aspect
         );
 
@@ -54,9 +51,8 @@ namespace Vk
         void Destroy(VmaAllocator allocator) const;
 
         // Vulkan handles
-        VkImage           handle         = VK_NULL_HANDLE;
-        VmaAllocation     allocation     = VK_NULL_HANDLE;
-        VmaAllocationInfo allocationInfo = {};
+        VkImage       handle     = VK_NULL_HANDLE;
+        VmaAllocation allocation = VK_NULL_HANDLE;
 
         // Image dimensions
         u32 width       = 0;
@@ -67,7 +63,6 @@ namespace Vk
 
         // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
-        VkImageUsageFlags  usage  = 0;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     };
 }

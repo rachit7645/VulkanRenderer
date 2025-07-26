@@ -22,6 +22,7 @@
 #include "Context.h"
 #include "Util/Types.h"
 #include "CommandBuffer.h"
+#include "Vulkan/MegaSet.h"
 
 namespace Vk
 {
@@ -30,12 +31,7 @@ namespace Vk
     public:
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
 
-        void BindDescriptors
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            u32 firstSet,
-            const std::span<const VkDescriptorSet> descriptors
-        ) const;
+        void BindDescriptors(const Vk::CommandBuffer& cmdBuffer, const Vk::MegaSet& megaSet) const;
 
         void PushConstants
         (

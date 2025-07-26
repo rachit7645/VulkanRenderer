@@ -166,8 +166,7 @@ namespace Renderer::ShadowRT
             constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         // You still need an empty callable region for some reason
         constexpr VkStridedDeviceAddressRegionKHR EMPTY_CALLABLE_REGION = {};

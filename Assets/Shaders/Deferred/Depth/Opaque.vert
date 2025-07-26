@@ -31,5 +31,5 @@ void main()
     vec3 position = Constants.Positions.positions[gl_VertexIndex];
 
     vec4 fragPos = instance.transform * vec4(position, 1.0f);
-    gl_Position  = Constants.Scene.currentMatrices.jitteredProjection * Constants.Scene.currentMatrices.view * fragPos;
+    gl_Position  = Constants.Scene.currentMatrices.jitteredProjectionView * fragPos;
 }

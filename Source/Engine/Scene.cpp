@@ -268,7 +268,7 @@ namespace Engine
                 {
                     if (ImGui::BeginMenu("Sun"))
                     {
-                        ImGui::DragFloat3("Position",  &sun.position[0],  1.0f, 0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Direction", &sun.direction[0], 0.01f, -1.0f, 1.0f, "%.2f");
                         ImGui::ColorEdit3("Color",     &sun.color[0]);
                         ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
 

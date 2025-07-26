@@ -174,7 +174,8 @@ namespace Models
         glm::mat4 nodeMatrix
     )
     {
-        auto& node = asset.nodes[nodeIndex];
+        const auto& node = asset.nodes[nodeIndex];
+
         nodeMatrix = GetTransformMatrix(node, nodeMatrix);
 
         if (node.meshIndex.has_value())

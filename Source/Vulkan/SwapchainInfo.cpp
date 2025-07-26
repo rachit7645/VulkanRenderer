@@ -101,15 +101,14 @@ namespace Vk
         // Make sure to resize kids!
         formats.resize(formatCount);
 
-        for (auto& format : formats)
+        constexpr VkSurfaceFormat2KHR emptyFormat =
         {
-            format = VkSurfaceFormat2KHR
-            {
-                .sType         = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
-                .pNext         = nullptr,
-                .surfaceFormat = {}
-            };
-        }
+            .sType         = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
+            .pNext         = nullptr,
+            .surfaceFormat = {}
+        };;
+
+        std::ranges::fill(formats, emptyFormat);
 
         Vk::CheckResult(vkGetPhysicalDeviceSurfaceFormats2KHR
         (

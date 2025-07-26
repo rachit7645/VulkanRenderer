@@ -23,12 +23,11 @@
 #include "MegaSet.glsl"
 #include "Skybox/Skybox.h"
 
-layout(location = 0) in vec3 txCoords;
+layout(location = 0) in vec3 uv;
 
 layout (location = 0) out vec3 outColor;
 
 void main()
 {
-    outColor     = texture(samplerCube(Cubemaps[Constants.CubemapIndex], Samplers[Constants.SamplerIndex]), txCoords).rgb;
-    gl_FragDepth = 0.0f;
+    outColor = texture(samplerCube(Cubemaps[Constants.CubemapIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
 }

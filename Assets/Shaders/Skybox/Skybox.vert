@@ -22,7 +22,7 @@
 
 #include "Skybox/Skybox.h"
 
-layout(location = 0) out vec3 txCoords;
+layout(location = 0) out vec3 uv;
 
 void main()
 {
@@ -30,6 +30,6 @@ void main()
     mat4 view     = mat4(mat3(Constants.Scene.currentMatrices.view));
     vec3 position = Constants.Vertices.positions[gl_VertexIndex];
 
-    txCoords    = normalize(position);
-    gl_Position = Constants.Scene.currentMatrices.jitteredProjection * view * vec4(position, 1.0f);
+    uv          = normalize(position);
+    gl_Position = Constants.Scene.currentMatrices.jitteredProjection * view * vec4(position, 0.0f);
 }

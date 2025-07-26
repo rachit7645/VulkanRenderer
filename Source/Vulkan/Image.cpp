@@ -16,10 +16,7 @@
 
 #include "Image.h"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #include "Util.h"
-#include "Util/Log.h"
 #include "Vulkan/BarrierWriter.h"
 
 namespace Vk
@@ -34,7 +31,6 @@ namespace Vk
               createInfo.mipLevels,
               createInfo.arrayLayers,
               createInfo.format,
-              createInfo.usage,
               aspect
           )
     {
@@ -56,7 +52,7 @@ namespace Vk
             &allocInfo,
             &handle,
             &allocation,
-            &allocationInfo),
+            nullptr),
             "Failed to create image!"
         );
     }
@@ -70,7 +66,6 @@ namespace Vk
         u32 mipLevels,
         u32 arrayLayers,
         VkFormat format,
-        VkImageUsageFlags usage,
         VkImageAspectFlags aspect
     )
         : handle(image),
@@ -80,7 +75,6 @@ namespace Vk
           mipLevels(mipLevels),
           arrayLayers(arrayLayers),
           format(format),
-          usage(usage),
           aspect(aspect)
     {
     }
@@ -95,7 +89,6 @@ namespace Vk
                mipLevels == rhs.mipLevels &&
                arrayLayers == rhs.arrayLayers &&
                format == rhs.format &&
-               usage == rhs.usage &&
                aspect == rhs.aspect;
     }
 

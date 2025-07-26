@@ -17,8 +17,8 @@
 #include "ImageUploader.h"
 
 #include <ktx.h>
-#include <vulkan/utility/vk_format_utils.h>
 
+#include "Util.h"
 #include "Util/Log.h"
 #include "Util/SIMD.h"
 #include "Util/Visitor.h"
@@ -85,7 +85,7 @@ namespace Vk
         #endif
 
         const auto pixelCount = static_cast<usize>(updateRawMemory.update.extent.width) * static_cast<usize>(updateRawMemory.update.extent.height);
-        const auto texelSize  = vkuFormatTexelSize(image.format);
+        const auto texelSize  = Vk::GetTexelSize(image.format);
         const auto updateSize = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
 
         auto buffer = Vk::Buffer
@@ -1063,7 +1063,7 @@ namespace Vk
         const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
         const auto pixelCount = static_cast<usize>(rawMemory.width) * static_cast<usize>(rawMemory.height);
-        const auto texelSize  = vkuFormatTexelSize(rawMemory.format);
+        const auto texelSize  = Vk::GetTexelSize(rawMemory.format);
         const auto dataSize   = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
 
         auto buffer = Vk::Buffer

@@ -20,8 +20,12 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
+#include "Util/Types.h"
+
 namespace Vk
 {
+    f64 GetTexelSize(VkFormat format);
+
     void CheckResult(VkResult result, const std::string_view message);
 }
 

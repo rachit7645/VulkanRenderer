@@ -154,12 +154,10 @@ namespace Renderer::Depth
     {
         Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        const auto projectionView = sceneBuffer.matrices.jitteredProjection * sceneBuffer.matrices.view;
-
         culling.Frustum
         (
             frameIndex,
-            projectionView,
+            sceneBuffer.matrices.jitteredProjectionView,
             cmdBuffer,
             pipelineManager,
             meshBuffer,
@@ -332,9 +330,7 @@ namespace Renderer::Depth
             Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
             alphaMaskedPipeline.Bind(cmdBuffer);
-
-            const std::array descriptorSets = {megaSet.descriptorSet};
-            alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            alphaMaskedPipeline.BindDescriptors(cmdBuffer, megaSet);
 
             // Single-Sided
             {

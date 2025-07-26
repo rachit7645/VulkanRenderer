@@ -22,8 +22,8 @@
 #include <span>
 #include <vulkan/vulkan.h>
 
-#include "Context.h"
 #include "ShaderModule.h"
+#include "Util/Types.h"
 
 namespace Vk
 {
@@ -125,10 +125,10 @@ namespace Vk
 
         VkPipelineViewportStateCreateInfo    m_viewportInfo    = {};
         VkPipelineVertexInputStateCreateInfo m_vertexInputInfo = {};
+        VkPipelineMultisampleStateCreateInfo m_msaaStateInfo   = {};
 
         VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo = {};
         VkPipelineRasterizationStateCreateInfo m_rasterizationInfo = {};
-        VkPipelineMultisampleStateCreateInfo   m_msaaStateInfo     = {};
 
         VkPipelineDepthStencilStateCreateInfo m_depthStencilInfo = {};
 

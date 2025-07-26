@@ -82,15 +82,23 @@ namespace Renderer::Buffers
 
         const auto view = scene.camera.GetViewMatrix();
 
+        const auto projectionView         = projection         * view;
+        const auto jitteredProjectionView = jitteredProjection * view;
+
         const auto previousMatrices = matrices;
 
         matrices = GPU::SceneMatrices
         {
-            .projection         = projection,
-            .inverseProjection  = glm::inverse(jitteredProjection),
-            .jitteredProjection = jitteredProjection,
-            .view               = view,
-            .inverseView        = glm::inverse(view)
+            .projection                    = projection,
+            .inverseProjection             = glm::inverse(projection),
+            .jitteredProjection            = jitteredProjection,
+            .inverseJitteredProjection     = glm::inverse(jitteredProjection),
+            .view                          = view,
+            .inverseView                   = glm::inverse(view),
+            .projectionView                = projectionView,
+            .inverseProjectionView         = glm::inverse(projectionView),
+            .jitteredProjectionView        = jitteredProjectionView,
+            .inverseJitteredProjectionView = glm::inverse(jitteredProjectionView)
         };
 
         const auto lightsBufferBaseAddress = lightsBuffer.buffers[FIF].deviceAddress;
@@ -102,6 +110,8 @@ namespace Renderer::Buffers
             .cameraPosition      = scene.camera.position,
             .nearPlane           = Renderer::NEAR_PLANE,
             .farPlane            = Renderer::FAR_PLANE,
+            .FIF                 = static_cast<u32>(FIF),
+            .frameIndex          = frameIndex,
             .Sun                 = lightsBufferBaseAddress + lightsBuffer.GetSunOffset(),
             .PointLights         = lightsBufferBaseAddress + lightsBuffer.GetPointLightOffset(),
             .ShadowedPointLights = lightsBufferBaseAddress + lightsBuffer.GetShadowedPointLightOffset(),

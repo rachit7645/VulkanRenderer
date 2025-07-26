@@ -42,7 +42,7 @@ namespace Renderer::PostProcess
             .AttachShader("Misc/PostProcess.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
@@ -204,9 +204,7 @@ namespace Renderer::PostProcess
             constants
         );
 
-        // Mega set
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (

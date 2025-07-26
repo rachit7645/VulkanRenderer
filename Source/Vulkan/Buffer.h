@@ -35,7 +35,7 @@ namespace Vk
             VkDeviceSize size,
             VkDeviceSize alignment,
             VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties,
+            VkMemoryPropertyFlags memoryProperties,
             VmaAllocationCreateFlags allocationFlags,
             VmaMemoryUsage memoryUsage
         );

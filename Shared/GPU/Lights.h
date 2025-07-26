@@ -41,7 +41,7 @@ constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
 
 struct DirLight
 {
-    GLSL_VEC3 position;
+    GLSL_VEC3 direction;
     GLSL_VEC3 color;
     GLSL_VEC3 intensity;
 };
@@ -224,7 +224,7 @@ LightInfo GetLightInfo(DirLight light)
 {
     LightInfo info;
 
-    info.L        = normalize(-light.position);
+    info.L        = normalize(-light.direction);
     info.radiance = light.color * light.intensity;
 
     return info;

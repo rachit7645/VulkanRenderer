@@ -93,7 +93,7 @@ namespace Renderer::IBL
             .AttachShader("IBL/BRDF.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
         );
 
@@ -436,9 +436,7 @@ namespace Renderer::IBL
             constants
         );
 
-        // Mega set
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        converterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        converterPipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (
@@ -651,9 +649,7 @@ namespace Renderer::IBL
             constants
         );
 
-        // Mega set
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        convolutionPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        convolutionPipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (
@@ -854,9 +850,7 @@ namespace Renderer::IBL
                 constants
             );
 
-            // Mega set
-            const std::array descriptorSets = {megaSet.descriptorSet};
-            preFilterPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            preFilterPipeline.BindDescriptors(cmdBuffer, megaSet);
 
             vkCmdDraw
             (

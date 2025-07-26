@@ -402,9 +402,7 @@ namespace Renderer::PointShadow
                     Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
                     alphaMaskedPipeline.Bind(cmdBuffer);
-
-                    const std::array descriptorSets = {megaSet.descriptorSet};
-                    alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+                    alphaMaskedPipeline.BindDescriptors(cmdBuffer, megaSet);
 
                     // Single Sided
                     {

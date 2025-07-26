@@ -313,9 +313,10 @@ namespace Vk
         const bool hasTimelineSemaphore              = vk12Features->timelineSemaphore;
 
         // Vulkan 1.3 features
-        const bool hasSync2        = vk13Features->synchronization2;
-        const bool hasDynRender    = vk13Features->dynamicRendering;
-        const bool hasMaintenance4 = vk13Features->maintenance4;
+        const bool hasSync2          = vk13Features->synchronization2;
+        const bool hasDynRender      = vk13Features->dynamicRendering;
+        const bool hasMaintenance4   = vk13Features->maintenance4;
+        const bool hasDemoteToHelper = vk13Features->shaderDemoteToHelperInvocation;
 
         const bool hasRequired = hasRequiredQueueFamilies && hasRequiredExtensions;
 
@@ -335,7 +336,7 @@ namespace Vk
                              hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
                              hasDrawIndirectCount && hasTimelineSemaphore;
 
-        const bool hasVK13 = hasSync2 && hasDynRender && hasMaintenance4;
+        const bool hasVK13 = hasSync2 && hasDynRender && hasMaintenance4 && hasDemoteToHelper;
 
         const usize totalScore = discreteGPU + completeQueues + rayTracingSupport;
 
@@ -433,11 +434,12 @@ namespace Vk
         vk12Features.timelineSemaphore                            = VK_TRUE;
 
         VkPhysicalDeviceVulkan13Features vk13Features = {};
-        vk13Features.sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-        vk13Features.pNext            = &vk12Features;
-        vk13Features.synchronization2 = VK_TRUE;
-        vk13Features.dynamicRendering = VK_TRUE;
-        vk13Features.maintenance4     = VK_TRUE;
+        vk13Features.sType                          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        vk13Features.pNext                          = &vk12Features;
+        vk13Features.synchronization2               = VK_TRUE;
+        vk13Features.dynamicRendering               = VK_TRUE;
+        vk13Features.maintenance4                   = VK_TRUE;
+        vk13Features.shaderDemoteToHelperInvocation = VK_TRUE;
 
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
         deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

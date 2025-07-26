@@ -175,8 +175,7 @@ namespace Renderer::Skybox
            constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (

@@ -376,7 +376,6 @@ namespace Vk
                         ImGui::Text("Mipmap Levels    | %u",   texture.image.mipLevels);
                         ImGui::Text("Array Layers     | %u",   texture.image.arrayLayers);
                         ImGui::Text("Format           | %s",   string_VkFormat(texture.image.format));
-                        ImGui::Text("Usage            | %s",   string_VkImageUsageFlags(texture.image.usage).c_str());
 
                         ImGui::Separator();
 
