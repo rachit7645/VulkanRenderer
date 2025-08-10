@@ -25,6 +25,11 @@ namespace Util
     {
         return (value + (alignment - 1)) & ~(alignment - 1);
     }
+
+    constexpr bool IsPowerOfTwo(usize x)
+    {
+        return x != 0 && (x & (x - 1)) == 0;
+    }
 }
 
 #endif

@@ -24,7 +24,7 @@
 
 namespace Vk
 {
-    GeometryBuffer::GeometryBuffer(const Vk::Context& context)
+    GeometryBuffer::GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool)
         : indexBuffer(context.extensions),
           positionBuffer(context.extensions),
           uvBuffer(context.extensions),
@@ -44,7 +44,7 @@ namespace Vk
 
         cubeBuffer.GetDeviceAddress(context.device);
 
-        SetupCubeUpload(context.allocator);
+        SetupCubeUpload(context.device, context.allocator, stagingPool);
 
         Vk::SetDebugName(context.device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
     }
@@ -59,6 +59,7 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -127,16 +128,16 @@ namespace Vk
             {
                 .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
                 .pNext     = nullptr,
-                .srcOffset = 0,
+                .srcOffset = m_pendingCubeUpload->memoryBlock.offset,
                 .dstOffset = 0,
-                .size      = VERTICES_SIZE
+                .size      = m_pendingCubeUpload->memoryBlock.size
             };
 
             const VkCopyBufferInfo2 copyInfo =
             {
                 .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
                 .pNext       = nullptr,
-                .srcBuffer   = m_pendingCubeUpload->handle,
+                .srcBuffer   = m_pendingCubeUpload->buffer,
                 .dstBuffer   = cubeBuffer.handle,
                 .regionCount = 1,
                 .pRegions    = &copyRegion
@@ -171,9 +172,9 @@ namespace Vk
 
         if (m_pendingCubeUpload.has_value())
         {
-            deletionQueue.PushDeletor([allocator, buffer = m_pendingCubeUpload.value()] () mutable
+            deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
             {
-                buffer.Destroy(allocator);
+                stagingPool.Free(stagingMemoryBlock);
             });
 
             m_pendingCubeUpload = std::nullopt;
@@ -191,7 +192,7 @@ namespace Vk
         });
     }
 
-    void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
+    void GeometryBuffer::SetupCubeUpload(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
         constexpr std::array CUBE_VERTICES =
         {
@@ -240,15 +241,12 @@ namespace Vk
 
         constexpr VkDeviceSize VERTICES_SIZE = CUBE_VERTICES.size() * sizeof(f32);
 
-        m_pendingCubeUpload = Vk::Buffer
+        m_pendingCubeUpload = stagingPool.Allocate
         (
+            device,
             allocator,
             VERTICES_SIZE,
-            0,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            0
         );
 
         std::memcpy(m_pendingCubeUpload->hostAddress, CUBE_VERTICES.data(), VERTICES_SIZE);

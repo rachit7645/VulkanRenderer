@@ -23,6 +23,7 @@
 #include "BarrierWriter.h"
 #include "ResizableAllocator.h"
 #include "Extensions.h"
+#include "StagingPool.h"
 #include "Externals/VMA.h"
 #include "Util/Types.h"
 #include "Util/DeletionQueue.h"
@@ -49,8 +50,10 @@ namespace Vk
 
         WriteHandle Allocate
         (
+            VkDevice device,
             VmaAllocator allocator,
             usize writeCount,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -72,17 +75,17 @@ namespace Vk
     private:
         struct GeometryUpload
         {
-            GPU::GeometryInfo info   = {};
-            Vk::Buffer        buffer = {};
+            GPU::GeometryInfo info         = {};
+            VkDeviceSize      sourceOffset = 0;
         };
 
         VkBufferUsageFlags    m_usage      = 0;
         VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
         VkAccessFlags2        m_accessMask = VK_ACCESS_2_NONE;
 
-        Vk::ResizableAllocator m_allocator = {};
+        Vk::ResizableAllocator m_allocator   = {};
 
-        std::vector<GeometryUpload> m_pendingUploads = {};
+        ankerl::unordered_dense::map<VkBuffer, std::vector<GeometryUpload>> m_pendingUploads;
 
         Vk::BarrierWriter m_barrierWriter = {};
     };

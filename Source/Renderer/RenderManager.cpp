@@ -34,7 +34,7 @@ namespace Renderer
           m_graphicsTimeline(m_context.device),
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
-          m_modelManager(m_context),
+          m_modelManager(m_context, m_stagingPool),
           m_samplers(m_context, m_megaSet, m_modelManager.textureManager),
           m_postProcess(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_depth(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
@@ -80,6 +80,7 @@ namespace Renderer
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
             m_pipelineManager.Destroy(m_context.device);
+            m_stagingPool.Destroy(m_context.allocator);
 
             m_graphicsTimeline.Destroy(m_context.device);
             m_swapchain.Destroy(m_context.device);
@@ -136,16 +137,17 @@ namespace Renderer
 
     void RenderManager::WaitForTimeline()
     {
-        // Frame indices 0 to Vk::FRAMES_IN_FLIGHT - 1 do not need to wait for anything
-        if (m_frameIndex >= Vk::FRAMES_IN_FLIGHT)
+        if (m_frameIndex < Vk::FRAMES_IN_FLIGHT)
         {
-            m_graphicsTimeline.WaitForStage
-            (
-                m_frameIndex - Vk::FRAMES_IN_FLIGHT,
-                Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED,
-                m_context.device
-            );
+            return;
         }
+
+        m_graphicsTimeline.WaitForStage
+        (
+            m_frameIndex - Vk::FRAMES_IN_FLIGHT,
+            Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED,
+            m_context.device
+        );
     }
 
     void RenderManager::AcquireSwapchainImage()
@@ -666,6 +668,7 @@ namespace Renderer
                 m_meshBuffer,
                 m_samplers,
                 *m_accelerationStructure,
+                m_stagingPool,
                 m_deletionQueues[m_FIF]
             );
         }
@@ -751,6 +754,7 @@ namespace Renderer
             m_swapchain,
             m_samplers,
             m_megaSet,
+            m_stagingPool,
             m_modelManager,
             m_deletionQueues[m_FIF]
         );
@@ -1650,6 +1654,8 @@ namespace Renderer
 
         m_pipelineManager.Update(m_context.device, m_deletionQueues[m_FIF]);
 
+        m_stagingPool.Update(m_context.allocator);
+
         if (!m_scene.has_value())
         {
             m_scene = Engine::Scene
@@ -1662,6 +1668,7 @@ namespace Renderer
                 m_samplers,
                 m_modelManager,
                 m_megaSet,
+                m_stagingPool,
                 m_iblGenerator,
                 m_deletionQueues[m_FIF]
             );
@@ -1672,6 +1679,7 @@ namespace Renderer
                 m_context.device,
                 m_context.allocator,
                 m_megaSet,
+                m_stagingPool,
                 m_deletionQueues[m_FIF]
             );
 
@@ -1722,6 +1730,8 @@ namespace Renderer
                             m_megaSet,
                             m_deletionQueues[m_FIF]
                         );
+
+                        m_scene = std::nullopt;
                     }
 
                     m_scene = Engine::Scene
@@ -1734,6 +1744,7 @@ namespace Renderer
                         m_samplers,
                         m_modelManager,
                         m_megaSet,
+                        m_stagingPool,
                         m_iblGenerator,
                         m_deletionQueues[m_FIF]
                     );
@@ -1744,6 +1755,7 @@ namespace Renderer
                         m_context.device,
                         m_context.allocator,
                         m_megaSet,
+                        m_stagingPool,
                         m_deletionQueues[m_FIF]
                     );
 
@@ -1780,6 +1792,7 @@ namespace Renderer
             m_samplers,
             m_modelManager,
             m_megaSet,
+            m_stagingPool,
             m_iblGenerator,
             m_deletionQueues[m_FIF]
         );
@@ -1790,6 +1803,7 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_megaSet,
+            m_stagingPool,
             m_deletionQueues[m_FIF]
         );
 
@@ -2064,7 +2078,9 @@ namespace Renderer
 
                 m_vbgtao.hilbertLUT = m_modelManager.textureManager.AddTexture
                 (
+                    m_context.device,
                     m_context.allocator,
+                    m_stagingPool,
                     m_deletionQueues[m_FIF],
                     Vk::ImageUpload{
                         .type   = Vk::ImageUploadType::RAW,
@@ -2085,6 +2101,7 @@ namespace Renderer
                     m_context.device,
                     m_context.allocator,
                     m_megaSet,
+                    m_stagingPool,
                     m_deletionQueues[m_FIF]
                 );
 

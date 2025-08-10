@@ -41,6 +41,7 @@ namespace Engine
             const Renderer::Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Renderer::IBL::Generator& iblGenerator,
             Util::DeletionQueue& deletionQueue
         );
@@ -56,6 +57,7 @@ namespace Engine
             const Renderer::Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Renderer::IBL::Generator& iblGenerator,
             Util::DeletionQueue& deletionQueue
         );

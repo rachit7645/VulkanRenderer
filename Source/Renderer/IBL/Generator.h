@@ -46,6 +46,7 @@ namespace Renderer::IBL
             const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
         );
@@ -58,6 +59,7 @@ namespace Renderer::IBL
             const Vk::Context& context,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
         );

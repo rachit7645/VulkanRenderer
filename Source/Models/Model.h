@@ -33,9 +33,11 @@ namespace Models
     public:
         Model
         (
+            VkDevice device,
             VmaAllocator allocator,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
@@ -53,11 +55,19 @@ namespace Models
         std::string               name;
         std::vector<Models::Mesh> meshes;
     private:
+        struct TextureInfo
+        {
+            Vk::TextureID id         = std::numeric_limits<Vk::TextureID>::max();
+            u32           uvMapIndex = 0;
+        };
+
         void ProcessScenes
         (
+            VkDevice device,
             VmaAllocator allocator,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
             const fastgltf::Asset& asset
@@ -65,9 +75,11 @@ namespace Models
 
         void ProcessNode
         (
+            VkDevice device,
             VmaAllocator allocator,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
             const fastgltf::Asset& asset,
@@ -77,9 +89,11 @@ namespace Models
 
         void LoadMesh
         (
+            VkDevice device,
             VmaAllocator allocator,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
             const fastgltf::Asset& asset,
@@ -105,11 +119,12 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        // Texture ID, UV Map Index
-        [[nodiscard]] static std::pair<Vk::TextureID, u32> LoadTexture
+        [[nodiscard]] static TextureInfo LoadTexture
         (
+            VkDevice device,
             VmaAllocator allocator,
             Vk::TextureManager& textureManager,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
             const fastgltf::Asset& asset,
@@ -117,11 +132,12 @@ namespace Models
             const std::string_view defaultTexture
         );
 
-        // Texture ID, UV Map Index
-        [[nodiscard]] static std::pair<Vk::TextureID, u32> LoadTexture
+        [[nodiscard]] static TextureInfo LoadTexture
         (
+            VkDevice device,
             VmaAllocator allocator,
             Vk::TextureManager& textureManager,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
             const fastgltf::Asset& asset,
@@ -130,8 +146,10 @@ namespace Models
 
         [[nodiscard]] static Vk::TextureID LoadTextureInternal
         (
+            VkDevice device,
             VmaAllocator allocator,
             Vk::TextureManager& textureManager,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
             const fastgltf::Asset& asset,

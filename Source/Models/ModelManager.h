@@ -31,13 +31,15 @@ namespace Models
     class ModelManager
     {
     public:
-        explicit ModelManager(const Vk::Context& context);
+        explicit ModelManager(const Vk::Context& context, Vk::StagingPool& stagingPool);
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         [[nodiscard]] Models::ModelID AddModel
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
@@ -59,6 +61,7 @@ namespace Models
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
 

@@ -101,6 +101,7 @@ namespace Renderer::ShadowRT
         const Buffers::MeshBuffer& meshBuffer,
         const Objects::GlobalSamplers& samplers,
         const Vk::AccelerationStructure& accelerationStructure,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -117,6 +118,7 @@ namespace Renderer::ShadowRT
                 pipeline,
                 MISS_SHADER_GROUP_COUNT,
                 HIT_SHADER_GROUP_COUNT,
+                stagingPool,
                 deletionQueue
             );
         }

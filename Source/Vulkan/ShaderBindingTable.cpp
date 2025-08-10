@@ -28,6 +28,7 @@ namespace Vk
         const Vk::Pipeline& pipeline,
         u32 missCount,
         u32 hitCount,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -65,23 +66,20 @@ namespace Vk
 
         const VkDeviceSize sbtSize = raygenRegion.size + missRegion.size + hitRegion.size;
 
-        auto stagingBuffer = Vk::Buffer
+        const auto stagingMemoryBlock = stagingPool.Allocate
         (
+            context.device,
             context.allocator,
             sbtSize,
-            0,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            0
         );
 
-        deletionQueue.PushDeletor([allocator = context.allocator, buffer = stagingBuffer] () mutable
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
         {
-            buffer.Destroy(allocator);
+            stagingPool.Free(stagingMemoryBlock);
         });
 
-        const auto pMappedData = static_cast<u8*>(stagingBuffer.hostAddress);
+        const auto pMappedData = static_cast<u8*>(stagingMemoryBlock.hostAddress);
 
         const usize raygenOffset = 0;
         const usize missOffset   = raygenOffset + 1         * shaderGroupHandleSize;
@@ -117,17 +115,6 @@ namespace Vk
             );
         }
 
-        if (!(stagingBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
-        {
-            Vk::CheckResult(vmaFlushAllocation(
-                context.allocator,
-                stagingBuffer.allocation,
-                0,
-                sbtSize),
-                "Failed to flush allocation!"
-            );
-        }
-
         m_buffer = Vk::Buffer
         (
             context.allocator,
@@ -145,7 +132,7 @@ namespace Vk
         {
             .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
             .pNext     = nullptr,
-            .srcOffset = 0,
+            .srcOffset = stagingMemoryBlock.memoryBlock.offset,
             .dstOffset = 0,
             .size      = sbtSize,
         };
@@ -154,7 +141,7 @@ namespace Vk
         {
             .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
             .pNext       = nullptr,
-            .srcBuffer   = stagingBuffer.handle,
+            .srcBuffer   = stagingMemoryBlock.buffer,
             .dstBuffer   = m_buffer.handle,
             .regionCount = 1,
             .pRegions    = &copyRegion

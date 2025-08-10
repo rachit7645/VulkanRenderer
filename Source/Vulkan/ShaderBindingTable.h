@@ -19,7 +19,7 @@
 
 #include "Pipeline.h"
 #include "Buffer.h"
-#include "CommandBufferAllocator.h"
+#include "StagingPool.h"
 
 namespace Vk
 {
@@ -33,6 +33,7 @@ namespace Vk
             const Vk::Pipeline& pipeline,
             u32 missCount,
             u32 hitCount,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
 

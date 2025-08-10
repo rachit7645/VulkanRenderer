@@ -35,7 +35,9 @@ namespace Vk
     public:
         [[nodiscard]] Vk::TextureID AddTexture
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
         );
@@ -62,7 +64,9 @@ namespace Vk
         void UpdateTexture
         (
             Vk::TextureID id,
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpdateRawMemory& updateRawMemory
         );
@@ -93,6 +97,14 @@ namespace Vk
             Vk::Texture texture        = {};
             u64         referenceCount = 0;
         };
+
+        struct TextureNameInfo
+        {
+            std::string name;
+            std::string id;
+        };
+
+        TextureNameInfo GetTextureNameInfo(const ImageUploadSource& source);
 
         ankerl::unordered_dense::map<Vk::TextureID, TextureInfo> m_textureMap;
         ankerl::unordered_dense::map<Vk::SamplerID, Vk::Sampler> m_samplerMap;

@@ -19,11 +19,12 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Util/Hash.h"
+
 namespace Vk
 {
-    class MemoryBlock
+    struct MemoryBlock
     {
-    public:
         bool operator==(const MemoryBlock& other) const noexcept;
         bool operator< (const MemoryBlock& other) const noexcept;
 
@@ -31,5 +32,19 @@ namespace Vk
         VkDeviceSize size   = 0;
     };
 }
+
+template <>
+struct std::hash<Vk::MemoryBlock>
+{
+    std::size_t operator()(const Vk::MemoryBlock& block) const noexcept
+    {
+        std::size_t hash = 0;
+
+        hash = Util::HashCombine(hash, block.offset);
+        hash = Util::HashCombine(hash, block.size);
+
+        return hash;
+    }
+};
 
 #endif

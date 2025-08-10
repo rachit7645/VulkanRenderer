@@ -45,6 +45,7 @@ namespace Renderer::DearImGui
             const Vk::Swapchain& swapchain,
             const Objects::GlobalSamplers& samplers,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Models::ModelManager& modelManager,
             Util::DeletionQueue& deletionQueue
         );
@@ -61,6 +62,7 @@ namespace Renderer::DearImGui
             const Vk::Swapchain& swapchain,
             const Objects::GlobalSamplers& samplers,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Models::ModelManager& modelManager,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
@@ -84,6 +86,7 @@ namespace Renderer::DearImGui
             VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Models::ModelManager& modelManager,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData

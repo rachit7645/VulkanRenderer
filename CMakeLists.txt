@@ -90,6 +90,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/ComputeTimeline.cpp
     Source/Vulkan/PipelineManager.cpp
     Source/Vulkan/MemoryBlock.cpp
+    Source/Vulkan/StagingPool.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderObject.cpp

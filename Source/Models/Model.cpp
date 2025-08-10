@@ -37,9 +37,11 @@ namespace Models
 
     Model::Model
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
@@ -100,44 +102,24 @@ namespace Models
 
         ProcessScenes
         (
+            device,
             allocator,
             geometryBuffer,
             textureManager,
+            stagingPool,
             deletionQueue,
             assetDirectory,
             asset.get()
         );
     }
 
-    void Model::Destroy
+    void Model::ProcessScenes
     (
         VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        Vk::GeometryBuffer& geometryBuffer,
-        Util::DeletionQueue& deletionQueue
-    )
-    {
-        for (auto& mesh : meshes)
-        {
-            mesh.Destroy
-            (
-                device,
-                allocator,
-                megaSet,
-                textureManager,
-                geometryBuffer,
-                deletionQueue
-            );
-        }
-    }
-
-    void Model::ProcessScenes
-    (
-        VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset
@@ -149,9 +131,11 @@ namespace Models
             {
                 ProcessNode
                 (
+                    device,
                     allocator,
                     geometryBuffer,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
@@ -164,9 +148,11 @@ namespace Models
 
     void Model::ProcessNode
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -182,9 +168,11 @@ namespace Models
         {
             LoadMesh
             (
+                device,
                 allocator,
                 geometryBuffer,
                 textureManager,
+                stagingPool,
                 deletionQueue,
                 directory,
                 asset,
@@ -197,9 +185,11 @@ namespace Models
         {
             ProcessNode
             (
+                device,
                 allocator,
                 geometryBuffer,
                 textureManager,
+                stagingPool,
                 deletionQueue,
                 directory,
                 asset,
@@ -211,9 +201,11 @@ namespace Models
 
     void Model::LoadMesh
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -256,8 +248,10 @@ namespace Models
 
                 const auto [writePointer, info] = geometryBuffer.indexBuffer.Allocate
                 (
+                    device,
                     allocator,
                     indicesAccessor.count,
+                    stagingPool,
                     deletionQueue
                 );
 
@@ -329,8 +323,10 @@ namespace Models
 
                 const auto [writePointer, info] = geometryBuffer.positionBuffer.Allocate
                 (
+                    device,
                     allocator,
                     positionAccessor.count,
+                    stagingPool,
                     deletionQueue
                 );
 
@@ -376,9 +372,11 @@ namespace Models
 
                 const auto [writePointer, info] = geometryBuffer.uvBuffer.Allocate
                 (
-                   allocator,
-                   normalAccessor.count,
-                   deletionQueue
+                    device,
+                    allocator,
+                    normalAccessor.count,
+                    stagingPool,
+                    deletionQueue
                 );
 
                 surfaceInfo.uvInfo = info;
@@ -419,8 +417,10 @@ namespace Models
 
                 const auto [writePointer, info] = geometryBuffer.vertexBuffer.Allocate
                 (
+                    device,
                     allocator,
                     normalAccessor.count,
+                    stagingPool,
                     deletionQueue
                 );
 
@@ -471,63 +471,83 @@ namespace Models
             {
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
-                std::tie(material.albedoID, material.albedoUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     baseColorTexture,
                     DEFAULT_ALBEDO
                 );
+
+                material.albedoID      = textureInfo.id;
+                material.albedoUVMapID = textureInfo.uvMapIndex;
             }
 
             // Normal
             {
                 const auto& normalTexture = mat.normalTexture;
 
-                std::tie(material.normalID, material.normalUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     normalTexture
                 );
+
+                material.normalID      = textureInfo.id;
+                material.normalUVMapID = textureInfo.uvMapIndex;
             }
 
             // AO + Roughness + Metallic
             {
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
-                std::tie(material.aoRghMtlID, material.aoRghMtlUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     metallicRoughnessTexture,
                     DEFAULT_AO_RGH_MTL
                 );
+
+                material.aoRghMtlID      = textureInfo.id;
+                material.aoRghMtlUVMapID = textureInfo.uvMapIndex;
             }
 
             // Emmisive
             {
                 const auto& emmisiveTexture = mat.emissiveTexture;
 
-                std::tie(material.emmisiveID, material.emmisiveUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     emmisiveTexture,
                     DEFAULT_EMMISIVE
                 );
+
+                material.emmisiveID      = textureInfo.id;
+                material.emmisiveUVMapID = textureInfo.uvMapIndex;
             }
 
             meshes.emplace_back
@@ -619,10 +639,12 @@ namespace Models
         return attributeIt->accessorIndex;
     }
 
-    std::pair<Vk::TextureID, u32> Model::LoadTexture
+    Model::TextureInfo Model::LoadTexture
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -634,7 +656,9 @@ namespace Models
         {
             const auto id = textureManager.AddTexture
             (
+                device,
                 allocator,
+                stagingPool,
                 deletionQueue,
                 Vk::ImageUpload{
                     .type   = Vk::ImageUploadType::KTX2,
@@ -645,7 +669,11 @@ namespace Models
                 }
             );
 
-            return std::make_pair(id, 0);
+            return Model::TextureInfo
+            {
+                .id         = id,
+                .uvMapIndex = 0
+            };
         }
 
         if (textureInfo->texCoordIndex > 1)
@@ -660,8 +688,10 @@ namespace Models
 
         const auto id = LoadTextureInternal
         (
+            device,
             allocator,
             textureManager,
+            stagingPool,
             deletionQueue,
             directory,
             asset,
@@ -670,13 +700,19 @@ namespace Models
 
         const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
 
-        return std::make_pair(id, index);
+        return Model::TextureInfo
+        {
+            .id         = id,
+            .uvMapIndex = index
+        };
     }
 
-    std::pair<Vk::TextureID, u32> Model::LoadTexture
+    Model::TextureInfo Model::LoadTexture
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -687,7 +723,9 @@ namespace Models
         {
             const auto id = textureManager.AddTexture
             (
+                device,
                 allocator,
+                stagingPool,
                 deletionQueue,
                 Vk::ImageUpload{
                     .type   = Vk::ImageUploadType::KTX2,
@@ -698,7 +736,11 @@ namespace Models
                 }
             );
 
-            return std::make_pair(id, 0);
+            return Model::TextureInfo
+            {
+                .id         = id,
+                .uvMapIndex = 0
+            };
         }
 
         if (textureInfo->texCoordIndex > 1)
@@ -713,8 +755,10 @@ namespace Models
 
         const auto id = LoadTextureInternal
         (
+            device,
             allocator,
             textureManager,
+            stagingPool,
             deletionQueue,
             directory,
             asset,
@@ -723,13 +767,19 @@ namespace Models
 
         const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
 
-        return std::make_pair(id, index);
+        return Model::TextureInfo
+        {
+            .id         = id,
+            .uvMapIndex = index
+        };
     }
 
     Vk::TextureID Model::LoadTextureInternal
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -797,7 +847,9 @@ namespace Models
 
                 return textureManager.AddTexture
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
@@ -815,7 +867,9 @@ namespace Models
 
                 return textureManager.AddTexture
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
@@ -852,7 +906,9 @@ namespace Models
 
                         return textureManager.AddTexture
                         (
+                            device,
                             allocator,
+                            stagingPool,
                             deletionQueue,
                             Vk::ImageUpload{
                                 .type   = type,
@@ -867,5 +923,29 @@ namespace Models
                 }, buffer.data);
             },
         }, image.data);
+    }
+
+    void Model::Destroy
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        Vk::GeometryBuffer& geometryBuffer,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        for (auto& mesh : meshes)
+        {
+            mesh.Destroy
+            (
+                device,
+                allocator,
+                megaSet,
+                textureManager,
+                geometryBuffer,
+                deletionQueue
+            );
+        }
     }
 }

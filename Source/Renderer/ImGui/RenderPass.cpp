@@ -70,6 +70,7 @@ namespace Renderer::DearImGui
         const Vk::Swapchain& swapchain,
         const Objects::GlobalSamplers& samplers,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Models::ModelManager& modelManager,
         Util::DeletionQueue& deletionQueue
     )
@@ -92,6 +93,7 @@ namespace Renderer::DearImGui
                 swapchain,
                 samplers,
                 megaSet,
+                stagingPool,
                 modelManager,
                 deletionQueue,
                 drawData
@@ -132,6 +134,7 @@ namespace Renderer::DearImGui
         const Vk::Swapchain& swapchain,
         const Objects::GlobalSamplers& samplers,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Models::ModelManager& modelManager,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
@@ -166,6 +169,7 @@ namespace Renderer::DearImGui
             allocator,
             cmdBuffer,
             megaSet,
+            stagingPool,
             modelManager,
             deletionQueue,
             drawData
@@ -331,7 +335,7 @@ namespace Renderer::DearImGui
                 vertexSize,
                 0,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
@@ -356,7 +360,7 @@ namespace Renderer::DearImGui
                 indexSize,
                 0,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
@@ -431,6 +435,7 @@ namespace Renderer::DearImGui
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Models::ModelManager& modelManager,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
@@ -464,7 +469,9 @@ namespace Renderer::DearImGui
 
                 const auto id = modelManager.textureManager.AddTexture
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = Vk::ImageUploadType::RAW,
@@ -501,7 +508,9 @@ namespace Renderer::DearImGui
                 modelManager.textureManager.UpdateTexture
                 (
                     id,
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     Vk::ImageUpdateRawMemory{
                         .update = {
@@ -540,6 +549,7 @@ namespace Renderer::DearImGui
             device,
             allocator,
             megaSet,
+            stagingPool,
             deletionQueue
         );
 

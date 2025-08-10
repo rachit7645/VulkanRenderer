@@ -115,7 +115,7 @@ namespace Renderer::IBL
             matrices.size() * sizeof(glm::mat4),
             0,
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
@@ -152,6 +152,7 @@ namespace Renderer::IBL
         const Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view hdrMapAssetPath
     )
@@ -164,6 +165,7 @@ namespace Renderer::IBL
             context,
             modelManager,
             megaSet,
+            stagingPool,
             deletionQueue,
             hdrMapAssetPath
         );
@@ -245,6 +247,7 @@ namespace Renderer::IBL
         const Vk::Context& context,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view hdrMapAssetPath
     )
@@ -266,7 +269,9 @@ namespace Renderer::IBL
 
         const auto hdrMapID = modelManager.textureManager.AddTexture
         (
+            context.device,
             context.allocator,
+            stagingPool,
             deletionQueue,
             Vk::ImageUpload{
                 .type   = type,
@@ -283,6 +288,7 @@ namespace Renderer::IBL
             context.device,
             context.allocator,
             megaSet,
+            stagingPool,
             deletionQueue
         );
 

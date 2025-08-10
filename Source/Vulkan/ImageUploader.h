@@ -23,6 +23,7 @@
 #include "Buffer.h"
 #include "BarrierWriter.h"
 #include "Util/DeletionQueue.h"
+#include "Vulkan/StagingPool.h"
 
 namespace Vk
 {
@@ -83,14 +84,18 @@ namespace Vk
     public:
         [[nodiscard]] Vk::Image LoadImage
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
         );
 
         void UpdateImage
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::Image& image,
             const Vk::ImageUpdateRawMemory& updateRawMemory
@@ -105,7 +110,7 @@ namespace Vk
         struct Upload
         {
             Vk::Image                       image           = {};
-            Vk::Buffer                      buffer          = {};
+            VkBuffer                        buffer          = VK_NULL_HANDLE;
             std::vector<VkBufferImageCopy2> copyRegions     = {};
             VkPipelineStageFlags2           srcStageMask    = VK_PIPELINE_STAGE_2_NONE;
             VkAccessFlags2                  srcAccessMask   = VK_ACCESS_2_NONE;
@@ -115,7 +120,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadFromFile
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadType type,
@@ -124,7 +131,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadFromMemory
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory,
             ImageUploadType type,
@@ -133,7 +142,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadSTBIFile
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
@@ -141,7 +152,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadSTBIMemory
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory,
             ImageUploadFlags flags
@@ -149,7 +162,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadSTBIInternal
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const u8* data,
             u32 width,
@@ -159,7 +174,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadHDRFile
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
@@ -167,7 +184,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadHDRMemory
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory,
             ImageUploadFlags flags
@@ -175,7 +194,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadHDRInternal
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const f32* data,
             u32 width,
@@ -185,7 +206,9 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadEXRFile
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
@@ -193,28 +216,36 @@ namespace Vk
 
         [[nodiscard]] Vk::Image LoadKTX2File
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
         [[nodiscard]] Vk::Image LoadKTX2Memory
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory
         );
 
         [[nodiscard]] Vk::Image LoadKTX2Internal
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             ktxTexture2* pTexture
         );
 
         [[nodiscard]] Vk::Image LoadRawMemory
         (
+            VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const ImageUploadRawMemory& rawMemory,
             ImageUploadFlags flags
@@ -223,7 +254,7 @@ namespace Vk
         void AppendUpload(Upload&& upload);
 
         std::vector<Upload> m_pendingUploads;
-        std::mutex          m_uploadMutex;
+        std::mutex          m_mutex;
 
         Vk::BarrierWriter m_barrierWriter;
     };

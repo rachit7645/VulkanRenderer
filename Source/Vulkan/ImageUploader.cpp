@@ -17,6 +17,7 @@
 #include "ImageUploader.h"
 
 #include <ktx.h>
+#include <vulkan/utility/vk_format_utils.h>
 
 #include "Util.h"
 #include "Util/Log.h"
@@ -31,7 +32,9 @@ namespace Vk
 {
     Vk::Image ImageUploader::LoadImage
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUpload& upload
     )
@@ -41,7 +44,9 @@ namespace Vk
             {
                 return LoadFromFile
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     file.path,
                     upload.type,
@@ -52,7 +57,9 @@ namespace Vk
             {
                 return LoadFromMemory
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     memory,
                     upload.type,
@@ -63,7 +70,9 @@ namespace Vk
             {
                 return LoadRawMemory
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     rawMemory,
                     upload.flags
@@ -74,7 +83,9 @@ namespace Vk
 
     void ImageUploader::UpdateImage
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::Image& image,
         const Vk::ImageUpdateRawMemory& updateRawMemory
@@ -88,25 +99,22 @@ namespace Vk
         const auto texelSize  = Vk::GetTexelSize(image.format);
         const auto updateSize = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
 
-        auto buffer = Vk::Buffer
+        const auto stagingMemoryBlock = stagingPool.Allocate
         (
+            device,
             allocator,
             updateSize,
-            0,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            vkuFormatTexelBlockSize(image.format)
         );
 
-        std::memcpy(buffer.hostAddress, updateRawMemory.data.data(), updateSize);
+        std::memcpy(stagingMemoryBlock.hostAddress, updateRawMemory.data.data(), updateSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 
         copyRegions.emplace_back(VkBufferImageCopy2{
             .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
             .pNext             = nullptr,
-            .bufferOffset      = 0,
+            .bufferOffset      = stagingMemoryBlock.memoryBlock.offset,
             .bufferRowLength   = 0,
             .bufferImageHeight = 0,
             .imageSubresource  = {
@@ -121,7 +129,7 @@ namespace Vk
 
         AppendUpload(Upload{
             .image           = image,
-            .buffer          = buffer,
+            .buffer          = stagingMemoryBlock.buffer,
             .copyRegions     = copyRegions,
             .srcStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
             .srcAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -129,9 +137,9 @@ namespace Vk
             .generateMipmaps = false
         });
 
-        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
         {
-            buffer.Destroy(allocator);
+            stagingPool.Free(stagingMemoryBlock);
         });
     }
 
@@ -142,7 +150,7 @@ namespace Vk
             return;
         }
 
-        std::lock_guard lock(m_uploadMutex);
+        std::lock_guard lock(m_mutex);
 
         // ? -> Transfer Destination
         {
@@ -179,7 +187,7 @@ namespace Vk
                 {
                     .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
                     .pNext          = nullptr,
-                    .srcBuffer      = upload.buffer.handle,
+                    .srcBuffer      = upload.buffer,
                     .dstImage       = upload.image.handle,
                     .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .regionCount    = static_cast<u32>(upload.copyRegions.size()),
@@ -272,14 +280,14 @@ namespace Vk
 
     bool ImageUploader::HasPendingUploads()
     {
-        std::lock_guard lock(m_uploadMutex);
+        std::lock_guard lock(m_mutex);
 
         return !m_pendingUploads.empty();
     }
 
     void ImageUploader::Clear()
     {
-        std::lock_guard lock(m_uploadMutex);
+        std::lock_guard lock(m_mutex);
 
         m_pendingUploads.clear();
         m_barrierWriter.Clear();
@@ -287,7 +295,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadFromFile
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         ImageUploadType type,
@@ -302,16 +312,47 @@ namespace Vk
         switch (type)
         {
         case ImageUploadType::SDR:
-            return LoadSTBIFile(allocator, deletionQueue, path, flags);
+            return LoadSTBIFile
+            (
+                device,
+                allocator,
+                stagingPool,
+                deletionQueue,
+                path,
+                flags
+            );
 
         case ImageUploadType::HDR:
-            return LoadHDRFile(allocator, deletionQueue, path, flags);
+            return LoadHDRFile
+            (
+                device,
+                allocator,
+                stagingPool,
+                deletionQueue,
+                path,
+                flags
+            );
 
         case ImageUploadType::EXR:
-            return LoadEXRFile(allocator, deletionQueue, path, flags);
+            return LoadEXRFile
+            (
+                device,
+                allocator,
+                stagingPool,
+                deletionQueue,
+                path,
+                flags
+            );
 
         case ImageUploadType::KTX2:
-            return LoadKTX2File(allocator, deletionQueue, path);
+            return LoadKTX2File
+            (
+                device,
+                allocator,
+                stagingPool,
+                deletionQueue,
+                path
+            );
 
         default:
             Logger::Error("{}\n", "Invalid image type!");
@@ -320,7 +361,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadFromMemory
     (
+        VkDevice device,
        VmaAllocator allocator,
+       Vk::StagingPool& stagingPool,
        Util::DeletionQueue& deletionQueue,
        const Vk::ImageUploadMemory& memory,
        ImageUploadType type,
@@ -334,13 +377,36 @@ namespace Vk
         switch (type)
         {
             case ImageUploadType::SDR:
-                return LoadSTBIMemory(allocator, deletionQueue, memory, flags);
+                return LoadSTBIMemory
+                (
+                    device,
+                    allocator,
+                    stagingPool,
+                    deletionQueue,
+                    memory,
+                    flags
+                );
 
             case ImageUploadType::HDR:
-                return LoadHDRMemory(allocator, deletionQueue, memory, flags);
+                return LoadHDRMemory
+                (
+                    device,
+                    allocator,
+                    stagingPool,
+                    deletionQueue,
+                    memory,
+                    flags
+                );
 
             case ImageUploadType::KTX2:
-                return LoadKTX2Memory(allocator, deletionQueue, memory);
+                return LoadKTX2Memory
+                (
+                    device,
+                    allocator,
+                    stagingPool,
+                    deletionQueue,
+                    memory
+                );
 
             default:
                 Logger::Error("{}\n", "Invalid image type!");
@@ -349,7 +415,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadSTBIFile
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         ImageUploadFlags flags
@@ -385,7 +453,9 @@ namespace Vk
 
         return LoadSTBIInternal
         (
+            device,
             allocator,
+            stagingPool,
             deletionQueue,
             data,
             width,
@@ -396,7 +466,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadSTBIMemory
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUploadMemory& memory,
         ImageUploadFlags flags
@@ -433,7 +505,9 @@ namespace Vk
 
         return LoadSTBIInternal
         (
+            device,
             allocator,
+            stagingPool,
             deletionQueue,
             data,
             width,
@@ -444,7 +518,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadSTBIInternal
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const u8* data,
         u32 width,
@@ -458,29 +534,28 @@ namespace Vk
 
         const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
+        constexpr VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+
         const usize        texelCount = static_cast<usize>(width) * height;
         const usize        elemCount  = texelCount * STBI_rgb_alpha;
         const VkDeviceSize dataSize   = elemCount * sizeof(u8);
 
-        auto buffer = Vk::Buffer
+        const auto stagingMemoryBlock = stagingPool.Allocate
         (
+            device,
             allocator,
             dataSize,
-            0,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            vkuFormatTexelBlockSize(format)
         );
 
-        std::memcpy(buffer.hostAddress, data, dataSize);
+        std::memcpy(stagingMemoryBlock.hostAddress, data, dataSize);
 
         stbi_image_free(std::bit_cast<void*>(data));
 
         const std::vector copyRegions = {VkBufferImageCopy2{
             .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
             .pNext             = nullptr,
-            .bufferOffset      = 0,
+            .bufferOffset      = stagingMemoryBlock.memoryBlock.offset,
             .bufferRowLength   = 0,
             .bufferImageHeight = 0,
             .imageSubresource  = {
@@ -499,7 +574,7 @@ namespace Vk
             .pNext                 = nullptr,
             .flags                 = 0,
             .imageType             = VK_IMAGE_TYPE_2D,
-            .format                = VK_FORMAT_R8G8B8A8_SRGB,
+            .format                = format,
             .extent                = {width, height, 1},
             .mipLevels             = 1,
             .arrayLayers           = 1,
@@ -522,7 +597,7 @@ namespace Vk
 
         AppendUpload(Upload{
             .image           = image,
-            .buffer          = buffer,
+            .buffer          = stagingMemoryBlock.buffer,
             .copyRegions     = copyRegions,
             .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
             .srcAccessMask   = VK_ACCESS_2_NONE,
@@ -530,9 +605,9 @@ namespace Vk
             .generateMipmaps = generateMipmaps
         });
 
-        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
         {
-            buffer.Destroy(allocator);
+            stagingPool.Free(stagingMemoryBlock);
         });
 
         return image;
@@ -540,7 +615,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadHDRFile
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         ImageUploadFlags flags
@@ -577,7 +654,9 @@ namespace Vk
 
         return LoadHDRInternal
         (
+            device,
             allocator,
+            stagingPool,
             deletionQueue,
             data,
             width,
@@ -588,7 +667,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadHDRMemory
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUploadMemory& memory,
         ImageUploadFlags flags
@@ -626,7 +707,9 @@ namespace Vk
 
         return LoadHDRInternal
         (
+            device,
             allocator,
+            stagingPool,
             deletionQueue,
             data,
             width,
@@ -637,7 +720,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadHDRInternal
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const f32* data,
         u32 width,
@@ -652,29 +737,28 @@ namespace Vk
         const bool toF16           = (flags & ImageUploadFlags::F16    ) == ImageUploadFlags::F16;
         const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
+        const VkFormat format = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
+
         const usize        texelCount = static_cast<usize>(width) * height;
         const usize        elemCount  = texelCount * STBI_rgb_alpha;
         const VkDeviceSize elemSize   = toF16 ? sizeof(f16) : sizeof(f32);
         const VkDeviceSize dataSize   = elemCount * elemSize;
 
-        auto buffer = Vk::Buffer
+        const auto stagingMemoryBlock = stagingPool.Allocate
         (
+            device,
             allocator,
             dataSize,
-            0,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            vkuFormatTexelBlockSize(format)
         );
 
         if (toF16)
         {
-            Util::ConvertF32ToF16(data, static_cast<f16*>(buffer.hostAddress), elemCount);
+            Util::ConvertF32ToF16(data, static_cast<f16*>(stagingMemoryBlock.hostAddress), elemCount);
         }
         else
         {
-            std::memcpy(buffer.hostAddress, data, dataSize);
+            std::memcpy(stagingMemoryBlock.hostAddress, data, dataSize);
         }
 
         stbi_image_free(std::bit_cast<void*>(data));
@@ -682,7 +766,7 @@ namespace Vk
         const std::vector copyRegions = {VkBufferImageCopy2{
             .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
             .pNext             = nullptr,
-            .bufferOffset      = 0,
+            .bufferOffset      = stagingMemoryBlock.memoryBlock.offset,
             .bufferRowLength   = 0,
             .bufferImageHeight = 0,
             .imageSubresource  = {
@@ -701,7 +785,7 @@ namespace Vk
             .pNext                 = nullptr,
             .flags                 = 0,
             .imageType             = VK_IMAGE_TYPE_2D,
-            .format                = VK_FORMAT_UNDEFINED,
+            .format                = format,
             .extent                = {width, height, 1},
             .mipLevels             = 1,
             .arrayLayers           = 1,
@@ -714,8 +798,6 @@ namespace Vk
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
         };
 
-        createInfo.format = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
-
         if (generateMipmaps)
         {
             createInfo.mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
@@ -726,7 +808,7 @@ namespace Vk
 
         AppendUpload(Upload{
             .image           = image,
-            .buffer          = buffer,
+            .buffer          = stagingMemoryBlock.buffer,
             .copyRegions     = copyRegions,
             .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
             .srcAccessMask   = VK_ACCESS_2_NONE,
@@ -734,9 +816,9 @@ namespace Vk
             .generateMipmaps = generateMipmaps
         });
 
-        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
         {
-            buffer.Destroy(allocator);
+            stagingPool.Free(stagingMemoryBlock);
         });
 
         return image;
@@ -744,7 +826,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadEXRFile
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         ImageUploadFlags flags
@@ -770,35 +854,34 @@ namespace Vk
             const bool toF16           = (flags & ImageUploadFlags::F16)     == ImageUploadFlags::F16;
             const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
+            const VkFormat format = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
+
             const usize        texelCount = static_cast<usize>(width) * height;
             const usize        elemCount  = 4 * texelCount;
             const VkDeviceSize elemSize   = toF16 ? sizeof(f16) : sizeof(f32);
             const VkDeviceSize dataSize   = elemCount * elemSize;
 
-            auto buffer = Vk::Buffer
+            const auto stagingMemoryBlock = stagingPool.Allocate
             (
+                device,
                 allocator,
                 dataSize,
-                0,
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                VMA_MEMORY_USAGE_AUTO
+                vkuFormatTexelBlockSize(format)
             );
 
             if (toF16)
             {
-                std::memcpy(buffer.hostAddress, &pixels[0][0], dataSize);
+                std::memcpy(stagingMemoryBlock.hostAddress, &pixels[0][0], dataSize);
             }
             else
             {
-                Util::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(buffer.hostAddress), elemCount);
+                Util::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(stagingMemoryBlock.hostAddress), elemCount);
             }
 
             const std::vector copyRegions = {VkBufferImageCopy2{
                 .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
                 .pNext             = nullptr,
-                .bufferOffset      = 0,
+                .bufferOffset      = stagingMemoryBlock.memoryBlock.offset,
                 .bufferRowLength   = 0,
                 .bufferImageHeight = 0,
                 .imageSubresource  = {
@@ -817,7 +900,7 @@ namespace Vk
                 .pNext                 = nullptr,
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = VK_FORMAT_UNDEFINED,
+                .format                = format,
                 .extent                = {static_cast<u32>(width), static_cast<u32>(height), 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,
@@ -830,8 +913,6 @@ namespace Vk
                 .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
             };
 
-            createInfo.format = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
-
             if (generateMipmaps)
             {
                 createInfo.mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
@@ -842,7 +923,7 @@ namespace Vk
 
             AppendUpload(Upload{
                 .image           = image,
-                .buffer          = buffer,
+                .buffer          = stagingMemoryBlock.buffer,
                 .copyRegions     = copyRegions,
                 .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
                 .srcAccessMask   = VK_ACCESS_2_NONE,
@@ -850,22 +931,24 @@ namespace Vk
                 .generateMipmaps = generateMipmaps
             });
 
-            deletionQueue.PushDeletor([allocator, buffer] () mutable
+            deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
             {
-                buffer.Destroy(allocator);
+                stagingPool.Free(stagingMemoryBlock);
             });
 
             return image;
         }
         catch (const std::exception& e)
         {
-            Logger::Error("Failed to read EXR file! [Error={}] [Path={}]\n", e.what(), path);
+            Logger::Error("Failed to load EXR file! [Error={}] [Path={}]\n", e.what(), path);
         }
     }
 
     Vk::Image ImageUploader::LoadKTX2File
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
@@ -888,12 +971,21 @@ namespace Vk
             Logger::Error("Failed to load KTX2 file! [Error={}] [Path={}]", ktxErrorString(result), path);
         }
 
-        return LoadKTX2Internal(allocator, deletionQueue, pTexture);
+        return LoadKTX2Internal
+        (
+            device,
+            allocator,
+            stagingPool,
+            deletionQueue,
+            pTexture
+        );
     }
 
     Vk::Image ImageUploader::LoadKTX2Memory
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUploadMemory& memory
     )
@@ -917,12 +1009,21 @@ namespace Vk
             Logger::Error("Failed to load KTX2 file! [Error={}] [Name={}]", ktxErrorString(result), memory.name);
         }
 
-        return LoadKTX2Internal(allocator, deletionQueue, pTexture);
+        return LoadKTX2Internal
+        (
+            device,
+            allocator,
+            stagingPool,
+            deletionQueue,
+            pTexture
+        );
     }
 
     Vk::Image ImageUploader::LoadKTX2Internal
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         ktxTexture2* pTexture
     )
@@ -955,15 +1056,12 @@ namespace Vk
             }
         }
 
-        auto buffer = Vk::Buffer
+        const auto stagingMemoryBlock = stagingPool.Allocate
         (
+            device,
             allocator,
             pTexture->dataSize,
-            0,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            vkuFormatTexelBlockSize(static_cast<VkFormat>(pTexture->vkFormat))
         );
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
@@ -974,7 +1072,7 @@ namespace Vk
             ZoneScopedN("Copy");
             #endif
 
-            std::memcpy(buffer.hostAddress, pTexture->pData, pTexture->dataSize);
+            std::memcpy(stagingMemoryBlock.hostAddress, pTexture->pData, pTexture->dataSize);
 
             for (u32 mipLevel = 0; mipLevel < pTexture->numLevels; ++mipLevel)
             {
@@ -989,7 +1087,7 @@ namespace Vk
                     copyRegions.emplace_back(VkBufferImageCopy2{
                         .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
                         .pNext             = nullptr,
-                        .bufferOffset      = offset,
+                        .bufferOffset      = stagingMemoryBlock.memoryBlock.offset + offset,
                         .bufferRowLength   = 0,
                         .bufferImageHeight = 0,
                         .imageSubresource  = {
@@ -1032,7 +1130,7 @@ namespace Vk
 
         AppendUpload(Upload{
             .image           = image,
-            .buffer          = buffer,
+            .buffer          = stagingMemoryBlock.buffer,
             .copyRegions     = copyRegions,
             .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
             .srcAccessMask   = VK_ACCESS_2_NONE,
@@ -1040,9 +1138,9 @@ namespace Vk
             .generateMipmaps = false
         });
 
-        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
         {
-            buffer.Destroy(allocator);
+            stagingPool.Free(stagingMemoryBlock);
         });
 
         return image;
@@ -1050,7 +1148,9 @@ namespace Vk
 
     Vk::Image ImageUploader::LoadRawMemory
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const ImageUploadRawMemory& rawMemory,
         ImageUploadFlags flags
@@ -1066,25 +1166,22 @@ namespace Vk
         const auto texelSize  = Vk::GetTexelSize(rawMemory.format);
         const auto dataSize   = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
 
-        auto buffer = Vk::Buffer
+        const auto stagingMemoryBlock = stagingPool.Allocate
         (
+            device,
             allocator,
             dataSize,
-            0,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            vkuFormatTexelBlockSize(rawMemory.format)
         );
 
-        std::memcpy(buffer.hostAddress, rawMemory.data.data(), dataSize);
+        std::memcpy(stagingMemoryBlock.hostAddress, rawMemory.data.data(), dataSize);
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 
         copyRegions.emplace_back(VkBufferImageCopy2{
             .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
             .pNext             = nullptr,
-            .bufferOffset      = 0,
+            .bufferOffset      = stagingMemoryBlock.memoryBlock.offset,
             .bufferRowLength   = 0,
             .bufferImageHeight = 0,
             .imageSubresource  = {
@@ -1126,7 +1223,7 @@ namespace Vk
 
         AppendUpload(Upload{
             .image           = image,
-            .buffer          = buffer,
+            .buffer          = stagingMemoryBlock.buffer,
             .copyRegions     = copyRegions,
             .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
             .srcAccessMask   = VK_ACCESS_2_NONE,
@@ -1134,9 +1231,9 @@ namespace Vk
             .generateMipmaps = generateMipmaps
         });
 
-        deletionQueue.PushDeletor([allocator, buffer] () mutable
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
         {
-            buffer.Destroy(allocator);
+            stagingPool.Free(stagingMemoryBlock);
         });
 
         return image;
@@ -1144,7 +1241,7 @@ namespace Vk
 
     void ImageUploader::AppendUpload(Upload&& upload)
     {
-        std::lock_guard lock(m_uploadMutex);
+        std::lock_guard lock(m_mutex);
 
         m_pendingUploads.emplace_back(upload);
     }

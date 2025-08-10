@@ -34,6 +34,7 @@ namespace Engine
         const Renderer::Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Renderer::IBL::Generator& iblGenerator,
         Util::DeletionQueue& deletionQueue
     )
@@ -67,7 +68,14 @@ namespace Engine
 
                     JSON::CheckError(model, "Failed to load model path!");
 
-                    renderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, model.value());
+                    renderObject.modelID = modelManager.AddModel
+                    (
+                        context.device,
+                        context.allocator,
+                        stagingPool,
+                        deletionQueue,
+                        model.value()
+                    );
 
                     JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
                     JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");
@@ -138,6 +146,7 @@ namespace Engine
                     samplers,
                     modelManager,
                     megaSet,
+                    stagingPool,
                     deletionQueue,
                     hdrMapAssetPath
                 );
@@ -162,6 +171,7 @@ namespace Engine
         const Renderer::Objects::GlobalSamplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Renderer::IBL::Generator& iblGenerator,
         Util::DeletionQueue& deletionQueue
     )
@@ -188,7 +198,14 @@ namespace Engine
 
                             if (Util::Files::Exists(modelAssetPath))
                             {
-                                m_loadedRenderObject.modelID = modelManager.AddModel(context.allocator, deletionQueue, m_loadedModelPath);
+                                m_loadedRenderObject.modelID = modelManager.AddModel
+                                (
+                                    context.device,
+                                    context.allocator,
+                                    stagingPool,
+                                    deletionQueue,
+                                    m_loadedModelPath
+                                );
 
                                 renderObjects.emplace_back(m_loadedRenderObject);
 
@@ -450,6 +467,7 @@ namespace Engine
                                 samplers,
                                 modelManager,
                                 megaSet,
+                                stagingPool,
                                 deletionQueue,
                                 hdrMapAssetPath
                             );

@@ -44,6 +44,7 @@
 #include "Vulkan/GraphicsTimeline.h"
 #include "Vulkan/ComputeTimeline.h"
 #include "Vulkan/PipelineManager.h"
+#include "Vulkan/StagingPool.h"
 #include "Util/Types.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -120,6 +121,7 @@ namespace Renderer
         Vk::FormatHelper  m_formatHelper;
 
         Vk::MegaSet            m_megaSet;
+        Vk::StagingPool        m_stagingPool;
         Vk::FramebufferManager m_framebufferManager;
         Models::ModelManager   m_modelManager;
         Vk::PipelineManager    m_pipelineManager;

@@ -30,7 +30,7 @@ namespace Vk
     class GeometryBuffer
     {
     public:
-        explicit GeometryBuffer(const Vk::Context& context);
+        GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator);
@@ -40,6 +40,7 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -61,9 +62,9 @@ namespace Vk
 
         Vk::Buffer cubeBuffer;
     private:
-        void SetupCubeUpload(VmaAllocator allocator);
+        void SetupCubeUpload(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool);
 
-        std::optional<Vk::Buffer> m_pendingCubeUpload;
+        std::optional<Vk::StagingMemoryBlock> m_pendingCubeUpload;
     };
 }
 
