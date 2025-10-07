@@ -14,7 +14,6 @@
 * Fog
 * Volumetric Lighting
 * IBL Generation Caching
-* Staging Pool
 * Generic CPU -> GPU Uploader
 * Light Culling (Tiled / Clustered)
 * Shadow Caching

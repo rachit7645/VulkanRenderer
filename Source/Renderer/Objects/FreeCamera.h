@@ -35,20 +35,22 @@ namespace Renderer::Objects
             f32 FOV,
             f32 exposure,
             f32 speed,
+            f32 sprint,
             f32 sensitivity,
             f32 zoom
         );
 
-        void Update(f32 frameDelta, Engine::Inputs& inputs) override;
+        void Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs) override;
         void ImGuiDisplay() override;
     private:
-        void CheckInputs(f32 frameDelta, Engine::Inputs& inputs);
-        void Move(f32 frameDelta, Engine::Inputs& inputs);
-        void Rotate(f32 frameDelta, Engine::Inputs& inputs);
-        void Zoom(f32 frameDelta, Engine::Inputs& inputs);
+        void CheckInputs(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
+        void Move(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
+        void Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
+        void Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
 
         // Settings
         f32 m_speed       = 0.000015f;
+        f32 m_sprint      = 1.9f;
         f32 m_sensitivity = 0.0001f;
         f32 m_zoom        = 0.000045f;
     };

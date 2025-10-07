@@ -27,21 +27,23 @@ namespace Renderer::Objects
         f32 FOV,
         f32 exposure,
         f32 speed,
+        f32 sprint,
         f32 sensitivity,
         f32 zoom
     )
         : Camera(position, rotation, FOV, exposure),
           m_speed(speed),
+          m_sprint(sprint),
           m_sensitivity(sensitivity),
           m_zoom(zoom)
     {
     }
 
-    void FreeCamera::Update(f32 frameDelta, Engine::Inputs& inputs)
+    void FreeCamera::Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
         if (isEnabled == true)
         {
-            CheckInputs(frameDelta, inputs);
+            CheckInputs(frameCounter, inputs);
         }
 
         front.x = std::cos(rotation.y) * std::cos(rotation.x);
@@ -53,16 +55,22 @@ namespace Renderer::Objects
         up    = glm::normalize(glm::cross(right, front));
     }
 
-    void FreeCamera::CheckInputs(f32 frameDelta, Engine::Inputs& inputs)
+    void FreeCamera::CheckInputs(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        Move(frameDelta, inputs);
-        Rotate(frameDelta, inputs);
-        Zoom(frameDelta, inputs);
+        Move(frameCounter, inputs);
+        Rotate(frameCounter, inputs);
+        Zoom(frameCounter, inputs);
     }
 
-    void FreeCamera::Move(f32 frameDelta, Engine::Inputs& inputs)
+    void FreeCamera::Move(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        const f32 velocity = m_speed * frameDelta;
+        f32 velocity = m_speed * frameCounter.frameDelta;
+
+        // Sprint
+        if (inputs.IsKeyPressed(SDL_SCANCODE_LCTRL))
+        {
+            velocity *= m_sprint;
+        }
 
         // Forward
         if (inputs.IsKeyPressed(SDL_SCANCODE_W))
@@ -86,6 +94,17 @@ namespace Renderer::Objects
             position += right * velocity;
         }
 
+        // Up
+        if (inputs.IsKeyPressed(SDL_SCANCODE_SPACE))
+        {
+            position += WORLD_UP * velocity;
+        }
+        // Down
+        if (inputs.IsKeyPressed(SDL_SCANCODE_LSHIFT))
+        {
+            position -= WORLD_UP * velocity;
+        }
+
         const auto lStick = inputs.GetLStick();
         // Forward/Backward
         position -= lStick.y * front * velocity;
@@ -93,9 +112,12 @@ namespace Renderer::Objects
         position += lStick.x * right * velocity;
     }
 
-    void FreeCamera::Rotate(f32 frameDelta, Engine::Inputs& inputs)
+    void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        const auto speed = m_sensitivity * frameDelta;
+        constexpr auto ROTATION_STICK_MULTIPLIER = 0.04f;
+        constexpr auto MAX_YAW                   = glm::radians(89.0f);
+
+        const auto speed = m_sensitivity * frameCounter.frameDelta;
 
         // Avoids freaking out
         if (inputs.WasMouseMoved())
@@ -108,22 +130,27 @@ namespace Renderer::Objects
 
         const auto rStick = inputs.GetRStick();
         // Pitch
-        rotation.x += rStick.y * speed * 0.04f;
+        rotation.x += rStick.y * speed * ROTATION_STICK_MULTIPLIER;
         // Yaw
-        rotation.y += rStick.x * speed * 0.04f;
+        rotation.y += rStick.x * speed * ROTATION_STICK_MULTIPLIER;
 
         // Don't really want to flip the world around
-        rotation.x = glm::clamp(rotation.x, glm::radians(-89.0f), glm::radians(89.0f));
+        rotation.x = glm::clamp(rotation.x, -MAX_YAW, MAX_YAW);
     }
 
-    void FreeCamera::Zoom(f32 frameDelta, Engine::Inputs& inputs)
+    void FreeCamera::Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
+        constexpr auto MIN_FOV = glm::radians(10.0f);
+        constexpr auto MAX_FOV = glm::radians(120.0f);
+
         // Stops things from going haywire
-        if (inputs.WasMouseScrolled())
+        if (!inputs.WasMouseScrolled())
         {
-            FOV -= inputs.GetMouseScroll().y * m_zoom * frameDelta;
-            FOV  = glm::clamp(FOV, glm::radians(10.0f), glm::radians(120.0f));
+            return;
         }
+
+        FOV -= inputs.GetMouseScroll().y * m_zoom * frameCounter.frameDelta;
+        FOV  = glm::clamp(FOV, MIN_FOV, MAX_FOV);
     }
 
     void FreeCamera::ImGuiDisplay()
@@ -134,6 +161,7 @@ namespace Renderer::Objects
         {
             // Camera Settings
             ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.7f");
+            ImGui::DragFloat("Sprint",      &m_sprint,      1.0f, 0.0f, 0.0f, "%.7f");
             ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
             ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.7f");
 

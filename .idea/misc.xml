@@ -4,7 +4,7 @@
     <option name="sdkName" value="Python 3.12" />
   </component>
   <component name="CMakePythonSetting">
-    <option name="pythonIntegrationState" value="YES" />
+    <option name="pythonIntegrationState" value="NO" />
   </component>
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="CidrRootsConfiguration">

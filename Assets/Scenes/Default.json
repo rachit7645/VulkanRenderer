@@ -110,9 +110,10 @@
             "Rotation"    : [0.0, 180.0, 0.0],
             "FOV"         : 80.0,
             "Exposure"    : 0.7,
-            "Speed"       : 0.000015,
-            "Sensitivity" : 0.0001,
-            "Zoom"        : 0.000045
+            "Speed"       : 15.0,
+            "Sprint"      : 1.85,
+            "Sensitivity" : 100.0,
+            "Zoom"        : 45.0
         }
     },
     "IBL" : "industrial_sunset_puresky_4k.exr"

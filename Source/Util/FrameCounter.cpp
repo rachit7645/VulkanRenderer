@@ -39,11 +39,12 @@ namespace Util
     {
         m_endTime = Clock::now();
 
-        const auto duration      = m_endTime - m_frameStartTime;
+        const auto frameDuration = m_endTime - m_frameStartTime;
         const auto cycleDuration = m_endTime - m_startTime;
 
-        // This is in us (I think)
-        frameDelta       = static_cast<f32>(static_cast<f64>(duration.count()) / 1000.0);
+        constexpr auto ONE_SECOND = chrono::duration_cast<chrono::duration<f64>>(chrono::seconds(1));
+
+        frameDelta       = static_cast<f32>(frameDuration / ONE_SECOND);
         m_frameStartTime = m_endTime;
 
         // A cycle is a second long
@@ -66,7 +67,7 @@ namespace Util
                 // Frame stats
                 ImGui::Text("FPS         | %.2f",    FPS);
                 ImGui::Text("Frame Time  | %.2f ms", avgFrameTime);
-                ImGui::Text("Frame Delta | %.2f us", frameDelta);
+                ImGui::Text("Frame Delta | %.6f s",  frameDelta);
 
                 ImGui::EndMenu();
             }

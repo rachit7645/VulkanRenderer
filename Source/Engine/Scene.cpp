@@ -176,7 +176,7 @@ namespace Engine
         Util::DeletionQueue& deletionQueue
     )
     {
-        camera.Update(frameCounter.frameDelta, inputs);
+        camera.Update(frameCounter, inputs);
 
         if (ImGui::BeginMainMenuBar())
         {

@@ -44,6 +44,7 @@ void main()
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 
     vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 aspect       = viewportSize.yx / viewportSize.x;
     vec2 texelSize    = 1.0f / viewportSize;
     vec2 pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
     vec2 uv           = pixelCenter * texelSize;
@@ -83,7 +84,9 @@ void main()
 
         uint bitmask = 0u;
 
-        vec2 sampleMul = vec2(cosPhi, -sinPhi) * sampleScale;
+        vec2 omega = vec2(cosPhi, -sinPhi);
+        // Account for aspect ratio, thanks cybereality!
+        vec2 sampleMul = omega * sampleScale * aspect;
 
         for (uint sampleIndex = 0; sampleIndex < GTAO_SAMPLE_COUNT; ++sampleIndex)
         {

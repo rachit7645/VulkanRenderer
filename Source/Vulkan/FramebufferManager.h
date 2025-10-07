@@ -162,6 +162,15 @@ namespace Vk
         [[nodiscard]] FramebufferView& GetFramebufferView(const std::string_view name);
         [[nodiscard]] const FramebufferView& GetFramebufferView(const std::string_view name) const;
 
+        void DeleteFramebuffer
+        (
+            const std::string_view framebufferName,
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
+
         void DeleteFramebufferViews
         (
             const std::string_view framebufferName,

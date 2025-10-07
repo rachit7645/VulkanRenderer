@@ -405,6 +405,54 @@ namespace Vk
         return iter->second;
     }
 
+    void FramebufferManager::DeleteFramebuffer
+    (
+        const std::string_view framebufferName,
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        const auto iter = m_framebuffers.find(framebufferName.data());
+
+        if (iter == m_framebuffers.end())
+        {
+            Logger::Error("Could not find framebuffer! [Name={}]\n", framebufferName);
+        }
+
+        const auto& framebuffer = iter->second;
+
+        std::erase_if(m_framebufferViews, [&] (const auto& pair) -> bool
+        {
+            const Vk::FramebufferView& framebufferView = pair.second;
+
+            if (framebufferView.framebuffer != framebufferName)
+            {
+                return false;
+            }
+
+            FreeDescriptors
+            (
+                framebufferView,
+                framebuffer.usage,
+                megaSet,
+                deletionQueue
+            );
+
+            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            {
+                view.Destroy(device);
+            });
+
+            return true;
+        });
+
+        framebuffer.image.Destroy(allocator);
+
+        m_framebuffers.erase(iter);
+    }
+
     void FramebufferManager::DeleteFramebufferViews
     (
         const std::string_view framebufferName,
