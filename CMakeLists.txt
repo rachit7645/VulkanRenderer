@@ -91,6 +91,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/PipelineManager.cpp
     Source/Vulkan/MemoryBlock.cpp
     Source/Vulkan/StagingPool.cpp
+    Source/Vulkan/ResizableBuffer.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderObject.cpp
@@ -104,6 +105,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Buffers/SceneBuffer.cpp
     Source/Renderer/Buffers/LightsBuffer.cpp
     Source/Renderer/Buffers/DrawCallBuffer.cpp
+    Source/Renderer/Buffers/TileLightIndexBuffer.cpp
 	# Graphics Pass Sources
 	Source/Renderer/PostProcess/RenderPass.cpp
     Source/Renderer/Depth/RenderPass.cpp
@@ -119,6 +121,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
     Source/Renderer/AO/VBGTAO/Dispatch.cpp
+    Source/Renderer/TiledLighting/Dispatch.cpp
     # Ray Tracing Pass Sources
     Source/Renderer/ShadowRT/RayDispatch.cpp
     # IBL Sources

@@ -18,6 +18,7 @@
 #define LIGHTS_GLSL
 
 #include "GLSL.h"
+#include "AABB.h"
 
 #ifdef __cplusplus
 #include "Util/Maths.h"
@@ -26,13 +27,12 @@
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
+GLSL_CONSTANT(u32, MAX_POINT_LIGHT_COUNT,          16)
+GLSL_CONSTANT(u32, MAX_SHADOWED_POINT_LIGHT_COUNT,  4)
+GLSL_CONSTANT(u32, MAX_SPOT_LIGHT_COUNT,           16)
+GLSL_CONSTANT(u32, MAX_SHADOWED_SPOT_LIGHT_COUNT,   4)
+
 #ifdef __cplusplus
-
-constexpr u32 MAX_POINT_LIGHT_COUNT          = 16;
-constexpr u32 MAX_SHADOWED_POINT_LIGHT_COUNT = 4;
-
-constexpr u32 MAX_SPOT_LIGHT_COUNT          = 16;
-constexpr u32 MAX_SHADOWED_SPOT_LIGHT_COUNT = 4;
 
 constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
 constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
@@ -203,7 +203,7 @@ float CalculateAttenuation(vec3 position, float range, vec3 fragPosition)
     float distance = length(position - fragPosition);
 
     float N = saturate(1.0f - pow4(distance / max(range, 0.00001f)));
-    float D = max(distance * distance, 0.0001f);
+    float D = max(distance * distance, 0.00001f);
 
     float attenuation = N / D;
 

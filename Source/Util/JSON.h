@@ -213,7 +213,8 @@ namespace simdjson
             return error;
         }
 
-        light.cutOff = glm::radians(light.cutOff);
+        light.direction = glm::normalize(light.direction);
+        light.cutOff    = glm::radians(light.cutOff);
 
         return error_code::SUCCESS;
     }

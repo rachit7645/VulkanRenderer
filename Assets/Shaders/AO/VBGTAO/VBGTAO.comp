@@ -17,6 +17,8 @@
 // https://ar5iv.labs.arxiv.org/html/2301.11376
 // Reference implementation: https://github.com/JMS55/bevy/blob/gtao/crates/bevy_pbr/src/ssao/ssao.wgsl
 
+// TODO: Implement the correction factor from the GP discord
+
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
@@ -162,9 +164,9 @@ float CalculateNeighboringDepthDifferences(ivec2 pixelCoord, vec2 viewportSize)
 
 vec3 LoadViewSpaceNormal(vec2 uv)
 {
-    vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
+    vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
 
-    vec3 normal = UnpackNormal(gNormal_Rgh_Mtl.rg);
+    vec3 normal = UnpackNormal(gNormal.rg);
          normal = mat3(Constants.Scene.currentMatrices.view) * normal;
          normal = normalize(normal);
 

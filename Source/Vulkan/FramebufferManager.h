@@ -38,7 +38,9 @@ namespace Vk
         ColorRG_Unorm8,
         ColorRG_Unorm16,
         ColorRG_SFloat16,
+        ColorRG_SFloat32,
         ColorRGBA_UNorm8,
+        ColorRGBA_SFloat32,
         ColorBGR_SFloat_10_11_11,
         // Regular Color Formats
         ColorLDR,

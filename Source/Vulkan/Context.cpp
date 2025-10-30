@@ -294,9 +294,12 @@ namespace Vk
         const bool indexU32             = featureSet.features.fullDrawIndexUint32;
 
         // Vulkan 1.1 features
-        const bool hasRequiredMultiViewCount = vk11Properties->maxMultiviewViewCount >= 6;
-        const bool hasShaderDrawParameters   = vk11Features->shaderDrawParameters;
-        const bool hasMultiView              = vk11Features->multiview;
+        const bool hasRequiredMultiViewCount      = vk11Properties->maxMultiviewViewCount >= 6;
+        const bool hasShaderDrawParameters        = vk11Features->shaderDrawParameters;
+        const bool hasMultiView                   = vk11Features->multiview;
+        const bool hasSubgroupOperationsInCompute = vk11Properties->subgroupSupportedStages & VK_SHADER_STAGE_COMPUTE_BIT;
+        const bool hasSubgroupBasic               = vk11Properties->subgroupSupportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT;
+        const bool hasSubgroupArithmetic          = vk11Properties->subgroupSupportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT;
 
         // Vulkan 1.2 features
         const bool hasBDA                            = vk12Features->bufferDeviceAddress;
@@ -329,7 +332,8 @@ namespace Vk
                                    #endif
                                    ;
 
-        const bool hasVK11 = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView;
+        const bool hasVK11 = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView &&
+                             hasSubgroupOperationsInCompute && hasSubgroupBasic && hasSubgroupArithmetic;
 
         const bool hasVK12 = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                              hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&

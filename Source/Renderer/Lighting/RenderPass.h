@@ -21,6 +21,7 @@
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Buffers/TileLightIndexBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
 #include "Renderer/Objects/GlobalSamplers.h"
 
@@ -46,6 +47,7 @@ namespace Renderer::Lighting
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
             const Objects::GlobalSamplers& samplers,
             const IBL::IBLMaps& iblMaps
         );

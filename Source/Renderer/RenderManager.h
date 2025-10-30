@@ -20,6 +20,7 @@
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
+#include "Buffers/TileLightIndexBuffer.h"
 #include "Objects/GlobalSamplers.h"
 #include "PostProcess/RenderPass.h"
 #include "Depth/RenderPass.h"
@@ -35,6 +36,7 @@
 #include "Culling/Dispatch.h"
 #include "IBL/Generator.h"
 #include "SpotShadow/RenderPass.h"
+#include "TiledLighting/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -142,13 +144,15 @@ namespace Renderer
         TAA::RenderPass         m_taa;
         SpotShadow::RenderPass  m_spotShadow;
 
-        Culling::Dispatch    m_culling;
-        AO::VBGTAO::Dispatch m_vbgtao;
+        Culling::Dispatch       m_culling;
+        AO::VBGTAO::Dispatch    m_vbgtao;
+        TiledLighting::Dispatch m_tiledLighting;
 
         IBL::Generator m_iblGenerator;
 
-        Buffers::MeshBuffer     m_meshBuffer;
-        Buffers::IndirectBuffer m_indirectBuffer;
+        Buffers::MeshBuffer           m_meshBuffer;
+        Buffers::IndirectBuffer       m_indirectBuffer;
+        Buffers::TileLightIndexBuffer m_tiledLightIndexBuffer;
 
         Buffers::SceneBuffer                m_sceneBuffer;
         std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;

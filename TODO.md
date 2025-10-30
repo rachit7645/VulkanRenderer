@@ -15,7 +15,7 @@
 * Volumetric Lighting
 * IBL Generation Caching
 * Generic CPU -> GPU Uploader
-* Light Culling (Tiled / Clustered)
+* Clustered Light Culling
 * Shadow Caching
 * Auto Exposure
 * Mesh Shaders

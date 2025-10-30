@@ -25,6 +25,7 @@
 #include "Packing.glsl"
 #include "PointShadowMap.glsl"
 #include "SpotShadowMap.glsl"
+#include "TiledLighting/Common.h"
 #include "Deferred/Lighting.h"
 
 layout(location = 0) in vec2 fragUV;
@@ -33,6 +34,13 @@ layout(location = 0) out vec3 outColor;
 
 void main()
 {
+    vec2             viewportSize     = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), 0));
+    uvec2            pixelCoord       = uvec2(viewportSize * fragUV);
+    uvec2            tileID           = pixelCoord / TILE_SIZE;
+    uvec2            tileCount        = Constants.MaxTileID + 1;
+    uint             tileIndex        = tileCount.x * tileID.y + tileID.x;
+    TileLightIndices tileLightIndices = Constants.TileLightIndices.indices[tileIndex];
+
     vec4  gAlbedoIoR  = texture(sampler2D(Textures[Constants.GAlbedoIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
     vec3  albedo      = gAlbedoIoR.rgb;
     float reflectance = IoRToReflectance(UnpackIoR(gAlbedoIoR.a));
@@ -71,9 +79,10 @@ void main()
         );
     }
 
-    for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
+    for (uint i = 0; i < tileLightIndices.pointLightCount; ++i)
     {
-        PointLight light     = Constants.Scene.PointLights.lights[i];
+        uint       index     = tileLightIndices.pointLightIndices[i];
+        PointLight light     = Constants.Scene.PointLights.lights[index];
         LightInfo  lightInfo = GetLightInfo(light, worldPosition);
 
         Lo += CalculateLight
@@ -88,14 +97,15 @@ void main()
         );
     }
 
-    for (uint i = 0; i < Constants.Scene.ShadowedPointLights.count; ++i)
+    for (uint i = 0; i < tileLightIndices.shadowedPointLightCount; ++i)
     {
-        ShadowedPointLight light     = Constants.Scene.ShadowedPointLights.lights[i];
+        uint               index     = tileLightIndices.shadowedPointLightIndices[i];
+        ShadowedPointLight light     = Constants.Scene.ShadowedPointLights.lights[index];
         LightInfo          lightInfo = GetLightInfo(light, worldPosition);
 
         float shadow = CalculatePointShadow
         (
-            i,
+            index,
             light,
             worldPosition,
             CubemapArrays[Constants.PointShadowMapIndex],
@@ -114,9 +124,10 @@ void main()
         );
     }
 
-    for (uint i = 0; i < Constants.Scene.SpotLights.count; ++i)
+    for (uint i = 0; i < tileLightIndices.spotLightCount; ++i)
     {
-        SpotLight light     = Constants.Scene.SpotLights.lights[i];
+        uint      index     = tileLightIndices.spotLightIndices[i];
+        SpotLight light     = Constants.Scene.SpotLights.lights[index];
         LightInfo lightInfo = GetLightInfo(light, worldPosition);
 
         Lo += CalculateLight
@@ -131,14 +142,15 @@ void main()
         );
     }
 
-    for (uint i = 0; i < Constants.Scene.ShadowedSpotLights.count; ++i)
+    for (uint i = 0; i < tileLightIndices.shadowedSpotLightCount; ++i)
     {
-        ShadowedSpotLight light     = Constants.Scene.ShadowedSpotLights.lights[i];
+        uint              index     = tileLightIndices.shadowedSpotLightIndices[i];
+        ShadowedSpotLight light     = Constants.Scene.ShadowedSpotLights.lights[index];
         LightInfo         lightInfo = GetLightInfo(light, worldPosition);
 
         float shadow = CalculateSpotShadow
         (
-            i,
+            index,
             light,
             worldPosition,
             normal,
@@ -182,4 +194,12 @@ void main()
     Lo += emmisive;
 
     outColor = Lo;
+
+    /*
+    uint  totalLightsInTile = tileLightIndices.pointLightCount  + tileLightIndices.shadowedPointLightCount  + tileLightIndices.spotLightCount  + tileLightIndices.shadowedSpotLightCount;
+    uint  totalLights       = Constants.Scene.PointLights.count + Constants.Scene.ShadowedPointLights.count + Constants.Scene.SpotLights.count + Constants.Scene.ShadowedSpotLights.count;
+    float tileLightCoverage = float(totalLightsInTile) / float(totalLights);
+
+    outColor = mix(vec3(0.0f, 0.0f, 1.0f), vec3(1.0f, 0.0f, 0.0f), tileLightCoverage);
+    */
 }

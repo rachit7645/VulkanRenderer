@@ -1,0 +1,196 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Math.glsl"
+#include "MegaSet.glsl"
+#include "GPU/AABB.h"
+#include "TiledLighting/Common.h"
+#include "TiledLighting/Culling.h"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+bool Intersects(AABB aabb, vec3 position, float range);
+bool Intersects(AABB aabb, vec3 position, vec3 direction, float outerCutOff, float range);
+
+bool Intersects(AABB aabb, PointLight light);
+bool Intersects(AABB aabb, ShadowedPointLight light);
+bool Intersects(AABB aabb, SpotLight light);
+bool Intersects(AABB aabb, ShadowedSpotLight light);
+
+void main()
+{
+    uvec2 tileID = gl_GlobalInvocationID.xy;
+
+    if (any(greaterThan(tileID, Constants.MaxTileID)))
+    {
+        return;
+    }
+
+    vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.TileDepthsIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 pixelCenter  = vec2(tileID) + vec2(0.5f);
+    vec2 uv           = pixelCenter / viewportSize;
+
+    vec2 depths = texture(sampler2D(Textures[Constants.TileDepthsIndex], Samplers[Constants.PointSamplerIndex]), uv).rg;
+
+    float minDepth = depths.r;
+    float maxDepth = depths.g;
+
+    vec2 minUV = vec2(tileID)     / viewportSize;
+    vec2 maxUV = vec2(tileID + 1) / viewportSize;
+
+    vec2 corners[4] =
+    {
+        vec2(minUV.x, minUV.y),
+        vec2(maxUV.x, minUV.y),
+        vec2(minUV.x, maxUV.y),
+        vec2(maxUV.x, maxUV.y)
+    };
+
+    AABB aabb;
+    aabb.min = vec3( FLOAT_MAX);
+    aabb.max = vec3(-FLOAT_MAX);
+
+    for (uint i = 0; i < 4; ++i)
+    {
+        vec3 minWorldPosition = GetWorldPosition(Constants.Scene.currentMatrices, corners[i], maxDepth);
+
+        aabb.min = min(aabb.min, minWorldPosition);
+        aabb.max = max(aabb.max, minWorldPosition);
+
+        vec3 maxWorldPosition = GetWorldPosition(Constants.Scene.currentMatrices, corners[i], minDepth);
+
+        aabb.min = min(aabb.min, maxWorldPosition);
+        aabb.max = max(aabb.max, maxWorldPosition);
+    }
+
+    TileLightIndices indices;
+
+    indices.pointLightCount         = 0;
+    indices.shadowedPointLightCount = 0;
+    indices.spotLightCount          = 0;
+    indices.shadowedSpotLightCount  = 0;
+
+    for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
+    {
+        PointLight light = Constants.Scene.PointLights.lights[i];
+
+        if (Intersects(aabb, light))
+        {
+            indices.pointLightIndices[indices.pointLightCount] = i;
+            ++indices.pointLightCount;
+        }
+    }
+
+    for (uint i = 0; i < Constants.Scene.ShadowedPointLights.count; ++i)
+    {
+        ShadowedPointLight light = Constants.Scene.ShadowedPointLights.lights[i];
+
+        if (Intersects(aabb, light))
+        {
+            indices.shadowedPointLightIndices[indices.shadowedPointLightCount] = i;
+            ++indices.shadowedPointLightCount;
+        }
+    }
+
+    for (uint i = 0; i < Constants.Scene.SpotLights.count; ++i)
+    {
+        SpotLight light = Constants.Scene.SpotLights.lights[i];
+
+        if (Intersects(aabb, light))
+        {
+            indices.spotLightIndices[indices.spotLightCount] = i;
+            ++indices.spotLightCount;
+        }
+    }
+
+    for (uint i = 0; i < Constants.Scene.ShadowedSpotLights.count; ++i)
+    {
+        ShadowedSpotLight light = Constants.Scene.ShadowedSpotLights.lights[i];
+
+        if (Intersects(aabb, light))
+        {
+            indices.shadowedSpotLightIndices[indices.shadowedSpotLightCount] = i;
+            ++indices.shadowedSpotLightCount;
+        }
+    }
+
+    Constants.TileLightIndices.indices[(Constants.MaxTileID.x + 1) * tileID.y + tileID.x] = indices;
+}
+
+// AABB-Sphere
+bool Intersects(AABB aabb, vec3 position, float range)
+{
+    vec3 closestPoint = clamp(position, aabb.min, aabb.max);
+
+    vec3 difference = closestPoint - position;
+
+    float d2 = dot(difference, difference);
+
+    return d2 <= (range * range);
+}
+
+// AABB-Cone
+bool Intersects(AABB aabb, vec3 position, vec3 direction, float outerCutOff, float range)
+{
+    vec3 center  = 0.5f * (aabb.max + aabb.min);
+    vec3 extents = 0.5f * (aabb.max - aabb.min);
+
+    float sphereRadius = length(extents);
+    vec3  difference   = center - position;
+    float d2           = dot(difference, difference);
+    float diffDotDir   = dot(difference, direction);
+    float D            = d2 - diffDotDir * diffDotDir;
+
+    if (D < 0.0f)
+    {
+        return true;
+    }
+
+    float angle        = 2.0f * outerCutOff;
+    float closestPoint = cos(angle) * sqrt(D) - diffDotDir * sin(angle);
+
+    bool angleCull = closestPoint > sphereRadius;
+    bool frontCull = diffDotDir > sphereRadius + range;
+    bool backCull  = diffDotDir < -sphereRadius;
+
+    return !(angleCull || frontCull || backCull);
+}
+
+bool Intersects(AABB aabb, PointLight light)
+{
+    return Intersects(aabb, light.position, light.range);
+}
+
+bool Intersects(AABB aabb, ShadowedPointLight light)
+{
+    return Intersects(aabb, light.position, light.range);
+}
+
+bool Intersects(AABB aabb, SpotLight light)
+{
+    return Intersects(aabb, light.position, light.direction, light.cutOff.y, light.range);
+}
+
+bool Intersects(AABB aabb, ShadowedSpotLight light)
+{
+    return Intersects(aabb, light.position, light.direction, light.cutOff.y, light.range);
+}

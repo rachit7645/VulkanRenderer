@@ -96,6 +96,7 @@ namespace Renderer::Lighting
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
         const Objects::GlobalSamplers& samplers,
         const IBL::IBLMaps& iblMaps
     )
@@ -181,9 +182,12 @@ namespace Renderer::Lighting
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
+        const auto& tileDepths = framebufferManager.GetFramebuffer("TiledLighting/TileDepths");
+
         const auto constants = Lighting::Constants
         {
             .Scene                   = sceneBuffer.buffers[FIF].deviceAddress,
+            .TileLightIndices        = tileLightIndexBuffer.resizableBuffer.buffer.deviceAddress,
             .GBufferSamplerIndex     = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .IBLSamplerIndex         = textureManager.GetSampler(samplers.iblSamplerID).descriptorID,
             .PointShadowSamplerIndex = textureManager.GetSampler(samplers.pointShadowSamplerID).descriptorID,
@@ -199,7 +203,8 @@ namespace Renderer::Lighting
             .ShadowMapIndex          = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
             .PointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
             .SpotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
-            .AOIndex                 = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID
+            .AOIndex                 = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID,
+            .MaxTileID               = glm::uvec2(tileDepths.image.width - 1, tileDepths.image.height - 1)
         };
 
         pipeline.PushConstants

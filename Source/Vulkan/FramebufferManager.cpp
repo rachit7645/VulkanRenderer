@@ -186,8 +186,20 @@ namespace Vk
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
+            case FramebufferType::ColorRG_SFloat32:
+                createInfo.format = VK_FORMAT_R32G32_SFLOAT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
             case FramebufferType::ColorRGBA_UNorm8:
                 createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorRGBA_SFloat32:
+                createInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;

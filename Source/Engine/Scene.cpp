@@ -376,6 +376,8 @@ namespace Engine
 
                             if (ImGui::Button("Add"))
                             {
+                                m_loadedSpotLight.direction = glm::normalize(m_loadedSpotLight.direction);
+
                                 spotLights.emplace_back(m_loadedSpotLight);
 
                                 m_loadedSpotLight = {};
@@ -412,6 +414,8 @@ namespace Engine
                                 {
                                     toDelete = true;
                                 }
+
+                                iter->direction = glm::normalize(iter->direction);
 
                                 ImGui::TreePop();
                             }

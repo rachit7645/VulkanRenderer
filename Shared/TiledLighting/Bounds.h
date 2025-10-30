@@ -14,42 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef LIGHTING_PUSH_CONSTANT
-#define LIGHTING_PUSH_CONSTANT
+#ifndef TILE_BOUNDS_PUSH_CONSTANT
+#define TILE_BOUNDS_PUSH_CONSTANT
 
 #include "GLSL.h"
-#include "TiledLighting/Common.h"
-#include "GPU/Scene.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::Lighting)
+GLSL_NAMESPACE_BEGIN(Renderer::TiledLighting::Bounds)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
-    GLSL_BUFFER_POINTER(SceneBuffer)          Scene;
-    GLSL_BUFFER_POINTER(TileLightIndexBuffer) TileLightIndices;
-
-    u32 GBufferSamplerIndex;
-    u32 IBLSamplerIndex;
-    u32 PointShadowSamplerIndex;
-    u32 SpotShadowSamplerIndex;
-
-    u32 GAlbedoIndex;
-    u32 GNormalIndex;
-    u32 GRghMtlIndex;
-    u32 GEmmisiveIndex;
+    u32 PointSamplerIndex;
     u32 SceneDepthIndex;
-
-    u32 IrradianceIndex;
-    u32 PreFilterIndex;
-    u32 BRDFLUTIndex;
-
-    u32 ShadowMapIndex;
-    u32 PointShadowMapIndex;
-    u32 SpotShadowMapIndex;
-
-    u32 AOIndex;
-
-    GLSL_UVEC2 MaxTileID;
+    u32 OutTileDepthsIndex;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

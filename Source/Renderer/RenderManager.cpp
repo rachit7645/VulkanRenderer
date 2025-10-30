@@ -49,6 +49,7 @@ namespace Renderer
           m_spotShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_culling(m_context.device, m_context.allocator, m_pipelineManager),
           m_vbgtao(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_tiledLighting(m_megaSet, m_pipelineManager, m_framebufferManager),
           m_iblGenerator(m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
@@ -67,6 +68,7 @@ namespace Renderer
 
         m_globalDeletionQueue.PushDeletor([&] ()
         {
+            m_tiledLightIndexBuffer.Destroy(m_context.allocator);
             m_sceneBuffer.Destroy(m_context.allocator);
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
@@ -684,6 +686,22 @@ namespace Renderer
 
     void RenderManager::Lighting(const Vk::CommandBuffer& cmdBuffer)
     {
+        m_tiledLighting.Execute
+        (
+            m_FIF,
+            m_context.device,
+            m_context.allocator,
+            cmdBuffer,
+            m_pipelineManager,
+            m_framebufferManager,
+            m_megaSet,
+            m_modelManager.textureManager,
+            m_sceneBuffer,
+            m_samplers,
+            m_tiledLightIndexBuffer,
+            m_deletionQueues[m_FIF]
+        );
+
         m_lighting.Render
         (
             m_FIF,
@@ -693,6 +711,7 @@ namespace Renderer
             m_megaSet,
             m_modelManager.textureManager,
             m_sceneBuffer,
+            m_tiledLightIndexBuffer,
             m_samplers,
             m_scene->iblMaps
         );
