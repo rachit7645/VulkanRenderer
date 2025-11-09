@@ -18,17 +18,20 @@
 #define LIGHTING_PUSH_CONSTANT
 
 #include "GLSL.h"
+#include "TiledLighting/Common.h"
 #include "GPU/Scene.h"
 
 GLSL_NAMESPACE_BEGIN(Renderer::Lighting)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
-    GLSL_BUFFER_POINTER(SceneBuffer) Scene;
+    GLSL_BUFFER_POINTER(SceneBuffer)          Scene;
+    GLSL_BUFFER_POINTER(TileLightIndexBuffer) TileLightIndices;
 
     u32 GBufferSamplerIndex;
     u32 IBLSamplerIndex;
-    u32 ShadowSamplerIndex;
+    u32 PointShadowSamplerIndex;
+    u32 SpotShadowSamplerIndex;
 
     u32 GAlbedoIndex;
     u32 GNormalIndex;
@@ -42,8 +45,11 @@ GLSL_PUSH_CONSTANT_BEGIN
 
     u32 ShadowMapIndex;
     u32 PointShadowMapIndex;
+    u32 SpotShadowMapIndex;
 
     u32 AOIndex;
+
+    GLSL_UVEC2 MaxTileID;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

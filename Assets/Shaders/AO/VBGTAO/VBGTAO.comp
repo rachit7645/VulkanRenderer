@@ -17,6 +17,8 @@
 // https://ar5iv.labs.arxiv.org/html/2301.11376
 // Reference implementation: https://github.com/JMS55/bevy/blob/gtao/crates/bevy_pbr/src/ssao/ssao.wgsl
 
+// TODO: Implement the correction factor from the GP discord
+
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
@@ -44,6 +46,7 @@ void main()
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 
     vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 aspect       = viewportSize.yx / viewportSize.x;
     vec2 texelSize    = 1.0f / viewportSize;
     vec2 pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
     vec2 uv           = pixelCenter * texelSize;
@@ -83,7 +86,9 @@ void main()
 
         uint bitmask = 0u;
 
-        vec2 sampleMul = vec2(cosPhi, -sinPhi) * sampleScale;
+        vec2 omega = vec2(cosPhi, -sinPhi);
+        // Account for aspect ratio, thanks cybereality!
+        vec2 sampleMul = omega * sampleScale * aspect;
 
         for (uint sampleIndex = 0; sampleIndex < GTAO_SAMPLE_COUNT; ++sampleIndex)
         {
@@ -159,9 +164,9 @@ float CalculateNeighboringDepthDifferences(ivec2 pixelCoord, vec2 viewportSize)
 
 vec3 LoadViewSpaceNormal(vec2 uv)
 {
-    vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
+    vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
 
-    vec3 normal = UnpackNormal(gNormal_Rgh_Mtl.rg);
+    vec3 normal = UnpackNormal(gNormal.rg);
          normal = mat3(Constants.Scene.currentMatrices.view) * normal;
          normal = normalize(normal);
 

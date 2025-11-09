@@ -23,7 +23,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Constants.h"
-#include "QueueFamilyIndices.h"
+#include "QueueFamilies.h"
 #include "CommandBuffer.h"
 
 namespace Vk

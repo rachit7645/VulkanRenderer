@@ -46,6 +46,11 @@ vec3 ACESFitted(vec3 color)
         0.02840f, 0.13383f, 0.83777f
     );
 
+    color = color * ACESInputMat;
+
+    // Apply RRT and ODT
+    color = RRTAndODTFit(color);
+    
     // ODT_SAT => XYZ => D60_2_D65 => sRGB
     const mat3 ACESOutputMat = mat3
     (
@@ -53,11 +58,6 @@ vec3 ACESFitted(vec3 color)
         -0.10208f,  1.10813f, -0.00605f,
         -0.00327f, -0.07276f,  1.07602f
     );
-
-    color = color * ACESInputMat;
-
-    // Apply RRT and ODT
-    color = RRTAndODTFit(color);
 
     color = color * ACESOutputMat;
 

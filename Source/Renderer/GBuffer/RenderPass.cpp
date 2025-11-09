@@ -24,18 +24,62 @@ namespace Renderer::GBuffer
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_singleSidedPipeline(context, formatHelper, megaSet, textureManager),
-          m_doubleSidedPipeline(context, formatHelper, megaSet, textureManager)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        constexpr std::array COLOR_FORMATS =
+        {
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_R16G16_UNORM,
+            VK_FORMAT_R8G8_UNORM,
+            VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+            VK_FORMAT_R16G16_SFLOAT
+        };
+
+        pipelineManager.AddPipeline("GBuffer/SingleSided", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
+            .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/GBuffer/SingleSided.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        pipelineManager.AddPipeline("GBuffer/DoubleSided", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
+            .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/GBuffer/DoubleSided.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
         framebufferManager.AddFramebuffer
         (
-            "GAlbedoReflectance",
+            "GAlbedoIoR",
             Vk::FramebufferType::ColorRGBA_UNorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
@@ -173,8 +217,8 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
-            "GAlbedoReflectance",
-            "GAlbedoReflectanceView",
+            "GAlbedoIoR",
+            "GAlbedoIoRView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -255,17 +299,22 @@ namespace Renderer::GBuffer
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Buffers::IndirectBuffer& indirectBuffer
+        const Buffers::IndirectBuffer& indirectBuffer,
+        const Objects::GlobalSamplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "GBuffer Generation", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
-        const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView");
+        const auto& singleSidedPipeline = pipelineManager.GetPipeline("GBuffer/SingleSided");
+        const auto& doubleSidedPipeline = pipelineManager.GetPipeline("GBuffer/DoubleSided");
+        
+        const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoIoRView");
         const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");
         const auto& gRghMtlView        = framebufferManager.GetFramebufferView("GRoughnessMetallicView");
         const auto& gEmmisiveView      = framebufferManager.GetFramebufferView("GEmmisiveView");
@@ -507,10 +556,8 @@ namespace Renderer::GBuffer
         {
             Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
-            m_singleSidedPipeline.Bind(cmdBuffer);
-
-            const std::array descriptorSets = {megaSet.descriptorSet};
-            m_singleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            singleSidedPipeline.Bind(cmdBuffer);
+            singleSidedPipeline.BindDescriptors(cmdBuffer, megaSet);
 
             // Opaque
             {
@@ -519,15 +566,18 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_singleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_singleSidedPipeline.PushConstants
+                singleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -541,7 +591,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -555,15 +605,18 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_singleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_singleSidedPipeline.PushConstants
+                singleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -577,7 +630,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -591,10 +644,8 @@ namespace Renderer::GBuffer
         {
             Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
-            m_doubleSidedPipeline.Bind(cmdBuffer);
-
-            const std::array descriptorSets = {megaSet.descriptorSet};
-            m_doubleSidedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            doubleSidedPipeline.Bind(cmdBuffer);
+            doubleSidedPipeline.BindDescriptors(cmdBuffer, megaSet);
 
             // Opaque
             {
@@ -603,15 +654,18 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_doubleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_doubleSidedPipeline.PushConstants
+                doubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -625,7 +679,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -639,15 +693,18 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
                     .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_doubleSidedPipeline.textureSamplerID).descriptorID
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_doubleSidedPipeline.PushConstants
+                doubleSidedPipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -661,7 +718,7 @@ namespace Renderer::GBuffer
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -779,11 +836,5 @@ namespace Renderer::GBuffer
         .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_singleSidedPipeline.Destroy(device);
-        m_doubleSidedPipeline.Destroy(device);
     }
 }

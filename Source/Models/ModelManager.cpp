@@ -21,14 +21,16 @@
 
 namespace Models
 {
-    ModelManager::ModelManager(VkDevice device, VmaAllocator allocator)
-        : geometryBuffer(device, allocator)
+    ModelManager::ModelManager(const Vk::Context& context, Vk::StagingPool& stagingPool)
+        : geometryBuffer(context, stagingPool)
     {
     }
 
     Models::ModelID ModelManager::AddModel
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
@@ -45,9 +47,11 @@ namespace Models
         {
             m_modelMap.emplace(id, ModelInfo{
                 .model = Model(
+                    device,
                     allocator,
                     geometryBuffer,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     path
                 ),
@@ -120,6 +124,7 @@ namespace Models
         VkDevice device,
         VmaAllocator allocator,
         Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -130,7 +135,15 @@ namespace Models
 
         Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
-        geometryBuffer.Update(cmdBuffer, device, allocator, deletionQueue);
+        geometryBuffer.Update
+        (
+            cmdBuffer,
+            device,
+            allocator,
+            stagingPool,
+            deletionQueue
+        );
+
         textureManager.Update(cmdBuffer, device, megaSet);
 
         Vk::EndLabel(cmdBuffer);

@@ -24,15 +24,15 @@
 #include "Constants.glsl"
 #include "Culling/Frustum.h"
 
-layout(local_size_x = 64) in;
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-bool IsVisible(Mesh mesh);
+bool IsVisible(Mesh mesh, Instance instance);
 
 void main()
 {
     uint index = gl_GlobalInvocationID.x;
 
-    if (index >= Constants.DrawCalls.count)
+    if (index >= Constants.Instances.count)
     {
         return;
     }
@@ -48,51 +48,52 @@ void main()
     memoryBarrierBuffer();
     barrier();
 
-    Mesh mesh = Constants.Meshes.meshes[index];
+    Instance instance = Constants.Instances.instances[index];
+    Mesh     mesh     = Constants.Meshes.meshes[instance.meshIndex];
 
-    if (!IsVisible(mesh))
+    if (!IsVisible(mesh, instance))
     {
         return;
     }
 
-    Material material = mesh.material;
-
-    bool isDoubleSided = Material_IsDoubleSided(material);
-    bool isAlphaMasked = Material_IsAlphaMasked(material);
+    bool isDoubleSided = Material_IsDoubleSided(mesh.material);
+    bool isAlphaMasked = Material_IsAlphaMasked(mesh.material);
+    
+    DrawCall drawCall = GenerateDrawCall(mesh.surfaceInfo);
 
     if (isDoubleSided && !isAlphaMasked)
     {
         uint drawIndex = atomicAdd(Constants.CulledOpaqueDoubleSidedDrawCalls.count, 1);
 
-        Constants.CulledOpaqueDoubleSidedDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
-        Constants.CulledOpaqueDoubleSidedMeshIndices.indices[drawIndex] = index;
+        Constants.CulledOpaqueDoubleSidedDrawCalls.drawCalls[drawIndex]     = drawCall;
+        Constants.CulledOpaqueDoubleSidedInstanceIndices.indices[drawIndex] = index;
     }
     else if (isAlphaMasked && !isDoubleSided)
     {
         uint drawIndex = atomicAdd(Constants.CulledAlphaMaskedDrawCalls.count, 1);
 
-        Constants.CulledAlphaMaskedDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
-        Constants.CulledAlphaMaskedMeshIndices.indices[drawIndex] = index;
+        Constants.CulledAlphaMaskedDrawCalls.drawCalls[drawIndex]     = drawCall;
+        Constants.CulledAlphaMaskedInstanceIndices.indices[drawIndex] = index;
     }
     else if (isDoubleSided && isAlphaMasked)
     {
         uint drawIndex = atomicAdd(Constants.CulledAlphaMaskedDoubleSidedDrawCalls.count, 1);
 
-        Constants.CulledAlphaMaskedDoubleSidedDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
-        Constants.CulledAlphaMaskedDoubleSidedMeshIndices.indices[drawIndex] = index;
+        Constants.CulledAlphaMaskedDoubleSidedDrawCalls.drawCalls[drawIndex]     = drawCall;
+        Constants.CulledAlphaMaskedDoubleSidedInstanceIndices.indices[drawIndex] = index;
     }
     else
     {
         uint drawIndex = atomicAdd(Constants.CulledOpaqueDrawCalls.count, 1);
 
-        Constants.CulledOpaqueDrawCalls.drawCalls[drawIndex] = Constants.DrawCalls.drawCalls[index];
-        Constants.CulledOpaqueMeshIndices.indices[drawIndex] = index;
+        Constants.CulledOpaqueDrawCalls.drawCalls[drawIndex]     = drawCall;
+        Constants.CulledOpaqueInstanceIndices.indices[drawIndex] = index;
     }
 }
 
-bool IsVisible(Mesh mesh)
+bool IsVisible(Mesh mesh, Instance instance)
 {
-    AABB    aabb    = AABB_Transform(mesh.aabb, mesh.transform);
+    AABB    aabb    = AABB_Transform(mesh.aabb, instance.transform);
     vec3[8] corners = AABB_GetCorners(aabb);
 
     for (uint i = 0; i < 6; ++i)

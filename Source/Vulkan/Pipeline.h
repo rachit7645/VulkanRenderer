@@ -22,25 +22,16 @@
 #include "Context.h"
 #include "Util/Types.h"
 #include "CommandBuffer.h"
+#include "Vulkan/MegaSet.h"
 
 namespace Vk
 {
     class Pipeline
     {
     public:
-        Pipeline(VkPipeline pipeline, VkPipelineLayout layout, VkPipelineBindPoint bindPoint);
-
-        Pipeline() = default;
-        virtual ~Pipeline() = default;
-
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
 
-        void BindDescriptors
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            u32 firstSet,
-            const std::span<const VkDescriptorSet> descriptors
-        ) const;
+        void BindDescriptors(const Vk::CommandBuffer& cmdBuffer, const Vk::MegaSet& megaSet) const;
 
         void PushConstants
         (
@@ -89,7 +80,6 @@ namespace Vk
 
         void Destroy(VkDevice device) const;
 
-        // Handles
         VkPipeline          handle    = VK_NULL_HANDLE;
         VkPipelineLayout    layout    = VK_NULL_HANDLE;
         VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;

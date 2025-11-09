@@ -186,8 +186,20 @@ namespace Vk
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
+            case FramebufferType::ColorRG_SFloat32:
+                createInfo.format = VK_FORMAT_R32G32_SFLOAT;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
             case FramebufferType::ColorRGBA_UNorm8:
                 createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+
+                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                break;
+
+            case FramebufferType::ColorRGBA_SFloat32:
+                createInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
@@ -405,6 +417,54 @@ namespace Vk
         return iter->second;
     }
 
+    void FramebufferManager::DeleteFramebuffer
+    (
+        const std::string_view framebufferName,
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        const auto iter = m_framebuffers.find(framebufferName.data());
+
+        if (iter == m_framebuffers.end())
+        {
+            Logger::Error("Could not find framebuffer! [Name={}]\n", framebufferName);
+        }
+
+        const auto& framebuffer = iter->second;
+
+        std::erase_if(m_framebufferViews, [&] (const auto& pair) -> bool
+        {
+            const Vk::FramebufferView& framebufferView = pair.second;
+
+            if (framebufferView.framebuffer != framebufferName)
+            {
+                return false;
+            }
+
+            FreeDescriptors
+            (
+                framebufferView,
+                framebuffer.usage,
+                megaSet,
+                deletionQueue
+            );
+
+            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            {
+                view.Destroy(device);
+            });
+
+            return true;
+        });
+
+        framebuffer.image.Destroy(allocator);
+
+        m_framebuffers.erase(iter);
+    }
+
     void FramebufferManager::DeleteFramebufferViews
     (
         const std::string_view framebufferName,
@@ -413,36 +473,31 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (!m_framebuffers.contains(framebufferName.data()))
-        {
-            Logger::Error("Framebuffer not found! [Name={}]\n", framebufferName);
-        }
-
-        const auto& framebuffer = m_framebuffers.at(framebufferName.data());
+        const auto& framebuffer = GetFramebuffer(framebufferName);
 
         std::erase_if(m_framebufferViews, [&] (const auto& pair) -> bool
         {
             const Vk::FramebufferView& framebufferView = pair.second;
 
-            if (framebufferView.framebuffer == framebufferName)
+            if (framebufferView.framebuffer != framebufferName)
             {
-                FreeDescriptors
-                (
-                    framebufferView,
-                    framebuffer.usage,
-                    megaSet,
-                    deletionQueue
-                );
-
-                deletionQueue.PushDeletor([device, view = framebufferView.view] ()
-                {
-                    view.Destroy(device);
-                });
-
-                return true;
+                return false;
             }
 
-            return false;
+            FreeDescriptors
+            (
+                framebufferView,
+                framebuffer.usage,
+                megaSet,
+                deletionQueue
+            );
+
+            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            {
+                view.Destroy(device);
+            });
+
+            return true;
         });
     }
 
@@ -598,7 +653,6 @@ namespace Vk
                         ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
                         ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.baseArrayLayer + framebufferView.size.layerCount);
                         ImGui::Text("Format           | %s",        string_VkFormat(framebuffer.image.format));
-                        ImGui::Text("Usage            | %s",        string_VkImageUsageFlags(framebuffer.image.usage).c_str());
 
                         ImGui::Separator();
 

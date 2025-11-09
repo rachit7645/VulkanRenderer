@@ -5,7 +5,6 @@
 * DLSS / FSR3
 * RTAO
 * Two-Pass Occlusion culling
-* Shader Hot Reloading
 * Write a README
 * Pull all dependencies from git submodules
 * Render Graph
@@ -15,10 +14,9 @@
 * Fog
 * Volumetric Lighting
 * IBL Generation Caching
-* Staging Pool
 * Generic CPU -> GPU Uploader
-* Spot Light Shadows
-* Light Culling (Tiled / Clustered)
+* Clustered Light Culling
 * Shadow Caching
 * Auto Exposure
 * Mesh Shaders
+* Improve PBR (See DevSH's Discussion)

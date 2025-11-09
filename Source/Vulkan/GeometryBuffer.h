@@ -17,14 +17,12 @@
 #ifndef GEOMETRY_BUFFER_H
 #define GEOMETRY_BUFFER_H
 
-#include <span>
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"
 #include "CommandBuffer.h"
-#include "BarrierWriter.h"
 #include "VertexBuffer.h"
-#include "Util/Types.h"
+#include "Context.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
@@ -32,7 +30,7 @@ namespace Vk
     class GeometryBuffer
     {
     public:
-        GeometryBuffer(VkDevice device, VmaAllocator allocator);
+        GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
         void Destroy(VmaAllocator allocator);
@@ -42,6 +40,7 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -53,17 +52,19 @@ namespace Vk
 
         [[nodiscard]] const Vk::Buffer& GetIndexBuffer()    const;
         [[nodiscard]] const Vk::Buffer& GetPositionBuffer() const;
+        [[nodiscard]] const Vk::Buffer& GetUVBuffer()       const;
         [[nodiscard]] const Vk::Buffer& GetVertexBuffer()   const;
 
         Vk::VertexBuffer<GPU::Index>    indexBuffer;
         Vk::VertexBuffer<GPU::Position> positionBuffer;
+        Vk::VertexBuffer<GPU::UV>       uvBuffer;
         Vk::VertexBuffer<GPU::Vertex>   vertexBuffer;
 
         Vk::Buffer cubeBuffer;
     private:
-        void SetupCubeUpload(VmaAllocator allocator);
+        void SetupCubeUpload(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool);
 
-        std::optional<Vk::Buffer> m_pendingCubeUpload;
+        std::optional<Vk::StagingMemoryBlock> m_pendingCubeUpload;
     };
 }
 

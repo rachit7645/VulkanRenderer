@@ -38,7 +38,9 @@ namespace Vk
         ColorRG_Unorm8,
         ColorRG_Unorm16,
         ColorRG_SFloat16,
+        ColorRG_SFloat32,
         ColorRGBA_UNorm8,
+        ColorRGBA_SFloat32,
         ColorBGR_SFloat_10_11_11,
         // Regular Color Formats
         ColorLDR,
@@ -161,6 +163,15 @@ namespace Vk
 
         [[nodiscard]] FramebufferView& GetFramebufferView(const std::string_view name);
         [[nodiscard]] const FramebufferView& GetFramebufferView(const std::string_view name) const;
+
+        void DeleteFramebuffer
+        (
+            const std::string_view framebufferName,
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
 
         void DeleteFramebufferViews
         (

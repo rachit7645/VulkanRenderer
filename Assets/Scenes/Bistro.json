@@ -8,7 +8,7 @@
         }
     ],
     "Sun": {
-        "Position"  : [4.0,    -20.0,  3.0  ],
+        "Direction" : [0.19,  -0.97,   0.15 ],
         "Color"     : [0.4784, 0.7372, 0.745],
         "Intensity" : [15.0,   10.0,   10.0 ]
     },
@@ -20,9 +20,10 @@
             "Rotation"    : [ 5.16, -3.44,  0.0],
             "FOV"         : 80.0,
             "Exposure"    : 0.4,
-            "Speed"       : 0.000015,
-            "Sensitivity" : 0.0001,
-            "Zoom"        : 0.000045
+            "Speed"       : 15.0,
+            "Sprint"      : 1.85,
+            "Sensitivity" : 100.0,
+            "Zoom"        : 45.0
         }
     },
     "IBL" : "industrial_sunset_puresky_4k.exr"

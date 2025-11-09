@@ -20,6 +20,8 @@
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
+#include "Buffers/TileLightIndexBuffer.h"
+#include "Objects/GlobalSamplers.h"
 #include "PostProcess/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
@@ -33,6 +35,8 @@
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "IBL/Generator.h"
+#include "SpotShadow/RenderPass.h"
+#include "TiledLighting/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -41,6 +45,8 @@
 #include "Vulkan/CommandBufferAllocator.h"
 #include "Vulkan/GraphicsTimeline.h"
 #include "Vulkan/ComputeTimeline.h"
+#include "Vulkan/PipelineManager.h"
+#include "Vulkan/StagingPool.h"
 #include "Util/Types.h"
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
@@ -77,6 +83,7 @@ namespace Renderer
 
         void TraceRays(const Vk::CommandBuffer& cmdBuffer);
         void Lighting(const Vk::CommandBuffer& cmdBuffer);
+        void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer);
 
         void GraphicsToAsyncComputeRelease(const Vk::CommandBuffer& cmdBuffer);
         void GraphicsToAsyncComputeAcquire(const Vk::CommandBuffer& cmdBuffer);
@@ -90,7 +97,7 @@ namespace Renderer
 
         void Resize();
 
-        void Init();
+        void Initialize();
 
         Engine::Config m_config;
 
@@ -113,12 +120,17 @@ namespace Renderer
         Vk::GraphicsTimeline               m_graphicsTimeline;
         std::optional<Vk::ComputeTimeline> m_computeTimeline = std::nullopt;
 
-        Vk::FormatHelper m_formatHelper;
+        Vk::FormatHelper  m_formatHelper;
 
-        Vk::MegaSet               m_megaSet;
-        Vk::FramebufferManager    m_framebufferManager;
-        Vk::AccelerationStructure m_accelerationStructure;
-        Models::ModelManager      m_modelManager;
+        Vk::MegaSet            m_megaSet;
+        Vk::StagingPool        m_stagingPool;
+        Vk::FramebufferManager m_framebufferManager;
+        Models::ModelManager   m_modelManager;
+        Vk::PipelineManager    m_pipelineManager;
+
+        std::optional<Vk::AccelerationStructure> m_accelerationStructure;
+
+        Objects::GlobalSamplers m_samplers;
 
         PostProcess::RenderPass m_postProcess;
         Depth::RenderPass       m_depth;
@@ -130,17 +142,20 @@ namespace Renderer
         Lighting::RenderPass    m_lighting;
         ShadowRT::RayDispatch   m_shadowRT;
         TAA::RenderPass         m_taa;
+        SpotShadow::RenderPass  m_spotShadow;
 
-        Culling::Dispatch    m_culling;
-        AO::VBGTAO::Dispatch m_vbgtao;
+        Culling::Dispatch       m_culling;
+        AO::VBGTAO::Dispatch    m_vbgtao;
+        TiledLighting::Dispatch m_tiledLighting;
 
         IBL::Generator m_iblGenerator;
 
-        Buffers::MeshBuffer     m_meshBuffer;
-        Buffers::IndirectBuffer m_indirectBuffer;
+        Buffers::MeshBuffer           m_meshBuffer;
+        Buffers::IndirectBuffer       m_indirectBuffer;
+        Buffers::TileLightIndexBuffer m_tiledLightIndexBuffer;
 
         Buffers::SceneBuffer                m_sceneBuffer;
-        std::optional<Buffers::SceneBuffer> m_sceneBufferCompute;
+        std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;
 
         std::optional<Engine::Scene> m_scene = std::nullopt;
 

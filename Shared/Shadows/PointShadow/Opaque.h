@@ -30,10 +30,11 @@ GLSL_NAMESPACE_BEGIN(Renderer::PointShadow::Opaque)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
-    GLSL_BUFFER_POINTER(SceneBuffer)     Scene;
-    GLSL_BUFFER_POINTER(MeshBuffer)      Meshes;
-    GLSL_BUFFER_POINTER(MeshIndexBuffer) MeshIndices;
-    GLSL_BUFFER_POINTER(PositionBuffer)  Positions;
+    GLSL_BUFFER_POINTER(SceneBuffer)         Scene;
+    GLSL_BUFFER_POINTER(MeshBuffer)          Meshes;
+    GLSL_BUFFER_POINTER(InstanceBuffer)      Instances;
+    GLSL_BUFFER_POINTER(InstanceIndexBuffer) InstanceIndices;
+    GLSL_BUFFER_POINTER(PositionBuffer)      Positions;
 
     u32 LightIndex;
     u32 FaceIndex;

@@ -27,8 +27,9 @@ namespace Vk
     (
         VmaAllocator allocator,
         VkDeviceSize size,
+        VkDeviceSize alignment,
         VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties,
+        VkMemoryPropertyFlags memoryProperties,
         VmaAllocationCreateFlags allocationFlags,
         VmaMemoryUsage memoryUsage
     )
@@ -50,7 +51,7 @@ namespace Vk
         {
             .flags          = allocationFlags,
             .usage          = memoryUsage,
-            .requiredFlags  = properties,
+            .requiredFlags  = memoryProperties,
             .preferredFlags = 0,
             .memoryTypeBits = 0,
             .pool           = VK_NULL_HANDLE,
@@ -58,15 +59,36 @@ namespace Vk
             .priority       = 0.0f
         };
 
-        Vk::CheckResult(vmaCreateBuffer(
-            allocator,
-            &createInfo,
-            &allocCreateInfo,
-            &handle,
-            &allocation,
-            &allocationInfo),
-            "Failed to create buffer!"
-        );
+        VmaAllocationInfo allocationInfo = {};
+
+        // Special Case: Use default alignment
+        if (alignment == 0)
+        {
+            Vk::CheckResult(vmaCreateBuffer(
+                allocator,
+                &createInfo,
+                &allocCreateInfo,
+                &handle,
+                &allocation,
+                &allocationInfo),
+                "Failed to create buffer!"
+            );
+        }
+        else
+        {
+            Vk::CheckResult(vmaCreateBufferWithAlignment(
+                allocator,
+                &createInfo,
+                &allocCreateInfo,
+                alignment,
+                &handle,
+                &allocation,
+                &allocationInfo),
+                "Failed to create buffer!"
+            );
+        }
+
+        hostAddress = allocationInfo.pMappedData;
 
         vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
     }
@@ -75,6 +97,7 @@ namespace Vk
     {
         if (handle == VK_NULL_HANDLE)
         {
+            deviceAddress = 0;
             return;
         }
 
@@ -136,10 +159,10 @@ namespace Vk
         vmaDestroyBuffer(allocator, handle, allocation);
 
         handle           = VK_NULL_HANDLE;
-        allocation       = {};
+        allocation       = VK_NULL_HANDLE;
+        hostAddress      = nullptr;
         deviceAddress    = 0;
         size             = 0;
-        allocationInfo   = {};
         memoryProperties = {};
     }
 }

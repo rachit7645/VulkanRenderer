@@ -17,10 +17,11 @@
 #ifndef TAA_PASS_H
 #define TAA_PASS_H
 
-#include "Pipeline.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
+#include "Vulkan/PipelineManager.h"
 
 namespace Renderer::TAA
 {
@@ -29,28 +30,25 @@ namespace Renderer::TAA
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
+            Vk::FramebufferManager& framebufferManager
         );
-
-        void Destroy(VkDevice device);
 
         void Render
         (
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager
+            const Vk::TextureManager& textureManager,
+            const Objects::GlobalSamplers& samplers
         );
 
         void ResetHistory();
     private:
-        TAA::Pipeline m_pipeline;
-
         bool m_hasToResetHistory = true;
     };
 }

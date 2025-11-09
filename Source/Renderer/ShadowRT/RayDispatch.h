@@ -17,13 +17,13 @@
 #ifndef SHADOW_RT_PASS_H
 #define SHADOW_RT_PASS_H
 
-#include "Pipeline.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/ShaderBindingTable.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::ShadowRT
 {
@@ -32,30 +32,35 @@ namespace Renderer::ShadowRT
     public:
         RayDispatch
         (
-            const Vk::Context& context,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            const Vk::Extensions& extensions,
+            Vk::PipelineManager& pipelineManager,
+            Vk::FramebufferManager& framebufferManager
         );
-
-        void Destroy(VkDevice device, VmaAllocator allocator);
 
         void TraceRays
         (
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
-            const Vk::AccelerationStructure& accelerationStructure
+            const Objects::GlobalSamplers& samplers,
+            const Vk::AccelerationStructure& accelerationStructure,
+            Vk::StagingPool& stagingPool,
+            Util::DeletionQueue& deletionQueue
         );
+
+        void Clear(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager);
+
+        void Destroy(VmaAllocator allocator);
     private:
-        ShadowRT::Pipeline     m_pipeline;
-        Vk::ShaderBindingTable m_shaderBindingTable;
+        std::optional<Vk::ShaderBindingTable> m_shaderBindingTable = std::nullopt;
     };
 }
 

@@ -35,10 +35,13 @@ namespace Engine
         (
             const Engine::Config& config,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Renderer::Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Renderer::IBL::Generator& iblGenerator,
             Util::DeletionQueue& deletionQueue
         );
@@ -46,12 +49,15 @@ namespace Engine
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Util::FrameCounter& frameCounter,
             Engine::Inputs& inputs,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Renderer::Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Renderer::IBL::Generator& iblGenerator,
             Util::DeletionQueue& deletionQueue
         );
@@ -75,9 +81,11 @@ namespace Engine
         // Only addition/deletion of render objects will update this
         bool haveRenderObjectsChanged = false;
     private:
-        std::string            m_hdrMap;
-        std::string            m_modelPath          = {};
+        std::string            m_loadedHDRMapPath   = {};
+        std::string            m_loadedModelPath    = {};
         Renderer::RenderObject m_loadedRenderObject = {};
+        GPU::PointLight        m_loadedPointLight   = {};
+        GPU::SpotLight         m_loadedSpotLight    = {};
     };
 }
 

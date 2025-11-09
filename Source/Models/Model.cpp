@@ -37,9 +37,11 @@ namespace Models
 
     Model::Model
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
@@ -100,44 +102,24 @@ namespace Models
 
         ProcessScenes
         (
+            device,
             allocator,
             geometryBuffer,
             textureManager,
+            stagingPool,
             deletionQueue,
             assetDirectory,
             asset.get()
         );
     }
 
-    void Model::Destroy
+    void Model::ProcessScenes
     (
         VkDevice device,
         VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        Vk::GeometryBuffer& geometryBuffer,
-        Util::DeletionQueue& deletionQueue
-    )
-    {
-        for (auto& mesh : meshes)
-        {
-            mesh.Destroy
-            (
-                device,
-                allocator,
-                megaSet,
-                textureManager,
-                geometryBuffer,
-                deletionQueue
-            );
-        }
-    }
-
-    void Model::ProcessScenes
-    (
-        VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset
@@ -149,9 +131,11 @@ namespace Models
             {
                 ProcessNode
                 (
+                    device,
                     allocator,
                     geometryBuffer,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
@@ -164,9 +148,11 @@ namespace Models
 
     void Model::ProcessNode
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -174,16 +160,19 @@ namespace Models
         glm::mat4 nodeMatrix
     )
     {
-        auto& node = asset.nodes[nodeIndex];
+        const auto& node = asset.nodes[nodeIndex];
+
         nodeMatrix = GetTransformMatrix(node, nodeMatrix);
 
         if (node.meshIndex.has_value())
         {
             LoadMesh
             (
+                device,
                 allocator,
                 geometryBuffer,
                 textureManager,
+                stagingPool,
                 deletionQueue,
                 directory,
                 asset,
@@ -196,9 +185,11 @@ namespace Models
         {
             ProcessNode
             (
+                device,
                 allocator,
                 geometryBuffer,
                 textureManager,
+                stagingPool,
                 deletionQueue,
                 directory,
                 asset,
@@ -210,9 +201,11 @@ namespace Models
 
     void Model::LoadMesh
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -255,8 +248,10 @@ namespace Models
 
                 const auto [writePointer, info] = geometryBuffer.indexBuffer.Allocate
                 (
+                    device,
                     allocator,
                     indicesAccessor.count,
+                    stagingPool,
                     deletionQueue
                 );
 
@@ -328,8 +323,10 @@ namespace Models
 
                 const auto [writePointer, info] = geometryBuffer.positionBuffer.Allocate
                 (
+                    device,
                     allocator,
                     positionAccessor.count,
+                    stagingPool,
                     deletionQueue
                 );
 
@@ -347,16 +344,16 @@ namespace Models
                 });
             }
 
-            // Vertices
-            {
-                const auto& normalAccessor = GetAccessor
-                (
-                    asset,
-                    primitive,
-                    "NORMAL",
-                    fastgltf::AccessorType::Vec3
-                );
+            const auto& normalAccessor = GetAccessor
+            (
+                asset,
+                primitive,
+                "NORMAL",
+                fastgltf::AccessorType::Vec3
+            );
 
+            // UV Maps
+            {
                 const auto uv0AccessorIndex = GetAccessorIndex
                 (
                     asset,
@@ -373,29 +370,20 @@ namespace Models
                     fastgltf::AccessorType::Vec2
                 );
 
-                const auto& tangentAccessor = GetAccessor
+                const auto [writePointer, info] = geometryBuffer.uvBuffer.Allocate
                 (
-                    asset,
-                    primitive,
-                    "TANGENT",
-                    fastgltf::AccessorType::Vec4
-                );
-
-                const auto [writePointer, info] = geometryBuffer.vertexBuffer.Allocate
-                (
+                    device,
                     allocator,
                     normalAccessor.count,
+                    stagingPool,
                     deletionQueue
                 );
 
-                surfaceInfo.vertexInfo = info;
+                surfaceInfo.uvInfo = info;
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    GPU::Vertex vertex = {};
-
-                    vertex.normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
-                    vertex.tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
+                    GPU::UV uvs = {};
 
                     std::optional<glm::vec2> uv0 = std::nullopt;
                     std::optional<glm::vec2> uv1 = std::nullopt;
@@ -410,10 +398,41 @@ namespace Models
                         uv1 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i);
                     }
 
-                    vertex.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::vec2(0.0f, 0.0f));
-                    vertex.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::vec2(0.0f, 0.0f));
+                    uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::vec2(0.0f, 0.0f));
+                    uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::vec2(0.0f, 0.0f));
 
-                    writePointer[i] = vertex;
+                    writePointer[i] = uvs;
+                }
+            }
+
+            // Vertices
+            {
+                const auto& tangentAccessor = GetAccessor
+                (
+                    asset,
+                    primitive,
+                    "TANGENT",
+                    fastgltf::AccessorType::Vec4
+                );
+
+                const auto [writePointer, info] = geometryBuffer.vertexBuffer.Allocate
+                (
+                    device,
+                    allocator,
+                    normalAccessor.count,
+                    stagingPool,
+                    deletionQueue
+                );
+
+                surfaceInfo.vertexInfo = info;
+
+                for (usize i = 0; i < normalAccessor.count; ++i)
+                {
+                    writePointer[i] = GPU::Vertex
+                    {
+                        .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
+                        .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i)
+                    };
                 }
             }
 
@@ -452,63 +471,83 @@ namespace Models
             {
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
-                std::tie(material.albedoID, material.albedoUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     baseColorTexture,
                     DEFAULT_ALBEDO
                 );
+
+                material.albedoID      = textureInfo.id;
+                material.albedoUVMapID = textureInfo.uvMapIndex;
             }
 
             // Normal
             {
                 const auto& normalTexture = mat.normalTexture;
 
-                std::tie(material.normalID, material.normalUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     normalTexture
                 );
+
+                material.normalID      = textureInfo.id;
+                material.normalUVMapID = textureInfo.uvMapIndex;
             }
 
             // AO + Roughness + Metallic
             {
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
-                std::tie(material.aoRghMtlID, material.aoRghMtlUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     metallicRoughnessTexture,
                     DEFAULT_AO_RGH_MTL
                 );
+
+                material.aoRghMtlID      = textureInfo.id;
+                material.aoRghMtlUVMapID = textureInfo.uvMapIndex;
             }
 
             // Emmisive
             {
                 const auto& emmisiveTexture = mat.emissiveTexture;
 
-                std::tie(material.emmisiveID, material.emmisiveUVMapID) = LoadTexture
+                const auto textureInfo = LoadTexture
                 (
+                    device,
                     allocator,
                     textureManager,
+                    stagingPool,
                     deletionQueue,
                     directory,
                     asset,
                     emmisiveTexture,
                     DEFAULT_EMMISIVE
                 );
+
+                material.emmisiveID      = textureInfo.id;
+                material.emmisiveUVMapID = textureInfo.uvMapIndex;
             }
 
             meshes.emplace_back
@@ -600,10 +639,12 @@ namespace Models
         return attributeIt->accessorIndex;
     }
 
-    std::pair<Vk::TextureID, u32> Model::LoadTexture
+    Model::TextureInfo Model::LoadTexture
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -615,7 +656,9 @@ namespace Models
         {
             const auto id = textureManager.AddTexture
             (
+                device,
                 allocator,
+                stagingPool,
                 deletionQueue,
                 Vk::ImageUpload{
                     .type   = Vk::ImageUploadType::KTX2,
@@ -626,7 +669,11 @@ namespace Models
                 }
             );
 
-            return std::make_pair(id, 0);
+            return Model::TextureInfo
+            {
+                .id         = id,
+                .uvMapIndex = 0
+            };
         }
 
         if (textureInfo->texCoordIndex > 1)
@@ -641,8 +688,10 @@ namespace Models
 
         const auto id = LoadTextureInternal
         (
+            device,
             allocator,
             textureManager,
+            stagingPool,
             deletionQueue,
             directory,
             asset,
@@ -651,13 +700,19 @@ namespace Models
 
         const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
 
-        return std::make_pair(id, index);
+        return Model::TextureInfo
+        {
+            .id         = id,
+            .uvMapIndex = index
+        };
     }
 
-    std::pair<Vk::TextureID, u32> Model::LoadTexture
+    Model::TextureInfo Model::LoadTexture
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -668,7 +723,9 @@ namespace Models
         {
             const auto id = textureManager.AddTexture
             (
+                device,
                 allocator,
+                stagingPool,
                 deletionQueue,
                 Vk::ImageUpload{
                     .type   = Vk::ImageUploadType::KTX2,
@@ -679,7 +736,11 @@ namespace Models
                 }
             );
 
-            return std::make_pair(id, 0);
+            return Model::TextureInfo
+            {
+                .id         = id,
+                .uvMapIndex = 0
+            };
         }
 
         if (textureInfo->texCoordIndex > 1)
@@ -694,8 +755,10 @@ namespace Models
 
         const auto id = LoadTextureInternal
         (
+            device,
             allocator,
             textureManager,
+            stagingPool,
             deletionQueue,
             directory,
             asset,
@@ -704,13 +767,19 @@ namespace Models
 
         const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
 
-        return std::make_pair(id, index);
+        return Model::TextureInfo
+        {
+            .id         = id,
+            .uvMapIndex = index
+        };
     }
 
     Vk::TextureID Model::LoadTextureInternal
     (
+        VkDevice device,
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
@@ -719,18 +788,21 @@ namespace Models
     {
         const auto& texture = asset.textures[textureIndex];
 
-        usize imageIndex         = 0;
-        Vk::ImageUploadType type = Vk::ImageUploadType::KTX2;
+        usize                imageIndex = 0;
+        Vk::ImageUploadType  type       = Vk::ImageUploadType::KTX2;
+        Vk::ImageUploadFlags flags      = Vk::ImageUploadFlags::None;
 
         if (texture.basisuImageIndex.has_value())
         {
             imageIndex = texture.basisuImageIndex.value();
             type       = Vk::ImageUploadType::KTX2;
+            flags      = Vk::ImageUploadFlags::None;
         }
         else if (texture.imageIndex.has_value())
         {
             imageIndex = texture.imageIndex.value();
             type       = Vk::ImageUploadType::SDR;
+            flags      = Vk::ImageUploadFlags::Mipmaps;
         }
         else
         {
@@ -775,11 +847,13 @@ namespace Models
 
                 return textureManager.AddTexture
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
-                        .flags  = Vk::ImageUploadFlags::None,
+                        .flags  = flags,
                         .source = Vk::ImageUploadFile{
                             .path = fmt::format("{}{}{}", directory.data(), "/", filePath.uri.c_str())
                         }
@@ -793,11 +867,13 @@ namespace Models
 
                 return textureManager.AddTexture
                 (
+                    device,
                     allocator,
+                    stagingPool,
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
-                        .flags  = Vk::ImageUploadFlags::None,
+                        .flags  = flags,
                         .source = Vk::ImageUploadMemory{
                             .name = std::string(image.name),
                             .data = std::vector(arrayBegin, arrayEnd)
@@ -830,11 +906,13 @@ namespace Models
 
                         return textureManager.AddTexture
                         (
+                            device,
                             allocator,
+                            stagingPool,
                             deletionQueue,
                             Vk::ImageUpload{
                                 .type   = type,
-                                .flags  = Vk::ImageUploadFlags::None,
+                                .flags  = flags,
                                 .source = Vk::ImageUploadMemory{
                                     .name = std::string(image.name),
                                     .data = std::vector(arrayBegin, arrayEnd)
@@ -845,5 +923,29 @@ namespace Models
                 }, buffer.data);
             },
         }, image.data);
+    }
+
+    void Model::Destroy
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::MegaSet& megaSet,
+        Vk::TextureManager& textureManager,
+        Vk::GeometryBuffer& geometryBuffer,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        for (auto& mesh : meshes)
+        {
+            mesh.Destroy
+            (
+                device,
+                allocator,
+                megaSet,
+                textureManager,
+                geometryBuffer,
+                deletionQueue
+            );
+        }
     }
 }

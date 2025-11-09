@@ -27,27 +27,16 @@ namespace Vk
 {
     Vk::TextureID TextureManager::AddTexture
     (
+        VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUpload& upload
     )
     {
-        const auto [name, nameID] = std::visit(Util::Visitor{
-            [] (const Vk::ImageUploadFile& file)
-            {
-                return std::make_pair(Util::Files::GetNameWithoutExtension(file.path), file.path);
-            },
-            [] (const Vk::ImageUploadMemory& memory)
-            {
-                return std::make_pair(memory.name, memory.name);
-            },
-            [] (const Vk::ImageUploadRawMemory& rawMemory)
-            {
-                return std::make_pair(rawMemory.name, rawMemory.name);
-            }
-        }, upload.source);
+        const auto nameInfo = GetTextureNameInfo(upload.source);
 
-        const Vk::TextureID id = std::hash<std::string_view>()(nameID);
+        const Vk::TextureID id = std::hash<std::string_view>()(nameInfo.id);
 
         auto iter = m_textureMap.find(id);
 
@@ -58,14 +47,21 @@ namespace Vk
             return id;
         }
 
-        m_futuresMap.emplace(id, m_executor.async([this, allocator, &deletionQueue, upload] ()
+        m_futuresMap.emplace(id, m_executor.async([this, device, allocator, &stagingPool, &deletionQueue, upload] ()
         {
-            return m_imageUploader.LoadImage(allocator, deletionQueue, upload);
+            return m_imageUploader.LoadImage
+            (
+                device,
+                allocator,
+                stagingPool,
+                deletionQueue,
+                upload
+            );
         }));
 
         m_textureMap.emplace(id, TextureInfo{
             .texture = Vk::Texture{
-                .name           = name,
+                .name           = nameInfo.name,
                 .image          = {},
                 .imageView      = {},
                 .descriptorID   = 0,
@@ -221,6 +217,29 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
+    void TextureManager::UpdateTexture
+    (
+        Vk::TextureID id,
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
+        Util::DeletionQueue& deletionQueue,
+        const Vk::ImageUpdateRawMemory& updateRawMemory
+    )
+    {
+        const auto& texture = GetTexture(id);
+
+        m_imageUploader.UpdateImage
+        (
+            device,
+            allocator,
+            stagingPool,
+            deletionQueue,
+            texture.image,
+            updateRawMemory
+        );
+    }
+
     Vk::Texture& TextureManager::GetTexture(Vk::TextureID id)
     {
         auto iter = m_textureMap.find(id);
@@ -357,7 +376,6 @@ namespace Vk
                         ImGui::Text("Mipmap Levels    | %u",   texture.image.mipLevels);
                         ImGui::Text("Array Layers     | %u",   texture.image.arrayLayers);
                         ImGui::Text("Format           | %s",   string_VkFormat(texture.image.format));
-                        ImGui::Text("Usage            | %s",   string_VkImageUsageFlags(texture.image.usage).c_str());
 
                         ImGui::Separator();
 
@@ -388,6 +406,36 @@ namespace Vk
     bool TextureManager::HasPendingUploads()
     {
         return m_imageUploader.HasPendingUploads() || !m_futuresMap.empty();
+    }
+
+    TextureManager::TextureNameInfo TextureManager::GetTextureNameInfo(const ImageUploadSource& source)
+    {
+        return std::visit(Util::Visitor{
+            [] (const Vk::ImageUploadFile& file)
+            {
+                return TextureManager::TextureNameInfo
+                {
+                    .name = Util::Files::GetNameWithoutExtension(file.path),
+                    .id   = file.path
+                };
+            },
+            [] (const Vk::ImageUploadMemory& memory)
+            {
+                return TextureManager::TextureNameInfo
+                {
+                    .name = memory.name,
+                    .id   = memory.name
+                };
+            },
+            [] (const Vk::ImageUploadRawMemory& rawMemory)
+            {
+                return TextureManager::TextureNameInfo
+                 {
+                     .name = rawMemory.name,
+                     .id   = rawMemory.name
+                 };
+            }
+        }, source);
     }
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)

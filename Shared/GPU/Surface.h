@@ -31,6 +31,7 @@ struct SurfaceInfo
 {
     GeometryInfo indexInfo;
     GeometryInfo positionInfo;
+    GeometryInfo uvInfo;
     GeometryInfo vertexInfo;
 };
 

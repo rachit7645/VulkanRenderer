@@ -25,13 +25,39 @@ namespace Renderer::DearImGui
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::Swapchain& swapchain,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager
     )
-        : m_pipeline(context, megaSet, textureManager, swapchain.imageFormat)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {swapchain.imageFormat};
+        
+        pipelineManager.AddPipeline("DearImGui", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("ImGui/ImGui.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("ImGui/ImGui.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddBlendAttachment(
+                VK_TRUE,
+                VK_BLEND_FACTOR_SRC_ALPHA,
+                VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_ONE,
+                VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                VK_BLEND_OP_ADD,
+                VK_COLOR_COMPONENT_R_BIT |
+                VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT
+            )
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DearImGui::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
     }
 
     void RenderPass::Render
@@ -40,9 +66,12 @@ namespace Renderer::DearImGui
         VkDevice device,
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
-        const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Swapchain& swapchain,
+        const Objects::GlobalSamplers& samplers,
+        Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
+        Models::ModelManager& modelManager,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -60,9 +89,12 @@ namespace Renderer::DearImGui
                 device,
                 allocator,
                 cmdBuffer,
-                megaSet,
-                textureManager,
+                pipelineManager,
                 swapchain,
+                samplers,
+                megaSet,
+                stagingPool,
+                modelManager,
                 deletionQueue,
                 drawData
             );
@@ -98,13 +130,18 @@ namespace Renderer::DearImGui
         VkDevice device,
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
-        const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::Swapchain& swapchain,
+        const Objects::GlobalSamplers& samplers,
+        Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
+        Models::ModelManager& modelManager,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
     {
+        const auto& pipeline = pipelineManager.GetPipeline("DearImGui");
+        
         const auto displaySize      = glm::vec2(drawData->DisplaySize.x,      drawData->DisplaySize.y);
         const auto displayPos       = glm::vec2(drawData->DisplayPos.x,       drawData->DisplayPos.y);
         const auto framebufferScale = glm::vec2(drawData->FramebufferScale.x, drawData->FramebufferScale.y);
@@ -122,6 +159,18 @@ namespace Renderer::DearImGui
             cmdBuffer,
             currentVertexBuffer,
             currentIndexBuffer,
+            deletionQueue,
+            drawData
+        );
+
+        UpdateTextures
+        (
+            device,
+            allocator,
+            cmdBuffer,
+            megaSet,
+            stagingPool,
+            modelManager,
             deletionQueue,
             drawData
         );
@@ -161,7 +210,7 @@ namespace Renderer::DearImGui
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_pipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         vkCmdBindIndexBuffer
         (
@@ -188,9 +237,9 @@ namespace Renderer::DearImGui
         constants.Vertices     = currentVertexBuffer.deviceAddress;
         constants.Scale        = glm::vec2(2.0f) / displaySize;
         constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
-        constants.SamplerIndex = textureManager.GetSampler(m_pipeline.samplerID).descriptorID;
+        constants.SamplerIndex = modelManager.textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
 
-        m_pipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -199,8 +248,7 @@ namespace Renderer::DearImGui
             &constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         s32 globalVertexOffset = 0;
         s32 globalIndexOffset  = 0;
@@ -229,7 +277,7 @@ namespace Renderer::DearImGui
 
                 constants.TextureIndex = cmd.GetTexID();
 
-                m_pipeline.PushConstants
+                pipeline.PushConstants
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -285,8 +333,9 @@ namespace Renderer::DearImGui
             (
                 allocator,
                 vertexSize,
+                0,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
@@ -309,8 +358,9 @@ namespace Renderer::DearImGui
             (
                 allocator,
                 indexSize,
+                0,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
@@ -318,8 +368,8 @@ namespace Renderer::DearImGui
             Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
         }
 
-        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.allocationInfo.pMappedData);
-        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.allocationInfo.pMappedData);
+        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.hostAddress);
+        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.hostAddress);
 
         for (const auto drawList : drawData->CmdLists)
         {
@@ -379,10 +429,148 @@ namespace Renderer::DearImGui
         }
     }
 
-    void RenderPass::Destroy(VkDevice device, VmaAllocator allocator)
+    void RenderPass::UpdateTextures
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::CommandBuffer& cmdBuffer,
+        Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
+        Models::ModelManager& modelManager,
+        Util::DeletionQueue& deletionQueue,
+        const ImDrawData* drawData
+    )
     {
-        m_pipeline.Destroy(device);
+        if (drawData->Textures == nullptr)
+        {
+            return;
+        }
 
+        for (auto* texture : *drawData->Textures)
+        {
+            if (texture->Status == ImTextureStatus_OK)
+            {
+                continue;
+            }
+
+            if (texture->Status == ImTextureStatus_WantCreate)
+            {
+                if (texture->TexID != ImTextureID_Invalid || texture->BackendUserData != nullptr)
+                {
+                    Logger::Error("Texture already created! [ID={}]", texture->UniqueID);
+                }
+
+                if (texture->Format != ImTextureFormat_RGBA32)
+                {
+                    Logger::Error("Unsupported texture format! [ID={}]", texture->UniqueID);
+                }
+
+                const auto pixels = static_cast<u8*>(texture->GetPixels());
+
+                const auto id = modelManager.textureManager.AddTexture
+                (
+                    device,
+                    allocator,
+                    stagingPool,
+                    deletionQueue,
+                    Vk::ImageUpload{
+                        .type   = Vk::ImageUploadType::RAW,
+                        .flags  = Vk::ImageUploadFlags::None,
+                        .source = Vk::ImageUploadRawMemory{
+                            .name   = fmt::format("DearImGui/Texture/{}", texture->UniqueID),
+                            .width  = static_cast<u32>(texture->Width),
+                            .height = static_cast<u32>(texture->Height),
+                            .format = VK_FORMAT_R8G8B8A8_UNORM,
+                            .data   = std::vector(pixels, pixels + texture->GetSizeInBytes()),
+                        }
+                    }
+                );
+
+                texture->BackendUserData = std::bit_cast<void*>(id);
+            }
+
+            if (texture->Status == ImTextureStatus_WantUpdates)
+            {
+                const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
+
+                const VkDeviceSize rowPitch = texture->UpdateRect.w * texture->BytesPerPixel;
+
+                auto data = std::vector<u8>(texture->UpdateRect.h * rowPitch);
+
+                for (u32 row = 0; row < texture->UpdateRect.h; ++row)
+                {
+                    const void* srcRow = texture->GetPixelsAt(texture->UpdateRect.x, texture->UpdateRect.y + row);
+                          void* dstRow = data.data() + (row * rowPitch);
+
+                    std::memcpy(dstRow, srcRow, rowPitch);
+                }
+
+                modelManager.textureManager.UpdateTexture
+                (
+                    id,
+                    device,
+                    allocator,
+                    stagingPool,
+                    deletionQueue,
+                    Vk::ImageUpdateRawMemory{
+                        .update = {
+                            .offset = {texture->UpdateRect.x, texture->UpdateRect.y},
+                            .extent = {texture->UpdateRect.w, texture->UpdateRect.h}
+                        },
+                        .data = data
+                    }
+                );
+
+                texture->SetStatus(ImTextureStatus_OK);
+            }
+
+            if (texture->Status == ImTextureStatus_WantDestroy)
+            {
+                const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
+
+                modelManager.textureManager.DestroyTexture
+                (
+                    id,
+                    device,
+                    allocator,
+                    megaSet,
+                    deletionQueue
+                );
+
+                texture->SetTexID(ImTextureID_Invalid);
+                texture->SetStatus(ImTextureStatus_Destroyed);
+                texture->BackendUserData = nullptr;
+            }
+        }
+
+        modelManager.Update
+        (
+            cmdBuffer,
+            device,
+            allocator,
+            megaSet,
+            stagingPool,
+            deletionQueue
+        );
+
+        megaSet.Update(device);
+
+        for (auto* texture : *drawData->Textures)
+        {
+            if (texture->Status != ImTextureStatus_WantCreate)
+            {
+                continue;
+            }
+
+            const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
+
+            texture->SetTexID(modelManager.textureManager.GetTexture(id).descriptorID);
+            texture->SetStatus(ImTextureStatus_OK);
+        }
+    }
+
+    void RenderPass::Destroy(VmaAllocator allocator)
+    {
         for (auto& buffer : m_vertexBuffers)
         {
             buffer.Destroy(allocator);

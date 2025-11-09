@@ -20,6 +20,7 @@
 #include "Externals/GLM.h"
 #include "Renderer/RenderConstants.h"
 #include "Engine/Inputs.h"
+#include "Util/FrameCounter.h"
 
 namespace Renderer::Objects
 {
@@ -37,7 +38,7 @@ namespace Renderer::Objects
         Camera& operator=(Camera&& other) noexcept = default;
 
         // Each subclass MUST define this method
-        virtual void Update(f32 frameDelta, Engine::Inputs& inputs) = 0;
+        virtual void Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs) = 0;
         virtual void ImGuiDisplay();
 
         [[nodiscard]] glm::mat4 GetViewMatrix() const;

@@ -52,7 +52,6 @@ namespace Maths
 
         projection[0][0] =  1.0f / (aspectRatio * tanHalfFovY);
         projection[1][1] = -1.0f / tanHalfFovY; // Flip Y axis for vulkan
-        projection[2][2] =  0.0f;
         projection[2][3] = -1.0f;
         projection[3][2] =  nearPlane;
 

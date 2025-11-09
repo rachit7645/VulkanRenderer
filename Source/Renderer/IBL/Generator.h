@@ -18,11 +18,10 @@
 #define IBL_PASS_H
 
 #include "IBLMaps.h"
-#include "Convolution/Pipeline.h"
-#include "BRDF/Pipeline.h"
-#include "Converter/Pipeline.h"
-#include "PreFilter/Pipeline.h"
 #include "Models/ModelManager.h"
+#include "Renderer/Objects/GlobalSamplers.h"
+#include "Vulkan/PipelineManager.h"
+#include "Vulkan/FormatHelper.h"
 
 namespace Renderer::IBL
 {
@@ -31,24 +30,28 @@ namespace Renderer::IBL
     public:
         Generator
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             const Vk::FormatHelper& formatHelper,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager
         );
 
         IBL::IBLMaps Generate
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
         );
 
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Destroy(VmaAllocator allocator);
     private:
         [[nodiscard]] Vk::TextureID LoadHDRMap
         (
@@ -56,6 +59,7 @@ namespace Renderer::IBL
             const Vk::Context& context,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
         );
@@ -63,47 +67,49 @@ namespace Renderer::IBL
         [[nodiscard]] Vk::TextureID GenerateSkybox
         (
             const Vk::CommandBuffer& cmdBuffer,
-            Vk::TextureID hdrMapID,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::TextureID hdrMapID,
             Util::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateIrradianceMap
         (
             const Vk::CommandBuffer& cmdBuffer,
-            Vk::TextureID skyboxID,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Vk::TextureID skyboxID
         );
 
         [[nodiscard]] Vk::TextureID GeneratePreFilterMap
         (
             const Vk::CommandBuffer& cmdBuffer,
-            Vk::TextureID skyboxID,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
+            const Objects::GlobalSamplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
+            Vk::TextureID skyboxID,
             Util::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateBRDFLUT
         (
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet
         );
-
-        Converter::Pipeline   m_converterPipeline;
-        Convolution::Pipeline m_convolutionPipeline;
-        PreFilter::Pipeline   m_preFilterPipeline;
-        BRDF::Pipeline        m_brdfLutPipeline;
 
         Vk::Buffer m_matrixBuffer;
 

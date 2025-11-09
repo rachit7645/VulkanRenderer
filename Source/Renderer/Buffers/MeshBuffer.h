@@ -43,12 +43,16 @@ namespace Renderer::Buffers
             const std::vector<Renderer::RenderObject>& renderObjects
         );
 
-        const Vk::Buffer& GetCurrentBuffer(usize frameIndex)  const;
-        const Vk::Buffer& GetPreviousBuffer(usize frameIndex) const;
+        [[nodiscard]] const Vk::Buffer& GetCurrentMeshBuffer(usize frameIndex)  const;
+        [[nodiscard]] const Vk::Buffer& GetPreviousMeshBuffer(usize frameIndex) const;
+
+        [[nodiscard]] const Vk::Buffer& GetCurrentInstanceBuffer(usize frameIndex)  const;
+        [[nodiscard]] const Vk::Buffer& GetPreviousInstanceBuffer(usize frameIndex) const;
 
         void Destroy(VmaAllocator allocator);
     private:
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT + 1> m_buffers;
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT + 1> m_meshBuffers;
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT + 1> m_instanceBuffers;
     };
 }
 

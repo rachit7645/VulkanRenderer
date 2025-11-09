@@ -24,25 +24,29 @@
 
 namespace Vk
 {
-    constexpr f64 BUFFER_GROWTH_FACTOR = 1.5;
-
-    GeometryBuffer::GeometryBuffer(VkDevice device, VmaAllocator allocator)
+    GeometryBuffer::GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool)
+        : indexBuffer(context.extensions),
+          positionBuffer(context.extensions),
+          uvBuffer(context.extensions),
+          vertexBuffer(context.extensions)
     {
         cubeBuffer = Vk::Buffer
         (
-            allocator,
+            context.allocator,
             36 * sizeof(GPU::Position),
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            0,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        cubeBuffer.GetDeviceAddress(device);
+        cubeBuffer.GetDeviceAddress(context.device);
 
-        SetupCubeUpload(allocator);
+        SetupCubeUpload(context.device, context.allocator, stagingPool);
 
-        Vk::SetDebugName(device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
+        Vk::SetDebugName(context.device, cubeBuffer.handle, "GeometryBuffer/CubeBuffer");
     }
 
     void GeometryBuffer::Bind(const Vk::CommandBuffer& cmdBuffer) const
@@ -55,6 +59,7 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -89,6 +94,18 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
+        Vk::BeginLabel(cmdBuffer, "UV Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
+
+        uvBuffer.FlushUploads
+        (
+            cmdBuffer,
+            device,
+            allocator,
+            deletionQueue
+        );
+
+        Vk::EndLabel(cmdBuffer);
+
         Vk::BeginLabel(cmdBuffer, "Vertex Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
 
         vertexBuffer.FlushUploads
@@ -111,16 +128,16 @@ namespace Vk
             {
                 .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
                 .pNext     = nullptr,
-                .srcOffset = 0,
+                .srcOffset = m_pendingCubeUpload->memoryBlock.offset,
                 .dstOffset = 0,
-                .size      = VERTICES_SIZE
+                .size      = m_pendingCubeUpload->memoryBlock.size
             };
 
             const VkCopyBufferInfo2 copyInfo =
             {
                 .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
                 .pNext       = nullptr,
-                .srcBuffer   = m_pendingCubeUpload->handle,
+                .srcBuffer   = m_pendingCubeUpload->buffer,
                 .dstBuffer   = cubeBuffer.handle,
                 .regionCount = 1,
                 .pRegions    = &copyRegion
@@ -148,15 +165,16 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
-        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer"   );
+        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer");
         Vk::SetDebugName(device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer"  );
+        Vk::SetDebugName(device, GetUVBuffer().handle,       "GeometryBuffer/UVBuffer");
+        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
 
         if (m_pendingCubeUpload.has_value())
         {
-            deletionQueue.PushDeletor([allocator, buffer = m_pendingCubeUpload.value()] () mutable
+            deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
             {
-                buffer.Destroy(allocator);
+                stagingPool.Free(stagingMemoryBlock);
             });
 
             m_pendingCubeUpload = std::nullopt;
@@ -169,11 +187,12 @@ namespace Vk
         {
             indexBuffer.Free(info.indexInfo);
             positionBuffer.Free(info.positionInfo);
+            uvBuffer.Free(info.uvInfo);
             vertexBuffer.Free(info.vertexInfo);
         });
     }
 
-    void GeometryBuffer::SetupCubeUpload(VmaAllocator allocator)
+    void GeometryBuffer::SetupCubeUpload(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
         constexpr std::array CUBE_VERTICES =
         {
@@ -222,17 +241,15 @@ namespace Vk
 
         constexpr VkDeviceSize VERTICES_SIZE = CUBE_VERTICES.size() * sizeof(f32);
 
-        m_pendingCubeUpload = Vk::Buffer
+        m_pendingCubeUpload = stagingPool.Allocate
         (
+            device,
             allocator,
             VERTICES_SIZE,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            0
         );
 
-        std::memcpy(m_pendingCubeUpload->allocationInfo.pMappedData, CUBE_VERTICES.data(), VERTICES_SIZE);
+        std::memcpy(m_pendingCubeUpload->hostAddress, CUBE_VERTICES.data(), VERTICES_SIZE);
     }
 
     void GeometryBuffer::ImGuiDisplay() const
@@ -249,8 +266,8 @@ namespace Vk
                     "Index Buffer    | %u | %llu/%llu/%llu",
                     indexBuffer.count,
                     indexBuffer.count * sizeof(GPU::Index),
-                    GetIndexBuffer().allocationInfo.size - (indexBuffer.count * sizeof(GPU::Index)),
-                    GetIndexBuffer().allocationInfo.size
+                    GetIndexBuffer().size - (indexBuffer.count * sizeof(GPU::Index)),
+                    GetIndexBuffer().size
                 );
 
                 ImGui::Text
@@ -258,8 +275,17 @@ namespace Vk
                     "Position Buffer | %u | %llu/%llu/%llu",
                     positionBuffer.count,
                     positionBuffer.count * sizeof(GPU::Position),
-                    GetPositionBuffer().allocationInfo.size - (positionBuffer.count * sizeof(GPU::Position)),
-                    GetPositionBuffer().allocationInfo.size
+                    GetPositionBuffer().size - (positionBuffer.count * sizeof(GPU::Position)),
+                    GetPositionBuffer().size
+                );
+
+                ImGui::Text
+                (
+                    "UV Buffer       | %u | %llu/%llu/%llu",
+                    uvBuffer.count,
+                    uvBuffer.count * sizeof(GPU::UV),
+                    GetUVBuffer().size - (uvBuffer.count * sizeof(GPU::UV)),
+                    GetUVBuffer().size
                 );
 
                 ImGui::Text
@@ -267,8 +293,8 @@ namespace Vk
                     "Vertex Buffer   | %u | %llu/%llu/%llu",
                     vertexBuffer.count,
                     vertexBuffer.count * sizeof(GPU::Vertex),
-                    GetVertexBuffer().allocationInfo.size - (vertexBuffer.count * sizeof(GPU::Vertex)),
-                    GetVertexBuffer().allocationInfo.size
+                    GetVertexBuffer().size - (vertexBuffer.count * sizeof(GPU::Vertex)),
+                    GetVertexBuffer().size
                 );
 
                 ImGui::EndMenu();
@@ -280,8 +306,9 @@ namespace Vk
 
     bool GeometryBuffer::HasPendingUploads() const
     {
-        return indexBuffer.HasPendingUploads()  || vertexBuffer.HasPendingUploads() ||
-               vertexBuffer.HasPendingUploads() || m_pendingCubeUpload.has_value();
+        return indexBuffer.HasPendingUploads() || positionBuffer.HasPendingUploads() ||
+               uvBuffer.HasPendingUploads() || vertexBuffer.HasPendingUploads() ||
+               m_pendingCubeUpload.has_value();
     }
 
     const Vk::Buffer& GeometryBuffer::GetIndexBuffer() const
@@ -294,6 +321,11 @@ namespace Vk
         return positionBuffer.GetBuffer();
     }
 
+    const Vk::Buffer& GeometryBuffer::GetUVBuffer() const
+    {
+        return uvBuffer.GetBuffer();
+    }
+
     const Vk::Buffer& GeometryBuffer::GetVertexBuffer() const
     {
         return vertexBuffer.GetBuffer();
@@ -303,6 +335,7 @@ namespace Vk
     {
         indexBuffer.Destroy(allocator);
         positionBuffer.Destroy(allocator);
+        uvBuffer.Destroy(allocator);
         vertexBuffer.Destroy(allocator);
         cubeBuffer.Destroy(allocator);
 

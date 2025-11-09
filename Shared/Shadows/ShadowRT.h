@@ -28,10 +28,10 @@ GLSL_PUSH_CONSTANT_BEGIN
 {
     u64 TLAS;
 
-    GLSL_BUFFER_POINTER(SceneBuffer)  Scene;
-    GLSL_BUFFER_POINTER(MeshBuffer)   Meshes;
-    GLSL_BUFFER_POINTER(IndexBuffer)  Indices;
-    GLSL_BUFFER_POINTER(VertexBuffer) Vertices;
+    GLSL_BUFFER_POINTER(SceneBuffer) Scene;
+    GLSL_BUFFER_POINTER(MeshBuffer)  Meshes;
+    GLSL_BUFFER_POINTER(IndexBuffer) Indices;
+    GLSL_BUFFER_POINTER(UVBuffer)    UVs;
 
     u32 GBufferSamplerIndex;
     u32 TextureSamplerIndex;

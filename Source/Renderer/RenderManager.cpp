@@ -34,64 +34,64 @@ namespace Renderer
           m_graphicsTimeline(m_context.device),
           m_formatHelper(m_context.physicalDevice),
           m_megaSet(m_context),
-          m_modelManager(m_context.device, m_context.allocator),
-          m_postProcess(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_depth(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_imGui(m_context, m_swapchain, m_megaSet, m_modelManager.textureManager),
-          m_skybox(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
-          m_bloom(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_pointShadow(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_gBuffer(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_lighting(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_shadowRT(m_context, m_graphicsCmdBufferAllocator, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_taa(m_context, m_formatHelper, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_culling(m_context),
-          m_vbgtao(m_context, m_framebufferManager, m_megaSet, m_modelManager.textureManager),
-          m_iblGenerator(m_context, m_formatHelper, m_megaSet, m_modelManager.textureManager),
+          m_modelManager(m_context, m_stagingPool),
+          m_samplers(m_context, m_megaSet, m_modelManager.textureManager),
+          m_postProcess(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_depth(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_imGui(m_swapchain, m_megaSet, m_pipelineManager),
+          m_skybox(m_formatHelper, m_megaSet, m_pipelineManager),
+          m_bloom(m_context.device, m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_pointShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_gBuffer(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_lighting(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_shadowRT(m_megaSet, m_context.extensions, m_pipelineManager, m_framebufferManager),
+          m_taa(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_spotShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_culling(m_context.device, m_context.allocator, m_pipelineManager),
+          m_vbgtao(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_tiledLighting(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_iblGenerator(m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
     {
-        if (m_context.queueFamilies.computeFamily.has_value())
+        if (m_context.queueFamilies.computeFamily.has_value() && m_context.extensions.HasRayTracing())
         {
             m_computeCmdBufferAllocator = Vk::CommandBufferAllocator(m_context.device, *m_context.queueFamilies.computeFamily);
             m_computeTimeline           = Vk::ComputeTimeline(m_context.device);
             m_sceneBufferCompute        = Buffers::SceneBuffer(m_context.device, m_context.allocator);
         }
 
-        // ImGui Yoy
-        Init();
+        Initialize();
 
         m_frameCounter.Reset();
 
         m_globalDeletionQueue.PushDeletor([&] ()
         {
+            m_tiledLightIndexBuffer.Destroy(m_context.allocator);
             m_sceneBuffer.Destroy(m_context.allocator);
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
-            m_iblGenerator.Destroy(m_context.device, m_context.allocator);
-            m_vbgtao.Destroy(m_context.device);
-            m_culling.Destroy(m_context.device, m_context.allocator);
-            m_taa.Destroy(m_context.device);
-            m_shadowRT.Destroy(m_context.device, m_context.allocator);
-            m_lighting.Destroy(m_context.device);
-            m_gBuffer.Destroy(m_context.device);
-            m_pointShadow.Destroy(m_context.device);
-            m_bloom.Destroy(m_context.device);
-            m_skybox.Destroy(m_context.device);
-            m_imGui.Destroy(m_context.device, m_context.allocator);
-            m_depth.Destroy(m_context.device);
-            m_postProcess.Destroy(m_context.device);
+            m_iblGenerator.Destroy(m_context.allocator);
+            m_culling.Destroy(m_context.allocator);
+            m_shadowRT.Destroy(m_context.allocator);
+            m_imGui.Destroy(m_context.allocator);
 
             m_megaSet.Destroy(m_context.device);
-            m_accelerationStructure.Destroy(m_context.device, m_context.allocator);
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator);
+            m_pipelineManager.Destroy(m_context.device);
+            m_stagingPool.Destroy(m_context.allocator);
 
             m_graphicsTimeline.Destroy(m_context.device);
             m_swapchain.Destroy(m_context.device);
             m_graphicsCmdBufferAllocator.Destroy(m_context.device);
+
+            if (m_accelerationStructure.has_value())
+            {
+                m_accelerationStructure->Destroy(m_context.device, m_context.allocator);
+            }
 
             if (m_computeCmdBufferAllocator.has_value())
             {
@@ -125,7 +125,7 @@ namespace Renderer
         AcquireSwapchainImage();
         BeginFrame();
 
-        if (m_context.queueFamilies.HasAllFamilies())
+        if (m_context.queueFamilies.HasAllFamilies() && m_context.extensions.HasRayTracing())
         {
             RenderMultiQueue();
         }
@@ -139,16 +139,17 @@ namespace Renderer
 
     void RenderManager::WaitForTimeline()
     {
-        // Frame indices 0 to Vk::FRAMES_IN_FLIGHT - 1 do not need to wait for anything
-        if (m_frameIndex >= Vk::FRAMES_IN_FLIGHT)
+        if (m_frameIndex < Vk::FRAMES_IN_FLIGHT)
         {
-            m_graphicsTimeline.WaitForStage
-            (
-                m_frameIndex - Vk::FRAMES_IN_FLIGHT,
-                Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED,
-                m_context.device
-            );
+            return;
         }
+
+        m_graphicsTimeline.WaitForStage
+        (
+            m_frameIndex - Vk::FRAMES_IN_FLIGHT,
+            Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED,
+            m_context.device
+        );
     }
 
     void RenderManager::AcquireSwapchainImage()
@@ -250,7 +251,7 @@ namespace Renderer
 
     void RenderManager::RenderMultiQueue()
     {
-        // GBuffer Generation Submit
+        // GBuffer Generation
         {
             const auto gBufferGenerationCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -309,7 +310,7 @@ namespace Renderer
             );
         }
 
-        // Async Compute Submit
+        // Async Compute
         {
             const auto asyncComputeCmdBuffer = m_computeCmdBufferAllocator->AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -369,7 +370,7 @@ namespace Renderer
             );
         }
 
-        // Ray Dispatch Submit
+        // Ray Dispatch
         {
             const auto rayDispatchCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -427,7 +428,7 @@ namespace Renderer
             );
         }
 
-        // Lighting Submit
+        // Lighting
         {
             const auto lightingCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -505,58 +506,83 @@ namespace Renderer
 
         if (m_scene->haveRenderObjectsChanged)
         {
-            m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = m_accelerationStructure] () mutable
+            if (m_context.extensions.HasRayTracing())
             {
-                as.Destroy(device, allocator);
-            });
+                if (m_accelerationStructure.has_value())
+                {
+                    m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
+                    {
+                        as.Destroy(device, allocator);
+                    });
+                }
 
-            m_accelerationStructure = {};
+                m_accelerationStructure = Vk::AccelerationStructure{};
 
-            m_accelerationStructure.BuildBottomLevelAS
-            (
-                m_frameIndex,
-                cmdBuffer,
-                m_context.device,
-                m_context.allocator,
-                m_modelManager,
-                m_scene->renderObjects,
-                m_deletionQueues[m_FIF]
-            );
+                m_accelerationStructure->BuildBottomLevelAS
+                (
+                    m_frameIndex,
+                    cmdBuffer,
+                    m_context,
+                    m_modelManager,
+                    m_scene->renderObjects,
+                    m_deletionQueues[m_FIF]
+                );
+            }
 
             m_scene->haveRenderObjectsChanged = false;
         }
 
-        m_accelerationStructure.TryCompactBottomLevelAS
-        (
-            cmdBuffer,
-            m_context.device,
-            m_context.allocator,
-            m_graphicsTimeline,
-            m_deletionQueues[m_FIF]
-        );
+        if (m_context.extensions.HasRayTracing())
+        {
+            m_accelerationStructure->TryCompactBottomLevelAS
+            (
+                cmdBuffer,
+                m_context.device,
+                m_context.allocator,
+                m_graphicsTimeline,
+                m_deletionQueues[m_FIF]
+            );
 
-        m_accelerationStructure.BuildTopLevelAS
-        (
-            m_FIF,
-            cmdBuffer,
-            m_context.device,
-            m_context.allocator,
-            m_modelManager,
-            m_scene->renderObjects,
-            m_deletionQueues[m_FIF]
-        );
+            m_accelerationStructure->BuildTopLevelAS
+            (
+                m_FIF,
+                cmdBuffer,
+                m_context,
+                m_modelManager,
+                m_scene->renderObjects,
+                m_deletionQueues[m_FIF]
+            );
+        }
 
         m_pointShadow.Render
         (
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            m_samplers,
+            m_culling
+        );
+
+        m_spotShadow.Render
+        (
+            m_FIF,
+            m_frameIndex,
+            cmdBuffer,
+            m_pipelineManager,
+            m_framebufferManager,
+            m_megaSet,
+            m_modelManager,
+            m_sceneBuffer,
+            m_meshBuffer,
+            m_indirectBuffer,
+            m_samplers,
             m_culling
         );
 
@@ -565,12 +591,14 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            m_samplers,
             m_culling
         );
 
@@ -579,12 +607,14 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
             m_sceneBuffer,
             m_meshBuffer,
-            m_indirectBuffer
+            m_indirectBuffer,
+            m_samplers
         );
     }
 
@@ -601,41 +631,88 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
-            sceneBuffer,
-            sceneDepthID,
-            gNormalID,
             m_megaSet,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            sceneBuffer,
+            m_samplers,
+            sceneDepthID,
+            gNormalID
         );
     }
 
     void RenderManager::TraceRays(const Vk::CommandBuffer& cmdBuffer)
     {
-        m_shadowRT.TraceRays
-        (
-            m_FIF,
-            m_frameIndex,
-            cmdBuffer,
-            m_megaSet,
-            m_modelManager,
-            m_framebufferManager,
-            m_sceneBuffer,
-            m_meshBuffer,
-            m_accelerationStructure
-        );
+        bool canPerformRayDispatch = false;
+
+        if (m_context.extensions.HasRayTracing())
+        {
+            if (m_accelerationStructure.has_value())
+            {
+                canPerformRayDispatch = m_accelerationStructure->topLevelASes[m_FIF].handle != VK_NULL_HANDLE;
+            }
+        }
+
+        if (canPerformRayDispatch)
+        {
+            m_shadowRT.TraceRays
+            (
+                m_FIF,
+                m_frameIndex,
+                cmdBuffer,
+                m_context,
+                m_megaSet,
+                m_modelManager,
+                m_pipelineManager,
+                m_framebufferManager,
+                m_sceneBuffer,
+                m_meshBuffer,
+                m_samplers,
+                *m_accelerationStructure,
+                m_stagingPool,
+                m_deletionQueues[m_FIF]
+            );
+        }
+        else
+        {
+            Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
+
+            m_shadowRT.Clear(cmdBuffer, m_framebufferManager);
+
+            Vk::EndLabel(cmdBuffer);
+        }
     }
 
     void RenderManager::Lighting(const Vk::CommandBuffer& cmdBuffer)
     {
-        m_lighting.Render
+        m_tiledLighting.Execute
         (
             m_FIF,
+            m_context.device,
+            m_context.allocator,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
             m_sceneBuffer,
+            m_samplers,
+            m_tiledLightIndexBuffer,
+            m_deletionQueues[m_FIF]
+        );
+
+        m_lighting.Render
+        (
+            m_FIF,
+            cmdBuffer,
+            m_pipelineManager,
+            m_framebufferManager,
+            m_megaSet,
+            m_modelManager.textureManager,
+            m_sceneBuffer,
+            m_tiledLightIndexBuffer,
+            m_samplers,
             m_scene->iblMaps
         );
 
@@ -643,10 +720,12 @@ namespace Renderer
         (
             m_FIF,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager,
             m_sceneBuffer,
+            m_samplers,
             m_scene->iblMaps
         );
 
@@ -654,29 +733,35 @@ namespace Renderer
         (
             m_frameIndex,
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            m_samplers
         );
 
         m_bloom.Render
         (
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager
+            m_modelManager.textureManager,
+            m_samplers
         );
 
         m_postProcess.Render
         (
             cmdBuffer,
+            m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
-            m_scene->camera
+            m_scene->camera,
+            m_samplers
         );
 
-        m_swapchain.Blit(cmdBuffer, m_framebufferManager);
+        BlitToSwapchain(cmdBuffer);
 
         m_imGui.Render
         (
@@ -684,11 +769,141 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             cmdBuffer,
-            m_megaSet,
-            m_modelManager.textureManager,
+            m_pipelineManager,
             m_swapchain,
+            m_samplers,
+            m_megaSet,
+            m_stagingPool,
+            m_modelManager,
             m_deletionQueues[m_FIF]
         );
+    }
+
+    void RenderManager::BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer)
+    {
+        const auto& finalColor     = m_framebufferManager.GetFramebuffer("FinalColor");
+        const auto& swapchainImage = m_swapchain.images[m_swapchain.imageIndex];
+
+        Vk::BeginLabel(cmdBuffer, "Blit To Swapchain", glm::vec4(0.4098f, 0.2843f, 0.7529f, 1.0f));
+
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask  = VK_ACCESS_2_NONE,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
+
+        const VkImageBlit2 blitRegion =
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+            .pNext = nullptr,
+            .srcSubresource = {
+                .aspectMask     = finalColor.image.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            },
+            .srcOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(finalColor.image.width), static_cast<s32>(finalColor.image.height), 1}
+            },
+            .dstSubresource = {
+                .aspectMask     = swapchainImage.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            },
+            .dstOffsets = {
+                {0, 0, 0},
+                {static_cast<s32>(swapchainImage.width), static_cast<s32>(swapchainImage.height), 1}
+            }
+        };
+
+        const VkBlitImageInfo2 blitImageInfo =
+        {
+            .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+            .pNext          = nullptr,
+            .srcImage       = finalColor.image.handle,
+            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .dstImage       = swapchainImage.handle,
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = 1,
+            .pRegions       = &blitRegion,
+            .filter         = VK_FILTER_LINEAR
+        };
+
+        vkCmdBlitImage2(cmdBuffer.handle, &blitImageInfo);
+
+        barrierWriter
+        .WriteImageBarrier(
+            finalColor.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = finalColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalColor.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            swapchainImage,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = swapchainImage.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = swapchainImage.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void RenderManager::GraphicsToAsyncComputeRelease(const Vk::CommandBuffer& cmdBuffer)
@@ -1456,16 +1671,23 @@ namespace Renderer
     {
         m_frameCounter.Update();
 
+        m_pipelineManager.Update(m_context.device, m_deletionQueues[m_FIF]);
+
+        m_stagingPool.Update(m_context.allocator);
+
         if (!m_scene.has_value())
         {
             m_scene = Engine::Scene
             (
                 m_config,
                 cmdBuffer,
+                m_pipelineManager,
                 m_context,
                 m_formatHelper,
+                m_samplers,
                 m_modelManager,
                 m_megaSet,
+                m_stagingPool,
                 m_iblGenerator,
                 m_deletionQueues[m_FIF]
             );
@@ -1476,6 +1698,7 @@ namespace Renderer
                 m_context.device,
                 m_context.allocator,
                 m_megaSet,
+                m_stagingPool,
                 m_deletionQueues[m_FIF]
             );
 
@@ -1526,16 +1749,21 @@ namespace Renderer
                             m_megaSet,
                             m_deletionQueues[m_FIF]
                         );
+
+                        m_scene = std::nullopt;
                     }
 
                     m_scene = Engine::Scene
                     (
                         m_config,
                         cmdBuffer,
+                        m_pipelineManager,
                         m_context,
                         m_formatHelper,
+                        m_samplers,
                         m_modelManager,
                         m_megaSet,
+                        m_stagingPool,
                         m_iblGenerator,
                         m_deletionQueues[m_FIF]
                     );
@@ -1546,6 +1774,7 @@ namespace Renderer
                         m_context.device,
                         m_context.allocator,
                         m_megaSet,
+                        m_stagingPool,
                         m_deletionQueues[m_FIF]
                     );
 
@@ -1574,12 +1803,15 @@ namespace Renderer
         m_scene->Update
         (
             cmdBuffer,
+            m_pipelineManager,
             m_frameCounter,
             m_window.inputs,
             m_context,
             m_formatHelper,
+            m_samplers,
             m_modelManager,
             m_megaSet,
+            m_stagingPool,
             m_iblGenerator,
             m_deletionQueues[m_FIF]
         );
@@ -1590,6 +1822,7 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_megaSet,
+            m_stagingPool,
             m_deletionQueues[m_FIF]
         );
 
@@ -1624,13 +1857,7 @@ namespace Renderer
             m_scene->renderObjects
         );
 
-        m_indirectBuffer.WriteDrawCalls
-        (
-            m_FIF,
-            m_context.allocator,
-            m_modelManager,
-            m_scene->renderObjects
-        );
+        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_scene->renderObjects);
 
         ImGuiDisplay();
     }
@@ -1641,6 +1868,7 @@ namespace Renderer
         m_modelManager.ImGuiDisplay();
         m_framebufferManager.ImGuiDisplay();
         m_megaSet.ImGuiDisplay();
+        m_pipelineManager.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {
@@ -1838,7 +2066,7 @@ namespace Renderer
         Render();
     }
 
-    void RenderManager::Init()
+    void RenderManager::Initialize()
     {
         Logger::Debug("Initializing Dear ImGui [Version = {}]\n", ImGui::GetVersion());
 
@@ -1850,8 +2078,8 @@ namespace Renderer
 
         auto& io = ImGui::GetIO();
 
-        io.BackendRendererName = "Rachit_DearImGui_Backend_Vulkan";
-        io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset;
+        io.BackendRendererName = "Rachit's Dear ImGui Backend (Vulkan)";
+        io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
         io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
         Vk::ImmediateSubmit
@@ -1861,31 +2089,6 @@ namespace Renderer
             m_graphicsCmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                u8* pixels = nullptr;
-                s32 width  = 0;
-                s32 height = 0;
-
-                io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-                const usize count = 4ull * static_cast<usize>(width) * static_cast<usize>(height);
-
-                const auto fontID = m_modelManager.textureManager.AddTexture
-                (
-                    m_context.allocator,
-                    m_deletionQueues[m_FIF],
-                    Vk::ImageUpload{
-                        .type   = Vk::ImageUploadType::RAW,
-                        .flags  = Vk::ImageUploadFlags::None,
-                        .source = Vk::ImageUploadRawMemory{
-                            .name   = "DearImGui/Font",
-                            .width  = static_cast<u32>(width),
-                            .height = static_cast<u32>(height),
-                            .format = VK_FORMAT_R8G8B8A8_UNORM,
-                            .data   = std::vector(pixels, pixels + count),
-                        }
-                    }
-                );
-
                 constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<AO::VBGTAO::Occlusion::GTAO_HILBERT_LEVEL>();
 
                 // A bit hacky but what can you do :(
@@ -1894,7 +2097,9 @@ namespace Renderer
 
                 m_vbgtao.hilbertLUT = m_modelManager.textureManager.AddTexture
                 (
+                    m_context.device,
                     m_context.allocator,
+                    m_stagingPool,
                     m_deletionQueues[m_FIF],
                     Vk::ImageUpload{
                         .type   = Vk::ImageUploadType::RAW,
@@ -1915,12 +2120,11 @@ namespace Renderer
                     m_context.device,
                     m_context.allocator,
                     m_megaSet,
+                    m_stagingPool,
                     m_deletionQueues[m_FIF]
                 );
 
                 m_megaSet.Update(m_context.device);
-
-                io.Fonts->SetTexID(static_cast<ImTextureID>(m_modelManager.textureManager.GetTexture(fontID).descriptorID));
             }
         );
 

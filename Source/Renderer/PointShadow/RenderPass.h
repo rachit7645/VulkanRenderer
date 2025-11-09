@@ -17,14 +17,13 @@
 #ifndef POINT_SHADOW_PASS_H
 #define POINT_SHADOW_PASS_H
 
-#include "Opaque/Pipeline.h"
-#include "AlphaMasked/Pipeline.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
+#include "Renderer/Objects/GlobalSamplers.h"
 
 namespace Renderer::PointShadow
 {
@@ -33,11 +32,10 @@ namespace Renderer::PointShadow
     public:
         RenderPass
         (
-            const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Vk::FramebufferManager& framebufferManager,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager
+            const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
+            Vk::FramebufferManager& framebufferManager
         );
 
         void Render
@@ -45,19 +43,16 @@ namespace Renderer::PointShadow
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            const Objects::GlobalSamplers& samplers,
             Culling::Dispatch& culling
         ) const;
-
-        void Destroy(VkDevice device);
-    private:
-        Opaque::Pipeline      m_opaquePipeline;
-        AlphaMasked::Pipeline m_alphaMaskedPipeline;
     };
 }
 

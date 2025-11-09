@@ -28,9 +28,14 @@ struct Mesh
 {
     SurfaceInfo surfaceInfo;
     Material    material;
-    GLSL_MAT4   transform;
-    GLSL_MAT3   normalMatrix;
     AABB        aabb;
+};
+
+struct Instance
+{
+    u32       meshIndex;
+    GLSL_MAT4 transform;
+    GLSL_MAT3 normalMatrix;
 };
 
 #ifndef __cplusplus
@@ -38,6 +43,12 @@ struct Mesh
 layout(buffer_reference, scalar) readonly buffer MeshBuffer
 {
     Mesh meshes[];
+};
+
+layout(buffer_reference, scalar) readonly buffer InstanceBuffer
+{
+    uint     count;
+    Instance instances[];
 };
 
 #endif

@@ -25,15 +25,44 @@ namespace Renderer::Depth
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_opaquePipeline(context, formatHelper),
-          m_alphaMaskedPipeline(context, formatHelper, megaSet, textureManager)
     {
+        constexpr std::array DYNAMIC_STATES =
+        {
+            VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
+            VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
+            VK_DYNAMIC_STATE_CULL_MODE
+        };
+
+        pipelineManager.AddPipeline("Depth/Opaque", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, {}, formatHelper.depthFormat)
+            .AttachShader("Deferred/Depth/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/Empty.frag",             VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
+        );
+
+        pipelineManager.AddPipeline("Depth/AlphaMasked", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, {}, formatHelper.depthFormat)
+            .AttachShader("Deferred/Depth/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/Depth/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
         framebufferManager.AddFramebuffer
         (
             "SceneDepth",
@@ -112,29 +141,31 @@ namespace Renderer::Depth
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
+        const Objects::GlobalSamplers& samplers,
         Culling::Dispatch& culling
     )
     {
         Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        const auto& currentMatrices = sceneBuffer.gpuScene.currentMatrices;
-        const auto  projectionView  = currentMatrices.projection * currentMatrices.view;
-
         culling.Frustum
         (
-            FIF,
             frameIndex,
-            projectionView,
+            sceneBuffer.matrices.jitteredProjectionView,
             cmdBuffer,
+            pipelineManager,
             meshBuffer,
             indirectBuffer
         );
+
+        const auto& opaquePipeline      = pipelineManager.GetPipeline("Depth/Opaque");
+        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline("Depth/AlphaMasked");
 
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
         const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
@@ -217,7 +248,7 @@ namespace Renderer::Depth
         {
             Vk::BeginLabel(cmdBuffer, "Opaque", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
-            m_opaquePipeline.Bind(cmdBuffer);
+            opaquePipeline.Bind(cmdBuffer);
 
             // Single-Sided
             {
@@ -227,13 +258,14 @@ namespace Renderer::Depth
 
                 const auto constants = Opaque::Constants
                 {
-                    .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                    .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
+                    .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
-                m_opaquePipeline.PushConstants
+                opaquePipeline.PushConstants
                 (
                    cmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT,
@@ -247,7 +279,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -262,13 +294,14 @@ namespace Renderer::Depth
 
                 const auto constants = Opaque::Constants
                 {
-                    .Scene       = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes      = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
-                    .Positions   = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                    .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+                    .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
-                m_opaquePipeline.PushConstants
+                opaquePipeline.PushConstants
                 (
                    cmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT,
@@ -282,7 +315,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -296,10 +329,8 @@ namespace Renderer::Depth
         {
             Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
-            m_alphaMaskedPipeline.Bind(cmdBuffer);
-
-            const std::array descriptorSets = {megaSet.descriptorSet};
-            m_alphaMaskedPipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+            alphaMaskedPipeline.Bind(cmdBuffer);
+            alphaMaskedPipeline.BindDescriptors(cmdBuffer, megaSet);
 
             // Single-Sided
             {
@@ -310,14 +341,15 @@ namespace Renderer::Depth
                 const auto constants = AlphaMasked::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.meshIndexBuffer->deviceAddress,
+                    .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_alphaMaskedPipeline.PushConstants
+                alphaMaskedPipeline.PushConstants
                 (
                    cmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -331,7 +363,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -347,14 +379,15 @@ namespace Renderer::Depth
                 const auto constants = AlphaMasked::Constants
                 {
                     .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes              = meshBuffer.GetCurrentBuffer(frameIndex).deviceAddress,
-                    .MeshIndices         = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.meshIndexBuffer->deviceAddress,
+                    .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                     .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(m_alphaMaskedPipeline.textureSamplerID).descriptorID
+                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
+                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
-                m_alphaMaskedPipeline.PushConstants
+                alphaMaskedPipeline.PushConstants
                 (
                    cmdBuffer,
                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -368,7 +401,7 @@ namespace Renderer::Depth
                     sizeof(u32),
                     indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,
                     0,
-                    indirectBuffer.writtenDrawCallBuffers[FIF].writtenDrawCount,
+                    indirectBuffer.maxDrawCount,
                     sizeof(VkDrawIndexedIndirectCommand)
                 );
 
@@ -381,11 +414,5 @@ namespace Renderer::Depth
         vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_opaquePipeline.Destroy(device);
-        m_alphaMaskedPipeline.Destroy(device);
     }
 }

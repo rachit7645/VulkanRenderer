@@ -18,7 +18,6 @@
 
 #include "Util/Log.h"
 #include "Util/Ranges.h"
-#include "Renderer/RenderConstants.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Misc/TAA.h"
 #include "Vulkan/DebugUtils.h"
@@ -29,14 +28,30 @@ namespace Renderer::TAA
 
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatHDRWithAlpha};
+
+        pipelineManager.AddPipeline("TAA", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/TAA.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
         framebufferManager.AddFramebuffer
         (
             "ResolvedSceneColor",
@@ -117,9 +132,11 @@ namespace Renderer::TAA
     (
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager
+        const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "TAA", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
@@ -204,6 +221,8 @@ namespace Renderer::TAA
 
             m_hasToResetHistory = false;
         }
+
+        const auto& pipeline = pipelineManager.GetPipeline("TAA");
 
         const usize currentIndex  = frameIndex                          % TAA_HISTORY_SIZE;
         const usize previousIndex = (frameIndex + TAA_HISTORY_SIZE - 1) % TAA_HISTORY_SIZE;
@@ -302,7 +321,7 @@ namespace Renderer::TAA
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_pipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -326,23 +345,22 @@ namespace Renderer::TAA
 
         const auto constants = TAA::Constants
         {
-            .PointSamplerIndex  = textureManager.GetSampler(m_pipeline.pointSamplerID).descriptorID,
-            .LinearSamplerIndex = textureManager.GetSampler(m_pipeline.linearSamplerID).descriptorID,
+            .PointSamplerIndex  = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .LinearSamplerIndex = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageID,
             .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageID,
             .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageID,
             .SceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID
         };
 
-        m_pipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (
@@ -398,10 +416,5 @@ namespace Renderer::TAA
     void RenderPass::ResetHistory()
     {
         m_hasToResetHistory = true;
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_pipeline.Destroy(device);
     }
 }

@@ -23,33 +23,21 @@
 
 namespace Vk
 {
-    Pipeline::Pipeline(VkPipeline pipeline, VkPipelineLayout layout, VkPipelineBindPoint bindPoint)
-        : handle(pipeline),
-          layout(layout),
-          bindPoint(bindPoint)
-    {
-    }
-
     void Pipeline::Bind(const Vk::CommandBuffer& cmdBuffer) const
     {
         vkCmdBindPipeline(cmdBuffer.handle, bindPoint, handle);
     }
 
-    void Pipeline::BindDescriptors
-    (
-        const Vk::CommandBuffer& cmdBuffer,
-        u32 firstSet,
-        const std::span<const VkDescriptorSet> descriptors
-    ) const
+    void Pipeline::BindDescriptors(const Vk::CommandBuffer& cmdBuffer, const Vk::MegaSet& megaSet) const
     {
         vkCmdBindDescriptorSets
         (
             cmdBuffer.handle,
             bindPoint,
             layout,
-            firstSet,
-            static_cast<u32>(descriptors.size()),
-            descriptors.data(),
+            0,
+            1,
+            &megaSet.descriptorSet,
             0,
             nullptr
         );

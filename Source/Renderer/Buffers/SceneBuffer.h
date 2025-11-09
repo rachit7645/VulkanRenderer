@@ -41,7 +41,7 @@ namespace Renderer::Buffers
 
         void Destroy(VmaAllocator allocator);
 
-        GPU::SceneBuffer gpuScene = {};
+        GPU::SceneMatrices matrices = {};
 
         Buffers::LightsBuffer lightsBuffer;
 

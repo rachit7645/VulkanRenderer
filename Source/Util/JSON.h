@@ -122,7 +122,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Position"].get<glm::vec3>(light.position); error != error_code::SUCCESS)
+        if (const auto error = object["Direction"].get<glm::vec3>(light.direction); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -213,7 +213,8 @@ namespace simdjson
             return error;
         }
 
-        light.cutOff = glm::radians(light.cutOff);
+        light.direction = glm::normalize(light.direction);
+        light.cutOff    = glm::radians(light.cutOff);
 
         return error_code::SUCCESS;
     }
@@ -234,6 +235,7 @@ namespace simdjson
         f32       FOV         = 0.0f;
         f32       exposure    = 0.0f;
         f32       speed       = 0.0f;
+        f32       sprint      = 0.0f;
         f32       sensitivity = 0.0f;
         f32       zoom        = 0.0f;
 
@@ -262,6 +264,11 @@ namespace simdjson
             return error;
         }
 
+        if (const auto error = object["Sprint"].get<f32>(sprint); error != error_code::SUCCESS)
+        {
+            return error;
+        }
+
         if (const auto error = object["Sensitivity"].get<f32>(sensitivity); error != error_code::SUCCESS)
         {
             return error;
@@ -282,6 +289,7 @@ namespace simdjson
             FOV,
             exposure,
             speed,
+            sprint,
             sensitivity,
             zoom
         );

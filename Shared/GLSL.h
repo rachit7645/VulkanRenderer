@@ -78,6 +78,8 @@ using GLSL_MAT4 = glm::mat4;
 #define GLSL_VEC3 vec3
 #define GLSL_VEC4 vec4
 
+#define GLSL_IVEC2 ivec2
+
 #define GLSL_UVEC2 uvec2
 
 #define GLSL_MAT3 mat3

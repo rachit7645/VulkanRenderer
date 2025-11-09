@@ -61,7 +61,7 @@ namespace Vk
         {
             Logger::Error
             (
-                "Failed to find any presentation modes! [device={}] [surface={}]\n",
+                "Failed to find any presentation modes! [Device={}] [Surface={}]\n",
                 std::bit_cast<void*>(device),
                 std::bit_cast<void*>(surface)
             );
@@ -92,7 +92,7 @@ namespace Vk
         {
             Logger::Error
             (
-                "Failed to find any surface formats! [device={}] [surface={}]\n",
+                "Failed to find any surface formats! [Device={}] [Surface={}]\n",
                 std::bit_cast<void*>(device),
                 std::bit_cast<void*>(surface)
             );
@@ -101,15 +101,14 @@ namespace Vk
         // Make sure to resize kids!
         formats.resize(formatCount);
 
-        for (auto& format : formats)
+        constexpr VkSurfaceFormat2KHR emptyFormat =
         {
-            format = VkSurfaceFormat2KHR
-            {
-                .sType         = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
-                .pNext         = nullptr,
-                .surfaceFormat = {}
-            };
-        }
+            .sType         = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
+            .pNext         = nullptr,
+            .surfaceFormat = {}
+        };;
+
+        std::ranges::fill(formats, emptyFormat);
 
         Vk::CheckResult(vkGetPhysicalDeviceSurfaceFormats2KHR
         (

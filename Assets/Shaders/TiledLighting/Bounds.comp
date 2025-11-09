@@ -1,0 +1,78 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive       : enable
+#extension GL_EXT_buffer_reference2          : enable
+#extension GL_EXT_scalar_block_layout        : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+#include "Math.glsl"
+#include "MegaSet.glsl"
+#include "TiledLighting/Bounds.h"
+
+// 16x16 tiles
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+shared uint minDepthBits;
+shared uint maxDepthBits;
+
+void main()
+{
+    ivec2 pixelCoord   = ivec2(gl_GlobalInvocationID.xy);
+    vec2  viewportSize = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2  pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
+    vec2  uv           = pixelCenter / viewportSize;
+
+    float depth = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), uv).r;
+
+    float subgroupMinDepth = subgroupMin(depth);
+    float subgroupMaxDepth = subgroupMax(depth);
+
+    uint localID = gl_LocalInvocationIndex;
+
+    if (localID == 0)
+    {
+        minDepthBits = 0x3F800000u;
+        maxDepthBits = 0u;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    if (subgroupElect())
+    {
+        uint subgroupMinDepthBits = floatBitsToUint(subgroupMinDepth);
+        uint subgroupMaxDepthBits = floatBitsToUint(subgroupMaxDepth);
+
+        atomicMin(minDepthBits, subgroupMinDepthBits);
+        atomicMax(maxDepthBits, subgroupMaxDepthBits);
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    if (localID == 0)
+    {
+        float minDepth = uintBitsToFloat(minDepthBits);
+        float maxDepth = uintBitsToFloat(maxDepthBits);
+
+        ivec2 tileID = ivec2(gl_WorkGroupID.xy);
+
+        imageStore(Images[Constants.OutTileDepthsIndex], tileID, vec4(minDepth, maxDepth, 0.0f, 0.0f));
+    }
+}

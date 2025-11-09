@@ -44,10 +44,10 @@ void main()
 
     vec3 worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
 
-    vec4 gNormal_Rgh_Mtl = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
-    vec3 normal          = UnpackNormal(gNormal_Rgh_Mtl.rg);
+    vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
+    vec3 normal  = UnpackNormal(gNormal.rg);
 
-    vec3 direction = normalize(-Constants.Scene.Sun.light.position);
+    vec3 direction = normalize(-Constants.Scene.Sun.light.direction);
 
     float cosTheta = saturate(dot(normal, direction));
     float bias     = RT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);
@@ -68,14 +68,14 @@ void main()
         accelerationStructureEXT(Constants.TLAS),
         rayFlags,
         cullMask,
-        0,
-        0,
-        0,
+        0, // SBT Record Offset
+        0, // SBT Record Stride
+        0, // Miss Index
         origin,
         tmin,
         direction,
         tmax,
-        0
+        0 // Payload Location
     );
 
     imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f - shadowAmount, 0.0f, 0.0f, 0.0f));

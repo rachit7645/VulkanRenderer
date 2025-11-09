@@ -98,6 +98,34 @@ namespace Vk
 
         Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
     }
+
+    template<typename T>
+    std::optional<T*> FindStructureInChainOptional(void* pNext)
+    {
+        for (auto current = static_cast<VkBaseOutStructure*>(pNext); current != nullptr; current = current->pNext)
+        {
+            if (current->sType == VulkanStructType<T>::sType)
+            {
+                return reinterpret_cast<T*>(current);
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    template<typename T>
+    std::optional<const T*> FindStructureInChainOptional(const void* pNext)
+    {
+        for (auto current = static_cast<const VkBaseInStructure*>(pNext); current != nullptr; current = current->pNext)
+        {
+            if (current->sType == VulkanStructType<T>::sType)
+            {
+                return reinterpret_cast<const T*>(current);
+            }
+        }
+
+        return std::nullopt;
+    }
 }
 
 #endif

@@ -31,6 +31,8 @@ namespace Renderer::Buffers
         GPU::ShadowedPointLight shadowedPointLights[GPU::MAX_SHADOWED_POINT_LIGHT_COUNT] = {};
         u32                     spotLightCount                                           = 0;
         GPU::SpotLight          spotLights[GPU::MAX_SPOT_LIGHT_COUNT]                    = {};
+        u32                     shadowedSpotLightCount                                   = 0;
+        GPU::ShadowedSpotLight  shadowedSpotLights[GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT]   = {};
     };
 
     LightsBuffer::LightsBuffer(VkDevice device, VmaAllocator allocator)
@@ -41,6 +43,7 @@ namespace Renderer::Buffers
             (
                 allocator,
                 sizeof(GPULights),
+                0,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
@@ -49,7 +52,7 @@ namespace Renderer::Buffers
 
             constexpr u32 ZERO = 0;
 
-            const auto pMappedData = static_cast<u8*>(buffers[i].allocationInfo.pMappedData);
+            const auto pMappedData = static_cast<u8*>(buffers[i].hostAddress);
 
             std::memcpy(pMappedData + GetPointLightOffset(),         &ZERO, sizeof(u32));
             std::memcpy(pMappedData + GetShadowedPointLightOffset(), &ZERO, sizeof(u32));
@@ -83,8 +86,6 @@ namespace Renderer::Buffers
     {
         WriteSunLight(FIF, inSun);
 
-        spotLights = WriteLights(FIF, inSpotLights);
-
         // Point Lights
         {
             std::vector<GPU::ShadowedPointLight> inShadowedPointLights;
@@ -98,12 +99,33 @@ namespace Renderer::Buffers
 
             const auto uploadedPointLights = (inPointLights.size() <= inShadowedPointLights.size()) ?
                                              std::span<GPU::PointLight>{} :
-                                             std::span(inPointLights.begin() + inShadowedPointLights.size(), inPointLights.end());
+                                             std::span(inPointLights.begin() + static_cast<ssize>(inShadowedPointLights.size()), inPointLights.end());
 
             const std::span<const GPU::ShadowedPointLight> uploadedShadowedPointLights = inShadowedPointLights;
 
             pointLights         = WriteLights(FIF, uploadedPointLights);
             shadowedPointLights = WriteLights(FIF, uploadedShadowedPointLights);
+        }
+
+        // Spot Lights
+        {
+            std::vector<GPU::ShadowedSpotLight> inShadowedSpotLights;
+
+            inShadowedSpotLights.resize(std::min<usize>(inSpotLights.size(), GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT));
+
+            for (usize i = 0; i < inShadowedSpotLights.size(); ++i)
+            {
+                inShadowedSpotLights[i] = GPU::ShadowedSpotLight(inSpotLights[i]);
+            }
+
+            const auto uploadedSpotLights = (inSpotLights.size() <= inShadowedSpotLights.size()) ?
+                                             std::span<GPU::SpotLight>{} :
+                                             std::span(inSpotLights.begin() + static_cast<ssize>(inShadowedSpotLights.size()), inSpotLights.end());
+
+            const std::span<const GPU::ShadowedSpotLight> uploadedShadowedSpotLights = inShadowedSpotLights;
+
+            spotLights         = WriteLights(FIF, uploadedSpotLights);
+            shadowedSpotLights = WriteLights(FIF, uploadedShadowedSpotLights);
         }
 
         if (!(buffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
@@ -123,7 +145,7 @@ namespace Renderer::Buffers
         sun = inSun;
 
         const auto offset  = GetSunOffset();
-        const auto pointer = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData) + offset;
+        const auto pointer = static_cast<u8*>(buffers[FIF].hostAddress) + offset;
 
         std::memcpy
         (
@@ -154,7 +176,12 @@ namespace Renderer::Buffers
             offset        = GetSpotLightOffset();
             maxLightCount = GPU::MAX_SPOT_LIGHT_COUNT;
         }
-        else if constexpr (Util::AlwaysTrue<T>)
+        else if constexpr (std::is_same_v<T, GPU::ShadowedSpotLight>)
+        {
+            offset        = GetShadowedSpotLightOffset();
+            maxLightCount = GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT;
+        }
+        else
         {
             static_assert(Util::AlwaysFalse<T>, "Invalid light type!");
         }
@@ -165,7 +192,7 @@ namespace Renderer::Buffers
         const VkDeviceSize size  = std::min(requiredSize, maxAllowedSize);
         const u32          count = size / sizeof(T);
 
-        const auto pointer = static_cast<u8*>(buffers[FIF].allocationInfo.pMappedData) + offset;
+        const auto pointer = static_cast<u8*>(buffers[FIF].hostAddress) + offset;
 
         std::memcpy
         (
@@ -207,6 +234,11 @@ namespace Renderer::Buffers
     VkDeviceSize LightsBuffer::GetSpotLightOffset()
     {
         return offsetof(GPULights, spotLightCount);
+    }
+
+    VkDeviceSize LightsBuffer::GetShadowedSpotLightOffset()
+    {
+        return offsetof(GPULights, shadowedSpotLightCount);
     }
 
     void LightsBuffer::Destroy(VmaAllocator allocator)

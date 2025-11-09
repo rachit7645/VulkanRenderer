@@ -17,25 +17,81 @@
 #include "VertexBuffer.h"
 
 #include "Util/Log.h"
+#include "Util/Concept.h"
 
 namespace Vk
 {
-    constexpr f64 BUFFER_GROWTH_FACTOR = 1.5;
-
     template<typename T>
     using WriteHandle = typename VertexBuffer<T>::WriteHandle;
 
     template <typename T> requires GPU::IsVertexType<T>
-    VertexBuffer<T>::VertexBuffer()
+    VertexBuffer<T>::VertexBuffer(const Vk::Extensions& extensions)
     {
-        constexpr auto bufferInfo = Detail::GetVertexBufferInfo<T>();
+        if constexpr (std::is_same_v<T, GPU::Index>)
+        {
+            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                      VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-        m_allocator = Vk::BlockAllocator
-        (
-            bufferInfo.usage,
-            bufferInfo.stageMask,
-            bufferInfo.accessMask
-        );
+            m_stageMask = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
+
+            m_accessMask = VK_ACCESS_2_INDEX_READ_BIT;
+
+            if (extensions.HasRayTracing())
+            {
+                m_usage      |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+                m_stageMask  |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+                m_accessMask |= VK_ACCESS_2_SHADER_READ_BIT;
+            }
+        }
+        else if constexpr (std::is_same_v<T, GPU::Position>)
+        {
+            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+            m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+            m_accessMask = VK_ACCESS_2_SHADER_READ_BIT;
+
+            if (extensions.HasRayTracing())
+            {
+                m_usage     |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+                m_stageMask |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+            }
+        }
+        else if constexpr (std::is_same_v<T, GPU::UV>)
+        {
+            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+            m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+            m_accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+
+            if (extensions.HasRayTracing())
+            {
+                m_stageMask |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+            }
+        }
+        else if constexpr (std::is_same_v<T, GPU::Vertex>)
+        {
+            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+            m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+            m_accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+        }
+        else
+        {
+            static_assert(Util::AlwaysFalse<T>, "Unsupported vertex type!");
+        }
+
+        m_allocator = Vk::ResizableAllocator(m_usage, m_stageMask, m_accessMask);
     }
 
     template <typename T> requires GPU::IsVertexType<T>
@@ -59,26 +115,26 @@ namespace Vk
     template <typename T> requires GPU::IsVertexType<T>
     typename VertexBuffer<T>::WriteHandle VertexBuffer<T>::Allocate
     (
+        VkDevice device,
         VmaAllocator allocator,
         usize writeCount,
+        Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
     {
         const VkDeviceSize writeSize = writeCount * sizeof(T);
 
-        const auto stagingBuffer = Vk::Buffer
+        const auto stagingMemoryBlock = stagingPool.Allocate
         (
+            device,
             allocator,
             writeSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            0
         );
 
-        deletionQueue.PushDeletor([allocator, buffer = stagingBuffer] () mutable
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
         {
-            buffer.Destroy(allocator);
+            stagingPool.Free(stagingMemoryBlock);
         });
 
         const auto allocation = m_allocator.Allocate(writeSize);
@@ -91,11 +147,18 @@ namespace Vk
 
         count += info.count;
 
-        m_pendingUploads.emplace_back(info, stagingBuffer);
+        auto iter = m_pendingUploads.find(stagingMemoryBlock.buffer);
+
+        if (iter == m_pendingUploads.end())
+        {
+            iter = m_pendingUploads.emplace(stagingMemoryBlock.buffer, std::vector<GeometryUpload>{}).first;
+        }
+
+        iter->second.emplace_back(info, stagingMemoryBlock.memoryBlock.offset);
 
         return Vk::WriteHandle<T>
         {
-            .pointer = static_cast<T*>(stagingBuffer.allocationInfo.pMappedData),
+            .pointer = static_cast<T*>(stagingMemoryBlock.hostAddress),
             .info    = info
         };
     }
@@ -103,7 +166,7 @@ namespace Vk
     template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::Free(const GPU::GeometryInfo& info)
     {
-        const auto block = BlockAllocator::Block
+        const Vk::MemoryBlock block =
         {
             .offset = info.offset * sizeof(T),
             .size   = info.count  * sizeof(T)
@@ -145,65 +208,76 @@ namespace Vk
             deletionQueue
         );
 
-        constexpr auto bufferInfo = Detail::GetVertexBufferInfo<T>();
-
-        for (const auto& [info, _] : m_pendingUploads)
+        for (const auto& uploads : m_pendingUploads | std::views::values)
         {
-            m_barrierWriter.WriteBufferBarrier
-            (
-               m_allocator.buffer,
-               Vk::BufferBarrier{
-                   .srcStageMask   = bufferInfo.stageMask,
-                   .srcAccessMask  = bufferInfo.accessMask,
-                   .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                   .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                   .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                   .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                   .offset         = info.offset * sizeof(T),
-                   .size           = info.count  * sizeof(T)
-               }
-            );
+            for (const auto& upload : uploads)
+            {
+                m_barrierWriter.WriteBufferBarrier
+                (
+                   m_allocator.buffer,
+                   Vk::BufferBarrier{
+                       .srcStageMask   = m_stageMask,
+                       .srcAccessMask  = m_accessMask,
+                       .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                       .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                       .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                       .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                       .offset         = upload.info.offset * sizeof(T),
+                       .size           = upload.info.count  * sizeof(T)
+                   }
+                );
+            }
         }
 
         m_barrierWriter.Execute(cmdBuffer);
 
-        for (const auto& [info, stagingBuffer] : m_pendingUploads)
+        for (const auto& [buffer, uploads] : m_pendingUploads)
         {
-            const VkBufferCopy2 copyRegion =
+            std::vector<VkBufferCopy2> copyRegions = {};
+
+            for (const auto& upload : uploads)
             {
-                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                .pNext     = nullptr,
-                .srcOffset = 0,
-                .dstOffset = info.offset * sizeof(T),
-                .size      = info.count  * sizeof(T)
-            };
+                copyRegions.emplace_back(VkBufferCopy2{
+                    .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                    .pNext     = nullptr,
+                    .srcOffset = upload.sourceOffset,
+                    .dstOffset = upload.info.offset * sizeof(T),
+                    .size      = upload.info.count  * sizeof(T)
+                });
+            }
 
             const VkCopyBufferInfo2 copyInfo =
             {
                 .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
                 .pNext       = nullptr,
-                .srcBuffer   = stagingBuffer.handle,
+                .srcBuffer   = buffer,
                 .dstBuffer   = m_allocator.buffer.handle,
-                .regionCount = 1,
-                .pRegions    = &copyRegion
+                .regionCount = static_cast<u32>(copyRegions.size()),
+                .pRegions    = copyRegions.data()
             };
 
             vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+        }
 
-            m_barrierWriter.WriteBufferBarrier
-            (
-                m_allocator.buffer,
-                Vk::BufferBarrier{
-                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .dstStageMask   = bufferInfo.stageMask,
-                    .dstAccessMask  = bufferInfo.accessMask,
-                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                    .offset         = info.offset * sizeof(T),
-                    .size           = info.count  * sizeof(T)
-                }
-            );
+        for (const auto& uploads : m_pendingUploads | std::views::values)
+        {
+            for (const auto& upload : uploads)
+            {
+                m_barrierWriter.WriteBufferBarrier
+                (
+                    m_allocator.buffer,
+                    Vk::BufferBarrier{
+                        .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                        .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask   = m_stageMask,
+                        .dstAccessMask  = m_accessMask,
+                        .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                        .offset         = upload.info.offset * sizeof(T),
+                        .size           = upload.info.count  * sizeof(T)
+                    }
+                );
+            }
         }
 
         m_barrierWriter.Execute(cmdBuffer);
@@ -226,5 +300,6 @@ namespace Vk
     // Explicit Instantiations
     template class Vk::VertexBuffer<GPU::Index>;
     template class Vk::VertexBuffer<GPU::Position>;
+    template class Vk::VertexBuffer<GPU::UV>;
     template class Vk::VertexBuffer<GPU::Vertex>;
 }

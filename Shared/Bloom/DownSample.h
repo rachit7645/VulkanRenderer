@@ -25,7 +25,6 @@ GLSL_PUSH_CONSTANT_BEGIN
 {
     u32 SamplerIndex;
     u32 ImageIndex;
-    u32 IsFirstSample;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

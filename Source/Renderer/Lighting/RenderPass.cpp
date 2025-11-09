@@ -27,14 +27,29 @@ namespace Renderer::Lighting
 {
     RenderPass::RenderPass
     (
-        const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Vk::FramebufferManager& framebufferManager,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
+        Vk::FramebufferManager& framebufferManager
     )
-        : m_pipeline(context, formatHelper, megaSet, textureManager)
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+
+        pipelineManager.AddPipeline("Lighting", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("Misc/Trongle.vert",      VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Deferred/Lighting.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Lighting::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+        
         framebufferManager.AddFramebuffer
         (
             "SceneColor",
@@ -76,15 +91,20 @@ namespace Renderer::Lighting
     (
         usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
+        const Objects::GlobalSamplers& samplers,
         const IBL::IBLMaps& iblMaps
     )
     {
         Vk::BeginLabel(cmdBuffer, "Lighting", glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
 
+        const auto& pipeline = pipelineManager.GetPipeline("Lighting");
+        
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
 
@@ -140,7 +160,7 @@ namespace Renderer::Lighting
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        m_pipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -162,34 +182,39 @@ namespace Renderer::Lighting
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
+        const auto& tileDepths = framebufferManager.GetFramebuffer("TiledLighting/TileDepths");
+
         const auto constants = Lighting::Constants
         {
-            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .GBufferSamplerIndex = textureManager.GetSampler(m_pipeline.gBufferSamplerID).descriptorID,
-            .IBLSamplerIndex     = textureManager.GetSampler(m_pipeline.iblSamplerID).descriptorID,
-            .ShadowSamplerIndex  = textureManager.GetSampler(m_pipeline.shadowSamplerID).descriptorID,
-            .GAlbedoIndex        = framebufferManager.GetFramebufferView("GAlbedoReflectanceView").sampledImageID,
-            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
-            .GRghMtlIndex        = framebufferManager.GetFramebufferView("GRoughnessMetallicView").sampledImageID,
-            .GEmmisiveIndex      = framebufferManager.GetFramebufferView("GEmmisiveView").sampledImageID,
-            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
-            .IrradianceIndex     = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
-            .PreFilterIndex      = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,
-            .BRDFLUTIndex        = textureManager.GetTexture(iblMaps.brdfLutID).descriptorID,
-            .ShadowMapIndex      = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
-            .PointShadowMapIndex = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
-            .AOIndex             = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID
+            .Scene                   = sceneBuffer.buffers[FIF].deviceAddress,
+            .TileLightIndices        = tileLightIndexBuffer.resizableBuffer.buffer.deviceAddress,
+            .GBufferSamplerIndex     = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .IBLSamplerIndex         = textureManager.GetSampler(samplers.iblSamplerID).descriptorID,
+            .PointShadowSamplerIndex = textureManager.GetSampler(samplers.pointShadowSamplerID).descriptorID,
+            .SpotShadowSamplerIndex  = textureManager.GetSampler(samplers.spotShadowSamplerID).descriptorID,
+            .GAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoIoRView").sampledImageID,
+            .GNormalIndex            = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
+            .GRghMtlIndex            = framebufferManager.GetFramebufferView("GRoughnessMetallicView").sampledImageID,
+            .GEmmisiveIndex          = framebufferManager.GetFramebufferView("GEmmisiveView").sampledImageID,
+            .SceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
+            .IrradianceIndex         = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
+            .PreFilterIndex          = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,
+            .BRDFLUTIndex            = textureManager.GetTexture(iblMaps.brdfLutID).descriptorID,
+            .ShadowMapIndex          = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
+            .PointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
+            .SpotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
+            .AOIndex                 = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID,
+            .MaxTileID               = glm::uvec2(tileDepths.image.width - 1, tileDepths.image.height - 1)
         };
 
-        m_pipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             constants
         );
 
-        const std::array descriptorSets = {megaSet.descriptorSet};
-        m_pipeline.BindDescriptors(cmdBuffer, 0, descriptorSets);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (
@@ -203,10 +228,5 @@ namespace Renderer::Lighting
         vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderPass::Destroy(VkDevice device)
-    {
-        m_pipeline.Destroy(device);
     }
 }

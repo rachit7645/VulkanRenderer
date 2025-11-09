@@ -19,7 +19,7 @@
 
 #include "Pipeline.h"
 #include "Buffer.h"
-#include "CommandBufferAllocator.h"
+#include "StagingPool.h"
 
 namespace Vk
 {
@@ -28,11 +28,13 @@ namespace Vk
     public:
         ShaderBindingTable
         (
+            const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
-            Vk::CommandBufferAllocator& cmdBufferAllocator,
             const Vk::Pipeline& pipeline,
             u32 missCount,
-            u32 hitCount
+            u32 hitCount,
+            Vk::StagingPool& stagingPool,
+            Util::DeletionQueue& deletionQueue
         );
 
         void Destroy(VmaAllocator allocator);

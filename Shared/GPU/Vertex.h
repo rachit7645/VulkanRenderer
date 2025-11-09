@@ -21,23 +21,32 @@
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
+struct UV
+{
+    GLSL_VEC2 uv[2];
+};
+
 struct Vertex
 {
     GLSL_VEC3 normal;
     GLSL_VEC4 tangent;
-    GLSL_VEC2 uv[2];
 };
 
 #ifndef __cplusplus
 
-layout(buffer_reference, scalar) readonly buffer VertexBuffer
-{
-    Vertex vertices[];
-};
-
 layout(buffer_reference, scalar) readonly buffer PositionBuffer
 {
     vec3 positions[];
+};
+
+layout(buffer_reference, scalar) readonly buffer UVBuffer
+{
+    UV uvs[];
+};
+
+layout(buffer_reference, scalar) readonly buffer VertexBuffer
+{
+    Vertex vertices[];
 };
 
 layout(buffer_reference, scalar) readonly buffer IndexBuffer
@@ -53,9 +62,10 @@ using Position = glm::vec3;
 using Index    = u32;
 
 template<typename T>
-concept IsVertexType = std::is_same_v<T, Index   > ||
+concept IsVertexType = std::is_same_v<T, Index> ||
                        std::is_same_v<T, Position> ||
-                       std::is_same_v<T, Vertex  >  ;
+                       std::is_same_v<T, UV> ||
+                       std::is_same_v<T, Vertex>;
 
 #endif
 
