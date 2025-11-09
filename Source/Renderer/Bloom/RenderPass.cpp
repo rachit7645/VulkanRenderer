@@ -18,6 +18,7 @@
 
 #include "Bloom/DownSample.h"
 #include "Bloom/UpSample.h"
+#include "Bloom/Combine.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
@@ -46,7 +47,7 @@ namespace Renderer::Bloom
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
@@ -59,7 +60,7 @@ namespace Renderer::Bloom
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
@@ -84,7 +85,20 @@ namespace Renderer::Bloom
                 VK_COLOR_COMPONENT_B_BIT |
                 VK_COLOR_COMPONENT_A_BIT
             )
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UpSample::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UpSample::Constants))
+            .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        pipelineManager.AddPipeline("Bloom/Combine", Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+            .AttachShader("Misc/Trongle.vert",  VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Bloom/Combine.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .SetDynamicStates(DYNAMIC_STATES)
+            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
+            .AddDefaultBlendAttachment()
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Combine::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
@@ -130,10 +144,46 @@ namespace Renderer::Bloom
 
                 return size;
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "FinalSceneColor",
+            Vk::FramebufferType::ColorHDR,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = extent.width,
+                    .height      = extent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            Vk::FramebufferInitialState{
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "FinalSceneColor",
+            "FinalSceneColorView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
             }
         );
     }
@@ -152,7 +202,8 @@ namespace Renderer::Bloom
         {
             if (ImGui::BeginMenu("Bloom"))
             {
-                ImGui::DragFloat("Filter Radius", &m_filterRadius, 0.0005f, 0.0f, 0.1f, "%.4f");
+                ImGui::DragFloat("Filter Radius", &m_filterRadius,  0.0005f,  0.0f, 0.1f, "%.4f");
+                ImGui::DragFloat("Strength",      &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
 
                 ImGui::EndMenu();
             }
@@ -162,7 +213,7 @@ namespace Renderer::Bloom
 
         Vk::BeginLabel(cmdBuffer, "Bloom", {0.6796f, 0.4538f, 0.1518f, 1.0f});
 
-        RenderDownSamples
+        DownSample
         (
             cmdBuffer,
             pipelineManager,
@@ -172,7 +223,17 @@ namespace Renderer::Bloom
             samplers
         );
 
-        RenderUpSamples
+        UpSample
+        (
+            cmdBuffer,
+            pipelineManager,
+            framebufferManager,
+            megaSet,
+            textureManager,
+            samplers
+        );
+
+        Combine
         (
             cmdBuffer,
             pipelineManager,
@@ -185,7 +246,7 @@ namespace Renderer::Bloom
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::RenderDownSamples
+    void RenderPass::DownSample
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
@@ -297,7 +358,7 @@ namespace Renderer::Bloom
                 downSampleFirstSamplePipeline.PushConstants
                 (
                    cmdBuffer,
-                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                   VK_SHADER_STAGE_FRAGMENT_BIT,
                    constants
                 );
 
@@ -314,7 +375,7 @@ namespace Renderer::Bloom
                 downSampleRegularPipeline.PushConstants
                 (
                    cmdBuffer,
-                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                   VK_SHADER_STAGE_FRAGMENT_BIT,
                    constants
                 );
             }
@@ -361,7 +422,7 @@ namespace Renderer::Bloom
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderPass::RenderUpSamples
+    void RenderPass::UpSample
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
@@ -472,7 +533,7 @@ namespace Renderer::Bloom
             upsamplePipeline.PushConstants
             (
                cmdBuffer,
-               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+               VK_SHADER_STAGE_FRAGMENT_BIT,
                constants
             );
 
@@ -508,6 +569,147 @@ namespace Renderer::Bloom
 
             Vk::EndLabel(cmdBuffer);
         }
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void RenderPass::Combine
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
+        const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
+        const Objects::GlobalSamplers& samplers
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Combine", {0.8736f, 0.4598f, 0.7548f, 1.0f});
+
+        const auto& combinePipeline = pipelineManager.GetPipeline("Bloom/Combine");
+
+        const auto& finalSceneColorView = framebufferManager.GetFramebufferView("FinalSceneColorView");
+        const auto& finalSceneColor     = framebufferManager.GetFramebuffer(finalSceneColorView.framebuffer);
+
+        finalSceneColor.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = finalSceneColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalSceneColor.image.arrayLayers
+            }
+        );
+
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = finalSceneColorView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {}
+        };
+
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {0, 0},
+                .extent = {finalSceneColor.image.width, finalSceneColor.image.height}
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
+
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+        combinePipeline.Bind(cmdBuffer);
+
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(finalSceneColor.image.width),
+            .height   = static_cast<f32>(finalSceneColor.image.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {0, 0},
+            .extent = {finalSceneColor.image.width, finalSceneColor.image.height}
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+        const auto constants = Combine::Constants
+        {
+            .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
+            .BloomIndex        = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
+            .BloomStrength     = m_bloomStrength
+        };
+
+        combinePipeline.PushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            constants
+        );
+
+        combinePipeline.BindDescriptors(cmdBuffer, megaSet);
+
+        vkCmdDraw
+        (
+            cmdBuffer.handle,
+            3,
+            1,
+            0,
+            0
+        );
+
+        vkCmdEndRendering(cmdBuffer.handle);
+
+        finalSceneColor.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = finalSceneColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = finalSceneColor.image.arrayLayers
+            }
+        );
 
         Vk::EndLabel(cmdBuffer);
     }

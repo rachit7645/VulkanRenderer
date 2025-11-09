@@ -17,13 +17,14 @@
 #ifndef POST_PROCESS_PASS_H
 #define POST_PROCESS_PASS_H
 
+#include "Renderer/Buffers/ExposureBuffer.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Objects/Camera.h"
 #include "Renderer/Objects/GlobalSamplers.h"
 #include "Vulkan/PipelineManager.h"
 
-namespace Renderer::PostProcess
+namespace Renderer::ToneMap
 {
     class RenderPass
     {
@@ -38,16 +39,17 @@ namespace Renderer::PostProcess
 
         void Render
         (
+            usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::Camera& camera,
+            const Buffers::ExposureBuffer& exposureBuffer,
             const Objects::GlobalSamplers& samplers
         );
     private:
-        f32 m_bloomStrength = 0.031f;
+        f32 m_exposureBias = 0.0f;
     };
 }
 

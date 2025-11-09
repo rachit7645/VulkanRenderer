@@ -45,7 +45,6 @@ namespace Vk
         // Regular Color Formats
         ColorLDR,
         ColorHDR,
-        ColorHDR_WithAlpha,
         // Regular Depth Formats
         Depth
     };

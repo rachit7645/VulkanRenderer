@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef POST_PROCESS_PUSH_CONSTANT
-#define POST_PROCESS_PUSH_CONSTANT
+#ifndef SHARED_CONSTANTS_H
+#define SHARED_CONSTANTS_H
 
 #include "GLSL.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::PostProcess)
+GLSL_NAMESPACE_BEGIN(Vk)
 
-GLSL_PUSH_CONSTANT_BEGIN
-{
-    u32 SamplerIndex;
-    u32 ImageIndex;
-    u32 BloomIndex;
-    f32 BloomStrength;
-    f32 Exposure;
-} GLSL_PUSH_CONSTANT_END;
+GLSL_CONSTANT(u32, FRAMES_IN_FLIGHT, 2)
 
 GLSL_NAMESPACE_END
 

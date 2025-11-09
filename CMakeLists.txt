@@ -106,8 +106,9 @@ add_executable(VulkanRenderer
     Source/Renderer/Buffers/LightsBuffer.cpp
     Source/Renderer/Buffers/DrawCallBuffer.cpp
     Source/Renderer/Buffers/TileLightIndexBuffer.cpp
+    Source/Renderer/Buffers/ExposureBuffer.cpp
 	# Graphics Pass Sources
-	Source/Renderer/PostProcess/RenderPass.cpp
+	Source/Renderer/Tonemap/RenderPass.cpp
     Source/Renderer/Depth/RenderPass.cpp
     Source/Renderer/ImGui/RenderPass.cpp
     Source/Renderer/Skybox/RenderPass.cpp
@@ -122,6 +123,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Culling/FrustumBuffer.cpp
     Source/Renderer/AO/VBGTAO/Dispatch.cpp
     Source/Renderer/TiledLighting/Dispatch.cpp
+    Source/Renderer/Exposure/Dispatch.cpp
     # Ray Tracing Pass Sources
     Source/Renderer/ShadowRT/RayDispatch.cpp
     # IBL Sources

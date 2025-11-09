@@ -34,9 +34,8 @@ namespace Vk
            VkFormatFeatureFlags2 features
         );
 
-        VkFormat colorAttachmentFormatLDR          = VK_FORMAT_UNDEFINED;
-        VkFormat colorAttachmentFormatHDR          = VK_FORMAT_UNDEFINED;
-        VkFormat colorAttachmentFormatHDRWithAlpha = VK_FORMAT_UNDEFINED;
+        VkFormat colorAttachmentFormatLDR = VK_FORMAT_UNDEFINED;
+        VkFormat colorAttachmentFormatHDR = VK_FORMAT_UNDEFINED;
 
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
     };

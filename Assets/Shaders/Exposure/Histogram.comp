@@ -1,0 +1,77 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Color.glsl"
+#include "Math.glsl"
+#include "MegaSet.glsl"
+#include "Exposure/Common.h"
+#include "Exposure/Histogram.h"
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+shared uint g_histogramBins[HISTOGRAM_SIZE];
+
+void main()
+{
+    ivec2 pixelCoord   = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 viewportSize = textureSize(sampler2D(Textures[Constants.HDRColorIndex], Samplers[Constants.PointSamplerIndex]), 0);
+
+    bool isThreadValid = !any(greaterThan(pixelCoord, viewportSize));
+
+    uint localIndex = gl_LocalInvocationIndex;
+
+    g_histogramBins[localIndex] = 0;
+
+    memoryBarrierShared();
+    barrier();
+
+    vec2  pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
+    vec2  uv           = pixelCenter / vec2(viewportSize);
+
+    vec3 color = texture(sampler2D(Textures[Constants.HDRColorIndex], Samplers[Constants.PointSamplerIndex]), uv).rgb;
+
+    float luminance = max(ToLuminance(color), HISTOGRAM_MIN_LUMINANCE);
+
+    uint binIndex = 0u;
+
+    const float LUMINANCE_EPSILON = 0.005f;
+
+    if (luminance > LUMINANCE_EPSILON)
+    {
+        float logLuminance = saturate((log2(luminance) - HISTOGRAM_MIN_LOG_LUMINANCE) * HISTOGRAM_INVERSE_LOG_LUMINANCE_RANGE);
+
+        binIndex = uint(254.0f * logLuminance + 1.0f);
+    }
+
+    if (isThreadValid)
+    {
+        atomicAdd(g_histogramBins[binIndex], 1);
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    if (g_histogramBins[localIndex] > 0)
+    {
+        atomicAdd(Constants.Histogram.bins[localIndex], g_histogramBins[localIndex]);
+    }
+}

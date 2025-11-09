@@ -21,8 +21,9 @@
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
 #include "Buffers/TileLightIndexBuffer.h"
+#include "Buffers/ExposureBuffer.h"
 #include "Objects/GlobalSamplers.h"
-#include "PostProcess/RenderPass.h"
+#include "Tonemap/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
 #include "Skybox/RenderPass.h"
@@ -37,6 +38,7 @@
 #include "IBL/Generator.h"
 #include "SpotShadow/RenderPass.h"
 #include "TiledLighting/Dispatch.h"
+#include "Exposure/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -132,7 +134,7 @@ namespace Renderer
 
         Objects::GlobalSamplers m_samplers;
 
-        PostProcess::RenderPass m_postProcess;
+        ToneMap::RenderPass     m_toneMap;
         Depth::RenderPass       m_depth;
         DearImGui::RenderPass   m_imGui;
         Skybox::RenderPass      m_skybox;
@@ -147,12 +149,14 @@ namespace Renderer
         Culling::Dispatch       m_culling;
         AO::VBGTAO::Dispatch    m_vbgtao;
         TiledLighting::Dispatch m_tiledLighting;
+        Exposure::Dispatch      m_exposure;
 
         IBL::Generator m_iblGenerator;
 
         Buffers::MeshBuffer           m_meshBuffer;
         Buffers::IndirectBuffer       m_indirectBuffer;
         Buffers::TileLightIndexBuffer m_tiledLightIndexBuffer;
+        Buffers::ExposureBuffer       m_exposureBuffer;
 
         Buffers::SceneBuffer                m_sceneBuffer;
         std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;

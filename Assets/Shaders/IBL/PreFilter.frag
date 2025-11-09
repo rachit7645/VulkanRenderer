@@ -67,7 +67,7 @@ void main()
 
         // Fix for extremely bright spots
         float saSample = 1.0f / max(sampleCount * pdf, 0.0001f);
-        float mipLevel = Constants.Roughness == 0.0f ? 0.0f : 0.5f * log2(saSample / saTexel);
+        float mipLevel = Constants.Roughness == 0.0f ? 0.0f : max(0.5f * log2(saSample / saTexel), 0.0f);
 
         vec3 color = NdotL * textureLod(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), L, mipLevel).rgb;
 
@@ -78,5 +78,5 @@ void main()
         }
     }
 
-    outColor = prefilteredColor / totalWeight;
+    outColor = totalWeight > 0.0f ? prefilteredColor / totalWeight : vec3(0.0f);
 }

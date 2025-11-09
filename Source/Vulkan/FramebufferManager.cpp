@@ -222,12 +222,6 @@ namespace Vk
                 aspect = VK_IMAGE_ASPECT_COLOR_BIT;
                 break;
 
-            case FramebufferType::ColorHDR_WithAlpha:
-                createInfo.format = formatHelper.colorAttachmentFormatHDRWithAlpha;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
             case FramebufferType::Depth:
                 createInfo.format = formatHelper.depthFormat;
 

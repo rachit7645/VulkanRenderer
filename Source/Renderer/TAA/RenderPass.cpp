@@ -36,7 +36,7 @@ namespace Renderer::TAA
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatHDRWithAlpha};
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatHDR};
 
         pipelineManager.AddPipeline("TAA", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
@@ -78,7 +78,7 @@ namespace Renderer::TAA
         framebufferManager.AddFramebuffer
         (
             "TAABuffer",
-            Vk::FramebufferType::ColorHDR_WithAlpha,
+            Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
             [] (const VkExtent2D& extent) -> Vk::FramebufferSize

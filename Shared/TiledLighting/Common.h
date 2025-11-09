@@ -52,7 +52,7 @@ struct TileLightIndices
 
 #ifndef __cplusplus
 
-layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer TileLightIndexBuffer
+layout(buffer_reference, scalar, buffer_reference_align = 4) buffer TileLightIndexBuffer
 {
     TileLightIndices indices[];
 };

@@ -19,12 +19,12 @@
 
 #include <vulkan/vulkan.h>
 
+#include "GPU/Constants.h"
 #include "Util/Types.h"
 
 namespace Vk
 {
-    constexpr auto  VULKAN_API_VERSION = VK_API_VERSION_1_3;
-    constexpr usize FRAMES_IN_FLIGHT   = 2;
+    constexpr auto VULKAN_API_VERSION = VK_API_VERSION_1_3;
 }
 
 #endif

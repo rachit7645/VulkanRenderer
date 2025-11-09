@@ -851,6 +851,34 @@ namespace Vk
             file.setFrameBuffer(&pixels[0][0], 1, width);
             file.readPixels(dataWindow.min.y, dataWindow.max.y);
 
+            for (ssize x = 0; x < width; ++x)
+            {
+                for (ssize y = 0; y < height; ++y)
+                {
+                    auto& rgba = pixels[static_cast<long>(x)][static_cast<long>(y)];
+
+                    auto Sanitize = [] (Imath::half& h)
+                    {
+                        if (h.isInfinity())
+                        {
+                            constexpr f16 F16_MAX = 0x7BFF;
+
+                            h = Imath::half(Imath::half::FromBits, F16_MAX);
+                        }
+
+                        if (h.isNan())
+                        {
+                            h = Imath::half(Imath::half::FromBits, 0);
+                        }
+                    };
+
+                    Sanitize(rgba.r);
+                    Sanitize(rgba.g);
+                    Sanitize(rgba.b);
+                    Sanitize(rgba.a);
+                }
+            }
+
             const bool toF16           = (flags & ImageUploadFlags::F16)     == ImageUploadFlags::F16;
             const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 

@@ -55,6 +55,11 @@ float pow5(float x)
     return x5;
 }
 
+float log10(float x)
+{
+    return log(x) / log(10.0f);
+}
+
 // Safe version (NaNs are scary)
 float FastTanArcCos(float x)
 {

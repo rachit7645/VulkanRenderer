@@ -36,7 +36,7 @@ namespace Renderer
           m_megaSet(m_context),
           m_modelManager(m_context, m_stagingPool),
           m_samplers(m_context, m_megaSet, m_modelManager.textureManager),
-          m_postProcess(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_toneMap(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_depth(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_imGui(m_swapchain, m_megaSet, m_pipelineManager),
           m_skybox(m_formatHelper, m_megaSet, m_pipelineManager),
@@ -50,9 +50,11 @@ namespace Renderer
           m_culling(m_context.device, m_context.allocator, m_pipelineManager),
           m_vbgtao(m_megaSet, m_pipelineManager, m_framebufferManager),
           m_tiledLighting(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_exposure(m_megaSet, m_pipelineManager),
           m_iblGenerator(m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
+          m_exposureBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
     {
         if (m_context.queueFamilies.computeFamily.has_value() && m_context.extensions.HasRayTracing())
@@ -68,8 +70,9 @@ namespace Renderer
 
         m_globalDeletionQueue.PushDeletor([&] ()
         {
-            m_tiledLightIndexBuffer.Destroy(m_context.allocator);
             m_sceneBuffer.Destroy(m_context.allocator);
+            m_exposureBuffer.Destroy(m_context.allocator);
+            m_tiledLightIndexBuffer.Destroy(m_context.allocator);
             m_indirectBuffer.Destroy(m_context.allocator);
             m_meshBuffer.Destroy(m_context.allocator);
 
@@ -750,14 +753,28 @@ namespace Renderer
             m_samplers
         );
 
-        m_postProcess.Render
+        m_exposure.Execute
         (
+            m_FIF,
             cmdBuffer,
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
-            m_scene->camera,
+            m_exposureBuffer,
+            m_samplers,
+            m_frameCounter
+        );
+
+        m_toneMap.Render
+        (
+            m_FIF,
+            cmdBuffer,
+            m_pipelineManager,
+            m_framebufferManager,
+            m_megaSet,
+            m_modelManager.textureManager,
+            m_exposureBuffer,
             m_samplers
         );
 

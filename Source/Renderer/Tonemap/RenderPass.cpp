@@ -19,9 +19,9 @@
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 #include "Vulkan/DebugUtils.h"
-#include "Misc/PostProcess.h"
+#include "Tonemap/Tonemap.h"
 
-namespace Renderer::PostProcess
+namespace Renderer::ToneMap
 {
     RenderPass::RenderPass
     (
@@ -35,16 +35,16 @@ namespace Renderer::PostProcess
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatLDR};
 
-        pipelineManager.AddPipeline("PostProcess", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline("Tonemap", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert",     VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Misc/PostProcess.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Misc/Trongle.vert",    VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Tonemap/Tonemap.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
-            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostProcess::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ToneMap::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
@@ -87,32 +87,33 @@ namespace Renderer::PostProcess
 
     void RenderPass::Render
     (
+        usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::Camera& camera,
+        const Buffers::ExposureBuffer& exposureBuffer,
         const Objects::GlobalSamplers& samplers
     )
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Bloom"))
+            if (ImGui::BeginMenu("Exposure"))
             {
-                ImGui::DragFloat("Strength", &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
+                ImGui::DragFloat("Exposure Bias", &m_exposureBias, 0.25f, 0.0f, 0.0f, "%.3f");
 
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
         }
 
-        const auto& pipeline = pipelineManager.GetPipeline("PostProcess");
+        const auto& pipeline = pipelineManager.GetPipeline("Tonemap");
 
         const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
         const auto& finalColor     = framebufferManager.GetFramebuffer(finalColorView.framebuffer);
 
-        Vk::BeginLabel(cmdBuffer, "PostProcess", glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "Tonemap", glm::vec4(0.0705f, 0.8588f, 0.2157f, 1.0f));
 
         finalColor.image.Barrier
         (
@@ -188,13 +189,13 @@ namespace Renderer::PostProcess
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto constants = PostProcess::Constants
+        const auto constants = ToneMap::Constants
         {
-            .SamplerIndex  = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .ImageIndex    = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
-            .BloomIndex    = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
-            .BloomStrength = m_bloomStrength,
-            .Exposure      = camera.exposure
+            .Luminance         = exposureBuffer.luminanceBuffer.deviceAddress,
+            .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID,
+            .CurrentFrame      = static_cast<u32>(FIF),
+            .ExposureBias      = m_exposureBias
         };
 
         pipeline.PushConstants

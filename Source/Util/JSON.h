@@ -233,7 +233,6 @@ namespace simdjson
         glm::vec3 position    = {};
         glm::vec3 rotation    = {};
         f32       FOV         = 0.0f;
-        f32       exposure    = 0.0f;
         f32       speed       = 0.0f;
         f32       sprint      = 0.0f;
         f32       sensitivity = 0.0f;
@@ -250,11 +249,6 @@ namespace simdjson
         }
 
         if (const auto error = object["FOV"].get<f32>(FOV); error != error_code::SUCCESS)
-        {
-            return error;
-        }
-
-        if (const auto error = object["Exposure"].get<f32>(exposure); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -287,7 +281,6 @@ namespace simdjson
             position,
             rotation,
             FOV,
-            exposure,
             speed,
             sprint,
             sensitivity,

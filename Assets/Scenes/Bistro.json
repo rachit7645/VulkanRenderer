@@ -19,7 +19,6 @@
             "Position"    : [-10.19, 1.97, -0.73],
             "Rotation"    : [ 5.16, -3.44,  0.0],
             "FOV"         : 80.0,
-            "Exposure"    : 0.4,
             "Speed"       : 15.0,
             "Sprint"      : 1.85,
             "Sensitivity" : 100.0,
