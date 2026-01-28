@@ -19,7 +19,7 @@
 #include "Util/Log.h"
 #include "Util/Ranges.h"
 #include "Renderer/Depth/RenderPass.h"
-#include "Misc/TAA.h"
+#include "TAA/TAA.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::TAA
@@ -42,7 +42,7 @@ namespace Renderer::TAA
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Misc/TAA.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("TAA/TAA.frag",      VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -68,7 +68,7 @@ namespace Renderer::TAA
                     .arrayLayers = 1
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -91,7 +91,7 @@ namespace Renderer::TAA
                     .arrayLayers = TAA_HISTORY_SIZE
                 };
             },
-            {
+            Vk::FramebufferInitialState{
                 .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL

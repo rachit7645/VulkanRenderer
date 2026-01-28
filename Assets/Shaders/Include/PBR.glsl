@@ -80,35 +80,6 @@ vec3 Lambert(vec3 albedo)
     return INVERSE_PI * albedo;
 }
 
-// Burley 2012, "Physically-Based Shading at Disney"
-vec3 Burley
-(
-    vec3 albedo,
-    float roughness,
-    float NdotV,
-    float NdotL,
-    float LdotH
-)
-{
-    float F90 = 0.5f + 2.0f * roughness * LdotH * LdotH;
-
-    float lightScatter = FresnelSchlick(1.0f, F90, NdotL);
-    float viewScatter  = FresnelSchlick(1.0f, F90, NdotV);
-
-    float factor = lightScatter * viewScatter * INVERSE_PI;
-
-    return factor * albedo;
-}
-
-vec3 DiffuseEnergyFactor(vec3 F, float metallic)
-{
-    vec3 kS = F;
-    vec3 kD = vec3(1.0f) - kS;
-    kD     *= 1.0f - metallic;
-
-    return kD;
-}
-
 vec3 CalculateLight
 (
     LightInfo lightInfo,
@@ -120,6 +91,8 @@ vec3 CalculateLight
     float reflectance
 )
 {
+    // SingleScatterOut = F(H, L) * G(H, L, V) * D(H, ...) / (4 * V ⋅ N * L ⋅ N) + FresnelTransmissionThroughAllMicrofacets * (1 - FresnelTotalInternalReflection) * Lambertian
+
     vec3 F0 = CalculateF0(albedo, metallic, reflectance);
 
     vec3 L        = lightInfo.L;
@@ -143,9 +116,14 @@ vec3 CalculateLight
     vec3 diffuse  = Lambert(albedo);
     vec3 specular = D * G * F;
 
-	vec3 kD = DiffuseEnergyFactor(F, metallic);
+    diffuse *= 1.0f - metallic;
+    // FresnelTransmissionThroughAllMicrofacets
+    diffuse *= 1.0f - FresnelSchlick(F0, NdotL);
+    // 1 - FresnelTotalInternalReflection
+    diffuse *= 1.0f - FresnelSchlick(F0, NdotV);
 
-	return (kD * diffuse + specular) * radiance * NdotL;
+    // Radiance is not a physically correct parameter, but we keep it for artist (me) control
+    return (diffuse + specular) * NdotL * radiance;
 }
 
 // Schlick's Approximation for IBL
@@ -197,12 +175,13 @@ vec3 CalculateAmbient
 
     vec3 F = FresnelSchlick_IBL(F0, roughness, NdotV);
 
-    vec3 kD = DiffuseEnergyFactor(F, metallic);
-
     vec3 diffuse  = irradiance * albedo;
     vec3 specular = preFilter * (F * brdf.x + brdf.y);
 
-    return kD * diffuse + specular;
+    diffuse *= (1.0f - metallic);
+    diffuse *= (1.0f - F) * (1.0f - F0); // This is probably wrong but....
+
+    return diffuse + specular;
 }
 
 #endif

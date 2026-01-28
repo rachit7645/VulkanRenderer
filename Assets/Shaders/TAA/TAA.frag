@@ -32,7 +32,7 @@
 #include "Math.glsl"
 #include "Color.glsl"
 #include "Constants.glsl"
-#include "Misc/TAA.h"
+#include "TAA/TAA.h"
 
 layout(location = 0) in vec2 fragUV;
 

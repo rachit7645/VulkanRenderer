@@ -37,7 +37,7 @@ void main()
 
     float keyValue = 1.03f - (2.0f / (log10(averageLuminance + 1.0f) + 2.0f));
 
-    float exposure = keyValue / (clamp(averageLuminance, 0.0001f, 100.0f) - Constants.ExposureBias);
+    float exposure = keyValue / max(clamp(averageLuminance, 0.0001f, 100.0f) - Constants.ExposureBias, 1e-5f);
 
     vec3 color = hdrColor * pow(2.0f, exposure);
          color = ACESFitted(color);

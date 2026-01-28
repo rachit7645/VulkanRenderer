@@ -18,5 +18,5 @@
 * Clustered Light Culling
 * Shadow Caching
 * Mesh Shaders
-* Improve PBR (See DevSH's Discussion)
+* Better Fresnel
 * Toggleable Raytracing
