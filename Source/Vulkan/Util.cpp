@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/utility/vk_format_utils.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 #include "Util.h"
 #include "DebugUtils.h"
@@ -28,7 +28,7 @@ namespace Vk
         const f64        texelBlockSize = vkuFormatTexelBlockSize(format);
         const VkExtent3D blockExtent    = vkuFormatTexelBlockExtent(format);
 
-        const usize texelsPerBlock = blockExtent.width * blockExtent.height * blockExtent.depth;
+        const usize texelsPerBlock = static_cast<usize>(blockExtent.width) * static_cast<usize>(blockExtent.height) * static_cast<usize>(blockExtent.depth);
 
         return texelBlockSize / static_cast<f64>(std::min(texelsPerBlock, 1ull));
     }

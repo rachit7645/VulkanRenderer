@@ -16,11 +16,11 @@
 
 #include "Scene.h"
 
+#include "Externals/ImGui.h"
+#include "Externals/SIMDJSON.h"
 #include "Util/Files.h"
 #include "Util/JSON.h"
 #include "Util/Log.h"
-#include "Externals/ImGui.h"
-#include "Externals/SIMDJSON.h"
 
 namespace Engine
 {

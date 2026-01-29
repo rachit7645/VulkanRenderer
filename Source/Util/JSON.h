@@ -18,8 +18,8 @@
 #define JSON_H
 
 #include "GPU/Lights.h"
-#include "Renderer/Objects/FreeCamera.h"
 #include "Externals/SIMDJSON.h"
+#include "Renderer/Objects/FreeCamera.h"
 
 namespace JSON
 {
@@ -36,7 +36,7 @@ namespace JSON
     {
         glm::vec<L, f32, glm::defaultp> output;
 
-        for (usize i = 0; i < L; ++i)
+        for (ssize i = 0; i < L; ++i)
         {
             array.reset();
 

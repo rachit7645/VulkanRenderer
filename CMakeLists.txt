@@ -19,8 +19,8 @@ project(VulkanRenderer)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 
-# C++ 20 is required
-set(CMAKE_CXX_STANDARD 20)
+# C++23 is required
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required packages
@@ -40,7 +40,7 @@ add_executable(VulkanRenderer
     # Main sources
 	Source/Main.cpp
 	# Engine sources
-	Source/Engine/AppInstance.cpp
+	Source/Engine/Application.cpp
 	Source/Engine/Window.cpp
 	Source/Engine/Inputs.cpp
     Source/Engine/Scene.cpp

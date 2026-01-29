@@ -16,10 +16,10 @@
 
 #include "Swapchain.h"
 
+#include "BarrierWriter.h"
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
 #include "Util.h"
-#include "BarrierWriter.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -40,12 +40,7 @@ namespace Vk
         m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
         extent          = ChooseSwapExtent(size);
 
-        if (extent.width == 0 || extent.height == 0)
-        {
-            return false;
-        }
-
-        return true;
+        return extent.width != 0 && extent.height != 0;
     }
 
     void Swapchain::RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)

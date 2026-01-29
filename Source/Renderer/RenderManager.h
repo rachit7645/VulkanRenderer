@@ -66,7 +66,7 @@ namespace Renderer
         void Render();
         [[nodiscard]] bool HandleEvents();
     private:
-        void WaitForTimeline();
+        void WaitForTimeline() const;
         void AcquireSwapchainImage();
         void BeginFrame();
 
@@ -86,11 +86,6 @@ namespace Renderer
         void TraceRays(const Vk::CommandBuffer& cmdBuffer);
         void Lighting(const Vk::CommandBuffer& cmdBuffer);
         void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer);
-
-        void GraphicsToAsyncComputeRelease(const Vk::CommandBuffer& cmdBuffer);
-        void GraphicsToAsyncComputeAcquire(const Vk::CommandBuffer& cmdBuffer);
-        void AsyncComputeToGraphicsRelease(const Vk::CommandBuffer& cmdBuffer);
-        void AsyncComputeToGraphicsAcquire(const Vk::CommandBuffer& cmdBuffer);
 
         void Update(const Vk::CommandBuffer& cmdBuffer);
         void ImGuiDisplay();
@@ -163,7 +158,9 @@ namespace Renderer
 
         std::optional<Engine::Scene> m_scene = std::nullopt;
 
-        bool m_isSwapchainOk = true;
+        bool m_isSwapchainOk       = true;
+        bool m_isMultiQueue        = false;
+        bool m_isRaytracingEnabled = false;
     };
 }
 

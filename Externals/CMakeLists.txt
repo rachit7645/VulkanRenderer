@@ -23,8 +23,8 @@ check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 
-# C++ 20 is required
-set(CMAKE_CXX_STANDARD 20)
+# C++23 is required
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Save current flags

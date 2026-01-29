@@ -14,31 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef TILE_LIGHT_INDEX_BUFFER_H
-#define TILE_LIGHT_INDEX_BUFFER_H
+#include "Application.h"
 
-#include "Vulkan/ResizableBuffer.h"
-
-namespace Renderer::Buffers
+namespace Engine
 {
-    class TileLightIndexBuffer
+    void Application::Run()
     {
-    public:
-        TileLightIndexBuffer();
+        while (true)
+        {
+            m_renderer.Render();
 
-        void Update
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            const Vk::CommandBuffer& cmdBuffer,
-            usize tileCount,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        void Destroy(VmaAllocator allocator);
-
-        Vk::ResizableBuffer resizableBuffer;
-    };
+            if (m_renderer.HandleEvents())
+            {
+                break;
+            }
+        }
+    }
 }
-
-#endif

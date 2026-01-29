@@ -17,13 +17,13 @@
 #include "RenderManager.h"
 
 #include "AO/VBGTAO/VBGTAO.h"
-#include "Util/Log.h"
-#include "Vulkan/Util.h"
-#include "Vulkan/DebugUtils.h"
-#include "Vulkan/ImmediateSubmit.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
 #include "Externals/Tracy.h"
+#include "Util/Log.h"
+#include "Vulkan/DebugUtils.h"
+#include "Vulkan/ImmediateSubmit.h"
+#include "Vulkan/Util.h"
 
 namespace Renderer
 {
@@ -57,7 +57,12 @@ namespace Renderer
           m_exposureBuffer(m_context.device, m_context.allocator),
           m_sceneBuffer(m_context.device, m_context.allocator)
     {
-        if (m_context.queueFamilies.computeFamily.has_value() && m_context.extensions.HasRayTracing())
+        m_isRaytracingEnabled = m_context.extensions.HasRayTracing();
+        // Right now there is no good reason to use multi-queue rendering if raytracing is disabled
+        // This might change in the future
+        m_isMultiQueue = m_context.queueFamilies.HasAllFamilies() && m_isRaytracingEnabled;
+
+        if (m_isMultiQueue)
         {
             m_computeCmdBufferAllocator = Vk::CommandBufferAllocator(m_context.device, *m_context.queueFamilies.computeFamily);
             m_computeTimeline           = Vk::ComputeTimeline(m_context.device);
@@ -119,20 +124,20 @@ namespace Renderer
     {
         WaitForTimeline();
 
-        // Swapchain is not ok, wait for resize event
         if (!m_isSwapchainOk)
         {
+            // Swapchain is not ok, wait for resize event
             return;
         }
 
         AcquireSwapchainImage();
         BeginFrame();
 
-        if (m_context.queueFamilies.HasAllFamilies() && m_context.extensions.HasRayTracing())
+        if (m_isMultiQueue)
         {
             RenderMultiQueue();
         }
-        else if (m_context.queueFamilies.HasRequiredFamilies())
+        else
         {
             RenderGraphicsQueueOnly();
         }
@@ -140,7 +145,7 @@ namespace Renderer
         EndFrame();
     }
 
-    void RenderManager::WaitForTimeline()
+    void RenderManager::WaitForTimeline() const
     {
         if (m_frameIndex < Vk::FRAMES_IN_FLIGHT)
         {
@@ -185,7 +190,7 @@ namespace Renderer
 
         m_graphicsCmdBufferAllocator.ResetPool(m_FIF, m_context.device);
 
-        if (m_computeCmdBufferAllocator.has_value())
+        if (m_isMultiQueue)
         {
             m_computeCmdBufferAllocator->ResetPool(m_FIF, m_context.device);
         }
@@ -254,13 +259,361 @@ namespace Renderer
 
     void RenderManager::RenderMultiQueue()
     {
+        Vk::BarrierWriter barrierWriter = {};
+
         // GBuffer Generation
         {
             const auto gBufferGenerationCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
             gBufferGenerationCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-                GBufferGeneration(gBufferGenerationCmdBuffer);
-                GraphicsToAsyncComputeRelease(gBufferGenerationCmdBuffer);
+
+            GBufferGeneration(gBufferGenerationCmdBuffer);
+
+            Vk::BeginLabel(gBufferGenerationCmdBuffer, "Graphics -> Async Compute | Release", {0.6726f, 0.6538f, 0.4518f, 1.0f});
+
+            const auto& sceneDepth             = m_framebufferManager.GetFramebuffer("SceneDepth");
+            const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
+            const auto& gNormal                = m_framebufferManager.GetFramebuffer("GNormal");
+            const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
+            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
+            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
+            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
+            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
+            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
+
+            barrierWriter
+            .WriteImageBarrier(
+                sceneDepth.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepth.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepth.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                sceneDepthAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormal.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormal.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormal.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormalAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormalAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormalAsyncCompute.image.arrayLayers
+                }
+            )
+            .Execute(gBufferGenerationCmdBuffer);
+
+            const VkImageCopy2 depthCopyRegion =
+            {
+                .sType          = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+                .pNext          = nullptr,
+                .srcSubresource = {
+                    .aspectMask     = sceneDepth.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                },
+                .srcOffset      = {.x = 0, .y = 0, .z = 0},
+                .dstSubresource = {
+                    .aspectMask     = sceneDepthAsyncCompute.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                },
+                .dstOffset      = {.x = 0, .y = 0, .z = 0},
+                .extent         = {.width = sceneDepth.image.width, .height = sceneDepth.image.height, .depth = 1}
+            };
+
+            const VkCopyImageInfo2 depthCopyInfo =
+            {
+                .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+                .pNext          = nullptr,
+                .srcImage       = sceneDepth.image.handle,
+                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .dstImage       = sceneDepthAsyncCompute.image.handle,
+                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .regionCount    = 1,
+                .pRegions       = &depthCopyRegion
+            };
+
+            vkCmdCopyImage2(gBufferGenerationCmdBuffer.handle, &depthCopyInfo);
+
+            const VkImageCopy2 normalCopyRegion =
+            {
+                .sType          = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+                .pNext          = nullptr,
+                .srcSubresource = {
+                    .aspectMask     = gNormal.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                },
+                .srcOffset      = {.x = 0, .y = 0, .z = 0},
+                .dstSubresource = {
+                    .aspectMask     = gNormalAsyncCompute.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                },
+                .dstOffset      = {.x = 0, .y = 0, .z = 0},
+                .extent         = {.width = gNormal.image.width, .height = gNormal.image.height, .depth = 1}
+            };
+
+            const VkCopyImageInfo2 normalCopyInfo =
+            {
+                .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+                .pNext          = nullptr,
+                .srcImage       = gNormal.image.handle,
+                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .dstImage       = gNormalAsyncCompute.image.handle,
+                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .regionCount    = 1,
+                .pRegions       = &normalCopyRegion
+            };
+
+            vkCmdCopyImage2(gBufferGenerationCmdBuffer.handle, &normalCopyInfo);
+
+            barrierWriter
+            .WriteImageBarrier(
+                sceneDepth.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepth.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepth.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                sceneDepthAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                sceneDepthAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormal.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormal.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormal.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormalAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormalAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormalAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormalAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormalAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormalAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthMipChain.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthMipChain.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthMipChain.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthDifferences.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthDifferences.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthDifferences.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                noisyAO.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = noisyAO.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = noisyAO.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                occlusion.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = occlusion.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = occlusion.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                hilbertLUT.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = hilbertLUT.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = hilbertLUT.image.arrayLayers
+                }
+            )
+            .Execute(gBufferGenerationCmdBuffer);
+
+            Vk::EndLabel(gBufferGenerationCmdBuffer);
+
             gBufferGenerationCmdBuffer.EndRecording();
 
             const VkSemaphoreSubmitInfo swapchainImageAcquireWaitSemaphoreInfo =
@@ -318,9 +671,269 @@ namespace Renderer
             const auto asyncComputeCmdBuffer = m_computeCmdBufferAllocator->AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
             asyncComputeCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-                GraphicsToAsyncComputeAcquire(asyncComputeCmdBuffer);
-                Occlusion(asyncComputeCmdBuffer, *m_sceneBufferCompute, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView");
-                AsyncComputeToGraphicsRelease(asyncComputeCmdBuffer);
+
+            Vk::BeginLabel(asyncComputeCmdBuffer, "Graphics -> Async Compute | Acquire", {0.6726f, 0.6538f, 0.4518f, 1.0f});
+
+            const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
+            const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
+            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
+            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
+            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
+            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
+            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
+
+            barrierWriter
+            .WriteImageBarrier(
+                sceneDepthAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormalAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormalAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormalAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthMipChain.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthMipChain.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthMipChain.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthDifferences.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthDifferences.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthDifferences.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                noisyAO.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = noisyAO.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = noisyAO.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                occlusion.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = occlusion.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = occlusion.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                hilbertLUT.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = hilbertLUT.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = hilbertLUT.image.arrayLayers
+                }
+            )
+            .Execute(asyncComputeCmdBuffer);
+
+            Vk::EndLabel(asyncComputeCmdBuffer);
+
+            Occlusion(asyncComputeCmdBuffer, *m_sceneBufferCompute, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView");
+
+            Vk::BeginLabel(asyncComputeCmdBuffer, "Async Compute -> Graphics | Release", {0.6726f, 0.6538f, 0.4518f, 1.0f});
+
+            barrierWriter
+            .WriteImageBarrier(
+                sceneDepthAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormalAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormalAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormalAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthMipChain.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthMipChain.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthMipChain.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthDifferences.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthDifferences.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthDifferences.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                noisyAO.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = noisyAO.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = noisyAO.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                occlusion.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = occlusion.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = occlusion.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                hilbertLUT.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .dstAccessMask  = VK_ACCESS_2_NONE,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = hilbertLUT.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = hilbertLUT.image.arrayLayers
+                }
+            )
+            .Execute(asyncComputeCmdBuffer);
+
+            Vk::EndLabel(asyncComputeCmdBuffer);
+
             asyncComputeCmdBuffer.EndRecording();
 
             const VkSemaphoreSubmitInfo gBufferGenerationAsyncComputeWaitSemaphoreInfo =
@@ -381,13 +994,15 @@ namespace Renderer
                 TraceRays(rayDispatchCmdBuffer);
             rayDispatchCmdBuffer.EndRecording();
 
+            const VkPipelineStageFlags2 stageMask = m_isRaytracingEnabled ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR : VK_PIPELINE_STAGE_2_CLEAR_BIT;
+
             const VkSemaphoreSubmitInfo gBufferGenerationWaitSemaphoreInfo =
             {
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
-                .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .stageMask   = stageMask,
                 .deviceIndex = 0
             };
 
@@ -405,7 +1020,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH),
-                .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+                .stageMask   = stageMask,
                 .deviceIndex = 0
             };
 
@@ -436,8 +1051,143 @@ namespace Renderer
             const auto lightingCmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
             lightingCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-                AsyncComputeToGraphicsAcquire(lightingCmdBuffer);
-                Lighting(lightingCmdBuffer);
+
+            Vk::BeginLabel(lightingCmdBuffer, "Async Compute -> Graphics | Acquire", {0.6726f, 0.6538f, 0.4518f, 1.0f});
+
+            const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
+            const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
+            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
+            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
+            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
+            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
+            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
+
+            barrierWriter
+            .WriteImageBarrier(
+                sceneDepthAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                gNormalAsyncCompute.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = gNormalAsyncCompute.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = gNormalAsyncCompute.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthMipChain.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthMipChain.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthMipChain.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                depthDifferences.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = depthDifferences.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = depthDifferences.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                noisyAO.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = noisyAO.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = noisyAO.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                occlusion.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = occlusion.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = occlusion.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                hilbertLUT.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask  = VK_ACCESS_2_NONE,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = *m_context.queueFamilies.computeFamily,
+                    .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
+                    .baseMipLevel   = 0,
+                    .levelCount     = occlusion.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = occlusion.image.arrayLayers
+                }
+            )
+            .Execute(lightingCmdBuffer);
+
+            Vk::EndLabel(lightingCmdBuffer);
+
+            Lighting(lightingCmdBuffer);
+
             lightingCmdBuffer.EndRecording();
 
             const VkSemaphoreSubmitInfo asyncComputeWaitSemaphoreInfo =
@@ -507,9 +1257,9 @@ namespace Renderer
     {
         Update(cmdBuffer);
 
-        if (m_scene->haveRenderObjectsChanged)
+        if (m_isRaytracingEnabled)
         {
-            if (m_context.extensions.HasRayTracing())
+            if (m_scene->haveRenderObjectsChanged)
             {
                 if (m_accelerationStructure.has_value())
                 {
@@ -530,13 +1280,10 @@ namespace Renderer
                     m_scene->renderObjects,
                     m_deletionQueues[m_FIF]
                 );
+
+                m_scene->haveRenderObjectsChanged = false;
             }
 
-            m_scene->haveRenderObjectsChanged = false;
-        }
-
-        if (m_context.extensions.HasRayTracing())
-        {
             m_accelerationStructure->TryCompactBottomLevelAS
             (
                 cmdBuffer,
@@ -649,7 +1396,7 @@ namespace Renderer
     {
         bool canPerformRayDispatch = false;
 
-        if (m_context.extensions.HasRayTracing())
+        if (m_isRaytracingEnabled)
         {
             if (m_accelerationStructure.has_value())
             {
@@ -853,8 +1600,8 @@ namespace Renderer
                 .layerCount     = finalColor.image.arrayLayers
             },
             .srcOffsets = {
-                {0, 0, 0},
-                {static_cast<s32>(finalColor.image.width), static_cast<s32>(finalColor.image.height), 1}
+                {.x = 0, .y = 0, .z = 0},
+                {.x = static_cast<s32>(finalColor.image.width), .y = static_cast<s32>(finalColor.image.height), .z = 1}
             },
             .dstSubresource = {
                 .aspectMask     = swapchainImage.aspect,
@@ -863,8 +1610,8 @@ namespace Renderer
                 .layerCount     = swapchainImage.arrayLayers
             },
             .dstOffsets = {
-                {0, 0, 0},
-                {static_cast<s32>(swapchainImage.width), static_cast<s32>(swapchainImage.height), 1}
+                {.x = 0, .y = 0, .z = 0},
+                {.x = static_cast<s32>(swapchainImage.width), .y = static_cast<s32>(swapchainImage.height), .z = 1}
             }
         };
 
@@ -916,767 +1663,6 @@ namespace Renderer
                 .levelCount     = swapchainImage.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = swapchainImage.arrayLayers
-            }
-        )
-        .Execute(cmdBuffer);
-
-        Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderManager::GraphicsToAsyncComputeRelease(const Vk::CommandBuffer& cmdBuffer)
-    {
-        Vk::BeginLabel(cmdBuffer, "Graphics -> Async Compute | Release", {0.6726f, 0.6538f, 0.4518f, 1.0f});
-
-        const auto& sceneDepth             = m_framebufferManager.GetFramebuffer("SceneDepth");
-        const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
-        const auto& gNormal                = m_framebufferManager.GetFramebuffer("GNormal");
-        const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
-        const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-        const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
-        const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-        const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
-        const auto& hilbertLUT             = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
-
-        Vk::BarrierWriter barrierWriter = {};
-
-        barrierWriter
-        .WriteImageBarrier(
-            sceneDepth.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepth.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepth.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            sceneDepthAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormal.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormal.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormal.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormalAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormalAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormalAsyncCompute.image.arrayLayers
-            }
-        )
-        .Execute(cmdBuffer);
-
-        const VkImageCopy2 depthCopyRegion =
-        {
-            .sType          = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
-            .pNext          = nullptr,
-            .srcSubresource = {
-                .aspectMask     = sceneDepth.image.aspect,
-                .mipLevel       = 0,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            },
-            .srcOffset      = {0, 0, 0},
-            .dstSubresource = {
-                .aspectMask     = sceneDepthAsyncCompute.image.aspect,
-                .mipLevel       = 0,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            },
-            .dstOffset      = {0, 0, 0},
-            .extent         = {sceneDepth.image.width, sceneDepth.image.height, 1}
-        };
-
-        const VkCopyImageInfo2 depthCopyInfo =
-        {
-            .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
-            .pNext          = nullptr,
-            .srcImage       = sceneDepth.image.handle,
-            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            .dstImage       = sceneDepthAsyncCompute.image.handle,
-            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            .regionCount    = 1,
-            .pRegions       = &depthCopyRegion
-        };
-
-        vkCmdCopyImage2(cmdBuffer.handle, &depthCopyInfo);
-
-        const VkImageCopy2 normalCopyRegion =
-        {
-            .sType          = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
-            .pNext          = nullptr,
-            .srcSubresource = {
-                .aspectMask     = gNormal.image.aspect,
-                .mipLevel       = 0,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            },
-            .srcOffset      = {0, 0, 0},
-            .dstSubresource = {
-                .aspectMask     = gNormalAsyncCompute.image.aspect,
-                .mipLevel       = 0,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            },
-            .dstOffset      = {0, 0, 0},
-            .extent         = {gNormal.image.width, gNormal.image.height, 1}
-        };
-
-        const VkCopyImageInfo2 normalCopyInfo =
-        {
-            .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
-            .pNext          = nullptr,
-            .srcImage       = gNormal.image.handle,
-            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            .dstImage       = gNormalAsyncCompute.image.handle,
-            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            .regionCount    = 1,
-            .pRegions       = &normalCopyRegion
-        };
-
-        vkCmdCopyImage2(cmdBuffer.handle, &normalCopyInfo);
-
-        barrierWriter
-        .WriteImageBarrier(
-            sceneDepth.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepth.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepth.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            sceneDepthAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            sceneDepthAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormal.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormal.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormal.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormalAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
-                .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormalAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormalAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormalAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormalAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormalAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthMipChain.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthMipChain.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthMipChain.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthDifferences.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthDifferences.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthDifferences.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            noisyAO.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = noisyAO.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = noisyAO.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            occlusion.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = occlusion.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = occlusion.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            hilbertLUT.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = hilbertLUT.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = hilbertLUT.image.arrayLayers
-            }
-        )
-        .Execute(cmdBuffer);
-
-        Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderManager::GraphicsToAsyncComputeAcquire(const Vk::CommandBuffer& cmdBuffer)
-    {
-        Vk::BeginLabel(cmdBuffer, "Graphics -> Async Compute | Acquire", {0.6726f, 0.6538f, 0.4518f, 1.0f});
-
-        const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
-        const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
-        const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-        const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
-        const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-        const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
-        const auto& hilbertLUT             = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
-
-        Vk::BarrierWriter{}
-        .WriteImageBarrier(
-            sceneDepthAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormalAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormalAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormalAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthMipChain.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthMipChain.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthMipChain.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthDifferences.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthDifferences.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthDifferences.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            noisyAO.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = noisyAO.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = noisyAO.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            occlusion.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = occlusion.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = occlusion.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            hilbertLUT.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .dstQueueFamily = *m_context.queueFamilies.computeFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = hilbertLUT.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = hilbertLUT.image.arrayLayers
-            }
-        )
-        .Execute(cmdBuffer);
-
-        Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderManager::AsyncComputeToGraphicsRelease(const Vk::CommandBuffer& cmdBuffer)
-    {
-        Vk::BeginLabel(cmdBuffer, "Async Compute -> Graphics | Release", {0.6726f, 0.6538f, 0.4518f, 1.0f});
-
-        const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
-        const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
-        const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-        const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
-        const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-        const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
-        const auto& hilbertLUT             = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
-
-        Vk::BarrierWriter{}
-        .WriteImageBarrier(
-            sceneDepthAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormalAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormalAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormalAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthMipChain.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthMipChain.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthMipChain.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthDifferences.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthDifferences.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthDifferences.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            noisyAO.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = noisyAO.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = noisyAO.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            occlusion.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = occlusion.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = occlusion.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            hilbertLUT.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask  = VK_ACCESS_2_NONE,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = hilbertLUT.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = hilbertLUT.image.arrayLayers
-            }
-        )
-        .Execute(cmdBuffer);
-
-        Vk::EndLabel(cmdBuffer);
-    }
-
-    void RenderManager::AsyncComputeToGraphicsAcquire(const Vk::CommandBuffer& cmdBuffer)
-    {
-        Vk::BeginLabel(cmdBuffer, "Async Compute -> Graphics | Acquire", {0.6726f, 0.6538f, 0.4518f, 1.0f});
-
-        const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
-        const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
-        const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-        const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
-        const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-        const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
-        const auto& hilbertLUT             = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
-
-        Vk::BarrierWriter{}
-        .WriteImageBarrier(
-            sceneDepthAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = sceneDepthAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = sceneDepthAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            gNormalAsyncCompute.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = gNormalAsyncCompute.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = gNormalAsyncCompute.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthMipChain.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthMipChain.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthMipChain.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            depthDifferences.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = depthDifferences.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = depthDifferences.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            noisyAO.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = noisyAO.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = noisyAO.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            occlusion.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = occlusion.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = occlusion.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            hilbertLUT.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask  = VK_ACCESS_2_NONE,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = *m_context.queueFamilies.computeFamily,
-                .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
-                .baseMipLevel   = 0,
-                .levelCount     = occlusion.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = occlusion.image.arrayLayers
             }
         )
         .Execute(cmdBuffer);
@@ -1919,7 +1905,10 @@ namespace Renderer
 
                 for (usize i = 0; i < budgets.size(); ++i)
                 {
-                    if (budgets[i].budget == 0) continue;
+                    if (budgets[i].budget == 0)
+                    {
+                        continue;
+                    }
 
                     if (ImGui::TreeNode(fmt::format("Memory Heap #{}", i).c_str()))
                     {
@@ -1946,10 +1935,22 @@ namespace Renderer
 
                 ImGui::Text("Graphics | %u            | %p", *m_context.queueFamilies.graphicsFamily, std::bit_cast<void*>(m_context.graphicsQueue));
 
-                if (m_context.queueFamilies.computeFamily.has_value())
+                if (m_isMultiQueue)
                 {
                     ImGui::Text("Compute  | %u            | %p", *m_context.queueFamilies.computeFamily, std::bit_cast<void*>(m_context.computeQueue));
                 }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Renderer"))
+            {
+                ImGui::Checkbox("Raytracing",  &m_isRaytracingEnabled);
+                ImGui::Checkbox("Multi-Queue", &m_isMultiQueue);
+
+                // Safety checks
+                m_isRaytracingEnabled = m_isRaytracingEnabled && m_context.extensions.HasRayTracing();
+                m_isMultiQueue        = m_isMultiQueue        && m_context.queueFamilies.HasAllFamilies();
 
                 ImGui::EndMenu();
             }
@@ -2011,6 +2012,10 @@ namespace Renderer
                     }
                 }
                 break;
+
+            case SDL_EVENT_WINDOW_MINIMIZED:
+                Resize();
+            break;
 
             case SDL_EVENT_KEY_DOWN:
                 switch (event.key.scancode)

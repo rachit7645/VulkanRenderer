@@ -21,6 +21,11 @@
 
 namespace Renderer::Buffers
 {
+    TileLightIndexBuffer::TileLightIndexBuffer()
+        : resizableBuffer(Vk::ResizableBufferFlags::None)
+    {
+    }
+
     void TileLightIndexBuffer::Update
     (
         VkDevice device,

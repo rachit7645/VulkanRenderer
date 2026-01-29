@@ -18,7 +18,6 @@
 
 #include <volk/volk.h>
 
-#include "Util/Log.h"
 #include "Util.h"
 
 namespace Vk

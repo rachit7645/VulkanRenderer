@@ -17,7 +17,7 @@
 #include <SDL3/SDL_main.h>
 
 #include "Util/Unused.h"
-#include "Engine/AppInstance.h"
+#include "Engine/Application.h"
 #include "Externals/Tracy.h"
 
 int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
@@ -34,7 +34,7 @@ int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
     }
     #endif
 
-    Engine::AppInstance().Run();
+    Engine::Application().Run();
 
     return EXIT_SUCCESS;
 }

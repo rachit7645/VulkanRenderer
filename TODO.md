@@ -19,4 +19,3 @@
 * Shadow Caching
 * Mesh Shaders
 * Better Fresnel
-* Toggleable Raytracing

@@ -22,9 +22,17 @@
 
 namespace Vk
 {
+    enum class ResizableBufferFlags
+    {
+        None         = 0,
+        CopyOnResize = 1 << 0,
+    };
+
     class ResizableBuffer
     {
     public:
+        explicit ResizableBuffer(const ResizableBufferFlags flags);
+
         void Reserve
         (
             VkDevice device,
@@ -36,7 +44,8 @@ namespace Vk
 
         void Destroy(VmaAllocator allocator);
 
-        Vk::Buffer buffer = {};
+        Vk::Buffer           buffer = {};
+        ResizableBufferFlags flags  = ResizableBufferFlags::None;
     };
 }
 
