@@ -62,7 +62,7 @@ namespace Engine
         inputs = Inputs(true);
     }
 
-    Window::~Window()
+    void Window::Destroy()
     {
         inputs.Destroy();
 

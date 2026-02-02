@@ -19,7 +19,6 @@
 
 #include <type_traits>
 
-// Enum class combiner
 template<typename T>
 constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
 {
@@ -29,7 +28,6 @@ constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
     );
 }
 
-// Enum class checker
 template<typename T>
 constexpr T operator&(T lhs, T rhs) requires (std::is_enum_v<T>)
 {

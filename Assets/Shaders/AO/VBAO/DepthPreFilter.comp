@@ -23,7 +23,7 @@
 #include "Math.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
-#include "AO/VBGTAO/DepthPreFilter.h"
+#include "AO/VBAO/DepthPreFilter.h"
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -113,10 +113,10 @@ float WeightedAverageDepthFilter(float depth0, float depth1, float depth2, float
 {
     float minDepth = min(min(depth0, depth1), min(depth2, depth3));
 
-    float weight0 = saturate((depth0 - minDepth) * GTAO_FALLOFF_MUL + GTAO_FALLOFF_ADD);
-    float weight1 = saturate((depth1 - minDepth) * GTAO_FALLOFF_MUL + GTAO_FALLOFF_ADD);
-    float weight2 = saturate((depth2 - minDepth) * GTAO_FALLOFF_MUL + GTAO_FALLOFF_ADD);
-    float weight3 = saturate((depth3 - minDepth) * GTAO_FALLOFF_MUL + GTAO_FALLOFF_ADD);
+    float weight0 = saturate((depth0 - minDepth) * VBAO_FALLOFF_MUL + VBAO_FALLOFF_ADD);
+    float weight1 = saturate((depth1 - minDepth) * VBAO_FALLOFF_MUL + VBAO_FALLOFF_ADD);
+    float weight2 = saturate((depth2 - minDepth) * VBAO_FALLOFF_MUL + VBAO_FALLOFF_ADD);
+    float weight3 = saturate((depth3 - minDepth) * VBAO_FALLOFF_MUL + VBAO_FALLOFF_ADD);
 
     float weightSum = weight0 + weight1 + weight2 + weight3;
 

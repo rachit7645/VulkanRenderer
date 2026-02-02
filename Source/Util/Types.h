@@ -18,6 +18,7 @@
 #define TYPES_H
 
 #include <cstdint>
+#include <stdfloat>
 
 // Signed integer types
 using s8  = std::int8_t;
@@ -31,8 +32,8 @@ using u16 = std::uint16_t;
 using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
-// Floating point types (TODO: <stdfloat>)
-using f16 = u16;
+// Floating point types
+using f16 = std::float16_t;
 using f32 = float;
 using f64 = double;
 

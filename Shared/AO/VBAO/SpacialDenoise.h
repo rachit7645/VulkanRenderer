@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef VBGTAO_DEPTH_PREFILTER_PUSH_CONSTANT
-#define VBGTAO_DEPTH_PREFILTER_PUSH_CONSTANT
+#ifndef VBAO_SPACIAL_DENOISE_PUSH_CONSTANT
+#define VBAO_SPACIAL_DENOISE_PUSH_CONSTANT
 
 #include "GLSL.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::AO::VBGTAO::DepthPreFilter)
+GLSL_NAMESPACE_BEGIN(Renderer::AO::VBAO::Denoise)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
     u32 PointSamplerIndex;
-    u32 SceneDepthIndex;
-
-    u32 OutDepthMip0Index;
-    u32 OutDepthMip1Index;
-    u32 OutDepthMip2Index;
-    u32 OutDepthMip3Index;
-    u32 OutDepthMip4Index;
+    u32 DepthDifferencesIndex;
+    u32 NoisyAOIndex;
+    u32 OutAOIndex;
+    f32 FinalValuePower;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

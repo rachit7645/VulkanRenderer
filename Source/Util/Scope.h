@@ -17,6 +17,8 @@
 #ifndef SCOPE_H
 #define SCOPE_H
 
+#include <utility>
+
 namespace Util
 {
     template<typename F>

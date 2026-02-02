@@ -40,7 +40,7 @@ namespace Renderer::Lighting
         pipelineManager.AddPipeline("Lighting", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert",      VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/Triangle.vert",     VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Deferred/Lighting.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -203,7 +203,7 @@ namespace Renderer::Lighting
             .ShadowMapIndex          = framebufferManager.GetFramebufferView("ShadowRTView").sampledImageID,
             .PointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
             .SpotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
-            .AOIndex                 = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").sampledImageID,
+            .AOIndex                 = framebufferManager.GetFramebufferView("VBAO/OcclusionView").sampledImageID,
             .MaxTileID               = glm::uvec2(tileDepths.image.width - 1, tileDepths.image.height - 1)
         };
 

@@ -30,7 +30,7 @@ namespace Util
         const __m256 F16_MIN_256_BIT = _mm256_set1_ps(F16_MIN);
         const __m256 F16_MAX_256_BIT = _mm256_set1_ps(F16_MAX);
 
-        for (; (i + 8) < count; i += 8)
+        for (; (i + 8) <= count; i += 8)
         {
             const __m256  src     = _mm256_loadu_ps(source + i);
             const __m256  clamped = _mm256_min_ps(_mm256_max_ps(src, F16_MIN_256_BIT), F16_MAX_256_BIT);
@@ -42,7 +42,7 @@ namespace Util
         const __m128 F16_MIN_128_BIT = _mm_set1_ps(F16_MIN);
         const __m128 F16_MAX_128_BIT = _mm_set1_ps(F16_MAX);
 
-        for (; (i + 4) < count; i += 4)
+        for (; (i + 4) <= count; i += 4)
         {
             const __m128  src     = _mm_loadu_ps(source + i);
             const __m128  clamped = _mm_min_ps(_mm_max_ps(src, F16_MIN_128_BIT), F16_MAX_128_BIT);
@@ -61,7 +61,7 @@ namespace Util
     {
         usize i = 0;
 
-        for (; (i + 8) < count; i += 8)
+        for (; (i + 8) <= count; i += 8)
         {
             const __m128i src = _mm_loadu_si128(reinterpret_cast<__m128i const*>(source + i));
             const __m256  dst = _mm256_cvtph_ps(src);
@@ -69,7 +69,7 @@ namespace Util
             _mm256_storeu_ps(destination + i, dst);
         }
 
-        for (; (i + 4) < count; i += 4)
+        for (; (i + 4) <= count; i += 4)
         {
             const __m128i src = _mm_loadu_si64(source + i);
             const __m128  dst = _mm_cvtph_ps(src);

@@ -19,6 +19,7 @@
 
 #include <string_view>
 #include <source_location>
+#include <cctype>
 
 #include "Types.h"
 

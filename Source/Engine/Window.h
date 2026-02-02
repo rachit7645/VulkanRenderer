@@ -27,15 +27,8 @@ namespace Engine
     {
     public:
         Window();
-        ~Window();
 
-        // No copying
-        Window(const Window&)            = delete;
-        Window& operator=(const Window&) = delete;
-
-        // Only moving
-        Window(Window&& other)            = default;
-        Window& operator=(Window&& other) = default;
+        void Destroy();
 
         SDL_Window* handle = nullptr;
 

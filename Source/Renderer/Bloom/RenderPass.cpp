@@ -41,7 +41,7 @@ namespace Renderer::Bloom
         pipelineManager.AddPipeline("Bloom/DownSample/FirstSample", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert",                 VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/Triangle.vert",                VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/DownSample/FirstSample.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -54,7 +54,7 @@ namespace Renderer::Bloom
         pipelineManager.AddPipeline("Bloom/DownSample/Regular", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert",             VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/Triangle.vert",             VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/DownSample/Regular.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -67,7 +67,7 @@ namespace Renderer::Bloom
         pipelineManager.AddPipeline("Bloom/UpSample", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert",   VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/Triangle.vert",   VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/UpSample.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -92,7 +92,7 @@ namespace Renderer::Bloom
         pipelineManager.AddPipeline("Bloom/Combine", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert",  VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("Misc/Triangle.vert",  VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/Combine.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)

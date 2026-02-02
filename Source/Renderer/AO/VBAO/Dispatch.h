@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef VBGTAO_RENDER_PASS_H
-#define VBGTAO_RENDER_PASS_H
+#ifndef VBAO_DISPATCH_H
+#define VBAO_DISPATCH_H
 
 #include "Vulkan/Context.h"
-#include "Vulkan/FramebufferManager.h"
-#include "Vulkan/TextureManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Objects/GlobalSamplers.h"
+#include "Vulkan/FramebufferManager.h"
 #include "Vulkan/PipelineManager.h"
+#include "Vulkan/TextureManager.h"
 
-namespace Renderer::AO::VBGTAO
+namespace Renderer::AO::VBAO
 {
     class Dispatch
     {

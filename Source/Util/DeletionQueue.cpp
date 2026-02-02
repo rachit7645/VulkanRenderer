@@ -20,7 +20,7 @@ namespace Util
 {
     void DeletionQueue::PushDeletor(Deletor&& deletor)
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         m_deletors.push(std::move(deletor));
     }
@@ -34,7 +34,7 @@ namespace Util
 
         std::stack<Deletor> temp = {};
         {
-            std::lock_guard lock(m_mutex);
+            std::scoped_lock lock{m_mutex};
             std::swap(m_deletors, temp);
         }
 

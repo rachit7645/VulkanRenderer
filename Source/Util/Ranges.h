@@ -19,7 +19,6 @@
 
 #include <vector>
 #include <array>
-#include <ranges>
 
 #include "Types.h"
 

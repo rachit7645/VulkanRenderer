@@ -16,7 +16,7 @@
 
 #include "RenderManager.h"
 
-#include "AO/VBGTAO/VBGTAO.h"
+#include "AO/VBAO/VBAO.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
 #include "Externals/Tracy.h"
@@ -48,16 +48,16 @@ namespace Renderer
           m_taa(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_spotShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
           m_culling(m_context.device, m_context.allocator, m_pipelineManager),
-          m_vbgtao(m_megaSet, m_pipelineManager, m_framebufferManager),
+          m_vbao(m_megaSet, m_pipelineManager, m_framebufferManager),
           m_tiledLighting(m_megaSet, m_pipelineManager, m_framebufferManager),
           m_exposure(m_megaSet, m_pipelineManager),
           m_iblGenerator(m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager),
           m_meshBuffer(m_context.device, m_context.allocator),
           m_indirectBuffer(m_context.device, m_context.allocator),
           m_exposureBuffer(m_context.device, m_context.allocator),
-          m_sceneBuffer(m_context.device, m_context.allocator)
+          m_sceneBuffer(m_context.device, m_context.allocator),
+          m_isRaytracingEnabled(m_context.extensions.HasRayTracing())
     {
-        m_isRaytracingEnabled = m_context.extensions.HasRayTracing();
         // Right now there is no good reason to use multi-queue rendering if raytracing is disabled
         // This might change in the future
         m_isMultiQueue = m_context.queueFamilies.HasAllFamilies() && m_isRaytracingEnabled;
@@ -117,6 +117,7 @@ namespace Renderer
             }
 
             m_context.Destroy();
+            m_window.Destroy();
         });
     }
 
@@ -275,11 +276,11 @@ namespace Renderer
             const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
             const auto& gNormal                = m_framebufferManager.GetFramebuffer("GNormal");
             const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
-            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
-            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
-            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
+            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBAO/DepthMipChain");
+            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
+            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBAO/NoisyAO");
+            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBAO/Occlusion");
+            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbao.hilbertLUT);
 
             barrierWriter
             .WriteImageBarrier(
@@ -676,11 +677,11 @@ namespace Renderer
 
             const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
             const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
-            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
-            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
-            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
+            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBAO/DepthMipChain");
+            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
+            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBAO/NoisyAO");
+            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBAO/Occlusion");
+            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbao.hilbertLUT);
 
             barrierWriter
             .WriteImageBarrier(
@@ -1056,11 +1057,11 @@ namespace Renderer
 
             const auto& sceneDepthAsyncCompute = m_framebufferManager.GetFramebuffer("SceneDepthAsyncCompute");
             const auto& gNormalAsyncCompute    = m_framebufferManager.GetFramebuffer("GNormalAsyncCompute");
-            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
-            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
-            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
-            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbgtao.hilbertLUT);
+            const auto& depthMipChain          = m_framebufferManager.GetFramebuffer("VBAO/DepthMipChain");
+            const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
+            const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBAO/NoisyAO");
+            const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBAO/Occlusion");
+            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbao.hilbertLUT);
 
             barrierWriter
             .WriteImageBarrier(
@@ -1376,7 +1377,7 @@ namespace Renderer
         const std::string_view gNormalID
     )
     {
-        m_vbgtao.Execute
+        m_vbao.Execute
         (
             m_FIF,
             m_frameIndex,
@@ -2111,13 +2112,13 @@ namespace Renderer
             m_graphicsCmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<AO::VBGTAO::Occlusion::GTAO_HILBERT_LEVEL>();
+                constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<AO::VBAO::Occlusion::VBAO_HILBERT_LEVEL>();
 
                 // A bit hacky but what can you do :(
                 const auto HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
                 const auto HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
 
-                m_vbgtao.hilbertLUT = m_modelManager.textureManager.AddTexture
+                m_vbao.hilbertLUT = m_modelManager.textureManager.AddTexture
                 (
                     m_context.device,
                     m_context.allocator,
@@ -2127,9 +2128,9 @@ namespace Renderer
                         .type   = Vk::ImageUploadType::RAW,
                         .flags  = Vk::ImageUploadFlags::None,
                         .source = Vk::ImageUploadRawMemory{
-                            .name   = "VBGTAO/HilbertLUT",
-                            .width  = AO::VBGTAO::Occlusion::GTAO_HILBERT_WIDTH,
-                            .height = AO::VBGTAO::Occlusion::GTAO_HILBERT_WIDTH,
+                            .name   = "VBAO/HilbertLUT",
+                            .width  = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
+                            .height = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
                             .format = VK_FORMAT_R16_UINT,
                             .data   = std::vector(HILBERT_BEGIN, HILBERT_END)
                         }

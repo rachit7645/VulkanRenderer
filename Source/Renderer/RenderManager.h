@@ -31,7 +31,7 @@
 #include "PointShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "AO/VBGTAO/Dispatch.h"
+#include "AO/VBAO/Dispatch.h"
 #include "ShadowRT/RayDispatch.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
@@ -142,7 +142,7 @@ namespace Renderer
         SpotShadow::RenderPass  m_spotShadow;
 
         Culling::Dispatch       m_culling;
-        AO::VBGTAO::Dispatch    m_vbgtao;
+        AO::VBAO::Dispatch    m_vbao;
         TiledLighting::Dispatch m_tiledLighting;
         Exposure::Dispatch      m_exposure;
 

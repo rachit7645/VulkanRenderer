@@ -150,7 +150,7 @@ namespace Vk
             return;
         }
 
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         // ? -> Transfer Destination
         {
@@ -280,14 +280,14 @@ namespace Vk
 
     bool ImageUploader::HasPendingUploads()
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         return !m_pendingUploads.empty();
     }
 
     void ImageUploader::Clear()
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         m_pendingUploads.clear();
         m_barrierWriter.Clear();
@@ -861,7 +861,7 @@ namespace Vk
                     {
                         if (h.isInfinity())
                         {
-                            constexpr f16 F16_MAX = 0x7BFF;
+                            constexpr u16 F16_MAX = 0x7BFF;
 
                             h = Imath::half(Imath::half::FromBits, F16_MAX);
                         }
@@ -1269,7 +1269,7 @@ namespace Vk
 
     void ImageUploader::AppendUpload(Upload&& upload)
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         m_pendingUploads.emplace_back(upload);
     }

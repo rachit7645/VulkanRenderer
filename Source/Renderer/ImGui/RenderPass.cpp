@@ -16,10 +16,12 @@
 
 #include "RenderPass.h"
 
-#include "Vulkan/DebugUtils.h"
-#include "Vulkan/BarrierWriter.h"
-#include "Util/Log.h"
+#include <cstddef>
+
 #include "ImGui/DearImGui.h"
+#include "Util/Log.h"
+#include "Vulkan/BarrierWriter.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::DearImGui
 {
@@ -197,7 +199,7 @@ namespace Renderer::DearImGui
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
+                .offset = {.x = 0, .y = 0},
                 .extent = swapchain.extent
             },
             .layerCount           = 1,
@@ -212,12 +214,14 @@ namespace Renderer::DearImGui
 
         pipeline.Bind(cmdBuffer);
 
+        constexpr VkIndexType INDEX_TYPE = sizeof(ImDrawIdx) == sizeof(u16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+
         vkCmdBindIndexBuffer
         (
             cmdBuffer.handle,
             currentIndexBuffer.handle,
             0,
-            sizeof(ImDrawIdx) == sizeof(u16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32
+            INDEX_TYPE
         );
 
         const VkViewport viewport =
@@ -269,8 +273,8 @@ namespace Renderer::DearImGui
 
                 const VkRect2D scissor =
                 {
-                    .offset = {static_cast<s32>(clipMin.x), static_cast<s32>(clipMin.y)},
-                    .extent = {static_cast<u32>(clipMax.x - clipMin.x), static_cast<u32>(clipMax.y - clipMin.y)}
+                    .offset = {.x = static_cast<s32>(clipMin.x), .y = static_cast<s32>(clipMin.y)},
+                    .extent = {.width = static_cast<u32>(clipMax.x - clipMin.x), .height = static_cast<u32>(clipMax.y - clipMin.y)}
                 };
 
                 vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -409,8 +413,8 @@ namespace Renderer::DearImGui
         )
         .Execute(cmdBuffer);
 
-        const bool needsManualFlushing = !(vertexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) ||
-                                         !(indexBuffer.memoryProperties  & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        const bool needsManualFlushing = ((vertexBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0u) ||
+                                         ((indexBuffer.memoryProperties  & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0u);
 
         if (needsManualFlushing)
         {
@@ -493,11 +497,11 @@ namespace Renderer::DearImGui
             {
                 const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
 
-                const VkDeviceSize rowPitch = texture->UpdateRect.w * texture->BytesPerPixel;
+                const VkDeviceSize rowPitch = static_cast<VkDeviceSize>(texture->UpdateRect.w) * static_cast<VkDeviceSize>(texture->BytesPerPixel);
 
                 auto data = std::vector<u8>(texture->UpdateRect.h * rowPitch);
 
-                for (u32 row = 0; row < texture->UpdateRect.h; ++row)
+                for (s32 row = 0; row < static_cast<s32>(texture->UpdateRect.h); ++row)
                 {
                     const void* srcRow = texture->GetPixelsAt(texture->UpdateRect.x, texture->UpdateRect.y + row);
                           void* dstRow = data.data() + (row * rowPitch);

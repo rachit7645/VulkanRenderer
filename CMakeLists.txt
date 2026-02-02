@@ -121,7 +121,7 @@ add_executable(VulkanRenderer
     # Compute Pass Sources
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
-    Source/Renderer/AO/VBGTAO/Dispatch.cpp
+    Source/Renderer/AO/VBAO/Dispatch.cpp
     Source/Renderer/TiledLighting/Dispatch.cpp
     Source/Renderer/Exposure/Dispatch.cpp
     # Ray Tracing Pass Sources

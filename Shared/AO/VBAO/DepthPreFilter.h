@@ -14,36 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef VBGTAO_PUSH_CONSTANT
-#define VBGTAO_PUSH_CONSTANT
+#ifndef VBAO_DEPTH_PREFILTER_PUSH_CONSTANT
+#define VBAO_DEPTH_PREFILTER_PUSH_CONSTANT
 
 #include "GLSL.h"
-#include "GPU/Scene.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::AO::VBGTAO::Occlusion)
-
-GLSL_CONSTANT(u32, GTAO_DEPTH_MIP_LEVELS, 5);
-GLSL_CONSTANT(u32, GTAO_HILBERT_LEVEL,    6);
-GLSL_CONSTANT(u32, GTAO_HILBERT_WIDTH,    1u << GTAO_HILBERT_LEVEL);
+GLSL_NAMESPACE_BEGIN(Renderer::AO::VBAO::DepthPreFilter)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
-    GLSL_BUFFER_POINTER(SceneBuffer) Scene;
-
     u32 PointSamplerIndex;
-    u32 LinearSamplerIndex;
+    u32 SceneDepthIndex;
 
-    u32 HilbertLUTIndex;
-    u32 GNormalIndex;
-
-    u32 PreFilterDepthIndex;
-
-    u32 OutDepthDifferencesIndex;
-    u32 OutNoisyAOIndex;
-
-    u32 TemporalIndex;
-
-    f32 Thickness;
+    u32 OutDepthMip0Index;
+    u32 OutDepthMip1Index;
+    u32 OutDepthMip2Index;
+    u32 OutDepthMip3Index;
+    u32 OutDepthMip4Index;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

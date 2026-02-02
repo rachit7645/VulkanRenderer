@@ -29,7 +29,7 @@
 #include "Constants.glsl"
 #include "MegaSet.glsl"
 #include "Packing.glsl"
-#include "AO/VBGTAO/VBGTAO.h"
+#include "AO/VBAO/VBAO.h"
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -61,14 +61,14 @@ void main()
     vec2 noise    = LoadNoise(pixelCoord);
 
     vec3  viewVector  = normalize(-position);
-    float sampleScale = (-0.5f * GTAO_EFFECT_RADIUS * Constants.Scene.currentMatrices.projection[0][0]) / position.z;
+    float sampleScale = (-0.5f * VBAO_EFFECT_RADIUS * Constants.Scene.currentMatrices.projection[0][0]) / position.z;
 
     float visibility          = 0.0f;
     uint  occludedSampleCount = 0u;
 
-    for (uint slice = 0; slice < GTAO_SLICE_COUNT; ++slice)
+    for (uint slice = 0; slice < VBAO_SLICE_COUNT; ++slice)
     {
-        float sliceK = (slice + noise.x) / GTAO_SLICE_COUNT;
+        float sliceK = (slice + noise.x) / VBAO_SLICE_COUNT;
 
         float phi    = sliceK * PI;
         float cosPhi = cos(phi);
@@ -82,7 +82,7 @@ void main()
 
         float signNorm = sign(dot(orthoDirection, projectedNormal));
         float cosNorm  = saturate(dot(projectedNormal, viewVector) / projectedNormalLength);
-        vec2  N        = vec2((HALF_PI - signNorm * FastArcCos(cosNorm)) * (1.0f / PI));
+        vec2  N        = vec2((HALF_PI - signNorm * FastArcCos(cosNorm)) * INVERSE_PI);
 
         uint bitmask = 0u;
 
@@ -90,31 +90,31 @@ void main()
         // Account for aspect ratio, thanks cybereality!
         vec2 sampleMul = omega * sampleScale * aspect;
 
-        for (uint sampleIndex = 0; sampleIndex < GTAO_SAMPLE_COUNT; ++sampleIndex)
+        for (uint sampleIndex = 0; sampleIndex < VBAO_SAMPLE_COUNT; ++sampleIndex)
         {
-            float sampleNoise = (slice + sampleIndex * GTAO_SAMPLE_COUNT) * 0.6180339887498948482f;
+            float sampleNoise = (slice + sampleIndex * VBAO_SAMPLE_COUNT) * 0.6180339887498948482f;
                   sampleNoise = fract(noise.y + sampleNoise);
 
-            float s  = (sampleIndex + sampleNoise) / GTAO_SAMPLE_COUNT;
+            float s  = (sampleIndex + sampleNoise) / VBAO_SAMPLE_COUNT;
                   s *= s;
 
             vec2 sampleOffset = s * sampleMul;
 
-            float sampleMipLevel  = clamp(log2(length(sampleOffset * viewportSize)) - GTAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, depthMipLevels);
+            float sampleMipLevel  = clamp(log2(length(sampleOffset * viewportSize)) - VBAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, depthMipLevels);
             vec3  samplePosition0 = LoadAndReconstructViewSpacePosition(uv + sampleOffset, sampleMipLevel);
             vec3  samplePosition1 = LoadAndReconstructViewSpacePosition(uv - sampleOffset, sampleMipLevel);
 
             vec3 sampleDifference0 = samplePosition0 - position;
             vec3 sampleDifference1 = samplePosition1 - position;
 
-            ProcessSample(sampleDifference0, viewVector, -1.0f, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
-            ProcessSample(sampleDifference1, viewVector,  1.0f, N, 2.0f * GTAO_SAMPLE_COUNT, bitmask);
+            ProcessSample(sampleDifference0, viewVector, -1.0f, N, 2.0f * VBAO_SAMPLE_COUNT, bitmask);
+            ProcessSample(sampleDifference1, viewVector,  1.0f, N, 2.0f * VBAO_SAMPLE_COUNT, bitmask);
         }
 
         occludedSampleCount += bitCount(bitmask);
     }
 
-    visibility = 1.0f - float(occludedSampleCount) / (GTAO_SLICE_COUNT * 2.0f * GTAO_SAMPLE_COUNT);
+    visibility = 1.0f - float(occludedSampleCount) / (VBAO_SLICE_COUNT * 2.0f * VBAO_SAMPLE_COUNT);
 
     // Disallow total occlusion
     visibility = clamp(visibility, 0.03f, 1.0f);
@@ -125,7 +125,7 @@ void main()
 vec2 LoadNoise(ivec2 pixelCoord)
 {
     // Hilbert curve driving R2 (see https://www.shadertoy.com/view/3tB3z3)
-    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.PointSamplerIndex]), pixelCoord % int(GTAO_HILBERT_WIDTH), 0).x);
+    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.PointSamplerIndex]), pixelCoord % int(VBAO_HILBERT_WIDTH), 0).x);
          index += 288 * Constants.TemporalIndex;
 
     // R2 sequence - see http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/

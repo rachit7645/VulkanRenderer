@@ -16,13 +16,13 @@
 
 #include "Dispatch.h"
 
+#include "AO/VBAO/DepthPreFilter.h"
+#include "AO/VBAO/SpacialDenoise.h"
+#include "AO/VBAO/VBAO.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
-#include "AO/VBGTAO/DepthPreFilter.h"
-#include "AO/VBGTAO/SpacialDenoise.h"
-#include "AO/VBGTAO/VBGTAO.h"
 
-namespace Renderer::AO::VBGTAO
+namespace Renderer::AO::VBAO
 {
     Dispatch::Dispatch
     (
@@ -31,30 +31,30 @@ namespace Renderer::AO::VBGTAO
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("VBGTAO/DepthPreFilter", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline("VBAO/DepthPreFilter", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("AO/VBGTAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("AO/VBAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
-        pipelineManager.AddPipeline("VBGTAO/Occlusion", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline("VBAO/Occlusion", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("AO/VBGTAO/VBGTAO.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("AO/VBAO/VBAO.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Occlusion::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
-        pipelineManager.AddPipeline("VBGTAO/Denoise", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline("VBAO/Denoise", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("AO/VBGTAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("AO/VBAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
         framebufferManager.AddFramebuffer
         (
-            "VBGTAO/DepthMipChain",
+            "VBAO/DepthMipChain",
             Vk::FramebufferType::ColorR_SFloat32,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
@@ -64,7 +64,7 @@ namespace Renderer::AO::VBGTAO
                 {
                     .width       = extent.width,
                     .height      = extent.height,
-                    .mipLevels   = Occlusion::GTAO_DEPTH_MIP_LEVELS,
+                    .mipLevels   = Occlusion::VBAO_DEPTH_MIP_LEVELS,
                     .arrayLayers = 1
                 };
             },
@@ -77,23 +77,23 @@ namespace Renderer::AO::VBGTAO
 
         framebufferManager.AddFramebufferView
         (
-            "VBGTAO/DepthMipChain",
-            "VBGTAO/DepthMipChainView",
+            "VBAO/DepthMipChain",
+            "VBAO/DepthMipChainView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
-                .levelCount     = Occlusion::GTAO_DEPTH_MIP_LEVELS,
+                .levelCount     = Occlusion::VBAO_DEPTH_MIP_LEVELS,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             }
         );
 
-        for (u32 i = 0; i < Occlusion::GTAO_DEPTH_MIP_LEVELS; ++i)
+        for (u32 i = 0; i < Occlusion::VBAO_DEPTH_MIP_LEVELS; ++i)
         {
             framebufferManager.AddFramebufferView
             (
-                "VBGTAO/DepthMipChain",
-                fmt::format("VBGTAO/DepthMipChainView/Mip{}", i),
+                "VBAO/DepthMipChain",
+                fmt::format("VBAO/DepthMipChainView/Mip{}", i),
                 Vk::FramebufferImageType::Single2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = i,
@@ -106,7 +106,7 @@ namespace Renderer::AO::VBGTAO
 
         framebufferManager.AddFramebuffer
         (
-            "VBGTAO/DepthDifferences",
+            "VBAO/DepthDifferences",
             Vk::FramebufferType::ColorR_Uint32,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
@@ -129,8 +129,8 @@ namespace Renderer::AO::VBGTAO
 
         framebufferManager.AddFramebufferView
         (
-            "VBGTAO/DepthDifferences",
-            "VBGTAO/DepthDifferencesView",
+            "VBAO/DepthDifferences",
+            "VBAO/DepthDifferencesView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -142,7 +142,7 @@ namespace Renderer::AO::VBGTAO
 
         framebufferManager.AddFramebuffer
         (
-            "VBGTAO/NoisyAO",
+            "VBAO/NoisyAO",
             Vk::FramebufferType::ColorR_Unorm16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
@@ -165,8 +165,8 @@ namespace Renderer::AO::VBGTAO
 
         framebufferManager.AddFramebufferView
         (
-            "VBGTAO/NoisyAO",
-            "VBGTAO/NoisyAOView",
+            "VBAO/NoisyAO",
+            "VBAO/NoisyAOView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -178,7 +178,7 @@ namespace Renderer::AO::VBGTAO
 
         framebufferManager.AddFramebuffer
         (
-            "VBGTAO/Occlusion",
+            "VBAO/Occlusion",
             Vk::FramebufferType::ColorR_Unorm16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
@@ -201,8 +201,8 @@ namespace Renderer::AO::VBGTAO
 
         framebufferManager.AddFramebufferView
         (
-            "VBGTAO/Occlusion",
-            "VBGTAO/OcclusionView",
+            "VBAO/Occlusion",
+            "VBAO/OcclusionView",
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -230,7 +230,7 @@ namespace Renderer::AO::VBGTAO
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("VBGTAO"))
+            if (ImGui::BeginMenu("VBAO"))
             {
                 ImGui::DragFloat("Power",     &m_finalValuePower, 0.05f,  0.0f, 0.0f, "%.4f");
                 ImGui::DragFloat("Thickness", &m_thickness,       0.005f, 0.0f, 1.0f, "%.4f");
@@ -241,7 +241,7 @@ namespace Renderer::AO::VBGTAO
             ImGui::EndMainMenuBar();
         }
 
-        Vk::BeginLabel(cmdBuffer, "VBGTAO", glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
+        Vk::BeginLabel(cmdBuffer, "VBAO", glm::vec4(0.9098f, 0.2843f, 0.7529f, 1.0f));
 
         PreFilterDepth
         (
@@ -294,9 +294,9 @@ namespace Renderer::AO::VBGTAO
     {
         Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
 
-        const auto& depthPreFilterPipeline = pipelineManager.GetPipeline("VBGTAO/DepthPreFilter");
+        const auto& depthPreFilterPipeline = pipelineManager.GetPipeline("VBAO/DepthPreFilter");
 
-        const auto& depthMipChain = framebufferManager.GetFramebuffer("VBGTAO/DepthMipChain");
+        const auto& depthMipChain = framebufferManager.GetFramebuffer("VBAO/DepthMipChain");
 
         depthMipChain.image.Barrier
         (
@@ -323,11 +323,11 @@ namespace Renderer::AO::VBGTAO
         {
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .SceneDepthIndex   = framebufferManager.GetFramebufferView(sceneDepthID).sampledImageID,
-            .OutDepthMip0Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip0").storageImageID,
-            .OutDepthMip1Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip1").storageImageID,
-            .OutDepthMip2Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip2").storageImageID,
-            .OutDepthMip3Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip3").storageImageID,
-            .OutDepthMip4Index = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView/Mip4").storageImageID,
+            .OutDepthMip0Index = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView/Mip0").storageImageID,
+            .OutDepthMip1Index = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView/Mip1").storageImageID,
+            .OutDepthMip2Index = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView/Mip2").storageImageID,
+            .OutDepthMip3Index = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView/Mip3").storageImageID,
+            .OutDepthMip4Index = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView/Mip4").storageImageID,
         };
 
         depthPreFilterPipeline.PushConstants
@@ -385,10 +385,10 @@ namespace Renderer::AO::VBGTAO
     {
         Vk::BeginLabel(cmdBuffer, "Occlusion", glm::vec4(0.6098f, 0.7143f, 0.4529f, 1.0f));
 
-        const auto& occlusionPipeline = pipelineManager.GetPipeline("VBGTAO/Occlusion");
+        const auto& occlusionPipeline = pipelineManager.GetPipeline("VBAO/Occlusion");
 
-        const auto& noisyAO          = framebufferManager.GetFramebuffer("VBGTAO/NoisyAO");
-        const auto& depthDifferences = framebufferManager.GetFramebuffer("VBGTAO/DepthDifferences");
+        const auto& noisyAO          = framebufferManager.GetFramebuffer("VBAO/NoisyAO");
+        const auto& depthDifferences = framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
 
         Vk::BarrierWriter barrierWriter = {};
 
@@ -438,9 +438,9 @@ namespace Renderer::AO::VBGTAO
             .LinearSamplerIndex       = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .HilbertLUTIndex          = textureManager.GetTexture(hilbertLUT).descriptorID,
             .GNormalIndex             = framebufferManager.GetFramebufferView(gNormalID).sampledImageID,
-            .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBGTAO/DepthMipChainView").sampledImageID,
-            .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").storageImageID,
-            .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").storageImageID,
+            .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView").sampledImageID,
+            .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBAO/DepthDifferencesView").storageImageID,
+            .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBAO/NoisyAOView").storageImageID,
             .TemporalIndex            = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
             .Thickness                = m_thickness
         };
@@ -514,18 +514,18 @@ namespace Renderer::AO::VBGTAO
     {
         Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));
 
-        const auto& denoisePipeline = pipelineManager.GetPipeline("VBGTAO/Denoise");
+        const auto& denoisePipeline = pipelineManager.GetPipeline("VBAO/Denoise");
 
-        const auto& occlusion = framebufferManager.GetFramebuffer("VBGTAO/Occlusion");
+        const auto& occlusion = framebufferManager.GetFramebuffer("VBAO/Occlusion");
 
         denoisePipeline.Bind(cmdBuffer);
 
         const auto constants = Denoise::Constants
         {
             .PointSamplerIndex     = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .DepthDifferencesIndex = framebufferManager.GetFramebufferView("VBGTAO/DepthDifferencesView").sampledImageID,
-            .NoisyAOIndex          = framebufferManager.GetFramebufferView("VBGTAO/NoisyAOView").sampledImageID,
-            .OutAOIndex            = framebufferManager.GetFramebufferView("VBGTAO/OcclusionView").storageImageID,
+            .DepthDifferencesIndex = framebufferManager.GetFramebufferView("VBAO/DepthDifferencesView").sampledImageID,
+            .NoisyAOIndex          = framebufferManager.GetFramebufferView("VBAO/NoisyAOView").sampledImageID,
+            .OutAOIndex            = framebufferManager.GetFramebufferView("VBAO/OcclusionView").storageImageID,
             .FinalValuePower       = m_finalValuePower
         };
 
