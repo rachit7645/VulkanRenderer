@@ -52,6 +52,7 @@ const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
 // VBAO Constants
 const uint VBAO_SLICE_COUNT  = 3;
 const uint VBAO_SAMPLE_COUNT = 3;
+const uint VBAO_SECTOR_COUNT = 32;
 
 const float VBAO_DEPTH_RANGE_SCALE_FACTOR  = 0.75f;
 const float VBAO_DEFAULT_RADIUS            = 0.5f;

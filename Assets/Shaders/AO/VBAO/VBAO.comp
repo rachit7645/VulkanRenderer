@@ -15,7 +15,8 @@
  */
 
 // https://ar5iv.labs.arxiv.org/html/2301.11376
-// Reference implementation: https://github.com/JMS55/bevy/blob/gtao/crates/bevy_pbr/src/ssao/ssao.wgsl
+// Reference implementation #1: https://github.com/JMS55/bevy/blob/gtao/crates/bevy_pbr/src/ssao/ssao.wgsl
+// Reference implementation #2: https://cybereality.com/screen-space-indirect-lighting-with-visibility-bitmask-improvement-to-gtao-ssao-real-time-ambient-occlusion-algorithm-glsl-shader-implementation/
 
 // TODO: Implement the correction factor from the GP discord
 
@@ -38,8 +39,7 @@ float CalculateNeighboringDepthDifferences(ivec2 pixelCoord, vec2 viewportSize);
 vec3  LoadViewSpaceNormal(vec2 uv);
 vec3  ReconstructViewSpacePosition(vec2 uv, float depth);
 vec3  LoadAndReconstructViewSpacePosition(vec2 uv, float mipLevel);
-uint  UpdateSectors(float minHorizon, float maxHorizon, float samplesPerSlice, uint bitmask);
-void  ProcessSample(vec3 deltaPosition, vec3 viewVector, float samplingDirection, vec2 N, float samplesPerSlice, inout uint bitmask);
+uint  UpdateSectors(float minHorizon, float maxHorizon, uint bitmask);
 
 void main()
 {
@@ -61,10 +61,9 @@ void main()
     vec2 noise    = LoadNoise(pixelCoord);
 
     vec3  viewVector  = normalize(-position);
-    float sampleScale = (-0.5f * VBAO_EFFECT_RADIUS * Constants.Scene.currentMatrices.projection[0][0]) / position.z;
+    float sampleScale = (VBAO_EFFECT_RADIUS * Constants.Scene.currentMatrices.projection[0][0]) / position.z;
 
-    float visibility          = 0.0f;
-    uint  occludedSampleCount = 0u;
+    float visibility = 0.0f;
 
     for (uint slice = 0; slice < VBAO_SLICE_COUNT; ++slice)
     {
@@ -77,16 +76,16 @@ void main()
         vec3  direction             = vec3(cosPhi, sinPhi, 0.0f);
         vec3  orthoDirection        = direction - (dot(direction, viewVector) * viewVector);
         vec3  axis                  = cross(direction, viewVector);
-        vec3  projectedNormal       = normal - axis * dot(normal, axis);
+        vec3  projectedNormal       = normal - dot(normal, axis) * axis;
         float projectedNormalLength = length(projectedNormal);
 
         float signNorm = sign(dot(orthoDirection, projectedNormal));
         float cosNorm  = saturate(dot(projectedNormal, viewVector) / projectedNormalLength);
-        vec2  N        = vec2((HALF_PI - signNorm * FastArcCos(cosNorm)) * INVERSE_PI);
+        float N        = signNorm * acos(cosNorm);
 
         uint bitmask = 0u;
 
-        vec2 omega = vec2(cosPhi, -sinPhi);
+        vec2 omega = vec2(cosPhi, sinPhi);
         // Account for aspect ratio, thanks cybereality!
         vec2 sampleMul = omega * sampleScale * aspect;
 
@@ -95,26 +94,39 @@ void main()
             float sampleNoise = (slice + sampleIndex * VBAO_SAMPLE_COUNT) * 0.6180339887498948482f;
                   sampleNoise = fract(noise.y + sampleNoise);
 
-            float s  = (sampleIndex + sampleNoise) / VBAO_SAMPLE_COUNT;
-                  s *= s;
+            float s = (sampleIndex + sampleNoise) / VBAO_SAMPLE_COUNT;
 
             vec2 sampleOffset = s * sampleMul;
+            vec2 sampleUV     = uv + sampleOffset;
 
-            float sampleMipLevel  = clamp(log2(length(sampleOffset * viewportSize)) - VBAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, depthMipLevels);
-            vec3  samplePosition0 = LoadAndReconstructViewSpacePosition(uv + sampleOffset, sampleMipLevel);
-            vec3  samplePosition1 = LoadAndReconstructViewSpacePosition(uv - sampleOffset, sampleMipLevel);
+            float sampleMipLevel = clamp(log2(length(sampleOffset * viewportSize)) - VBAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, depthMipLevels);
 
-            vec3 sampleDifference0 = samplePosition0 - position;
-            vec3 sampleDifference1 = samplePosition1 - position;
+            vec3  samplePosition   = LoadAndReconstructViewSpacePosition(sampleUV, sampleMipLevel);
+            vec3  sampleDifference = samplePosition - position;
+            float sampleLength     = length(sampleDifference);
+            vec3  sampleHorizon    = sampleDifference / sampleLength;
 
-            ProcessSample(sampleDifference0, viewVector, -1.0f, N, 2.0f * VBAO_SAMPLE_COUNT, bitmask);
-            ProcessSample(sampleDifference1, viewVector,  1.0f, N, 2.0f * VBAO_SAMPLE_COUNT, bitmask);
+            vec2 frontBackHorizon = vec2(0.0f);
+
+            frontBackHorizon.x = dot(sampleHorizon, viewVector);
+            frontBackHorizon.y = dot(normalize(sampleDifference - viewVector * Constants.Thickness), viewVector);
+
+            frontBackHorizon = clamp(frontBackHorizon, -1.0f, 1.0f);
+            frontBackHorizon = acos(frontBackHorizon);
+
+            float minHorizon = min(frontBackHorizon.x, frontBackHorizon.y);
+            float maxHorizon = max(frontBackHorizon.x, frontBackHorizon.y);
+
+            frontBackHorizon = vec2(minHorizon, maxHorizon);
+            frontBackHorizon = saturate((frontBackHorizon + N + HALF_PI) / PI);
+
+            bitmask = UpdateSectors(frontBackHorizon.x, frontBackHorizon.y, bitmask);
         }
 
-        occludedSampleCount += bitCount(bitmask);
+        visibility += 1.0f - float(bitCount(bitmask)) / float(VBAO_SECTOR_COUNT);
     }
 
-    visibility = 1.0f - float(occludedSampleCount) / (VBAO_SLICE_COUNT * 2.0f * VBAO_SAMPLE_COUNT);
+    visibility /= float(VBAO_SLICE_COUNT);
 
     // Disallow total occlusion
     visibility = clamp(visibility, 0.03f, 1.0f);
@@ -185,26 +197,10 @@ vec3 LoadAndReconstructViewSpacePosition(vec2 uv, float mipLevel)
     return ReconstructViewSpacePosition(uv, depth);
 }
 
-uint UpdateSectors(float minHorizon, float maxHorizon, float samplesPerSlice, uint bitmask)
+uint UpdateSectors(float minHorizon, float maxHorizon, uint bitmask)
 {
-    int startHorizon = int(minHorizon * samplesPerSlice);
-    int angleHorizon = int(ceil((maxHorizon - minHorizon) * samplesPerSlice));
+    int startHorizon = int(floor(minHorizon               * float(VBAO_SECTOR_COUNT)));
+    int angleHorizon = int(ceil((maxHorizon - minHorizon) * float(VBAO_SECTOR_COUNT)));
 
     return bitfieldInsert(bitmask, uint(0xFFFFFFFF), startHorizon, angleHorizon);
-}
-
-void ProcessSample(vec3 deltaPosition, vec3 viewVector, float samplingDirection, vec2 N, float samplesPerSlice, inout uint bitmask)
-{
-    vec3 deltaPositionBackFace = deltaPosition - viewVector * Constants.Thickness;
-
-    vec2 frontBackHorizon = vec2
-    (
-        FastArcCos(dot(normalize(deltaPosition),         viewVector)),
-        FastArcCos(dot(normalize(deltaPositionBackFace), viewVector))
-    );
-
-    frontBackHorizon = saturate(fma(vec2(samplingDirection), -frontBackHorizon, N));
-    frontBackHorizon = samplingDirection >= 0.0f ? frontBackHorizon.yx : frontBackHorizon.xy;
-
-    bitmask = UpdateSectors(frontBackHorizon.x, frontBackHorizon.y, samplesPerSlice, bitmask);
 }
