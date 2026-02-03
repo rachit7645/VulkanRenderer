@@ -194,12 +194,4 @@ void main()
     Lo += emmisive;
 
     outColor = Lo;
-
-    /*
-    uint  totalLightsInTile = tileLightIndices.pointLightCount  + tileLightIndices.shadowedPointLightCount  + tileLightIndices.spotLightCount  + tileLightIndices.shadowedSpotLightCount;
-    uint  totalLights       = Constants.Scene.PointLights.count + Constants.Scene.ShadowedPointLights.count + Constants.Scene.SpotLights.count + Constants.Scene.ShadowedSpotLights.count;
-    float tileLightCoverage = float(totalLightsInTile) / float(totalLights);
-
-    outColor = mix(vec3(0.0f, 0.0f, 1.0f), vec3(1.0f, 0.0f, 0.0f), tileLightCoverage);
-    */
 }
