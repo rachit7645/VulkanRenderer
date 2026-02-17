@@ -29,6 +29,7 @@ GLSL_PUSH_CONSTANT_BEGIN
 
     u32 PixelCount;
     f32 TimeCoefficient;
+    f32 ExposureBias;
     u32 CurrentFrame;
     u32 PreviousFrame;
 } GLSL_PUSH_CONSTANT_END;

@@ -48,7 +48,7 @@ namespace Renderer::Exposure
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Buffers::ExposureBuffer& exposureBuffer,
+        const Buffers::ExposureBuffers& exposureBuffer,
         const Objects::GlobalSamplers& samplers,
         const Util::FrameCounter& frameCounter
     )
@@ -79,6 +79,11 @@ namespace Renderer::Exposure
         Vk::EndLabel(cmdBuffer);
     }
 
+    void Dispatch::ResetLuminance()
+    {
+        m_hasLuminanceBeenReset = false;
+    }
+
     void Dispatch::Histogram
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -86,10 +91,28 @@ namespace Renderer::Exposure
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Buffers::ExposureBuffer& exposureBuffer,
+        const Buffers::ExposureBuffers& exposureBuffer,
         const Objects::GlobalSamplers& samplers
     )
     {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Exposure"))
+            {
+                ImGui::DragFloat("Adaptation Speed", &m_adaptationSpeed, 0.25f, 0.0f, 0.0f, "%.3f");
+                ImGui::DragFloat("Exposure Bias",    &m_exposureBias,    0.01f, 0.0f, 0.0f, "%.3f");
+
+                if (ImGui::Button("Reset Luminance"))
+                {
+                    m_hasLuminanceBeenReset = false;
+                }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
         Vk::BeginLabel(cmdBuffer, "Histogram", glm::vec4(0.7098f, 0.4843f, 0.549f, 1.0f));
 
         const auto& histogramPipeline = pipelineManager.GetPipeline("Exposure/Histogram");
@@ -185,22 +208,10 @@ namespace Renderer::Exposure
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
-        const Buffers::ExposureBuffer& exposureBuffer,
+        const Buffers::ExposureBuffers& exposureBuffer,
         const Util::FrameCounter& frameCounter
     )
     {
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Exposure"))
-            {
-                ImGui::DragFloat("Adaptation Speed", &m_adaptationSpeed, 0.25f, 0.0f, 0.0f, "%.3f");
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
-
         Vk::BeginLabel(cmdBuffer, "Average", glm::vec4(0.3098f, 0.4843f, 0.549f, 1.0f));
 
         const auto& averagePipeline = pipelineManager.GetPipeline("Exposure/Average");
@@ -274,8 +285,9 @@ namespace Renderer::Exposure
             .Luminance       = exposureBuffer.luminanceBuffer.deviceAddress,
             .PixelCount      = sceneColor.image.width * sceneColor.image.height,
             .TimeCoefficient = 1.0f - std::exp(-frameCounter.frameDelta * m_adaptationSpeed),
+            .ExposureBias    = m_exposureBias,
             .CurrentFrame    = static_cast<u32>(FIF),
-            .PreviousFrame   = static_cast<u32>((FIF + Vk::FRAMES_IN_FLIGHT - 1) % Vk::FRAMES_IN_FLIGHT)
+            .PreviousFrame   = static_cast<u32>((FIF + Vk::FRAMES_IN_FLIGHT - 1) % Vk::FRAMES_IN_FLIGHT),
         };
 
         averagePipeline.PushConstants

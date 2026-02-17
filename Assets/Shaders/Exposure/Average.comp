@@ -21,6 +21,7 @@
 #extension GL_EXT_scalar_block_layout  : enable
 
 #include "Constants.glsl"
+#include "Math.glsl"
 #include "Exposure/Common.h"
 #include "Exposure/Average.h"
 #include "GPU/Constants.h"
@@ -62,5 +63,9 @@ void main()
         float adaptedLuminance   = luminanceLastFrame + (weightedAvgLuminance - luminanceLastFrame) * Constants.TimeCoefficient;
 
         Constants.Luminance.values[Constants.CurrentFrame] = adaptedLuminance;
+
+        float keyValue = 1.03f - (2.0f / (log10(adaptedLuminance + 1.0f) + 2.0f));
+
+        Constants.Luminance.exposure = keyValue / max(clamp(adaptedLuminance, 0.0001f, 100.0f) - Constants.ExposureBias, 1e-5f);
     }
 }

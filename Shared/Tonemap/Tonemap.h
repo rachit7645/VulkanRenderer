@@ -28,8 +28,6 @@ GLSL_PUSH_CONSTANT_BEGIN
 
     u32 PointSamplerIndex;
     u32 SceneColorIndex;
-    u32 CurrentFrame;
-    f32 ExposureBias;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

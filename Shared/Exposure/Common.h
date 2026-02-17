@@ -33,6 +33,7 @@ layout(buffer_reference, scalar, buffer_reference_align = 4) buffer HistogramBuf
 
 layout(buffer_reference, scalar, buffer_reference_align = 4) buffer LuminanceBuffer
 {
+    float exposure;
     float values[];
 };
 

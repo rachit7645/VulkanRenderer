@@ -106,7 +106,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Buffers/LightsBuffer.cpp
     Source/Renderer/Buffers/DrawCallBuffer.cpp
     Source/Renderer/Buffers/TileLightIndexBuffer.cpp
-    Source/Renderer/Buffers/ExposureBuffer.cpp
+        Source/Renderer/Buffers/ExposureBuffers.cpp
 	# Graphics Pass Sources
 	Source/Renderer/Tonemap/RenderPass.cpp
     Source/Renderer/Depth/RenderPass.cpp

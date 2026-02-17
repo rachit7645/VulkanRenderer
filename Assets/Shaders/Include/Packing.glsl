@@ -17,28 +17,21 @@
 #ifndef PACKING_GLSL
 #define PACKING_GLSL
 
-vec2 OctWrap(vec2 vector)
+#include "Math.glsl"
+
+// https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding
+// https://twitter.com/Stubbesaurus/status/937994790553227264
+
+vec2 OctahedronWrap(vec2 vector)
 {
-    vec2 wrapped = 1.0f - abs(vector.yx);
-
-    if (vector.x < 0.0f)
-    {
-        wrapped.x = -wrapped.x;
-    }
-
-    if (vector.y < 0.0f)
-    {
-        wrapped.y = -wrapped.y;
-    }
-
-    return wrapped;
+    return (1.0f - abs(vector.yx)) * vec2(vector.x >= 0.0f ? 1.0f : -1.0f, vector.y >= 0.0f ? 1.0f : -1.0f);
 }
 
 vec2 PackNormal(vec3 normal)
 {
     normal /= abs(normal.x) + abs(normal.y) + abs(normal.z);
 
-    normal.xy = normal.z > 0.0f ? normal.xy : OctWrap(normal.xy);
+    normal.xy = normal.z >= 0.0f ? normal.xy : OctahedronWrap(normal.xy);
     normal.xy = normal.xy * 0.5f + 0.5f;
 
     return normal.xy;

@@ -146,7 +146,7 @@ namespace Renderer
         EndFrame();
     }
 
-    void RenderManager::WaitForTimeline() const
+    void RenderManager::WaitForTimeline()
     {
         if (m_frameIndex < Vk::FRAMES_IN_FLIGHT)
         {
@@ -1516,7 +1516,6 @@ namespace Renderer
 
         m_toneMap.Render
         (
-            m_FIF,
             cmdBuffer,
             m_pipelineManager,
             m_framebufferManager,
@@ -2083,6 +2082,7 @@ namespace Renderer
         m_swapchain.RecreateSwapChain(m_context, m_graphicsCmdBufferAllocator);
 
         m_taa.ResetHistory();
+        m_exposure.ResetLuminance();
 
         m_isSwapchainOk = true;
 

@@ -21,8 +21,8 @@
 #include "AABB.h"
 
 #ifdef __cplusplus
-#include "Util/Maths.h"
 #include "Renderer/RenderConstants.h"
+#include "Util/Maths.h"
 #endif
 
 GLSL_NAMESPACE_BEGIN(GPU)

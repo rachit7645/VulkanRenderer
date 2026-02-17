@@ -57,7 +57,9 @@ float pow5(float x)
 
 float log10(float x)
 {
-    return log(x) / log(10.0f);
+    const float INVERSE_LOG_10 = 1.0f / log(10.0f);
+
+    return INVERSE_LOG_10 * log(x);
 }
 
 // Safe version (NaNs are scary)

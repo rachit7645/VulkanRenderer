@@ -22,7 +22,6 @@
 
 #include "Tonemap.glsl"
 #include "MegaSet.glsl"
-#include "Math.glsl"
 #include "Tonemap/Tonemap.h"
 
 layout(location = 0) in vec2 fragUV;
@@ -33,13 +32,7 @@ void main()
 {
     vec3 hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
 
-    float averageLuminance = Constants.Luminance.values[Constants.CurrentFrame];
-
-    float keyValue = 1.03f - (2.0f / (log10(averageLuminance + 1.0f) + 2.0f));
-
-    float exposure = keyValue / max(clamp(averageLuminance, 0.0001f, 100.0f) - Constants.ExposureBias, 1e-5f);
-
-    vec3 color = hdrColor * pow(2.0f, exposure);
+    vec3 color = hdrColor * pow(2.0f, Constants.Luminance.exposure);
          color = ACESFitted(color);
 
     outColor = vec4(color, 1.0f);

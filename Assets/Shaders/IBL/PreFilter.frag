@@ -41,7 +41,7 @@ void main()
     // Tangent to World Space Sample Vector
     vec3 up = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
     vec3 T  = normalize(cross(up, N));
-    vec3 B  = cross(N, T);
+    vec3 B  = normalize(cross(N, T));
 
     vec2 resolution = vec2(textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0));
 

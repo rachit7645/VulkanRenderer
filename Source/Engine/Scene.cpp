@@ -289,6 +289,8 @@ namespace Engine
                         ImGui::ColorEdit3("Color",     &sun.color[0]);
                         ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
 
+                        sun.direction = glm::normalize(sun.direction);
+
                         ImGui::EndMenu();
                     }
 
@@ -373,6 +375,8 @@ namespace Engine
                             ImGui::DragFloat3("Direction", &m_loadedSpotLight.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
                             ImGui::DragFloat2("Cut Off",   &m_loadedSpotLight.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
                             ImGui::DragFloat( "Range",     &m_loadedSpotLight.range,        0.01f,      0.0f, 0.0f,          "%.3f");
+
+                            m_loadedSpotLight.direction = glm::normalize(m_loadedSpotLight.direction);
 
                             if (ImGui::Button("Add"))
                             {

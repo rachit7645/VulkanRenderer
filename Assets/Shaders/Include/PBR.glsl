@@ -151,7 +151,7 @@ float GeometrySmith_IBL(vec3 N, vec3 V, vec3 L, float roughness)
 }
 
 // Schlick's Fresnel approximation with injected roughness parameter
-vec3 FresnelSchlick_IBL(vec3 F0, float roughness, float cosTheta)
+vec3 FresnelSchlick_IBL(vec3 F0, float cosTheta, float roughness)
 {
     return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(saturate(1.0f - cosTheta));
 }
@@ -173,7 +173,7 @@ vec3 CalculateAmbient
 
     float NdotV = abs(dot(N, V)) + 1e-5f;
 
-    vec3 F = FresnelSchlick_IBL(F0, roughness, NdotV);
+    vec3 F = FresnelSchlick_IBL(F0, NdotV, roughness);
 
     vec3 diffuse  = irradiance * albedo;
     vec3 specular = preFilter * (F * brdf.x + brdf.y);

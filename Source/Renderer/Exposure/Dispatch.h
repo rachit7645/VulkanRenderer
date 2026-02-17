@@ -17,7 +17,7 @@
 #ifndef EXPOSURE_DISPATCH_H
 #define EXPOSURE_DISPATCH_H
 
-#include "Renderer/Buffers/ExposureBuffer.h"
+#include "Renderer/Buffers/ExposureBuffers.h"
 #include "Renderer/Objects/GlobalSamplers.h"
 #include "Util/FrameCounter.h"
 #include "Vulkan/FramebufferManager.h"
@@ -40,10 +40,12 @@ namespace Renderer::Exposure
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Buffers::ExposureBuffer& exposureBuffer,
+            const Buffers::ExposureBuffers& exposureBuffer,
             const Objects::GlobalSamplers& samplers,
             const Util::FrameCounter& frameCounter
         );
+
+        void ResetLuminance();
     private:
         void Histogram
         (
@@ -52,7 +54,7 @@ namespace Renderer::Exposure
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Buffers::ExposureBuffer& exposureBuffer,
+            const Buffers::ExposureBuffers& exposureBuffer,
             const Objects::GlobalSamplers& samplers
         );
 
@@ -62,12 +64,13 @@ namespace Renderer::Exposure
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
-            const Buffers::ExposureBuffer& exposureBuffer,
+            const Buffers::ExposureBuffers& exposureBuffer,
             const Util::FrameCounter& frameCounter
         );
 
         bool m_hasLuminanceBeenReset = false;
         f32  m_adaptationSpeed       = 1.1f;
+        f32  m_exposureBias          = 0.0f;
     };
 }
 

@@ -95,7 +95,7 @@ namespace Renderer::Objects
                 .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
                 .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-                .mipLodBias              = 0.0f,
+                .mipLodBias              = -0.5f,
                 .anisotropyEnable        = VK_TRUE,
                 .maxAnisotropy           = anisotropy,
                 .compareEnable           = VK_FALSE,

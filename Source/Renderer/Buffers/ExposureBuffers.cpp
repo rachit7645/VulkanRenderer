@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ExposureBuffer.h"
+#include "ExposureBuffers.h"
 
 #include "Exposure/Common.h"
 #include "GPU/Constants.h"
@@ -22,7 +22,7 @@
 
 namespace Renderer::Buffers
 {
-    ExposureBuffer::ExposureBuffer(VkDevice device, VmaAllocator allocator)
+    ExposureBuffers::ExposureBuffers(VkDevice device, VmaAllocator allocator)
     {
         histogramBuffer = Vk::Buffer
         (
@@ -53,7 +53,7 @@ namespace Renderer::Buffers
         Vk::SetDebugName(device, luminanceBuffer.handle, "Exposure/LuminanceBuffer");
     }
 
-    void ExposureBuffer::Destroy(VmaAllocator allocator)
+    void ExposureBuffers::Destroy(VmaAllocator allocator)
     {
         histogramBuffer.Destroy(allocator);
         luminanceBuffer.Destroy(allocator);

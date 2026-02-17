@@ -190,6 +190,7 @@ namespace Vk
         }
 
         auto _images = std::vector<VkImage>(imageCount);
+
         Vk::CheckResult(vkGetSwapchainImagesKHR(
             context.device,
             handle,

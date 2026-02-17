@@ -21,10 +21,10 @@
 
 namespace Renderer::Buffers
 {
-    class ExposureBuffer
+    class ExposureBuffers
     {
     public:
-        ExposureBuffer(VkDevice device, VmaAllocator allocator);
+        ExposureBuffers(VkDevice device, VmaAllocator allocator);
 
         void Destroy(VmaAllocator allocator);
 

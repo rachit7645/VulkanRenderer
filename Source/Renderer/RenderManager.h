@@ -21,7 +21,7 @@
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
 #include "Buffers/TileLightIndexBuffer.h"
-#include "Buffers/ExposureBuffer.h"
+#include "Buffers/ExposureBuffers.h"
 #include "Objects/GlobalSamplers.h"
 #include "Tonemap/RenderPass.h"
 #include "Depth/RenderPass.h"
@@ -66,7 +66,7 @@ namespace Renderer
         void Render();
         [[nodiscard]] bool HandleEvents();
     private:
-        void WaitForTimeline() const;
+        void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
 
@@ -151,7 +151,7 @@ namespace Renderer
         Buffers::MeshBuffer           m_meshBuffer;
         Buffers::IndirectBuffer       m_indirectBuffer;
         Buffers::TileLightIndexBuffer m_tiledLightIndexBuffer;
-        Buffers::ExposureBuffer       m_exposureBuffer;
+        Buffers::ExposureBuffers       m_exposureBuffer;
 
         Buffers::SceneBuffer                m_sceneBuffer;
         std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;

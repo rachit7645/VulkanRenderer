@@ -17,7 +17,7 @@
 #ifndef POST_PROCESS_PASS_H
 #define POST_PROCESS_PASS_H
 
-#include "Renderer/Buffers/ExposureBuffer.h"
+#include "Renderer/Buffers/ExposureBuffers.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Renderer/Objects/Camera.h"
@@ -39,17 +39,14 @@ namespace Renderer::ToneMap
 
         void Render
         (
-            usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Buffers::ExposureBuffer& exposureBuffer,
+            const Buffers::ExposureBuffers& exposureBuffer,
             const Objects::GlobalSamplers& samplers
         );
-    private:
-        f32 m_exposureBias = 0.0f;
     };
 }
 

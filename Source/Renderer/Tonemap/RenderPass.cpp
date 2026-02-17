@@ -87,27 +87,15 @@ namespace Renderer::ToneMap
 
     void RenderPass::Render
     (
-        usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Buffers::ExposureBuffer& exposureBuffer,
+        const Buffers::ExposureBuffers& exposureBuffer,
         const Objects::GlobalSamplers& samplers
     )
     {
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Exposure"))
-            {
-                ImGui::DragFloat("Exposure Bias", &m_exposureBias, 0.25f, 0.0f, 0.0f, "%.3f");
-
-                ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-        }
-
         const auto& pipeline = pipelineManager.GetPipeline("Tonemap");
 
         const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
@@ -193,9 +181,7 @@ namespace Renderer::ToneMap
         {
             .Luminance         = exposureBuffer.luminanceBuffer.deviceAddress,
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID,
-            .CurrentFrame      = static_cast<u32>(FIF),
-            .ExposureBias      = m_exposureBias
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID
         };
 
         pipeline.PushConstants
