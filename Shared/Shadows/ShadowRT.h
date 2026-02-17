@@ -18,9 +18,9 @@
 #define SHADOW_RT_PUSH_CONSTANT
 
 #include "GLSL.h"
+#include "GPU/Mesh.h"
 #include "GPU/Scene.h"
 #include "GPU/Vertex.h"
-#include "GPU/Mesh.h"
 
 GLSL_NAMESPACE_BEGIN(Renderer::ShadowRT)
 

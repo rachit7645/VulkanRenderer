@@ -18,9 +18,9 @@
 #define ACCELERATION_STRUCTURE_H
 
 #include "Constants.h"
+#include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Context.h"
-#include "Buffer.h"
 #include "GraphicsTimeline.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"

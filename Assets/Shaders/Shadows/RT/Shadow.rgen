@@ -39,6 +39,7 @@ void main()
     if (depth == 0.0f)
     {
         imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f, 0.0f, 0.0f, 0.0f));
+
         return;
     }
 
@@ -55,7 +56,7 @@ void main()
 
     vec3 origin = worldPosition + normal * bias;
 
-    uint  rayFlags = gl_RayFlagsSkipClosestHitShaderEXT;
+    uint  rayFlags = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT;
     uint  cullMask = 0xFF;
     float tmin     = 0.001f;
     float tmax     = Constants.Scene.farPlane;

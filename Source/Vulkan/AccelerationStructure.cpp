@@ -17,8 +17,8 @@
 #include "AccelerationStructure.h"
 
 #include "DebugUtils.h"
-#include "Util.h"
 #include "GPU/Vertex.h"
+#include "Util.h"
 #include "Util/Maths.h"
 
 namespace Vk
@@ -79,7 +79,7 @@ namespace Vk
             transformsSize
         );
 
-        if (!(transformBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if ((transformBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0u)
         {
             Vk::CheckResult(vmaFlushAllocation(
                 context.allocator,
@@ -142,8 +142,8 @@ namespace Vk
                         .vertexStride  = sizeof(GPU::Position),
                         .maxVertex     = mesh.surfaceInfo.positionInfo.count - 1,
                         .indexType     = VK_INDEX_TYPE_UINT32,
-                        .indexData     = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress + mesh.surfaceInfo.indexInfo.offset * sizeof(GPU::Index),
-                        .transformData = {.deviceAddress = transformBuffer.deviceAddress + meshIndex * sizeof(VkTransformMatrixKHR)}
+                        .indexData     = {.deviceAddress = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress + mesh.surfaceInfo.indexInfo.offset * sizeof(GPU::Index)},
+                        .transformData = {.deviceAddress = transformBuffer.deviceAddress                              + meshIndex                         * sizeof(VkTransformMatrixKHR)}
                     }},
                     .flags        = geometryFlags
                 });
@@ -379,6 +379,8 @@ namespace Vk
 
         Vk::CheckResult(result, "Failed to retrieve BLAS compacted sizes!");
 
+        Vk::BarrierWriter barrierWriter = {};
+
         for (usize i = 0; i < m_bottomLevelASes.size(); ++i)
         {
             auto& blas = m_bottomLevelASes[i];
@@ -435,6 +437,21 @@ namespace Vk
 
             vkCmdCopyAccelerationStructureKHR(cmdBuffer.handle, &copyInfo);
 
+            barrierWriter.WriteBufferBarrier
+            (
+                blas.buffer,
+                Vk::BufferBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR,
+                    .srcAccessMask  = VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                    .dstAccessMask  = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .offset         = 0,
+                    .size           = blas.buffer.size
+                }
+            );
+
             const VkAccelerationStructureDeviceAddressInfoKHR blasDAInfo =
             {
                 .sType                  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
@@ -447,6 +464,8 @@ namespace Vk
             Vk::SetDebugName(device, blas.handle,        fmt::format("BLAS/Compacted/{}",       i));
             Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/Compacted/{}", i));
         }
+
+        barrierWriter.Execute(cmdBuffer);
 
         vkDestroyQueryPool(device, m_compactionQueryPool, nullptr);
 
@@ -577,7 +596,7 @@ namespace Vk
             instancesSize
         );
 
-        if (!(m_instanceBuffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if ((m_instanceBuffers[FIF].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0u)
         {
             Vk::CheckResult(vmaFlushAllocation(
                 context.allocator,
@@ -680,7 +699,7 @@ namespace Vk
             .createFlags   = 0,
             .buffer        = topLevelASes[FIF].buffer.handle,
             .offset        = 0,
-            .size          = topLevelASes[FIF].buffer.size,
+            .size          = tlasBuildSizes.accelerationStructureSize,
             .type          = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
             .deviceAddress = 0
         };
