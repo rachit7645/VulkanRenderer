@@ -51,12 +51,12 @@ void main()
 
     // https://advances.realtimerendering.com/s2014/index.html#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING, slide 27
 
-    float offset = texelSize.x * 2.0f;
+    vec2 offset = texelSize * 2.0f;
 
-    vec2 depthUVTopLeft     = fragUV + vec2(-offset,  offset);
-    vec2 depthUVTopRight    = fragUV + vec2( offset,  offset);
-    vec2 depthUVBottomLeft  = fragUV + vec2(-offset, -offset);
-    vec2 depthUVBottomRight = fragUV + vec2( offset, -offset);
+    vec2 depthUVTopLeft     = fragUV + vec2(-offset.x,  offset.y);
+    vec2 depthUVTopRight    = fragUV + vec2( offset.x,  offset.y);
+    vec2 depthUVBottomLeft  = fragUV + vec2(-offset.x, -offset.y);
+    vec2 depthUVBottomRight = fragUV + vec2( offset.x, -offset.y);
 
     vec2 closestUV = fragUV;
 
@@ -118,7 +118,7 @@ void main()
          historyColor += texture(sampler2D(Textures[Constants.HistoryBufferIndex], Samplers[Constants.LinearSamplerIndex]), vec2(texelPosition12.x, texelPosition3.y )).rgb * w12.x * w3.y;
 
     vec3 currentColor = texture(sampler2D(Textures[Constants.CurrentColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
-    currentColor = ToneMap(currentColor);
+         currentColor = ToneMap(currentColor);
 
     // YCoCg: https://advances.realtimerendering.com/s2014/index.html#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING, slide 33
     // Variance clipping: https://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf

@@ -54,6 +54,7 @@
 #include "Engine/Window.h"
 #include "Engine/Scene.h"
 #include "Models/ModelManager.h"
+#include "Renderer/RenderConfig.h"
 
 namespace Renderer
 {
@@ -94,7 +95,7 @@ namespace Renderer
 
         void Resize();
 
-        void Initialize();
+        void InitImGui();
 
         Engine::Config m_config;
 
@@ -108,6 +109,8 @@ namespace Renderer
 
         Engine::Window m_window;
         Vk::Context    m_context;
+
+        Renderer::RenderConfig m_renderConfig;
 
         Vk::CommandBufferAllocator                m_graphicsCmdBufferAllocator;
         std::optional<Vk::CommandBufferAllocator> m_computeCmdBufferAllocator = std::nullopt;
@@ -142,7 +145,7 @@ namespace Renderer
         SpotShadow::RenderPass  m_spotShadow;
 
         Culling::Dispatch       m_culling;
-        AO::VBAO::Dispatch    m_vbao;
+        AO::VBAO::Dispatch      m_vbao;
         TiledLighting::Dispatch m_tiledLighting;
         Exposure::Dispatch      m_exposure;
 
@@ -151,16 +154,14 @@ namespace Renderer
         Buffers::MeshBuffer           m_meshBuffer;
         Buffers::IndirectBuffer       m_indirectBuffer;
         Buffers::TileLightIndexBuffer m_tiledLightIndexBuffer;
-        Buffers::ExposureBuffers       m_exposureBuffer;
+        Buffers::ExposureBuffers      m_exposureBuffer;
 
         Buffers::SceneBuffer                m_sceneBuffer;
         std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;
 
         std::optional<Engine::Scene> m_scene = std::nullopt;
 
-        bool m_isSwapchainOk       = true;
-        bool m_isMultiQueue        = false;
-        bool m_isRaytracingEnabled = false;
+        bool m_isSwapchainOk = true;
     };
 }
 

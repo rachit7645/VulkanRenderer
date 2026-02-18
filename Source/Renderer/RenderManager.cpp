@@ -28,48 +28,44 @@
 namespace Renderer
 {
     RenderManager::RenderManager()
-        : m_context(m_window.handle),
-          m_graphicsCmdBufferAllocator(m_context.device, *m_context.queueFamilies.graphicsFamily),
-          m_swapchain(m_window.size, m_context, m_graphicsCmdBufferAllocator),
-          m_graphicsTimeline(m_context.device),
-          m_formatHelper(m_context.physicalDevice),
-          m_megaSet(m_context),
-          m_modelManager(m_context, m_stagingPool),
-          m_samplers(m_context, m_megaSet, m_modelManager.textureManager),
-          m_toneMap(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_depth(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_imGui(m_swapchain, m_megaSet, m_pipelineManager),
-          m_skybox(m_formatHelper, m_megaSet, m_pipelineManager),
-          m_bloom(m_context.device, m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_pointShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_gBuffer(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_lighting(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_shadowRT(m_megaSet, m_context.extensions, m_pipelineManager, m_framebufferManager),
-          m_taa(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_spotShadow(m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_culling(m_context.device, m_context.allocator, m_pipelineManager),
-          m_vbao(m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_tiledLighting(m_megaSet, m_pipelineManager, m_framebufferManager),
-          m_exposure(m_megaSet, m_pipelineManager),
-          m_iblGenerator(m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager),
-          m_meshBuffer(m_context.device, m_context.allocator),
-          m_indirectBuffer(m_context.device, m_context.allocator),
-          m_exposureBuffer(m_context.device, m_context.allocator),
-          m_sceneBuffer(m_context.device, m_context.allocator),
-          m_isRaytracingEnabled(m_context.extensions.HasRayTracing())
+        : m_context{m_window.handle},
+          m_renderConfig{m_context.queueFamilies, m_context.extensions},
+          m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
+          m_swapchain{m_window.size, m_context, m_graphicsCmdBufferAllocator},
+          m_graphicsTimeline{m_context.device},
+          m_formatHelper{m_context.physicalDevice},
+          m_megaSet{m_context},
+          m_modelManager{m_context, m_stagingPool},
+          m_samplers{m_context, m_megaSet, m_modelManager.textureManager},
+          m_toneMap{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_depth{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_imGui{m_swapchain, m_megaSet, m_pipelineManager},
+          m_skybox{m_formatHelper, m_megaSet, m_pipelineManager},
+          m_bloom{m_context.device, m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_pointShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_gBuffer{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_lighting{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_shadowRT{m_megaSet, m_context.extensions, m_pipelineManager, m_framebufferManager},
+          m_taa{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_spotShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_culling{m_context.device, m_context.allocator, m_pipelineManager},
+          m_vbao{m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_tiledLighting{m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_exposure{m_megaSet, m_pipelineManager},
+          m_iblGenerator{m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager},
+          m_meshBuffer{m_context.device, m_context.allocator},
+          m_indirectBuffer{m_context.device, m_context.allocator},
+          m_exposureBuffer{m_context.device, m_context.allocator},
+          m_sceneBuffer{m_context.device, m_context.allocator}
     {
-        // Right now there is no good reason to use multi-queue rendering if raytracing is disabled
-        // This might change in the future
-        m_isMultiQueue = m_context.queueFamilies.HasAllFamilies() && m_isRaytracingEnabled;
-
-        if (m_isMultiQueue)
+        if (m_renderConfig.multiQueue.isSupported)
         {
             m_computeCmdBufferAllocator = Vk::CommandBufferAllocator(m_context.device, *m_context.queueFamilies.computeFamily);
             m_computeTimeline           = Vk::ComputeTimeline(m_context.device);
             m_sceneBufferCompute        = Buffers::SceneBuffer(m_context.device, m_context.allocator);
         }
 
-        Initialize();
+        InitImGui();
 
         m_frameCounter.Reset();
 
@@ -134,7 +130,7 @@ namespace Renderer
         AcquireSwapchainImage();
         BeginFrame();
 
-        if (m_isMultiQueue)
+        if (m_renderConfig.multiQueue.isEnabled)
         {
             RenderMultiQueue();
         }
@@ -191,7 +187,7 @@ namespace Renderer
 
         m_graphicsCmdBufferAllocator.ResetPool(m_FIF, m_context.device);
 
-        if (m_isMultiQueue)
+        if (m_renderConfig.multiQueue.isEnabled)
         {
             m_computeCmdBufferAllocator->ResetPool(m_FIF, m_context.device);
         }
@@ -995,7 +991,7 @@ namespace Renderer
                 TraceRays(rayDispatchCmdBuffer);
             rayDispatchCmdBuffer.EndRecording();
 
-            const VkPipelineStageFlags2 stageMask = m_isRaytracingEnabled ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR : VK_PIPELINE_STAGE_2_CLEAR_BIT;
+            const VkPipelineStageFlags2 stageMask = m_renderConfig.rayTracing.isEnabled ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR : VK_PIPELINE_STAGE_2_CLEAR_BIT;
 
             const VkSemaphoreSubmitInfo gBufferGenerationWaitSemaphoreInfo =
             {
@@ -1178,9 +1174,9 @@ namespace Renderer
                     .srcQueueFamily = *m_context.queueFamilies.computeFamily,
                     .dstQueueFamily = *m_context.queueFamilies.graphicsFamily,
                     .baseMipLevel   = 0,
-                    .levelCount     = occlusion.image.mipLevels,
+                    .levelCount     = hilbertLUT.image.mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = occlusion.image.arrayLayers
+                    .layerCount     = hilbertLUT.image.arrayLayers
                 }
             )
             .Execute(lightingCmdBuffer);
@@ -1258,7 +1254,7 @@ namespace Renderer
     {
         Update(cmdBuffer);
 
-        if (m_isRaytracingEnabled)
+        if (m_renderConfig.rayTracing.isEnabled)
         {
             if (m_scene->haveRenderObjectsChanged)
             {
@@ -1397,7 +1393,7 @@ namespace Renderer
     {
         bool canPerformRayDispatch = false;
 
-        if (m_isRaytracingEnabled)
+        if (m_renderConfig.rayTracing.isEnabled)
         {
             if (m_accelerationStructure.has_value())
             {
@@ -1674,6 +1670,9 @@ namespace Renderer
     {
         m_frameCounter.Update();
 
+        // TODO: Possible bugs with mid-rendering update
+        m_renderConfig.Update();
+
         m_pipelineManager.Update(m_context.device, m_deletionQueues[m_FIF]);
 
         m_stagingPool.Update(m_context.allocator);
@@ -1935,22 +1934,10 @@ namespace Renderer
 
                 ImGui::Text("Graphics | %u            | %p", *m_context.queueFamilies.graphicsFamily, std::bit_cast<void*>(m_context.graphicsQueue));
 
-                if (m_isMultiQueue)
+                if (m_renderConfig.multiQueue.isSupported)
                 {
                     ImGui::Text("Compute  | %u            | %p", *m_context.queueFamilies.computeFamily, std::bit_cast<void*>(m_context.computeQueue));
                 }
-
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Renderer"))
-            {
-                ImGui::Checkbox("Raytracing",  &m_isRaytracingEnabled);
-                ImGui::Checkbox("Multi-Queue", &m_isMultiQueue);
-
-                // Safety checks
-                m_isRaytracingEnabled = m_isRaytracingEnabled && m_context.extensions.HasRayTracing();
-                m_isMultiQueue        = m_isMultiQueue        && m_context.queueFamilies.HasAllFamilies();
 
                 ImGui::EndMenu();
             }
@@ -2089,7 +2076,7 @@ namespace Renderer
         Render();
     }
 
-    void RenderManager::Initialize()
+    void RenderManager::InitImGui()
     {
         Logger::Debug("Initializing Dear ImGui [Version = {}]\n", ImGui::GetVersion());
 
