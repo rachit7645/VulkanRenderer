@@ -27,31 +27,15 @@ set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Save current flags
-set(ORIGINAL_C_FLAGS   ${CMAKE_C_FLAGS})
-set(ORIGINAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-
-# Force Release flags w/ no warnings
-set(CMAKE_C_FLAGS   ${CMAKE_C_FLAGS_RELEASE})
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
-
 # Build shared libraries
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
 function(engine_add_external directory)
     # Parse optional arguments
-    set(options EXCLUDE_FROM_ALL FORCE_RELEASE ENABLE_LTO)
+    set(options EXCLUDE_FROM_ALL ENABLE_LTO)
     set(oneValueArgs INSTALL_TARGET)
     set(multiValueArgs "")
     cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
-
-    # Save current build type
-    set(ORIGINAL_BUILD_TYPE ${CMAKE_BUILD_TYPE})
-
-    # Force Release
-    if (ARG_FORCE_RELEASE)
-        set(CMAKE_BUILD_TYPE Release)
-    endif()
 
     # Add subdirectory
     if (ARG_EXCLUDE_FROM_ALL)
@@ -90,11 +74,6 @@ function(engine_add_external directory)
             COMPONENT Runtime
         )
     endif()
-
-    # Restore original build type
-    if (ARG_FORCE_RELEASE)
-        set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
-    endif()
 endfunction()
 
 # Required packages
@@ -119,15 +98,15 @@ set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FO
 set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
 
 # External Libraries
-engine_add_external(vma             FORCE_RELEASE                                                              )
-engine_add_external(volk            FORCE_RELEASE                                                              )
-engine_add_external(unordered_dense FORCE_RELEASE                                                              )
-engine_add_external(glm             FORCE_RELEASE                  ENABLE_LTO INSTALL_TARGET glm::glm          )
-engine_add_external(fmt                                            ENABLE_LTO INSTALL_TARGET fmt::fmt          )
-engine_add_external(sdl                           EXCLUDE_FROM_ALL            INSTALL_TARGET SDL3::SDL3-shared )
-engine_add_external(simdjson        FORCE_RELEASE EXCLUDE_FROM_ALL            INSTALL_TARGET simdjson::simdjson)
-engine_add_external(fastgltf        FORCE_RELEASE EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
-engine_add_external(openexr         FORCE_RELEASE EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
+engine_add_external(vma                                                                          )
+engine_add_external(volk                                                                         )
+engine_add_external(unordered_dense                                                              )
+engine_add_external(glm                              ENABLE_LTO INSTALL_TARGET glm::glm          )
+engine_add_external(fmt                              ENABLE_LTO INSTALL_TARGET fmt::fmt          )
+engine_add_external(sdl             EXCLUDE_FROM_ALL            INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(simdjson        EXCLUDE_FROM_ALL            INSTALL_TARGET simdjson::simdjson)
+engine_add_external(fastgltf        EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
+engine_add_external(openexr         EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
@@ -138,7 +117,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
 
     # Add Tracy (Requires v0.11.1!)
-    engine_add_external(tracy FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
+    engine_add_external(tracy EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
 endif()
 
 # ImGui source files
@@ -172,8 +151,6 @@ target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTex
 target_compile_options(DearImGui PRIVATE -w)
 # -O3 optimisations
 target_compile_options(DearImGui PRIVATE -O3)
-# Enable CPU vectorisation
-target_compile_options(DearImGui PRIVATE -mavx2)
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
 
@@ -184,7 +161,3 @@ install(
     LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
     RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
 )
-
-# Restore original flags
-set(CMAKE_C_FLAGS   ${ORIGINAL_C_FLAGS})
-set(CMAKE_CXX_FLAGS ${ORIGINAL_CXX_FLAGS})
