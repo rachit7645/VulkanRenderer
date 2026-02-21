@@ -78,7 +78,9 @@ namespace simdjson
             return error;
         }
 
-        auto parsed = JSON::ParseVector<glm::vec2::length()>(array);
+        constexpr glm::length_t VECTOR_LENGTH = 2;
+
+        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {
@@ -100,7 +102,9 @@ namespace simdjson
             return error;
         }
 
-        auto parsed = JSON::ParseVector<glm::vec3::length()>(array);
+        constexpr glm::length_t VECTOR_LENGTH = 3;
+
+        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {

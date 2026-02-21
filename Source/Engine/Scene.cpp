@@ -16,6 +16,8 @@
 
 #include "Scene.h"
 
+#include <numbers>
+
 #include "Externals/ImGui.h"
 #include "Externals/SIMDJSON.h"
 #include "Util/Files.h"
@@ -364,8 +366,8 @@ namespace Engine
 
                     if (ImGui::BeginMenu("Spot"))
                     {
-                        constexpr auto ONE_DEGREE    = glm::radians(1.0f);
-                        constexpr auto HALF_ROTATION = std::numbers::pi;
+                        const auto ONE_DEGREE    = glm::radians(1.0f);
+                        const auto HALF_ROTATION = std::numbers::pi;
 
                         if (ImGui::TreeNode("Add"))
                         {

@@ -17,8 +17,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <cstddef>
 #include <cstdint>
-#include <stdfloat>
 
 // Signed integer types
 using s8  = std::int8_t;
@@ -33,12 +33,12 @@ using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
 // Floating point types
-using f16 = std::float16_t;
+using f16 = u16;
 using f32 = float;
 using f64 = double;
 
 // Size types
-using ssize = ssize_t;
+using ssize = std::ptrdiff_t;
 using usize = std::size_t;
 
 #endif

@@ -17,6 +17,8 @@
 #ifndef STAGING_POOL_H
 #define STAGING_POOL_H
 
+#include <optional>
+#include <mutex>
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"

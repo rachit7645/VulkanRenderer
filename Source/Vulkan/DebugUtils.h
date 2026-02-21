@@ -18,6 +18,7 @@
 #define DEBUG_UTILS_H
 
 #include <string_view>
+#include <bit>
 #include <vulkan/vulkan.h>
 #include <volk/volk.h>
 
@@ -25,6 +26,7 @@
 #include "CommandBuffer.h"
 #include "Util/Types.h"
 #include "Util/Unused.h"
+#include "Externals/GLM.h"
 
 namespace Vk
 {

@@ -21,6 +21,7 @@
 #include "DebugUtils.h"
 #include "Util.h"
 #include "Util/Log.h"
+#include "Externals/ImGui.h"
 
 namespace Vk
 {

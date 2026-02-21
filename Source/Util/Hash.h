@@ -17,6 +17,8 @@
 #ifndef HASH_H
 #define HASH_H
 
+#include <utility>
+
 #include "Util/Types.h"
 
 namespace Util

@@ -17,7 +17,9 @@
 #ifndef IMAGE_UPLOADER_H
 #define IMAGE_UPLOADER_H
 
+#include <variant>
 #include <vulkan/vulkan.h>
+#include <ktx.h>
 
 #include "Image.h"
 #include "Buffer.h"

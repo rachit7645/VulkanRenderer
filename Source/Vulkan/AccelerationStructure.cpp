@@ -20,6 +20,7 @@
 #include "GPU/Vertex.h"
 #include "Util.h"
 #include "Util/Maths.h"
+#include "Externals/FMT.h"
 
 namespace Vk
 {

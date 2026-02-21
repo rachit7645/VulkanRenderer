@@ -16,6 +16,9 @@
 
 #include "VertexBuffer.h"
 
+#include <ranges>
+#include <volk/volk.h>
+
 #include "Util/Log.h"
 #include "Util/Concept.h"
 

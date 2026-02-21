@@ -20,6 +20,7 @@
 #include "Exposure/Average.h"
 #include "GPU/Constants.h"
 #include "Vulkan/DebugUtils.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer::Exposure
 {

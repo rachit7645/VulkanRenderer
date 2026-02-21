@@ -20,7 +20,6 @@
 #include <vector>
 
 #include <vulkan/vulkan.h>
-#include <SDL2/SDL.h>
 
 #include "SwapchainInfo.h"
 #include "Image.h"

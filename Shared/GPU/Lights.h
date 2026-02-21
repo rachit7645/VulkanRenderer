@@ -34,8 +34,8 @@ GLSL_CONSTANT(u32, MAX_SHADOWED_SPOT_LIGHT_COUNT,   4)
 
 #ifdef __cplusplus
 
-constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
-constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
+const glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
+const glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
 
 #endif
 

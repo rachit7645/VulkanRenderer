@@ -16,6 +16,8 @@
 
 #include "DebugCallback.h"
 
+#include <volk/volk.h>
+
 #include "Util/Log.h"
 #include "Util.h"
 

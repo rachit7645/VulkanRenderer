@@ -17,6 +17,8 @@
 #ifndef BARRIER_WRITER_H
 #define BARRIER_WRITER_H
 
+#include <vector>
+
 #include "Image.h"
 #include "Buffer.h"
 #include "Barrier.h"

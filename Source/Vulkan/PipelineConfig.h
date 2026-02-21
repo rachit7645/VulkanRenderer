@@ -17,6 +17,7 @@
 #ifndef PIPELINE_BUILDER_H
 #define PIPELINE_BUILDER_H
 
+#include <string>
 #include <string_view>
 #include <vector>
 #include <span>

@@ -16,6 +16,8 @@
 
 #include "PipelineConfig.h"
 
+#include <volk/volk.h>
+
 #include "Util/Log.h"
 #include "Vulkan/Util.h"
 

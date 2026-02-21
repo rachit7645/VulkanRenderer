@@ -19,6 +19,7 @@
 #include "Util.h"
 #include "DebugUtils.h"
 #include "Util/SourceLocation.h"
+#include "Externals/FMT.h"
 
 namespace Vk
 {

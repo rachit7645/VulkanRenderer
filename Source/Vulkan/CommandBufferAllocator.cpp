@@ -18,6 +18,7 @@
 
 #include "DebugUtils.h"
 #include "Util.h"
+#include "Externals/FMT.h"
 
 namespace Vk
 {

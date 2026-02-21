@@ -17,8 +17,18 @@
 #ifndef EXTERNALS_IMGUI_H
 #define EXTERNALS_IMGUI_H
 
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmicrosoft-include"
+    #pragma clang diagnostic ignored "-Wnonportable-include-path"
+#endif
+
 #include "imgui/imgui.h"
 #include "imgui/misc/cpp/imgui_stdlib.h"
 #include "imgui/backends/imgui_impl_sdl3.h"
+
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
 
 #endif

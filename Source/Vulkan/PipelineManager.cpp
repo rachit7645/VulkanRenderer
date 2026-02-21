@@ -16,9 +16,13 @@
 
 #include "PipelineManager.h"
 
+#include <ranges>
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "DebugUtils.h"
 #include "Util.h"
 #include "Util/Log.h"
+#include "Externals/ImGui.h"
 
 namespace Vk
 {

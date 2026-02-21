@@ -142,15 +142,15 @@ add_executable(VulkanRenderer
 
 # Precompiled Headers
 target_precompile_headers(VulkanRenderer PRIVATE
-	# SDL headers
+    # SDL headers
     Externals/sdl/include/SDL3/SDL.h
     Externals/sdl/include/SDL3/SDL_vulkan.h
-	# Vulkan headers
-	<vulkan/vulkan.h>
-	<vulkan/vulkan_core.h>
-	<vulkan/vk_enum_string_helper.h>
+    # Vulkan headers
+    <vulkan/vulkan.h>
+    <vulkan/vulkan_core.h>
+    <vulkan/vk_enum_string_helper.h>
     Externals/volk/volk.h
-	# ImGui Headers
+    # ImGui Headers
     Externals/imgui/imgui.h
     Externals/imgui/backends/imgui_impl_sdl2.h
     # KTX Headers
@@ -159,7 +159,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/fmt/include/fmt/core.h
     Externals/fmt/include/fmt/format.h
     Externals/fmt/include/fmt/chrono.h
-	Externals/fmt/include/fmt/color.h
+    Externals/fmt/include/fmt/color.h
     # GLM Headers
     Externals/glm/glm/vec2.hpp
     Externals/glm/glm/vec3.hpp
@@ -175,7 +175,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/glm/glm/gtc/type_ptr.hpp
     Externals/glm/glm/gtc/matrix_transform.hpp
     # VMA Headers
-	Externals/vma/include/vk_mem_alloc.h
+    Externals/vma/include/vk_mem_alloc.h
     # simdjson Headers
     Externals/simdjson/include/simdjson.h
     # fastgltf Headers
@@ -194,7 +194,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     # Unordered Dense Headers
     Externals/unordered_dense/include/ankerl/unordered_dense.h
     # C++ STL Headers
-	<map>
+    <map>
     <unordered_map>
     <vector>
     <random>
@@ -206,24 +206,24 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <fstream>
     <chrono>
     <sstream>
-	<span>
-	<optional>
-	<set>
-	<tuple>
-	<functional>
-	<ranges>
-	<istream>
-	<source_location>
-	<iostream>
-	<numbers>
-	<deque>
+    <span>
+    <optional>
+    <set>
+    <tuple>
+    <functional>
+    <ranges>
+    <istream>
+    <source_location>
+    <iostream>
+    <numbers>
+    <deque>
     <variant>
     <list>
     <queue>
     # C STL Headers
     <cstdint>
     <cstddef>
-	<cstdlib>
+    <cstdlib>
     <cassert>
     <cmath>
 )
@@ -232,12 +232,18 @@ target_precompile_headers(VulkanRenderer PRIVATE
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Shared/)
 # No Vulkan prototypes
 target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
-# -O3 optimisations (Set to -Og when debugging)
-target_compile_options(VulkanRenderer PRIVATE -O3)
-# Enable all warnings
-target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
-# Enable CPU vectorisation
-target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c)
+
+# Compiler options
+if (MSVC)
+    target_compile_options(VulkanRenderer PRIVATE /O2)
+    target_compile_options(VulkanRenderer PRIVATE /W4)
+    target_compile_options(VulkanRenderer PRIVATE /arch:AVX2)
+    target_compile_definitions(VulkanRenderer PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+else()
+    target_compile_options(VulkanRenderer PRIVATE -O3)
+    target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c)
+endif()
 
 # Debug config
 if (CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
@@ -251,6 +257,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
     if (LTOSupported)
         set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
+
     # Release Mode
     target_compile_definitions(VulkanRenderer PRIVATE NDEBUG)
 endif()
@@ -261,12 +268,19 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     if (LTOSupported)
         set_property(TARGET VulkanRenderer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
+
     # Engine Debug Mode
     target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
     # Engine Profile Mode
     target_compile_definitions(VulkanRenderer PRIVATE ENGINE_PROFILE)
-    # Enable debug output
-    target_compile_options(VulkanRenderer PRIVATE -g)
+
+    # Enable debug symbols
+    if (MSVC)
+        target_compile_options(VulkanRenderer PRIVATE /Zi)
+    else()
+        target_compile_options(VulkanRenderer PRIVATE -g)
+    endif()
+
     # Add Tracy
     target_link_libraries(VulkanRenderer TracyClient)
     # Add Tracy Headers

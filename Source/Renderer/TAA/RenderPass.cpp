@@ -21,6 +21,7 @@
 #include "Renderer/Depth/RenderPass.h"
 #include "TAA/TAA.h"
 #include "Vulkan/DebugUtils.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer::TAA
 {

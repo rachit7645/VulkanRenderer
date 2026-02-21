@@ -18,6 +18,7 @@
 
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Externals/ImGui.h"
 
 namespace Models
 {

@@ -18,6 +18,7 @@
 #define BLOCK_ALLOCATOR_H
 
 #include <set>
+#include <optional>
 #include <vulkan/vulkan.h>
 
 #include "Buffer.h"

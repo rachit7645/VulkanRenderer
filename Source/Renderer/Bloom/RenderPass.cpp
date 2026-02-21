@@ -22,6 +22,7 @@
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer::Bloom
 {

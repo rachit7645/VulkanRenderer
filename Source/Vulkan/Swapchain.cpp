@@ -16,6 +16,8 @@
 
 #include "Swapchain.h"
 
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "BarrierWriter.h"
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"

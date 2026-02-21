@@ -21,6 +21,7 @@
 #include "AO/VBAO/VBAO.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer::AO::VBAO
 {

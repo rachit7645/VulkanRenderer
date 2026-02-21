@@ -16,6 +16,8 @@
 
 #include "Image.h"
 
+#include <volk/volk.h>
+
 #include "Util.h"
 #include "Vulkan/BarrierWriter.h"
 

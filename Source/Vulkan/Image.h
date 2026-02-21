@@ -20,6 +20,7 @@
 #include "Barrier.h"
 #include "CommandBuffer.h"
 #include "Util/Types.h"
+#include "Externals/VMA.h"
 
 namespace Vk
 {

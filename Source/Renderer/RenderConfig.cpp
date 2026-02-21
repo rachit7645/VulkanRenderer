@@ -16,6 +16,8 @@
 
 #include "RenderConfig.h"
 
+#include "Externals/ImGui.h"
+
 namespace Renderer
 {
     RenderConfig::RenderConfig(const Vk::QueueFamilies& queueFamilies, const Vk::Extensions& extensions)

@@ -17,6 +17,8 @@
 #ifndef BARRIER_H
 #define BARRIER_H
 
+#include <vulkan/vulkan.h>
+
 #include "Util/Types.h"
 
 namespace Vk

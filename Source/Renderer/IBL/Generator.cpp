@@ -25,10 +25,10 @@
 
 namespace Renderer::IBL
 {
-    constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
-    constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
-    constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
-    constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
+    inline const glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
+    inline const glm::uvec2 IRRADIANCE_SIZE = {128,  128};
+    inline const glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
+    inline const glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
     constexpr u32 PREFILTER_SAMPLE_COUNT = 512;
     

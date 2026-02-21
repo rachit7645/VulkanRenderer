@@ -51,6 +51,9 @@
 // Fastgltf math types
 #include "FastGLTF.h"
 
+// Vulkan types
+#include <vulkan/vulkan.h>
+
 namespace glm
 {
     // fastgtlf to GLM conversions

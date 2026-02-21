@@ -18,6 +18,7 @@
 
 #include <ktx.h>
 #include <vulkan/utility/vk_format_utils.h>
+#include <volk/volk.h>
 
 #include "Util.h"
 #include "Util/Log.h"

@@ -17,7 +17,23 @@
 #ifndef EXTERNALS_OPENEXR_H
 #define EXTERNALS_OPENEXR_H
 
+#if defined(__GNUC__) && !defined(__clang__)
+    #pragma GCC diagnostic push
+     #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-parameter"
+#endif
+
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #include "openexr/src/lib/OpenEXR/ImfRgbaFile.h"
 #include "openexr/src/lib/OpenEXR/ImfArray.h"
+
+#if defined(__GNUC__) && !defined(__clang__)
+    #pragma GCC diagnostic pop
+#elifdef __clang__
+    #pragma clang diagnostic pop
+#endif
 
 #endif

@@ -18,6 +18,8 @@
 
 #include <immintrin.h>
 
+#include "Externals/GLM.h"
+
 namespace Util
 {
     void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count)

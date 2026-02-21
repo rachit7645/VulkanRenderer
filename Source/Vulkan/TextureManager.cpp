@@ -16,12 +16,16 @@
 
 #include "TextureManager.h"
 
+#include <ranges>
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "Texture.h"
 #include "Util.h"
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Types.h"
 #include "Util/Visitor.h"
+#include "Externals/ImGui.h"
 
 namespace Vk
 {

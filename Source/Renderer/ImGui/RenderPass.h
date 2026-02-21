@@ -22,6 +22,7 @@
 #include "Vulkan/Constants.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/Swapchain.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer::DearImGui
 {

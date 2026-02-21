@@ -19,6 +19,12 @@ project(Externals)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
+if (MSVC)
+    add_compile_options(/arch:AVX2)
+else()
+    add_compile_options(-mavx2 -mf16c)
+endif()
+
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
@@ -108,6 +114,9 @@ engine_add_external(simdjson        EXCLUDE_FROM_ALL            INSTALL_TARGET s
 engine_add_external(fastgltf        EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
 engine_add_external(openexr         EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
 
+# Vulkan Headers
+target_link_libraries(volk PRIVATE Vulkan::Headers)
+
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Tracy Config
@@ -121,7 +130,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
 endif()
 
 # ImGui source files
-add_library(DearImGui SHARED
+add_library(DearImGui STATIC
 	imgui/imgui.cpp
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
@@ -133,12 +142,12 @@ add_library(DearImGui SHARED
 
 # ImGui precompiled headers
 target_precompile_headers(DearImGui PRIVATE
-	imgui/imconfig.h
-	imgui/imgui_internal.h
-	imgui/imgui.h
-	imgui/imstb_rectpack.h
-	imgui/imstb_truetype.h
-	imgui/backends/imgui_impl_sdl3.h
+    imgui/imconfig.h
+    imgui/imgui_internal.h
+    imgui/imgui.h
+    imgui/imstb_rectpack.h
+    imgui/imstb_truetype.h
+    imgui/backends/imgui_impl_sdl3.h
 )
 
 # SDL2 Includes
@@ -147,10 +156,15 @@ target_include_directories(DearImGui PRIVATE sdl/include/)
 target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
 target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
-# Disable warnings
-target_compile_options(DearImGui PRIVATE -w)
-# -O3 optimisations
-target_compile_options(DearImGui PRIVATE -O3)
+
+# Compiler options
+if (MSVC)
+    target_compile_options(DearImGui PRIVATE /w /O2)
+    target_compile_definitions(DearImGui PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+else()
+    target_compile_options(DearImGui PRIVATE -w -O3)
+endif()
+
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
 

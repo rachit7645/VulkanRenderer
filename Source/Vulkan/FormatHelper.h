@@ -17,6 +17,7 @@
 #ifndef FORMAT_HELPER_H
 #define FORMAT_HELPER_H
 
+#include <span>
 #include <vulkan/vulkan.h>
 
 namespace Vk

@@ -17,33 +17,25 @@
 #ifndef EXTERNALS_VMA_H
 #define EXTERNALS_VMA_H
 
-// Disable warnings
 #if defined(__GNUC__) && !defined(__clang__)
     #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wall"
-    #pragma GCC diagnostic ignored "-Wextra"
-    #pragma GCC diagnostic ignored "-Wpedantic"
     #pragma GCC diagnostic ignored "-Wunused-variable"
     #pragma GCC diagnostic ignored "-Wunused-parameter"
-    #pragma GCC diagnostic ignored "-Wunused-function"
     #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#elif defined(__clang__)
+#elifdef __clang__
     #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wall"
-    #pragma clang diagnostic ignored "-Wextra"
-    #pragma clang diagnostic ignored "-Wpedantic"
     #pragma clang diagnostic ignored "-Wunused-variable"
     #pragma clang diagnostic ignored "-Wunused-parameter"
-    #pragma clang diagnostic ignored "-Wunused-function"
+    #pragma clang diagnostic ignored "-Wnullability-completeness"
+    #pragma clang diagnostic ignored "-Wunused-private-field"
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
 #include "vma/include/vk_mem_alloc.h"
 
-// Reset warning stack
 #if defined(__GNUC__) && !defined(__clang__)
     #pragma GCC diagnostic pop
-#elif defined(__clang__)
+#elifdef __clang__
     #pragma clang diagnostic pop
 #endif
 

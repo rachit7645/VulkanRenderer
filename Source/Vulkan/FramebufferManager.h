@@ -17,6 +17,8 @@
 #ifndef FRAME_BUFFER_MANAGER_H
 #define FRAME_BUFFER_MANAGER_H
 
+#include <variant>
+
 #include "Image.h"
 #include "ImageView.h"
 #include "FormatHelper.h"
