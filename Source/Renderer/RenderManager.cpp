@@ -29,7 +29,7 @@ namespace Renderer
 {
     RenderManager::RenderManager()
         : m_context{m_window.handle},
-          m_renderConfig{m_context.queueFamilies, m_context.extensions},
+          m_renderConfig{m_context},
           m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
           m_swapchain{m_window.size, m_context, m_graphicsCmdBufferAllocator},
           m_graphicsTimeline{m_context.device},
@@ -51,7 +51,7 @@ namespace Renderer
           m_culling{m_context.device, m_context.allocator, m_pipelineManager},
           m_vbao{m_megaSet, m_pipelineManager, m_framebufferManager},
           m_tiledLighting{m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_exposure{m_megaSet, m_pipelineManager},
+          m_exposure{m_megaSet, m_pipelineManager, m_framebufferManager},
           m_iblGenerator{m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager},
           m_meshBuffer{m_context.device, m_context.allocator},
           m_indirectBuffer{m_context.device, m_context.allocator},
@@ -111,6 +111,8 @@ namespace Renderer
             {
                 m_computeTimeline->Destroy(m_context.device);
             }
+
+            m_renderConfig.Destroy(m_context.device);
 
             m_context.Destroy();
             m_window.Destroy();
@@ -1476,16 +1478,7 @@ namespace Renderer
             m_scene->iblMaps
         );
 
-        m_taa.Render
-        (
-            m_frameIndex,
-            cmdBuffer,
-            m_pipelineManager,
-            m_framebufferManager,
-            m_megaSet,
-            m_modelManager.textureManager,
-            m_samplers
-        );
+        TAA(cmdBuffer);
 
         m_bloom.Render
         (
@@ -1517,7 +1510,6 @@ namespace Renderer
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
-            m_exposureBuffer,
             m_samplers
         );
 
@@ -1537,6 +1529,47 @@ namespace Renderer
             m_modelManager,
             m_deletionQueues[m_FIF]
         );
+    }
+
+    void RenderManager::TAA(const Vk::CommandBuffer& cmdBuffer)
+    {
+        #ifdef ENGINE_DLSS
+        if (m_renderConfig.DLSS.isEnabled)
+        {
+            m_DLSS.Evaluate
+            (
+                m_frameIndex,
+                cmdBuffer,
+                m_framebufferManager,
+                m_frameCounter,
+                m_renderConfig.DLSSConfig
+            );
+        }
+        else
+        {
+            m_taa.Render
+            (
+                m_frameIndex,
+                cmdBuffer,
+                m_pipelineManager,
+                m_framebufferManager,
+                m_megaSet,
+                m_modelManager.textureManager,
+                m_samplers
+            );
+        }
+        #else
+        m_taa.Render
+        (
+            m_frameIndex,
+            cmdBuffer,
+            m_pipelineManager,
+            m_framebufferManager,
+            m_megaSet,
+            m_modelManager.textureManager,
+            m_samplers
+        );
+        #endif
     }
 
     void RenderManager::BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer)
@@ -1670,7 +1703,6 @@ namespace Renderer
     {
         m_frameCounter.Update();
 
-        // TODO: Possible bugs with mid-rendering update
         m_renderConfig.Update();
 
         m_pipelineManager.Update(m_context.device, m_deletionQueues[m_FIF]);
@@ -1783,6 +1815,11 @@ namespace Renderer
                     m_megaSet.Update(m_context.device);
 
                     m_taa.ResetHistory();
+                    m_exposure.ResetLuminance();
+
+                    #ifdef ENGINE_DLSS
+                    m_renderConfig.DLSSConfig.resetNeeded = true;
+                    #endif
                 }
 
                 ImGui::EndMenu();
@@ -1797,10 +1834,23 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_formatHelper,
-            m_swapchain.extent,
+            m_swapchain,
+            m_renderConfig,
             m_megaSet,
             m_deletionQueues[m_FIF]
         );
+
+        #ifdef ENGINE_DLSS
+        if (m_renderConfig.DLSS.isEnabled)
+        {
+            m_renderConfig.DLSSConfig.UpdateDLSSFeature
+            (
+                cmdBuffer,
+                glm::vk_cast(m_swapchain.extent),
+                m_deletionQueues[m_FIF]
+            );
+        }
+        #endif
 
         m_scene->Update
         (
@@ -1835,7 +1885,8 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             m_context.allocator,
-            m_swapchain.extent,
+            m_framebufferManager.renderExtent,
+            m_framebufferManager.displayExtent,
             *m_scene
         );
 
@@ -1846,7 +1897,8 @@ namespace Renderer
                 m_FIF,
                 m_frameIndex,
                 m_context.allocator,
-                m_swapchain.extent,
+                m_framebufferManager.renderExtent,
+                m_framebufferManager.displayExtent,
                 *m_scene
             );
         }
@@ -1860,6 +1912,16 @@ namespace Renderer
         );
 
         m_indirectBuffer.ComputeDrawCount(m_modelManager, m_scene->renderObjects);
+
+        m_samplers.Update
+        (
+            m_context,
+            m_framebufferManager.renderExtent,
+            m_framebufferManager.displayExtent,
+            m_megaSet,
+            m_modelManager.textureManager,
+            m_deletionQueues[m_FIF]
+        );
 
         ImGuiDisplay();
     }

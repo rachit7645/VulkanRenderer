@@ -96,6 +96,7 @@ add_executable(VulkanRenderer
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderObject.cpp
     Source/Renderer/RenderConfig.cpp
+    Source/Renderer/Jitter.cpp
     # Object sources
     Source/Renderer/Objects/FreeCamera.cpp
     Source/Renderer/Objects/Camera.cpp
@@ -235,7 +236,7 @@ target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_I
 
 # Compiler options
 if (MSVC)
-    target_compile_options(VulkanRenderer PRIVATE /O2)
+    target_compile_options(VulkanRenderer PRIVATE /O2   )
     target_compile_options(VulkanRenderer PRIVATE /W4)
     target_compile_options(VulkanRenderer PRIVATE /arch:AVX2)
     target_compile_definitions(VulkanRenderer PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
@@ -308,6 +309,28 @@ target_link_libraries(VulkanRenderer
     unordered_dense::unordered_dense
     DearImGui
 )
+
+if (DLSSAvailable)
+    # DLSS Sources
+    target_sources(VulkanRenderer PRIVATE
+        Source/Renderer/DLSS/DLSSConfig.cpp
+        Source/Renderer/DLSS/Evaluation.cpp
+        Source/Externals/DLSS.cpp
+    )
+    # Mark DLSS As Available
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DLSS)
+    # DLSS Precompiled Headers
+    target_precompile_headers(VulkanRenderer PRIVATE
+        Externals/dlss/include/nvsdk_ngx.h
+        Externals/dlss/include/nvsdk_ngx_defs.h
+        Externals/dlss/include/nvsdk_ngx_params.h
+        Externals/dlss/include/nvsdk_ngx_helpers.h
+        Externals/dlss/include/nvsdk_ngx_vk.h
+        Externals/dlss/include/nvsdk_ngx_helpers_vk.h
+    )
+    # Link DLSS
+    target_link_libraries(VulkanRenderer DLSS)
+endif()
 
 # Install
 install(

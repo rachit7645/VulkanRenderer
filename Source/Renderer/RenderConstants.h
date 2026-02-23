@@ -19,7 +19,6 @@
 
 #include "Externals/GLM.h"
 #include "Util/Types.h"
-#include "Util/Maths.h"
 
 namespace Renderer
 {
@@ -31,8 +30,7 @@ namespace Renderer
     // World Up direction
     inline const glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
     // TAA Jitter Samples
-           constexpr usize JITTER_SAMPLE_COUNT = 64;
-    inline const     auto  JITTER_SAMPLES      = Maths::GenerateHaltonSequence<JITTER_SAMPLE_COUNT>();
+    constexpr usize JITTER_SAMPLE_COUNT = 64;
 }
 
 #endif

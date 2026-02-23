@@ -349,6 +349,30 @@ namespace Vk
         m_textureMap.erase(iter);
     }
 
+    void TextureManager::DestroySampler
+    (
+        Vk::SamplerID id,
+        VkDevice device,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        const auto iter = m_samplerMap.find(id);
+
+        if (iter == m_samplerMap.end())
+        {
+            return;
+        }
+
+        deletionQueue.PushDeletor([&megaSet, device, sampler = iter->second] () mutable
+        {
+            megaSet.FreeSampler(sampler.descriptorID);
+            sampler.Destroy(device);
+        });
+
+        m_samplerMap.erase(id);
+    }
+
     void TextureManager::ImGuiDisplay()
     {
         if (ImGui::BeginMainMenuBar())

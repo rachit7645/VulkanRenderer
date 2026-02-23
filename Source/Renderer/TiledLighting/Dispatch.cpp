@@ -50,12 +50,12 @@ namespace Renderer::TiledLighting
             Vk::FramebufferType::ColorRG_SFloat32,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = (extent.width  + TILE_SIZE - 1) / TILE_SIZE,
-                    .height      = (extent.height + TILE_SIZE - 1) / TILE_SIZE,
+                    .width       = (renderExtent.width  + TILE_SIZE - 1) / TILE_SIZE,
+                    .height      = (renderExtent.height + TILE_SIZE - 1) / TILE_SIZE,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };

@@ -14,30 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef EXPOSURE_COMMON_H
-#define EXPOSURE_COMMON_H
+#include "DLSS.h"
 
-#include "GLSL.h"
+#include "Util/Log.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::Exposure)
-
-GLSL_CONSTANT(u32, HISTOGRAM_SIZE_X, 16)
-GLSL_CONSTANT(u32, HISTOGRAM_SIZE,   HISTOGRAM_SIZE_X * HISTOGRAM_SIZE_X)
-
-#ifndef __cplusplus
-
-layout(buffer_reference, scalar, buffer_reference_align = 4) buffer HistogramBuffer
+namespace DLSS
 {
-    uint bins[];
-};
-
-layout(buffer_reference, scalar, buffer_reference_align = 4) buffer LuminanceBuffer
-{
-    float values[];
-};
-
-#endif
-
-GLSL_NAMESPACE_END
-
-#endif
+    void DebugCallback(ENGINE_UNUSED const char* message, ENGINE_UNUSED NVSDK_NGX_Logging_Level level, ENGINE_UNUSED NVSDK_NGX_Feature feature)
+    {
+        // Logger::Debug("{}\n", message);
+    }
+}

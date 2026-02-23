@@ -24,7 +24,9 @@
 
 namespace Vk
 {
-    constexpr auto VULKAN_API_VERSION = VK_API_VERSION_1_3;
+    constexpr auto VULKAN_API_VERSION      = VK_API_VERSION_1_3;
+    constexpr auto VULKAN_APPLICATION_NAME = "Rachit's Vulkan Renderer";
+    constexpr auto VULKAN_ENGINE_NAME      = "Rachit's Engine: Vulkan Edition";
 }
 
 #endif

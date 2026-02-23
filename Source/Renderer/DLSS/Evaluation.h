@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef EXPOSURE_COMMON_H
-#define EXPOSURE_COMMON_H
+#ifndef DLSS_EVALUATION_H
+#define DLSS_EVALUATION_H
 
-#include "GLSL.h"
+#include "DLSSConfig.h"
+#include "Util/FrameCounter.h"
+#include "Vulkan/CommandBuffer.h"
+#include "Vulkan/FramebufferManager.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::Exposure)
-
-GLSL_CONSTANT(u32, HISTOGRAM_SIZE_X, 16)
-GLSL_CONSTANT(u32, HISTOGRAM_SIZE,   HISTOGRAM_SIZE_X * HISTOGRAM_SIZE_X)
-
-#ifndef __cplusplus
-
-layout(buffer_reference, scalar, buffer_reference_align = 4) buffer HistogramBuffer
+namespace Renderer::DLSS
 {
-    uint bins[];
-};
-
-layout(buffer_reference, scalar, buffer_reference_align = 4) buffer LuminanceBuffer
-{
-    float values[];
-};
-
-#endif
-
-GLSL_NAMESPACE_END
+    class Evaluation
+    {
+    public:
+        void Evaluate
+        (
+            usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
+            const Util::FrameCounter& frameCounter,
+            DLSS::DLSSConfig& config
+        );
+    };
+}
 
 #endif

@@ -31,6 +31,16 @@ namespace Renderer::Objects
             Vk::TextureManager& textureManager
         );
 
+        void Update
+        (
+            const Vk::Context& context,
+            const VkExtent2D& renderExtent,
+            const VkExtent2D& swapchainExtent,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue
+        );
+
         Vk::SamplerID pointSamplerID       = 0;
         Vk::SamplerID linearSamplerID      = 0;
         Vk::SamplerID textureSamplerID     = 0;

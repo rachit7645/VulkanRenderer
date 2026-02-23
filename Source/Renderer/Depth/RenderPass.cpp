@@ -69,12 +69,12 @@ namespace Renderer::Depth
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
@@ -92,12 +92,12 @@ namespace Renderer::Depth
             Vk::FramebufferType::Depth,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };

@@ -26,6 +26,8 @@
 #include "BarrierWriter.h"
 #include "Util/Enum.h"
 #include "Externals/UnorderedDense.h"
+#include "Renderer/RenderConfig.h"
+#include "Vulkan/Swapchain.h"
 
 namespace Vk
 {
@@ -104,8 +106,8 @@ namespace Vk
         VkImageLayout         initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     };
 
-    using FramebufferResizeCallbackWithExtent                 = std::function<FramebufferSize(const VkExtent2D&)>;
-    using FramebufferResizeCallbackWithExtentAndDeletionQueue = std::function<FramebufferSize(const VkExtent2D&, Util::DeletionQueue& deletionQueue)>;
+    using FramebufferResizeCallbackWithExtent                 = std::function<FramebufferSize(const VkExtent2D&, const VkExtent2D&)>;
+    using FramebufferResizeCallbackWithExtentAndDeletionQueue = std::function<FramebufferSize(const VkExtent2D&, const VkExtent2D&, Util::DeletionQueue& deletionQueue)>;
 
     using FramebufferSizeData = std::variant
     <
@@ -151,7 +153,8 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             const Vk::FormatHelper& formatHelper,
-            const VkExtent2D& extent,
+            const Vk::Swapchain& swapchain,
+            Renderer::RenderConfig& renderConfig,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
         );
@@ -184,6 +187,9 @@ namespace Vk
 
         void ImGuiDisplay();
         void Destroy(VkDevice device, VmaAllocator allocator);
+
+        VkExtent2D renderExtent  = {};
+        VkExtent2D displayExtent = {};
     private:
         FramebufferSize GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const;
 
@@ -209,8 +215,6 @@ namespace Vk
         ankerl::unordered_dense::map<std::string, FramebufferView> m_framebufferViews;
 
         ankerl::unordered_dense::set<std::string> m_fixedSizeFramebuffers;
-
-        VkExtent2D m_extent = {};
 
         Vk::BarrierWriter m_barrierWriter = {};
     };

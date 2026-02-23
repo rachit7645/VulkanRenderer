@@ -27,7 +27,6 @@
 #include "Context.h"
 #include "Constants.h"
 #include "CommandBufferAllocator.h"
-#include "FramebufferManager.h"
 
 namespace Vk
 {

@@ -24,7 +24,12 @@
 
 namespace Renderer::Exposure
 {
-    Dispatch::Dispatch(const Vk::MegaSet& megaSet, Vk::PipelineManager& pipelineManager)
+    Dispatch::Dispatch
+    (
+        const Vk::MegaSet& megaSet,
+        Vk::PipelineManager& pipelineManager,
+        Vk::FramebufferManager& framebufferManager
+    )
     {
         pipelineManager.AddPipeline("Exposure/Histogram", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
@@ -38,6 +43,38 @@ namespace Renderer::Exposure
             .AttachShader("Exposure/Average.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Average::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "Exposure/Value",
+            Vk::FramebufferType::ColorR_SFloat32,
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
+            Vk::FramebufferSize{
+                .width       = 1,
+                .height      = 1,
+                .mipLevels   = 1,
+                .arrayLayers = 1
+            },
+            Vk::FramebufferInitialState{
+                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "Exposure/Value",
+            "Exposure/ValueView",
+            Vk::FramebufferImageType::Single2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
         );
     }
 
@@ -73,6 +110,7 @@ namespace Renderer::Exposure
             cmdBuffer,
             pipelineManager,
             framebufferManager,
+            megaSet,
             exposureBuffer,
             frameCounter
         );
@@ -209,6 +247,7 @@ namespace Renderer::Exposure
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet,
         const Buffers::ExposureBuffers& exposureBuffer,
         const Util::FrameCounter& frameCounter
     )
@@ -217,13 +256,18 @@ namespace Renderer::Exposure
 
         const auto& averagePipeline = pipelineManager.GetPipeline("Exposure/Average");
 
-        const auto& sceneColor = framebufferManager.GetFramebuffer("FinalSceneColor");
+        const auto& exposureValueView = framebufferManager.GetFramebufferView("Exposure/ValueView");
+
+        const auto& sceneColor    = framebufferManager.GetFramebuffer("FinalSceneColor");
+        const auto& exposureValue = framebufferManager.GetFramebuffer(exposureValueView.framebuffer);
 
         if (!m_hasLuminanceBeenReset)
         {
-            exposureBuffer.luminanceBuffer.Barrier
-            (
-                cmdBuffer,
+            Vk::BarrierWriter barrierWriter = {};
+
+            barrierWriter
+            .WriteBufferBarrier(
+                exposureBuffer.luminanceBuffer,
                 Vk::BufferBarrier{
                     .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                     .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -234,7 +278,25 @@ namespace Renderer::Exposure
                     .offset         = 0,
                     .size           = exposureBuffer.luminanceBuffer.size
                 }
-            );
+            )
+            .WriteImageBarrier(
+                exposureValue.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = exposureValue.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = exposureValue.image.arrayLayers
+                }
+            )
+            .Execute(cmdBuffer);
 
             vkCmdFillBuffer
             (
@@ -245,9 +307,30 @@ namespace Renderer::Exposure
                 0
             );
 
-            exposureBuffer.luminanceBuffer.Barrier
+            constexpr VkClearColorValue RESET = {.float32 = {1.0f, 0.0f, 0.0f, 0.0f}};
+
+            const VkImageSubresourceRange subresourceRange =
+            {
+                .aspectMask     = exposureValue.image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = exposureValue.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = exposureValue.image.arrayLayers
+            };
+
+            vkCmdClearColorImage
             (
-                cmdBuffer,
+                cmdBuffer.handle,
+                exposureValue.image.handle,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                &RESET,
+                1,
+                &subresourceRange
+            );
+
+            barrierWriter
+            .WriteBufferBarrier(
+                exposureBuffer.luminanceBuffer,
                 Vk::BufferBarrier{
                     .srcStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                     .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
@@ -258,14 +341,34 @@ namespace Renderer::Exposure
                     .offset         = 0,
                     .size           = exposureBuffer.luminanceBuffer.size
                 }
-            );
+            )
+            .WriteImageBarrier(
+                exposureValue.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = exposureValue.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = exposureValue.image.arrayLayers
+                }
+            )
+            .Execute(cmdBuffer);
 
             m_hasLuminanceBeenReset = true;
         }
 
-        exposureBuffer.luminanceBuffer.Barrier
-        (
-            cmdBuffer,
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteBufferBarrier(
+            exposureBuffer.luminanceBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
@@ -276,19 +379,38 @@ namespace Renderer::Exposure
                 .offset         = 0,
                 .size           = exposureBuffer.luminanceBuffer.size
             }
-        );
+        )
+        .WriteImageBarrier(
+            exposureValue.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = exposureValue.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = exposureValue.image.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
 
         averagePipeline.Bind(cmdBuffer);
 
         const auto constants = Average::Constants
         {
-            .Histogram       = exposureBuffer.histogramBuffer.deviceAddress,
-            .Luminance       = exposureBuffer.luminanceBuffer.deviceAddress,
-            .PixelCount      = sceneColor.image.width * sceneColor.image.height,
-            .TimeCoefficient = 1.0f - std::exp(-frameCounter.frameDelta * m_adaptationSpeed),
-            .ExposureBias    = m_exposureBias,
-            .CurrentFrame    = static_cast<u32>(FIF),
-            .PreviousFrame   = static_cast<u32>((FIF + Vk::FRAMES_IN_FLIGHT - 1) % Vk::FRAMES_IN_FLIGHT),
+            .Histogram          = exposureBuffer.histogramBuffer.deviceAddress,
+            .Luminance          = exposureBuffer.luminanceBuffer.deviceAddress,
+            .ExposureImageIndex = exposureValueView.storageImageID,
+            .PixelCount         = sceneColor.image.width * sceneColor.image.height,
+            .TimeCoefficient    = 1.0f - std::exp(-frameCounter.frameDelta * m_adaptationSpeed),
+            .ExposureBias       = m_exposureBias,
+            .CurrentFrame       = static_cast<u32>(FIF),
+            .PreviousFrame      = static_cast<u32>((FIF + Vk::FRAMES_IN_FLIGHT - 1) % Vk::FRAMES_IN_FLIGHT)
         };
 
         averagePipeline.PushConstants
@@ -298,6 +420,8 @@ namespace Renderer::Exposure
             constants
         );
 
+        averagePipeline.BindDescriptors(cmdBuffer, megaSet);
+
         vkCmdDispatch
         (
             cmdBuffer.handle,
@@ -306,9 +430,9 @@ namespace Renderer::Exposure
             1
         );
 
-        exposureBuffer.luminanceBuffer.Barrier
-        (
-            cmdBuffer,
+        barrierWriter
+        .WriteBufferBarrier(
+            exposureBuffer.luminanceBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -319,7 +443,25 @@ namespace Renderer::Exposure
                 .offset         = 0,
                 .size           = exposureBuffer.luminanceBuffer.size
             }
-        );
+        )
+        .WriteImageBarrier(
+            exposureValue.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = exposureValue.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = exposureValue.image.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }

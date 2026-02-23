@@ -63,7 +63,7 @@ namespace Vk
 
         [[nodiscard]] usize CalculateScore
         (
-            VkPhysicalDevice phyDevice,
+            VkPhysicalDevice currentPhysicalDevice,
             const VkPhysicalDeviceProperties2& propertySet,
             const VkPhysicalDeviceFeatures2& featureSet
         ) const;

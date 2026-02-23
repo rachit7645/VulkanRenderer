@@ -57,4 +57,14 @@ namespace glm
 
         return vkTransform;
     }
+
+    uvec2 vk_cast(const VkExtent2D& extent)
+    {
+        return {extent.width, extent.height};
+    }
+
+    VkExtent2D vk_cast(const uvec2& vector)
+    {
+        return {.width = vector.x, .height = vector.y};
+    }
 }

@@ -64,6 +64,8 @@ namespace glm
 
     // GLM to Vulkan conversion
     VkTransformMatrixKHR vk_cast(const mat4& matrix);
+    uvec2                vk_cast(const VkExtent2D& extent);
+    VkExtent2D           vk_cast(const uvec2& vector);
 }
 
 #endif

@@ -175,3 +175,48 @@ install(
     LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
     RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
 )
+
+# DLSS SDK will only build on MSVC-Style Windows Compilers and Linux
+if (WIN32)
+    if (MSVC)
+        set(DLSSAvailable ON)
+    else()
+        set(DLSSAvailable OFF)
+    endif()
+else()
+    set(DLSSAvailable ON)
+endif()
+
+# You can use this to forcefully disable DLSS
+# set(DLSSAvailable OFF)
+
+set(DLSSAvailable ${DLSSAvailable} PARENT_SCOPE)
+
+if (DLSSAvailable)
+    # DLSS
+    set(DLSS_ROOT ${CMAKE_SOURCE_DIR}/Externals/dlss)
+
+    # DLSS Paths
+    if (WIN32)
+        # Debug Mode DLL
+        # set(DLSS_DLL "${DLSS_ROOT}/lib/Windows_x86_64/dev/nvngx_dlss.dll")
+
+        set(DLSS_DLL "${DLSS_ROOT}/lib/Windows_x86_64/rel/nvngx_dlss.dll")
+        set(DLSS_LIB "${DLSS_ROOT}/lib/Windows_x86_64/x64/nvsdk_ngx_d.lib")
+    else()
+        set(DLSS_DLL "${DLSS_ROOT}/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.5.3")
+        set(DLSS_LIB "${DLSS_ROOT}/lib/Linux_x86_64/libnvsdk_ngx.a")
+    endif()
+
+    # DLSS Imported Library
+    add_library(DLSS SHARED IMPORTED GLOBAL)
+
+    # Setup DLSS import
+    set_target_properties(DLSS PROPERTIES
+        IMPORTED_IMPLIB   "${DLSS_LIB}"
+        IMPORTED_LOCATION "${DLSS_DLL}"
+    )
+
+    # Install DLSS
+    install(IMPORTED_RUNTIME_ARTIFACTS DLSS)
+endif()

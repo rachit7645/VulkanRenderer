@@ -27,6 +27,14 @@ namespace Maths
     glm::mat4 InfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
     glm::mat3 NormalMatrix(const glm::mat4& transform);
 
+    std::vector<glm::vec2> GenerateHaltonSequence(usize N);
+
+    template<typename T>
+    constexpr T Max2(const glm::vec<2, T>& vector)
+    {
+        return glm::max(vector.x, vector.y);
+    }
+
     constexpr f32 Halton(usize index, usize base)
     {
         f64 result = 0.0;
@@ -43,19 +51,6 @@ namespace Maths
         }
 
         return static_cast<f32>(result);
-    }
-
-    template<usize N>
-    constexpr auto GenerateHaltonSequence()
-    {
-        std::array<glm::vec2, N> sequence = {};
-
-        for (usize i = 0; i < N; ++i)
-        {
-            sequence[i] = {Halton(i, 2), Halton(i, 3)};
-        }
-
-        return sequence;
     }
 
     template<u32 HilbertWidth>

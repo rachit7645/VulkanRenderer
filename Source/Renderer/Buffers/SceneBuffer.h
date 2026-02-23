@@ -35,7 +35,8 @@ namespace Renderer::Buffers
             usize FIF,
             usize frameIndex,
             VmaAllocator allocator,
-            VkExtent2D extent,
+            VkExtent2D renderExtent,
+            VkExtent2D displayExtent,
             const Engine::Scene& scene
         );
 

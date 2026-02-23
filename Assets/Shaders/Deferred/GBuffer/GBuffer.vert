@@ -23,11 +23,11 @@
 #include "GPU/Material.h"
 #include "Deferred/GBuffer.h"
 
-layout(location = 0) out      vec4 fragCurrentPosition;
-layout(location = 1) out      vec4 fragPreviousPosition;
-layout(location = 2) out      vec2 fragUV[2];
-layout(location = 4) out      mat3 fragTBNMatrix;
-layout(location = 7) out flat uint fragDrawID;
+layout(location = 0) out noperspective vec4 fragCurrentPosition;
+layout(location = 1) out noperspective vec4 fragPreviousPosition;
+layout(location = 2) out               vec2 fragUV[2];
+layout(location = 4) out               mat3 fragTBNMatrix;
+layout(location = 7) out flat          uint fragDrawID;
 
 void main()
 {

@@ -19,12 +19,12 @@
 #include <vector>
 #include <volk/volk.h>
 
+#include "Chain.h"
+#include "Constants.h"
+#include "DebugUtils.h"
 #include "Extensions.h"
 #include "SwapchainInfo.h"
 #include "Util.h"
-#include "Constants.h"
-#include "DebugUtils.h"
-#include "Chain.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -51,11 +51,11 @@ namespace Vk
         {
             .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pNext              = nullptr,
-            .pApplicationName   = "Rachit's Vulkan Renderer",
+            .pApplicationName   = Vk::VULKAN_APPLICATION_NAME,
             .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1),
-            .pEngineName        = "Rachit's Engine: Vulkan Edition",
+            .pEngineName        = Vk::VULKAN_ENGINE_NAME,
             .engineVersion      = VK_MAKE_API_VERSION(0, 0, 0, 1),
-            .apiVersion         = VULKAN_API_VERSION
+            .apiVersion         = Vk::VULKAN_API_VERSION
         };
 
         const auto instanceExtensions = Vk::Extensions::GetInstanceExtensions();
@@ -209,12 +209,12 @@ namespace Vk
         VkPhysicalDevice bestDevice   = VK_NULL_HANDLE;
         usize            highestScore = 0;
 
-        for (const auto& [device, score] : scores)
+        for (const auto& [currentDevice, score] : scores)
         {
             if (score > highestScore)
             {
                 highestScore = score;
-                bestDevice   = device;
+                bestDevice   = currentDevice;
             }
         }
 
@@ -235,13 +235,13 @@ namespace Vk
 
     usize Context::CalculateScore
     (
-        VkPhysicalDevice phyDevice,
+        VkPhysicalDevice currentPhysicalDevice,
         const VkPhysicalDeviceProperties2& propertySet,
         const VkPhysicalDeviceFeatures2& featureSet
     ) const
     {
-        const auto queues     = QueueFamilies(phyDevice, surface);
-        const auto extensions = Extensions(phyDevice);
+        const auto queues            = QueueFamilies(currentPhysicalDevice, surface);
+        const auto currentExtensions = Extensions(currentPhysicalDevice);
 
         const auto vk11Properties = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Properties>(propertySet.pNext);
 
@@ -257,11 +257,11 @@ namespace Vk
         // Score parts
         const usize discreteGPU       = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
         const usize completeQueues    = queues.HasAllFamilies() ? 1000 : 0;
-        const usize rayTracingSupport = extensions.HasRayTracing() ? 5000 : 0;
+        const usize rayTracingSupport = currentExtensions.HasRayTracing() ? 5000 : 0;
 
         // Requirements
         const bool hasRequiredQueueFamilies = queues.HasRequiredFamilies();
-        const bool hasRequiredExtensions    = extensions.HasRequiredExtensions();
+        const bool hasRequiredExtensions    = currentExtensions.HasRequiredExtensions();
 
         // Need extensions to calculate these
         bool isSwapChainAdequate     = false;
@@ -273,7 +273,7 @@ namespace Vk
 
         if (hasRequiredExtensions)
         {
-            const auto swapChainInfo = Vk::SwapchainInfo(phyDevice, surface);
+            const auto swapChainInfo = Vk::SwapchainInfo(currentPhysicalDevice, surface);
 
             isSwapChainAdequate     = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
             hasSwapchainMaintenance = swapchainMaintenanceFeatures->swapchainMaintenance1;
@@ -456,7 +456,7 @@ namespace Vk
         deviceFeatures.features.shaderInt64          = VK_TRUE;
         deviceFeatures.features.fullDrawIndexUint32  = VK_TRUE;
 
-        const auto deviceExtensions = extensions.GetDeviceExtensions();
+        const auto deviceExtensions = extensions.GetDeviceExtensions(instance, physicalDevice);
 
         const VkDeviceCreateInfo createInfo =
         {

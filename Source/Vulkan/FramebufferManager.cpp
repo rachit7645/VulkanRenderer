@@ -74,7 +74,8 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         const Vk::FormatHelper& formatHelper,
-        const VkExtent2D& extent,
+        const Vk::Swapchain& swapchain,
+        ENGINE_UNUSED Renderer::RenderConfig& renderConfig,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
     )
@@ -84,15 +85,40 @@ namespace Vk
             return;
         }
 
-        // TODO: Figure out a better way
-        if (extent.width == m_extent.width && extent.height == m_extent.height)
+        #ifdef ENGINE_DLSS
+        if (renderConfig.DLSS.isEnabled)
+        {
+            auto DLSSExtent = glm::vk_cast(renderConfig.DLSSConfig.GetInternalResolution(glm::vk_cast(swapchain.extent)));
+
+            if (DLSSExtent.width == renderExtent.width && DLSSExtent.height == renderExtent.height)
+            {
+                return;
+            }
+
+            renderExtent  = DLSSExtent;
+            displayExtent = swapchain.extent;
+        }
+        else
+        {
+            if (swapchain.extent.width == renderExtent.width && swapchain.extent.height == renderExtent.height)
+            {
+                return;
+            }
+
+            renderExtent  = swapchain.extent;
+            displayExtent = swapchain.extent;
+        }
+        #else
+        if (swapchain.extent.width == renderExtent.width && swapchain.extent.height == renderExtent.height)
         {
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, "FramebufferManager::Update", {0.6421f, 0.1234f, 0.0316f, 1.0f});
+        renderExtent  = swapchain.extent;
+        displayExtent = swapchain.extent;
+        #endif
 
-        m_extent = extent;
+        Vk::BeginLabel(cmdBuffer, "FramebufferManager::Update", {0.6421f, 0.1234f, 0.0316f, 1.0f});
 
         ankerl::unordered_dense::set<std::string> updatedFramebuffers = {};
 
@@ -512,11 +538,11 @@ namespace Vk
             },
             [this] (const FramebufferResizeCallbackWithExtent& Callback) -> Vk::FramebufferSize
             {
-                return Callback(m_extent);
+                return Callback(renderExtent, displayExtent);
             },
             [this, &deletionQueue] (const FramebufferResizeCallbackWithExtentAndDeletionQueue& Callback) -> Vk::FramebufferSize
             {
-                return Callback(m_extent, deletionQueue);
+                return Callback(renderExtent, displayExtent, deletionQueue);
             }
         }, sizeData);
     }

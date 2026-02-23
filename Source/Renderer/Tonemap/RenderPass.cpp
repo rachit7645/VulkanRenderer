@@ -54,12 +54,12 @@ namespace Renderer::ToneMap
             Vk::FramebufferType::ColorLDR,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = displayExtent.width,
+                    .height      = displayExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
@@ -92,7 +92,6 @@ namespace Renderer::ToneMap
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Buffers::ExposureBuffers& exposureBuffer,
         const Objects::GlobalSamplers& samplers
     )
     {
@@ -179,9 +178,9 @@ namespace Renderer::ToneMap
 
         const auto constants = ToneMap::Constants
         {
-            .Luminance         = exposureBuffer.luminanceBuffer.deviceAddress,
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID,
+            .ExposureIndex     = framebufferManager.GetFramebufferView("Exposure/ValueView").sampledImageID
         };
 
         pipeline.PushConstants

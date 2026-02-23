@@ -58,13 +58,13 @@ namespace Renderer::TAA
             "ResolvedSceneColor",
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::TransferDestination,
+            [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = displayExtent.width,
+                    .height      = displayExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
@@ -82,12 +82,12 @@ namespace Renderer::TAA
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = displayExtent.width,
+                    .height      = displayExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = TAA_HISTORY_SIZE
                 };

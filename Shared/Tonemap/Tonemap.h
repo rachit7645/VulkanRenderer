@@ -18,16 +18,14 @@
 #define TONE_MAP_PUSH_CONSTANT
 
 #include "GLSL.h"
-#include "Exposure/Common.h"
 
 GLSL_NAMESPACE_BEGIN(Renderer::ToneMap)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
-    GLSL_BUFFER_POINTER(LuminanceBuffer) Luminance;
-
     u32 PointSamplerIndex;
     u32 SceneColorIndex;
+    u32 ExposureIndex;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

@@ -30,7 +30,12 @@ namespace Renderer::Exposure
     class Dispatch
     {
     public:
-        Dispatch(const Vk::MegaSet& megaSet, Vk::PipelineManager& pipelineManager);
+        Dispatch
+        (
+            const Vk::MegaSet& megaSet,
+            Vk::PipelineManager& pipelineManager,
+            Vk::FramebufferManager& framebufferManager
+        );
 
         void Execute
         (
@@ -64,6 +69,7 @@ namespace Renderer::Exposure
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
             const Buffers::ExposureBuffers& exposureBuffer,
             const Util::FrameCounter& frameCounter
         );

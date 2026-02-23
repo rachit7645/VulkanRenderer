@@ -44,7 +44,6 @@ namespace Renderer::ToneMap
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Buffers::ExposureBuffers& exposureBuffer,
             const Objects::GlobalSamplers& samplers
         );
     };

@@ -20,14 +20,25 @@
 
 namespace Renderer
 {
-    RenderConfig::RenderConfig(const Vk::QueueFamilies& queueFamilies, const Vk::Extensions& extensions)
+    RenderConfig::RenderConfig(const Vk::Context& context)
+    #ifdef ENGINE_DLSS
+        : DLSSConfig{context}
+    #endif
     {
-        rayTracing.isSupported = extensions.HasRayTracing();
+        rayTracing.isSupported = context.extensions.HasRayTracing();
         rayTracing.isEnabled   = rayTracing.isSupported;
 
         // If ray tracing is not available then it would be slower, so disable it
-        multiQueue.isSupported = queueFamilies.HasAllFamilies();
+        multiQueue.isSupported = context.queueFamilies.HasAllFamilies();
         multiQueue.isEnabled   = multiQueue.isSupported && rayTracing.isSupported;
+
+        #ifdef ENGINE_DLSS
+        DLSS.isSupported = DLSSConfig.isSupported;
+        DLSS.isEnabled   = DLSS.isSupported;
+        #else
+        DLSS.isSupported = false;
+        DLSS.isEnabled   = DLSS.isSupported;
+        #endif
     }
 
     void RenderConfig::Update()
@@ -38,6 +49,7 @@ namespace Renderer
             {
                 ImGui::Checkbox("Raytracing",  &rayTracing.isEnabled);
                 ImGui::Checkbox("Multi-Queue", &multiQueue.isEnabled);
+                ImGui::Checkbox("DLSS",        &DLSS.isEnabled);
 
                 ImGui::EndMenu();
             }
@@ -52,6 +64,14 @@ namespace Renderer
     {
         rayTracing.Validate();
         multiQueue.Validate();
+        DLSS.Validate();
+    }
+
+    void RenderConfig::Destroy(ENGINE_UNUSED VkDevice device)
+    {
+        #ifdef ENGINE_DLSS
+        DLSSConfig.Destroy(device);
+        #endif
     }
 
     void RenderConfig::Entry::Validate()

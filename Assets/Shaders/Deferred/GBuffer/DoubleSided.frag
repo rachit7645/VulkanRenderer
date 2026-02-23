@@ -25,11 +25,11 @@
 #include "PBR.glsl"
 #include "Deferred/GBuffer.h"
 
-layout(location = 0) in      vec4 fragCurrentPosition;
-layout(location = 1) in      vec4 fragPreviousPosition;
-layout(location = 2) in      vec2 fragUV[2];
-layout(location = 4) in      mat3 fragTBNMatrix;
-layout(location = 7) in flat uint fragDrawID;
+layout(location = 0) in noperspective vec4 fragCurrentPosition;
+layout(location = 1) in noperspective vec4 fragPreviousPosition;
+layout(location = 2) in               vec2 fragUV[2];
+layout(location = 4) in               mat3 fragTBNMatrix;
+layout(location = 7) in flat          uint fragDrawID;
 
 layout(location = 0) out vec4 gAlbedoIoR;
 layout(location = 1) out vec2 gNormal;

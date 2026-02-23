@@ -18,11 +18,15 @@
 
 #include <volk/volk.h>
 
-#include "Util.h"
-#include "Util/Types.h"
-#include "Util/Log.h"
-#include "Externals/UnorderedDense.h"
 #include "Externals/SDL.h"
+#include "Externals/UnorderedDense.h"
+#include "Util.h"
+#include "Util/Log.h"
+#include "Util/Types.h"
+
+#ifdef ENGINE_DLSS
+#include "Externals/DLSS.h"
+#endif
 
 namespace Vk
 {
@@ -53,23 +57,47 @@ namespace Vk
 
     std::vector<const char*> Extensions::GetInstanceExtensions()
     {
-        u32 extensionCount = 0;
+        u32 SDLExtensionCount = 0;
 
-        const auto instanceExtensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
+        const auto SDLInstanceExtensions = SDL_Vulkan_GetInstanceExtensions(&SDLExtensionCount);
 
-        if (instanceExtensions == nullptr)
+        if (SDLInstanceExtensions == nullptr)
         {
-            Logger::Error("Failed to load extensions!: {}\n", SDL_GetError());
+            Logger::Error("Failed to load SDL3 extensions!: {}\n", SDL_GetError());
         }
 
-        auto extensionStrings = std::vector(instanceExtensions, instanceExtensions + extensionCount);
+        auto extensions = std::vector(REQUIRED_INSTANCE_EXTENSIONS.begin(), REQUIRED_INSTANCE_EXTENSIONS.end());
 
-        extensionStrings.insert(extensionStrings.end(), REQUIRED_INSTANCE_EXTENSIONS.begin(), REQUIRED_INSTANCE_EXTENSIONS.end());
+        extensions.insert(extensions.end(), SDLInstanceExtensions, SDLInstanceExtensions + SDLExtensionCount);
 
-        return extensionStrings;
+        #ifdef ENGINE_DLSS
+
+        u32                    DLSSExtensionCount      = 0;
+        VkExtensionProperties* DLSSExtensionProperties = nullptr;
+
+        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements
+        (
+            &DLSS::FEATURE_DISCOVERY_INFO,
+            &DLSSExtensionCount,
+            &DLSSExtensionProperties
+        );
+
+        if (result != NVSDK_NGX_Result_Success)
+        {
+            Logger::Error("Failed to load DLSS instance extensions! [Error={}]\n", static_cast<u64>(result));
+        }
+
+        for (u32 i = 0; i < DLSSExtensionCount; ++i)
+        {
+            extensions.emplace_back(DLSSExtensionProperties[i].extensionName);
+        }
+
+        #endif
+
+        return extensions;
     }
 
-    std::vector<const char*> Extensions::GetDeviceExtensions() const
+    std::vector<const char*> Extensions::GetDeviceExtensions(ENGINE_UNUSED VkInstance instance, ENGINE_UNUSED VkPhysicalDevice physicalDevice) const
     {
         auto extensions = std::vector(REQUIRED_DEVICE_EXTENSIONS.begin(), REQUIRED_DEVICE_EXTENSIONS.end());
 
@@ -85,6 +113,32 @@ namespace Vk
         {
             extensions.emplace_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
         }
+
+        #ifdef ENGINE_DLSS
+
+        u32                    DLSSExtensionCount      = 0;
+        VkExtensionProperties* DLSSExtensionProperties = nullptr;
+
+        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements
+        (
+            instance,
+            physicalDevice,
+            &DLSS::FEATURE_DISCOVERY_INFO,
+            &DLSSExtensionCount,
+            &DLSSExtensionProperties
+        );
+
+        if (result != NVSDK_NGX_Result_Success)
+        {
+            Logger::Error("Failed to load DLSS device extensions! [Error={}]\n", static_cast<u64>(result));
+        }
+
+        for (u32 i = 0; i < DLSSExtensionCount; ++i)
+        {
+            extensions.emplace_back(DLSSExtensionProperties[i].extensionName);
+        }
+
+        #endif
 
         return extensions;
     }
@@ -102,17 +156,17 @@ namespace Vk
     bool Extensions::HasRayTracing() const
     {
         const bool hasASExtension = HasExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-        const bool hasASFeature   = m_accelerationStructureFeatures.accelerationStructure;
+        const bool hasASFeature   = m_accelerationStructureFeatures.accelerationStructure != 0u;
         const bool hasAS          = hasASExtension && hasASFeature;
 
         const bool hasDeferredHostOperations = HasExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 
         const bool hasRayTracingPipelineExtension = HasExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-        const bool hasRayTracingPipelineFeature   = m_rayTracingPipelineFeatures.rayTracingPipeline;
+        const bool hasRayTracingPipelineFeature   = m_rayTracingPipelineFeatures.rayTracingPipeline != 0u;
         const bool hasRayTracingPipeline          = hasRayTracingPipelineExtension && hasRayTracingPipelineFeature;
 
         const bool hasRayTracingMaintenanceExtension = HasExtension(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
-        const bool hasRayTracingMaintenanceFeature   = m_rayTracingMaintenanceFeatures.rayTracingMaintenance1;
+        const bool hasRayTracingMaintenanceFeature   = m_rayTracingMaintenanceFeatures.rayTracingMaintenance1 != 0u;
         const bool hasRayTracingMaintenance          = hasRayTracingMaintenanceExtension && hasRayTracingMaintenanceFeature;
 
         return hasAS && hasDeferredHostOperations && hasRayTracingPipeline && hasRayTracingMaintenance;
@@ -162,7 +216,7 @@ namespace Vk
 
         for (const auto& [name, version] : m_instanceExtensions)
         {
-            m_extensionTable[name] = true;
+            m_extensionTable[std::string(name)] = true;
         }
     }
 

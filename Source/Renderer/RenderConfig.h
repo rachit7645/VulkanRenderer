@@ -16,8 +16,15 @@
 
 #ifndef RENDER_CONFIG_H
 #define RENDER_CONFIG_H
+
+#include "Util/Unused.h"
+#include "Vulkan/Context.h"
 #include "Vulkan/Extensions.h"
 #include "Vulkan/QueueFamilies.h"
+
+#ifdef ENGINE_DLSS
+#include "DLSS/DLSSConfig.h"
+#endif
 
 namespace Renderer
 {
@@ -32,12 +39,19 @@ namespace Renderer
             bool isEnabled   = false;
         };
 
-        RenderConfig(const Vk::QueueFamilies& queueFamilies, const Vk::Extensions& extensions);
+        explicit RenderConfig(const Vk::Context& context);
 
         void Update();
 
+        void Destroy(VkDevice device);
+
+        #ifdef ENGINE_DLSS
+        DLSS::DLSSConfig DLSSConfig;
+        #endif
+
         RenderConfig::Entry rayTracing = {};
         RenderConfig::Entry multiQueue = {};
+        RenderConfig::Entry DLSS       = {};
     private:
         void Validate();
     };

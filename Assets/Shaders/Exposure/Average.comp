@@ -22,6 +22,7 @@
 
 #include "Constants.glsl"
 #include "Math.glsl"
+#include "MegaSet.glsl"
 #include "Exposure/Common.h"
 #include "Exposure/Average.h"
 #include "GPU/Constants.h"
@@ -66,6 +67,8 @@ void main()
 
         float keyValue = 1.03f - (2.0f / (log10(adaptedLuminance + 1.0f) + 2.0f));
 
-        Constants.Luminance.exposure = keyValue / max(clamp(adaptedLuminance, 0.0001f, 100.0f) - Constants.ExposureBias, 1e-5f);
+        float exposure = keyValue / max(clamp(adaptedLuminance, exp2(HISTOGRAM_MIN_LOG_LUMINANCE), exp2(HISTOGRAM_MAX_LOG_LUMINANCE)) - Constants.ExposureBias, 1e-5f);
+
+        imageStore(Images[Constants.ExposureImageIndex], ivec2(0, 0), vec4(exposure, 0.0f, 0.0f, 0.0f));
     }
 }

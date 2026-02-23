@@ -109,7 +109,7 @@ namespace Renderer::Bloom
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Array2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
-            [device, &framebufferManager, &megaSet] (const VkExtent2D& extent, Util::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
+            [device, &framebufferManager, &megaSet] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent, Util::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews
                 (
@@ -121,9 +121,9 @@ namespace Renderer::Bloom
 
                 const auto size = Vk::FramebufferSize
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
-                    .mipLevels   = static_cast<u32>(std::floor(std::log2(std::max(extent.width, extent.height)))) + 1,
+                    .width       = displayExtent.width,
+                    .height      = displayExtent.height,
+                    .mipLevels   = static_cast<u32>(std::floor(std::log2(std::max(displayExtent.width, displayExtent.height)))) + 1,
                     .arrayLayers = 1
                 };
 
@@ -158,12 +158,12 @@ namespace Renderer::Bloom
             Vk::FramebufferType::ColorHDR,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = displayExtent.width,
+                    .height      = displayExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };

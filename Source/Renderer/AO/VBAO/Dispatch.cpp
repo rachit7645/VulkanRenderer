@@ -59,12 +59,12 @@ namespace Renderer::AO::VBAO
             Vk::FramebufferType::ColorR_SFloat32,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = Occlusion::VBAO_DEPTH_MIP_LEVELS,
                     .arrayLayers = 1
                 };
@@ -111,12 +111,12 @@ namespace Renderer::AO::VBAO
             Vk::FramebufferType::ColorR_Uint32,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
@@ -147,12 +147,12 @@ namespace Renderer::AO::VBAO
             Vk::FramebufferType::ColorR_Unorm16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };
@@ -183,12 +183,12 @@ namespace Renderer::AO::VBAO
             Vk::FramebufferType::ColorR_Unorm16,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };

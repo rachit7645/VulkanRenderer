@@ -30,9 +30,10 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    vec3 hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
+    vec3  hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
+    float exposure = texture(sampler2D(Textures[Constants.ExposureIndex],   Samplers[Constants.PointSamplerIndex]), vec2(0.0f)).r;
 
-    vec3 color = hdrColor * pow(2.0f, Constants.Luminance.exposure);
+    vec3 color = hdrColor * pow(2.0f, exposure);
          color = ACESFitted(color);
 
     outColor = vec4(color, 1.0f);

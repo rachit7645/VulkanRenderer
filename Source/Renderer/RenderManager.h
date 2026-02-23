@@ -56,6 +56,11 @@
 #include "Models/ModelManager.h"
 #include "Renderer/RenderConfig.h"
 
+#ifdef ENGINE_DLSS
+#include "DLSS/DLSSConfig.h"
+#include "Renderer/DLSS/Evaluation.h"
+#endif
+
 namespace Renderer
 {
     class RenderManager
@@ -86,6 +91,7 @@ namespace Renderer
 
         void TraceRays(const Vk::CommandBuffer& cmdBuffer);
         void Lighting(const Vk::CommandBuffer& cmdBuffer);
+        void TAA(const Vk::CommandBuffer& cmdBuffer);
         void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer);
 
         void Update(const Vk::CommandBuffer& cmdBuffer);
@@ -148,6 +154,10 @@ namespace Renderer
         AO::VBAO::Dispatch      m_vbao;
         TiledLighting::Dispatch m_tiledLighting;
         Exposure::Dispatch      m_exposure;
+
+        #ifdef ENGINE_DLSS
+        DLSS::Evaluation m_DLSS;
+        #endif
 
         IBL::Generator m_iblGenerator;
 

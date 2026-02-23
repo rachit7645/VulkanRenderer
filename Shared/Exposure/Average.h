@@ -27,6 +27,8 @@ GLSL_PUSH_CONSTANT_BEGIN
     GLSL_BUFFER_POINTER(HistogramBuffer) Histogram;
     GLSL_BUFFER_POINTER(LuminanceBuffer) Luminance;
 
+    u32 ExposureImageIndex;
+
     u32 PixelCount;
     f32 TimeCoefficient;
     f32 ExposureBias;

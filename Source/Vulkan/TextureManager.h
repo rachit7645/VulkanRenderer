@@ -86,6 +86,14 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
+        void DestroySampler
+        (
+            Vk::SamplerID id,
+            VkDevice device,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
+
         void ImGuiDisplay();
 
         [[nodiscard]] bool HasPendingUploads();
