@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 #include <SDL3/SDL_main.h>
 
 #include "Util/Unused.h"
-#include "Engine/AppInstance.h"
+#include "Engine/Application.h"
 #include "Externals/Tracy.h"
 
 int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
 {
     #ifdef ENGINE_DEBUG
     // Set stderr to line buffering mode (does this even work on windows lol)
-    setvbuf(stderr, nullptr, _IOLBF, 0);
+    // setvbuf(stderr, nullptr, _IOLBF, 0);
     #endif
 
     #ifdef ENGINE_PROFILE
@@ -34,7 +34,7 @@ int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
     }
     #endif
 
-    Engine::AppInstance().Run();
+    Engine::Application().Run();
 
     return EXIT_SUCCESS;
 }

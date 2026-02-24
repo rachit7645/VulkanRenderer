@@ -1,0 +1,74 @@
+/*
+ * Copyright (c) 2023 - 2025 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Constants.glsl"
+#include "Math.glsl"
+#include "MegaSet.glsl"
+#include "Exposure/Common.h"
+#include "Exposure/Average.h"
+#include "GPU/Constants.h"
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+shared uint g_histogramBins[HISTOGRAM_SIZE];
+
+void main()
+{
+    uint threadIndex = gl_GlobalInvocationID.x;
+    uint localIndex  = gl_LocalInvocationIndex;
+
+    uint countForThisBin = Constants.Histogram.bins[localIndex];
+
+    g_histogramBins[localIndex] = countForThisBin * localIndex;
+
+    memoryBarrierShared();
+    barrier();
+
+    for (uint cutoff = (HISTOGRAM_SIZE >> 1); cutoff > 0; cutoff >>= 1)
+    {
+        if (localIndex < cutoff)
+        {
+            g_histogramBins[localIndex] += g_histogramBins[localIndex + cutoff];
+        }
+
+        memoryBarrierShared();
+        barrier();
+    }
+
+    if (threadIndex == 0)
+    {
+        float weightedLogAverage = (g_histogramBins[0] / max(Constants.PixelCount - float(countForThisBin), 1.0f)) - 1.0f;
+
+        float weightedAvgLuminance = exp2(((weightedLogAverage / 254.0f) * HISTOGRAM_LOG_LUMINANCE_RANGE) + HISTOGRAM_MIN_LOG_LUMINANCE);
+
+        float luminanceLastFrame = Constants.Luminance.values[Constants.PreviousFrame];
+        float adaptedLuminance   = luminanceLastFrame + (weightedAvgLuminance - luminanceLastFrame) * Constants.TimeCoefficient;
+
+        Constants.Luminance.values[Constants.CurrentFrame] = adaptedLuminance;
+
+        float keyValue = 1.03f - (2.0f / (log10(adaptedLuminance + 1.0f) + 2.0f));
+
+        float exposure = keyValue / max(clamp(adaptedLuminance, exp2(HISTOGRAM_MIN_LOG_LUMINANCE), exp2(HISTOGRAM_MAX_LOG_LUMINANCE)) - Constants.ExposureBias, 1e-5f);
+
+        imageStore(Images[Constants.ExposureImageIndex], ivec2(0, 0), vec4(exposure, 0.0f, 0.0f, 0.0f));
+    }
+}

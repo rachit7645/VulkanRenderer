@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 #include "Scene.h"
 
+#include <numbers>
+
+#include "Externals/ImGui.h"
+#include "Externals/SIMDJSON.h"
 #include "Util/Files.h"
 #include "Util/JSON.h"
 #include "Util/Log.h"
-#include "Externals/ImGui.h"
-#include "Externals/SIMDJSON.h"
 
 namespace Engine
 {
@@ -289,6 +291,8 @@ namespace Engine
                         ImGui::ColorEdit3("Color",     &sun.color[0]);
                         ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
 
+                        sun.direction = glm::normalize(sun.direction);
+
                         ImGui::EndMenu();
                     }
 
@@ -362,8 +366,8 @@ namespace Engine
 
                     if (ImGui::BeginMenu("Spot"))
                     {
-                        constexpr auto ONE_DEGREE    = glm::radians(1.0f);
-                        constexpr auto HALF_ROTATION = std::numbers::pi;
+                        const auto ONE_DEGREE    = glm::radians(1.0f);
+                        const auto HALF_ROTATION = std::numbers::pi;
 
                         if (ImGui::TreeNode("Add"))
                         {
@@ -373,6 +377,8 @@ namespace Engine
                             ImGui::DragFloat3("Direction", &m_loadedSpotLight.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
                             ImGui::DragFloat2("Cut Off",   &m_loadedSpotLight.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
                             ImGui::DragFloat( "Range",     &m_loadedSpotLight.range,        0.01f,      0.0f, 0.0f,          "%.3f");
+
+                            m_loadedSpotLight.direction = glm::normalize(m_loadedSpotLight.direction);
 
                             if (ImGui::Button("Add"))
                             {

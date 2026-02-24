@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,12 +56,12 @@ namespace Renderer::ShadowRT
             Vk::FramebufferType::ColorR_Unorm8,
             Vk::FramebufferImageType::Single2D,
             Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::TransferDestination,
-            [] (const VkExtent2D& extent) -> Vk::FramebufferSize
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = extent.width,
-                    .height      = extent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = 1
                 };

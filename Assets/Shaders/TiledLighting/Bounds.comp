@@ -28,8 +28,8 @@
 // 16x16 tiles
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-shared uint minDepthBits;
-shared uint maxDepthBits;
+shared uint g_MinDepthBits;
+shared uint g_MaxDepthBits;
 
 void main()
 {
@@ -47,8 +47,8 @@ void main()
 
     if (localID == 0)
     {
-        minDepthBits = 0x3F800000u;
-        maxDepthBits = 0u;
+        g_MinDepthBits = 0x3F800000u;
+        g_MaxDepthBits = 0u;
     }
 
     memoryBarrierShared();
@@ -59,8 +59,8 @@ void main()
         uint subgroupMinDepthBits = floatBitsToUint(subgroupMinDepth);
         uint subgroupMaxDepthBits = floatBitsToUint(subgroupMaxDepth);
 
-        atomicMin(minDepthBits, subgroupMinDepthBits);
-        atomicMax(maxDepthBits, subgroupMaxDepthBits);
+        atomicMin(g_MinDepthBits, subgroupMinDepthBits);
+        atomicMax(g_MaxDepthBits, subgroupMaxDepthBits);
     }
 
     memoryBarrierShared();
@@ -68,8 +68,8 @@ void main()
 
     if (localID == 0)
     {
-        float minDepth = uintBitsToFloat(minDepthBits);
-        float maxDepth = uintBitsToFloat(maxDepthBits);
+        float minDepth = uintBitsToFloat(g_MinDepthBits);
+        float maxDepth = uintBitsToFloat(g_MaxDepthBits);
 
         ivec2 tileID = ivec2(gl_WorkGroupID.xy);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 #include "Swapchain.h"
 
+#include <vulkan/vk_enum_string_helper.h>
+
+#include "BarrierWriter.h"
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
 #include "Util.h"
-#include "BarrierWriter.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -40,12 +42,7 @@ namespace Vk
         m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
         extent          = ChooseSwapExtent(size);
 
-        if (extent.width == 0 || extent.height == 0)
-        {
-            return false;
-        }
-
-        return true;
+        return extent.width != 0 && extent.height != 0;
     }
 
     void Swapchain::RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
@@ -195,6 +192,7 @@ namespace Vk
         }
 
         auto _images = std::vector<VkImage>(imageCount);
+
         Vk::CheckResult(vkGetSwapchainImagesKHR(
             context.device,
             handle,

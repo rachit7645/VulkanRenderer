@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@
 #include "AABB.h"
 
 #ifdef __cplusplus
-#include "Util/Maths.h"
 #include "Renderer/RenderConstants.h"
+#include "Util/Maths.h"
 #endif
 
 GLSL_NAMESPACE_BEGIN(GPU)
@@ -34,8 +34,8 @@ GLSL_CONSTANT(u32, MAX_SHADOWED_SPOT_LIGHT_COUNT,   4)
 
 #ifdef __cplusplus
 
-constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
-constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
+const glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
+const glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
 
 #endif
 

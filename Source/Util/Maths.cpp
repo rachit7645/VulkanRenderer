@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,5 +67,19 @@ namespace Maths
             glm::cross(glm::vec3(transform[2]), glm::vec3(transform[0])),
             glm::cross(glm::vec3(transform[0]), glm::vec3(transform[1]))
         };
+    }
+
+    std::vector<glm::vec2> GenerateHaltonSequence(usize N)
+    {
+        std::vector<glm::vec2> sequence = {};
+
+        sequence.reserve(N);
+
+        for (usize i = 0; i < N; ++i)
+        {
+            sequence.emplace_back(Halton(i, 2), Halton(i, 3));
+        }
+
+        return sequence;
     }
 }

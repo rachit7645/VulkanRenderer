@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <ktx.h>
 #include <vulkan/utility/vk_format_utils.h>
+#include <volk/volk.h>
 
 #include "Util.h"
 #include "Util/Log.h"
@@ -150,7 +151,7 @@ namespace Vk
             return;
         }
 
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         // ? -> Transfer Destination
         {
@@ -280,14 +281,14 @@ namespace Vk
 
     bool ImageUploader::HasPendingUploads()
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         return !m_pendingUploads.empty();
     }
 
     void ImageUploader::Clear()
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         m_pendingUploads.clear();
         m_barrierWriter.Clear();
@@ -851,6 +852,34 @@ namespace Vk
             file.setFrameBuffer(&pixels[0][0], 1, width);
             file.readPixels(dataWindow.min.y, dataWindow.max.y);
 
+            for (ssize x = 0; x < width; ++x)
+            {
+                for (ssize y = 0; y < height; ++y)
+                {
+                    auto& rgba = pixels[static_cast<long>(x)][static_cast<long>(y)];
+
+                    auto Sanitize = [] (Imath::half& h)
+                    {
+                        if (h.isInfinity())
+                        {
+                            constexpr u16 F16_MAX = 0x7BFF;
+
+                            h = Imath::half(Imath::half::FromBits, F16_MAX);
+                        }
+
+                        if (h.isNan())
+                        {
+                            h = Imath::half(Imath::half::FromBits, 0);
+                        }
+                    };
+
+                    Sanitize(rgba.r);
+                    Sanitize(rgba.g);
+                    Sanitize(rgba.b);
+                    Sanitize(rgba.a);
+                }
+            }
+
             const bool toF16           = (flags & ImageUploadFlags::F16)     == ImageUploadFlags::F16;
             const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
@@ -1241,7 +1270,7 @@ namespace Vk
 
     void ImageUploader::AppendUpload(Upload&& upload)
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         m_pendingUploads.emplace_back(upload);
     }

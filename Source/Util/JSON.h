@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 #define JSON_H
 
 #include "GPU/Lights.h"
-#include "Renderer/Objects/FreeCamera.h"
 #include "Externals/SIMDJSON.h"
+#include "Renderer/Objects/FreeCamera.h"
 
 namespace JSON
 {
@@ -36,7 +36,7 @@ namespace JSON
     {
         glm::vec<L, f32, glm::defaultp> output;
 
-        for (usize i = 0; i < L; ++i)
+        for (ssize i = 0; i < L; ++i)
         {
             array.reset();
 
@@ -78,7 +78,9 @@ namespace simdjson
             return error;
         }
 
-        auto parsed = JSON::ParseVector<glm::vec2::length()>(array);
+        constexpr glm::length_t VECTOR_LENGTH = 2;
+
+        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {
@@ -100,7 +102,9 @@ namespace simdjson
             return error;
         }
 
-        auto parsed = JSON::ParseVector<glm::vec3::length()>(array);
+        constexpr glm::length_t VECTOR_LENGTH = 3;
+
+        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {
@@ -233,7 +237,6 @@ namespace simdjson
         glm::vec3 position    = {};
         glm::vec3 rotation    = {};
         f32       FOV         = 0.0f;
-        f32       exposure    = 0.0f;
         f32       speed       = 0.0f;
         f32       sprint      = 0.0f;
         f32       sensitivity = 0.0f;
@@ -250,11 +253,6 @@ namespace simdjson
         }
 
         if (const auto error = object["FOV"].get<f32>(FOV); error != error_code::SUCCESS)
-        {
-            return error;
-        }
-
-        if (const auto error = object["Exposure"].get<f32>(exposure); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -287,7 +285,6 @@ namespace simdjson
             position,
             rotation,
             FOV,
-            exposure,
             speed,
             sprint,
             sensitivity,

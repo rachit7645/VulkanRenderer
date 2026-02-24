@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@
 #define ACCELERATION_STRUCTURE_H
 
 #include "Constants.h"
+#include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Context.h"
-#include "Buffer.h"
 #include "GraphicsTimeline.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,16 @@
 
 #include "ResizableBuffer.h"
 
+#include "Util/Enum.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Vk
 {
+    ResizableBuffer::ResizableBuffer(const ResizableBufferFlags flags)
+        : flags(flags)
+    {
+    }
+
     void ResizableBuffer::Reserve
     (
         VkDevice device,
@@ -34,6 +40,8 @@ namespace Vk
             return;
         }
 
+        const bool copyOnResize = (flags & ResizableBufferFlags::CopyOnResize) == ResizableBufferFlags::CopyOnResize;
+
         auto oldBuffer = buffer;
 
         deletionQueue.PushDeletor([allocator, buffer = oldBuffer] () mutable
@@ -41,18 +49,32 @@ namespace Vk
            buffer.Destroy(allocator);
         });
 
+        // TODO: Move choice of buffer creation parameters to user
+
+        VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+        if (copyOnResize)
+        {
+            usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        }
+
         buffer = Vk::Buffer
         (
             allocator,
             capacity,
             0,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            usageFlags,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
         buffer.GetDeviceAddress(device);
+
+        if (!copyOnResize)
+        {
+            return;
+        }
 
         if (oldBuffer.handle == VK_NULL_HANDLE || oldBuffer.size == 0)
         {

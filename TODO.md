@@ -17,6 +17,5 @@
 * Generic CPU -> GPU Uploader
 * Clustered Light Culling
 * Shadow Caching
-* Auto Exposure
 * Mesh Shaders
-* Improve PBR (See DevSH's Discussion)
+* Better Fresnel

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ namespace Util
 {
     void DeletionQueue::PushDeletor(Deletor&& deletor)
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         m_deletors.push(std::move(deletor));
     }
@@ -34,7 +34,7 @@ namespace Util
 
         std::stack<Deletor> temp = {};
         {
-            std::lock_guard lock(m_mutex);
+            std::scoped_lock lock{m_mutex};
             std::swap(m_deletors, temp);
         }
 

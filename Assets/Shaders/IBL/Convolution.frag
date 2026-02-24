@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ void main()
 {
     vec3 normal = normalize(worldPos);
 
-    vec3 up    = vec3(0.0f, 1.0f, 0.0f);
+    vec3 up    = abs(normal.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 

@@ -37,3 +37,6 @@
 [submodule "unordered_dense"]
 	path = Externals/unordered_dense
 	url = https://github.com/martinus/unordered_dense.git
+[submodule "DLSS SDK"]
+	path = Externals/dlss
+	url = https://github.com/NVIDIA/DLSS.git

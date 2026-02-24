@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,14 @@
 
 #include <vulkan/vulkan.h>
 
+#include "GPU/Constants.h"
 #include "Util/Types.h"
 
 namespace Vk
 {
-    constexpr auto  VULKAN_API_VERSION = VK_API_VERSION_1_3;
-    constexpr usize FRAMES_IN_FLIGHT   = 2;
+    constexpr auto VULKAN_API_VERSION      = VK_API_VERSION_1_3;
+    constexpr auto VULKAN_APPLICATION_NAME = "Rachit's Vulkan Renderer";
+    constexpr auto VULKAN_ENGINE_NAME      = "Rachit's Engine: Vulkan Edition";
 }
 
 #endif

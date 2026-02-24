@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,18 @@
 
 #include "Externals/GLM.h"
 #include "Util/Types.h"
-#include "Util/Maths.h"
 
 namespace Renderer
 {
     // Default field of view
-    constexpr f32 DEFAULT_FOV = glm::radians(80.0f);
+    inline const f32 DEFAULT_FOV = glm::radians(80.0f);
     // Near and far plane
     constexpr f32 NEAR_PLANE = 0.1f;
     constexpr f32 FAR_PLANE  = 512.0f;
     // World Up direction
-    constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
+    inline const glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
     // TAA Jitter Samples
     constexpr usize JITTER_SAMPLE_COUNT = 64;
-    constexpr auto  JITTER_SAMPLES      = Maths::GenerateHaltonSequence<JITTER_SAMPLE_COUNT>();
 }
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,19 @@
 
 #include "Generator.h"
 
-#include "Vulkan/DebugUtils.h"
-#include "Util/Log.h"
 #include "Externals/GLM.h"
 #include "IBL/Converter.h"
 #include "IBL/Convolution.h"
 #include "IBL/PreFilter.h"
+#include "Util/Log.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::IBL
 {
-    constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
-    constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
-    constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
-    constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
+    inline const glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
+    inline const glm::uvec2 IRRADIANCE_SIZE = {128,  128};
+    inline const glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
+    inline const glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
     constexpr u32 PREFILTER_SAMPLE_COUNT = 512;
     
@@ -89,8 +89,8 @@ namespace Renderer::IBL
         pipelineManager.AddPipeline("IBL/BRDF", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, BRDF_COLOR_FORMATS, VK_FORMAT_UNDEFINED)
-            .AttachShader("Misc/Trongle.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("IBL/BRDF.frag",     VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("Misc/Triangle.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/BRDF.frag",      VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
@@ -131,7 +131,7 @@ namespace Renderer::IBL
 
         Vk::SetDebugName(device, m_matrixBuffer.handle, "IBLMaps/MatrixBuffer");
 
-        if (!(m_matrixBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+        if ((m_matrixBuffer.memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0u)
         {
             Vk::CheckResult(vmaFlushAllocation(
                 allocator,
@@ -325,7 +325,7 @@ namespace Renderer::IBL
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.colorAttachmentFormatHDR,
-                .extent                = {SKYBOX_SIZE.x, SKYBOX_SIZE.y, 1},
+                .extent                = {.width = SKYBOX_SIZE.x, .height = SKYBOX_SIZE.y, .depth = 1},
                 .mipLevels             = static_cast<u32>(std::floor(std::log2(std::max(SKYBOX_SIZE.x, SKYBOX_SIZE.y)))) + 1,
                 .arrayLayers           = 6,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -392,8 +392,8 @@ namespace Renderer::IBL
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {skybox.width, skybox.height}
+                .offset = {.x = 0, .y = 0},
+                .extent = {.width = skybox.width, .height = skybox.height}
             },
             .layerCount           = 1,
             .viewMask             = 0b00111111,
@@ -421,8 +421,8 @@ namespace Renderer::IBL
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {skybox.width, skybox.height}
+            .offset = {.x = 0, .y = 0},
+            .extent = {.width = skybox.width, .height = skybox.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -538,7 +538,7 @@ namespace Renderer::IBL
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.colorAttachmentFormatHDR,
-                .extent                = {IRRADIANCE_SIZE.x, IRRADIANCE_SIZE.y, 1},
+                .extent                = {.width = IRRADIANCE_SIZE.x, .height = IRRADIANCE_SIZE.y, .depth = 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 6,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -605,8 +605,8 @@ namespace Renderer::IBL
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {irradianceMap.width, irradianceMap.height}
+                .offset = {.x = 0, .y = 0},
+                .extent = {.width = irradianceMap.width, .height = irradianceMap.height}
             },
             .layerCount           = 1,
             .viewMask             = 0b00111111,
@@ -634,8 +634,8 @@ namespace Renderer::IBL
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {irradianceMap.width, irradianceMap.height}
+            .offset = {.x = 0, .y = 0},
+            .extent = {.width = irradianceMap.width, .height = irradianceMap.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -725,7 +725,7 @@ namespace Renderer::IBL
                 .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = formatHelper.colorAttachmentFormatHDR,
-                .extent                = {PRE_FILTER_SIZE.x, PRE_FILTER_SIZE.y, 1},
+                .extent                = {.width = PRE_FILTER_SIZE.x, .height = PRE_FILTER_SIZE.y, .depth = 1},
                 .mipLevels             = PREFILTER_MIPMAP_LEVELS,
                 .arrayLayers           = 6,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -804,8 +804,8 @@ namespace Renderer::IBL
                 .pNext                = nullptr,
                 .flags                = 0,
                 .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {mipWidth, mipHeight}
+                    .offset = {.x = 0, .y = 0},
+                    .extent = {.width = mipWidth, .height = mipHeight}
                 },
                 .layerCount           = 1,
                 .viewMask             = 0b00111111,
@@ -833,8 +833,8 @@ namespace Renderer::IBL
 
             const VkRect2D scissor =
             {
-                .offset = {0, 0},
-                .extent = {mipWidth, mipHeight}
+                .offset = {.x = 0, .y = 0},
+                .extent = {.width = mipWidth, .height = mipHeight}
             };
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -954,7 +954,7 @@ namespace Renderer::IBL
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = VK_FORMAT_R16G16_SFLOAT,
-                .extent                = {BRDF_LUT_SIZE.x, BRDF_LUT_SIZE.y, 1},
+                .extent                = {.width = BRDF_LUT_SIZE.x, .height = BRDF_LUT_SIZE.y, .depth = 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -1021,8 +1021,8 @@ namespace Renderer::IBL
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {brdfLut.width, brdfLut.height}
+                .offset = {.x = 0, .y = 0},
+                .extent = {.width = brdfLut.width, .height = brdfLut.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -1050,8 +1050,8 @@ namespace Renderer::IBL
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {brdfLut.width, brdfLut.height}
+            .offset = {.x = 0, .y = 0},
+            .extent = {.width = brdfLut.width, .height = brdfLut.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);

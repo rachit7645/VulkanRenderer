@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #include "FreeCamera.h"
 #include "Renderer/RenderConstants.h"
 #include "Engine/Inputs.h"
+#include "Externals/ImGui.h"
 
 namespace Renderer::Objects
 {
@@ -25,13 +26,12 @@ namespace Renderer::Objects
         const glm::vec3& position,
         const glm::vec3& rotation,
         f32 FOV,
-        f32 exposure,
         f32 speed,
         f32 sprint,
         f32 sensitivity,
         f32 zoom
     )
-        : Camera(position, rotation, FOV, exposure),
+        : Camera(position, rotation, FOV),
           m_speed(speed),
           m_sprint(sprint),
           m_sensitivity(sensitivity),
@@ -115,7 +115,8 @@ namespace Renderer::Objects
     void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
         constexpr auto ROTATION_STICK_MULTIPLIER = 0.04f;
-        constexpr auto MAX_YAW                   = glm::radians(89.0f);
+
+        const auto MAX_YAW = glm::radians(89.0f);
 
         const auto speed = m_sensitivity * frameCounter.frameDelta;
 
@@ -140,8 +141,8 @@ namespace Renderer::Objects
 
     void FreeCamera::Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        constexpr auto MIN_FOV = glm::radians(10.0f);
-        constexpr auto MAX_FOV = glm::radians(120.0f);
+        const auto MIN_FOV = glm::radians(10.0f);
+        const auto MAX_FOV = glm::radians(120.0f);
 
         // Stops things from going haywire
         if (!inputs.WasMouseScrolled())

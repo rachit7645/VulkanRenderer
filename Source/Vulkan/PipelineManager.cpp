@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,13 @@
 
 #include "PipelineManager.h"
 
+#include <ranges>
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "DebugUtils.h"
 #include "Util.h"
 #include "Util/Log.h"
+#include "Externals/ImGui.h"
 
 namespace Vk
 {

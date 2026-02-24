@@ -41,7 +41,7 @@ void main()
     // Tangent to World Space Sample Vector
     vec3 up = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
     vec3 T  = normalize(cross(up, N));
-    vec3 B  = cross(N, T);
+    vec3 B  = normalize(cross(N, T));
 
     vec2 resolution = vec2(textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0));
 
@@ -67,7 +67,7 @@ void main()
 
         // Fix for extremely bright spots
         float saSample = 1.0f / max(sampleCount * pdf, 0.0001f);
-        float mipLevel = Constants.Roughness == 0.0f ? 0.0f : 0.5f * log2(saSample / saTexel);
+        float mipLevel = Constants.Roughness == 0.0f ? 0.0f : max(0.5f * log2(saSample / saTexel), 0.0f);
 
         vec3 color = NdotL * textureLod(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), L, mipLevel).rgb;
 
@@ -78,5 +78,5 @@ void main()
         }
     }
 
-    outColor = prefilteredColor / totalWeight;
+    outColor = totalWeight > 0.0f ? prefilteredColor / totalWeight : vec3(0.0f);
 }

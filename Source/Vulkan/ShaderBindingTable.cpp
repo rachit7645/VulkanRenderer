@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include "ShaderBindingTable.h"
+
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
 #include "Util/Align.h"
@@ -34,9 +35,9 @@ namespace Vk
     {
         Vk::BeginLabel(cmdBuffer, "Shader Binding Table Build", glm::vec4(0.4126f, 0.7488f, 0.5581f, 1.0f));
 
-        const u32 shaderGroupHandleSize      = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
-        const u32 shaderGroupHandleAlignment = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment;
-        const u32 shaderGroupBaseAlignment   = context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment;
+        const VkDeviceSize shaderGroupHandleSize      = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
+        const VkDeviceSize shaderGroupHandleAlignment = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment;
+        const VkDeviceSize shaderGroupBaseAlignment   = context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment;
 
         const u32          handleCount = 1 + missCount + hitCount;
         const VkDeviceSize handlesSize = handleCount * shaderGroupHandleSize;
@@ -81,9 +82,10 @@ namespace Vk
 
         const auto pMappedData = static_cast<u8*>(stagingMemoryBlock.hostAddress);
 
-        const usize raygenOffset = 0;
-        const usize missOffset   = raygenOffset + 1         * shaderGroupHandleSize;
-        const usize hitOffset    = missOffset   + missCount * shaderGroupHandleSize;
+        constexpr usize RAYGEN_OFFSET = 0;
+
+        const usize missOffset = RAYGEN_OFFSET + 1         * shaderGroupHandleSize;
+        const usize hitOffset  = missOffset    + missCount * shaderGroupHandleSize;
 
         // Raygen
         std::memcpy

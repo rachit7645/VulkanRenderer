@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,16 @@
 
 #include "TextureManager.h"
 
+#include <ranges>
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "Texture.h"
 #include "Util.h"
 #include "DebugUtils.h"
 #include "Util/Log.h"
 #include "Util/Types.h"
 #include "Util/Visitor.h"
+#include "Externals/ImGui.h"
 
 namespace Vk
 {
@@ -343,6 +347,30 @@ namespace Vk
         });
 
         m_textureMap.erase(iter);
+    }
+
+    void TextureManager::DestroySampler
+    (
+        Vk::SamplerID id,
+        VkDevice device,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        const auto iter = m_samplerMap.find(id);
+
+        if (iter == m_samplerMap.end())
+        {
+            return;
+        }
+
+        deletionQueue.PushDeletor([&megaSet, device, sampler = iter->second] () mutable
+        {
+            megaSet.FreeSampler(sampler.descriptorID);
+            sampler.Destroy(device);
+        });
+
+        m_samplerMap.erase(id);
     }
 
     void TextureManager::ImGuiDisplay()

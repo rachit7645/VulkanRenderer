@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
 #include "Buffers/TileLightIndexBuffer.h"
+#include "Buffers/ExposureBuffers.h"
 #include "Objects/GlobalSamplers.h"
-#include "PostProcess/RenderPass.h"
+#include "Tonemap/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
 #include "Skybox/RenderPass.h"
@@ -30,13 +31,14 @@
 #include "PointShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "AO/VBGTAO/Dispatch.h"
+#include "AO/VBAO/Dispatch.h"
 #include "ShadowRT/RayDispatch.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
 #include "IBL/Generator.h"
 #include "SpotShadow/RenderPass.h"
 #include "TiledLighting/Dispatch.h"
+#include "Exposure/Dispatch.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -52,6 +54,12 @@
 #include "Engine/Window.h"
 #include "Engine/Scene.h"
 #include "Models/ModelManager.h"
+#include "Renderer/RenderConfig.h"
+
+#ifdef ENGINE_DLSS
+#include "DLSS/DLSSConfig.h"
+#include "Renderer/DLSS/Evaluation.h"
+#endif
 
 namespace Renderer
 {
@@ -83,12 +91,8 @@ namespace Renderer
 
         void TraceRays(const Vk::CommandBuffer& cmdBuffer);
         void Lighting(const Vk::CommandBuffer& cmdBuffer);
+        void TAA(const Vk::CommandBuffer& cmdBuffer);
         void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer);
-
-        void GraphicsToAsyncComputeRelease(const Vk::CommandBuffer& cmdBuffer);
-        void GraphicsToAsyncComputeAcquire(const Vk::CommandBuffer& cmdBuffer);
-        void AsyncComputeToGraphicsRelease(const Vk::CommandBuffer& cmdBuffer);
-        void AsyncComputeToGraphicsAcquire(const Vk::CommandBuffer& cmdBuffer);
 
         void Update(const Vk::CommandBuffer& cmdBuffer);
         void ImGuiDisplay();
@@ -97,7 +101,7 @@ namespace Renderer
 
         void Resize();
 
-        void Initialize();
+        void InitImGui();
 
         Engine::Config m_config;
 
@@ -111,6 +115,8 @@ namespace Renderer
 
         Engine::Window m_window;
         Vk::Context    m_context;
+
+        Renderer::RenderConfig m_renderConfig;
 
         Vk::CommandBufferAllocator                m_graphicsCmdBufferAllocator;
         std::optional<Vk::CommandBufferAllocator> m_computeCmdBufferAllocator = std::nullopt;
@@ -132,7 +138,7 @@ namespace Renderer
 
         Objects::GlobalSamplers m_samplers;
 
-        PostProcess::RenderPass m_postProcess;
+        ToneMap::RenderPass     m_toneMap;
         Depth::RenderPass       m_depth;
         DearImGui::RenderPass   m_imGui;
         Skybox::RenderPass      m_skybox;
@@ -145,14 +151,20 @@ namespace Renderer
         SpotShadow::RenderPass  m_spotShadow;
 
         Culling::Dispatch       m_culling;
-        AO::VBGTAO::Dispatch    m_vbgtao;
+        AO::VBAO::Dispatch      m_vbao;
         TiledLighting::Dispatch m_tiledLighting;
+        Exposure::Dispatch      m_exposure;
+
+        #ifdef ENGINE_DLSS
+        DLSS::Evaluation m_DLSS;
+        #endif
 
         IBL::Generator m_iblGenerator;
 
         Buffers::MeshBuffer           m_meshBuffer;
         Buffers::IndirectBuffer       m_indirectBuffer;
         Buffers::TileLightIndexBuffer m_tiledLightIndexBuffer;
+        Buffers::ExposureBuffers      m_exposureBuffer;
 
         Buffers::SceneBuffer                m_sceneBuffer;
         std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;

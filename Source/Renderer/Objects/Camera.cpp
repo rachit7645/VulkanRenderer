@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,11 @@ namespace Renderer::Objects
     (
         const glm::vec3& position,
         const glm::vec3& rotation,
-        f32 FOV,
-        f32 exposure
+        f32 FOV
     )
         : position(position),
           rotation(rotation),
-          FOV(FOV),
-          exposure(exposure)
+          FOV(FOV)
     {
     }
 
@@ -47,7 +45,6 @@ namespace Renderer::Objects
             ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.2f");
             ImGui::DragFloat3("Rotation", &rotation[0], 1.0f, 0.0f, 0.0f, "%.2f");
             ImGui::DragFloat ("FOV",      &FOV,         1.0f, 0.0f, 0.0f, "%.2f");
-            ImGui::DragFloat ("Exposure", &exposure,    0.1f, 0.0f, 0.0f, "%.2f");
 
             ImGui::Separator();
 

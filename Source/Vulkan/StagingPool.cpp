@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ namespace Vk
 {
     void StagingPool::Update(VmaAllocator allocator)
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         if (m_stagingBuffers.size() <= 1)
         {
@@ -71,7 +71,7 @@ namespace Vk
     {
         constexpr VkDeviceSize STAGING_BUFFER_SIZE = 128ull * 1024 * 1024;
 
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         if (size == 0)
         {
@@ -131,7 +131,7 @@ namespace Vk
 
     void StagingPool::Free(const StagingMemoryBlock& stagingMemoryBlock)
     {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock{m_mutex};
 
         for (auto& stagingBuffer : m_stagingBuffers)
         {

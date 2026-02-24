@@ -55,6 +55,13 @@ float pow5(float x)
     return x5;
 }
 
+float log10(float x)
+{
+    const float INVERSE_LOG_10 = 1.0f / log(10.0f);
+
+    return INVERSE_LOG_10 * log(x);
+}
+
 // Safe version (NaNs are scary)
 float FastTanArcCos(float x)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  */
 
 #include "FormatHelper.h"
+
+#include <array>
+#include <vulkan/vk_enum_string_helper.h>
+#include <volk/volk.h>
 
 #include "Util/Log.h"
 
@@ -34,23 +38,6 @@ namespace Vk
         );
 
         colorAttachmentFormatHDR = FindSupportedFormat
-        (
-            physicalDevice,
-            std::array
-            {
-                VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-                VK_FORMAT_R16G16B16A16_SFLOAT,
-                VK_FORMAT_R32G32B32A32_SFLOAT,
-                VK_FORMAT_R64G64B64A64_SFLOAT
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT |
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
-            VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-        );
-
-        colorAttachmentFormatHDRWithAlpha = FindSupportedFormat
         (
             physicalDevice,
             std::array

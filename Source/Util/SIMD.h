@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@
 namespace Util
 {
     // `source` and `destination` must not be the same
-    // Requires AVX2
+    // Requires AVX2, F16C
     void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count);
 
     // `source` and `destination` must not be the same
-    // Requires AVX2
+    // Requires AVX2, F16C
     void ConvertF16ToF32(const f16* __restrict__ source, f32* __restrict__ destination, usize count);
 }
 

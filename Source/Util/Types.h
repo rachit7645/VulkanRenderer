@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <cstddef>
 #include <cstdint>
 
 // Signed integer types
@@ -31,13 +32,13 @@ using u16 = std::uint16_t;
 using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
-// Floating point types (TODO: <stdfloat>)
+// Floating point types
 using f16 = u16;
 using f32 = float;
 using f64 = double;
 
 // Size types
-using ssize = ssize_t;
+using ssize = std::ptrdiff_t;
 using usize = std::size_t;
 
 #endif

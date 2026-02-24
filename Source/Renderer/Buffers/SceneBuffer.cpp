@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "SceneBuffer.h"
 
+#include "Renderer/Jitter.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
@@ -50,7 +51,8 @@ namespace Renderer::Buffers
         usize FIF,
         usize frameIndex,
         VmaAllocator allocator,
-        VkExtent2D extent,
+        VkExtent2D renderExtent,
+        VkExtent2D displayExtent,
         const Engine::Scene& scene
     )
     {
@@ -66,14 +68,12 @@ namespace Renderer::Buffers
         const auto projection = Maths::InfiniteProjectionReverseZ
         (
             scene.camera.FOV,
-            static_cast<f32>(extent.width) /
-            static_cast<f32>(extent.height),
+            static_cast<f32>(displayExtent.width) /
+            static_cast<f32>(displayExtent.height),
             Renderer::NEAR_PLANE
         );
 
-        auto jitter = Renderer::JITTER_SAMPLES[frameIndex % JITTER_SAMPLE_COUNT];
-        jitter     -= glm::vec2(0.5f);
-        jitter     /= glm::vec2(extent.width, extent.height);
+        const auto jitter = Renderer::GetJitter(frameIndex, renderExtent, displayExtent);
 
         auto jitteredProjection = projection;
 

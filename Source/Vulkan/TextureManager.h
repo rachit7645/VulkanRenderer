@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,14 @@ namespace Vk
             Vk::TextureID id,
             VkDevice device,
             VmaAllocator allocator,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        void DestroySampler
+        (
+            Vk::SamplerID id,
+            VkDevice device,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
         );

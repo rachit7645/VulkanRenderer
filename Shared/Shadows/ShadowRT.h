@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@
 #define SHADOW_RT_PUSH_CONSTANT
 
 #include "GLSL.h"
+#include "GPU/Mesh.h"
 #include "GPU/Scene.h"
 #include "GPU/Vertex.h"
-#include "GPU/Mesh.h"
 
 GLSL_NAMESPACE_BEGIN(Renderer::ShadowRT)
 

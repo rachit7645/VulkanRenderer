@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,16 @@ namespace Renderer::Objects
             const Vk::Context& context,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager
+        );
+
+        void Update
+        (
+            const Vk::Context& context,
+            const VkExtent2D& renderExtent,
+            const VkExtent2D& swapchainExtent,
+            Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
+            Util::DeletionQueue& deletionQueue
         );
 
         Vk::SamplerID pointSamplerID       = 0;

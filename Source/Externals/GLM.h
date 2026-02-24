@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,9 @@
 // Fastgltf math types
 #include "FastGLTF.h"
 
+// Vulkan types
+#include <vulkan/vulkan.h>
+
 namespace glm
 {
     // fastgtlf to GLM conversions
@@ -61,6 +64,8 @@ namespace glm
 
     // GLM to Vulkan conversion
     VkTransformMatrixKHR vk_cast(const mat4& matrix);
+    uvec2                vk_cast(const VkExtent2D& extent);
+    VkExtent2D           vk_cast(const uvec2& vector);
 }
 
 #endif

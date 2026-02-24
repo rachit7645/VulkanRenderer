@@ -19,39 +19,29 @@ project(Externals)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
+if (MSVC)
+    add_compile_options(/arch:AVX2)
+else()
+    add_compile_options(-mavx2 -mf16c)
+endif()
+
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 
-# C++ 20 is required
-set(CMAKE_CXX_STANDARD 20)
+# C++23 is required
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Save current flags
-set(ORIGINAL_C_FLAGS   ${CMAKE_C_FLAGS})
-set(ORIGINAL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-
-# Force Release flags w/ no warnings
-set(CMAKE_C_FLAGS   ${CMAKE_C_FLAGS_RELEASE})
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_RELEASE})
 
 # Build shared libraries
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
 function(engine_add_external directory)
     # Parse optional arguments
-    set(options EXCLUDE_FROM_ALL FORCE_RELEASE ENABLE_LTO)
+    set(options EXCLUDE_FROM_ALL ENABLE_LTO)
     set(oneValueArgs INSTALL_TARGET)
     set(multiValueArgs "")
     cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
-
-    # Save current build type
-    set(ORIGINAL_BUILD_TYPE ${CMAKE_BUILD_TYPE})
-
-    # Force Release
-    if (ARG_FORCE_RELEASE)
-        set(CMAKE_BUILD_TYPE Release)
-    endif()
 
     # Add subdirectory
     if (ARG_EXCLUDE_FROM_ALL)
@@ -90,11 +80,6 @@ function(engine_add_external directory)
             COMPONENT Runtime
         )
     endif()
-
-    # Restore original build type
-    if (ARG_FORCE_RELEASE)
-        set(CMAKE_BUILD_TYPE ${ORIGINAL_BUILD_TYPE})
-    endif()
 endfunction()
 
 # Required packages
@@ -119,15 +104,18 @@ set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FO
 set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
 
 # External Libraries
-engine_add_external(vma             FORCE_RELEASE                                                              )
-engine_add_external(volk            FORCE_RELEASE                                                              )
-engine_add_external(unordered_dense FORCE_RELEASE                                                              )
-engine_add_external(glm             FORCE_RELEASE                  ENABLE_LTO INSTALL_TARGET glm::glm          )
-engine_add_external(fmt                                            ENABLE_LTO INSTALL_TARGET fmt::fmt          )
-engine_add_external(sdl                           EXCLUDE_FROM_ALL            INSTALL_TARGET SDL3::SDL3-shared )
-engine_add_external(simdjson        FORCE_RELEASE EXCLUDE_FROM_ALL            INSTALL_TARGET simdjson::simdjson)
-engine_add_external(fastgltf        FORCE_RELEASE EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
-engine_add_external(openexr         FORCE_RELEASE EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
+engine_add_external(vma                                                                          )
+engine_add_external(volk                                                                         )
+engine_add_external(unordered_dense                                                              )
+engine_add_external(glm                              ENABLE_LTO INSTALL_TARGET glm::glm          )
+engine_add_external(fmt                              ENABLE_LTO INSTALL_TARGET fmt::fmt          )
+engine_add_external(sdl             EXCLUDE_FROM_ALL            INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(simdjson        EXCLUDE_FROM_ALL            INSTALL_TARGET simdjson::simdjson)
+engine_add_external(fastgltf        EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
+engine_add_external(openexr         EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
+
+# Vulkan Headers
+target_link_libraries(volk PRIVATE Vulkan::Headers)
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
@@ -138,11 +126,11 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
 
     # Add Tracy (Requires v0.11.1!)
-    engine_add_external(tracy FORCE_RELEASE EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
+    engine_add_external(tracy EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
 endif()
 
 # ImGui source files
-add_library(DearImGui SHARED
+add_library(DearImGui STATIC
 	imgui/imgui.cpp
 	imgui/imgui_draw.cpp
 	imgui/imgui_tables.cpp
@@ -154,12 +142,12 @@ add_library(DearImGui SHARED
 
 # ImGui precompiled headers
 target_precompile_headers(DearImGui PRIVATE
-	imgui/imconfig.h
-	imgui/imgui_internal.h
-	imgui/imgui.h
-	imgui/imstb_rectpack.h
-	imgui/imstb_truetype.h
-	imgui/backends/imgui_impl_sdl3.h
+    imgui/imconfig.h
+    imgui/imgui_internal.h
+    imgui/imgui.h
+    imgui/imstb_rectpack.h
+    imgui/imstb_truetype.h
+    imgui/backends/imgui_impl_sdl3.h
 )
 
 # SDL2 Includes
@@ -168,12 +156,15 @@ target_include_directories(DearImGui PRIVATE sdl/include/)
 target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
 # ImGui Defines
 target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
-# Disable warnings
-target_compile_options(DearImGui PRIVATE -w)
-# -O3 optimisations
-target_compile_options(DearImGui PRIVATE -O3)
-# Enable CPU vectorisation
-target_compile_options(DearImGui PRIVATE -mavx2)
+
+# Compiler options
+if (MSVC)
+    target_compile_options(DearImGui PRIVATE /w /O2)
+    target_compile_definitions(DearImGui PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+else()
+    target_compile_options(DearImGui PRIVATE -w -O3)
+endif()
+
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
 
@@ -185,6 +176,47 @@ install(
     RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
 )
 
-# Restore original flags
-set(CMAKE_C_FLAGS   ${ORIGINAL_C_FLAGS})
-set(CMAKE_CXX_FLAGS ${ORIGINAL_CXX_FLAGS})
+# DLSS SDK will only build on MSVC-Style Windows Compilers and Linux
+if (WIN32)
+    if (MSVC)
+        set(DLSSAvailable ON)
+    else()
+        set(DLSSAvailable OFF)
+    endif()
+else()
+    set(DLSSAvailable ON)
+endif()
+
+# You can use this to forcefully disable DLSS
+# set(DLSSAvailable OFF)
+
+set(DLSSAvailable ${DLSSAvailable} PARENT_SCOPE)
+
+if (DLSSAvailable)
+    # DLSS
+    set(DLSS_ROOT ${CMAKE_SOURCE_DIR}/Externals/dlss)
+
+    # DLSS Paths
+    if (WIN32)
+        # Debug Mode DLL
+        # set(DLSS_DLL "${DLSS_ROOT}/lib/Windows_x86_64/dev/nvngx_dlss.dll")
+
+        set(DLSS_DLL "${DLSS_ROOT}/lib/Windows_x86_64/rel/nvngx_dlss.dll")
+        set(DLSS_LIB "${DLSS_ROOT}/lib/Windows_x86_64/x64/nvsdk_ngx_d.lib")
+    else()
+        set(DLSS_DLL "${DLSS_ROOT}/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.5.3")
+        set(DLSS_LIB "${DLSS_ROOT}/lib/Linux_x86_64/libnvsdk_ngx.a")
+    endif()
+
+    # DLSS Imported Library
+    add_library(DLSS SHARED IMPORTED GLOBAL)
+
+    # Setup DLSS import
+    set_target_properties(DLSS PROPERTIES
+        IMPORTED_IMPLIB   "${DLSS_LIB}"
+        IMPORTED_LOCATION "${DLSS_DLL}"
+    )
+
+    # Install DLSS
+    install(IMPORTED_RUNTIME_ARTIFACTS DLSS)
+endif()

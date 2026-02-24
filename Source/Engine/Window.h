@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,8 @@ namespace Engine
     {
     public:
         Window();
-        ~Window();
 
-        // No copying
-        Window(const Window&)            = delete;
-        Window& operator=(const Window&) = delete;
-
-        // Only moving
-        Window(Window&& other)            = default;
-        Window& operator=(Window&& other) = default;
+        void Destroy();
 
         SDL_Window* handle = nullptr;
 

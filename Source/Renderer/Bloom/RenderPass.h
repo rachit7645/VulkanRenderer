@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ namespace Renderer::Bloom
             const Objects::GlobalSamplers& samplers
         );
     private:
-        void RenderDownSamples
+        void DownSample
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
@@ -55,7 +55,7 @@ namespace Renderer::Bloom
             const Objects::GlobalSamplers& samplers
         );
 
-        void RenderUpSamples
+        void UpSample
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
@@ -65,7 +65,18 @@ namespace Renderer::Bloom
             const Objects::GlobalSamplers& samplers
         );
 
-        f32 m_filterRadius = 0.005f;
+        void Combine
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager,
+            const Objects::GlobalSamplers& samplers
+        );
+
+        f32 m_filterRadius  = 0.005f;
+        f32 m_bloomStrength = 0.031f;
     };
 }
 
