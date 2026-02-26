@@ -44,6 +44,7 @@ namespace Renderer::Bloom
             const Vk::TextureManager& textureManager,
             const Objects::GlobalSamplers& samplers
         );
+
     private:
         void DownSample
         (

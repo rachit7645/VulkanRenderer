@@ -348,7 +348,7 @@ namespace Renderer::Bloom
 
             const auto constants = DownSample::Constants
             {
-                .SamplerIndex  = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+                .SamplerIndex  = textureManager.GetSampler(samplers.bloomDownsampleSamplerID).descriptorID,
                 .ImageIndex    = srcView.sampledImageID
             };
 
@@ -526,7 +526,7 @@ namespace Renderer::Bloom
 
             const auto constants = UpSample::Constants
             {
-                .SamplerIndex  = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+                .SamplerIndex  = textureManager.GetSampler(samplers.bloomUpsampleSamplerID).descriptorID,
                 .ImageIndex    = srcView.sampledImageID,
                 .FilterRadius  = m_filterRadius
             };

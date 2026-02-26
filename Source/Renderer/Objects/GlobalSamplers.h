@@ -41,13 +41,15 @@ namespace Renderer::Objects
             Util::DeletionQueue& deletionQueue
         );
 
-        Vk::SamplerID pointSamplerID       = 0;
-        Vk::SamplerID linearSamplerID      = 0;
-        Vk::SamplerID textureSamplerID     = 0;
-        Vk::SamplerID iblSamplerID         = 0;
-        Vk::SamplerID pointShadowSamplerID = 0;
-        Vk::SamplerID imguiSamplerID       = 0;
-        Vk::SamplerID spotShadowSamplerID  = 0;
+        Vk::SamplerID pointSamplerID           = 0;
+        Vk::SamplerID linearSamplerID          = 0;
+        Vk::SamplerID textureSamplerID         = 0;
+        Vk::SamplerID iblSamplerID             = 0;
+        Vk::SamplerID pointShadowSamplerID     = 0;
+        Vk::SamplerID imguiSamplerID           = 0;
+        Vk::SamplerID spotShadowSamplerID      = 0;
+        Vk::SamplerID bloomDownsampleSamplerID = 0;
+        Vk::SamplerID bloomUpsampleSamplerID   = 0;
     };
 }
 

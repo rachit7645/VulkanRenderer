@@ -2,7 +2,7 @@
 
 * Soft RT Shadows for Directional Lights
 * RT Shadows for Point and Spot Lights
-* DLSS / FSR3
+* FSR3
 * RTAO
 * Two-Pass Occlusion culling
 * Write a README
