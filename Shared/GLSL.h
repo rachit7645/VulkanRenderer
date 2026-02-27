@@ -33,6 +33,8 @@ using GLSL_VEC4 = glm::vec4;
 
 using GLSL_UVEC2 = glm::uvec2;
 
+using GLSL_F16VEC2 = glm::f16vec2;
+
 using GLSL_MAT3 = glm::mat3;
 using GLSL_MAT4 = glm::mat4;
 
@@ -68,6 +70,7 @@ using GLSL_MAT4 = glm::mat4;
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int32   : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int64   : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_float32 : enable
 
 #define u32 uint32_t
@@ -78,9 +81,9 @@ using GLSL_MAT4 = glm::mat4;
 #define GLSL_VEC3 vec3
 #define GLSL_VEC4 vec4
 
-#define GLSL_IVEC2 ivec2
-
 #define GLSL_UVEC2 uvec2
+
+#define GLSL_F16VEC2 f16vec2
 
 #define GLSL_MAT3 mat3
 #define GLSL_MAT4 mat4

@@ -390,16 +390,16 @@ namespace Models
 
                     if (uv0AccessorIndex.has_value())
                     {
-                        uv0 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv0AccessorIndex], i);
+                        uv0 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv0AccessorIndex], i));
                     }
 
                     if (uv1AccessorIndex.has_value())
                     {
-                        uv1 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i);
+                        uv1 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i));
                     }
 
-                    uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::vec2(0.0f, 0.0f));
-                    uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::vec2(0.0f, 0.0f));
+                    uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::f16vec2(0, 0));
+                    uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::f16vec2(0, 0));
 
                     writePointer[i] = uvs;
                 }

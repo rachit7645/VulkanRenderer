@@ -16,6 +16,7 @@
 
 #include "GLM.h"
 
+#include "Util/SIMD.h"
 #include "Util/Types.h"
 
 namespace glm
@@ -66,5 +67,10 @@ namespace glm
     VkExtent2D vk_cast(const uvec2& vector)
     {
         return {.width = vector.x, .height = vector.y};
+    }
+
+    glm::f16vec2 glm_cast(const glm::vec2& vector)
+    {
+        return {Util::ConvertF32ToF16(vector.x), Util::ConvertF32ToF16(vector.y)};
     }
 }

@@ -22,11 +22,16 @@
 
 namespace Util
 {
+    constexpr f32 F16_MIN = -65504.0f;
+    constexpr f32 F16_MAX =  65504.0f;
+    
+    f16 ConvertF32ToF16(f32 value)
+    {
+        return _cvtss_sh(glm::clamp(value, F16_MIN, F16_MAX), _MM_FROUND_TO_NEAREST_INT);
+    }
+
     void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count)
     {
-        constexpr f32 F16_MIN = -65504.0f;
-        constexpr f32 F16_MAX =  65504.0f;
-
         usize i = 0;
 
         const __m256 F16_MIN_256_BIT = _mm256_set1_ps(F16_MIN);

@@ -21,6 +21,8 @@
 
 namespace Util
 {
+    f16 ConvertF32ToF16(f32 value);
+
     // `source` and `destination` must not be the same
     // Requires AVX2, F16C
     void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count);

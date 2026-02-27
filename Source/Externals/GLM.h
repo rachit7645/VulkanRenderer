@@ -44,6 +44,7 @@
 #include "glm/glm/matrix.hpp"
 #include "glm/glm/vector_relational.hpp"
 #include "glm/glm/gtc/type_ptr.hpp"
+#include "glm/glm/gtc/type_precision.hpp"
 
 // Matrix transformations
 #include "glm/glm/gtc/matrix_transform.hpp"
@@ -54,8 +55,13 @@
 // Vulkan types
 #include <vulkan/vulkan.h>
 
+// Standard Types
+#include "Util/Types.h"
+
 namespace glm
 {
+    using f16vec2 = vec<2, f16, defaultp>;
+
     // fastgtlf to GLM conversions
     vec3 fastgltf_cast(const fastgltf::math::nvec3& vector);
     vec4 fastgltf_cast(const fastgltf::math::nvec4& vector);
@@ -66,6 +72,9 @@ namespace glm
     VkTransformMatrixKHR vk_cast(const mat4& matrix);
     uvec2                vk_cast(const VkExtent2D& extent);
     VkExtent2D           vk_cast(const uvec2& vector);
+
+    // GLM Conversions
+    glm::f16vec2 glm_cast(const glm::vec2& vector);
 }
 
 #endif
