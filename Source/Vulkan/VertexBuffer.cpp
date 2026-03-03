@@ -24,9 +24,6 @@
 
 namespace Vk
 {
-    template<typename T>
-    using WriteHandle = typename VertexBuffer<T>::WriteHandle;
-
     template <typename T> requires GPU::IsVertexType<T>
     VertexBuffer<T>::VertexBuffer(const Vk::Extensions& extensions)
     {
@@ -116,7 +113,7 @@ namespace Vk
     }
 
     template <typename T> requires GPU::IsVertexType<T>
-    typename VertexBuffer<T>::WriteHandle VertexBuffer<T>::Allocate
+    VertexBuffer<T>::WriteHandle VertexBuffer<T>::Allocate
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -159,9 +156,9 @@ namespace Vk
 
         iter->second.emplace_back(info, stagingMemoryBlock.memoryBlock.offset);
 
-        return Vk::WriteHandle<T>
+        return VertexBuffer<T>::WriteHandle
         {
-            .pointer = static_cast<T*>(stagingMemoryBlock.hostAddress),
+            .data    = std::span{static_cast<T*>(stagingMemoryBlock.hostAddress), info.count},
             .info    = info
         };
     }

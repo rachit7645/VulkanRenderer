@@ -300,6 +300,7 @@ namespace Vk
         const bool hasSubgroupOperationsInCompute = vk11Properties->subgroupSupportedStages & VK_SHADER_STAGE_COMPUTE_BIT;
         const bool hasSubgroupBasic               = vk11Properties->subgroupSupportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT;
         const bool hasSubgroupArithmetic          = vk11Properties->subgroupSupportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT;
+        const bool hasStorageF16                  = vk11Features->storageBuffer16BitAccess;
 
         // Vulkan 1.2 features
         const bool hasBDA                            = vk12Features->bufferDeviceAddress;
@@ -314,6 +315,7 @@ namespace Vk
         const bool hasUpdateUnusedWhilePending       = vk12Features->descriptorBindingUpdateUnusedWhilePending;
         const bool hasDrawIndirectCount              = vk12Features->drawIndirectCount;
         const bool hasTimelineSemaphore              = vk12Features->timelineSemaphore;
+        const bool hasShaderF16                      = vk12Features->shaderFloat16;
 
         // Vulkan 1.3 features
         const bool hasSync2          = vk13Features->synchronization2;
@@ -333,12 +335,12 @@ namespace Vk
                                    ;
 
         const bool hasVK11 = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView &&
-                             hasSubgroupOperationsInCompute && hasSubgroupBasic && hasSubgroupArithmetic;
+                             hasSubgroupOperationsInCompute && hasSubgroupBasic && hasSubgroupArithmetic && hasStorageF16;
 
         const bool hasVK12 = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                              hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                              hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
-                             hasDrawIndirectCount && hasTimelineSemaphore;
+                             hasDrawIndirectCount && hasTimelineSemaphore && hasShaderF16;
 
         const bool hasVK13 = hasSync2 && hasDynRender && hasMaintenance4 && hasDemoteToHelper;
 
@@ -417,8 +419,9 @@ namespace Vk
         VkPhysicalDeviceVulkan11Features vk11Features = {};
         vk11Features.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
         vk11Features.pNext                = &swapchainMaintenanceFeatures;
-        vk11Features.shaderDrawParameters = VK_TRUE;
-        vk11Features.multiview            = VK_TRUE;
+        vk11Features.shaderDrawParameters     = VK_TRUE;
+        vk11Features.multiview                = VK_TRUE;
+        vk11Features.storageBuffer16BitAccess = VK_TRUE;
 
         VkPhysicalDeviceVulkan12Features vk12Features = {};
         vk12Features.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -436,6 +439,7 @@ namespace Vk
         vk12Features.descriptorBindingUpdateUnusedWhilePending    = VK_TRUE;
         vk12Features.drawIndirectCount                            = VK_TRUE;
         vk12Features.timelineSemaphore                            = VK_TRUE;
+        vk12Features.shaderFloat16                                = VK_TRUE;
 
         VkPhysicalDeviceVulkan13Features vk13Features = {};
         vk13Features.sType                          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;

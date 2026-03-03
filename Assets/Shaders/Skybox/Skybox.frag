@@ -23,11 +23,19 @@
 #include "MegaSet.glsl"
 #include "Skybox/Skybox.h"
 
-layout(location = 0) in vec3 uv;
+layout(location = 0) in noperspective vec4 fragCurrentPosition;
+layout(location = 1) in noperspective vec4 fragPreviousPosition;
+layout(location = 2) in               vec3 fragUV;
 
-layout (location = 0) out vec3 outColor;
+layout(location = 0) out vec3 outColor;
+layout(location = 1) out vec2 gMotionVectors;
 
 void main()
 {
-    outColor = texture(samplerCube(Cubemaps[Constants.CubemapIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
+    outColor = texture(samplerCube(Cubemaps[Constants.CubemapIndex], Samplers[Constants.SamplerIndex]), fragUV).rgb;
+
+    vec2 currentUV  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
+    vec2 previousUV = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;
+
+    gMotionVectors = currentUV - previousUV;
 }

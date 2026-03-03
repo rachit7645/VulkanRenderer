@@ -60,6 +60,7 @@ namespace Models
         );
 
         auto data = fastgltf::GltfDataBuffer::FromPath(assetPath);
+
         if (auto error = data.error(); error != fastgltf::Error::None)
         {
             Logger::Error
@@ -246,7 +247,7 @@ namespace Models
                     );
                 }
 
-                const auto [writePointer, info] = geometryBuffer.indexBuffer.Allocate
+                const auto [data, info] = geometryBuffer.indexBuffer.Allocate
                 (
                     device,
                     allocator,
@@ -257,15 +258,17 @@ namespace Models
 
                 surfaceInfo.indexInfo = info;
 
-                // Assume indices are u32s
                 switch (indicesAccessor.componentType)
                 {
                 case fastgltf::ComponentType::Byte:
                 {
                     fastgltf::iterateAccessorWithIndex<s8>(asset, indicesAccessor, [&] (s8 index, usize i)
                     {
-                        writePointer[i] = static_cast<GPU::Index>(static_cast<u8>(index));
+                        const auto copy = static_cast<GPU::Index>(index);
+
+                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
                     });
+
                     break;
                 }
 
@@ -273,8 +276,11 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<u8>(asset, indicesAccessor, [&] (u8 index, usize i)
                     {
-                        writePointer[i] = static_cast<GPU::Index>(index);
+                        const auto copy = static_cast<GPU::Index>(index);
+
+                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
                     });
+
                     break;
                 }
 
@@ -282,8 +288,11 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<s16>(asset, indicesAccessor, [&] (s16 index, usize i)
                     {
-                        writePointer[i] = static_cast<GPU::Index>(index);
+                        const auto copy = static_cast<GPU::Index>(index);
+
+                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
                     });
+
                     break;
                 }
 
@@ -291,14 +300,19 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<u16>(asset, indicesAccessor, [&] (u16 index, usize i)
                     {
-                        writePointer[i] = static_cast<GPU::Index>(index);
+                        const auto copy = static_cast<GPU::Index>(index);
+
+                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
                     });
+
                     break;
                 }
 
                 case fastgltf::ComponentType::UnsignedInt:
                 {
-                    fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, writePointer);
+                    // Assume indices are u32s
+                    fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data.data());
+
                     break;
                 }
 
@@ -321,7 +335,7 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                const auto [writePointer, info] = geometryBuffer.positionBuffer.Allocate
+                const auto [data, info] = geometryBuffer.positionBuffer.Allocate
                 (
                     device,
                     allocator,
@@ -340,7 +354,7 @@ namespace Models
                     aabb.min = glm::min(aabb.min, position);
                     aabb.max = glm::max(aabb.max, position);
 
-                    writePointer[index] = position;
+                    std::memcpy(&data[index], &position, sizeof(GPU::Position));
                 });
             }
 
@@ -370,7 +384,7 @@ namespace Models
                     fastgltf::AccessorType::Vec2
                 );
 
-                const auto [writePointer, info] = geometryBuffer.uvBuffer.Allocate
+                const auto [data, info] = geometryBuffer.uvBuffer.Allocate
                 (
                     device,
                     allocator,
@@ -401,7 +415,7 @@ namespace Models
                     uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::f16vec2(0, 0));
                     uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::f16vec2(0, 0));
 
-                    writePointer[i] = uvs;
+                    std::memcpy(&data[i], &uvs, sizeof(GPU::UV));
                 }
             }
 
@@ -415,7 +429,7 @@ namespace Models
                     fastgltf::AccessorType::Vec4
                 );
 
-                const auto [writePointer, info] = geometryBuffer.vertexBuffer.Allocate
+                const auto [data, info] = geometryBuffer.vertexBuffer.Allocate
                 (
                     device,
                     allocator,
@@ -428,11 +442,13 @@ namespace Models
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    writePointer[i] = GPU::Vertex
+                    const auto vertex = GPU::Vertex
                     {
                         .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
                         .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i)
                     };
+
+                    std::memcpy(&data[i], &vertex, sizeof(GPU::Vertex));
                 }
             }
 
@@ -788,9 +804,9 @@ namespace Models
     {
         const auto& texture = asset.textures[textureIndex];
 
-        usize                imageIndex = 0;
-        Vk::ImageUploadType  type       = Vk::ImageUploadType::KTX2;
-        Vk::ImageUploadFlags flags      = Vk::ImageUploadFlags::None;
+        usize imageIndex = 0;
+        auto  type       = Vk::ImageUploadType::KTX2;
+        auto  flags      = Vk::ImageUploadFlags::None;
 
         if (texture.basisuImageIndex.has_value())
         {

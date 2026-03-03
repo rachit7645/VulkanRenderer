@@ -38,7 +38,7 @@ namespace Vk
     public:
         struct WriteHandle
         {
-            T*                pointer;
+            std::span<T>      data;
             GPU::GeometryInfo info;
         };
 
@@ -48,6 +48,7 @@ namespace Vk
 
         void Destroy(VmaAllocator allocator);
 
+        // WriteHandle is valid until the next call to FlushUploads
         WriteHandle Allocate
         (
             VkDevice device,
