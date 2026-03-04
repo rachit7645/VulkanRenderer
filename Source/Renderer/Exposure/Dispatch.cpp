@@ -48,9 +48,9 @@ namespace Renderer::Exposure
         framebufferManager.AddFramebuffer
         (
             "Exposure/Value",
-            Vk::FramebufferType::ColorR_SFloat32,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
+            VK_FORMAT_R32_SFLOAT,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             Vk::FramebufferSize{
                 .width       = 1,
                 .height      = 1,
@@ -58,9 +58,9 @@ namespace Renderer::Exposure
                 .arrayLayers = 1
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -68,7 +68,7 @@ namespace Renderer::Exposure
         (
             "Exposure/Value",
             "Exposure/ValueView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,

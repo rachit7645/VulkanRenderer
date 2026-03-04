@@ -124,8 +124,8 @@ namespace Vk
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             },
-            .imageOffset       = {updateRawMemory.update.offset.x,     updateRawMemory.update.offset.y,      0},
-            .imageExtent       = {updateRawMemory.update.extent.width, updateRawMemory.update.extent.height, 1}
+            .imageOffset       = {.x     = updateRawMemory.update.offset.x,     .y      = updateRawMemory.update.offset.y,      .z     = 0},
+            .imageExtent       = {.width = updateRawMemory.update.extent.width, .height = updateRawMemory.update.extent.height, .depth = 1}
         });
 
         AppendUpload(Upload{
@@ -151,7 +151,7 @@ namespace Vk
             return;
         }
 
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         // ? -> Transfer Destination
         {
@@ -281,14 +281,14 @@ namespace Vk
 
     bool ImageUploader::HasPendingUploads()
     {
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         return !m_pendingUploads.empty();
     }
 
     void ImageUploader::Clear()
     {
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         m_pendingUploads.clear();
         m_barrierWriter.Clear();
@@ -565,8 +565,8 @@ namespace Vk
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, 1}
+            .imageOffset = {.x     = 0,     .y      = 0,      .z     = 0},
+            .imageExtent = {.width = width, .height = height, .depth = 1}
         }};
 
         VkImageCreateInfo createInfo =
@@ -576,7 +576,7 @@ namespace Vk
             .flags                 = 0,
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = format,
-            .extent                = {width, height, 1},
+            .extent                = {.width = width, .height = height, .depth = 1},
             .mipLevels             = 1,
             .arrayLayers           = 1,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -776,8 +776,8 @@ namespace Vk
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, 1}
+            .imageOffset = {.x     = 0,     .y      = 0,      .z     = 0},
+            .imageExtent = {.width = width, .height = height, .depth = 1}
         }};
 
         VkImageCreateInfo createInfo =
@@ -787,7 +787,7 @@ namespace Vk
             .flags                 = 0,
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = format,
-            .extent                = {width, height, 1},
+            .extent                = {.width = width, .height = height, .depth = 1},
             .mipLevels             = 1,
             .arrayLayers           = 1,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -856,7 +856,7 @@ namespace Vk
             {
                 for (ssize y = 0; y < height; ++y)
                 {
-                    auto& rgba = pixels[static_cast<long>(x)][static_cast<long>(y)];
+                    auto& rgba = pixels[static_cast<s32>(x)][static_cast<s32>(y)];
 
                     auto Sanitize = [] (Imath::half& h)
                     {
@@ -919,8 +919,8 @@ namespace Vk
                     .baseArrayLayer = 0,
                     .layerCount     = 1
                 },
-                .imageOffset = {0, 0, 0},
-                .imageExtent = {static_cast<u32>(width), static_cast<u32>(height), 1}
+                .imageOffset = {.x     = 0,                       .y      = 0,                        .z     = 0},
+                .imageExtent = {.width = static_cast<u32>(width), .height = static_cast<u32>(height), .depth = 1}
             }};
 
             VkImageCreateInfo createInfo =
@@ -930,7 +930,7 @@ namespace Vk
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = format,
-                .extent                = {static_cast<u32>(width), static_cast<u32>(height), 1},
+                .extent                = {.width = static_cast<u32>(width), .height = static_cast<u32>(height), .depth = 1},
                 .mipLevels             = 1,
                 .arrayLayers           = 1,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -1125,8 +1125,8 @@ namespace Vk
                             .baseArrayLayer = arrayLayer,
                             .layerCount     = 1
                         },
-                        .imageOffset = {0, 0, 0},
-                        .imageExtent = {mipWidth, mipHeight, 1}
+                        .imageOffset = {.x     = 0,        .y      = 0,         .z     = 0},
+                        .imageExtent = {.width = mipWidth, .height = mipHeight, .depth = 1}
                     });
                 }
             }
@@ -1141,7 +1141,7 @@ namespace Vk
                 .flags                 = 0,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = static_cast<VkFormat>(pTexture->vkFormat),
-                .extent                = {pTexture->baseWidth, pTexture->baseHeight, 1},
+                .extent                = {.width = pTexture->baseWidth, .height = pTexture->baseHeight, .depth = 1},
                 .mipLevels             = pTexture->numLevels,
                 .arrayLayers           = pTexture->numLayers,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -1219,8 +1219,8 @@ namespace Vk
                 .baseArrayLayer = 0,
                 .layerCount     = 1
             },
-            .imageOffset       = {0, 0, 0},
-            .imageExtent       = {rawMemory.width, rawMemory.height, 1}
+            .imageOffset = {.x     = 0,               .y      = 0,                .z     = 0},
+            .imageExtent = {.width = rawMemory.width, .height = rawMemory.height, .depth = 1}
         });
 
         VkImageCreateInfo createInfo =
@@ -1230,7 +1230,7 @@ namespace Vk
             .flags                 = 0,
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = rawMemory.format,
-            .extent                = {rawMemory.width, rawMemory.height, 1},
+            .extent                = {.width = rawMemory.width, .height = rawMemory.height, .depth = 1},
             .mipLevels             = 1,
             .arrayLayers           = 1,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
@@ -1270,8 +1270,8 @@ namespace Vk
 
     void ImageUploader::AppendUpload(Upload&& upload)
     {
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
-        m_pendingUploads.emplace_back(upload);
+        m_pendingUploads.emplace_back(std::move(upload));
     }
 }

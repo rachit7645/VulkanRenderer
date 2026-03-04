@@ -66,9 +66,9 @@ namespace Renderer::SpotShadow
         framebufferManager.AddFramebuffer
         (
             "SpotShadowMap",
-            Vk::FramebufferType::Depth,
-            Vk::FramebufferImageType::Array2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferCustomFormat::Depth,
+            VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             Vk::FramebufferSize{
                 .width       = GPU::SPOT_SHADOW_DIMENSIONS.x,
                 .height      = GPU::SPOT_SHADOW_DIMENSIONS.y,
@@ -76,9 +76,9 @@ namespace Renderer::SpotShadow
                 .arrayLayers = GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -86,7 +86,7 @@ namespace Renderer::SpotShadow
         (
             "SpotShadowMap",
             "SpotShadowMapView",
-            Vk::FramebufferImageType::Array2D,
+            VK_IMAGE_VIEW_TYPE_2D_ARRAY,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -101,7 +101,7 @@ namespace Renderer::SpotShadow
             (
                 "SpotShadowMap",
                 fmt::format("SpotShadowMapView/Light{}", i),
-                Vk::FramebufferImageType::Single2D,
+                VK_IMAGE_VIEW_TYPE_2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = 0,
                     .levelCount     = 1,

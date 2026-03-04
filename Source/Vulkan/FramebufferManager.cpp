@@ -18,6 +18,7 @@
 
 #include <ranges>
 #include <vulkan/vk_enum_string_helper.h>
+#include <vulkan/utility/vk_format_utils.h>
 
 #include "DebugUtils.h"
 #include "Util/Log.h"
@@ -29,9 +30,9 @@ namespace Vk
     void FramebufferManager::AddFramebuffer
     (
         const std::string_view name,
-        FramebufferType type,
-        FramebufferImageType imageType,
-        FramebufferUsage usage,
+        const FramebufferFormat& format,
+        VkImageViewType imageViewType,
+        VkImageUsageFlags imageUsage,
         const FramebufferSizeData& sizeData,
         const FramebufferInitialState& initialState
     )
@@ -41,13 +42,13 @@ namespace Vk
             return;
         }
 
-        m_framebuffers.emplace(name, Framebuffer{
-            .type         = type,
-            .imageType    = imageType,
-            .usage        = usage,
-            .sizeData     = sizeData,
-            .initialState = initialState,
-            .image        = {}
+        m_framebuffers.emplace(name, Vk::Framebuffer{
+            .format        = format,
+            .imageViewType = imageViewType,
+            .imageUsage    = imageUsage,
+            .sizeData      = sizeData,
+            .initialState  = initialState,
+            .image         = {}
         });
     }
 
@@ -55,14 +56,14 @@ namespace Vk
     (
         const std::string_view framebufferName,
         const std::string_view name,
-        FramebufferImageType imageType,
+        VkImageViewType imageViewType,
         const FramebufferViewSize& size
     )
     {
         m_framebufferViews.emplace(name, FramebufferView{
             .framebuffer     = framebufferName.data(),
             .sampledImageID = std::numeric_limits<u32>::max(),
-            .type            = imageType,
+            .type            = imageViewType,
             .size            = size,
             .view            = {}
         });
@@ -153,138 +154,59 @@ namespace Vk
                 createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
                 createInfo.pNext                 = nullptr;
                 createInfo.imageType             = VK_IMAGE_TYPE_2D;
-                createInfo.extent                = {size.width, size.height, 1};
+                createInfo.extent                = {.width = size.width, .height = size.height, .depth = 1};
                 createInfo.arrayLayers           = size.arrayLayers;
                 createInfo.mipLevels             = size.mipLevels;
                 createInfo.samples               = VK_SAMPLE_COUNT_1_BIT;
                 createInfo.tiling                = VK_IMAGE_TILING_OPTIMAL;
+                createInfo.usage                 = framebuffer.imageUsage;
                 createInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
                 createInfo.queueFamilyIndexCount = 0;
                 createInfo.pQueueFamilyIndices   = nullptr;
                 createInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
             }
 
-            VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
+            createInfo.format = std::visit(Util::Visitor{
+                [] (VkFormat format) -> VkFormat
+                {
+                    return format;
+                },
+                [&formatHelper] (Vk::FramebufferCustomFormat format) -> VkFormat
+                {
+                    switch (format)
+                    {
+                    case FramebufferCustomFormat::ColorLDR:
+                        return formatHelper.colorAttachmentFormatLDR;
 
-            switch (framebuffer.type)
+                    case FramebufferCustomFormat::ColorHDR:
+                        return formatHelper.colorAttachmentFormatHDR;
+
+                    case FramebufferCustomFormat::Depth:
+                        return formatHelper.depthFormat;
+
+                    default:
+                        return VK_FORMAT_UNDEFINED;
+                    }
+                }
+            }, framebuffer.format);
+
+            const VkImageAspectFlags aspect = vkuFormatHasDepth(createInfo.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+            switch (framebuffer.imageViewType)
             {
-            case FramebufferType::ColorR_Unorm8:
-                createInfo.format = VK_FORMAT_R8_UNORM;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorR_Unorm16:
-                createInfo.format = VK_FORMAT_R16_UNORM;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorR_SFloat16:
-                createInfo.format = VK_FORMAT_R16_SFLOAT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorR_SFloat32:
-                createInfo.format = VK_FORMAT_R32_SFLOAT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorR_Uint32:
-                createInfo.format = VK_FORMAT_R32_UINT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorRG_Unorm8:
-                createInfo.format = VK_FORMAT_R8G8_UNORM;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorRG_Unorm16:
-                createInfo.format = VK_FORMAT_R16G16_UNORM;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorRG_SFloat16:
-                createInfo.format = VK_FORMAT_R16G16_SFLOAT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorRG_SFloat32:
-                createInfo.format = VK_FORMAT_R32G32_SFLOAT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorRGBA_UNorm8:
-                createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorRGBA_SFloat32:
-                createInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorBGR_SFloat_10_11_11:
-                createInfo.format = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorLDR:
-                createInfo.format = formatHelper.colorAttachmentFormatLDR;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::ColorHDR:
-                createInfo.format = formatHelper.colorAttachmentFormatHDR;
-
-                aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-                break;
-
-            case FramebufferType::Depth:
-                createInfo.format = formatHelper.depthFormat;
-
-                aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
-                break;
-            }
-
-            switch (framebuffer.imageType)
-            {
-            case FramebufferImageType::Single2D:
-            case FramebufferImageType::Array2D:
+            case VK_IMAGE_VIEW_TYPE_2D:
+            case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
                 createInfo.flags = 0;
                 break;
 
-            case FramebufferImageType::Cube:
-            case FramebufferImageType::ArrayCube:
+            case VK_IMAGE_VIEW_TYPE_CUBE:
+            case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
                 createInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
                 break;
-            }
 
-            if (aspect == VK_IMAGE_ASPECT_COLOR_BIT)
-            {
-                AddUsage<FramebufferUsage::Attachment, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT>(framebuffer.usage, createInfo.usage);
+            default:
+                createInfo.flags = 0;
             }
-            else if (aspect == VK_IMAGE_ASPECT_DEPTH_BIT)
-            {
-                AddUsage<FramebufferUsage::Attachment, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT>(framebuffer.usage, createInfo.usage);
-            }
-
-            AddUsage<FramebufferUsage::Sampled,             VK_IMAGE_USAGE_SAMPLED_BIT     >(framebuffer.usage, createInfo.usage);
-            AddUsage<FramebufferUsage::Storage,             VK_IMAGE_USAGE_STORAGE_BIT     >(framebuffer.usage, createInfo.usage);
-            AddUsage<FramebufferUsage::TransferSource,      VK_IMAGE_USAGE_TRANSFER_SRC_BIT>(framebuffer.usage, createInfo.usage);
-            AddUsage<FramebufferUsage::TransferDestination, VK_IMAGE_USAGE_TRANSFER_DST_BIT>(framebuffer.usage, createInfo.usage);
 
             framebuffer.image = Vk::Image(allocator, createInfo, aspect);
 
@@ -303,10 +225,10 @@ namespace Vk
                 Vk::ImageBarrier{
                     .srcStageMask   = VK_PIPELINE_STAGE_2_NONE,
                     .srcAccessMask  = VK_ACCESS_2_NONE,
-                    .dstStageMask   = framebuffer.initialState.dstStageMask,
-                    .dstAccessMask  = framebuffer.initialState.dstAccessMask,
+                    .dstStageMask   = framebuffer.initialState.stageMask,
+                    .dstAccessMask  = framebuffer.initialState.accessMask,
                     .oldLayout      = VK_IMAGE_LAYOUT_UNDEFINED,
-                    .newLayout      = framebuffer.initialState.initialLayout,
+                    .newLayout      = framebuffer.initialState.layout,
                     .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .baseMipLevel   = 0,
@@ -329,7 +251,7 @@ namespace Vk
             FreeDescriptors
             (
                 framebufferView,
-                framebuffer.usage,
+                framebuffer.imageUsage,
                 megaSet,
                 deletionQueue
             );
@@ -339,29 +261,11 @@ namespace Vk
                 view.Destroy(device);
             });
 
-            VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
-
-            switch (framebufferView.type)
-            {
-            case FramebufferImageType::Single2D:
-                viewType = VK_IMAGE_VIEW_TYPE_2D;
-                break;
-            case FramebufferImageType::Array2D:
-                viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-                break;
-            case FramebufferImageType::Cube:
-                viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-                break;
-            case FramebufferImageType::ArrayCube:
-                viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-                break;
-            }
-
             framebufferView.view = Vk::ImageView
             (
                 device,
                 framebuffer.image,
-                viewType,
+                framebufferView.type,
                 {
                     .aspectMask     = framebuffer.image.aspect,
                     .baseMipLevel   = framebufferView.size.baseMipLevel,
@@ -371,7 +275,7 @@ namespace Vk
                 }
             );
 
-            AllocateDescriptors(megaSet, framebufferView, framebuffer.usage);
+            AllocateDescriptors(megaSet, framebufferView, framebuffer.imageUsage);
 
             Vk::SetDebugName(device, framebufferView.view.handle, name);
         }
@@ -471,7 +375,7 @@ namespace Vk
             FreeDescriptors
             (
                 framebufferView,
-                framebuffer.usage,
+                framebuffer.imageUsage,
                 megaSet,
                 deletionQueue
             );
@@ -511,7 +415,7 @@ namespace Vk
             FreeDescriptors
             (
                 framebufferView,
-                framebuffer.usage,
+                framebuffer.imageUsage,
                 megaSet,
                 deletionQueue
             );
@@ -547,28 +451,19 @@ namespace Vk
         }, sizeData);
     }
 
-    template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
-    void FramebufferManager::AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage)
-    {
-        if ((framebufferUsage & FBUsage) == FBUsage)
-        {
-            vulkanUsage |= VkUsage;
-        }
-    }
-
     void FramebufferManager::AllocateDescriptors
     (
         Vk::MegaSet& megaSet,
         Vk::FramebufferView& framebufferView,
-        Vk::FramebufferUsage usage
+        VkImageUsageFlags imageUsage
     )
     {
-        if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
+        if (imageUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
         {
             framebufferView.sampledImageID = megaSet.WriteSampledImage(framebufferView.view);
         }
 
-        if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
+        if (imageUsage & VK_IMAGE_USAGE_STORAGE_BIT)
         {
             framebufferView.storageImageID = megaSet.WriteStorageImage(framebufferView.view);
         }
@@ -577,14 +472,14 @@ namespace Vk
     void FramebufferManager::FreeDescriptors
     (
         const Vk::FramebufferView& framebufferView,
-        Vk::FramebufferUsage usage,
+        VkImageUsageFlags imageUsage,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
     )
     {
         if (framebufferView.view.handle != VK_NULL_HANDLE)
         {
-            if ((usage & FramebufferUsage::Sampled) == FramebufferUsage::Sampled)
+            if (imageUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
             {
                 deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageID]
                 {
@@ -592,7 +487,7 @@ namespace Vk
                 });
             }
 
-            if ((usage & FramebufferUsage::Storage) == FramebufferUsage::Storage)
+            if (imageUsage & VK_IMAGE_USAGE_STORAGE_BIT)
             {
                 deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageID]
                 {

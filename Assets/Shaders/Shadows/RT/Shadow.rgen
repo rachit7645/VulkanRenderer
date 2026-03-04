@@ -54,6 +54,7 @@ void main()
     float bias     = RT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, RT_SHADOW_MAX_BIAS);
 
+    // TODO: Consider a better self-intersection prevention method
     vec3 origin = worldPosition + normal * bias;
 
     uint  rayFlags = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT;

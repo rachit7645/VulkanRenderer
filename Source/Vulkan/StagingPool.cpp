@@ -25,7 +25,7 @@ namespace Vk
 {
     void StagingPool::Update(VmaAllocator allocator)
     {
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         if (m_stagingBuffers.size() <= 1)
         {
@@ -71,7 +71,7 @@ namespace Vk
     {
         constexpr VkDeviceSize STAGING_BUFFER_SIZE = 128ull * 1024 * 1024;
 
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         if (size == 0)
         {
@@ -112,7 +112,8 @@ namespace Vk
                 .pAllocationCallbacks = nullptr
             };
 
-            VmaVirtualBlock virtualBlock;
+            VmaVirtualBlock virtualBlock = VK_NULL_HANDLE;
+
             Vk::CheckResult(vmaCreateVirtualBlock(&createInfo, &virtualBlock), "Failed to create virtual block!");
 
             m_stagingBuffers.emplace_back(buffer, virtualBlock);
@@ -131,7 +132,7 @@ namespace Vk
 
     void StagingPool::Free(const StagingMemoryBlock& stagingMemoryBlock)
     {
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         for (auto& stagingBuffer : m_stagingBuffers)
         {

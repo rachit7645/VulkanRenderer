@@ -106,9 +106,9 @@ namespace Renderer::Bloom
         framebufferManager.AddFramebuffer
         (
             "Bloom",
-            Vk::FramebufferType::ColorHDR,
-            Vk::FramebufferImageType::Array2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferCustomFormat::ColorHDR,
+            VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             [device, &framebufferManager, &megaSet] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent, Util::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews
@@ -133,7 +133,7 @@ namespace Renderer::Bloom
                     (
                         "Bloom",
                         fmt::format("BloomView/{}", mipLevel),
-                        Vk::FramebufferImageType::Single2D,
+                        VK_IMAGE_VIEW_TYPE_2D,
                         {
                             .baseMipLevel   = mipLevel,
                             .levelCount     = 1,
@@ -146,18 +146,18 @@ namespace Renderer::Bloom
                 return size;
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
         framebufferManager.AddFramebuffer
         (
             "FinalSceneColor",
-            Vk::FramebufferType::ColorHDR,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferCustomFormat::ColorHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -169,9 +169,9 @@ namespace Renderer::Bloom
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -179,7 +179,7 @@ namespace Renderer::Bloom
         (
             "FinalSceneColor",
             "FinalSceneColorView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,

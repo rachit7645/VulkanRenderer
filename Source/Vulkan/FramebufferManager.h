@@ -31,21 +31,8 @@
 
 namespace Vk
 {
-    enum class FramebufferType : u8
+    enum class FramebufferCustomFormat : u8
     {
-        // Special Color Formats
-        ColorR_Unorm8,
-        ColorR_Unorm16,
-        ColorR_SFloat16,
-        ColorR_SFloat32,
-        ColorR_Uint32,
-        ColorRG_Unorm8,
-        ColorRG_Unorm16,
-        ColorRG_SFloat16,
-        ColorRG_SFloat32,
-        ColorRGBA_UNorm8,
-        ColorRGBA_SFloat32,
-        ColorBGR_SFloat_10_11_11,
         // Regular Color Formats
         ColorLDR,
         ColorHDR,
@@ -53,23 +40,7 @@ namespace Vk
         Depth
     };
 
-    enum class FramebufferImageType : u8
-    {
-        Single2D,
-        Array2D,
-        Cube,
-        ArrayCube
-    };
-
-    enum class FramebufferUsage : u8
-    {
-        None                = 0,
-        Attachment          = 1U << 0,
-        Sampled             = 1U << 1,
-        Storage             = 1U << 2,
-        TransferSource      = 1U << 3,
-        TransferDestination = 1U << 4
-    };
+    using FramebufferFormat = std::variant<VkFormat, FramebufferCustomFormat>;
 
     struct FramebufferSize
     {
@@ -94,16 +65,16 @@ namespace Vk
         std::string          framebuffer    = {};
         u32                  sampledImageID = 0;
         u32                  storageImageID = 0;
-        FramebufferImageType type           = FramebufferImageType::Single2D;
+        VkImageViewType      type           = VK_IMAGE_VIEW_TYPE_2D;
         FramebufferViewSize  size           = {};
         Vk::ImageView        view           = {};
     };
 
     struct FramebufferInitialState
     {
-        VkPipelineStageFlags2 dstStageMask  = VK_PIPELINE_STAGE_2_NONE;
-        VkAccessFlags2        dstAccessMask = VK_ACCESS_2_NONE;
-        VkImageLayout         initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VkPipelineStageFlags2 stageMask  = VK_PIPELINE_STAGE_2_NONE;
+        VkAccessFlags2        accessMask = VK_ACCESS_2_NONE;
+        VkImageLayout         layout     = VK_IMAGE_LAYOUT_UNDEFINED;
     };
 
     using FramebufferResizeCallbackWithExtent                 = std::function<FramebufferSize(const VkExtent2D&, const VkExtent2D&)>;
@@ -118,12 +89,12 @@ namespace Vk
 
     struct Framebuffer
     {
-        FramebufferType         type         = FramebufferType::ColorLDR;
-        FramebufferImageType    imageType    = FramebufferImageType::Single2D;
-        FramebufferUsage        usage        = FramebufferUsage::None;
-        FramebufferSizeData     sizeData     = {};
-        FramebufferInitialState initialState = {};
-        Vk::Image               image        = {};
+        FramebufferFormat       format        = FramebufferCustomFormat::ColorLDR;
+        VkImageViewType         imageViewType = VK_IMAGE_VIEW_TYPE_2D;
+        VkImageUsageFlags       imageUsage    = 0;
+        FramebufferSizeData     sizeData      = {};
+        FramebufferInitialState initialState  = {};
+        Vk::Image               image         = {};
     };
 
     class FramebufferManager
@@ -132,9 +103,9 @@ namespace Vk
         void AddFramebuffer
         (
             const std::string_view name,
-            FramebufferType type,
-            FramebufferImageType imageType,
-            FramebufferUsage usage,
+            const FramebufferFormat& format,
+            VkImageViewType imageViewType,
+            VkImageUsageFlags imageUsage,
             const FramebufferSizeData& sizeData,
             const FramebufferInitialState& initialState
         );
@@ -143,7 +114,7 @@ namespace Vk
         (
             const std::string_view framebufferName,
             const std::string_view name,
-            FramebufferImageType imageType,
+            VkImageViewType imageType,
             const FramebufferViewSize& size
         );
 
@@ -193,20 +164,17 @@ namespace Vk
     private:
         FramebufferSize GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const;
 
-        template<FramebufferUsage FBUsage, VkImageUsageFlags VkUsage>
-        static void AddUsage(FramebufferUsage framebufferUsage, VkImageUsageFlags& vulkanUsage);
-
         void AllocateDescriptors
         (
             Vk::MegaSet& megaSet,
             Vk::FramebufferView& framebufferView,
-            Vk::FramebufferUsage usage
+            VkImageUsageFlags imageUsage
         );
 
         void FreeDescriptors
         (
             const Vk::FramebufferView& framebufferView,
-            Vk::FramebufferUsage usage,
+            VkImageUsageFlags imageUsage,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
         );

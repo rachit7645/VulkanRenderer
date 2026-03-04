@@ -23,12 +23,12 @@
 namespace Renderer
 {
     // Default field of view
-    inline const f32 DEFAULT_FOV = glm::radians(80.0f);
+    constexpr f32 DEFAULT_FOV = glm::radians(80.0f);
     // Near and far plane
     constexpr f32 NEAR_PLANE = 0.1f;
     constexpr f32 FAR_PLANE  = 512.0f;
     // World Up direction
-    inline const glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
+    constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
     // TAA Jitter Samples
     constexpr usize JITTER_SAMPLE_COUNT = 64;
 }

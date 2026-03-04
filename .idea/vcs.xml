@@ -2,6 +2,9 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Build/Debug/_deps/imath-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Build/Profile/_deps/imath-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Build/Release/_deps/imath-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/dlss" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/dlss/NVIDIAImageScaling" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/fastgltf" vcs="Git" />

@@ -70,9 +70,9 @@ namespace Renderer::PointShadow
         framebufferManager.AddFramebuffer
         (
             "PointShadowMap",
-            Vk::FramebufferType::ColorR_SFloat32,
-            Vk::FramebufferImageType::ArrayCube,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            VK_FORMAT_R32_SFLOAT,
+            VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             Vk::FramebufferSize{
                 .width       = GPU::POINT_SHADOW_DIMENSIONS.x,
                 .height      = GPU::POINT_SHADOW_DIMENSIONS.y,
@@ -80,18 +80,18 @@ namespace Renderer::PointShadow
                 .arrayLayers = 6 * GPU::MAX_SHADOWED_POINT_LIGHT_COUNT
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
         framebufferManager.AddFramebuffer
         (
             "PointShadowDepth",
-            Vk::FramebufferType::Depth,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            Vk::FramebufferCustomFormat::Depth,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             Vk::FramebufferSize{
                 .width       = GPU::POINT_SHADOW_DIMENSIONS.x,
                 .height      = GPU::POINT_SHADOW_DIMENSIONS.y,
@@ -99,9 +99,9 @@ namespace Renderer::PointShadow
                 .arrayLayers = 1
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -109,7 +109,7 @@ namespace Renderer::PointShadow
         (
             "PointShadowMap",
             "PointShadowMapView",
-            Vk::FramebufferImageType::ArrayCube,
+            VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -126,7 +126,7 @@ namespace Renderer::PointShadow
                 (
                     "PointShadowMap",
                     fmt::format("PointShadowMapView/Light{}/{}", i, j),
-                    Vk::FramebufferImageType::Single2D,
+                    VK_IMAGE_VIEW_TYPE_2D,
                     Vk::FramebufferViewSize{
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -141,7 +141,7 @@ namespace Renderer::PointShadow
         (
             "PointShadowDepth",
             "PointShadowDepthView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
