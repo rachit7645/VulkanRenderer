@@ -109,6 +109,8 @@ namespace Vk
         Vk::SetDebugName(device, image.handle,     name);
         Vk::SetDebugName(device, imageView.handle, name.data() + std::string("_View"));
 
+        megaSet.Update(device);
+
         Logger::Debug("Added texture! [Name={}]\n", name);
 
         return id;
@@ -143,6 +145,8 @@ namespace Vk
         Vk::SetDebugName(device, sampler.handle, fmt::format("Sampler/{}", id));
 
         m_samplerMap.emplace(id, sampler);
+
+        megaSet.Update(device);
 
         return id;
     }
@@ -186,21 +190,10 @@ namespace Vk
 
             future.wait();
 
-            texture.image = future.get();
+            const auto uploadedImage = future.get();
 
-            texture.imageView = Vk::ImageView
-            (
-                device,
-                texture.image,
-                VK_IMAGE_VIEW_TYPE_2D,
-                VkImageSubresourceRange{
-                    .aspectMask     = texture.image.aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = texture.image.mipLevels,
-                    .baseArrayLayer = 0,
-                    .layerCount     = texture.image.arrayLayers
-                }
-            );
+            texture.image     = uploadedImage.image;
+            texture.imageView = uploadedImage.imageView;
 
             texture.descriptorID = megaSet.WriteSampledImage(texture.imageView);
 
@@ -219,6 +212,8 @@ namespace Vk
         m_imageUploader.FlushUploads(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
+
+        megaSet.Update(device);
     }
 
     void TextureManager::UpdateTexture
@@ -458,10 +453,10 @@ namespace Vk
             [] (const Vk::ImageUploadRawMemory& rawMemory)
             {
                 return TextureManager::TextureNameInfo
-                 {
-                     .name = rawMemory.name,
-                     .id   = rawMemory.name
-                 };
+                {
+                    .name = rawMemory.name,
+                    .id   = rawMemory.name
+                };
             }
         }, source);
     }

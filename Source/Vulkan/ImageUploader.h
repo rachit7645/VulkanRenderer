@@ -24,18 +24,19 @@
 #include "Image.h"
 #include "Buffer.h"
 #include "BarrierWriter.h"
+#include "ImageView.h"
+#include "StagingPool.h"
 #include "Util/DeletionQueue.h"
-#include "Vulkan/StagingPool.h"
 
 namespace Vk
 {
     enum class ImageUploadType : u8
     {
-        SDR  = 0,
-        HDR  = 1,
-        EXR  = 2,
-        KTX2 = 3,
-        RAW  = 4
+        SDR,
+        HDR,
+        EXR,
+        KTX2,
+        RAW,
     };
 
     enum class ImageUploadFlags : u8
@@ -81,10 +82,16 @@ namespace Vk
         ImageUploadSource source = {};
     };
 
+    struct UploadedImage
+    {
+        Vk::Image     image     = {};
+        Vk::ImageView imageView = {};
+    };
+
     class ImageUploader
     {
     public:
-        [[nodiscard]] Vk::Image LoadImage
+        [[nodiscard]] Vk::UploadedImage LoadImage
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -120,7 +127,7 @@ namespace Vk
             bool                            generateMipmaps = false;
         };
 
-        [[nodiscard]] Vk::Image LoadFromFile
+        [[nodiscard]] Vk::UploadedImage LoadFromFile
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -131,7 +138,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadFromMemory
+        [[nodiscard]] Vk::UploadedImage LoadFromMemory
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -142,7 +149,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadSTBIFile
+        [[nodiscard]] Vk::UploadedImage LoadSTBIFile
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -152,7 +159,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadSTBIMemory
+        [[nodiscard]] Vk::UploadedImage LoadSTBIMemory
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -162,7 +169,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadSTBIInternal
+        [[nodiscard]] Vk::UploadedImage LoadSTBIInternal
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -174,7 +181,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadHDRFile
+        [[nodiscard]] Vk::UploadedImage LoadHDRFile
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -184,7 +191,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadHDRMemory
+        [[nodiscard]] Vk::UploadedImage LoadHDRMemory
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -194,7 +201,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadHDRInternal
+        [[nodiscard]] Vk::UploadedImage LoadHDRInternal
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -206,7 +213,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadEXRFile
+        [[nodiscard]] Vk::UploadedImage LoadEXRFile
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -216,7 +223,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        [[nodiscard]] Vk::Image LoadKTX2File
+        [[nodiscard]] Vk::UploadedImage LoadKTX2File
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -225,7 +232,7 @@ namespace Vk
             const std::string_view path
         );
 
-        [[nodiscard]] Vk::Image LoadKTX2Memory
+        [[nodiscard]] Vk::UploadedImage LoadKTX2Memory
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -234,7 +241,7 @@ namespace Vk
             const Vk::ImageUploadMemory& memory
         );
 
-        [[nodiscard]] Vk::Image LoadKTX2Internal
+        [[nodiscard]] Vk::UploadedImage LoadKTX2Internal
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -243,7 +250,7 @@ namespace Vk
             ktxTexture2* pTexture
         );
 
-        [[nodiscard]] Vk::Image LoadRawMemory
+        [[nodiscard]] Vk::UploadedImage LoadRawMemory
         (
             VkDevice device,
             VmaAllocator allocator,

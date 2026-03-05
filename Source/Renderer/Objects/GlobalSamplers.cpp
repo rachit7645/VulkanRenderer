@@ -235,8 +235,6 @@ namespace Renderer::Objects
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
-
-        megaSet.Update(context.device);
     }
 
     void GlobalSamplers::Update
@@ -289,7 +287,5 @@ namespace Renderer::Objects
                 .unnormalizedCoordinates = VK_FALSE
             }
         );
-
-        megaSet.Update(context.device);
     }
 }

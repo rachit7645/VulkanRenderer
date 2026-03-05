@@ -119,8 +119,8 @@ namespace Vk
 
         Vk::ImageUploader m_imageUploader;
 
-        tf::Executor                                                        m_executor;
-        ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::Image>> m_futuresMap;
+        tf::Executor                                                                m_executor;
+        ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::UploadedImage>> m_futuresMap;
     };
 }
 

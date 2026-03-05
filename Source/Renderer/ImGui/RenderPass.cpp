@@ -557,8 +557,6 @@ namespace Renderer::DearImGui
             deletionQueue
         );
 
-        megaSet.Update(device);
-
         for (auto* texture : *drawData->Textures)
         {
             if (texture->Status != ImTextureStatus_WantCreate)

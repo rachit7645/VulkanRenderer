@@ -1735,8 +1735,6 @@ namespace Renderer
                 m_stagingPool,
                 m_deletionQueues[m_FIF]
             );
-
-            m_megaSet.Update(m_context.device);
         }
 
         if (ImGui::BeginMainMenuBar())
@@ -1812,8 +1810,6 @@ namespace Renderer
                         m_deletionQueues[m_FIF]
                     );
 
-                    m_megaSet.Update(m_context.device);
-
                     m_taa.ResetHistory();
                     m_exposure.ResetLuminance();
 
@@ -1877,8 +1873,6 @@ namespace Renderer
             m_stagingPool,
             m_deletionQueues[m_FIF]
         );
-
-        m_megaSet.Update(m_context.device);
 
         m_sceneBuffer.WriteScene
         (
@@ -2195,8 +2189,6 @@ namespace Renderer
                     m_stagingPool,
                     m_deletionQueues[m_FIF]
                 );
-
-                m_megaSet.Update(m_context.device);
             }
         );
 

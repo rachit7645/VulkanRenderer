@@ -75,7 +75,7 @@ namespace Renderer::Exposure
         );
 
         bool m_hasLuminanceBeenReset = false;
-        f32  m_adaptationSpeed       = 1.1f;
+        f32  m_adaptationSpeed       = 1.5f;
         f32  m_exposureBias          = 0.0f;
     };
 }

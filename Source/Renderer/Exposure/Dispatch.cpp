@@ -298,16 +298,18 @@ namespace Renderer::Exposure
             )
             .Execute(cmdBuffer);
 
+            constexpr f32 MIDDLE_GRAY = 0.18f;
+
             vkCmdFillBuffer
             (
                 cmdBuffer.handle,
                 exposureBuffer.luminanceBuffer.handle,
                 0,
                 exposureBuffer.luminanceBuffer.size,
-                0
+                std::bit_cast<u32>(MIDDLE_GRAY)
             );
 
-            constexpr VkClearColorValue RESET = {.float32 = {1.0f, 0.0f, 0.0f, 0.0f}};
+            constexpr VkClearColorValue RESET = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}};
 
             const VkImageSubresourceRange subresourceRange =
             {

@@ -31,7 +31,7 @@
 
 namespace Vk
 {
-    Vk::Image ImageUploader::LoadImage
+    Vk::UploadedImage ImageUploader::LoadImage
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -41,7 +41,7 @@ namespace Vk
     )
     {
         return std::visit(Util::Visitor{
-            [&] (const ImageUploadFile& file) -> Vk::Image
+            [&] (const ImageUploadFile& file) -> Vk::UploadedImage
             {
                 return LoadFromFile
                 (
@@ -54,7 +54,7 @@ namespace Vk
                     upload.flags
                 );
             },
-            [&] (const ImageUploadMemory& memory) -> Vk::Image
+            [&] (const ImageUploadMemory& memory) -> Vk::UploadedImage
             {
                 return LoadFromMemory
                 (
@@ -67,7 +67,7 @@ namespace Vk
                     upload.flags
                 );
             },
-            [&] (const ImageUploadRawMemory& rawMemory) -> Vk::Image
+            [&] (const ImageUploadRawMemory& rawMemory) -> Vk::UploadedImage
             {
                 return LoadRawMemory
                 (
@@ -294,7 +294,7 @@ namespace Vk
         m_barrierWriter.Clear();
     }
 
-    Vk::Image ImageUploader::LoadFromFile
+    Vk::UploadedImage ImageUploader::LoadFromFile
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -360,7 +360,7 @@ namespace Vk
         }
     }
 
-    Vk::Image ImageUploader::LoadFromMemory
+    Vk::UploadedImage ImageUploader::LoadFromMemory
     (
         VkDevice device,
        VmaAllocator allocator,
@@ -414,7 +414,7 @@ namespace Vk
         }
     }
 
-    Vk::Image ImageUploader::LoadSTBIFile
+    Vk::UploadedImage ImageUploader::LoadSTBIFile
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -465,7 +465,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadSTBIMemory
+    Vk::UploadedImage ImageUploader::LoadSTBIMemory
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -517,7 +517,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadSTBIInternal
+    Vk::UploadedImage ImageUploader::LoadSTBIInternal
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -596,6 +596,20 @@ namespace Vk
 
         const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
+        const auto imageView = Vk::ImageView
+        (
+            device,
+            image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VkImageSubresourceRange{
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = image.arrayLayers
+            }
+        );
+
         AppendUpload(Upload{
             .image           = image,
             .buffer          = stagingMemoryBlock.buffer,
@@ -611,10 +625,14 @@ namespace Vk
             stagingPool.Free(stagingMemoryBlock);
         });
 
-        return image;
+        return Vk::UploadedImage
+        {
+            .image     = image,
+            .imageView = imageView
+        };
     }
 
-    Vk::Image ImageUploader::LoadHDRFile
+    Vk::UploadedImage ImageUploader::LoadHDRFile
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -666,7 +684,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadHDRMemory
+    Vk::UploadedImage ImageUploader::LoadHDRMemory
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -719,7 +737,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadHDRInternal
+    Vk::UploadedImage ImageUploader::LoadHDRInternal
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -807,6 +825,20 @@ namespace Vk
 
         const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
+        const auto imageView = Vk::ImageView
+        (
+            device,
+            image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VkImageSubresourceRange{
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = image.arrayLayers
+            }
+        );
+
         AppendUpload(Upload{
             .image           = image,
             .buffer          = stagingMemoryBlock.buffer,
@@ -822,10 +854,14 @@ namespace Vk
             stagingPool.Free(stagingMemoryBlock);
         });
 
-        return image;
+        return Vk::UploadedImage
+        {
+            .image     = image,
+            .imageView = imageView
+        };
     }
 
-    Vk::Image ImageUploader::LoadEXRFile
+    Vk::UploadedImage ImageUploader::LoadEXRFile
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -950,6 +986,20 @@ namespace Vk
 
             const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
+            const auto imageView = Vk::ImageView
+            (
+                device,
+                image,
+                VK_IMAGE_VIEW_TYPE_2D,
+                VkImageSubresourceRange{
+                    .aspectMask     = image.aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = image.arrayLayers
+                }
+            );
+
             AppendUpload(Upload{
                 .image           = image,
                 .buffer          = stagingMemoryBlock.buffer,
@@ -965,7 +1015,11 @@ namespace Vk
                 stagingPool.Free(stagingMemoryBlock);
             });
 
-            return image;
+            return Vk::UploadedImage
+            {
+                .image     = image,
+                .imageView = imageView
+            };
         }
         catch (const std::exception& e)
         {
@@ -973,7 +1027,7 @@ namespace Vk
         }
     }
 
-    Vk::Image ImageUploader::LoadKTX2File
+    Vk::UploadedImage ImageUploader::LoadKTX2File
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -1010,7 +1064,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadKTX2Memory
+    Vk::UploadedImage ImageUploader::LoadKTX2Memory
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -1048,7 +1102,7 @@ namespace Vk
         );
     }
 
-    Vk::Image ImageUploader::LoadKTX2Internal
+    Vk::UploadedImage ImageUploader::LoadKTX2Internal
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -1064,11 +1118,6 @@ namespace Vk
         if (pTexture->isVideo)
         {
             Logger::Error("{}\n", "Videos are not supported!");
-        }
-
-        if (pTexture->isCubemap)
-        {
-            Logger::Error("{}\n", "Cubemaps are not supported!");
         }
 
         if (ktxTexture2_NeedsTranscoding(pTexture))
@@ -1110,24 +1159,35 @@ namespace Vk
 
                 for (u32 arrayLayer = 0; arrayLayer < pTexture->numLayers; ++arrayLayer)
                 {
-                    ktx_size_t offset = 0;
-                    ktxTexture2_GetImageOffset(pTexture, mipLevel, arrayLayer, 0, &offset);
+                    for (u32 face = 0; face < pTexture->numFaces; ++face)
+                    {
+                        ktx_size_t offset = 0;
 
-                    copyRegions.emplace_back(VkBufferImageCopy2{
-                        .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
-                        .pNext             = nullptr,
-                        .bufferOffset      = stagingMemoryBlock.memoryBlock.offset + offset,
-                        .bufferRowLength   = 0,
-                        .bufferImageHeight = 0,
-                        .imageSubresource  = {
-                            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                            .mipLevel       = mipLevel,
-                            .baseArrayLayer = arrayLayer,
-                            .layerCount     = 1
-                        },
-                        .imageOffset = {.x     = 0,        .y      = 0,         .z     = 0},
-                        .imageExtent = {.width = mipWidth, .height = mipHeight, .depth = 1}
-                    });
+                        ktxTexture2_GetImageOffset
+                        (
+                            pTexture,
+                            mipLevel,
+                            arrayLayer,
+                            face,
+                            &offset
+                        );
+
+                        copyRegions.emplace_back(VkBufferImageCopy2{
+                            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                            .pNext             = nullptr,
+                            .bufferOffset      = stagingMemoryBlock.memoryBlock.offset + offset,
+                            .bufferRowLength   = 0,
+                            .bufferImageHeight = 0,
+                            .imageSubresource  = {
+                                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                                .mipLevel       = mipLevel,
+                                .baseArrayLayer = pTexture->numFaces * arrayLayer + face,
+                                .layerCount     = 1
+                            },
+                            .imageOffset       = {.x     = 0,        .y      = 0,         .z     = 0},
+                            .imageExtent       = {.width = mipWidth, .height = mipHeight, .depth = 1}
+                        });
+                    }
                 }
             }
         }
@@ -1143,7 +1203,7 @@ namespace Vk
                 .format                = static_cast<VkFormat>(pTexture->vkFormat),
                 .extent                = {.width = pTexture->baseWidth, .height = pTexture->baseHeight, .depth = 1},
                 .mipLevels             = pTexture->numLevels,
-                .arrayLayers           = pTexture->numLayers,
+                .arrayLayers           = pTexture->numLayers * pTexture->numFaces,
                 .samples               = VK_SAMPLE_COUNT_1_BIT,
                 .tiling                = VK_IMAGE_TILING_OPTIMAL,
                 .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -1153,6 +1213,38 @@ namespace Vk
                 .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
             },
             VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
+
+        if (pTexture->isCubemap)
+        {
+            if (pTexture->isArray)
+            {
+                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+            }
+            else
+            {
+                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+            }
+        }
+        else if (pTexture->isArray)
+        {
+            imageViewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        }
+
+        const auto imageView = Vk::ImageView
+        (
+            device,
+            image,
+            imageViewType,
+            VkImageSubresourceRange{
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = image.arrayLayers
+            }
         );
 
         ktxTexture2_Destroy(pTexture);
@@ -1172,10 +1264,14 @@ namespace Vk
             stagingPool.Free(stagingMemoryBlock);
         });
 
-        return image;
+        return Vk::UploadedImage
+        {
+            .image     = image,
+            .imageView = imageView
+        };
     }
 
-    Vk::Image ImageUploader::LoadRawMemory
+    Vk::UploadedImage ImageUploader::LoadRawMemory
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -1250,6 +1346,20 @@ namespace Vk
 
         const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
+        const auto imageView = Vk::ImageView
+        (
+            device,
+            image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VkImageSubresourceRange{
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = image.arrayLayers
+            }
+        );
+
         AppendUpload(Upload{
             .image           = image,
             .buffer          = stagingMemoryBlock.buffer,
@@ -1265,7 +1375,11 @@ namespace Vk
             stagingPool.Free(stagingMemoryBlock);
         });
 
-        return image;
+        return Vk::UploadedImage
+        {
+            .image     = image,
+            .imageView = imageView
+        };
     }
 
     void ImageUploader::AppendUpload(Upload&& upload)

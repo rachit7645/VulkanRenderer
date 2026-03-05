@@ -192,8 +192,6 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        megaSet.Update(context.device);
-
         const auto irradianceMapID = GenerateIrradianceMap
         (
             cmdBuffer,
@@ -227,8 +225,6 @@ namespace Renderer::IBL
             modelManager.textureManager,
             megaSet
         );
-
-        megaSet.Update(context.device);
 
         Vk::EndLabel(cmdBuffer);
 
@@ -291,8 +287,6 @@ namespace Renderer::IBL
             stagingPool,
             deletionQueue
         );
-
-        megaSet.Update(context.device);
 
         Vk::EndLabel(cmdBuffer);
 
