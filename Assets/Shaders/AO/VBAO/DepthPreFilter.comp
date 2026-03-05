@@ -56,7 +56,6 @@ void main()
 
     g_ScratchDepths[lID.x][lID.y] = depthMip1;
 
-    memoryBarrierShared();
     barrier();
 
     // Mip 2
@@ -74,7 +73,6 @@ void main()
         g_ScratchDepths[lID.x][lID.y] = depthMip2;
     }
 
-    memoryBarrierShared();
     barrier();
 
     // Mip 3
@@ -92,7 +90,6 @@ void main()
         g_ScratchDepths[lID.x][lID.y] = depthMip3;
     }
 
-    memoryBarrierShared();
     barrier();
 
     // Mip 4

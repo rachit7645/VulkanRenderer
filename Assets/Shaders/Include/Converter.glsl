@@ -19,19 +19,6 @@
 
 #include "Constants.glsl"
 
-vec4 UnpackRGBA8(uint data)
-{
-    const float ONE_BY_255 = 1.0f / 255.0f;
-
-    return vec4
-    (
-        float(bitfieldExtract(data, 0,  8)) * ONE_BY_255,
-        float(bitfieldExtract(data, 8,  8)) * ONE_BY_255,
-        float(bitfieldExtract(data, 16, 8)) * ONE_BY_255,
-        float(bitfieldExtract(data, 24, 8)) * ONE_BY_255
-    );
-}
-
 vec2 GetSphericalMapUV(vec3 v)
 {
     const vec2 INVERSE_CONSTANTS = vec2(INVERSE_TWO_PI, INVERSE_PI);

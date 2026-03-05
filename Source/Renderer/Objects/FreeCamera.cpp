@@ -62,7 +62,7 @@ namespace Renderer::Objects
         Zoom(frameCounter, inputs);
     }
 
-    void FreeCamera::Move(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
+    void FreeCamera::Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         f32 velocity = m_speed * frameCounter.frameDelta;
 
@@ -116,7 +116,7 @@ namespace Renderer::Objects
     {
         constexpr auto ROTATION_STICK_MULTIPLIER = 0.04f;
 
-        const auto MAX_YAW = glm::radians(89.0f);
+        constexpr f32 MAX_YAW = glm::radians(89.0f);
 
         const auto speed = m_sensitivity * frameCounter.frameDelta;
 
@@ -141,8 +141,8 @@ namespace Renderer::Objects
 
     void FreeCamera::Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        const auto MIN_FOV = glm::radians(10.0f);
-        const auto MAX_FOV = glm::radians(120.0f);
+        constexpr f32 MIN_FOV = glm::radians(10.0f);
+        constexpr f32 MAX_FOV = glm::radians(120.0f);
 
         // Stops things from going haywire
         if (!inputs.WasMouseScrolled())
@@ -161,10 +161,10 @@ namespace Renderer::Objects
         if (ImGui::BeginMenu("Camera"))
         {
             // Camera Settings
-            ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.7f");
-            ImGui::DragFloat("Sprint",      &m_sprint,      1.0f, 0.0f, 0.0f, "%.7f");
-            ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.7f");
-            ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.7f");
+            ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.3f");
+            ImGui::DragFloat("Sprint",      &m_sprint,      1.0f, 0.0f, 0.0f, "%.3f");
+            ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.3f");
+            ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.3f");
 
             ImGui::EndMenu();
         }

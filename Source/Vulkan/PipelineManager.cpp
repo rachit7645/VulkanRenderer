@@ -27,6 +27,13 @@
 namespace Vk
 {
     constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
+    constexpr auto PYTHON_EXECUTABLE  = "C:/msys64/ucrt64/bin/python.exe";
+
+    #ifdef ENGINE_DEBUG
+    constexpr auto COMPILATION_FLAGS = "";
+    #else
+    constexpr auto COMPILATION_FLAGS = "--release";
+    #endif
 
     void PipelineManager::AddPipeline(const std::string_view id, const Vk::PipelineConfig& config)
     {
@@ -210,11 +217,7 @@ namespace Vk
         {
             const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
 
-            #ifdef ENGINE_DEBUG
-            const auto result = std::system(fmt::format("python ../Assets/Shaders/CompileShader.py {}", shaderAssetPath).c_str());
-            #else
-            const auto result = std::system(fmt::format("python ../Assets/Shaders/CompileShader.py {} --release", shaderAssetPath).c_str());
-            #endif
+            const auto result = std::system(fmt::format("{} ../Assets/Shaders/CompileShader.py {} {}", PYTHON_EXECUTABLE, COMPILATION_FLAGS, shaderAssetPath).c_str());
 
             if (result != 0)
             {
@@ -231,11 +234,7 @@ namespace Vk
 
     void PipelineManager::ReloadAll()
     {
-        #ifdef ENGINE_DEBUG
-        const auto result = std::system("python ../Assets/Shaders/CompileShaders.py");
-        #else
-        const auto result = std::system("python ../Assets/Shaders/CompileShaders.py --release");
-        #endif
+        const auto result = std::system(fmt::format("{} ../Assets/Shaders/CompileShaders.py {}", PYTHON_EXECUTABLE, COMPILATION_FLAGS).c_str());
 
         if (result != 0)
         {

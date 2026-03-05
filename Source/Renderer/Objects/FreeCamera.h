@@ -43,7 +43,7 @@ namespace Renderer::Objects
         void ImGuiDisplay() override;
     private:
         void CheckInputs(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
-        void Move(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
+        void Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
         void Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
         void Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
 

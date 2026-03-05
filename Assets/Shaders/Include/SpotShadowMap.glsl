@@ -38,7 +38,7 @@ float CalculateSpotShadow
     vec3 lightDirection = normalize(light.position - fragPosition);
 
     float cosTheta = saturate(dot(normal, lightDirection));
-    float bias     = SPOT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);
+    float bias     = SPOT_SHADOW_MIN_BIAS * TanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, SPOT_SHADOW_MAX_BIAS);
 
     float currentDepth = projCoords.z;

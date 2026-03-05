@@ -33,16 +33,6 @@ shared uint g_MaxDepthBits;
 
 void main()
 {
-    ivec2 pixelCoord   = ivec2(gl_GlobalInvocationID.xy);
-    vec2  viewportSize = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
-    vec2  pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
-    vec2  uv           = pixelCenter / viewportSize;
-
-    float depth = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), uv).r;
-
-    float subgroupMinDepth = subgroupMin(depth);
-    float subgroupMaxDepth = subgroupMax(depth);
-
     uint localID = gl_LocalInvocationIndex;
 
     if (localID == 0)
@@ -51,8 +41,22 @@ void main()
         g_MaxDepthBits = 0u;
     }
 
-    memoryBarrierShared();
     barrier();
+
+    ivec2 pixelCoord   = ivec2(gl_GlobalInvocationID.xy);
+    vec2  viewportSize = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2  pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
+    vec2  uv           = pixelCenter / viewportSize;
+
+    float depth = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), uv).r;
+
+    if (any(greaterThanEqual(pixelCoord, ivec2(viewportSize))))
+    {
+        depth = 1.0f;
+    }
+
+    float subgroupMinDepth = subgroupMin(depth);
+    float subgroupMaxDepth = subgroupMax(depth);
 
     if (subgroupElect())
     {
@@ -63,7 +67,6 @@ void main()
         atomicMax(g_MaxDepthBits, subgroupMaxDepthBits);
     }
 
-    memoryBarrierShared();
     barrier();
 
     if (localID == 0)

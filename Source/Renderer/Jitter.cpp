@@ -31,9 +31,9 @@ namespace Renderer
 
         const auto phaseCount = static_cast<usize>(static_cast<f32>(Renderer::JITTER_SAMPLE_COUNT) * multiplier2);
 
-        const auto jitterSamples = Maths::GenerateHaltonSequence(phaseCount);
+        const usize index = frameIndex % phaseCount;
 
-        auto jitter  = jitterSamples[frameIndex % phaseCount];
+        auto jitter  = glm::vec2(Maths::Halton(index, 2), Maths::Halton(index, 3));
              jitter -= glm::vec2(0.5f);
 
         return jitter;

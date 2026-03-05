@@ -40,7 +40,6 @@ void main()
 
     g_histogramBins[localIndex] = countForThisBin * localIndex;
 
-    memoryBarrierShared();
     barrier();
 
     for (uint cutoff = (HISTOGRAM_SIZE >> 1); cutoff > 0; cutoff >>= 1)
@@ -50,7 +49,6 @@ void main()
             g_histogramBins[localIndex] += g_histogramBins[localIndex + cutoff];
         }
 
-        memoryBarrierShared();
         barrier();
     }
 

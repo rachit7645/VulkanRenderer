@@ -33,11 +33,11 @@ void main()
     uint meshID = gl_InstanceCustomIndexEXT;
     Mesh mesh   = Constants.Meshes.meshes[meshID];
 
-    uint primitiveID = mesh.surfaceInfo.indexInfo.offset + 3 * gl_PrimitiveID;
+    uint indexOffset = mesh.surfaceInfo.indexInfo.offset + 3 * gl_PrimitiveID;
 
-    uint i0 = Constants.Indices.indices[primitiveID + 0];
-    uint i1 = Constants.Indices.indices[primitiveID + 1];
-    uint i2 = Constants.Indices.indices[primitiveID + 2];
+    uint i0 = Constants.Indices.indices[indexOffset + 0];
+    uint i1 = Constants.Indices.indices[indexOffset + 1];
+    uint i2 = Constants.Indices.indices[indexOffset + 2];
 
     uint uvOffset      = mesh.surfaceInfo.uvInfo.offset;
     uint albedoUVMapID = mesh.material.albedoUVMapID;
@@ -48,6 +48,7 @@ void main()
 
     vec2 uv = uv0 * barycentricCoords.x + uv1 * barycentricCoords.y + uv2 * barycentricCoords.z;
 
+    // TODO: Compute a mip level to sample from
     float alpha  = textureLod(sampler2D(Textures[nonuniformEXT(mesh.material.albedoID)], Samplers[Constants.TextureSamplerIndex]), uv, 0).a;
           alpha *= mesh.material.albedoFactor.a;
 

@@ -63,7 +63,7 @@ float log10(float x)
 }
 
 // Safe version (NaNs are scary)
-float FastTanArcCos(float x)
+float TanArcCos(float x)
 {
     // tan(acos(x)) = sqrt(1 - x^2) / x
 
@@ -71,37 +71,6 @@ float FastTanArcCos(float x)
     float denominator = max(x, 0.00001f);
 
     return sqrt(numerator) / denominator;
-}
-
-float UnsafeFastTanArcCos(float x)
-{
-    // tan(acos(x)) = sqrt(1 - x^2) / x
-
-    float numerator   = 1.0f - (x * x);
-    float denominator = x;
-
-    return sqrt(numerator) / denominator;
-}
-
-// http://h14s.p5r.org/2012/09/0x5f3759df.html, [Drobot2014a] Low Level Optimizations for GCN, https://blog.selfshadow.com/publications/s2016-shading-course/activision/s2016_pbs_activision_occlusion.pdf slide 63
-float FastSqrt(float x)
-{
-    return intBitsToFloat(0x1fbd1df5 + (floatBitsToInt(x) >> 1));
-}
-
-// https://seblagarde.wordpress.com/2014/12/01/inverse-trigonometric-functions-gpu-optimization-for-amd-gcn-architecture/
-// Input:  [-1, 1]
-// Output: [0, PI]
-float FastArcCos(float inX)
-{
-    const float FAST_ACOS_PI      = 3.141593f;
-    const float FAST_ACOS_HALF_PI = 1.570796f;
-
-    float x   = abs(inX);
-    float res = -0.156583f * x + FAST_ACOS_HALF_PI;
-    res      *= FastSqrt(1.0f - x);
-
-    return (inX >= 0) ? res : FAST_ACOS_PI - res;
 }
 
 #endif

@@ -68,18 +68,4 @@ namespace Maths
             glm::cross(glm::vec3(transform[0]), glm::vec3(transform[1]))
         };
     }
-
-    std::vector<glm::vec2> GenerateHaltonSequence(usize N)
-    {
-        std::vector<glm::vec2> sequence = {};
-
-        sequence.reserve(N);
-
-        for (usize i = 0; i < N; ++i)
-        {
-            sequence.emplace_back(Halton(i, 2), Halton(i, 3));
-        }
-
-        return sequence;
-    }
 }

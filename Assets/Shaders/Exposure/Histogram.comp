@@ -41,7 +41,6 @@ void main()
 
     g_histogramBins[localIndex] = 0;
 
-    memoryBarrierShared();
     barrier();
 
     vec2  pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
@@ -53,9 +52,7 @@ void main()
 
     uint binIndex = 0u;
 
-    const float LUMINANCE_EPSILON = 0.005f;
-
-    if (luminance > LUMINANCE_EPSILON)
+    if (luminance > HISTOGRAM_LUMINANCE_EPSILON)
     {
         float logLuminance = saturate((log2(luminance) - HISTOGRAM_MIN_LOG_LUMINANCE) * HISTOGRAM_INVERSE_LOG_LUMINANCE_RANGE);
 
@@ -67,7 +64,6 @@ void main()
         atomicAdd(g_histogramBins[binIndex], 1);
     }
 
-    memoryBarrierShared();
     barrier();
 
     if (g_histogramBins[localIndex] > 0)

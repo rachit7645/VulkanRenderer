@@ -37,7 +37,6 @@ namespace Renderer::Objects
         Camera(Camera&& other) noexcept = default;
         Camera& operator=(Camera&& other) noexcept = default;
 
-        // Each subclass MUST define this method
         virtual void Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs) = 0;
         virtual void ImGuiDisplay();
 

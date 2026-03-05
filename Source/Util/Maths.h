@@ -27,8 +27,6 @@ namespace Maths
     glm::mat4 InfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
     glm::mat3 NormalMatrix(const glm::mat4& transform);
 
-    std::vector<glm::vec2> GenerateHaltonSequence(usize N);
-
     template<typename T>
     constexpr T Max2(const glm::vec<2, T>& vector)
     {
@@ -83,16 +81,18 @@ namespace Maths
         return index;
     }
 
-    template<u32 HilbertLevel, typename OutputType = u16, u32 HilbertWidth = 1u << HilbertLevel>
+    template<u32 HilbertLevel>
     constexpr auto GenerateHilbertSequence()
     {
-        std::array<OutputType, HilbertWidth * HilbertWidth> sequence = {};
+        constexpr u32 HILBERT_WIDTH = 1u << HilbertLevel;
 
-        for (u32 i = 0; i < HilbertWidth; ++i)
+        std::array<u16, static_cast<usize>(HILBERT_WIDTH * HILBERT_WIDTH)> sequence = {};
+
+        for (u32 i = 0; i < HILBERT_WIDTH; ++i)
         {
-            for (u32 j = 0; j < HilbertWidth; ++j)
+            for (u32 j = 0; j < HILBERT_WIDTH; ++j)
             {
-                sequence[i * HilbertWidth + j] = static_cast<OutputType>(HilbertIndex<HilbertWidth>(i, j));
+                sequence[i * HILBERT_WIDTH + j] = static_cast<u16>(HilbertIndex<HILBERT_WIDTH>(i, j));
             }
         }
 

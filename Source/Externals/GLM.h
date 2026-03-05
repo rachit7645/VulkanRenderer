@@ -20,6 +20,7 @@
 #define GLM_FORCE_INTRINSICS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_SILENT_WARNINGS
+#define GLM_FORCE_SIZE_T_LENGTH
 
 // Standard vector types
 #include "glm/glm/vec2.hpp"
@@ -48,6 +49,9 @@
 
 // Matrix transformations
 #include "glm/glm/gtc/matrix_transform.hpp"
+
+// Quaternions
+#include "glm/glm/gtc/quaternion.hpp"
 
 // Fastgltf math types
 #include "FastGLTF.h"

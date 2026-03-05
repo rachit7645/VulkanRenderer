@@ -30,7 +30,7 @@ void main()
 {
     Vertex vertex = Constants.Vertices.vertices[gl_VertexIndex];
 
-    fragColor = UnpackRGBA8(vertex.color);
+    fragColor = unpackUnorm4x8(vertex.color);
     fragUV    = vertex.uv;
 
     gl_Position = vec4(vertex.position * Constants.Scale + Constants.Translate, 0.0f, 1.0f);

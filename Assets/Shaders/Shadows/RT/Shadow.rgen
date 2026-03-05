@@ -51,7 +51,7 @@ void main()
     vec3 direction = normalize(-Constants.Scene.Sun.light.direction);
 
     float cosTheta = saturate(dot(normal, direction));
-    float bias     = RT_SHADOW_MIN_BIAS * FastTanArcCos(cosTheta);
+    float bias     = RT_SHADOW_MIN_BIAS * TanArcCos(cosTheta);
     bias           = clamp(bias, 0.0f, RT_SHADOW_MAX_BIAS);
 
     // TODO: Consider a better self-intersection prevention method

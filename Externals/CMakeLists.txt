@@ -95,13 +95,16 @@ set(GLM_ENABLE_SIMD_AVX2 ON CACHE BOOL "Enable AVX2" FORCE)
 
 # fmt Config
 set(FMT_INSTALL OFF CACHE BOOL "Disable fmt installation" FORCE)
+set(FMT_MODULE  OFF CACHE BOOL "Disable fmt modules"      FORCE)
 
 # fastgltf Config
 set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
 
 # OpenEXR Config
-set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FORCE)
-set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
+set(OPENEXR_INSTALL        OFF CACHE BOOL "Disable openexr installation"       FORCE)
+set(OPENEXR_BUILD_TOOLS    OFF CACHE BOOL "Disable building openexr tools"     FORCE)
+set(OPENEXR_BUILD_EXAMPLES OFF CACHE BOOL "Disable building openexr examples"  FORCE)
+set(OPENEXR_INSTALL_TOOLS  OFF CACHE BOOL "Disable openexr tools installation" FORCE)
 
 # External Libraries
 engine_add_external(vma                                                                          )

@@ -88,7 +88,7 @@ namespace Renderer::AO::VBAO
             const Objects::GlobalSamplers& samplers
         );
 
-        f32 m_finalValuePower = 1.0f;
+        f32 m_finalValuePower = 1.5f;
         f32 m_thickness       = 0.25f;
     };
 }
