@@ -42,16 +42,24 @@ namespace Renderer::Objects
         void Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs) override;
         void ImGuiDisplay() override;
     private:
-        void CheckInputs(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
-        void Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
         void Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
+        void Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
         void Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
 
         // Settings
-        f32 m_speed       = 0.000015f;
-        f32 m_sprint      = 1.9f;
-        f32 m_sensitivity = 0.0001f;
-        f32 m_zoom        = 0.000045f;
+        f32 m_speed       = 15.0f;
+        f32 m_sprint      = 1.85f;
+        f32 m_sensitivity = 100.0f;
+        f32 m_zoom        = 45.0f;
+
+        // Internal quaternions
+        glm::quat m_yaw   = glm::identity<glm::quat>();
+        glm::quat m_pitch = glm::identity<glm::quat>();
+
+        // Targets
+        glm::vec3 m_targetPosition    = {};
+        glm::quat m_targetOrientation = glm::identity<glm::quat>();
+        f32       m_targetFOV         = 0.0f;
     };
 }
 

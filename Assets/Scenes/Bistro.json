@@ -16,8 +16,8 @@
     "SpotLights" : [],
     "Camera" : {
         "FreeCamera" : {
-            "Position"    : [-10.19, 1.97, -0.73],
-            "Rotation"    : [ 5.16, -3.44,  0.0],
+            "Position"    : [-10.19, 1.97,  -0.73],
+            "Rotation"    : [ 2.86, -73.91,  0.0],
             "FOV"         : 80.0,
             "Speed"       : 15.0,
             "Sprint"      : 1.85,

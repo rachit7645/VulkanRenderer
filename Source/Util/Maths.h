@@ -33,6 +33,24 @@ namespace Maths
         return glm::max(vector.x, vector.y);
     }
 
+    template<typename T>
+    constexpr T ExponentialDecay(T current, T target, f32 rate, f32 dt)
+    {
+        return target + (current - target) * std::exp(-rate * dt);
+    }
+
+    template<>
+    constexpr glm::quat ExponentialDecay(glm::quat current, glm::quat target, float rate, float dt)
+    {
+        // Ensure we go through the shortest arc
+        if (glm::dot(current, target) < 0.0f)
+        {
+            target = -target;
+        }
+
+        return glm::slerp(current, target, 1.0f - std::exp(-rate * dt));
+    }
+
     constexpr f32 Halton(usize index, usize base)
     {
         f64 result = 0.0;

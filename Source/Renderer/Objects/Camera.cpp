@@ -26,32 +26,33 @@ namespace Renderer::Objects
         const glm::vec3& rotation,
         f32 FOV
     )
-        : position(position),
-          rotation(rotation),
-          FOV(FOV)
+        : position{position},
+          orientation{glm::normalize(glm::quat(rotation))},
+          FOV{FOV}
     {
     }
 
     glm::mat4 Camera::GetViewMatrix() const
     {
-        return glm::lookAtRH(position, position + front, up);
+        auto matrix = glm::identity<glm::mat4>();
+
+        matrix = glm::mat4(glm::inverse(orientation));
+        matrix = glm::translate(matrix, -position);
+
+        return matrix;
     }
 
     void Camera::ImGuiDisplay()
     {
         if (ImGui::BeginMenu("Camera"))
         {
-            // Camera Data
-            ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.2f");
-            ImGui::DragFloat3("Rotation", &rotation[0], 1.0f, 0.0f, 0.0f, "%.2f");
-            ImGui::DragFloat ("FOV",      &FOV,         1.0f, 0.0f, 0.0f, "%.2f");
+            glm::vec3 eulerAngles = glm::eulerAngles(orientation);
 
-            ImGui::Separator();
+            ImGui::DragFloat3("Position", &position[0],    1.0f, 0.0f, 0.0f, "%.2f");
+            ImGui::DragFloat3("Rotation", &eulerAngles[0], 1.0f, 0.0f, 0.0f, "%.2f");
+            ImGui::DragFloat ("FOV",      &FOV,            1.0f, 0.0f, 0.0f, "%.2f");
 
-            // Camera lookat data
-            ImGui::DragFloat3("Front", &front[0], 1.0f, 0.0f, 0.0f, "%.2f");
-            ImGui::DragFloat3("Up",    &up[0],    1.0f, 0.0f, 0.0f, "%.2f");
-            ImGui::DragFloat3("Right", &right[0], 1.0f, 0.0f, 0.0f, "%.2f");
+            orientation = glm::normalize(glm::quat(eulerAngles));
 
             ImGui::Separator();
 
