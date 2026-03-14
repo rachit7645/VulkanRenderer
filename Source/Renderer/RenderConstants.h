@@ -30,7 +30,7 @@ namespace Renderer
     // World Up direction
     constexpr glm::vec3 WORLD_UP = {0.0f, 1.0f, 0.0f};
     // TAA Jitter Samples
-    constexpr usize JITTER_SAMPLE_COUNT = 64;
+    constexpr usize BASE_JITTER_PHASE_COUNT = 64;
 }
 
 #endif

@@ -47,6 +47,8 @@ namespace Renderer::Objects
         f32       FOV         = Renderer::DEFAULT_FOV;
 
         bool isEnabled = true;
+    private:
+        bool m_enableQuaternionInputMode = false;
     };
 }
 

@@ -49,12 +49,12 @@ namespace Engine
 
     void Inputs::FindGamepad()
     {
-        m_gamepad = nullptr;
+        gamepad = nullptr;
 
         s32 joystickCount = 0;
-        auto* joysticks = SDL_GetJoysticks(&joystickCount);
 
-        // No joystick found, abort
+        const SDL_JoystickID* joysticks = SDL_GetJoysticks(&joystickCount);
+
         if (joysticks == nullptr)
         {
             return;
@@ -62,10 +62,10 @@ namespace Engine
 
         for (s32 i = 0; i < joystickCount; ++i)
         {
-            // We need a proper game controller
             if (SDL_IsGamepad(joysticks[i]))
             {
-                m_gamepad = SDL_OpenGamepad(joysticks[i]);
+                gamepad = SDL_OpenGamepad(joysticks[i]);
+
                 break;
             }
         }
@@ -79,16 +79,18 @@ namespace Engine
     const glm::vec2& Inputs::GetMousePosition()
     {
         m_wasMouseMoved = false;
+
         return m_mousePosition;
     }
 
     const glm::vec2& Inputs::GetMouseScroll()
     {
         m_wasMouseScrolled = false;
+
         return m_mouseScroll;
     }
 
-    glm::vec2 Inputs::GetLStick() const
+    glm::vec2 Inputs::GetLeftStickDirection() const
     {
         return GetNormalisedAxisDirection
         (
@@ -98,7 +100,7 @@ namespace Engine
         );
     }
 
-    glm::vec2 Inputs::GetRStick() const
+    glm::vec2 Inputs::GetRightStickDirection() const
     {
         return GetNormalisedAxisDirection
         (
@@ -108,14 +110,9 @@ namespace Engine
         );
     }
 
-    SDL_Gamepad* Inputs::GetGamepad() const
-    {
-        return m_gamepad;
-    }
-
     SDL_JoystickID Inputs::GetGamepadID() const
     {
-        return SDL_GetJoystickID(SDL_GetGamepadJoystick(m_gamepad));
+        return SDL_GetJoystickID(SDL_GetGamepadJoystick(gamepad));
     }
 
     bool Inputs::WasMouseMoved() const
@@ -135,14 +132,13 @@ namespace Engine
         const glm::vec2& deadZone
     ) const
     {
-        // No controller connected
-        if (m_gamepad == nullptr)
+        if (gamepad == nullptr)
         {
             return {0, 0};
         }
 
-        const auto x = SDL_GetGamepadAxis(m_gamepad, axisHorizontal);
-        const auto y = SDL_GetGamepadAxis(m_gamepad, axisVertical);
+        const s16 x = SDL_GetGamepadAxis(gamepad, axisHorizontal);
+        const s16 y = SDL_GetGamepadAxis(gamepad, axisVertical);
 
         constexpr auto AXIS_MAX = static_cast<f32>(SDL_JOYSTICK_AXIS_MAX);
 
@@ -177,24 +173,25 @@ namespace Engine
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Input"))
+            if (ImGui::BeginMenu("Engine"))
             {
-                // Realtime(ish) mouse position
-                glm::vec2 mousePos = {};
-                SDL_GetMouseState(&mousePos.x, &mousePos.y);
-
-                // Mouse data
-                ImGui::DragFloat2("Mouse Position", &mousePos[0]);
-                ImGui::DragFloat2("Mouse Relative", &m_mousePosition[0]);
-                ImGui::DragFloat2("Mouse Scroll",   &m_mouseScroll[0]);
-
-                // If controller is connected
-                if (m_gamepad != nullptr)
+                if (ImGui::CollapsingHeader("Input", ImGuiTreeNodeFlags_DefaultOpen))
                 {
-                    // Controller data
-                    ImGui::Text("%s", SDL_GetGamepadName(m_gamepad));
-                    ImGui::DragFloat2("LStick", &GetLStick()[0], 1.0f, 0.0f, 0.0f, "%.3f");
-                    ImGui::DragFloat2("RStick", &GetRStick()[0], 1.0f, 0.0f, 0.0f, "%.3f");
+                    glm::vec2 mousePos = {};
+                    // Realtime(ish) mouse position
+                    SDL_GetMouseState(&mousePos.x, &mousePos.y);
+
+                    ImGui::DragFloat2("Mouse Position", &mousePos[0]);
+                    ImGui::DragFloat2("Mouse Relative", &m_mousePosition[0]);
+                    ImGui::DragFloat2("Mouse Scroll",   &m_mouseScroll[0]);
+
+                    if (gamepad != nullptr)
+                    {
+                        ImGui::Text("%s", SDL_GetGamepadName(gamepad));
+
+                        ImGui::DragFloat2("LStick", &GetLeftStickDirection()[0],  1.0f, 0.0f, 0.0f, "%.3f");
+                        ImGui::DragFloat2("RStick", &GetRightStickDirection()[0], 1.0f, 0.0f, 0.0f, "%.3f");
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -206,6 +203,6 @@ namespace Engine
 
     void Inputs::Destroy()
     {
-        SDL_CloseGamepad(m_gamepad);
+        SDL_CloseGamepad(gamepad);
     }
 }

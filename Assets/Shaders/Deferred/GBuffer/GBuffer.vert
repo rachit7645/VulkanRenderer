@@ -23,11 +23,19 @@
 #include "GPU/Material.h"
 #include "Deferred/GBuffer.h"
 
-layout(location = 0) out noperspective vec4 fragCurrentPosition;
-layout(location = 1) out noperspective vec4 fragPreviousPosition;
-layout(location = 2) out               vec2 fragUV[2];
-layout(location = 4) out               mat3 fragTBNMatrix;
-layout(location = 7) out flat          uint fragDrawID;
+layout(location = 0) out VertexData
+{
+    vec2 uv[2];
+
+    vec3 N;
+    vec3 T;
+    vec3 B;
+
+    noperspective vec3 currentPosition;
+    noperspective vec3 previousPosition;
+
+    flat uint drawID;
+} Output;
 
 void main()
 {
@@ -43,20 +51,22 @@ void main()
 
     vec4 worldPosition = currentInstance.transform * vec4(position, 1.0f);
 
-    fragCurrentPosition = Constants.Scene.currentMatrices.projectionView         * worldPosition;
-    gl_Position         = Constants.Scene.currentMatrices.jitteredProjectionView * worldPosition;
+    vec4 currentPosition = Constants.Scene.currentMatrices.projectionView         * worldPosition;
+    gl_Position          = Constants.Scene.currentMatrices.jitteredProjectionView * worldPosition;
 
-    fragPreviousPosition = Constants.Scene.previousMatrices.projectionView *
-                           previousInstance.transform * vec4(position, 1.0f);
+    vec4 previousPosition = Constants.Scene.previousMatrices.projectionView *
+                            (previousInstance.transform * vec4(position, 1.0f));
 
-    fragUV[0]  = uvs.uv[0];
-    fragUV[1]  = uvs.uv[1];
-    fragDrawID = currentInstance.meshIndex;
+    Output.currentPosition  = currentPosition.xyw;
+    Output.previousPosition = previousPosition.xyw;
 
-    vec3 N = normalize(currentInstance.normalMatrix * vertex.normal);
-    vec3 T = normalize(currentInstance.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
-         T = normalize(T - dot(T, N) * N);
-    vec3 B = normalize(cross(N, T)) * vertex.tangent.w;
+    Output.uv[0]  = uvs.uv[0];
+    Output.uv[1]  = uvs.uv[1];
 
-    fragTBNMatrix = mat3(T, B, N);
+    Output.drawID = currentInstance.meshIndex;
+
+    Output.N = normalize(currentInstance.normalMatrix * vertex.normal);
+    Output.T = normalize(currentInstance.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
+    Output.T = normalize(Output.T - dot(Output.T, Output.N) * Output.N);
+    Output.B = normalize(cross(Output.N, Output.T)) * vertex.tangent.w;
 }

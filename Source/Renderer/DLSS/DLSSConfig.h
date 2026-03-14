@@ -30,8 +30,6 @@ namespace Renderer::DLSS
 
         void Destroy(VkDevice device);
 
-        bool isSupported = false;
-
         [[nodiscard]] glm::uvec2 GetInternalResolution(const glm::uvec2& swapchainSize);
 
         void UpdateDLSSFeature
@@ -40,6 +38,8 @@ namespace Renderer::DLSS
             const glm::uvec2& swapchainSize,
             Util::DeletionQueue& deletionQueue
         );
+
+        bool isSupported = false;
 
         NVSDK_NGX_Parameter* parameters = nullptr;
         NVSDK_NGX_Handle*    handle     = nullptr;

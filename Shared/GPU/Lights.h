@@ -27,15 +27,15 @@
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
-GLSL_CONSTANT(u32, MAX_POINT_LIGHT_COUNT,          16)
-GLSL_CONSTANT(u32, MAX_SHADOWED_POINT_LIGHT_COUNT,  4)
-GLSL_CONSTANT(u32, MAX_SPOT_LIGHT_COUNT,           16)
-GLSL_CONSTANT(u32, MAX_SHADOWED_SPOT_LIGHT_COUNT,   4)
+GLSL_CONSTEXPR u32 MAX_POINT_LIGHT_COUNT          = 16;
+GLSL_CONSTEXPR u32 MAX_SHADOWED_POINT_LIGHT_COUNT =  4;
+GLSL_CONSTEXPR u32 MAX_SPOT_LIGHT_COUNT           = 16;
+GLSL_CONSTEXPR u32 MAX_SHADOWED_SPOT_LIGHT_COUNT  =  4;
 
 #ifdef __cplusplus
 
-const glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
-const glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
+constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
+constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
 
 #endif
 
@@ -66,11 +66,13 @@ struct ShadowedPointLight
           range(pointLight.range),
           matrices()
     {
+        constexpr f32 ASPECT_RATIO = static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
+                                     static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y);
+
         auto projection = Maths::ProjectionReverseZ
         (
             glm::radians(90.0f),
-            static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
-            static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y),
+            ASPECT_RATIO,
             Renderer::NEAR_PLANE,
             Renderer::FAR_PLANE
         );
@@ -117,11 +119,13 @@ struct ShadowedSpotLight
           range(spotLight.range),
           matrix(glm::identity<glm::mat4>())
     {
+        constexpr f32 ASPECT_RATIO = static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.x) /
+                                     static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.y);
+
         auto projection = Maths::InfiniteProjectionReverseZ
         (
             2.0f * cutOff.y,
-            static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.x) /
-            static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.y),
+            ASPECT_RATIO,
             Renderer::NEAR_PLANE
         );
 

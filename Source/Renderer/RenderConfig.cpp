@@ -45,11 +45,14 @@ namespace Renderer
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Renderer Config"))
+            if (ImGui::BeginMenu("Renderer"))
             {
-                ImGui::Checkbox("Raytracing",  &rayTracing.isEnabled);
-                ImGui::Checkbox("Multi-Queue", &multiQueue.isEnabled);
-                ImGui::Checkbox("DLSS",        &DLSS.isEnabled);
+                if (ImGui::CollapsingHeader("Config"))
+                {
+                    ImGui::Checkbox("Raytracing",  &rayTracing.isEnabled);
+                    ImGui::Checkbox("Multi-Queue", &multiQueue.isEnabled);
+                    ImGui::Checkbox("DLSS",        &DLSS.isEnabled);
+                }
 
                 ImGui::EndMenu();
             }

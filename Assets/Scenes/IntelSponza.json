@@ -52,12 +52,12 @@
     ],
     "Camera" : {
         "FreeCamera" : {
-            "Position"    : [0.0, 2.0,   0.0],
-            "Rotation"    : [0.0, 180.0, 0.0],
+            "Position"    : [0.0, 2.0,  0.0],
+            "Rotation"    : [0.0, 90.0, 0.0],
             "FOV"         : 80.0,
             "Speed"       : 15.0,
             "Sprint"      : 1.85,
-            "Sensitivity" : 100.0,
+            "Sensitivity" : 1.75,
             "Zoom"        : 45.0
         }
     },

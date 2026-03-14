@@ -26,6 +26,7 @@ namespace Engine
     {
     public:
         Inputs() = default;
+
         explicit Inputs(bool enableJoyConFixes);
 
         void SetMousePosition(const glm::vec2& position);
@@ -38,10 +39,9 @@ namespace Engine
         [[nodiscard]] const glm::vec2& GetMousePosition();
         [[nodiscard]] const glm::vec2& GetMouseScroll();
 
-        [[nodiscard]] glm::vec2 GetLStick() const;
-        [[nodiscard]] glm::vec2 GetRStick() const;
+        [[nodiscard]] glm::vec2 GetLeftStickDirection()  const;
+        [[nodiscard]] glm::vec2 GetRightStickDirection() const;
 
-        [[nodiscard]] SDL_Gamepad* GetGamepad() const;
         [[nodiscard]] SDL_JoystickID GetGamepadID() const;
 
         [[nodiscard]] bool WasMouseMoved() const;
@@ -50,7 +50,6 @@ namespace Engine
         void ImGuiDisplay();
         void Destroy();
 
-        // Dead zone must be between 0.0f and 1.0f
         [[nodiscard]] glm::vec2 GetNormalisedAxisDirection
         (
             SDL_GamepadAxis axisHorizontal,
@@ -58,16 +57,13 @@ namespace Engine
             const glm::vec2& deadZone
         ) const;
 
-        // Key array from SDL
+        SDL_Gamepad* gamepad = nullptr;
+    private:
         const bool* m_keys = nullptr;
-        // Game controller from SDL
-        SDL_Gamepad* m_gamepad = nullptr;
 
-        // Mouse data
         glm::vec2 m_mousePosition = {};
         glm::vec2 m_mouseScroll   = {};
 
-        // Flags
         bool m_wasMouseMoved    = false;
         bool m_wasMouseScrolled = false;
     };

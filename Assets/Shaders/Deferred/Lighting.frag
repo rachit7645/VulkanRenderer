@@ -34,11 +34,13 @@ layout(location = 0) out vec3 outColor;
 
 void main()
 {
-    vec2             viewportSize     = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), 0));
-    uvec2            pixelCoord       = uvec2(viewportSize * fragUV);
-    uvec2            tileID           = pixelCoord / TILE_SIZE;
-    uvec2            tileCount        = Constants.MaxTileID + 1;
-    uint             tileIndex        = tileCount.x * tileID.y + tileID.x;
+    vec2  viewportSize = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), 0));
+    uvec2 pixelCoord   = uvec2(viewportSize * fragUV);
+
+    uvec2 tileID    = pixelCoord / TILE_SIZE;
+    uvec2 tileCount = Constants.MaxTileID + 1;
+    uint  tileIndex = tileCount.x * tileID.y + tileID.x;
+
     TileLightIndices tileLightIndices = Constants.TileLightIndices.indices[tileIndex];
 
     vec4  gAlbedoIoR  = texture(sampler2D(Textures[Constants.GAlbedoIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
@@ -55,8 +57,7 @@ void main()
     float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
     vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, fragUV, depth);
 
-    vec3 toCamera  = normalize(Constants.Scene.cameraPosition - worldPosition);
-    vec3 reflected = normalize(reflect(-toCamera, normal));
+    vec3 toCamera = normalize(Constants.Scene.cameraPosition - worldPosition);
 
     vec3 Lo = vec3(0.0f);
 
@@ -170,11 +171,18 @@ void main()
         );
     }
 
-    vec3  irradiance       = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
+    vec3 reflected = normalize(reflect(-toCamera, normal));
+
     uint  maxReflectionLod = textureQueryLevels(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]));
-    vec3  preFilter        = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), reflected, roughness * float(maxReflectionLod)).rgb;
-    vec2  brdf             = texture(sampler2D(Textures[Constants.BRDFLUTIndex], Samplers[Constants.IBLSamplerIndex]), vec2(max(dot(normal, toCamera), 0.0f), roughness)).rg;
-    float ao               = texture(sampler2D(Textures[Constants.AOIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
+    float prefilterLod     = roughness * float(maxReflectionLod);
+    vec3  preFilter        = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), reflected, prefilterLod).rgb;
+
+    vec3 irradiance = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
+
+    float NdotV = abs(dot(normal, toCamera)) + 1e-5f;
+    vec2  brdf  = texture(sampler2D(Textures[Constants.BRDFLUTIndex], Samplers[Constants.IBLSamplerIndex]), vec2(NdotV, roughness)).rg;
+
+    float ao = texture(sampler2D(Textures[Constants.AOIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
 
     Lo += ao * CalculateAmbient
     (

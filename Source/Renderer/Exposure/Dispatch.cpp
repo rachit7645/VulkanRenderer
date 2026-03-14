@@ -136,14 +136,17 @@ namespace Renderer::Exposure
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Exposure"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::DragFloat("Adaptation Speed", &m_adaptationSpeed, 0.25f, 0.0f, 0.0f, "%.3f");
-                ImGui::DragFloat("Exposure Bias",    &m_exposureBias,    0.01f, 0.0f, 0.0f, "%.3f");
-
-                if (ImGui::Button("Reset Luminance"))
+                if (ImGui::CollapsingHeader("Exposure"))
                 {
-                    m_hasLuminanceBeenReset = false;
+                    ImGui::DragFloat("Adaptation Speed", &m_adaptationSpeed, 0.25f, 0.0f, 0.0f, "%.3f");
+                    ImGui::DragFloat("Exposure Bias",    &m_exposureBias,    0.01f, 0.0f, 0.0f, "%.3f");
+
+                    if (ImGui::Button("Reset Luminance"))
+                    {
+                        m_hasLuminanceBeenReset = false;
+                    }
                 }
 
                 ImGui::EndMenu();

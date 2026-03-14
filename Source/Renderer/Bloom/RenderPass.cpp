@@ -201,10 +201,13 @@ namespace Renderer::Bloom
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Bloom"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::DragFloat("Filter Radius", &m_filterRadius,  0.0005f,  0.0f, 0.1f, "%.4f");
-                ImGui::DragFloat("Strength",      &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
+                if (ImGui::CollapsingHeader("Bloom"))
+                {
+                    ImGui::DragFloat("Filter Radius", &m_filterRadius,  0.0005f,  0.0f, 0.1f, "%.4f");
+                    ImGui::DragFloat("Strength",      &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
+                }
 
                 ImGui::EndMenu();
             }

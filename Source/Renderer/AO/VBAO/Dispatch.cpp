@@ -231,10 +231,13 @@ namespace Renderer::AO::VBAO
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("VBAO"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::DragFloat("Power",     &m_finalValuePower, 0.05f,  0.0f, 0.0f, "%.4f");
-                ImGui::DragFloat("Thickness", &m_thickness,       0.005f, 0.0f, 1.0f, "%.4f");
+                if (ImGui::CollapsingHeader("VBAO"))
+                {
+                    ImGui::DragFloat("Power",     &m_finalValuePower, 0.05f,  0.0f, 0.0f, "%.4f");
+                    ImGui::DragFloat("Thickness", &m_thickness,       0.005f, 0.0f, 1.0f, "%.4f");
+                }
 
                 ImGui::EndMenu();
             }
@@ -442,7 +445,7 @@ namespace Renderer::AO::VBAO
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView").sampledImageID,
             .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBAO/DepthDifferencesView").storageImageID,
             .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBAO/NoisyAOView").storageImageID,
-            .TemporalIndex            = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
+            .TemporalIndex            = static_cast<u32>(frameIndex % BASE_JITTER_PHASE_COUNT),
             .Thickness                = m_thickness
         };
 

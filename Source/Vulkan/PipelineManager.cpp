@@ -59,10 +59,10 @@ namespace Vk
         std::vector<std::string>                  graphicsPipelineIDs;
 
         std::vector<VkComputePipelineCreateInfo> computePipelineCreateInfos;
-        std::vector<std::string>                 computePipelinesIDs;
+        std::vector<std::string>                 computePipelineIDs;
 
         std::vector<VkRayTracingPipelineCreateInfoKHR> rayTracingPipelineCreateInfos;
-        std::vector<std::string>                       rayTracingPipelinesIDs;
+        std::vector<std::string>                       rayTracingPipelineIDs;
 
         for (auto& [id, config] : m_dirtyPipelineConfigs)
         {
@@ -92,27 +92,33 @@ namespace Vk
 
             case VK_PIPELINE_BIND_POINT_COMPUTE:
                 computePipelineCreateInfos.emplace_back(config.BuildComputePipelineCreateInfo(pipeline.layout));
-                computePipelinesIDs.emplace_back(id);
+                computePipelineIDs.emplace_back(id);
                 break;
 
             case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
                 rayTracingPipelineCreateInfos.emplace_back(config.BuildRayTracingPipelineCreateInfo(pipeline.layout));
-                rayTracingPipelinesIDs.emplace_back(id);
+                rayTracingPipelineIDs.emplace_back(id);
                 break;
 
             default:
-                continue;
+                break;
             }
         }
 
-        Logger::Debug
-        (
-            "Compiling pipelines! [Total={}] [Graphics={}] [Compute={}] [RayTracing={}]\n",
-            m_dirtyPipelineConfigs.size(),
-            graphicsPipelineCreateInfos.size(),
-            computePipelineCreateInfos.size(),
-            rayTracingPipelineCreateInfos.size()
-        );
+        const auto AssignHandles = [&] (const std::vector<std::string>& ids, const std::vector<VkPipeline>& handles)
+        {
+            for (usize i = 0; i < ids.size(); ++i)
+            {
+                const auto& id     = ids[i];
+                const auto  handle = handles[i];
+
+                auto& pipeline = GetPipeline(id);
+
+                pipeline.handle = handle;
+
+                Vk::SetDebugName(device, pipeline.handle, id + "/Pipeline");
+            }
+        };
 
         if (!graphicsPipelineIDs.empty())
         {
@@ -128,20 +134,10 @@ namespace Vk
                 "Failed to create graphics pipelines!"
             );
 
-            for (usize i = 0; i < graphicsPipelineIDs.size(); ++i)
-            {
-                const auto& id     = graphicsPipelineIDs[i];
-                const auto  handle = handles[i];
-
-                auto& pipeline = GetPipeline(id);
-
-                pipeline.handle = handle;
-
-                Vk::SetDebugName(device, pipeline.handle, id + "/Pipeline");
-            }
+            AssignHandles(graphicsPipelineIDs, handles);
         }
 
-        if (!computePipelinesIDs.empty())
+        if (!computePipelineIDs.empty())
         {
             auto handles = std::vector<VkPipeline>(computePipelineCreateInfos.size());
 
@@ -155,20 +151,10 @@ namespace Vk
                 "Failed to create compute pipelines!"
             );
 
-            for (usize i = 0; i < computePipelinesIDs.size(); ++i)
-            {
-                const auto& id     = computePipelinesIDs[i];
-                const auto  handle = handles[i];
-
-                auto& pipeline = GetPipeline(id);
-
-                pipeline.handle = handle;
-
-                Vk::SetDebugName(device, pipeline.handle, id + "/Pipeline");
-            }
+            AssignHandles(computePipelineIDs, handles);
         }
 
-        if (!rayTracingPipelinesIDs.empty())
+        if (!rayTracingPipelineIDs.empty())
         {
             auto handles = std::vector<VkPipeline>(rayTracingPipelineCreateInfos.size());
 
@@ -183,17 +169,7 @@ namespace Vk
                 "Failed to create ray tracing pipelines!"
             );
 
-            for (usize i = 0; i < rayTracingPipelinesIDs.size(); ++i)
-            {
-                const auto& id     = rayTracingPipelinesIDs[i];
-                const auto  handle = handles[i];
-
-                auto& pipeline = GetPipeline(id);
-
-                pipeline.handle = handle;
-
-                Vk::SetDebugName(device, pipeline.handle, id + "/Pipeline");
-            }
+            AssignHandles(rayTracingPipelineIDs, handles);
         }
 
         for (auto& config : m_dirtyPipelineConfigs | std::views::values)
@@ -274,45 +250,38 @@ namespace Vk
 
     void PipelineManager::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("Pipeline Manager"))
         {
-            if (ImGui::BeginMenu("Pipeline Manager"))
+            if (ImGui::TreeNode("Reload"))
             {
-                if (ImGui::TreeNode("Reload"))
+                if (ImGui::Button("Reload All Pipelines"))
                 {
-                    if (ImGui::Button("Reload All Pipelines"))
+                    ReloadAll();
+                }
+
+                ImGui::TreePop();
+            }
+
+            ImGui::Separator();
+
+            for (const auto& [id, pipeline] : m_pipelines)
+            {
+                if (ImGui::TreeNode(std::bit_cast<void*>(pipeline.handle), "%s", id.c_str()))
+                {
+                    ImGui::Text("Handle     | %p", std::bit_cast<void*>(pipeline.handle));
+                    ImGui::Text("Layout     | %p", std::bit_cast<void*>(pipeline.layout));
+                    ImGui::Text("Bind Point | %s", string_VkPipelineBindPoint(pipeline.bindPoint));
+
+                    if (ImGui::Button("Reload Pipeline"))
                     {
-                        ReloadAll();
+                        Reload(id);
                     }
 
                     ImGui::TreePop();
                 }
 
                 ImGui::Separator();
-
-                for (const auto& [id, pipeline] : m_pipelines)
-                {
-                    if (ImGui::TreeNode(std::bit_cast<void*>(pipeline.handle), "%s", id.c_str()))
-                    {
-                        ImGui::Text("Handle     | %p", std::bit_cast<void*>(pipeline.handle));
-                        ImGui::Text("Layout     | %p", std::bit_cast<void*>(pipeline.layout));
-                        ImGui::Text("Bind Point | %s", string_VkPipelineBindPoint(pipeline.bindPoint));
-
-                        if (ImGui::Button("Reload Pipeline"))
-                        {
-                            Reload(id);
-                        }
-
-                        ImGui::TreePop();
-                    }
-
-                    ImGui::Separator();
-                }
-
-                ImGui::EndMenu();
             }
-
-            ImGui::EndMainMenuBar();
         }
     }
 

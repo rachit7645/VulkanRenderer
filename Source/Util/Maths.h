@@ -40,7 +40,7 @@ namespace Maths
     }
 
     template<>
-    constexpr glm::quat ExponentialDecay(glm::quat current, glm::quat target, float rate, float dt)
+    constexpr glm::quat ExponentialDecay(glm::quat current, glm::quat target, f32 rate, f32 dt)
     {
         // Ensure we go through the shortest arc
         if (glm::dot(current, target) < 0.0f)

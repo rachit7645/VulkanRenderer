@@ -254,53 +254,46 @@ namespace Vk
 
     void GeometryBuffer::ImGuiDisplay() const
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("Geometry Buffer"))
         {
-            if (ImGui::BeginMenu("Geometry Buffer"))
-            {
-                ImGui::Text("Buffer Name     | Count  | Used/Available/Allocated");
-                ImGui::Separator();
+            ImGui::Text("Buffer Name     | Count  | Used/Available/Allocated");
+            ImGui::Separator();
 
-                ImGui::Text
-                (
-                    "Index Buffer    | %u | %llu/%llu/%llu",
-                    indexBuffer.count,
-                    indexBuffer.count * sizeof(GPU::Index),
-                    GetIndexBuffer().size - (indexBuffer.count * sizeof(GPU::Index)),
-                    GetIndexBuffer().size
-                );
+            ImGui::Text
+            (
+                "Index Buffer    | %u | %llu/%llu/%llu",
+                indexBuffer.count,
+                indexBuffer.count * sizeof(GPU::Index),
+                GetIndexBuffer().size - (indexBuffer.count * sizeof(GPU::Index)),
+                GetIndexBuffer().size
+            );
 
-                ImGui::Text
-                (
-                    "Position Buffer | %u | %llu/%llu/%llu",
-                    positionBuffer.count,
-                    positionBuffer.count * sizeof(GPU::Position),
-                    GetPositionBuffer().size - (positionBuffer.count * sizeof(GPU::Position)),
-                    GetPositionBuffer().size
-                );
+            ImGui::Text
+            (
+                "Position Buffer | %u | %llu/%llu/%llu",
+                positionBuffer.count,
+                positionBuffer.count * sizeof(GPU::Position),
+                GetPositionBuffer().size - (positionBuffer.count * sizeof(GPU::Position)),
+                GetPositionBuffer().size
+            );
 
-                ImGui::Text
-                (
-                    "UV Buffer       | %u | %llu/%llu/%llu",
-                    uvBuffer.count,
-                    uvBuffer.count * sizeof(GPU::UV),
-                    GetUVBuffer().size - (uvBuffer.count * sizeof(GPU::UV)),
-                    GetUVBuffer().size
-                );
+            ImGui::Text
+            (
+                "UV Buffer       | %u | %llu/%llu/%llu",
+                uvBuffer.count,
+                uvBuffer.count * sizeof(GPU::UV),
+                GetUVBuffer().size - (uvBuffer.count * sizeof(GPU::UV)),
+                GetUVBuffer().size
+            );
 
-                ImGui::Text
-                (
-                    "Vertex Buffer   | %u | %llu/%llu/%llu",
-                    vertexBuffer.count,
-                    vertexBuffer.count * sizeof(GPU::Vertex),
-                    GetVertexBuffer().size - (vertexBuffer.count * sizeof(GPU::Vertex)),
-                    GetVertexBuffer().size
-                );
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
+            ImGui::Text
+            (
+                "Vertex Buffer   | %u | %llu/%llu/%llu",
+                vertexBuffer.count,
+                vertexBuffer.count * sizeof(GPU::Vertex),
+                GetVertexBuffer().size - (vertexBuffer.count * sizeof(GPU::Vertex)),
+                GetVertexBuffer().size
+            );
         }
     }
 

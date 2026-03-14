@@ -22,7 +22,7 @@
 
 GLSL_NAMESPACE_BEGIN(Renderer::TiledLighting)
 
-GLSL_CONSTANT(u32, TILE_SIZE, 16)
+GLSL_CONSTEXPR u32 TILE_SIZE = 16;
 
 #ifdef __cplusplus
 

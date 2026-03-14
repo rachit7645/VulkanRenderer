@@ -26,10 +26,10 @@ namespace Renderer
         const f32 renderXResolution  = Maths::Max2(glm::vec2(glm::vk_cast(renderExtent)));
         const f32 displayXResolution = Maths::Max2(glm::vec2(glm::vk_cast(displayExtent)));
 
-        const f32 multiplier  = renderXResolution / displayXResolution;
+        const f32 multiplier  = displayXResolution / renderXResolution;
         const f32 multiplier2 = multiplier * multiplier;
 
-        const auto phaseCount = static_cast<usize>(static_cast<f32>(Renderer::JITTER_SAMPLE_COUNT) * multiplier2);
+        const auto phaseCount = static_cast<usize>(std::ceil(static_cast<f32>(Renderer::BASE_JITTER_PHASE_COUNT) * multiplier2));
 
         const usize index = frameIndex % phaseCount;
 

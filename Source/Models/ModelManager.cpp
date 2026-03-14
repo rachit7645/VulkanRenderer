@@ -152,92 +152,85 @@ namespace Models
 
     void ModelManager::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("Model Manager"))
         {
-            if (ImGui::BeginMenu("Model Manager"))
+            for (const auto& [id, info] : m_modelMap)
             {
-                for (const auto& [id, info] : m_modelMap)
+                const auto& [model, refCount] = info;
+
+                if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", model.name.c_str()))
                 {
-                    const auto& [model, refCount] = info;
+                    ImGui::Text("Reference Count | %llu", refCount);
 
-                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", model.name.c_str()))
+                    for (usize i = 0; i < model.meshes.size(); ++i)
                     {
-                        ImGui::Text("Reference Count | %llu", refCount);
-
-                        for (usize i = 0; i < model.meshes.size(); ++i)
+                        if (ImGui::TreeNode(fmt::format("Mesh #{}", i).c_str()))
                         {
-                            if (ImGui::TreeNode(fmt::format("Mesh #{}", i).c_str()))
-                            {
-                                const auto& mesh = model.meshes[i];
-
-                                ImGui::Separator();
-                                ImGui::Text("Info Name | Offset/Count");
-                                ImGui::Separator();
-
-                                ImGui::Text("Indices   | %u/%u", mesh.surfaceInfo.indexInfo.offset,    mesh.surfaceInfo.indexInfo.count);
-                                ImGui::Text("Positions | %u/%u", mesh.surfaceInfo.positionInfo.offset, mesh.surfaceInfo.positionInfo.count);
-                                ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset,   mesh.surfaceInfo.vertexInfo.count);
-
-                                ImGui::Separator();
-                                ImGui::Text("Texture Name              | UV Map ID | ID");
-                                ImGui::Separator();
-
-                                ImGui::Text("Albedo                    | %u         | %llu", mesh.material.albedoUVMapID,   mesh.material.albedoID);
-                                ImGui::Text("Normal                    | %u         | %llu", mesh.material.normalUVMapID,   mesh.material.normalID);
-                                ImGui::Text("AO + Roughness + Metallic | %u         | %llu", mesh.material.aoRghMtlUVMapID, mesh.material.aoRghMtlID);
-                                ImGui::Text("Emmisive                  | %u         | %llu", mesh.material.emmisiveUVMapID, mesh.material.emmisiveID);
-
-                                ImGui::Separator();
-                                ImGui::Text("Factor Name | Value");
-                                ImGui::Separator();
-
-                                ImGui::Text("Albedo      | [%.3f, %.3f, %.3f, %.3f]",
-                                    mesh.material.albedoFactor.r,
-                                    mesh.material.albedoFactor.g,
-                                    mesh.material.albedoFactor.b,
-                                    mesh.material.albedoFactor.a
-                                );
-
-                                ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
-                                ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
-
-                                ImGui::Text("Emmisive    | [%.3f, %.3f, %.3f]",
-                                    mesh.material.emmisiveFactor.r,
-                                    mesh.material.emmisiveFactor.g,
-                                    mesh.material.emmisiveFactor.b
-                                );
-
-                                ImGui::Separator();
-                                ImGui::Text("Misc              | Value");
-                                ImGui::Separator();
-
-                                ImGui::Text("Emmisive Strength | %.3f", mesh.material.emmisiveStrength);
-                                ImGui::Text("Alpha Cutoff      | %.3f", mesh.material.alphaCutOff);
-                                ImGui::Text("IoR               | %.3f", mesh.material.ior);
-
-                                ImGui::Separator();
-                                ImGui::Text("Bounds   | Value");
-                                ImGui::Separator();
-
-                                ImGui::Text("AABB Min | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
-                                ImGui::Text("AABB Max | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
-
-                                ImGui::TreePop();
-                            }
+                            const auto& mesh = model.meshes[i];
 
                             ImGui::Separator();
+                            ImGui::Text("Info Name | Offset/Count");
+                            ImGui::Separator();
+
+                            ImGui::Text("Indices   | %u/%u", mesh.surfaceInfo.indexInfo.offset,    mesh.surfaceInfo.indexInfo.count);
+                            ImGui::Text("Positions | %u/%u", mesh.surfaceInfo.positionInfo.offset, mesh.surfaceInfo.positionInfo.count);
+                            ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset,   mesh.surfaceInfo.vertexInfo.count);
+
+                            ImGui::Separator();
+                            ImGui::Text("Texture Name              | UV Map ID | ID");
+                            ImGui::Separator();
+
+                            ImGui::Text("Albedo                    | %u         | %llu", mesh.material.albedoUVMapID,   mesh.material.albedoID);
+                            ImGui::Text("Normal                    | %u         | %llu", mesh.material.normalUVMapID,   mesh.material.normalID);
+                            ImGui::Text("AO + Roughness + Metallic | %u         | %llu", mesh.material.aoRghMtlUVMapID, mesh.material.aoRghMtlID);
+                            ImGui::Text("Emmisive                  | %u         | %llu", mesh.material.emmisiveUVMapID, mesh.material.emmisiveID);
+
+                            ImGui::Separator();
+                            ImGui::Text("Factor Name | Value");
+                            ImGui::Separator();
+
+                            ImGui::Text("Albedo      | [%.3f, %.3f, %.3f, %.3f]",
+                                mesh.material.albedoFactor.r,
+                                mesh.material.albedoFactor.g,
+                                mesh.material.albedoFactor.b,
+                                mesh.material.albedoFactor.a
+                            );
+
+                            ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
+                            ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
+
+                            ImGui::Text("Emmisive    | [%.3f, %.3f, %.3f]",
+                                mesh.material.emmisiveFactor.r,
+                                mesh.material.emmisiveFactor.g,
+                                mesh.material.emmisiveFactor.b
+                            );
+
+                            ImGui::Separator();
+                            ImGui::Text("Misc              | Value");
+                            ImGui::Separator();
+
+                            ImGui::Text("Emmisive Strength | %.3f", mesh.material.emmisiveStrength);
+                            ImGui::Text("Alpha Cutoff      | %.3f", mesh.material.alphaCutOff);
+                            ImGui::Text("IoR               | %.3f", mesh.material.ior);
+
+                            ImGui::Separator();
+                            ImGui::Text("Bounds   | Value");
+                            ImGui::Separator();
+
+                            ImGui::Text("AABB Min | [%.3f, %.3f, %.3f]", mesh.aabb.min.x, mesh.aabb.min.y, mesh.aabb.min.z);
+                            ImGui::Text("AABB Max | [%.3f, %.3f, %.3f]", mesh.aabb.max.x, mesh.aabb.max.y, mesh.aabb.max.z);
+
+                            ImGui::TreePop();
                         }
 
-                        ImGui::TreePop();
+                        ImGui::Separator();
                     }
 
-                    ImGui::Separator();
+                    ImGui::TreePop();
                 }
 
-                ImGui::EndMenu();
+                ImGui::Separator();
             }
-
-            ImGui::EndMainMenuBar();
         }
 
         geometryBuffer.ImGuiDisplay();

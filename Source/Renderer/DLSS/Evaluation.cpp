@@ -19,6 +19,7 @@
 #include "Renderer/Jitter.h"
 #include "Renderer/RenderConstants.h"
 #include "Util/Log.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::DLSS
 {
@@ -31,6 +32,8 @@ namespace Renderer::DLSS
         DLSS::DLSSConfig& config
     )
     {
+        Vk::BeginLabel(cmdBuffer, "DLSS", glm::vec4(0.4098f, 0.5843f, 0.7629f, 1.0f));
+
         const auto& sceneColorView         = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& resolvedSceneColorView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
         const auto& sceneDepthView         = framebufferManager.GetFramebufferView("SceneDepthView");
@@ -168,8 +171,8 @@ namespace Renderer::DLSS
             .InJitterOffsetY               = jitter.y,
             .InRenderSubrectDimensions     = {.Width = config.optimalResolution.x, .Height = config.optimalResolution.y},
             .InReset                       = config.resetNeeded ? 1 : 0,
-            .InMVScaleX                    = -static_cast<f32>(config.optimalResolution.x),
-            .InMVScaleY                    = -static_cast<f32>(config.optimalResolution.y),
+            .InMVScaleX                    = -static_cast<f32>(gMotionVectors.image.width),
+            .InMVScaleY                    = -static_cast<f32>(gMotionVectors.image.height),
             .pInTransparencyMask           = nullptr,
             .pInExposureTexture            = &exposureValueNV,
             .pInBiasCurrentColorMask       = nullptr,
@@ -194,11 +197,6 @@ namespace Renderer::DLSS
             .pInRayTracingHitDistance      = nullptr,
             .pInMotionVectorsReflections   = nullptr
         };
-
-        if (config.resetNeeded)
-        {
-            config.resetNeeded = false;
-        }
 
         resolvedSceneColor.image.Barrier
         (
@@ -250,5 +248,12 @@ namespace Renderer::DLSS
                 .layerCount     = resolvedSceneColor.image.arrayLayers
             }
         );
+
+        if (config.resetNeeded)
+        {
+            config.resetNeeded = false;
+        }
+
+        Vk::EndLabel(cmdBuffer);
     }
 }

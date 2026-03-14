@@ -386,13 +386,6 @@ namespace Vk
                 if (surfaceFormat.format == format &&
                     surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
                 {
-                    Logger::Debug
-                    (
-                        "Choosing surface format! [Format={}] [ColorSpace={}]\n",
-                        string_VkFormat(surfaceFormat.format),
-                        string_VkColorSpaceKHR(surfaceFormat.colorSpace)
-                    );
-
                     return format2;
                 }
             }
@@ -441,12 +434,6 @@ namespace Vk
             }
         }
 
-        Logger::Debug
-        (
-            "Choosing presentation mode! [PresentMode={}]\n",
-            string_VkPresentModeKHR(presentMode)
-        );
-
         return presentMode;
     }
 
@@ -488,13 +475,6 @@ namespace Vk
         if (capabilities.surfaceCapabilities.currentExtent.width  != std::numeric_limits<u32>::max() &&
             capabilities.surfaceCapabilities.currentExtent.height != std::numeric_limits<u32>::max())
         {
-            Logger::Debug
-            (
-                "Choosing existing swap extent! [width={}] [height={}]\n",
-                capabilities.surfaceCapabilities.currentExtent.width,
-                capabilities.surfaceCapabilities.currentExtent.height
-            );
-
             return capabilities.surfaceCapabilities.currentExtent;
         }
 
@@ -502,8 +482,6 @@ namespace Vk
         const auto maxSize = glm::ivec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
 
         const auto actualExtent = glm::clamp(size, minSize, maxSize);
-
-        Logger::Debug("Choosing swap extent! [X={}] [Y={}]\n", actualExtent.x, actualExtent.y);
 
         return
         {

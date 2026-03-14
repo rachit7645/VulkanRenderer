@@ -499,103 +499,96 @@ namespace Vk
 
     void FramebufferManager::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("Framebuffer Manager"))
         {
-            if (ImGui::BeginMenu("Framebuffer Manager"))
+            std::vector sortedFramebufferViews
+            (
+                m_framebufferViews.begin(),
+                m_framebufferViews.end()
+            );
+
+            auto CustomOrderedSort = [] (const std::string& a, const std::string& b)
             {
-                std::vector sortedFramebufferViews
-                (
-                    m_framebufferViews.begin(),
-                    m_framebufferViews.end()
-                );
+                usize i = 0;
+                usize j = 0;
 
-                auto CustomOrderedSort = [] (const std::string& a, const std::string& b)
+                while (i < a.length() && j < b.length())
                 {
-                    usize i = 0;
-                    usize j = 0;
-
-                    while (i < a.length() && j < b.length())
+                    if (std::isdigit(a[i]) && std::isdigit(b[j]))
                     {
-                        if (std::isdigit(a[i]) && std::isdigit(b[j]))
+                        const usize aNumberStart = i;
+                        const usize bNumberStart = j;
+
+                        while (i < a.length() && std::isdigit(a[i]))
                         {
-                            const usize aNumberStart = i;
-                            const usize bNumberStart = j;
-
-                            while (i < a.length() && std::isdigit(a[i]))
-                            {
-                                ++i;
-                            }
-
-                            while (j < b.length() && std::isdigit(b[j]))
-                            {
-                                ++j;
-                            }
-
-                            const usize aAsNumber = std::stoi(a.substr(aNumberStart, i - aNumberStart));
-                            const usize bAsNumber = std::stoi(b.substr(bNumberStart, j - bNumberStart));
-
-                            if (aAsNumber != bAsNumber)
-                            {
-                                return aAsNumber < bAsNumber;
-                            }
-
-                            i = aNumberStart;
-                            j = bNumberStart;
+                            ++i;
                         }
 
-                        if (a[i] != b[j])
+                        while (j < b.length() && std::isdigit(b[j]))
                         {
-                            return a[i] < b[j];
+                            ++j;
                         }
 
-                        ++i;
-                        ++j;
+                        const usize aAsNumber = std::stoi(a.substr(aNumberStart, i - aNumberStart));
+                        const usize bAsNumber = std::stoi(b.substr(bNumberStart, j - bNumberStart));
+
+                        if (aAsNumber != bAsNumber)
+                        {
+                            return aAsNumber < bAsNumber;
+                        }
+
+                        i = aNumberStart;
+                        j = bNumberStart;
                     }
 
-                    return a.length() < b.length();
-                };
-
-                std::ranges::sort(sortedFramebufferViews, [&CustomOrderedSort] (const auto& a, const auto& b)
-                {
-                    return CustomOrderedSort(a.first, b.first);
-                });
-
-                for (const auto& [name, framebufferView] : sortedFramebufferViews)
-                {
-                    const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
-
-                    if (ImGui::TreeNode(name.c_str()))
+                    if (a[i] != b[j])
                     {
-                        ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageID);
-                        ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
-                        ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
-                        ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
-                        ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.baseArrayLayer + framebufferView.size.layerCount);
-                        ImGui::Text("Format           | %s",        string_VkFormat(framebuffer.image.format));
-
-                        ImGui::Separator();
-
-                        const f32 originalWidth  = static_cast<f32>(framebuffer.image.width);
-                        const f32 originalHeight = static_cast<f32>(framebuffer.image.height);
-
-                        constexpr f32 MAX_SIZE = 1024.0f;
-
-                        // Maintain aspect ratio
-                        const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
-                        const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
-
-                        ImGui::Image(framebufferView.sampledImageID, imageSize);
-
-                        ImGui::TreePop();
+                        return a[i] < b[j];
                     }
 
-                    ImGui::Separator();
+                    ++i;
+                    ++j;
                 }
 
-                ImGui::EndMenu();
-            }
+                return a.length() < b.length();
+            };
 
-            ImGui::EndMainMenuBar();
+            std::ranges::sort(sortedFramebufferViews, [&CustomOrderedSort] (const auto& a, const auto& b)
+            {
+                return CustomOrderedSort(a.first, b.first);
+            });
+
+            for (const auto& [name, framebufferView] : sortedFramebufferViews)
+            {
+                const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
+
+                if (ImGui::TreeNode(name.c_str()))
+                {
+                    ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageID);
+                    ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
+                    ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
+                    ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
+                    ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.baseArrayLayer + framebufferView.size.layerCount);
+                    ImGui::Text("Format           | %s",        string_VkFormat(framebuffer.image.format));
+
+                    ImGui::Separator();
+
+                    const f32 originalWidth  = static_cast<f32>(framebuffer.image.width);
+                    const f32 originalHeight = static_cast<f32>(framebuffer.image.height);
+
+                    constexpr f32 MAX_SIZE = 1024.0f;
+
+                    // Maintain aspect ratio
+                    const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
+                    const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
+
+                    ImGui::Image(framebufferView.sampledImageID, imageSize);
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::Separator();
+            }
         }
     }
 

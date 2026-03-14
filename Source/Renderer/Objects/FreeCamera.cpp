@@ -22,6 +22,23 @@
 
 namespace Renderer::Objects
 {
+    constexpr f32 ROTATION_RATE = 24.0f;
+    constexpr f32 MOVEMENT_RATE = 16.0f;
+    constexpr f32 ZOOM_RATE     = 16.0f;
+
+    constexpr f32 STICK_ROTATION_MULTIPLIER = 0.04f;
+
+    constexpr f32 MIN_FOV = glm::radians(10.0f);
+    constexpr f32 MAX_FOV = glm::radians(120.0f);
+
+    constexpr SDL_Scancode KEY_SPRINT   = SDL_SCANCODE_LCTRL;
+    constexpr SDL_Scancode KEY_FORWARD  = SDL_SCANCODE_W;
+    constexpr SDL_Scancode KEY_BACKWARD = SDL_SCANCODE_S;
+    constexpr SDL_Scancode KEY_LEFT     = SDL_SCANCODE_A;
+    constexpr SDL_Scancode KEY_RIGHT    = SDL_SCANCODE_D;
+    constexpr SDL_Scancode KEY_UP       = SDL_SCANCODE_SPACE;
+    constexpr SDL_Scancode KEY_DOWN     = SDL_SCANCODE_LSHIFT;
+
     FreeCamera::FreeCamera
     (
         const glm::vec3& position,
@@ -38,20 +55,15 @@ namespace Renderer::Objects
           m_sensitivity{sensitivity},
           m_zoom{zoom},
           m_targetPosition{position},
-          m_targetFOV{FOV}
+          m_targetOrientation{orientation},
+          m_targetFOV{FOV},
+          m_yaw{glm::normalize(glm::angleAxis(rotation.y, WORLD_UP))},
+          m_pitch{glm::normalize(glm::angleAxis(rotation.x, glm::vec3(1.0f, 0.0f, 0.0f)))}
     {
-        m_yaw   = glm::normalize(glm::angleAxis(rotation.y, WORLD_UP));
-        m_pitch = glm::normalize(glm::angleAxis(rotation.x, glm::vec3(1.0f, 0.0f, 0.0f)));
-
-        m_targetOrientation = orientation;
     }
 
     void FreeCamera::Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        constexpr f32 ROTATION_SMOOTHNESS = 24.0f;
-        constexpr f32 MOVEMENT_SMOOTHNESS = 16.0f;
-        constexpr f32 ZOOM_SMOOTHNESS     = 16.0f;
-
         if (!isEnabled)
         {
             return;
@@ -61,90 +73,81 @@ namespace Renderer::Objects
         Move(frameCounter, inputs);
         Zoom(frameCounter, inputs);
 
-        orientation = Maths::ExponentialDecay(orientation, m_targetOrientation, ROTATION_SMOOTHNESS, frameCounter.frameDelta);
-        position    = Maths::ExponentialDecay(position,    m_targetPosition,    MOVEMENT_SMOOTHNESS, frameCounter.frameDelta);
-        FOV         = Maths::ExponentialDecay(FOV,         m_targetFOV,         ZOOM_SMOOTHNESS,     frameCounter.frameDelta);
+        orientation = Maths::ExponentialDecay(orientation, m_targetOrientation, ROTATION_RATE, frameCounter.frameDelta);
+        position    = Maths::ExponentialDecay(position,    m_targetPosition,    MOVEMENT_RATE, frameCounter.frameDelta);
+        FOV         = Maths::ExponentialDecay(FOV,         m_targetFOV,         ZOOM_RATE,     frameCounter.frameDelta);
 
         orientation = glm::normalize(orientation);
     }
 
     void FreeCamera::Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
-        const glm::vec3 front = m_targetOrientation * glm::vec3(0.0f, 0.0f, -1.0f);
-        const glm::vec3 right = m_targetOrientation * glm::vec3(1.0f, 0.0f,  0.0f);
+        const glm::vec3 front = glm::normalize(m_targetOrientation * glm::vec3(0.0f, 0.0f, -1.0f));
+        const glm::vec3 right = glm::normalize(m_targetOrientation * glm::vec3(1.0f, 0.0f,  0.0f));
 
         f32 velocity = m_speed * frameCounter.frameDelta;
 
-        // Sprint
-        if (inputs.IsKeyPressed(SDL_SCANCODE_LCTRL))
+        if (inputs.IsKeyPressed(KEY_SPRINT))
         {
             velocity *= m_sprint;
         }
 
-        // Forward
-        if (inputs.IsKeyPressed(SDL_SCANCODE_W))
+        if (inputs.IsKeyPressed(KEY_FORWARD))
         {
             m_targetPosition += front * velocity;
         }
-        // Backward
-        else if (inputs.IsKeyPressed(SDL_SCANCODE_S))
+        else if (inputs.IsKeyPressed(KEY_BACKWARD))
         {
             m_targetPosition -= front * velocity;
         }
 
-        // Left
-        if (inputs.IsKeyPressed(SDL_SCANCODE_A))
+        if (inputs.IsKeyPressed(KEY_LEFT))
         {
             m_targetPosition -= right * velocity;
         }
-        // Right
-        else if (inputs.IsKeyPressed(SDL_SCANCODE_D))
+        else if (inputs.IsKeyPressed(KEY_RIGHT))
         {
             m_targetPosition += right * velocity;
         }
 
-        // Up
-        if (inputs.IsKeyPressed(SDL_SCANCODE_SPACE))
+        if (inputs.IsKeyPressed(KEY_UP))
         {
             m_targetPosition += WORLD_UP * velocity;
         }
-        // Down
-        else if (inputs.IsKeyPressed(SDL_SCANCODE_LSHIFT))
+        else if (inputs.IsKeyPressed(KEY_DOWN))
         {
             m_targetPosition -= WORLD_UP * velocity;
         }
 
-        const auto lStick = inputs.GetLStick();
+        const glm::vec2 leftStickDirection = inputs.GetLeftStickDirection();
+
         // Forward/Backward
-        m_targetPosition -= lStick.y * front * velocity;
+        m_targetPosition -= leftStickDirection.y * front * velocity;
         // Left/Right
-        m_targetPosition += lStick.x * right * velocity;
+        m_targetPosition += leftStickDirection.x * right * velocity;
     }
 
     void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        constexpr f32 ROTATION_STICK_MULTIPLIER = 0.04f;
-
         const f32 speed = m_sensitivity * frameCounter.frameDelta;
 
         f32 deltaPitch = 0.0f;
         f32 deltaYaw   = 0.0f;
 
-        // Avoids freaking out
         if (inputs.WasMouseMoved())
         {
             const auto mouseDelta = inputs.GetMousePosition();
 
-            const glm::vec2 angularMovement = glm::radians(speed * mouseDelta);
+            const glm::vec2 angularMovement = speed * mouseDelta;
 
             deltaYaw   += angularMovement.x;
             deltaPitch += angularMovement.y;
         }
 
-        const auto rStick = inputs.GetRStick();
+        const glm::vec2 rightStickDirection = inputs.GetRightStickDirection();
 
-        deltaYaw   += rStick.x * speed * ROTATION_STICK_MULTIPLIER;
-        deltaPitch += rStick.y * speed * ROTATION_STICK_MULTIPLIER;
+        deltaYaw   += rightStickDirection.x * speed * STICK_ROTATION_MULTIPLIER;
+        deltaPitch += rightStickDirection.y * speed * STICK_ROTATION_MULTIPLIER;
 
         const glm::quat deltaYawQuat   = glm::angleAxis(-deltaYaw,   WORLD_UP);
         const glm::quat deltaPitchQuat = glm::angleAxis( deltaPitch, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -157,10 +160,6 @@ namespace Renderer::Objects
 
     void FreeCamera::Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
     {
-        constexpr f32 MIN_FOV = glm::radians(10.0f);
-        constexpr f32 MAX_FOV = glm::radians(120.0f);
-
-        // Stops things from going haywire
         if (!inputs.WasMouseScrolled())
         {
             return;
@@ -172,18 +171,14 @@ namespace Renderer::Objects
 
     void FreeCamera::ImGuiDisplay()
     {
-        Camera::ImGuiDisplay();
-
-        if (ImGui::BeginMenu("Camera"))
+        if (ImGui::CollapsingHeader("Camera"))
         {
-            // Camera Settings
+            Camera::ImGuiDisplay();
+
             ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.3f");
             ImGui::DragFloat("Sprint",      &m_sprint,      1.0f, 0.0f, 0.0f, "%.3f");
             ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.3f");
             ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.3f");
-
-            ImGui::EndMenu();
         }
     }
-
 }

@@ -63,8 +63,7 @@ using GLSL_MAT4 = glm::mat4;
 
 #define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) EnumClassName
 
-#define GLSL_CONSTANT(ConstantType, ConstantName, ConstantValue) \
-    constexpr ConstantType ConstantName = ConstantValue;
+#define GLSL_CONSTEXPR constexpr
 
 #else
 
@@ -108,8 +107,7 @@ using GLSL_MAT4 = glm::mat4;
 
 #define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) UnderlyingType
 
-#define GLSL_CONSTANT(ConstantType, ConstantName, ConstantValue) \
-    const ConstantType ConstantName = ConstantValue;
+#define GLSL_CONSTEXPR const
 
 #endif
 

@@ -111,8 +111,6 @@ namespace Vk
 
         megaSet.Update(device);
 
-        Logger::Debug("Added texture! [Name={}]\n", name);
-
         return id;
     }
 
@@ -201,8 +199,6 @@ namespace Vk
 
             Vk::SetDebugName(device, texture.image.handle,     texture.name);
             Vk::SetDebugName(device, texture.imageView.handle, texture.name + "_View");
-
-            Logger::Debug("Loaded texture! [Name={}]\n", texture.name);
         }
 
         m_futuresMap.clear();
@@ -370,59 +366,52 @@ namespace Vk
 
     void TextureManager::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("Texture Manager"))
         {
-            if (ImGui::BeginMenu("Texture Manager"))
+            for (const auto& [id, info] : m_textureMap)
             {
-                for (const auto& [id, info] : m_textureMap)
+                const auto& [texture, referenceCount] = info;
+
+                if (!texture.isLoaded)
                 {
-                    const auto& [texture, referenceCount] = info;
-
-                    if (!texture.isLoaded)
-                    {
-                        continue;
-                    }
-
-                    if (referenceCount == 0)
-                    {
-                        continue;
-                    }
-
-                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", texture.name.c_str()))
-                    {
-                        ImGui::Text("ID               | %llu", id);
-                        ImGui::Text("Reference Count  | %llu", referenceCount);
-                        ImGui::Text("Descriptor Index | %u",   texture.descriptorID);
-                        ImGui::Text("Width            | %u",   texture.image.width);
-                        ImGui::Text("Height           | %u",   texture.image.height);
-                        ImGui::Text("Depth            | %u",   texture.image.depth);
-                        ImGui::Text("Mipmap Levels    | %u",   texture.image.mipLevels);
-                        ImGui::Text("Array Layers     | %u",   texture.image.arrayLayers);
-                        ImGui::Text("Format           | %s",   string_VkFormat(texture.image.format));
-
-                        ImGui::Separator();
-
-                        const f32 originalWidth  = static_cast<f32>(texture.image.width);
-                        const f32 originalHeight = static_cast<f32>(texture.image.height);
-
-                        constexpr f32 MAX_SIZE = 512.0f;
-
-                        // Maintain aspect ratio
-                        const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
-                        const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
-
-                        ImGui::Image(texture.descriptorID, imageSize);
-
-                        ImGui::TreePop();
-                    }
-
-                    ImGui::Separator();
+                    continue;
                 }
 
-                ImGui::EndMenu();
-            }
+                if (referenceCount == 0)
+                {
+                    continue;
+                }
 
-            ImGui::EndMainMenuBar();
+                if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", texture.name.c_str()))
+                {
+                    ImGui::Text("ID               | %llu", id);
+                    ImGui::Text("Reference Count  | %llu", referenceCount);
+                    ImGui::Text("Descriptor Index | %u",   texture.descriptorID);
+                    ImGui::Text("Width            | %u",   texture.image.width);
+                    ImGui::Text("Height           | %u",   texture.image.height);
+                    ImGui::Text("Depth            | %u",   texture.image.depth);
+                    ImGui::Text("Mipmap Levels    | %u",   texture.image.mipLevels);
+                    ImGui::Text("Array Layers     | %u",   texture.image.arrayLayers);
+                    ImGui::Text("Format           | %s",   string_VkFormat(texture.image.format));
+
+                    ImGui::Separator();
+
+                    const f32 originalWidth  = static_cast<f32>(texture.image.width);
+                    const f32 originalHeight = static_cast<f32>(texture.image.height);
+
+                    constexpr f32 MAX_SIZE = 512.0f;
+
+                    // Maintain aspect ratio
+                    const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
+                    const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
+
+                    ImGui::Image(texture.descriptorID, imageSize);
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::Separator();
+            }
         }
     }
 

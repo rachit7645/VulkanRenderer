@@ -103,7 +103,7 @@ namespace Vk
         [[nodiscard]] PipelineConfig& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         [[nodiscard]] PipelineConfig& AddDescriptorLayout(VkDescriptorSetLayout layout);
 
-        std::span<const PipelineShader> GetShaders() const;
+        [[nodiscard]] std::span<const PipelineShader> GetShaders() const;
 
         void Destroy(VkDevice device);
     private:

@@ -23,14 +23,6 @@ namespace Engine
 {
     Window::Window()
     {
-        Logger::Debug
-        (
-            "Initializing SDL3! [Version = {}.{}.{}]\n",
-            SDL_MAJOR_VERSION,
-            SDL_MINOR_VERSION,
-            SDL_MICRO_VERSION
-        );
-
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         {
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());

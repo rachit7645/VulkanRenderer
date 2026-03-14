@@ -23,8 +23,8 @@
 #include "MegaSet.glsl"
 #include "Skybox/Skybox.h"
 
-layout(location = 0) in noperspective vec4 fragCurrentPosition;
-layout(location = 1) in noperspective vec4 fragPreviousPosition;
+layout(location = 0) in noperspective vec3 fragCurrentPosition;
+layout(location = 1) in noperspective vec3 fragPreviousPosition;
 layout(location = 2) in               vec3 fragUV;
 
 layout(location = 0) out vec3 outColor;
@@ -34,8 +34,8 @@ void main()
 {
     outColor = texture(samplerCube(Cubemaps[Constants.CubemapIndex], Samplers[Constants.SamplerIndex]), fragUV).rgb;
 
-    vec2 currentUV  = (fragCurrentPosition.xy  / fragCurrentPosition.w ) * 0.5f + 0.5f;
-    vec2 previousUV = (fragPreviousPosition.xy / fragPreviousPosition.w) * 0.5f + 0.5f;
+    vec2 currentUV  = (fragCurrentPosition.xy  / fragCurrentPosition.z ) * 0.5f + 0.5f;
+    vec2 previousUV = (fragPreviousPosition.xy / fragPreviousPosition.z) * 0.5f + 0.5f;
 
     gMotionVectors = currentUV - previousUV;
 }

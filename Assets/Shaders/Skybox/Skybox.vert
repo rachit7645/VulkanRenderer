@@ -22,8 +22,8 @@
 
 #include "Skybox/Skybox.h"
 
-layout(location = 0) out noperspective vec4 fragCurrentPosition;
-layout(location = 1) out noperspective vec4 fragPreviousPosition;
+layout(location = 0) out noperspective vec3 fragCurrentPosition;
+layout(location = 1) out noperspective vec3 fragPreviousPosition;
 layout(location = 2) out               vec3 fragUV;
 
 void main()
@@ -36,10 +36,13 @@ void main()
 
     vec4 currentViewPosition = currentView * vec4(position, 0.0f);
 
-    fragCurrentPosition  = Constants.Scene.currentMatrices.projection  * currentViewPosition;
+    vec4 currentPosition = Constants.Scene.currentMatrices.projection         * currentViewPosition;
     gl_Position          = Constants.Scene.currentMatrices.jitteredProjection * currentViewPosition;
 
-    fragPreviousPosition = Constants.Scene.previousMatrices.projection * previousView * vec4(position, 0.0f);
+    vec4 previousPosition = Constants.Scene.previousMatrices.projection * (previousView * vec4(position, 0.0f));
+
+    fragCurrentPosition  = currentPosition.xyw;
+    fragPreviousPosition = previousPosition.xyw;
 
     fragUV = normalize(position);
 }

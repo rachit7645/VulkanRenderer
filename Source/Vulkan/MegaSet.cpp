@@ -244,64 +244,59 @@ namespace Vk
 
     void MegaSet::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("MegaSet"))
         {
-            if (ImGui::BeginMenu("MegaSet"))
-            {
-                ImGui::Text
-                (
-                    "%-8s | %-14s | %-10s | %-10s | %-4s | %-8s",
-                    "Binding",
-                    "Type",
-                    "Allocated",
-                    "Free Slots",
-                    "Used",
-                    "Max Count"
-                );
+            constexpr auto ALLOCATOR_STATISTICS_FORMAT = "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u";
 
-                ImGui::Separator();
+            ImGui::Text
+            (
+                "%-8s | %-14s | %-10s | %-10s | %-4s | %-8s",
+                "Binding",
+                "Type",
+                "Allocated",
+                "Free Slots",
+                "Used",
+                "Max Count"
+            );
 
-                ImGui::Text
-                (
-                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    std::to_underlying(DescriptorBinding::Samplers),
-                    "Sampler",
-                    m_samplerAllocator.GetAllocatedCount(),
-                    m_samplerAllocator.GetFreeSlotCount(),
-                    m_samplerAllocator.GetUsedCount(),
-                    m_samplerAllocator.GetMaxCount()
-                );
+            ImGui::Separator();
 
-                ImGui::Separator();
+            ImGui::Text
+            (
+                ALLOCATOR_STATISTICS_FORMAT,
+                std::to_underlying(DescriptorBinding::Samplers),
+                "Sampler",
+                m_samplerAllocator.GetAllocatedCount(),
+                m_samplerAllocator.GetFreeSlotCount(),
+                m_samplerAllocator.GetUsedCount(),
+                m_samplerAllocator.GetMaxCount()
+            );
 
-                ImGui::Text
-                (
-                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    std::to_underlying(DescriptorBinding::SampledImages),
-                    "Sampled Image",
-                    m_sampledImageAllocator.GetAllocatedCount(),
-                    m_sampledImageAllocator.GetFreeSlotCount(),
-                    m_sampledImageAllocator.GetUsedCount(),
-                    m_sampledImageAllocator.GetMaxCount()
-                );
+            ImGui::Separator();
 
-                ImGui::Separator();
+            ImGui::Text
+            (
+                ALLOCATOR_STATISTICS_FORMAT,
+                std::to_underlying(DescriptorBinding::SampledImages),
+                "Sampled Image",
+                m_sampledImageAllocator.GetAllocatedCount(),
+                m_sampledImageAllocator.GetFreeSlotCount(),
+                m_sampledImageAllocator.GetUsedCount(),
+                m_sampledImageAllocator.GetMaxCount()
+            );
 
-                ImGui::Text
-                (
-                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    std::to_underlying(DescriptorBinding::StorageImages),
-                    "Storage Image",
-                    m_storageImageAllocator.GetAllocatedCount(),
-                    m_storageImageAllocator.GetFreeSlotCount(),
-                    m_storageImageAllocator.GetUsedCount(),
-                    m_storageImageAllocator.GetMaxCount()
-                );
+            ImGui::Separator();
 
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
+            ImGui::Text
+            (
+                ALLOCATOR_STATISTICS_FORMAT,
+                std::to_underlying(DescriptorBinding::StorageImages),
+                "Storage Image",
+                m_storageImageAllocator.GetAllocatedCount(),
+                m_storageImageAllocator.GetFreeSlotCount(),
+                m_storageImageAllocator.GetUsedCount(),
+                m_storageImageAllocator.GetMaxCount()
+            );
         }
     }
 

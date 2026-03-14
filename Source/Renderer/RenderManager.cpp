@@ -1743,32 +1743,20 @@ namespace Renderer
             {
                 bool toReload = false;
 
-                if (ImGui::BeginMenu("Reload"))
-                {
-                    if (ImGui::Button("Reload Scene"))
-                    {
-                        m_config = Engine::Config();
-                        toReload = true;
-                    }
+                ImGui::InputText("Scene", &m_config.scene);
 
-                    ImGui::EndMenu();
+                if (ImGui::Button("Load From File"))
+                {
+                    toReload = true;
                 }
 
-                ImGui::Separator();
+                ImGui::SameLine();
 
-                if (ImGui::BeginMenu("Load"))
+                if (ImGui::Button("Reload From Config"))
                 {
-                    ImGui::InputText("Scene", &m_config.scene);
-
-                    if (ImGui::Button("Load Scene"))
-                    {
-                        toReload = true;
-                    }
-
-                    ImGui::EndMenu();
+                    m_config = Engine::Config();
+                    toReload = true;
                 }
-
-                ImGui::Separator();
 
                 if (toReload)
                 {
@@ -1923,76 +1911,98 @@ namespace Renderer
     void RenderManager::ImGuiDisplay()
     {
         m_window.inputs.ImGuiDisplay();
-        m_modelManager.ImGuiDisplay();
-        m_framebufferManager.ImGuiDisplay();
-        m_megaSet.ImGuiDisplay();
-        m_pipelineManager.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Memory"))
+            if (ImGui::BeginMenu("Renderer"))
             {
-                std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets = {};
-                vmaGetHeapBudgets(m_context.allocator, budgets.data());
+                m_modelManager.ImGuiDisplay();
+                m_framebufferManager.ImGuiDisplay();
+                m_megaSet.ImGuiDisplay();
+                m_pipelineManager.ImGuiDisplay();
 
-                usize usedBytes       = 0;
-                usize budgetBytes     = 0;
-                usize allocatedBytes  = 0;
-                usize allocationCount = 0;
-                usize blockCount      = 0;
-
-                for (const auto& budget : budgets)
+                if (ImGui::CollapsingHeader("Memory"))
                 {
-                    usedBytes       += budget.usage;
-                    budgetBytes     += budget.budget;
-                    allocatedBytes  += budget.statistics.blockBytes;
-                    allocationCount += budget.statistics.allocationCount;
-                    blockCount      += budget.statistics.blockCount;
-                }
+                    std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets = {};
+                    vmaGetHeapBudgets(m_context.allocator, budgets.data());
 
-                ImGui::Text("Total Used             | %llu", usedBytes);
-                ImGui::Text("Total Allocated        | %llu", allocatedBytes);
-                ImGui::Text("Total Available        | %llu", budgetBytes - usedBytes);
-                ImGui::Text("Total Budget           | %llu", budgetBytes);
-                ImGui::Text("Total Allocation Count | %llu", allocationCount);
-                ImGui::Text("Total Block Count      | %llu", blockCount);
-                ImGui::Separator();
+                    usize usedBytes       = 0;
+                    usize budgetBytes     = 0;
+                    usize allocatedBytes  = 0;
+                    usize allocationCount = 0;
+                    usize blockCount      = 0;
 
-                for (usize i = 0; i < budgets.size(); ++i)
-                {
-                    if (budgets[i].budget == 0)
+                    for (const auto& budget : budgets)
                     {
-                        continue;
+                        usedBytes       += budget.usage;
+                        budgetBytes     += budget.budget;
+                        allocatedBytes  += budget.statistics.blockBytes;
+                        allocationCount += budget.statistics.allocationCount;
+                        blockCount      += budget.statistics.blockCount;
                     }
 
-                    if (ImGui::TreeNode(fmt::format("Memory Heap #{}", i).c_str()))
-                    {
-                        ImGui::Text("Used             | %llu", budgets[i].usage);
-                        ImGui::Text("Allocated        | %llu", budgets[i].statistics.allocationBytes);
-                        ImGui::Text("Available        | %llu", budgets[i].budget - budgets[i].usage);
-                        ImGui::Text("Budget           | %llu", budgets[i].budget);
-                        ImGui::Text("Allocation Count | %u",   budgets[i].statistics.allocationCount);
-                        ImGui::Text("Block Count      | %u",   budgets[i].statistics.blockCount);
-
-                        ImGui::TreePop();
-                    }
+                    ImGui::Text("Total Used             | %llu", usedBytes);
+                    ImGui::Text("Total Allocated        | %llu", allocatedBytes);
+                    ImGui::Text("Total Available        | %llu", budgetBytes - usedBytes);
+                    ImGui::Text("Total Budget           | %llu", budgetBytes);
+                    ImGui::Text("Total Allocation Count | %llu", allocationCount);
+                    ImGui::Text("Total Block Count      | %llu", blockCount);
 
                     ImGui::Separator();
+
+                    for (usize i = 0; i < budgets.size(); ++i)
+                    {
+                        if (budgets[i].budget == 0)
+                        {
+                            continue;
+                        }
+
+                        if (ImGui::TreeNode(fmt::format("Memory Heap #{}", i).c_str()))
+                        {
+                            ImGui::Text("Used             | %llu", budgets[i].usage);
+                            ImGui::Text("Allocated        | %llu", budgets[i].statistics.allocationBytes);
+                            ImGui::Text("Available        | %llu", budgets[i].budget - budgets[i].usage);
+                            ImGui::Text("Budget           | %llu", budgets[i].budget);
+                            ImGui::Text("Allocation Count | %u",   budgets[i].statistics.allocationCount);
+                            ImGui::Text("Block Count      | %u",   budgets[i].statistics.blockCount);
+
+                            ImGui::TreePop();
+                        }
+
+                        ImGui::Separator();
+                    }
                 }
 
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Queues"))
-            {
-                ImGui::Text("Queue    | Family Index | Handle");
-                ImGui::Separator();
-
-                ImGui::Text("Graphics | %u            | %p", *m_context.queueFamilies.graphicsFamily, std::bit_cast<void*>(m_context.graphicsQueue));
-
-                if (m_renderConfig.multiQueue.isSupported)
+                if (ImGui::CollapsingHeader("Queues"))
                 {
-                    ImGui::Text("Compute  | %u            | %p", *m_context.queueFamilies.computeFamily, std::bit_cast<void*>(m_context.computeQueue));
+                    ImGui::Text
+                    (
+                        "%-8s | %-12s | %-6s",
+                        "Queue",
+                        "Family Index",
+                        "Handle"
+                    );
+
+                    ImGui::Separator();
+
+                    ImGui::Text
+                    (
+                        "%-8s | %-12u | %-6p",
+                        "Graphics",
+                        *m_context.queueFamilies.graphicsFamily,
+                        std::bit_cast<void*>(m_context.graphicsQueue)
+                    );
+
+                    if (m_renderConfig.multiQueue.isSupported)
+                    {
+                        ImGui::Text
+                        (
+                            "%-8s | %-12u | %-6p",
+                            "Compute",
+                            *m_context.queueFamilies.computeFamily,
+                            std::bit_cast<void*>(m_context.computeQueue)
+                        );
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -2088,18 +2098,18 @@ namespace Renderer
                 break;
 
             case SDL_EVENT_GAMEPAD_ADDED:
-                if (m_window.inputs.GetGamepad() == nullptr)
+                if (m_window.inputs.gamepad == nullptr)
                 {
                     m_window.inputs.FindGamepad();
                 }
                 break;
 
             case SDL_EVENT_GAMEPAD_REMOVED:
-                if (m_window.inputs.GetGamepad() != nullptr && event.gdevice.which == m_window.inputs.GetGamepadID())
+                if (m_window.inputs.gamepad != nullptr && event.gdevice.which == m_window.inputs.GetGamepadID())
                 {
-                    if (const auto gamepad = m_window.inputs.GetGamepad(); gamepad != nullptr)
+                    if (m_window.inputs.gamepad != nullptr)
                     {
-                        SDL_CloseGamepad(gamepad);
+                        SDL_CloseGamepad(m_window.inputs.gamepad);
                     }
 
                     m_window.inputs.FindGamepad();
@@ -2134,8 +2144,6 @@ namespace Renderer
 
     void RenderManager::InitImGui()
     {
-        Logger::Debug("Initializing Dear ImGui [Version = {}]\n", ImGui::GetVersion());
-
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
@@ -2148,6 +2156,7 @@ namespace Renderer
         io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
         io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
+        // TODO: Move this to frame 0
         Vk::ImmediateSubmit
         (
             m_context.device,

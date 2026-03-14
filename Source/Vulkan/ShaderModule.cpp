@@ -27,12 +27,13 @@
 
 namespace Vk
 {
-    // Shader directory
     constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
+    constexpr auto SHADER_BINARY_EXT  = ".spv";
 
     ShaderModule::ShaderModule(VkDevice device, const std::string_view path)
     {
-        const auto fullPath     = Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path) + ".spv";
+        const auto assetPath    = Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
+        const auto fullPath     = assetPath + SHADER_BINARY_EXT;
         const auto shaderBinary = Util::Files::ReadBytes(fullPath);
 
         const VkShaderModuleCreateInfo createInfo =
@@ -40,7 +41,7 @@ namespace Vk
             .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             .pNext    = nullptr,
             .flags    = 0,
-            .codeSize = shaderBinary.size() * sizeof(u8),
+            .codeSize = sizeof(u8) * shaderBinary.size(),
             .pCode    = reinterpret_cast<const u32*>(shaderBinary.data())
         };
 
@@ -52,9 +53,7 @@ namespace Vk
             fmt::format("Failed to create shader module! [Path={}]!", path)
         );
 
-        Vk::SetDebugName(device, handle, Util::Files::GetNameWithoutExtension(path));
-
-        Logger::Debug("Loaded shader! [Path={}] [Handle={}]\n", path, std::bit_cast<void*>(handle));
+        Vk::SetDebugName(device, handle, path);
     }
 
     void ShaderModule::Destroy(VkDevice device) const

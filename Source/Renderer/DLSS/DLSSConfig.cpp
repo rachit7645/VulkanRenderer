@@ -71,48 +71,51 @@ namespace Renderer::DLSS
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("DLSS"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::Text("Optimal Resolution | [%u, %u]", optimalResolution.x, optimalResolution.y);
-                ImGui::Text("Min Resolution     | [%u, %u]", m_minResolution.x,   m_minResolution.y);
-                ImGui::Text("Max Resolution     | [%u, %u]", m_maxResolution.x,   m_maxResolution.y);
-
-                ImGui::Separator();
-
-                constexpr std::array DLSS_MODE_NAMES =
+                if (ImGui::CollapsingHeader("DLSS"))
                 {
-                    "Performance",
-                    "Balanced",
-                    "Quality",
-                    "Ultra Performance",
-                    "DLAA"
-                };
+                    ImGui::Text("Optimal Resolution | [%u, %u]", optimalResolution.x, optimalResolution.y);
+                    ImGui::Text("Min Resolution     | [%u, %u]", m_minResolution.x,   m_minResolution.y);
+                    ImGui::Text("Max Resolution     | [%u, %u]", m_maxResolution.x,   m_maxResolution.y);
 
-                constexpr std::array DLSS_MODE_VALUES =
-                {
-                    NVSDK_NGX_PerfQuality_Value_MaxPerf,
-                    NVSDK_NGX_PerfQuality_Value_Balanced,
-                    NVSDK_NGX_PerfQuality_Value_MaxQuality,
-                    NVSDK_NGX_PerfQuality_Value_UltraPerformance,
-                    NVSDK_NGX_PerfQuality_Value_DLAA
-                };
+                    ImGui::Separator();
 
-                s32 currentModeIndex = 0;
-
-                for (s32 i = 0; i < static_cast<s32>(DLSS_MODE_VALUES.size()); ++i)
-                {
-                    if (DLSS_MODE_VALUES[i] == DLSSMode)
+                    constexpr std::array DLSS_MODE_NAMES =
                     {
-                        currentModeIndex = i;
+                        "Performance",
+                        "Balanced",
+                        "Quality",
+                        "Ultra Performance",
+                        "DLAA"
+                    };
 
-                        break;
+                    constexpr std::array DLSS_MODE_VALUES =
+                    {
+                        NVSDK_NGX_PerfQuality_Value_MaxPerf,
+                        NVSDK_NGX_PerfQuality_Value_Balanced,
+                        NVSDK_NGX_PerfQuality_Value_MaxQuality,
+                        NVSDK_NGX_PerfQuality_Value_UltraPerformance,
+                        NVSDK_NGX_PerfQuality_Value_DLAA
+                    };
+
+                    s32 currentModeIndex = 0;
+
+                    for (s32 i = 0; i < static_cast<s32>(DLSS_MODE_VALUES.size()); ++i)
+                    {
+                        if (DLSS_MODE_VALUES[i] == DLSSMode)
+                        {
+                            currentModeIndex = i;
+
+                            break;
+                        }
                     }
-                }
 
-                if (ImGui::Combo("Mode", &currentModeIndex, DLSS_MODE_NAMES.data(), DLSS_MODE_NAMES.size()))
-                {
-                    DLSSMode                = DLSS_MODE_VALUES[currentModeIndex];
-                    m_haveParametersChanged = true;
+                    if (ImGui::Combo("Mode", &currentModeIndex, DLSS_MODE_NAMES.data(), DLSS_MODE_NAMES.size()))
+                    {
+                        DLSSMode                = DLSS_MODE_VALUES[currentModeIndex];
+                        m_haveParametersChanged = true;
+                    }
                 }
 
                 ImGui::EndMenu();

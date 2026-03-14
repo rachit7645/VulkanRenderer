@@ -111,7 +111,7 @@
             "FOV"         : 80.0,
             "Speed"       : 15.0,
             "Sprint"      : 1.85,
-            "Sensitivity" : 100.0,
+            "Sensitivity" : 1.75,
             "Zoom"        : 45.0
         }
     },

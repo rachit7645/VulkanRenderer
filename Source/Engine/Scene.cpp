@@ -178,15 +178,15 @@ namespace Engine
         Util::DeletionQueue& deletionQueue
     )
     {
-        camera.Update(frameCounter, inputs);
-
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("Scene"))
             {
-                if (ImGui::BeginMenu("Render Objects"))
+                if (ImGui::CollapsingHeader("Render Objects"))
                 {
-                    if (ImGui::TreeNode("Load"))
+                    ImGui::PushID("Render Objects UI");
+
+                    if (ImGui::TreeNode("Load Object"))
                     {
                         ImGui::InputText("Model Path", &m_loadedModelPath);
 
@@ -278,14 +278,12 @@ namespace Engine
                         ImGui::Separator();
                     }
 
-                    ImGui::EndMenu();
+                    ImGui::PopID();
                 }
 
-                ImGui::Separator();
-
-                if (ImGui::BeginMenu("Lights"))
+                if (ImGui::CollapsingHeader("Lights"))
                 {
-                    if (ImGui::BeginMenu("Sun"))
+                    if (ImGui::TreeNode("Sun"))
                     {
                         ImGui::DragFloat3("Direction", &sun.direction[0], 0.01f, -1.0f, 1.0f, "%.2f");
                         ImGui::ColorEdit3("Color",     &sun.color[0]);
@@ -293,14 +291,14 @@ namespace Engine
 
                         sun.direction = glm::normalize(sun.direction);
 
-                        ImGui::EndMenu();
+                        ImGui::TreePop();
                     }
 
                     ImGui::Separator();
 
-                    if (ImGui::BeginMenu("Point"))
+                    if (ImGui::TreeNode("Point"))
                     {
-                        if (ImGui::TreeNode("Add"))
+                        if (ImGui::TreeNode("Add Point Light"))
                         {
                             ImGui::DragFloat3("Position",  &m_loadedPointLight.position[0],  1.0f,  0.0f, 0.0f, "%.2f");
                             ImGui::ColorEdit3("Color",     &m_loadedPointLight.color[0]);
@@ -359,17 +357,17 @@ namespace Engine
                             ImGui::Separator();
                         }
 
-                        ImGui::EndMenu();
+                        ImGui::TreePop();
                     }
 
                     ImGui::Separator();
 
-                    if (ImGui::BeginMenu("Spot"))
+                    if (ImGui::TreeNode("Spot"))
                     {
-                        const auto ONE_DEGREE    = glm::radians(1.0f);
-                        const auto HALF_ROTATION = std::numbers::pi;
+                        constexpr f32 ONE_DEGREE    = glm::radians(1.0f);
+                        constexpr f32 HALF_ROTATION = std::numbers::pi;
 
-                        if (ImGui::TreeNode("Add"))
+                        if (ImGui::TreeNode("Add Spot Light"))
                         {
                             ImGui::DragFloat3("Position",  &m_loadedSpotLight.position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
                             ImGui::ColorEdit3("Color",     &m_loadedSpotLight.color[0]);
@@ -377,8 +375,6 @@ namespace Engine
                             ImGui::DragFloat3("Direction", &m_loadedSpotLight.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
                             ImGui::DragFloat2("Cut Off",   &m_loadedSpotLight.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
                             ImGui::DragFloat( "Range",     &m_loadedSpotLight.range,        0.01f,      0.0f, 0.0f,          "%.3f");
-
-                            m_loadedSpotLight.direction = glm::normalize(m_loadedSpotLight.direction);
 
                             if (ImGui::Button("Add"))
                             {
@@ -438,19 +434,13 @@ namespace Engine
                             ImGui::Separator();
                         }
 
-                        ImGui::EndMenu();
+                        ImGui::TreePop();
                     }
-
-                    ImGui::EndMenu();
                 }
-
-                ImGui::Separator();
 
                 camera.ImGuiDisplay();
 
-                ImGui::Separator();
-
-                if (ImGui::BeginMenu("IBL"))
+                if (ImGui::CollapsingHeader("IBL"))
                 {
                     ImGui::InputText("HDR Map Path", &m_loadedHDRMapPath);
 
@@ -485,8 +475,6 @@ namespace Engine
 
                         m_loadedHDRMapPath.clear();
                     }
-
-                    ImGui::EndMenu();
                 }
 
                 ImGui::EndMenu();
@@ -494,6 +482,8 @@ namespace Engine
             
             ImGui::EndMainMenuBar();
         }
+
+        camera.Update(frameCounter, inputs);
     }
 
     void Scene::Destroy

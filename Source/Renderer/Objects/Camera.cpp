@@ -34,29 +34,39 @@ namespace Renderer::Objects
 
     glm::mat4 Camera::GetViewMatrix() const
     {
-        auto matrix = glm::identity<glm::mat4>();
-
-        matrix = glm::mat4(glm::inverse(orientation));
-        matrix = glm::translate(matrix, -position);
+        glm::mat4 matrix = glm::mat4(glm::inverse(orientation));
+                  matrix = glm::translate(matrix, -position);
 
         return matrix;
     }
 
     void Camera::ImGuiDisplay()
     {
-        if (ImGui::BeginMenu("Camera"))
+        ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.2f");
+
+        if (m_enableQuaternionInputMode)
+        {
+            ImGui::DragFloat4("Orientation", &orientation[0], 0.01f, 0.0f, 0.0f, "%.4f");
+
+            orientation = glm::normalize(orientation);
+        }
+        else
         {
             glm::vec3 eulerAngles = glm::eulerAngles(orientation);
 
-            ImGui::DragFloat3("Position", &position[0],    1.0f, 0.0f, 0.0f, "%.2f");
-            ImGui::DragFloat3("Rotation", &eulerAngles[0], 1.0f, 0.0f, 0.0f, "%.2f");
-            ImGui::DragFloat ("FOV",      &FOV,            1.0f, 0.0f, 0.0f, "%.2f");
+            constexpr f32 ONE_DEGREE = glm::radians(1.0f);
+
+            ImGui::DragFloat3("Rotation", &eulerAngles[0], ONE_DEGREE, 0.0f, 0.0f, "%.2f");
 
             orientation = glm::normalize(glm::quat(eulerAngles));
-
-            ImGui::Separator();
-
-            ImGui::EndMenu();
         }
+
+        ImGui::DragFloat("FOV", &FOV, 1.0f, 0.0f, 0.0f, "%.2f");
+
+        ImGui::Separator();
+
+        ImGui::Checkbox("Quaternion Mode", &m_enableQuaternionInputMode);
+
+        ImGui::Separator();
     }
 }

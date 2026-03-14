@@ -42,7 +42,6 @@ namespace Renderer::SpotShadow
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Shadows/SpotShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Misc/Empty.frag",                VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
             .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_TRUE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
