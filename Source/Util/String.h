@@ -14,13 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef EXTERNALS_TRACY_H
-#define EXTERNALS_TRACY_H
+#ifndef STRING_H
+#define STRING_H
 
-#ifdef ENGINE_PROFILE
+#include <string>
+#include <string_view>
 
-#include "tracy/public/tracy/Tracy.hpp"
+namespace Util
+{
+    struct StringHash
+    {
+        using is_transparent = void;
 
-#endif
+        [[nodiscard]] std::size_t operator()(const std::string_view string) const
+        {
+            return std::hash<std::string_view>{}(string);
+        }
+    };
+}
 
 #endif

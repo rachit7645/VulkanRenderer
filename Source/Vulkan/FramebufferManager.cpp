@@ -37,7 +37,7 @@ namespace Vk
         const FramebufferInitialState& initialState
     )
     {
-        if (m_framebuffers.contains(name.data()))
+        if (m_framebuffers.contains(name))
         {
             return;
         }
@@ -62,7 +62,7 @@ namespace Vk
     {
         m_framebufferViews.emplace(name, FramebufferView{
             .framebuffer     = framebufferName.data(),
-            .sampledImageID = std::numeric_limits<u32>::max(),
+            .sampledImageID  = std::numeric_limits<u32>::max(),
             .type            = imageViewType,
             .size            = size,
             .view            = {}
@@ -289,17 +289,17 @@ namespace Vk
 
     bool FramebufferManager::DoesFramebufferExist(const std::string_view name) const
     {
-        return m_framebuffers.contains(name.data());
+        return m_framebuffers.contains(name);
     }
 
     bool FramebufferManager::DoesFramebufferViewExist(const std::string_view name) const
     {
-        return m_framebufferViews.contains(name.data());
+        return m_framebufferViews.contains(name);
     }
 
     Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name)
     {
-        const auto iter = m_framebuffers.find(name.data());
+        const auto iter = m_framebuffers.find(name);
 
         if (iter == m_framebuffers.end())
         {
@@ -311,7 +311,7 @@ namespace Vk
 
     const Vk::Framebuffer& FramebufferManager::GetFramebuffer(const std::string_view name) const
     {
-        const auto iter = m_framebuffers.find(name.data());
+        const auto iter = m_framebuffers.find(name);
 
         if (iter == m_framebuffers.cend())
         {
@@ -323,7 +323,7 @@ namespace Vk
 
     Vk::FramebufferView& FramebufferManager::GetFramebufferView(const std::string_view name)
     {
-        const auto iter = m_framebufferViews.find(name.data());
+        const auto iter = m_framebufferViews.find(name);
 
         if (iter == m_framebufferViews.end())
         {
@@ -335,7 +335,7 @@ namespace Vk
 
     const Vk::FramebufferView& FramebufferManager::GetFramebufferView(const std::string_view name) const
     {
-        const auto iter = m_framebufferViews.find(name.data());
+        const auto iter = m_framebufferViews.find(name);
 
         if (iter == m_framebufferViews.cend())
         {
@@ -354,7 +354,7 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        const auto iter = m_framebuffers.find(framebufferName.data());
+        const auto iter = m_framebuffers.find(framebufferName);
 
         if (iter == m_framebuffers.end())
         {

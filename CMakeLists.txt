@@ -236,7 +236,7 @@ target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_I
 
 # Compiler options
 if (MSVC)
-    target_compile_options(VulkanRenderer PRIVATE /O2   )
+    target_compile_options(VulkanRenderer PRIVATE /O2)
     target_compile_options(VulkanRenderer PRIVATE /W4)
     target_compile_options(VulkanRenderer PRIVATE /arch:AVX2)
     target_compile_definitions(VulkanRenderer PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)

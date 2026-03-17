@@ -27,6 +27,8 @@ namespace Vk
     template <typename T> requires GPU::IsVertexType<T>
     VertexBuffer<T>::VertexBuffer(const Vk::Extensions& extensions)
     {
+        const bool hasRaytracing = extensions.HasRayTracing();
+
         if constexpr (std::is_same_v<T, GPU::Index>)
         {
             m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
@@ -38,7 +40,7 @@ namespace Vk
 
             m_accessMask = VK_ACCESS_2_INDEX_READ_BIT;
 
-            if (extensions.HasRayTracing())
+            if (hasRaytracing)
             {
                 m_usage      |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
                 m_stageMask  |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
@@ -55,7 +57,7 @@ namespace Vk
             m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
             m_accessMask = VK_ACCESS_2_SHADER_READ_BIT;
 
-            if (extensions.HasRayTracing())
+            if (hasRaytracing)
             {
                 m_usage     |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
                 m_stageMask |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
@@ -71,7 +73,7 @@ namespace Vk
             m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
             m_accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
 
-            if (extensions.HasRayTracing())
+            if (hasRaytracing)
             {
                 m_stageMask |= VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
             }

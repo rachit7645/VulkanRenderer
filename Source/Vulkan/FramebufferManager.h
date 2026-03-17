@@ -27,6 +27,7 @@
 #include "Util/Enum.h"
 #include "Externals/UnorderedDense.h"
 #include "Renderer/RenderConfig.h"
+#include "Util/String.h"
 #include "Vulkan/Swapchain.h"
 
 namespace Vk
@@ -179,10 +180,10 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
-        ankerl::unordered_dense::map<std::string, Framebuffer>     m_framebuffers;
-        ankerl::unordered_dense::map<std::string, FramebufferView> m_framebufferViews;
+        ankerl::unordered_dense::map<std::string, Framebuffer,     Util::StringHash, std::equal_to<>> m_framebuffers;
+        ankerl::unordered_dense::map<std::string, FramebufferView, Util::StringHash, std::equal_to<>> m_framebufferViews;
 
-        ankerl::unordered_dense::set<std::string> m_fixedSizeFramebuffers;
+        ankerl::unordered_dense::set<std::string, Util::StringHash, std::equal_to<>> m_fixedSizeFramebuffers;
 
         Vk::BarrierWriter m_barrierWriter = {};
     };

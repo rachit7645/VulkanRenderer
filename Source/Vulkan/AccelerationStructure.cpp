@@ -344,10 +344,10 @@ namespace Vk
         }
 
         // Wait Vk::FRAMES_IN_FLIGHT frames before trying to retrieve query results (Thanks Darian and devsh!)
-        const bool isQueryReady = timeline.IsAtOrPastState
+        const bool isQueryReady = timeline.IsAtOrPastStage
         (
             m_initialBLASBuildFrameIndex + Vk::FRAMES_IN_FLIGHT,
-            Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED,
+            Vk::GraphicsTimeline::Stage::SwapchainImageAcquired,
             device
         );
 

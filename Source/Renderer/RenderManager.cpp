@@ -45,7 +45,7 @@ namespace Renderer
           m_pointShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_gBuffer{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_lighting{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_shadowRT{m_megaSet, m_context.extensions, m_pipelineManager, m_framebufferManager},
+          m_shadowRT{m_megaSet, m_renderConfig,m_pipelineManager, m_framebufferManager},
           m_taa{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_spotShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_culling{m_context.device, m_context.allocator, m_pipelineManager},
@@ -154,7 +154,7 @@ namespace Renderer
         m_graphicsTimeline.WaitForStage
         (
             m_frameIndex - Vk::FRAMES_IN_FLIGHT,
-            Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED,
+            Vk::GraphicsTimeline::Stage::RenderFinished,
             m_context.device
         );
     }
@@ -211,7 +211,7 @@ namespace Renderer
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
             .semaphore   = m_graphicsTimeline.semaphore,
-            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
+            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::SwapchainImageAcquired),
             .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             .deviceIndex = 0
         };
@@ -221,7 +221,7 @@ namespace Renderer
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
             .semaphore   = m_graphicsTimeline.semaphore,
-            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED),
+            .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::RenderFinished),
             .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             .deviceIndex = 0
         };
@@ -620,7 +620,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::SwapchainImageAcquired),
                 .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .deviceIndex = 0
             };
@@ -638,7 +638,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
                 .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .deviceIndex = 0
             };
@@ -940,7 +940,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
                 .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .deviceIndex = 0
             };
@@ -958,7 +958,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_computeTimeline->semaphore,
-                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED),
+                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
                 .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .deviceIndex = 0
             };
@@ -1000,7 +1000,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
                 .stageMask   = stageMask,
                 .deviceIndex = 0
             };
@@ -1018,7 +1018,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::RayDispatch),
                 .stageMask   = stageMask,
                 .deviceIndex = 0
             };
@@ -1194,7 +1194,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_computeTimeline->semaphore,
-                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED),
+                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
                 .stageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .deviceIndex = 0
             };
@@ -1204,7 +1204,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::RayDispatch),
                 .stageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .deviceIndex = 0
             };
@@ -1224,7 +1224,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::RenderFinished),
                 .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .deviceIndex = 0
             };
@@ -2003,6 +2003,11 @@ namespace Renderer
                             std::bit_cast<void*>(m_context.computeQueue)
                         );
                     }
+                }
+
+                if (ImGui::CollapsingHeader("Information"))
+                {
+                    ImGui::Text("Device | %s", m_context.physicalDeviceName.c_str());
                 }
 
                 ImGui::EndMenu();

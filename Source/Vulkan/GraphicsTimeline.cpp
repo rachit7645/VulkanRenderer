@@ -46,7 +46,7 @@ namespace Vk
             "Failed to create timeline semaphore!"
         );
 
-        Vk::SetDebugName(device, semaphore, "Graphics/TimelineSemaphore");
+        Vk::SetDebugName(device, semaphore, "Graphics/Timeline");
     }
 
     void GraphicsTimeline::AcquireImageToTimeline(usize frameIndex, VkQueue queue, VkSemaphore imageAcquire)
@@ -66,7 +66,7 @@ namespace Vk
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
             .semaphore   = semaphore,
-            .value       = GetTimelineValue(frameIndex, GraphicsTimelineStage::GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED),
+            .value       = GetTimelineValue(frameIndex, GraphicsTimeline::Stage::SwapchainImageAcquired),
             .stageMask   = VK_PIPELINE_STAGE_2_NONE,
             .deviceIndex = 0
         };
@@ -100,7 +100,7 @@ namespace Vk
             .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
             .pNext       = nullptr,
             .semaphore   = semaphore,
-            .value       = GetTimelineValue(frameIndex, GraphicsTimelineStage::GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED),
+            .value       = GetTimelineValue(frameIndex, GraphicsTimeline::Stage::RenderFinished),
             .stageMask   = VK_PIPELINE_STAGE_2_NONE,
             .deviceIndex = 0
         };
@@ -137,14 +137,14 @@ namespace Vk
         );
     }
 
-    u64 GraphicsTimeline::GetTimelineValue(usize frameIndex, GraphicsTimelineStage timelineStage) const
+    u64 GraphicsTimeline::GetTimelineValue(usize frameIndex, GraphicsTimeline::Stage timelineStage) const
     {
         // Since we use an initial value of 0, an easy fix is to add 1 to the frame index
         // 0 -> 1 * TIMELINE_STAGE_COUNT + 0 -> ....
-        return (frameIndex + 1) * GraphicsTimelineStage::GRAPHICS_TIMELINE_STAGE_COUNT + timelineStage;
+        return (frameIndex + 1) * std::to_underlying(GraphicsTimeline::Stage::Count) + std::to_underlying(timelineStage);
     }
 
-    void GraphicsTimeline::WaitForStage(usize frameIndex, GraphicsTimelineStage timelineStage, VkDevice device) const
+    void GraphicsTimeline::WaitForStage(usize frameIndex, GraphicsTimeline::Stage timelineStage, VkDevice device) const
     {
         const u64 value = GetTimelineValue(frameIndex, timelineStage);
 
@@ -166,11 +166,12 @@ namespace Vk
         );
     }
 
-    bool GraphicsTimeline::IsAtOrPastState(usize frameIndex, GraphicsTimelineStage timelineStage, VkDevice device) const
+    bool GraphicsTimeline::IsAtOrPastStage(usize frameIndex, GraphicsTimeline::Stage timelineStage, VkDevice device) const
     {
         const u64 value = GetTimelineValue(frameIndex, timelineStage);
 
         u64 currentValue = 0;
+
         Vk::CheckResult(vkGetSemaphoreCounterValue(
             device,
             semaphore,

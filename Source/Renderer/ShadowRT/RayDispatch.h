@@ -33,7 +33,7 @@ namespace Renderer::ShadowRT
         RayDispatch
         (
             const Vk::MegaSet& megaSet,
-            const Vk::Extensions& extensions,
+            const Renderer::RenderConfig& renderConfig,
             Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );

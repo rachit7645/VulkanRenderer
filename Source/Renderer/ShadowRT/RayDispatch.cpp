@@ -29,12 +29,12 @@ namespace Renderer::ShadowRT
     RayDispatch::RayDispatch
     (
         const Vk::MegaSet& megaSet,
-        const Vk::Extensions& extensions,
+        const Renderer::RenderConfig& renderConfig,
         Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
     {
-        if (extensions.HasRayTracing())
+        if (renderConfig.rayTracing.isSupported)
         {
             pipelineManager.AddPipeline("ShadowRT", Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)

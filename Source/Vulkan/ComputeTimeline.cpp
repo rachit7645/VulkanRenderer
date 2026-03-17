@@ -46,51 +46,14 @@ namespace Vk
             "Failed to create timeline semaphore!"
         );
 
-        Vk::SetDebugName(device, semaphore, "Compute/TimelineSemaphore");
+        Vk::SetDebugName(device, semaphore, "Compute/Timeline");
     }
 
-    u64 ComputeTimeline::GetTimelineValue(usize frameIndex, ComputeTimelineStage timelineStage) const
+    u64 ComputeTimeline::GetTimelineValue(usize frameIndex, ComputeTimeline::Stage timelineStage) const
     {
         // Since we use an initial value of 0, an easy fix is to add 1 to the frame index
         // 0 -> 1 * TIMELINE_STAGE_COUNT + 0 -> ....
-        return (frameIndex + 1) * ComputeTimelineStage::COMPUTE_TIMELINE_STAGE_COUNT + timelineStage;
-    }
-
-    void ComputeTimeline::WaitForStage(usize frameIndex, ComputeTimelineStage timelineStage, VkDevice device) const
-    {
-        const u64 value = GetTimelineValue(frameIndex, timelineStage);
-
-        const VkSemaphoreWaitInfo waitInfo =
-        {
-            .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-            .pNext          = nullptr,
-            .flags          = 0,
-            .semaphoreCount = 1,
-            .pSemaphores    = &semaphore,
-            .pValues        = &value
-        };
-
-        Vk::CheckResult(vkWaitSemaphores(
-            device,
-            &waitInfo,
-            std::numeric_limits<u64>::max()),
-            "Failed to wait for semaphore!"
-        );
-    }
-
-    bool ComputeTimeline::IsAtOrPastState(usize frameIndex, ComputeTimelineStage timelineStage, VkDevice device) const
-    {
-        const u64 value = GetTimelineValue(frameIndex, timelineStage);
-
-        u64 currentValue = 0;
-        Vk::CheckResult(vkGetSemaphoreCounterValue(
-            device,
-            semaphore,
-            &currentValue),
-            "Failed to get semaphore counter value!"
-        );
-
-        return currentValue >= value;
+        return (frameIndex + 1) * std::to_underlying(ComputeTimeline::Stage::Count) + std::to_underlying(timelineStage);
     }
 
     void ComputeTimeline::Destroy(VkDevice device)

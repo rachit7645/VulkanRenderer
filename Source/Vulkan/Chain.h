@@ -19,92 +19,65 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Util/Concept.h"
 #include "Util/Log.h"
 
 namespace Vk
 {
     template<typename T>
-    struct VulkanStructType;
+    struct StructureType;
 
-    template<> struct VulkanStructType<VkPhysicalDeviceVulkan13Features>
+    template<> struct StructureType<VkPhysicalDeviceVulkan13Features>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceVulkan12Features>
+    template<> struct StructureType<VkPhysicalDeviceVulkan12Features>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceVulkan11Features>
+    template<> struct StructureType<VkPhysicalDeviceVulkan11Features>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>
+    template<> struct StructureType<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceAccelerationStructureFeaturesKHR>
+    template<> struct StructureType<VkPhysicalDeviceAccelerationStructureFeaturesKHR>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>
+    template<> struct StructureType<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>
+    template<> struct StructureType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>
+    template<> struct StructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
     };
 
-    template<> struct VulkanStructType<VkPhysicalDeviceVulkan11Properties>
+    template<> struct StructureType<VkPhysicalDeviceVulkan11Properties>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES;
     };
-
-    template<typename T>
-    T* FindStructureInChain(void* pNext)
-    {
-        for (auto current = static_cast<VkBaseOutStructure*>(pNext); current != nullptr; current = current->pNext)
-        {
-            if (current->sType == VulkanStructType<T>::sType)
-            {
-                return reinterpret_cast<T*>(current);
-            }
-        }
-
-        Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
-    }
-
-    template<typename T>
-    const T* FindStructureInChain(const void* pNext)
-    {
-        for (auto current = static_cast<const VkBaseInStructure*>(pNext); current != nullptr; current = current->pNext)
-        {
-            if (current->sType == VulkanStructType<T>::sType)
-            {
-                return reinterpret_cast<const T*>(current);
-            }
-        }
-
-        Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
-    }
 
     template<typename T>
     std::optional<T*> FindStructureInChainOptional(void* pNext)
     {
         for (auto current = static_cast<VkBaseOutStructure*>(pNext); current != nullptr; current = current->pNext)
         {
-            if (current->sType == VulkanStructType<T>::sType)
+            if (current->sType == Vk::StructureType<T>::sType)
             {
                 return reinterpret_cast<T*>(current);
             }
@@ -118,13 +91,39 @@ namespace Vk
     {
         for (auto current = static_cast<const VkBaseInStructure*>(pNext); current != nullptr; current = current->pNext)
         {
-            if (current->sType == VulkanStructType<T>::sType)
+            if (current->sType == Vk::StructureType<T>::sType)
             {
                 return reinterpret_cast<const T*>(current);
             }
         }
 
         return std::nullopt;
+    }
+
+    template<typename T>
+    T* FindStructureInChain(void* pNext)
+    {
+        auto result = Vk::FindStructureInChainOptional<T>(pNext);
+
+        if (!result.has_value())
+        {
+            Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
+        }
+
+        return result.value();
+    }
+
+    template<typename T>
+    const T* FindStructureInChain(const void* pNext)
+    {
+        auto result = Vk::FindStructureInChainOptional<T>(pNext);
+
+        if (!result.has_value())
+        {
+            Logger::Error("Failed to find structure in chain! [pNext={}]", pNext);
+        }
+
+        return result.value();
     }
 }
 

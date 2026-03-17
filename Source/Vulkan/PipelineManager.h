@@ -22,6 +22,7 @@
 #include "Pipeline.h"
 #include "PipelineConfig.h"
 #include "Externals/UnorderedDense.h"
+#include "Util/String.h"
 
 namespace Vk
 {
@@ -42,9 +43,9 @@ namespace Vk
 
         void Destroy(VkDevice device);
     private:
-        ankerl::unordered_dense::map<std::string, Vk::Pipeline>       m_pipelines;
-        ankerl::unordered_dense::map<std::string, Vk::PipelineConfig> m_pipelineConfigs;
-        ankerl::unordered_dense::map<std::string, Vk::PipelineConfig> m_dirtyPipelineConfigs;
+        ankerl::unordered_dense::map<std::string, Vk::Pipeline,       Util::StringHash, std::equal_to<>> m_pipelines;
+        ankerl::unordered_dense::map<std::string, Vk::PipelineConfig, Util::StringHash, std::equal_to<>> m_pipelineConfigs;
+        ankerl::unordered_dense::map<std::string, Vk::PipelineConfig, Util::StringHash, std::equal_to<>> m_dirtyPipelineConfigs;
     };
 }
 

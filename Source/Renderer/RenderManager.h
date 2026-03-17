@@ -57,7 +57,6 @@
 #include "Renderer/RenderConfig.h"
 
 #ifdef ENGINE_DLSS
-#include "DLSS/DLSSConfig.h"
 #include "Renderer/DLSS/Evaluation.h"
 #endif
 
@@ -68,6 +67,12 @@ namespace Renderer
     public:
         RenderManager();
         ~RenderManager();
+
+        RenderManager(const RenderManager&) noexcept = delete;
+        RenderManager& operator=(const RenderManager&) noexcept = delete;
+
+        RenderManager(RenderManager&& other) noexcept = delete;
+        RenderManager& operator=(RenderManager&& other) noexcept = delete;
 
         void Render();
         [[nodiscard]] bool HandleEvents();

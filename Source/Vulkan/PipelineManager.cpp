@@ -37,12 +37,12 @@ namespace Vk
 
     void PipelineManager::AddPipeline(const std::string_view id, const Vk::PipelineConfig& config)
     {
-        if (!m_dirtyPipelineConfigs.contains(id.data()))
+        if (!m_dirtyPipelineConfigs.contains(id))
         {
             m_dirtyPipelineConfigs.emplace(id, config);
         }
 
-        if (!m_pipelineConfigs.contains(id.data()))
+        if (!m_pipelineConfigs.contains(id))
         {
             m_pipelineConfigs.emplace(id, config);
         }
@@ -182,7 +182,7 @@ namespace Vk
 
     void PipelineManager::Reload(const std::string_view id)
     {
-        const auto iter = m_pipelineConfigs.find(id.data());
+        const auto iter = m_pipelineConfigs.find(id);
 
         if (iter == m_pipelineConfigs.cend())
         {
@@ -226,7 +226,7 @@ namespace Vk
 
     Vk::Pipeline& PipelineManager::GetPipeline(const std::string_view id)
     {
-        auto iter = m_pipelines.find(id.data());
+        auto iter = m_pipelines.find(id);
 
         if (iter == m_pipelines.end())
         {
@@ -238,7 +238,7 @@ namespace Vk
 
     const Vk::Pipeline& PipelineManager::GetPipeline(const std::string_view id) const
     {
-        const auto iter = m_pipelines.find(id.data());
+        const auto iter = m_pipelines.find(id);
 
         if (iter == m_pipelines.cend())
         {

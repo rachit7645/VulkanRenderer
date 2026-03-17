@@ -179,7 +179,7 @@ namespace Vk
 
     bool Extensions::HasExtension(const std::string_view name) const
     {
-        const auto iter = m_extensionTable.find(name.data());
+        const auto iter = m_extensionTable.find(name);
 
         if (iter == m_extensionTable.cend())
         {
@@ -216,7 +216,7 @@ namespace Vk
 
         for (const auto& [name, version] : m_instanceExtensions)
         {
-            m_extensionTable[std::string(name)] = true;
+            m_extensionTable[name] = true;
         }
     }
 

@@ -26,13 +26,13 @@ namespace Vk
     class GraphicsTimeline
     {
     public:
-        enum GraphicsTimelineStage : u64
+        enum class Stage : u64
         {
-            GRAPHICS_TIMELINE_STAGE_SWAPCHAIN_IMAGE_ACQUIRED    = 0,
-            GRAPHICS_TIMELINE_STAGE_GBUFFER_GENERATION_COMPLETE = 1,
-            GRAPHICS_TIMELINE_STAGE_RAY_DISPATCH                = 2,
-            GRAPHICS_TIMELINE_STAGE_RENDER_FINISHED             = 3,
-            GRAPHICS_TIMELINE_STAGE_COUNT
+            SwapchainImageAcquired    = 0,
+            GbufferGenerationComplete = 1,
+            RayDispatch               = 2,
+            RenderFinished            = 3,
+            Count
         };
 
         explicit GraphicsTimeline(VkDevice device);
@@ -40,10 +40,10 @@ namespace Vk
         void AcquireImageToTimeline(usize frameIndex, VkQueue queue, VkSemaphore imageAcquire);
         void TimelineToRenderFinished(usize frameIndex, VkQueue queue, VkSemaphore renderFinished);
 
-        [[nodiscard]] u64 GetTimelineValue(usize frameIndex, GraphicsTimelineStage timelineStage) const;
+        [[nodiscard]] u64 GetTimelineValue(usize frameIndex, GraphicsTimeline::Stage timelineStage) const;
 
-        void WaitForStage(usize frameIndex, GraphicsTimelineStage timelineStage, VkDevice device) const;
-        bool IsAtOrPastState(usize frameIndex, GraphicsTimelineStage timelineStage, VkDevice device) const;
+        void WaitForStage(usize frameIndex, GraphicsTimeline::Stage timelineStage, VkDevice device) const;
+        bool IsAtOrPastStage(usize frameIndex, GraphicsTimeline::Stage timelineStage, VkDevice device) const;
 
         void Destroy(VkDevice device);
 

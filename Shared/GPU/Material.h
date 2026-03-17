@@ -78,25 +78,6 @@ bool Material_IsAlphaMasked(Material material)
     return Material_IsAlphaMasked(material.flags);
 }
 
-// Safe version, use with bad geometry
-vec3 Orthogonalize(vec3 T, vec3 N)
-{
-    vec3  TPerpendicular       = T - dot(T, N) * N;
-    float lengthTPerpendicular = length(TPerpendicular);
-
-    if (lengthTPerpendicular < 1e-5f)
-    {
-        vec3 reference = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
-        TPerpendicular = normalize(cross(N, reference));
-    }
-    else
-    {
-        TPerpendicular /= lengthTPerpendicular;
-    }
-
-    return TPerpendicular;
-}
-
 vec3 GetNormalFromMap(vec3 normal, mat3 TBN)
 {
     normal = normal * 2.0f - 1.0f;

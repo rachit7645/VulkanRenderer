@@ -26,18 +26,15 @@ namespace Vk
     class ComputeTimeline
     {
     public:
-        enum ComputeTimelineStage : u64
+        enum class Stage : u64
         {
-            COMPUTE_TIMELINE_STAGE_ASYNC_COMPUTE_FINISHED = 0,
-            COMPUTE_TIMELINE_STAGE_COUNT
+            AsyncComputeFinished = 0,
+            Count
         };
 
         explicit ComputeTimeline(VkDevice device);
 
-        [[nodiscard]] u64 GetTimelineValue(usize frameIndex, ComputeTimelineStage timelineStage) const;
-
-        void WaitForStage(usize frameIndex, ComputeTimelineStage timelineStage, VkDevice device) const;
-        bool IsAtOrPastState(usize frameIndex, ComputeTimelineStage timelineStage, VkDevice device) const;
+        [[nodiscard]] u64 GetTimelineValue(usize frameIndex, ComputeTimeline::Stage timelineStage) const;
 
         void Destroy(VkDevice device);
 

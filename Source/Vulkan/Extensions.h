@@ -22,6 +22,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Externals/UnorderedDense.h"
+#include "Util/String.h"
 
 namespace Vk
 {
@@ -49,7 +50,7 @@ namespace Vk
         std::vector<VkExtensionProperties> m_instanceExtensions;
         std::vector<VkExtensionProperties> m_deviceExtensions;
 
-        ankerl::unordered_dense::map<std::string, bool> m_extensionTable;
+        ankerl::unordered_dense::map<std::string, bool, Util::StringHash, std::equal_to<>> m_extensionTable;
 
         VkPhysicalDeviceAccelerationStructureFeaturesKHR  m_accelerationStructureFeatures = {};
         VkPhysicalDeviceRayTracingPipelineFeaturesKHR     m_rayTracingPipelineFeatures    = {};

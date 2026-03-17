@@ -48,12 +48,14 @@ namespace Vk
         VkDevice device = VK_NULL_HANDLE;
 
         Vk::QueueFamilies queueFamilies;
-        Vk::Extensions         extensions;
+        Vk::Extensions    extensions;
 
         VkQueue graphicsQueue = VK_NULL_HANDLE;
         VkQueue computeQueue  = VK_NULL_HANDLE;
 
         VmaAllocator allocator = VK_NULL_HANDLE;
+
+        std::string physicalDeviceName = "Device/Null";
     private:
         void CreateInstance();
         void CreateSurface(SDL_Window* window);

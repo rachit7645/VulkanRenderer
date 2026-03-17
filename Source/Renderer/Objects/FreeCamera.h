@@ -23,7 +23,7 @@
 
 namespace Renderer::Objects
 {
-    class FreeCamera : public Camera
+    class FreeCamera final : public Camera
     {
     public:
         FreeCamera() = default;

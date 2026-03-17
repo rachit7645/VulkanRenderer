@@ -229,8 +229,9 @@ namespace Vk
         physicalDeviceVulkan12Properties              = vk12Properties[physicalDevice];
         physicalDeviceAccelerationStructureProperties = asProperties[physicalDevice];
         physicalDeviceRayTracingPipelineProperties    = rtPipelineProperties[physicalDevice];
+        physicalDeviceName                            = properties[physicalDevice].properties.deviceName;
 
-        Logger::Info("Selected GPU! [GPU={}]\n", properties[physicalDevice].properties.deviceName);
+        Logger::Info("Selected GPU! [GPU={}]\n", physicalDeviceName);
     }
 
     usize Context::CalculateScore
