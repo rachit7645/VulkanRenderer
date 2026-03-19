@@ -40,7 +40,7 @@ namespace Vk
     bool Swapchain::IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context)
     {
         m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
-        extent          = ChooseSwapExtent(size);
+        extent          = ChooseSwapchainExtent(size);
 
         return extent.width != 0 && extent.height != 0;
     }
@@ -69,9 +69,9 @@ namespace Vk
             "Unable to reset fence!"
         );
 
-        const VkSwapchainPresentFenceInfoEXT fenceInfo =
+        const VkSwapchainPresentFenceInfoKHR fenceInfo =
         {
-            .sType          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT,
+            .sType          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_KHR,
             .pNext          = nullptr,
             .swapchainCount = 1,
             .pFences        = &presentFences[imageIndex]
@@ -115,22 +115,23 @@ namespace Vk
 
     void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
     {
-        const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
-        const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
-              u32                 imageCount    = GetImageCount();
+        surfaceFormat = ChooseSurfaceFormat();
+        presentMode   = ChoosePresentationMode();
 
-        constexpr VkSwapchainPresentScalingCreateInfoEXT presentScalingCreateInfo =
+        u32 imageCount = GetImageCount();
+
+        constexpr VkSwapchainPresentScalingCreateInfoKHR presentScalingCreateInfo =
         {
-            .sType           = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
+            .sType           = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR,
             .pNext           = nullptr,
-            .scalingBehavior = VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT,
-            .presentGravityX = VK_PRESENT_GRAVITY_MIN_BIT_EXT,
-            .presentGravityY = VK_PRESENT_GRAVITY_MIN_BIT_EXT
+            .scalingBehavior = VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_KHR,
+            .presentGravityX = VK_PRESENT_GRAVITY_MIN_BIT_KHR,
+            .presentGravityY = VK_PRESENT_GRAVITY_MIN_BIT_KHR
         };
 
-        const VkSwapchainPresentModesCreateInfoEXT presentModesCreateInfo =
+        const VkSwapchainPresentModesCreateInfoKHR presentModesCreateInfo =
         {
-            .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
+            .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_KHR,
             .pNext            = &presentScalingCreateInfo,
             .presentModeCount = 1,
             .pPresentModes    = &presentMode
@@ -143,8 +144,8 @@ namespace Vk
             .flags                 = 0,
             .surface               = context.surface,
             .minImageCount         = imageCount,
-            .imageFormat           = surfaceFormat.surfaceFormat.format,
-            .imageColorSpace       = surfaceFormat.surfaceFormat.colorSpace,
+            .imageFormat           = surfaceFormat.format,
+            .imageColorSpace       = surfaceFormat.colorSpace,
             .imageExtent           = extent,
             .imageArrayLayers      = 1,
             .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -191,32 +192,30 @@ namespace Vk
             );
         }
 
-        auto _images = std::vector<VkImage>(imageCount);
+        auto imageHandles = std::vector<VkImage>(imageCount);
 
         Vk::CheckResult(vkGetSwapchainImagesKHR(
             context.device,
             handle,
             &imageCount,
-            _images.data()),
+            imageHandles.data()),
             "Failed to get swapchain images!"
         );
 
-        imageFormat = surfaceFormat.surfaceFormat.format;
+        images.resize(imageHandles.size());
+        imageViews.resize(imageHandles.size());
 
-        images.resize(_images.size());
-        imageViews.resize(_images.size());
-
-        for (usize i = 0; i < _images.size(); ++i)
+        for (usize i = 0; i < imageHandles.size(); ++i)
         {
             images[i] = Vk::Image
             (
-                _images[i],
+                imageHandles[i],
                 extent.width,
                 extent.height,
                 1,
                 1,
                 1,
-                imageFormat,
+                surfaceFormat.format,
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
 
@@ -225,7 +224,7 @@ namespace Vk
                 context.device,
                 images[i],
                 VK_IMAGE_VIEW_TYPE_2D,
-                {
+                VkImageSubresourceRange{
                     .aspectMask     = images[i].aspect,
                     .baseMipLevel   = 0,
                     .levelCount     = images[i].mipLevels,
@@ -358,7 +357,7 @@ namespace Vk
         }
     }
 
-    VkSurfaceFormat2KHR Swapchain::ChooseSurfaceFormat() const
+    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat() const
     {
         const auto& formats = m_swapChainInfo.formats;
 
@@ -381,12 +380,12 @@ namespace Vk
         {
             for (const auto& format2 : formats)
             {
-                const auto& surfaceFormat = format2.surfaceFormat;
+                const auto& currentSurfaceFormat = format2.surfaceFormat;
 
-                if (surfaceFormat.format == format &&
-                    surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                if (currentSurfaceFormat.format == format &&
+                    currentSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
                 {
-                    return format2;
+                    return currentSurfaceFormat;
                 }
             }
         }
@@ -396,26 +395,12 @@ namespace Vk
         {
             if (format2.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
             {
-                Logger::Debug
-                (
-                    "Choosing surface format! [Fallback #1] [Format={}] [ColorSpace={}]\n",
-                    string_VkFormat(format2.surfaceFormat.format),
-                    string_VkColorSpaceKHR(format2.surfaceFormat.colorSpace)
-                );
-
-                return format2;
+                return format2.surfaceFormat;
             }
         }
 
         // Fallback #2 -> Return first available format (probably won't work)
-        Logger::Debug
-        (
-            "Choosing surface format! [Fallback #2] [Format={}] [ColorSpace={}]\n",
-            string_VkFormat(formats[0].surfaceFormat.format),
-            string_VkColorSpaceKHR(formats[0].surfaceFormat.colorSpace)
-        );
-
-        return formats[0];
+        return formats[0].surfaceFormat;
     }
 
     VkPresentModeKHR Swapchain::ChoosePresentationMode() const
@@ -423,51 +408,21 @@ namespace Vk
         const auto& presentModes = m_swapChainInfo.presentModes;
 
         // FIFO is guaranteed to be supported (Lame)
-        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        VkPresentModeKHR currentPresentMode = VK_PRESENT_MODE_FIFO_KHR;
 
         for (const auto availablePresentMode : presentModes)
         {
             if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
-                presentMode = availablePresentMode;
+                currentPresentMode = availablePresentMode;
                 break;
             }
         }
 
-        return presentMode;
+        return currentPresentMode;
     }
 
-    void Swapchain::DestroySwapchain(VkDevice device)
-    {
-        Vk::CheckResult(vkWaitForFences(
-            device,
-            presentFences.size(),
-            presentFences.data(),
-            VK_TRUE,
-            std::numeric_limits<u64>::max()),
-            "Failed to wait for fences!"
-        );
-
-        for (auto& imageView : imageViews)
-        {
-            imageView.Destroy(device);
-        }
-
-        for (const auto fence : presentFences)
-        {
-            vkDestroyFence(device, fence, nullptr);
-        }
-
-        for (const auto semaphore : renderFinishedSemaphores)
-        {
-            vkDestroySemaphore(device, semaphore, nullptr);
-        }
-
-        images.clear();
-        imageViews.clear();
-    }
-
-    VkExtent2D Swapchain::ChooseSwapExtent(const glm::ivec2& size) const
+    VkExtent2D Swapchain::ChooseSwapchainExtent(const glm::uvec2& size) const
     {
         const auto& capabilities = m_swapChainInfo.capabilities;
 
@@ -478,8 +433,8 @@ namespace Vk
             return capabilities.surfaceCapabilities.currentExtent;
         }
 
-        const auto minSize = glm::ivec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
-        const auto maxSize = glm::ivec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
+        const auto minSize = glm::uvec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
+        const auto maxSize = glm::uvec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
 
         const auto actualExtent = glm::clamp(size, minSize, maxSize);
 
@@ -513,6 +468,36 @@ namespace Vk
         }
 
         return imageCount;
+    }
+
+    void Swapchain::DestroySwapchain(VkDevice device)
+    {
+        Vk::CheckResult(vkWaitForFences(
+            device,
+            presentFences.size(),
+            presentFences.data(),
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fences!"
+        );
+
+        for (auto& imageView : imageViews)
+        {
+            imageView.Destroy(device);
+        }
+
+        for (const auto fence : presentFences)
+        {
+            vkDestroyFence(device, fence, nullptr);
+        }
+
+        for (const auto semaphore : renderFinishedSemaphores)
+        {
+            vkDestroySemaphore(device, semaphore, nullptr);
+        }
+
+        images.clear();
+        imageViews.clear();
     }
 
     void Swapchain::Destroy(VkDevice device)

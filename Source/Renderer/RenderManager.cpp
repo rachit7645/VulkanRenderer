@@ -2005,9 +2005,18 @@ namespace Renderer
                     }
                 }
 
-                if (ImGui::CollapsingHeader("Information"))
+                if (ImGui::CollapsingHeader("Device"))
                 {
                     ImGui::Text("Device | %s", m_context.physicalDeviceName.c_str());
+                }
+
+                if (ImGui::CollapsingHeader("Swapchain"))
+                {
+                    ImGui::Text("Format       | %s",       string_VkFormat(m_swapchain.surfaceFormat.format));
+                    ImGui::Text("Color Space  | %s",       string_VkColorSpaceKHR(m_swapchain.surfaceFormat.colorSpace));
+                    ImGui::Text("Present Mode | %s",       string_VkPresentModeKHR(m_swapchain.presentMode));
+                    ImGui::Text("Extent       | [%u, %u]", m_swapchain.extent.width, m_swapchain.extent.height);
+                    ImGui::Text("Image Count  | %llu",     m_swapchain.images.size());
                 }
 
                 ImGui::EndMenu();

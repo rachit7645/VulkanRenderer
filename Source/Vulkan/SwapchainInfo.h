@@ -24,16 +24,12 @@ namespace Vk
 {
     struct SwapchainInfo
     {
-        // Is this needed?
         SwapchainInfo() = default;
         SwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-        // Surface feature data
-        VkSurfaceCapabilities2KHR capabilities = {};
-        // Available formats
-        std::vector<VkSurfaceFormat2KHR> formats = {};
-        // Presentation modes
-        std::vector<VkPresentModeKHR> presentModes = {};
+        VkSurfaceCapabilities2KHR        capabilities = {};
+        std::vector<VkSurfaceFormat2KHR> formats      = {};
+        std::vector<VkPresentModeKHR>    presentModes = {};
     };
 }
 

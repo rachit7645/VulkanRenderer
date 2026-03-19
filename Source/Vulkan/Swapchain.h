@@ -44,12 +44,15 @@ namespace Vk
         VkResult AcquireSwapChainImage(VkDevice device, usize FIF);
 
         VkSwapchainKHR handle = VK_NULL_HANDLE;
-        VkExtent2D     extent = {};
 
-        VkFormat                   imageFormat = {};
+        VkSurfaceFormatKHR surfaceFormat = {};
+        VkPresentModeKHR   presentMode   = VK_PRESENT_MODE_FIFO_KHR;
+        VkExtent2D         extent        = {};
+
         std::vector<Vk::Image>     images      = {};
         std::vector<Vk::ImageView> imageViews  = {};
-        u32                        imageIndex  = 0;
+
+        u32 imageIndex = 0;
 
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
 
@@ -62,9 +65,9 @@ namespace Vk
         void CreateStaticSyncObjects(VkDevice device);
         void CreateSyncObjects(VkDevice device);
 
-        [[nodiscard]] VkSurfaceFormat2KHR ChooseSurfaceFormat() const;
+        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
-        [[nodiscard]] VkExtent2D ChooseSwapExtent(const glm::ivec2& size) const;
+        [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const glm::uvec2& size) const;
         [[nodiscard]] u32 GetImageCount() const;
 
         Vk::SwapchainInfo m_swapChainInfo = {};

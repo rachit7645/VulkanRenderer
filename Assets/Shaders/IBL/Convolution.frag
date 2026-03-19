@@ -22,6 +22,7 @@
 
 #include "Constants.glsl"
 #include "MegaSet.glsl"
+#include "Sampling.glsl"
 #include "IBL/Convolution.h"
 
 layout(location = 0) in vec3 worldPos;
@@ -36,27 +37,36 @@ void main()
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
-    vec3 irradiance  = vec3(0.0f);
-    uint sampleCount = 0u;
+    vec2 resolution = vec2(textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0));
 
-    for (float phi = 0.0f; phi < TWO_PI; phi += CONVOLUTION_SAMPLE_DELTA)
+    float saTexel     = (4.0f * PI) / (6.0f * resolution.x * resolution.y);
+    float sampleCount = float(IRRADIANCE_SAMPLE_COUNT);
+
+    vec3 irradiance = vec3(0.0f);
+
+    for (uint i = 0u; i < IRRADIANCE_SAMPLE_COUNT; ++i)
     {
-        float sinPhi = sin(phi);
-        float cosPhi = cos(phi);
+        vec2 xi = Hammersley(i, IRRADIANCE_SAMPLE_COUNT);
 
-        for (float theta = 0.0f; theta < HALF_PI; theta += CONVOLUTION_SAMPLE_DELTA)
-        {
-            float sinTheta = sin(theta);
-            float cosTheta = cos(theta);
+        float phi      = TWO_PI * xi.x;
+        float cosTheta = sqrt(xi.y);
+        float sinTheta = sqrt(1.0f - xi.y);
 
-            vec3 tangentSample = vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
-            vec3 sampleVec     = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
+        vec3 tangentSample = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+        vec3 sampleVec     = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
 
-            irradiance += texture(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), sampleVec).rgb * cosTheta * sinTheta;
+        float pdf = cosTheta / PI;
 
-            ++sampleCount;
-        }
+        // Fix for extremely bright spots
+        float saSample = 1.0f / max(sampleCount * pdf, 0.0001f);
+        float mipLevel = max(0.5f * log2(saSample / saTexel), 0.0f);
+
+        irradiance += textureLod(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), sampleVec, mipLevel).rgb;
     }
 
-    outColor = PI * (irradiance / float(sampleCount));
+    // Irradiance = (π * I) / N
+    // Diffuse = Lambert(Irradiance) * Albedo => [{(π * I) / N} / π] * Albedo => (I / N) * Albedo
+    // OutColor = I / N => Diffuse = OutColor * Albedo
+    // See PBR.glsl/CalculateAmbient(...)
+    outColor = irradiance / sampleCount;
 }

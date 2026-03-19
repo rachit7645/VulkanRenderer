@@ -28,17 +28,16 @@ namespace Renderer
         rayTracing.isSupported = context.extensions.HasRayTracing();
         rayTracing.isEnabled   = rayTracing.isSupported;
 
-        // If ray tracing is not available then it would be slower, so disable it
         multiQueue.isSupported = context.queueFamilies.HasAllFamilies();
         multiQueue.isEnabled   = multiQueue.isSupported && rayTracing.isSupported;
 
         #ifdef ENGINE_DLSS
         DLSS.isSupported = DLSSConfig.isSupported;
-        DLSS.isEnabled   = DLSS.isSupported;
         #else
         DLSS.isSupported = false;
-        DLSS.isEnabled   = DLSS.isSupported;
         #endif
+
+        DLSS.isEnabled = DLSS.isSupported;
     }
 
     void RenderConfig::Update()

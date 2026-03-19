@@ -34,7 +34,7 @@ namespace Renderer::DearImGui
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {swapchain.imageFormat};
+        const std::array colorFormats = {swapchain.surfaceFormat.format};
         
         pipelineManager.AddPipeline("DearImGui", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
@@ -518,8 +518,8 @@ namespace Renderer::DearImGui
                     deletionQueue,
                     Vk::ImageUpdateRawMemory{
                         .update = {
-                            .offset = {texture->UpdateRect.x, texture->UpdateRect.y},
-                            .extent = {texture->UpdateRect.w, texture->UpdateRect.h}
+                            .offset = {.x     = texture->UpdateRect.x, .y      = texture->UpdateRect.y},
+                            .extent = {.width = texture->UpdateRect.w, .height = texture->UpdateRect.h}
                         },
                         .data = data
                     }
