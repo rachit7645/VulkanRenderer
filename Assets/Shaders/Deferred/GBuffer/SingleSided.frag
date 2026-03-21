@@ -27,6 +27,8 @@
 
 layout(location = 0) in VertexData
 {
+    vec3 position;
+
     vec2 uv[2];
 
     vec3 N;
@@ -41,7 +43,7 @@ layout(location = 0) in VertexData
 
 layout(location = 0) out vec4 gAlbedoIoR;
 layout(location = 1) out vec2 gNormal;
-layout(location = 2) out vec2 gRoughnessMetallic;
+layout(location = 2) out vec3 gRoughnessMetallicHorizon;
 layout(location = 3) out vec3 gEmmisive;
 layout(location = 4) out vec2 gMotionVectors;
 
@@ -66,8 +68,12 @@ void main()
          aoRghMtl.g *= mesh.material.roughnessFactor;
          aoRghMtl.b *= mesh.material.metallicFactor;
 
-    gRoughnessMetallic.r = aoRghMtl.g;
-    gRoughnessMetallic.g = aoRghMtl.b;
+    vec3 toCamera  = normalize(Constants.Scene.cameraPosition - Input.position);
+    vec3 reflected = normalize(reflect(-toCamera, normal));
+
+    gRoughnessMetallicHorizon.r = aoRghMtl.g;
+    gRoughnessMetallicHorizon.g = aoRghMtl.b;
+    gRoughnessMetallicHorizon.b = CalculateHorizonOcclusion(reflected, Input.N);
 
     vec3 emmisive  = texture(sampler2D(Textures[nonuniformEXT(mesh.material.emmisiveID)], Samplers[Constants.TextureSamplerIndex]), Input.uv[mesh.material.emmisiveUVMapID]).rgb;
          emmisive *= mesh.material.emmisiveFactor;

@@ -36,7 +36,7 @@ namespace Renderer::GBuffer
         {
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_FORMAT_R16G16_UNORM,
-            VK_FORMAT_R8G8_UNORM,
+            VK_FORMAT_R8G8B8A8_UNORM,
             VK_FORMAT_B10G11R11_UFLOAT_PACK32,
             VK_FORMAT_R16G16_SFLOAT
         };
@@ -148,8 +148,8 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebuffer
         (
-            "GRoughnessMetallic",
-            VK_FORMAT_R8G8_UNORM,
+            "GRoughnessMetallicHorizon",
+            VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
@@ -256,8 +256,8 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
-            "GRoughnessMetallic",
-            "GRoughnessMetallicView",
+            "GRoughnessMetallicHorizon",
+            "GRoughnessMetallicHorizonView",
             VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -316,14 +316,14 @@ namespace Renderer::GBuffer
         
         const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoIoRView");
         const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");
-        const auto& gRghMtlView        = framebufferManager.GetFramebufferView("GRoughnessMetallicView");
+        const auto& gRghMtlHrzView     = framebufferManager.GetFramebufferView("GRoughnessMetallicHorizonView");
         const auto& gEmmisiveView      = framebufferManager.GetFramebufferView("GEmmisiveView");
         const auto& gMotionVectorsView = framebufferManager.GetFramebufferView("GMotionVectorsView");
         const auto& sceneDepthView     = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& gAlbedo        = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
         const auto& gNormal        = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
-        const auto& gRghMtl        = framebufferManager.GetFramebuffer(gRghMtlView.framebuffer);
+        const auto& gRghMtlHrz     = framebufferManager.GetFramebuffer(gRghMtlHrzView.framebuffer);
         const auto& gEmmisive      = framebufferManager.GetFramebuffer(gEmmisiveView.framebuffer);
         const auto& gMotionVectors = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
         const auto& sceneDepth     = framebufferManager.GetFramebuffer(sceneDepthView.framebuffer);
@@ -366,7 +366,7 @@ namespace Renderer::GBuffer
             }
         )
         .WriteImageBarrier(
-            gRghMtl.image,
+            gRghMtlHrz.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -377,9 +377,9 @@ namespace Renderer::GBuffer
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
-                .levelCount     = gRghMtl.image.mipLevels,
+                .levelCount     = gRghMtlHrz.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = gRghMtl.image.arrayLayers
+                .layerCount     = gRghMtlHrz.image.arrayLayers
             }
         )
         .WriteImageBarrier(
@@ -446,11 +446,11 @@ namespace Renderer::GBuffer
             .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
         };
 
-        const VkRenderingAttachmentInfo gRghMtlInfo =
+        const VkRenderingAttachmentInfo gRghMtlHrzInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = gRghMtlView.view.handle,
+            .imageView          = gRghMtlHrzView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -506,7 +506,7 @@ namespace Renderer::GBuffer
         {
             gAlbedoInfo,
             gNormalInfo,
-            gRghMtlInfo,
+            gRghMtlHrzInfo,
             gEmmisiveInfo,
             gMotionVectorsInfo
         };
@@ -517,8 +517,8 @@ namespace Renderer::GBuffer
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {gAlbedo.image.width, gAlbedo.image.height}
+                .offset = {.x     = 0,                   .y      = 0},
+                .extent = {.width = gAlbedo.image.width, .height = gAlbedo.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -544,8 +544,8 @@ namespace Renderer::GBuffer
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {gAlbedo.image.width, gAlbedo.image.height}
+            .offset = {.x     = 0,                   .y     = 0},
+            .extent = {.width = gAlbedo.image.width, .height= gAlbedo.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -766,7 +766,7 @@ namespace Renderer::GBuffer
             }
         )
         .WriteImageBarrier(
-            gRghMtl.image,
+            gRghMtlHrz.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -777,9 +777,9 @@ namespace Renderer::GBuffer
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
-                .levelCount     = gRghMtl.image.mipLevels,
+                .levelCount     = gRghMtlHrz.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = gRghMtl.image.arrayLayers
+                .layerCount     = gRghMtlHrz.image.arrayLayers
             }
         )
         .WriteImageBarrier(

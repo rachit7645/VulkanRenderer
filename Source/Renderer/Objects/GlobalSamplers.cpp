@@ -42,7 +42,7 @@ namespace Renderer::Objects
                 .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                 .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                .mipLodBias              = -0.5f,
+                .mipLodBias              = 0.0f,
                 .anisotropyEnable        = VK_FALSE,
                 .maxAnisotropy           = 0.0f,
                 .compareEnable           = VK_FALSE,

@@ -50,9 +50,10 @@ void main()
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
     vec3 normal  = UnpackNormal(gNormal.rg);
 
-    vec4  gRghMtl   = texture(sampler2D(Textures[Constants.GRghMtlIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    float roughness = gRghMtl.r;
-    float metallic  = gRghMtl.g;
+    vec4  gRghMtlHrz = texture(sampler2D(Textures[Constants.GRghMtlIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
+    float roughness  = gRghMtlHrz.r;
+    float metallic   = gRghMtlHrz.g;
+    float horizon    = gRghMtlHrz.b;
 
     float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
     vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, fragUV, depth);
@@ -192,6 +193,7 @@ void main()
         roughness,
         metallic,
         reflectance,
+        horizon,
         irradiance,
         preFilter,
         brdf

@@ -29,6 +29,9 @@ const float INVERSE_TWO_PI = 0.1591549430918953357688837633725f;
 // Float limits
 const float FLOAT_MAX = 3.402823466e+38;
 
+// GBuffer Constants
+const float GBUFFER_HORIZON_FADE = 1.2f;
+
 // IBL Constants
 const uint IRRADIANCE_SAMPLE_COUNT = 1024u;
 const uint BRDF_LUT_SAMPLE_COUNT   = 1024u;

@@ -25,6 +25,8 @@
 
 layout(location = 0) out VertexData
 {
+    vec3 position;
+
     vec2 uv[2];
 
     vec3 N;
@@ -50,6 +52,8 @@ void main()
     Vertex vertex   = Constants.Vertices.vertices[gl_VertexIndex];
 
     vec4 worldPosition = currentInstance.transform * vec4(position, 1.0f);
+
+    Output.position = worldPosition.xyz;
 
     vec4 currentPosition = Constants.Scene.currentMatrices.projectionView         * worldPosition;
     gl_Position          = Constants.Scene.currentMatrices.jitteredProjectionView * worldPosition;

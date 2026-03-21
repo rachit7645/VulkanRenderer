@@ -21,12 +21,22 @@
 
 #include "GPU/Lights.h"
 #include "Math.glsl"
+#include "Constants.glsl"
 
 float IoRToReflectance(float ior)
 {
     float r = (ior - 1.0f) / (ior + 1.0f);
 
     return r * r;
+}
+
+// https://marmosetco.tumblr.com/post/81245981087
+float CalculateHorizonOcclusion(vec3 R, vec3 N)
+{
+    float horizon = saturate(1.0f + GBUFFER_HORIZON_FADE * dot(R, N));
+          horizon = horizon * horizon;
+
+    return horizon;
 }
 
 vec3 CalculateF0(vec3 albedo, float metallic, float reflectance)
@@ -164,6 +174,7 @@ vec3 CalculateAmbient
     float roughness,
     float metallic,
     float reflectance,
+    float horizon,
     vec3 irradiance,
     vec3 preFilter,
     vec2 brdf
@@ -176,7 +187,7 @@ vec3 CalculateAmbient
     vec3 F = FresnelSchlick_IBL(F0, NdotV, roughness);
 
     vec3 diffuse  = irradiance * albedo;
-    vec3 specular = preFilter * (F * brdf.x + brdf.y);
+    vec3 specular = horizon * preFilter * (F * brdf.x + brdf.y);
 
     diffuse *= (1.0f - metallic);
     diffuse *= (1.0f - F) * (1.0f - F0); // This is probably wrong but....
