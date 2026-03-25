@@ -167,7 +167,7 @@ float CalculateNeighboringDepthDifferences(ivec2 pixelCoord, vec2 viewportSize)
     edgeInfo = min(abs(edgeInfo), abs(edgeInfoSlopeAdjusted));
     
     float bias  = 0.25f;
-    float scale = depthCenter * 0.011f;
+    float scale = max(depthCenter * 0.011f, 1e-6f);
 
     edgeInfo = saturate((1.0f + bias) - edgeInfo / scale);
 

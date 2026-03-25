@@ -55,16 +55,8 @@ const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
 const uint  VBAO_SLICE_COUNT               = 3;
 const uint  VBAO_SAMPLE_COUNT              = 3;
 const uint  VBAO_SECTOR_COUNT              = 32;
-const float VBAO_DEPTH_RANGE_SCALE_FACTOR  = 0.75f;
-const float VBAO_DEFAULT_RADIUS            = 0.5f;
-const float VBAO_DEFAULT_RADIUS_MULTIPLIER = 1.457f;
-const float VBAO_DEFAULT_FALLOFF_RANGE     = 0.615f;
-const float VBAO_EFFECT_RADIUS             = VBAO_DEPTH_RANGE_SCALE_FACTOR * VBAO_DEFAULT_RADIUS * VBAO_DEFAULT_RADIUS_MULTIPLIER;
-const float VBAO_FALLOFF_RANGE             = VBAO_DEFAULT_FALLOFF_RANGE * VBAO_EFFECT_RADIUS;
-const float VBAO_FALLOFF_FROM              = VBAO_EFFECT_RADIUS * (1.0f - VBAO_DEFAULT_FALLOFF_RANGE);
-const float VBAO_FALLOFF_MUL               = -1.0f / VBAO_FALLOFF_RANGE;
-const float VBAO_FALLOFF_ADD               = VBAO_FALLOFF_FROM / (VBAO_FALLOFF_RANGE) + 1.0f;
-const float VBAO_DEPTH_MIP_SAMPLING_OFFSET = 3.30f;
+const float VBAO_EFFECT_RADIUS             = 0.546375f;
+const float VBAO_DEPTH_MIP_SAMPLING_OFFSET = 3.15f;
 
 // Auto-Exposure Constants
 const float HISTOGRAM_MIN_LUMINANCE               = 1.0f / 1024.0f;
