@@ -50,11 +50,6 @@ void main()
 
     float depth = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), uv).r;
 
-    if (any(greaterThanEqual(pixelCoord, ivec2(viewportSize))))
-    {
-        depth = 1.0f;
-    }
-
     float subgroupMinDepth = subgroupMin(depth);
     float subgroupMaxDepth = subgroupMax(depth);
 
