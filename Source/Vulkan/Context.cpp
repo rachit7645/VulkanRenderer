@@ -189,9 +189,13 @@ namespace Vk
             vk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
             vk13Features.pNext = &vk12Features;
 
+            VkPhysicalDeviceVulkan14Features vk14Features = {};
+            vk14Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+            vk14Features.pNext = &vk13Features;
+
             VkPhysicalDeviceFeatures2 featureSet = {};
             featureSet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-            featureSet.pNext = &vk13Features;
+            featureSet.pNext = &vk14Features;
 
             vkGetPhysicalDeviceProperties2(currentDevice, &propertySet);
             vkGetPhysicalDeviceFeatures2(currentDevice, &featureSet);
@@ -246,9 +250,11 @@ namespace Vk
 
         const auto vk11Properties = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Properties>(propertySet.pNext);
 
-        const auto vk11Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
-        const auto vk12Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
-        const auto vk13Features                  = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
+        const auto vk11Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
+        const auto vk12Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
+        const auto vk13Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
+        const auto vk14Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan14Features>(featureSet.pNext);
+
         const auto swapchainMaintenanceFeatures  = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
 
         #ifdef ENGINE_DEBUG
@@ -263,6 +269,12 @@ namespace Vk
         // Requirements
         const bool hasRequiredQueueFamilies = queues.HasRequiredFamilies();
         const bool hasRequiredExtensions    = currentExtensions.HasRequiredExtensions();
+
+        #ifdef ENGINE_DLSS
+        const bool arePushDescriptorsRequired = std::ranges::contains(currentExtensions.GetDLSSDeviceExtensions(instance, currentPhysicalDevice), Util::ToLower(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME), Util::ToLower);
+        #else
+        constexpr bool arePushDescriptorsRequired = false;
+        #endif
 
         // Need extensions to calculate these
         bool isSwapChainAdequate     = false;
@@ -324,6 +336,10 @@ namespace Vk
         const bool hasMaintenance4   = vk13Features->maintenance4;
         const bool hasDemoteToHelper = vk13Features->shaderDemoteToHelperInvocation;
 
+        // Vulkan 1.4 features
+        const bool hasMaintenance5   = vk14Features->maintenance5;
+        const bool hasPushDescriptor = vk14Features->pushDescriptor || !arePushDescriptorsRequired;
+
         const bool hasRequired = hasRequiredQueueFamilies && hasRequiredExtensions;
 
         const bool hasStandard = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
@@ -338,16 +354,18 @@ namespace Vk
         const bool hasVK11 = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView &&
                              hasSubgroupOperationsInCompute && hasSubgroupBasic && hasSubgroupArithmetic && hasStorageF16;
 
-        const bool hasVK12 = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
+        const bool hasVk12 = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
                              hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
                              hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
                              hasDrawIndirectCount && hasTimelineSemaphore && hasShaderF16;
 
-        const bool hasVK13 = hasSync2 && hasDynRender && hasMaintenance4 && hasDemoteToHelper;
+        const bool hasVk13 = hasSync2 && hasDynRender && hasMaintenance4 && hasDemoteToHelper;
+
+        const bool hasVk14 = hasMaintenance5 && hasPushDescriptor;
 
         const usize totalScore = discreteGPU + completeQueues + rayTracingSupport;
 
-        return (hasRequired && hasStandard && hasExtensions && hasVK11 && hasVK12 && hasVK13) * totalScore;
+        return (hasRequired && hasStandard && hasExtensions && hasVK11 && hasVk12 && hasVk13 && hasVk14) * totalScore;
     }
 
     void Context::CreateLogicalDevice()
@@ -373,6 +391,8 @@ namespace Vk
                 .pQueuePriorities = &QUEUE_PRIORITY
             });
         }
+
+        const auto deviceExtensions = extensions.GetDeviceExtensions(instance, physicalDevice);
 
         VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
         rayTracingMaintenance1Features.sType                  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
@@ -450,9 +470,17 @@ namespace Vk
         vk13Features.maintenance4                   = VK_TRUE;
         vk13Features.shaderDemoteToHelperInvocation = VK_TRUE;
 
+        VkPhysicalDeviceVulkan14Features vk14Features = {};
+        vk14Features.sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+        vk14Features.pNext          = &vk13Features;
+        vk14Features.maintenance5   = VK_TRUE;
+        #ifdef ENGINE_DLSS
+        vk14Features.pushDescriptor = std::ranges::contains(deviceExtensions, Util::ToLower(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME), Util::ToLower); // Fuck you Jensen Huang
+        #endif
+
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
         deviceFeatures.sType                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext                         = &vk13Features;
+        deviceFeatures.pNext                         = &vk14Features;
         deviceFeatures.features.samplerAnisotropy    = VK_TRUE;
         deviceFeatures.features.multiDrawIndirect    = VK_TRUE;
         deviceFeatures.features.textureCompressionBC = VK_TRUE;
@@ -460,8 +488,6 @@ namespace Vk
         deviceFeatures.features.depthClamp           = VK_TRUE;
         deviceFeatures.features.shaderInt64          = VK_TRUE;
         deviceFeatures.features.fullDrawIndexUint32  = VK_TRUE;
-
-        const auto deviceExtensions = extensions.GetDeviceExtensions(instance, physicalDevice);
 
         const VkDeviceCreateInfo createInfo =
         {
@@ -556,7 +582,9 @@ namespace Vk
             .vkGetMemoryWin32HandleKHR               = nullptr
         };
 
-        VmaAllocatorCreateFlags flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT;
+        VmaAllocatorCreateFlags flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT |
+                                        VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT |
+                                        VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE5_BIT;
 
         if (extensions.HasMemoryBudget())
         {

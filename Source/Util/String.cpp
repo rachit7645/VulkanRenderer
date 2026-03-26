@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef STRING_H
-#define STRING_H
-
-#include <string>
-#include <string_view>
+#include "String.h"
 
 namespace Util
 {
-    struct StringHash
+    std::string ToLower(const std::string_view string)
     {
-        using is_transparent = void;
+        std::string result = string.data();
 
-        [[nodiscard]] std::size_t operator()(const std::string_view string) const
+        std::ranges::transform(result, result.begin(), [] (unsigned char character)
         {
-            return std::hash<std::string_view>{}(string);
-        }
-    };
+            return std::tolower(character);
+        });
 
-    [[nodiscard]] std::string ToLower(const std::string_view string);
+        return result;
+    }
 }
-
-#endif

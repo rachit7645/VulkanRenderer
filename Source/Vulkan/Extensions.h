@@ -37,6 +37,10 @@ namespace Vk
 
         [[nodiscard]] std::vector<const char*> GetDeviceExtensions(VkInstance instance, VkPhysicalDevice physicalDevice) const;
 
+        #ifdef ENGINE_DLSS
+        [[nodiscard]] std::vector<const char*> GetDLSSDeviceExtensions(VkInstance instance, VkPhysicalDevice physicalDevice) const;
+        #endif
+
         [[nodiscard]] bool HasRequiredExtensions() const;
         [[nodiscard]] bool HasRayTracing()         const;
         [[nodiscard]] bool HasMemoryBudget()       const;

@@ -36,7 +36,7 @@ namespace Vk
               aspect
           )
     {
-        const VmaAllocationCreateInfo allocInfo =
+        constexpr VmaAllocationCreateInfo allocationCreateInfo =
         {
             .flags          = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
             .usage          = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
@@ -45,13 +45,14 @@ namespace Vk
             .memoryTypeBits = 0,
             .pool           = VK_NULL_HANDLE,
             .pUserData      = nullptr,
-            .priority       = 0.0f
+            .priority       = 0.0f,
+            .minAlignment   = 0
         };
 
         Vk::CheckResult(vmaCreateImage(
             allocator,
             &createInfo,
-            &allocInfo,
+            &allocationCreateInfo,
             &handle,
             &allocation,
             nullptr),
@@ -197,8 +198,8 @@ namespace Vk
                         .layerCount     = 1
                     },
                     .srcOffsets = {
-                        {0, 0, 0},
-                        {mipWidth, mipHeight, 1}
+                        {.x = 0,        .y = 0,         .z = 0},
+                        {.x = mipWidth, .y = mipHeight, .z = 1}
                     },
                     .dstSubresource = {
                         .aspectMask     = aspect,
@@ -207,8 +208,8 @@ namespace Vk
                         .layerCount     = 1
                     },
                     .dstOffsets = {
-                        {0, 0, 0},
-                        {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1}
+                        {.x = 0,                               .y = 0,                                 .z = 0},
+                        {.x = mipWidth > 1 ? mipWidth / 2 : 1, .y = mipHeight > 1 ? mipHeight / 2 : 1, .z = 1}
                     }
                 };
 
@@ -227,8 +228,15 @@ namespace Vk
 
                 vkCmdBlitImage2(cmdBuffer.handle, &blitInfo);
 
-                if (mipWidth > 1) mipWidth /= 2;
-                if (mipHeight > 1) mipHeight /= 2;
+                if (mipWidth > 1)
+                {
+                    mipWidth /= 2;
+                }
+
+                if (mipHeight > 1)
+                {
+                    mipHeight /= 2;
+                }
             }
         }
 

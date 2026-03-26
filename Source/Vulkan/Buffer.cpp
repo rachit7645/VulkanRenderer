@@ -55,37 +55,21 @@ namespace Vk
             .memoryTypeBits = 0,
             .pool           = VK_NULL_HANDLE,
             .pUserData      = nullptr,
-            .priority       = 0.0f
+            .priority       = 0.0f,
+            .minAlignment   = alignment
         };
 
         VmaAllocationInfo allocationInfo = {};
 
-        // Special Case: Use default alignment
-        if (alignment == 0)
-        {
-            Vk::CheckResult(vmaCreateBuffer(
-                allocator,
-                &createInfo,
-                &allocCreateInfo,
-                &handle,
-                &allocation,
-                &allocationInfo),
-                "Failed to create buffer!"
-            );
-        }
-        else
-        {
-            Vk::CheckResult(vmaCreateBufferWithAlignment(
-                allocator,
-                &createInfo,
-                &allocCreateInfo,
-                alignment,
-                &handle,
-                &allocation,
-                &allocationInfo),
-                "Failed to create buffer!"
-            );
-        }
+        Vk::CheckResult(vmaCreateBuffer(
+            allocator,
+            &createInfo,
+            &allocCreateInfo,
+            &handle,
+            &allocation,
+            &allocationInfo),
+            "Failed to create buffer!"
+        );
 
         hostAddress = allocationInfo.pMappedData;
 

@@ -115,11 +115,19 @@ namespace Vk
         }
 
         #ifdef ENGINE_DLSS
+        extensions.append_range(GetDLSSDeviceExtensions(instance, physicalDevice));
+        #endif
 
+        return extensions;
+    }
+
+    #ifdef ENGINE_DLSS
+    std::vector<const char*> Extensions::GetDLSSDeviceExtensions(VkInstance instance, VkPhysicalDevice physicalDevice) const
+    {
         u32                    DLSSExtensionCount      = 0;
         VkExtensionProperties* DLSSExtensionProperties = nullptr;
 
-        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements
+        const NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements
         (
             instance,
             physicalDevice,
@@ -130,18 +138,20 @@ namespace Vk
 
         if (result != NVSDK_NGX_Result_Success)
         {
-            Logger::Error("Failed to load DLSS device extensions! [Error={}]\n", static_cast<u64>(result));
+            return {};
         }
+
+        std::vector<const char*> extensions;
+        extensions.reserve(DLSSExtensionCount);
 
         for (u32 i = 0; i < DLSSExtensionCount; ++i)
         {
             extensions.emplace_back(DLSSExtensionProperties[i].extensionName);
         }
 
-        #endif
-
         return extensions;
     }
+    #endif
 
     bool Extensions::HasRequiredExtensions() const
     {

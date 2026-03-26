@@ -53,6 +53,7 @@ add_executable(VulkanRenderer
 	Source/Util/Maths.cpp
     Source/Util/SIMD.cpp
     Source/Util/JSON.cpp
+    Source/Util/String.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp

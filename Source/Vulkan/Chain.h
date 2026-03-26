@@ -27,6 +27,11 @@ namespace Vk
     template<typename T>
     struct StructureType;
 
+    template<> struct StructureType<VkPhysicalDeviceVulkan14Features>
+    {
+        static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+    };
+
     template<> struct StructureType<VkPhysicalDeviceVulkan13Features>
     {
         static constexpr VkStructureType sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
