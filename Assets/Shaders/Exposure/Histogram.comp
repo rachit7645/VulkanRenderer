@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Color.glsl"
 #include "Math.glsl"
@@ -33,7 +34,7 @@ shared uint g_histogramBins[HISTOGRAM_SIZE];
 void main()
 {
     ivec2 pixelCoord   = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 viewportSize = textureSize(sampler2D(Textures[Constants.HDRColorIndex], Samplers[Constants.PointSamplerIndex]), 0);
+    ivec2 viewportSize = textureSize(Textures[Constants.HDRColorIndex], 0);
 
     bool isThreadValid = !any(greaterThan(pixelCoord, viewportSize));
 

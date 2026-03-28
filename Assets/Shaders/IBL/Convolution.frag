@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Constants.glsl"
 #include "MegaSet.glsl"
@@ -37,7 +38,7 @@ void main()
     vec3 right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
-    vec2 resolution = vec2(textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0));
+    vec2 resolution = vec2(textureSize(Cubemaps[Constants.EnvMapIndex], 0));
 
     float saTexel     = (4.0f * PI) / (6.0f * resolution.x * resolution.y);
     float sampleCount = float(IRRADIANCE_SAMPLE_COUNT);

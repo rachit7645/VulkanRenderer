@@ -21,9 +21,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Math.glsl"
 #include "Constants.glsl"
@@ -44,13 +45,13 @@ void main()
 {
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 
-    vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 viewportSize = vec2(textureSize(Textures[Constants.PreFilterDepthIndex], 0));
     vec2 aspect       = viewportSize.yx / viewportSize.x;
     vec2 texelSize    = 1.0f / viewportSize;
     vec2 pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
     vec2 uv           = pixelCenter * texelSize;
 
-    float depthMipLevels = float(textureQueryLevels(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex])));
+    float depthMipLevels = float(textureQueryLevels(Textures[Constants.PreFilterDepthIndex]));
 
     float depth  = CalculateNeighboringDepthDifferences(pixelCoord, viewportSize);
           depth += 0.00001f; // Add a small value to avoid depth precision issues
@@ -137,7 +138,7 @@ void main()
 vec2 LoadNoise(ivec2 pixelCoord)
 {
     // Hilbert curve driving R2 (see https://www.shadertoy.com/view/3tB3z3)
-    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.PointSamplerIndex]), pixelCoord % int(VBAO_HILBERT_WIDTH), 0).x);
+    uint index  = uint(texelFetch(UTextures[Constants.HilbertLUTIndex], pixelCoord % int(VBAO_HILBERT_WIDTH), 0).x);
          index += 288 * Constants.TemporalIndex;
 
     // R2 sequence - see http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/

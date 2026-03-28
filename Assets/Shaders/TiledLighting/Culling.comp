@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Math.glsl"
 #include "MegaSet.glsl"
@@ -45,7 +46,7 @@ void main()
         return;
     }
 
-    vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.TileDepthsIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 viewportSize = vec2(textureSize(Textures[Constants.TileDepthsIndex], 0));
     vec2 pixelCenter  = vec2(tileID) + vec2(0.5f);
     vec2 uv           = pixelCenter / viewportSize;
 

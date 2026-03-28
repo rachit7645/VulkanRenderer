@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Constants.glsl"
 #include "MegaSet.glsl"
@@ -29,7 +30,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 void main()
 {
     ivec2 pixelCoord   = ivec2(gl_GlobalInvocationID.xy);
-    vec2  viewportSize = vec2(textureSize(usampler2D(UTextures[Constants.DepthDifferencesIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2  viewportSize = vec2(textureSize(UTextures[Constants.DepthDifferencesIndex], 0));
     vec2  uv           = vec2(pixelCoord) / viewportSize;
 
     uvec4 edges0 = textureGather      (usampler2D(UTextures[Constants.DepthDifferencesIndex], Samplers[Constants.PointSamplerIndex]), uv             );

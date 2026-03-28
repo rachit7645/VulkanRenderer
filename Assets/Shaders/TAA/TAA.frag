@@ -24,9 +24,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "MegaSet.glsl"
 #include "Math.glsl"
@@ -46,7 +47,7 @@ vec3 SampleSceneColor(vec2 fragUV);
 
 void main()
 {
-    vec2 sceneColorSize = vec2(textureSize(sampler2D(Textures[Constants.CurrentColorIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 sceneColorSize = vec2(textureSize(Textures[Constants.CurrentColorIndex], 0));
     vec2 texelSize      = 1.0f / sceneColorSize;
 
     // https://advances.realtimerendering.com/s2014/index.html#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING, slide 27

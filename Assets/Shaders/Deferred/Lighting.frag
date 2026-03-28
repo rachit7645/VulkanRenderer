@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "PBR.glsl"
 #include "MegaSet.glsl"
@@ -34,7 +35,7 @@ layout(location = 0) out vec3 outColor;
 
 void main()
 {
-    vec2  viewportSize = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), 0));
+    vec2  viewportSize = vec2(textureSize(Textures[Constants.SceneDepthIndex], 0));
     uvec2 pixelCoord   = uvec2(viewportSize * fragUV);
 
     uvec2 tileID    = pixelCoord / TILE_SIZE;
@@ -174,7 +175,7 @@ void main()
 
     vec3 reflected = normalize(reflect(-toCamera, normal));
 
-    uint  maxReflectionLod = textureQueryLevels(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]));
+    uint  maxReflectionLod = textureQueryLevels(Cubemaps[Constants.PreFilterIndex]);
     float prefilterLod     = roughness * float(maxReflectionLod);
     vec3  preFilter        = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), reflected, prefilterLod).rgb;
 

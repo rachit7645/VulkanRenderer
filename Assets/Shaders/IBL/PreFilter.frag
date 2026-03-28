@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Constants.glsl"
 #include "MegaSet.glsl"
@@ -38,12 +39,11 @@ void main()
     vec3 R = N;
     vec3 V = R;
 
-    // Tangent to World Space Sample Vector
     vec3 up = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
     vec3 T  = normalize(cross(up, N));
     vec3 B  = normalize(cross(N, T));
 
-    vec2 resolution = vec2(textureSize(samplerCube(Cubemaps[Constants.EnvMapIndex], Samplers[Constants.SamplerIndex]), 0));
+    vec2 resolution = vec2(textureSize(Cubemaps[Constants.EnvMapIndex], 0));
 
     vec3  prefilteredColor = vec3(0.0f);
     float totalWeight      = 0.0f;

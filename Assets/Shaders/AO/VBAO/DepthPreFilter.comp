@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Math.glsl"
 #include "Constants.glsl"
@@ -38,7 +39,7 @@ void main()
     ivec2 baseCoord   = ivec2(gl_GlobalInvocationID.xy);
     ivec2 pixelCoord  = 2 * baseCoord;
     
-    vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 viewportSize = vec2(textureSize(Textures[Constants.SceneDepthIndex], 0));
     vec2 depthUV      = vec2(pixelCoord) / viewportSize;
 
     // Mip 0
