@@ -639,7 +639,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
-                .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
 
@@ -941,7 +941,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
-                .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
 
@@ -959,7 +959,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_computeTimeline->semaphore,
                 .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
-                .stageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
 
@@ -1195,7 +1195,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_computeTimeline->semaphore,
                 .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
-                .stageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
 
@@ -1205,7 +1205,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::RayDispatch),
-                .stageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .stageMask   = m_renderConfig.rayTracing.isEnabled ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR : VK_PIPELINE_STAGE_2_CLEAR_BIT,
                 .deviceIndex = 0
             };
 

@@ -22,4 +22,3 @@
 * Asset Pipeline
 * More ImGui Widgets To Display Information
 * Nuke Shader Modules
-* Deal with VK_DEPENDENCY_QUEUE_FAMILY_OWNERSHIP_TRANSFER_USE_ALL_STAGES_BIT_KHR Shenanigans
