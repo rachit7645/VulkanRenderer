@@ -19,14 +19,15 @@
 
 #include <vulkan/vulkan.h>
 
-#include "GPU/Constants.h"
 #include "Util/Types.h"
 
 namespace Vk
 {
-    constexpr auto VULKAN_API_VERSION      = VK_API_VERSION_1_4;
+    constexpr u32  VULKAN_API_VERSION      = VK_API_VERSION_1_4;
     constexpr auto VULKAN_APPLICATION_NAME = "Rachit's Vulkan Renderer";
     constexpr auto VULKAN_ENGINE_NAME      = "Rachit's Engine: Vulkan Edition";
+
+    constexpr usize FRAMES_IN_FLIGHT = 2;
 }
 
 #endif

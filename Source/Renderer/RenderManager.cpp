@@ -1916,6 +1916,11 @@ namespace Renderer
         {
             if (ImGui::BeginMenu("Renderer"))
             {
+                constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
+                                                  ImGuiTableFlags_BordersInnerV |
+                                                  ImGuiTableFlags_BordersOuterH |
+                                                  ImGuiTableFlags_BordersOuterV;
+
                 m_modelManager.ImGuiDisplay();
                 m_framebufferManager.ImGuiDisplay();
                 m_megaSet.ImGuiDisplay();
@@ -1941,67 +1946,96 @@ namespace Renderer
                         blockCount      += budget.statistics.blockCount;
                     }
 
-                    ImGui::Text("Total Used             | %llu", usedBytes);
-                    ImGui::Text("Total Allocated        | %llu", allocatedBytes);
-                    ImGui::Text("Total Available        | %llu", budgetBytes - usedBytes);
-                    ImGui::Text("Total Budget           | %llu", budgetBytes);
-                    ImGui::Text("Total Allocation Count | %llu", allocationCount);
-                    ImGui::Text("Total Block Count      | %llu", blockCount);
-
-                    ImGui::Separator();
-
-                    for (usize i = 0; i < budgets.size(); ++i)
+                    if (ImGui::BeginTable("##DeviceMemoryTable", 7, flags))
                     {
-                        if (budgets[i].budget == 0)
+                        ImGui::TableSetupColumn("Heap");
+                        ImGui::TableSetupColumn("Used");
+                        ImGui::TableSetupColumn("Allocated");
+                        ImGui::TableSetupColumn("Available");
+                        ImGui::TableSetupColumn("Budget");
+                        ImGui::TableSetupColumn("Allocation Count");
+                        ImGui::TableSetupColumn("Block Count");
+
+                        ImGui::TableSetupScrollFreeze(0, 0);
+
+                        ImGui::TableHeadersRow();
+
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("Total");
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Text("%llu", usedBytes);
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::Text("%llu", allocatedBytes);
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::Text("%llu", budgetBytes - usedBytes);
+                        ImGui::TableSetColumnIndex(4);
+                        ImGui::Text("%llu", budgetBytes);
+                        ImGui::TableSetColumnIndex(5);
+                        ImGui::Text("%llu", allocationCount);
+                        ImGui::TableSetColumnIndex(6);
+                        ImGui::Text("%llu", blockCount);
+
+                        for (usize i = 0; i < budgets.size(); ++i)
                         {
-                            continue;
+                            if (budgets[i].budget == 0)
+                            {
+                                continue;
+                            }
+
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("#%llu", i);
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::Text("%llu", budgets[i].usage);
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text("%llu", budgets[i].statistics.allocationBytes);
+                            ImGui::TableSetColumnIndex(3);
+                            ImGui::Text("%llu", budgets[i].budget - budgets[i].usage);
+                            ImGui::TableSetColumnIndex(4);
+                            ImGui::Text("%llu", budgets[i].budget);
+                            ImGui::TableSetColumnIndex(5);
+                            ImGui::Text("%u", budgets[i].statistics.allocationCount);
+                            ImGui::TableSetColumnIndex(6);
+                            ImGui::Text("%u", budgets[i].statistics.blockCount);
                         }
 
-                        if (ImGui::TreeNode(fmt::format("Memory Heap #{}", i).c_str()))
-                        {
-                            ImGui::Text("Used             | %llu", budgets[i].usage);
-                            ImGui::Text("Allocated        | %llu", budgets[i].statistics.allocationBytes);
-                            ImGui::Text("Available        | %llu", budgets[i].budget - budgets[i].usage);
-                            ImGui::Text("Budget           | %llu", budgets[i].budget);
-                            ImGui::Text("Allocation Count | %u",   budgets[i].statistics.allocationCount);
-                            ImGui::Text("Block Count      | %u",   budgets[i].statistics.blockCount);
-
-                            ImGui::TreePop();
-                        }
-
-                        ImGui::Separator();
+                        ImGui::EndTable();
                     }
                 }
 
                 if (ImGui::CollapsingHeader("Queues"))
                 {
-                    ImGui::Text
-                    (
-                        "%-8s | %-12s | %-6s",
-                        "Queue",
-                        "Family Index",
-                        "Handle"
-                    );
-
-                    ImGui::Separator();
-
-                    ImGui::Text
-                    (
-                        "%-8s | %-12u | %-6p",
-                        "Graphics",
-                        *m_context.queueFamilies.graphicsFamily,
-                        std::bit_cast<void*>(m_context.graphicsQueue)
-                    );
-
-                    if (m_renderConfig.multiQueue.isSupported)
+                    if (ImGui::BeginTable("##DeviceQueueTable", 3, flags))
                     {
-                        ImGui::Text
-                        (
-                            "%-8s | %-12u | %-6p",
-                            "Compute",
-                            *m_context.queueFamilies.computeFamily,
-                            std::bit_cast<void*>(m_context.computeQueue)
-                        );
+                        ImGui::TableSetupColumn("Queue");
+                        ImGui::TableSetupColumn("Family Index");
+                        ImGui::TableSetupColumn("Handle");
+
+                        ImGui::TableSetupScrollFreeze(0, 0);
+
+                        ImGui::TableHeadersRow();
+
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("Graphics");
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Text("%u", *m_context.queueFamilies.graphicsFamily);
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::Text("%p", std::bit_cast<void*>(m_context.graphicsQueue));
+
+                        if (m_renderConfig.multiQueue.isSupported)
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("Compute");
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::Text("%u", *m_context.queueFamilies.computeFamily);
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text("%p", std::bit_cast<void*>(m_context.computeQueue));
+                        }
+
+                        ImGui::EndTable();
                     }
                 }
 
@@ -2017,6 +2051,16 @@ namespace Renderer
                     ImGui::Text("Present Mode | %s",       string_VkPresentModeKHR(m_swapchain.presentMode));
                     ImGui::Text("Extent       | [%u, %u]", m_swapchain.extent.width, m_swapchain.extent.height);
                     ImGui::Text("Image Count  | %llu",     m_swapchain.images.size());
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Engine"))
+            {
+                if (ImGui::CollapsingHeader("Debug/Fonts"))
+                {
+                    ImGui::Text("ゼルダの伝説　ブレス オブ ザ ワイルド");
                 }
 
                 ImGui::EndMenu();
@@ -2164,11 +2208,29 @@ namespace Renderer
 
         ImGui_ImplSDL3_InitForVulkan(m_window.handle);
 
-        auto& io = ImGui::GetIO();
+        auto& io    = ImGui::GetIO();
+        auto& style = ImGui::GetStyle();
 
         io.BackendRendererName = "Rachit's Dear ImGui Backend (Vulkan)";
         io.BackendFlags       |= ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
         io.ConfigFlags        |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+
+        const f32 scale = SDL_GetWindowDisplayScale(m_window.handle);
+
+        style.FontScaleDpi = scale;
+        style.ScaleAllSizes(scale);
+
+        io.Fonts->AddFontDefaultVector();
+
+        ImFontConfig config;
+        config.MergeMode = true;
+
+        io.Fonts->AddFontFromFileTTF
+        (
+            Util::Files::GetAssetPath("Fonts/", "NotoCJK/NotoSansCJKjp-Regular.otf").c_str(),
+            18.0f,
+            &config
+        );
 
         // TODO: Move this to frame 0
         Vk::ImmediateSubmit

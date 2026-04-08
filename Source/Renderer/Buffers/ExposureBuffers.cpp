@@ -17,8 +17,8 @@
 #include "ExposureBuffers.h"
 
 #include "Exposure/Common.h"
-#include "GPU/Constants.h"
 #include "Vulkan/DebugUtils.h"
+#include "Vulkan/Constants.h"
 
 namespace Renderer::Buffers
 {

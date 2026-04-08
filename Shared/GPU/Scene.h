@@ -43,7 +43,6 @@ GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
     GLSL_VEC3     cameraPosition;
 
     f32 nearPlane;
-    f32 farPlane;
 
     u32 FIF;
     u64 frameIndex;

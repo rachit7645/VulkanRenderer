@@ -18,7 +18,7 @@
 
 #include "Exposure/Histogram.h"
 #include "Exposure/Average.h"
-#include "GPU/Constants.h"
+#include "Vulkan/Constants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Externals/ImGui.h"
 

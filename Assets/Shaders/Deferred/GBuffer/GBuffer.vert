@@ -64,8 +64,8 @@ void main()
     Output.currentPosition  = currentPosition.xyw;
     Output.previousPosition = previousPosition.xyw;
 
-    Output.uv[0]  = uvs.uv[0];
-    Output.uv[1]  = uvs.uv[1];
+    Output.uv[0] = uvs.uv[0];
+    Output.uv[1] = uvs.uv[1];
 
     Output.drawID = currentInstance.meshIndex;
 

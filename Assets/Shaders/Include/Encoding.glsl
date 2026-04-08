@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef PACKING_GLSL
-#define PACKING_GLSL
+#ifndef ENCODING_GLSL
+#define ENCODING_GLSL
 
 #include "Math.glsl"
 

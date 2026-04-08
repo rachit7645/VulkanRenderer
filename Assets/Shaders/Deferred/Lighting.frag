@@ -23,9 +23,8 @@
 
 #include "PBR.glsl"
 #include "MegaSet.glsl"
-#include "Packing.glsl"
-#include "PointShadowMap.glsl"
-#include "SpotShadowMap.glsl"
+#include "Encoding.glsl"
+#include "ShadowMap.glsl"
 #include "TiledLighting/Common.h"
 #include "Deferred/Lighting.h"
 

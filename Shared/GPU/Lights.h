@@ -34,7 +34,7 @@ GLSL_CONSTEXPR u32 MAX_SHADOWED_SPOT_LIGHT_COUNT  =  4;
 
 #ifdef __cplusplus
 
-constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
+constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512,  512};
 constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
 
 #endif
@@ -69,12 +69,14 @@ struct ShadowedPointLight
         constexpr f32 ASPECT_RATIO = static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
                                      static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y);
 
+        constexpr f32 FAR_PLANE = 512.0f;
+
         auto projection = Maths::ProjectionReverseZ
         (
             glm::radians(90.0f),
             ASPECT_RATIO,
             Renderer::NEAR_PLANE,
-            Renderer::FAR_PLANE
+            FAR_PLANE
         );
 
         projection[1][1] *= -1;
@@ -206,8 +208,8 @@ float CalculateAttenuation(vec3 position, float range, vec3 fragPosition)
 {
     float distance = length(position - fragPosition);
 
-    float N = saturate(1.0f - pow4(distance / max(range, 0.00001f)));
-    float D = max(distance * distance, 0.00001f);
+    float N = saturate(1.0f - pow4(distance / max(range, 1e-5f)));
+    float D = max(distance * distance, 1e-5f);
 
     float attenuation = N / D;
 

@@ -351,7 +351,7 @@ namespace Vk
                                    #endif
                                    ;
 
-        const bool hasVK11 = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView &&
+        const bool hasVk11 = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView &&
                              hasSubgroupOperationsInCompute && hasSubgroupBasic && hasSubgroupArithmetic && hasStorageF16;
 
         const bool hasVk12 = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
@@ -365,7 +365,7 @@ namespace Vk
 
         const usize totalScore = discreteGPU + completeQueues + rayTracingSupport;
 
-        return (hasRequired && hasStandard && hasExtensions && hasVK11 && hasVk12 && hasVk13 && hasVk14) * totalScore;
+        return (hasRequired && hasStandard && hasExtensions && hasVk11 && hasVk12 && hasVk13 && hasVk14) * totalScore;
     }
 
     void Context::CreateLogicalDevice()

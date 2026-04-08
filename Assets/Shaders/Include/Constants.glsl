@@ -37,7 +37,7 @@ const uint IRRADIANCE_SAMPLE_COUNT = 1024u;
 const uint BRDF_LUT_SAMPLE_COUNT   = 1024u;
 
 // Point Shadow Constants
-const float POINT_SHADOW_BIAS = 0.15f;
+const float POINT_SHADOW_BIAS = 0.0001f;
 
 // Spot shadow constants
 const float SPOT_SHADOW_MIN_BIAS = 0.0001f;
@@ -55,7 +55,7 @@ const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
 const uint  VBAO_SLICE_COUNT               = 3;
 const uint  VBAO_SAMPLE_COUNT              = 3;
 const uint  VBAO_SECTOR_COUNT              = 32;
-const float VBAO_EFFECT_RADIUS             = 0.546375f;
+const float VBAO_EFFECT_RADIUS             = 0.55f;
 const float VBAO_DEPTH_MIP_SAMPLING_OFFSET = 3.15f;
 
 // Auto-Exposure Constants

@@ -246,57 +246,68 @@ namespace Vk
     {
         if (ImGui::CollapsingHeader("MegaSet"))
         {
-            constexpr auto ALLOCATOR_STATISTICS_FORMAT = "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u";
+            constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
+                                              ImGuiTableFlags_BordersInnerV |
+                                              ImGuiTableFlags_BordersOuterH |
+                                              ImGuiTableFlags_BordersOuterV;
 
-            ImGui::Text
-            (
-                "%-8s | %-14s | %-10s | %-10s | %-4s | %-8s",
-                "Binding",
-                "Type",
-                "Allocated",
-                "Free Slots",
-                "Used",
-                "Max Count"
-            );
+            if (ImGui::BeginTable("##MegaSetTable", 6, flags))
+            {
+                ImGui::TableSetupColumn("Binding");
+                ImGui::TableSetupColumn("Type");
+                ImGui::TableSetupColumn("Used");
+                ImGui::TableSetupColumn("Free Slots");
+                ImGui::TableSetupColumn("Allocated");
+                ImGui::TableSetupColumn("Max Count");
 
-            ImGui::Separator();
+                ImGui::TableSetupScrollFreeze(0, 0);
 
-            ImGui::Text
-            (
-                ALLOCATOR_STATISTICS_FORMAT,
-                std::to_underlying(DescriptorBinding::Samplers),
-                "Sampler",
-                m_samplerAllocator.GetAllocatedCount(),
-                m_samplerAllocator.GetFreeSlotCount(),
-                m_samplerAllocator.GetUsedCount(),
-                m_samplerAllocator.GetMaxCount()
-            );
+                ImGui::TableHeadersRow();
 
-            ImGui::Separator();
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%u", std::to_underlying(DescriptorBinding::Samplers));
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Samplers");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%u", m_samplerAllocator.GetUsedCount());
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%u", m_samplerAllocator.GetFreeSlotCount());
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%u", m_samplerAllocator.GetAllocatedCount());
+                ImGui::TableSetColumnIndex(5);
+                ImGui::Text("%u", m_samplerAllocator.GetMaxCount());
 
-            ImGui::Text
-            (
-                ALLOCATOR_STATISTICS_FORMAT,
-                std::to_underlying(DescriptorBinding::SampledImages),
-                "Sampled Image",
-                m_sampledImageAllocator.GetAllocatedCount(),
-                m_sampledImageAllocator.GetFreeSlotCount(),
-                m_sampledImageAllocator.GetUsedCount(),
-                m_sampledImageAllocator.GetMaxCount()
-            );
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%u", std::to_underlying(DescriptorBinding::SampledImages));
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Sampled Images");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%u", m_sampledImageAllocator.GetUsedCount());
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%u", m_sampledImageAllocator.GetFreeSlotCount());
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%u", m_sampledImageAllocator.GetAllocatedCount());
+                ImGui::TableSetColumnIndex(5);
+                ImGui::Text("%u", m_sampledImageAllocator.GetMaxCount());
 
-            ImGui::Separator();
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%u", std::to_underlying(DescriptorBinding::StorageImages));
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Storage Image");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%u", m_storageImageAllocator.GetUsedCount());
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%u", m_storageImageAllocator.GetFreeSlotCount());
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%u", m_storageImageAllocator.GetAllocatedCount());
+                ImGui::TableSetColumnIndex(5);
+                ImGui::Text("%u", m_storageImageAllocator.GetMaxCount());
 
-            ImGui::Text
-            (
-                ALLOCATOR_STATISTICS_FORMAT,
-                std::to_underlying(DescriptorBinding::StorageImages),
-                "Storage Image",
-                m_storageImageAllocator.GetAllocatedCount(),
-                m_storageImageAllocator.GetFreeSlotCount(),
-                m_storageImageAllocator.GetUsedCount(),
-                m_storageImageAllocator.GetMaxCount()
-            );
+                ImGui::EndTable();
+            }
         }
     }
 

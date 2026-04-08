@@ -25,7 +25,6 @@
 #include "MegaSet.glsl"
 #include "Exposure/Common.h"
 #include "Exposure/Average.h"
-#include "GPU/Constants.h"
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 

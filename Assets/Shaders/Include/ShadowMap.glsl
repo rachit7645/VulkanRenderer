@@ -14,11 +14,33 @@
  * limitations under the License.
  */
 
-#ifndef SPOT_SHADOW_MAP_GLSL
-#define SPOT_SHADOW_MAP_GLSL
+#ifndef SHADOW_MAP_GLSL
+#define SHADOW_MAP_GLSL
 
 #include "GPU/Lights.h"
 #include "Math.glsl"
+
+float CalculatePointShadow
+(
+    uint lightIndex,
+    ShadowedPointLight light,
+    vec3 fragPosition,
+    textureCubeArray pointShadowMap,
+    sampler pointShadowSampler
+)
+{
+    vec3  fragToLight     = fragPosition - light.position;
+    float currentDistance = length(fragToLight);
+
+    float shadow = texture
+    (
+        samplerCubeArrayShadow(pointShadowMap, pointShadowSampler),
+        vec4(fragToLight, lightIndex),
+        currentDistance - POINT_SHADOW_BIAS
+    );
+
+    return shadow;
+}
 
 float CalculateSpotShadow
 (
@@ -39,7 +61,7 @@ float CalculateSpotShadow
 
     float cosTheta = saturate(dot(normal, lightDirection));
     float bias     = SPOT_SHADOW_MIN_BIAS * TanArcCos(cosTheta);
-    bias           = clamp(bias, 0.0f, SPOT_SHADOW_MAX_BIAS);
+         bias      = clamp(bias, 0.0f, SPOT_SHADOW_MAX_BIAS);
 
     float currentDepth = projCoords.z;
 

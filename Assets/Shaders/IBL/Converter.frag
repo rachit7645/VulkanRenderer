@@ -21,7 +21,7 @@
 #extension GL_EXT_scalar_block_layout  : enable
 
 #include "MegaSet.glsl"
-#include "Converter.glsl"
+#include "Math.glsl"
 #include "IBL/Converter.h"
 
 layout(location = 0) in vec3 worldPos;
@@ -31,7 +31,7 @@ layout(location = 0) out vec3 outColor;
 void main()
 {
     vec3 normal = normalize(worldPos);
-    vec2 uv     = GetSphericalMapUV(normal);
+    vec2 uv     = DirectionToEquirectangular(normal);
 
     outColor = texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
 }

@@ -70,12 +70,12 @@ GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)
         planes[5].distance = projectionView[3][3] - projectionView[3][2];
 
         // Normalize all planes
-        for (auto& plane : planes)
+        for (auto& [normal, distance] : planes)
         {
-            const f32 length = glm::length(plane.normal);
+            const f32 length = glm::length(normal);
 
-            plane.normal   /= length;
-            plane.distance /= length;
+            normal   /= length;
+            distance /= length;
         }
     }
     #endif

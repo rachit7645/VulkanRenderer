@@ -109,7 +109,6 @@ namespace Renderer::Buffers
             .previousMatrices    = previousMatrices,
             .cameraPosition      = scene.camera.position,
             .nearPlane           = Renderer::NEAR_PLANE,
-            .farPlane            = Renderer::FAR_PLANE,
             .FIF                 = static_cast<u32>(FIF),
             .frameIndex          = frameIndex,
             .Sun                 = lightsBufferBaseAddress + lightsBuffer.GetSunOffset(),

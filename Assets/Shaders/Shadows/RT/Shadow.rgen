@@ -22,7 +22,7 @@
 #extension GL_EXT_ray_tracing          : enable
 
 #include "MegaSet.glsl"
-#include "Packing.glsl"
+#include "Encoding.glsl"
 #include "Constants.glsl"
 #include "Math.glsl"
 #include "Shadows/ShadowRT.h"
@@ -60,7 +60,7 @@ void main()
     uint  rayFlags = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT;
     uint  cullMask = 0xFF;
     float tmin     = 0.001f;
-    float tmax     = Constants.Scene.farPlane;
+    float tmax     = 1e27f;
 
     // Assume that the ray hits something, i.e, the point is in shadow
     shadowAmount = 1.0f;

@@ -21,12 +21,6 @@
 
 #include "Math.glsl"
 
-// https://github.com/dmnsgn/glsl-tone-map/blob/main/aces.glsl
-vec3 ACESFast(vec3 color)
-{
-    return saturate((color * (2.51f * color + 0.03f)) / (color * (2.43f * color + 0.59f) + 0.14f));
-}
-
 // Stephen Hill (@self_shadow)
 vec3 RRTAndODTFit(vec3 v)
 {
@@ -48,7 +42,6 @@ vec3 ACESFitted(vec3 color)
 
     color = color * ACESInputMat;
 
-    // Apply RRT and ODT
     color = RRTAndODTFit(color);
     
     // ODT_SAT => XYZ => D60_2_D65 => sRGB
@@ -61,7 +54,6 @@ vec3 ACESFitted(vec3 color)
 
     color = color * ACESOutputMat;
 
-    // Clamp to [0, 1]
     color = saturate(color);
 
     return color;

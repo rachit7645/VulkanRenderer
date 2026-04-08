@@ -17,11 +17,12 @@
 #ifndef MATH_GLSL
 #define MATH_GLSL
 
+#include "Constants.glsl"
+
 // I'm too damn lazy to replace all calls to saturate
 // Fuck you Microsoft
 #define saturate(x) clamp(x, 0.0f, 1.0f)
 
-// Get max component
 float max3(vec3 v)
 {
     return max(v.x, max(v.y, v.z));
@@ -30,11 +31,6 @@ float max3(vec3 v)
 float rcp(float x)
 {
     return 1.0f / x;
-}
-
-float square(float x)
-{
-    return x * x;
 }
 
 // x^4 in 2 multiplications
@@ -62,15 +58,27 @@ float log10(float x)
     return INVERSE_LOG_10 * log(x);
 }
 
-// Safe version (NaNs are scary)
 float TanArcCos(float x)
 {
     // tan(acos(x)) = sqrt(1 - x^2) / x
 
     float numerator   = max(1.0f - (x * x), 0.0f);
-    float denominator = max(x, 0.00001f);
+    float denominator = max(x, 1e-5f);
 
     return sqrt(numerator) / denominator;
+}
+
+vec2 DirectionToEquirectangular(vec3 v)
+{
+    const vec2 INVERSE_CONSTANTS = vec2(INVERSE_TWO_PI, INVERSE_PI);
+
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv     *= INVERSE_CONSTANTS;
+    uv     += 0.5f;
+
+    uv.y = 1.0f - uv.y;
+
+    return uv;
 }
 
 #endif

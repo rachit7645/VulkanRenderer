@@ -262,7 +262,7 @@ namespace Models
                 {
                     fastgltf::iterateAccessorWithIndex<s8>(asset, indicesAccessor, [&] (s8 index, usize i)
                     {
-                        const auto copy = static_cast<GPU::Index>(index);
+                        const auto copy = static_cast<GPU::Index>(static_cast<u8>(index));
 
                         std::memcpy(&data[i], &copy, sizeof(GPU::Index));
                     });
