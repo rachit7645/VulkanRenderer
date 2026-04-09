@@ -35,23 +35,9 @@ namespace Models
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
-        [[nodiscard]] Models::ModelID AddModel
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view path
-        );
+        [[nodiscard]] Models::ModelID Load(const std::string_view path);
 
-        void DestroyModel
-        (
-            ModelID id,
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
-        );
+        void Free(Models::ModelID id);
 
         [[nodiscard]] const Model& GetModel(Models::ModelID id) const;
 
@@ -77,6 +63,9 @@ namespace Models
         };
 
         ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelInfo> m_modelMap;
+
+        ankerl::unordered_dense::map<Models::ModelID, std::string> m_requestedModelLoads;
+        ankerl::unordered_dense::set<Models::ModelID>              m_requestedModelDeletions;
     };
 }
 

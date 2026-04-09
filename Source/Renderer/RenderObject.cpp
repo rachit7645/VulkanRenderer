@@ -18,22 +18,8 @@
 
 namespace Renderer
 {
-    void RenderObject::Destroy
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
-        Models::ModelManager& modelManager,
-        Util::DeletionQueue& deletionQueue
-    )
+    void RenderObject::Destroy(Models::ModelManager& modelManager)
     {
-        modelManager.DestroyModel
-        (
-            modelID,
-            device,
-            allocator,
-            megaSet,
-            deletionQueue
-        );
+        modelManager.Free(modelID);
     }
 }

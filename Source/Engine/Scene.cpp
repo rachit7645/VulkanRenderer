@@ -70,14 +70,7 @@ namespace Engine
 
                     JSON::CheckError(model, "Failed to load model path!");
 
-                    renderObject.modelID = modelManager.AddModel
-                    (
-                        context.device,
-                        context.allocator,
-                        stagingPool,
-                        deletionQueue,
-                        model.value()
-                    );
+                    renderObject.modelID = modelManager.Load(model.value());
 
                     JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
                     JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");
@@ -200,13 +193,16 @@ namespace Engine
 
                             if (Util::Files::Exists(modelAssetPath))
                             {
-                                m_loadedRenderObject.modelID = modelManager.AddModel
+                                m_loadedRenderObject.modelID = modelManager.Load(m_loadedModelPath);
+
+                                modelManager.Update
                                 (
+                                    cmdBuffer,
                                     context.device,
                                     context.allocator,
+                                    megaSet,
                                     stagingPool,
-                                    deletionQueue,
-                                    m_loadedModelPath
+                                    deletionQueue
                                 );
 
                                 renderObjects.emplace_back(m_loadedRenderObject);
@@ -257,14 +253,7 @@ namespace Engine
 
                         if (toDelete)
                         {
-                            iter->Destroy
-                            (
-                                context.device,
-                                context.allocator,
-                                megaSet,
-                                modelManager,
-                                deletionQueue
-                            );
+                            iter->Destroy(modelManager);
 
                             iter = renderObjects.erase(iter);
 
@@ -452,7 +441,8 @@ namespace Engine
                         {
                             iblMaps.Destroy
                             (
-                                context,
+                                context.device,
+                                context.allocator,
                                 modelManager.textureManager,
                                 megaSet,
                                 deletionQueue
@@ -496,7 +486,8 @@ namespace Engine
     {
         iblMaps.Destroy
         (
-            context,
+            context.device,
+            context.allocator,
             modelManager.textureManager,
             megaSet,
             deletionQueue
@@ -504,14 +495,7 @@ namespace Engine
 
         for (auto& renderObject : renderObjects)
         {
-            renderObject.Destroy
-            (
-                context.device,
-                context.allocator,
-                megaSet,
-                modelManager,
-                deletionQueue
-            );
+            renderObject.Destroy(modelManager);
         }
     }
 }

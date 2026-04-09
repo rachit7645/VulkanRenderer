@@ -1836,6 +1836,16 @@ namespace Renderer
         }
         #endif
 
+        m_modelManager.Update
+        (
+            cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_megaSet,
+            m_stagingPool,
+            m_deletionQueues[m_FIF]
+        );
+
         m_scene->Update
         (
             cmdBuffer,
@@ -1849,16 +1859,6 @@ namespace Renderer
             m_megaSet,
             m_stagingPool,
             m_iblGenerator,
-            m_deletionQueues[m_FIF]
-        );
-
-        m_modelManager.Update
-        (
-            cmdBuffer,
-            m_context.device,
-            m_context.allocator,
-            m_megaSet,
-            m_stagingPool,
             m_deletionQueues[m_FIF]
         );
 

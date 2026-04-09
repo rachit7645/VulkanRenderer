@@ -146,6 +146,7 @@ namespace Renderer::GBuffer
             }
         );
 
+        // Alpha channel is unused
         framebufferManager.AddFramebuffer
         (
             "GRoughnessMetallicHorizon",

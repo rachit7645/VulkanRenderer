@@ -17,7 +17,6 @@
 #ifndef IBL_MAPS_H
 #define IBL_MAPS_H
 
-#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/MegaSet.h"
 
@@ -29,7 +28,8 @@ namespace Renderer::IBL
     {
         void Destroy
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue

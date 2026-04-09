@@ -35,7 +35,7 @@ namespace Models
     constexpr auto DEFAULT_AO_RGH_MTL = "Albedo.ktx2";
     constexpr auto DEFAULT_EMMISIVE   = "Albedo.ktx2";
 
-    Model::Model
+    void Model::LoadFromFile
     (
         VkDevice device,
         VmaAllocator allocator,
@@ -45,7 +45,6 @@ namespace Models
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
-        : name(Util::Files::GetNameWithoutExtension(path))
     {
         const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
@@ -110,6 +109,8 @@ namespace Models
             assetDirectory,
             asset.get()
         );
+
+        isLoaded = true;
     }
 
     void Model::ProcessScenes

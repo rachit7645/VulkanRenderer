@@ -24,14 +24,7 @@ namespace Renderer
 {
     struct RenderObject
     {
-        void Destroy
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
-            Models::ModelManager& modelManager,
-            Util::DeletionQueue& deletionQueue
-        );
+        void Destroy(Models::ModelManager& modelManager);
 
         Models::ModelID modelID  = 0;
         glm::vec3       position = {};

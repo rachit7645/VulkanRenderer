@@ -144,11 +144,14 @@ namespace Renderer::TAA
 
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("TAA"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                if (ImGui::Button("Reset History"))
+                if (ImGui::CollapsingHeader("TAA"))
                 {
-                    m_hasToResetHistory = true;
+                    if (ImGui::Button("Reset History"))
+                    {
+                        m_hasToResetHistory = true;
+                    }
                 }
 
                 ImGui::EndMenu();

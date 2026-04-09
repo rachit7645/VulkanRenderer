@@ -31,7 +31,7 @@ namespace Models
     class Model
     {
     public:
-        Model
+        void LoadFromFile
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -52,8 +52,9 @@ namespace Models
             Util::DeletionQueue& deletionQueue
         );
 
-        std::string               name;
-        std::vector<Models::Mesh> meshes;
+        std::string               name     = "Null/Model";
+        std::vector<Models::Mesh> meshes   = {};
+        bool                      isLoaded = false;
     private:
         struct TextureInfo
         {

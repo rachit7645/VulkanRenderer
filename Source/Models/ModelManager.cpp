@@ -27,14 +27,7 @@ namespace Models
     {
     }
 
-    Models::ModelID ModelManager::AddModel
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view path
-    )
+    Models::ModelID ModelManager::Load(const std::string_view path)
     {
         const Models::ModelID id = std::hash<std::string_view>()(path);
 
@@ -46,16 +39,14 @@ namespace Models
         }
         else
         {
+            m_requestedModelLoads.emplace(id, path);
+
             m_modelMap.emplace(id, ModelInfo{
-                .model = Model(
-                    device,
-                    allocator,
-                    geometryBuffer,
-                    textureManager,
-                    stagingPool,
-                    deletionQueue,
-                    path
-                ),
+                .model          = {
+                    .name     = Util::Files::GetNameWithoutExtension(path),
+                    .meshes   = {},
+                    .isLoaded = false
+                },
                 .referenceCount = 1
             });
         }
@@ -63,14 +54,7 @@ namespace Models
         return id;
     }
 
-    void ModelManager::DestroyModel
-    (
-        ModelID id,
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
-    )
+    void ModelManager::Free(Models::ModelID id)
     {
         const auto iter = m_modelMap.find(id);
 
@@ -88,17 +72,7 @@ namespace Models
 
         if (iter->second.referenceCount == 0)
         {
-            iter->second.model.Destroy
-            (
-                device,
-                allocator,
-                megaSet,
-                textureManager,
-                geometryBuffer,
-                deletionQueue
-            );
-
-            m_modelMap.erase(iter);
+            m_requestedModelDeletions.emplace(id);
         }
     }
 
@@ -116,6 +90,11 @@ namespace Models
             Logger::Error("Model already freed! [ID={}]\n", id);
         }
 
+        if (!iter->second.model.isLoaded)
+        {
+            Logger::Error("Model is not loaded! [ID={}]\n", id);
+        }
+
         return iter->second.model;
     }
 
@@ -129,12 +108,92 @@ namespace Models
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (!geometryBuffer.HasPendingUploads() && !textureManager.HasPendingUploads())
+        if
+        (
+            !geometryBuffer.HasPendingUploads() &&
+            !textureManager.HasPendingUploads() &&
+            m_requestedModelLoads.empty() &&
+            m_requestedModelDeletions.empty()
+        )
         {
             return;
         }
 
         Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
+
+        for (const auto& id : m_requestedModelDeletions)
+        {
+            const auto iter = m_modelMap.find(id);
+
+            if (iter == m_modelMap.end())
+            {
+                Logger::Warning("Attempted deletion of invalid model! [ID={}]\n", id);
+
+                continue;
+            }
+
+            // Verify that new references to a model that was requested
+            // to be deleted have not been made in the meantime
+            if (iter->second.referenceCount != 0)
+            {
+                continue;
+            }
+
+            if (iter->second.model.isLoaded)
+            {
+                iter->second.model.Destroy
+                (
+                    device,
+                    allocator,
+                    megaSet,
+                    textureManager,
+                    geometryBuffer,
+                    deletionQueue
+                );
+            }
+
+            m_modelMap.erase(iter);
+        }
+
+        for (const auto& [id, path] : m_requestedModelLoads)
+        {
+            const auto iter = m_modelMap.find(id);
+
+            if (iter == m_modelMap.end())
+            {
+                Logger::Warning("Attempted loading of invalid model! [ID={}]\n", id);
+
+                continue;
+            }
+
+            if (iter->second.referenceCount == 0)
+            {
+                Logger::Warning("Model already freed! [ID={}]\n", id);
+
+                continue;
+            }
+
+            if (iter->second.model.isLoaded)
+            {
+                Logger::Warning("Model already loaded! [ID={}]\n", id);
+
+                continue;
+            }
+
+            iter->second.model.LoadFromFile
+            (
+                device,
+                allocator,
+                geometryBuffer,
+                textureManager,
+                stagingPool,
+                deletionQueue,
+                path
+            );
+        }
+
+        m_requestedModelDeletions.clear();
+        m_requestedModelLoads.clear();
 
         geometryBuffer.Update
         (
@@ -241,5 +300,9 @@ namespace Models
     {
         geometryBuffer.Destroy(allocator);
         textureManager.Destroy(device, allocator);
+
+        m_modelMap.clear();
+        m_requestedModelDeletions.clear();
+        m_requestedModelLoads.clear();
     }
 }
