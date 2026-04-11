@@ -16,7 +16,6 @@
 
 #include "LightsBuffer.h"
 
-#include "Util/Concept.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 
@@ -183,7 +182,7 @@ namespace Renderer::Buffers
         }
         else
         {
-            static_assert(Util::AlwaysFalse<T>, "Invalid light type!");
+            static_assert(false, "Invalid light type!");
         }
 
         const VkDeviceSize requiredSize   = lights.size_bytes();

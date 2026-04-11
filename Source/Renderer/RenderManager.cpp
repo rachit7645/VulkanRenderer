@@ -2060,7 +2060,8 @@ namespace Renderer
             {
                 if (ImGui::CollapsingHeader("Debug/Fonts"))
                 {
-                    ImGui::Text("ゼルダの伝説　ブレス オブ ザ ワイルド");
+                    ImGui::Text("EN: The Legend of Zelda: Breath of The Wild");
+                    ImGui::Text("JP: ゼルダの伝説　ブレス オブ ザ ワイルド");
                 }
 
                 ImGui::EndMenu();

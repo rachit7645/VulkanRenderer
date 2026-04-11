@@ -80,11 +80,10 @@ namespace Vk
             VkDeviceSize      sourceOffset = 0;
         };
 
-        VkBufferUsageFlags    m_usage      = 0;
         VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
         VkAccessFlags2        m_accessMask = VK_ACCESS_2_NONE;
 
-        Vk::ResizableAllocator m_allocator   = {};
+        Vk::ResizableAllocator m_allocator = {};
 
         ankerl::unordered_dense::map<VkBuffer, std::vector<GeometryUpload>> m_pendingUploads;
 

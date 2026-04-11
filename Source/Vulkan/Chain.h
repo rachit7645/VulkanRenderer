@@ -19,7 +19,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Util/Concept.h"
 #include "Util/Log.h"
 
 namespace Vk

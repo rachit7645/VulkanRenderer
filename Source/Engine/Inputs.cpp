@@ -175,7 +175,7 @@ namespace Engine
         {
             if (ImGui::BeginMenu("Engine"))
             {
-                if (ImGui::CollapsingHeader("Input", ImGuiTreeNodeFlags_DefaultOpen))
+                if (ImGui::CollapsingHeader("Input"))
                 {
                     glm::vec2 mousePos = {};
                     // Realtime(ish) mouse position

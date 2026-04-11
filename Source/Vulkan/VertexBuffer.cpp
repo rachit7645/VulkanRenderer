@@ -20,7 +20,6 @@
 #include <volk/volk.h>
 
 #include "Util/Log.h"
-#include "Util/Concept.h"
 
 namespace Vk
 {
@@ -29,12 +28,14 @@ namespace Vk
     {
         const bool hasRaytracing = extensions.HasRayTracing();
 
+        VkBufferUsageFlags usage = 0;
+
         if constexpr (std::is_same_v<T, GPU::Index>)
         {
-            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                      VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
             m_stageMask = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
 
@@ -42,33 +43,33 @@ namespace Vk
 
             if (hasRaytracing)
             {
-                m_usage      |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+                usage        |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
                 m_stageMask  |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
                 m_accessMask |= VK_ACCESS_2_SHADER_READ_BIT;
             }
         }
         else if constexpr (std::is_same_v<T, GPU::Position>)
         {
-            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
             m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
             m_accessMask = VK_ACCESS_2_SHADER_READ_BIT;
 
             if (hasRaytracing)
             {
-                m_usage     |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+                usage     |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
                 m_stageMask |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
             }
         }
         else if constexpr (std::is_same_v<T, GPU::UV>)
         {
-            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
             m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
             m_accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
@@ -80,20 +81,20 @@ namespace Vk
         }
         else if constexpr (std::is_same_v<T, GPU::Vertex>)
         {
-            m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
             m_stageMask  = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
             m_accessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
         }
         else
         {
-            static_assert(Util::AlwaysFalse<T>, "Unsupported vertex type!");
+            static_assert(false, "Unsupported vertex type!");
         }
 
-        m_allocator = Vk::ResizableAllocator(m_usage, m_stageMask, m_accessMask);
+        m_allocator = Vk::ResizableAllocator(usage, m_stageMask, m_accessMask);
     }
 
     template <typename T> requires GPU::IsVertexType<T>
