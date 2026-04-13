@@ -51,8 +51,6 @@ namespace Renderer::Buffers
         }
     }
 
-
-    // TODO: Remove duplicate logic for shadowed/non-shadowed light splitting
     void SceneBuffer::Write
     (
         usize FIF,
