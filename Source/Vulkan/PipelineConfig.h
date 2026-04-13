@@ -69,7 +69,7 @@ namespace Vk
 
         [[nodiscard]] PipelineConfig& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
 
-        [[nodiscard]] PipelineConfig& SetIAState(VkPrimitiveTopology topology);
+        [[nodiscard]] PipelineConfig& SetInputAssemblyState(VkPrimitiveTopology topology);
 
         [[nodiscard]] PipelineConfig& SetRasterizerState
         (
@@ -79,7 +79,7 @@ namespace Vk
             VkPolygonMode polygonMode
         );
 
-        [[nodiscard]] PipelineConfig& SetDepthStencilState
+        [[nodiscard]] PipelineConfig& SetDepthState
         (
             VkBool32 depthTestEnable,
             VkBool32 depthWriteEnable,

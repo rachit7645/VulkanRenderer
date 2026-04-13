@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef CONVOLUTION_PUSH_CONSTANT
-#define CONVOLUTION_PUSH_CONSTANT
+#version 460
 
-#include "GLSL.h"
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
 
-#ifndef __cplusplus
-#include "Shared.glsl"
-#endif
+#include "MegaSet.glsl"
+#include "Math.glsl"
+#include "IBL/EquirectangularToCubemap.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::IBL::Convolution)
+layout(location = 0) in vec3 worldPos;
 
-GLSL_PUSH_CONSTANT_BEGIN
+layout(location = 0) out vec3 outColor;
+
+void main()
 {
-    GLSL_BUFFER_POINTER(VertexBuffer) Vertices;
-    GLSL_BUFFER_POINTER(MatrixBuffer) Matrices;
+    vec3 normal = normalize(worldPos);
+    vec2 uv     = DirectionToEquirectangular(normal);
 
-    u32 SamplerIndex;
-    u32 EnvMapIndex;
-} GLSL_PUSH_CONSTANT_END;
-
-GLSL_NAMESPACE_END
-
-#endif
+    outColor = texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
+}

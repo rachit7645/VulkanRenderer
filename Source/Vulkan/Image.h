@@ -51,18 +51,15 @@ namespace Vk
 
         void Destroy(VmaAllocator allocator) const;
 
-        // Vulkan handles
         VkImage       handle     = VK_NULL_HANDLE;
         VmaAllocation allocation = VK_NULL_HANDLE;
 
-        // Image dimensions
         u32 width       = 0;
         u32 height      = 0;
         u32 depth       = 0;
         u32 mipLevels   = 0;
         u32 arrayLayers = 0;
 
-        // Image properties
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
     };

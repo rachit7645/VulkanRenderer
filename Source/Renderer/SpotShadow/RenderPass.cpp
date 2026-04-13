@@ -43,9 +43,9 @@ namespace Renderer::SpotShadow
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Shadows/SpotShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_TRUE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
         );
 
@@ -55,9 +55,9 @@ namespace Renderer::SpotShadow
             .AttachShader("Shadows/SpotShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Shadows/SpotShadow/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_TRUE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );

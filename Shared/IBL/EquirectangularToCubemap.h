@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef EQUIRECTANGULAR_TO_CUBEMAP_PUSH_CONSTANT
+#define EQUIRECTANGULAR_TO_CUBEMAP_PUSH_CONSTANT
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#include "GLSL.h"
 
-#include "MegaSet.glsl"
-#include "Math.glsl"
-#include "IBL/Converter.h"
+#ifndef __cplusplus
+#include "Shared.glsl"
+#endif
 
-layout(location = 0) in vec3 worldPos;
+GLSL_NAMESPACE_BEGIN(Renderer::IBL::EquirectangularToCubemap)
 
-layout(location = 0) out vec3 outColor;
-
-void main()
+GLSL_PUSH_CONSTANT_BEGIN
 {
-    vec3 normal = normalize(worldPos);
-    vec2 uv     = DirectionToEquirectangular(normal);
+    GLSL_BUFFER_POINTER(VertexBuffer) Vertices;
+    GLSL_BUFFER_POINTER(MatrixBuffer) Matrices;
 
-    outColor = texture(sampler2D(Textures[Constants.TextureIndex], Samplers[Constants.SamplerIndex]), uv).rgb;
-}
+    u32 SamplerIndex;
+    u32 TextureIndex;
+} GLSL_PUSH_CONSTANT_END;
+
+GLSL_NAMESPACE_END
+
+#endif

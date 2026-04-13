@@ -100,10 +100,9 @@ namespace Vk
             }
         }
 
-        // No format was suitable, exit
         Logger::Error
         (
-            "No valid formats found! [physicalDevice={}] [tiling={}] [features={}]\n",
+            "No valid formats found! [PhysicalDevice={}] [Tiling={}] [Features={}]\n",
             std::bit_cast<void*>(physicalDevice),
             string_VkImageTiling(tiling),
             string_VkFormatFeatureFlags(features)

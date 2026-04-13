@@ -18,7 +18,7 @@
 
 namespace Renderer
 {
-    void RenderObject::Destroy(Models::ModelManager& modelManager)
+    void RenderObject::Destroy(Models::ModelManager& modelManager) const
     {
         modelManager.Free(modelID);
     }

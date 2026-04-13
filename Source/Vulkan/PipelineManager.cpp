@@ -28,6 +28,7 @@ namespace Vk
 {
     constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
     constexpr auto PYTHON_EXECUTABLE  = "C:/msys64/ucrt64/bin/python.exe";
+    constexpr auto SCRIPT_LOCATION    = "../Scripts";
 
     #ifdef ENGINE_DEBUG
     constexpr auto COMPILATION_FLAGS = "";
@@ -193,7 +194,13 @@ namespace Vk
         {
             const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
 
-            const auto result = std::system(fmt::format("{} ../Assets/Shaders/CompileShader.py {} {}", PYTHON_EXECUTABLE, COMPILATION_FLAGS, shaderAssetPath).c_str());
+            const auto result = std::system(fmt::format(
+                "{} {}/CompileShader.py {} {}",
+                PYTHON_EXECUTABLE,
+                SCRIPT_LOCATION,
+                COMPILATION_FLAGS,
+                shaderAssetPath
+            ).c_str());
 
             if (result != 0)
             {
@@ -210,7 +217,12 @@ namespace Vk
 
     void PipelineManager::ReloadAll()
     {
-        const auto result = std::system(fmt::format("{} ../Assets/Shaders/CompileShaders.py {}", PYTHON_EXECUTABLE, COMPILATION_FLAGS).c_str());
+        const auto result = std::system(fmt::format(
+            "{} {}/CompileShaders.py {}",
+            PYTHON_EXECUTABLE,
+            SCRIPT_LOCATION,
+            COMPILATION_FLAGS
+        ).c_str());
 
         if (result != 0)
         {

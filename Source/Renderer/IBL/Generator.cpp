@@ -17,8 +17,8 @@
 #include "Generator.h"
 
 #include "Externals/GLM.h"
-#include "IBL/Converter.h"
-#include "IBL/Convolution.h"
+#include "IBL/EquirectangularToCubemap.h"
+#include "IBL/Irradiance.h"
 #include "IBL/PreFilter.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
@@ -45,29 +45,29 @@ namespace Renderer::IBL
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("IBL/Converter", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline("IBL/EquirectangularToCubemap", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("IBL/Converter.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("IBL/Converter.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("IBL/EquirectangularToCubemap.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/EquirectangularToCubemap.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Converter::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(EquirectangularToCubemap::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
-        pipelineManager.AddPipeline("IBL/Convolution", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline("IBL/Irradiance", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
-            .AttachShader("IBL/Convolution.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("IBL/Convolution.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+            .AttachShader("IBL/Irradiance.vert", VK_SHADER_STAGE_VERTEX_BIT)
+            .AttachShader("IBL/Irradiance.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Convolution::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Irradiance::Constants))
             .AddDescriptorLayout(megaSet.descriptorLayout)
         );
 
@@ -77,7 +77,7 @@ namespace Renderer::IBL
             .AttachShader("IBL/PreFilter.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("IBL/PreFilter.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PreFilter::Constants))
@@ -92,7 +92,7 @@ namespace Renderer::IBL
             .AttachShader("Misc/Triangle.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("IBL/BRDF.frag",      VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
         );
@@ -250,19 +250,6 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
 
-        const auto extension = Util::Files::GetExtension(hdrMapAssetPath);
-
-        auto type = Vk::ImageUploadType{0};
-
-        if (extension == ".hdr")
-        {
-            type = Vk::ImageUploadType::HDR;
-        }
-        else if (extension == ".exr")
-        {
-            type = Vk::ImageUploadType::EXR;
-        }
-
         const auto hdrMapID = modelManager.textureManager.AddTexture
         (
             context.device,
@@ -270,7 +257,7 @@ namespace Renderer::IBL
             stagingPool,
             deletionQueue,
             Vk::ImageUpload{
-                .type   = type,
+                .type   = Vk::FileToImageUploadType(hdrMapAssetPath),
                 .flags  = Vk::ImageUploadFlags::F16,
                 .source = Vk::ImageUploadFile{
                     .path = hdrMapAssetPath.data()
@@ -308,7 +295,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Equirectangular To Cubemap Conversion", {0.2588f, 0.5294f, 0.9607f, 1.0f});
 
-        const auto& converterPipeline = pipelineManager.GetPipeline("IBL/Converter");
+        const auto& pipeline = pipelineManager.GetPipeline("IBL/EquirectangularToCubemap");
 
         const auto skybox = Vk::Image
         (
@@ -399,7 +386,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        converterPipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -421,7 +408,7 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto constants = Converter::Constants
+        const auto constants = EquirectangularToCubemap::Constants
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
@@ -429,14 +416,14 @@ namespace Renderer::IBL
             .TextureIndex = modelManager.textureManager.GetTexture(hdrMapID).descriptorID
         };
 
-        converterPipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             constants
         );
 
-        converterPipeline.BindDescriptors(cmdBuffer, megaSet);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (
@@ -521,7 +508,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Irradiance Map Generation", {0.2988f, 0.2294f, 0.6607f, 1.0f});
 
-        const auto& convolutionPipeline = pipelineManager.GetPipeline("IBL/Convolution");
+        const auto& pipeline = pipelineManager.GetPipeline("IBL/Irradiance");
 
         const auto irradianceMap = Vk::Image
         (
@@ -612,7 +599,7 @@ namespace Renderer::IBL
 
         vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
 
-        convolutionPipeline.Bind(cmdBuffer);
+        pipeline.Bind(cmdBuffer);
 
         const VkViewport viewport =
         {
@@ -634,7 +621,7 @@ namespace Renderer::IBL
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        const auto constants = Convolution::Constants
+        const auto constants = Irradiance::Constants
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
@@ -642,14 +629,14 @@ namespace Renderer::IBL
             .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID
         };
 
-        convolutionPipeline.PushConstants
+        pipeline.PushConstants
         (
             cmdBuffer,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             constants
         );
 
-        convolutionPipeline.BindDescriptors(cmdBuffer, megaSet);
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         vkCmdDraw
         (

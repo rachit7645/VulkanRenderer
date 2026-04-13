@@ -45,7 +45,7 @@ namespace Renderer::TAA
             .AttachShader("Misc/Triangle.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("TAA/TAA.frag",       VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()

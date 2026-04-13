@@ -326,7 +326,7 @@ namespace Vk
         return *this;
     }
 
-    PipelineConfig& PipelineConfig::SetIAState(VkPrimitiveTopology topology)
+    PipelineConfig& PipelineConfig::SetInputAssemblyState(VkPrimitiveTopology topology)
     {
         m_inputAssemblyInfo =
         {
@@ -340,7 +340,7 @@ namespace Vk
         return *this;
     }
 
-    PipelineConfig& PipelineConfig::SetDepthStencilState
+    PipelineConfig& PipelineConfig::SetDepthState
     (
         VkBool32 depthTestEnable,
         VkBool32 depthWriteEnable,

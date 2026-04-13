@@ -39,6 +39,8 @@ namespace Vk
         RAW,
     };
 
+    Vk::ImageUploadType FileToImageUploadType(const std::string_view file);
+
     enum class ImageUploadFlags : u8
     {
         None    = 0,

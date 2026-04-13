@@ -32,17 +32,18 @@ namespace Util
         void Reset();
         void Update();
 
-        f32 FPS          = 0.0f;
-        f32 avgFrameTime = 0.0f;
-        f32 frameDelta   = 0.0f;
+        f32 frameDelta = 0.0f;
     private:
+        f32 m_FPS = 0.0f;
+
         TimePoint m_startTime      = {};
         TimePoint m_frameStartTime = {};
-        TimePoint m_endTime        = {};
+        TimePoint m_plotStartTime  = {};
 
-        f32 m_currentFPS = 0.0f;
+        usize m_frameCount = 0;
+
+        std::vector<f32> m_plotFrameTimes;
     };
-
 }
 
 #endif

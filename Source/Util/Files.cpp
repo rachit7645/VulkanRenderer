@@ -38,8 +38,8 @@ namespace Util::Files
 
     usize GetSize(const std::string_view path)
     {
-        // This should always work
         static_assert(sizeof(usize) >= sizeof(std::uintmax_t), "How???");
+
         return static_cast<usize>(filesystem::file_size(path));
     }
 

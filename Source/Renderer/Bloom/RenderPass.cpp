@@ -45,7 +45,7 @@ namespace Renderer::Bloom
             .AttachShader("Misc/Triangle.vert",                VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/DownSample/FirstSample.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
@@ -58,7 +58,7 @@ namespace Renderer::Bloom
             .AttachShader("Misc/Triangle.vert",             VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/DownSample/Regular.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
@@ -71,7 +71,7 @@ namespace Renderer::Bloom
             .AttachShader("Misc/Triangle.vert",   VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/UpSample.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddBlendAttachment(
                 VK_TRUE,
@@ -96,7 +96,7 @@ namespace Renderer::Bloom
             .AttachShader("Misc/Triangle.vert",  VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/Combine.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Combine::Constants))
@@ -316,8 +316,8 @@ namespace Renderer::Bloom
                 .pNext                = nullptr,
                 .flags                = 0,
                 .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {mipWidth, mipHeight}
+                    .offset = {.x    =  0,        .y      = 0        },
+                    .extent = {.width = mipWidth, .height = mipHeight}
                 },
                 .layerCount           = 1,
                 .viewMask             = 0,
@@ -343,8 +343,8 @@ namespace Renderer::Bloom
 
             const VkRect2D scissor =
             {
-                .offset = {0, 0},
-                .extent = {mipWidth, mipHeight}
+                .offset = {.x    =  0,        .y      = 0        },
+                .extent = {.width = mipWidth, .height = mipHeight}
             };
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -494,8 +494,8 @@ namespace Renderer::Bloom
                 .pNext                = nullptr,
                 .flags                = 0,
                 .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {mipWidth, mipHeight}
+                    .offset = {.x    =  0,        .y      = 0        },
+                    .extent = {.width = mipWidth, .height = mipHeight}
                 },
                 .layerCount           = 1,
                 .viewMask             = 0,
@@ -521,8 +521,8 @@ namespace Renderer::Bloom
 
             const VkRect2D scissor =
             {
-                .offset = {0, 0},
-                .extent = {mipWidth, mipHeight}
+                .offset = {.x    =  0,        .y      = 0        },
+                .extent = {.width = mipWidth, .height = mipHeight}
             };
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -633,8 +633,8 @@ namespace Renderer::Bloom
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {finalSceneColor.image.width, finalSceneColor.image.height}
+                .offset = {.x     = 0,                           .y      = 0                           },
+                .extent = {.width = finalSceneColor.image.width, .height = finalSceneColor.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -662,8 +662,8 @@ namespace Renderer::Bloom
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {finalSceneColor.image.width, finalSceneColor.image.height}
+            .offset = {.x     = 0,                           .y      = 0                           },
+            .extent = {.width = finalSceneColor.image.width, .height = finalSceneColor.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);

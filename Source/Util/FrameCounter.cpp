@@ -21,53 +21,90 @@
 
 namespace Util
 {
-    namespace chrono = std::chrono;
+    constexpr usize PLOT_FRAME_TIME_MAX_COUNT = 25;
+    constexpr auto  PLOT_UPDATE_FREQUENCY     = std::chrono::milliseconds(200);
 
     void FrameCounter::Reset()
     {
-        FPS          = 0.0f;
-        avgFrameTime = 0.0f;
-        m_currentFPS = 0.0f;
+        m_FPS          = 0.0f;
+        m_frameCount = 0;
+
+        m_plotFrameTimes.clear();
 
         m_startTime      = Clock::now();
         m_frameStartTime = m_startTime;
-
-        m_endTime = {};
+        m_plotStartTime  = m_startTime;
     }
 
     void FrameCounter::Update()
     {
-        m_endTime = Clock::now();
+        const auto now = Clock::now();
 
-        const auto frameDuration = m_endTime - m_frameStartTime;
-        const auto cycleDuration = m_endTime - m_startTime;
+        const auto frameDuration = now - m_frameStartTime;
+        const auto cycleDuration = now - m_startTime;
+        const auto plotDuration  = now - m_plotStartTime;
 
-        constexpr auto ONE_SECOND = chrono::duration_cast<chrono::duration<f64>>(chrono::seconds(1));
+        frameDelta       = std::chrono::duration<f32>(frameDuration).count();
+        m_frameStartTime = now;
 
-        frameDelta       = static_cast<f32>(frameDuration / ONE_SECOND);
-        m_frameStartTime = m_endTime;
+        ++m_frameCount;
 
-        // A cycle is a second long
-        if (cycleDuration >= chrono::seconds(1))
+        const f32 frameTime = std::chrono::duration<f32, std::milli>(frameDuration).count();
+
+        if (plotDuration >= PLOT_UPDATE_FREQUENCY)
         {
-            m_startTime  = m_endTime;
-            FPS          = m_currentFPS;
-            avgFrameTime = static_cast<f32>(1000.0 / static_cast<f64>(FPS));
-            m_currentFPS = 0.0f;
+            if (m_plotFrameTimes.size() >= PLOT_FRAME_TIME_MAX_COUNT)
+            {
+                m_plotFrameTimes.erase(m_plotFrameTimes.begin());
+            }
+
+            m_plotFrameTimes.emplace_back(frameTime);
+
+            m_plotStartTime = now;
         }
-        else
+
+        if (cycleDuration >= std::chrono::seconds(1))
         {
-            ++m_currentFPS;
+            const auto seconds = std::chrono::duration<f64>(cycleDuration).count();
+
+            m_FPS = static_cast<f32>(static_cast<f64>(m_frameCount) / seconds);
+
+            m_frameCount = 0;
+            m_startTime  = now;
         }
 
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("Profiler"))
             {
-                // Frame stats
-                ImGui::Text("FPS         | %.2f",    FPS);
-                ImGui::Text("Frame Time  | %.2f ms", avgFrameTime);
-                ImGui::Text("Frame Delta | %.6f s",  frameDelta);
+                ImGui::Text("FPS        | %.3f",    m_FPS);
+                ImGui::Text("Frame Time | %.4f ms", frameTime);
+
+                ImGui::Separator();
+
+                if (ImPlot::BeginPlot("Frame Time", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImPlotFlags_NoLegend | ImPlotFlags_NoMenus | ImPlotFlags_NoBoxSelect | ImPlotFlags_NoMouseText))
+                {
+                    ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_AutoFit);
+                    ImPlot::SetupAxisLimits(ImAxis_X1, 0, PLOT_FRAME_TIME_MAX_COUNT, ImGuiCond_Always);
+                    ImPlot::SetupAxisLimitsConstraints(ImAxis_Y1, 0.0f, 50.0f);
+
+                    ImPlotSpec spec;
+                    spec.FillColor = IMPLOT_AUTO_COL;
+                    spec.FillAlpha = 0.3f;
+                    spec.Flags     = ImPlotLineFlags_Shaded;
+
+                    ImPlot::PlotLine
+                    (
+                        "##FrameTime",
+                        m_plotFrameTimes.data(),
+                        static_cast<s32>(m_plotFrameTimes.size()),
+                        1.0,
+                        0.0,
+                        spec
+                    );
+
+                    ImPlot::EndPlot();
+                }
 
                 ImGui::EndMenu();
             }
@@ -76,7 +113,7 @@ namespace Util
         }
 
         #ifdef ENGINE_PROFILE
-        TracyPlot("Average Frame Time", avgFrameTime);
+        TracyPlot("Frame Time", frameTime);
         #endif
     }
 }

@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef CONVERTER_PUSH_CONSTANT
-#define CONVERTER_PUSH_CONSTANT
+#version 460
 
-#include "GLSL.h"
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_EXT_multiview            : enable
 
-#ifndef __cplusplus
-#include "Shared.glsl"
-#endif
+#include "IBL/EquirectangularToCubemap.h"
 
-GLSL_NAMESPACE_BEGIN(Renderer::IBL::Converter)
+layout(location = 0) out vec3 worldPos;
 
-GLSL_PUSH_CONSTANT_BEGIN
+void main()
 {
-    GLSL_BUFFER_POINTER(VertexBuffer) Vertices;
-    GLSL_BUFFER_POINTER(MatrixBuffer) Matrices;
+    worldPos    = Constants.Vertices.positions[gl_VertexIndex];
+    gl_Position = Constants.Matrices.matrices[gl_ViewIndex] * vec4(worldPos, 1.0f);
 
-    u32 SamplerIndex;
-    u32 TextureIndex;
-} GLSL_PUSH_CONSTANT_END;
-
-GLSL_NAMESPACE_END
-
-#endif
+    // Trick to guarantee early depth test
+    gl_Position = gl_Position.xyww;
+}

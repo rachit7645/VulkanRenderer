@@ -2215,6 +2215,8 @@ namespace Renderer
             &config
         );
 
+        ImPlot::CreateContext();
+
         // TODO: Move this to frame 0
         Vk::ImmediateSubmit
         (
@@ -2262,6 +2264,8 @@ namespace Renderer
 
         m_globalDeletionQueue.PushDeletor([&] ()
         {
+            ImPlot::DestroyContext();
+
             ImGui_ImplSDL3_Shutdown();
             ImGui::DestroyContext();
         });

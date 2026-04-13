@@ -31,6 +31,28 @@
 
 namespace Vk
 {
+    Vk::ImageUploadType FileToImageUploadType(const std::string_view file)
+    {
+        const auto extension = Util::Files::GetExtension(file);
+
+        auto type = Vk::ImageUploadType::SDR;
+
+        if (extension == ".hdr")
+        {
+            type = Vk::ImageUploadType::HDR;
+        }
+        else if (extension == ".exr")
+        {
+            type = Vk::ImageUploadType::EXR;
+        }
+        else if (extension == ".ktx2")
+        {
+            type = Vk::ImageUploadType::KTX2;
+        }
+
+        return type;
+    }
+
     Vk::UploadedImage ImageUploader::LoadImage
     (
         VkDevice device,

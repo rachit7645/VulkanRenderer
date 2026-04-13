@@ -140,7 +140,10 @@ add_library(DearImGui STATIC
 	imgui/imgui_widgets.cpp
 	imgui/backends/imgui_impl_sdl3.cpp
 	imgui/misc/cpp/imgui_stdlib.cpp
+    implot/implot.cpp
+    implot/implot_items.cpp
     # imgui/imgui_demo.cpp
+    # implot/implot_demo.cpp
 )
 
 # ImGui precompiled headers
@@ -151,12 +154,14 @@ target_precompile_headers(DearImGui PRIVATE
     imgui/imstb_rectpack.h
     imgui/imstb_truetype.h
     imgui/backends/imgui_impl_sdl3.h
+    implot/implot.h
+    implot/implot_internal.h
 )
 
 # SDL2 Includes
 target_include_directories(DearImGui PRIVATE sdl/include/)
 # ImGUI Includes
-target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
+target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc implot/)
 # ImGui Defines
 target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
 
@@ -170,14 +175,6 @@ endif()
 
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
-
-# Install Dear ImGui
-install(
-    TARGETS DearImGui
-    ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
-    LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
-    RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
-)
 
 # DLSS SDK will only build on MSVC-Style Windows Compilers and Linux
 if (WIN32)

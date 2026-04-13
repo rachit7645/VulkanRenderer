@@ -24,7 +24,7 @@
 #include "Constants.glsl"
 #include "MegaSet.glsl"
 #include "Sampling.glsl"
-#include "IBL/Convolution.h"
+#include "IBL/Irradiance.h"
 
 layout(location = 0) in vec3 worldPos;
 

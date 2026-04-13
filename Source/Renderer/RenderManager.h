@@ -131,7 +131,7 @@ namespace Renderer
         Vk::GraphicsTimeline               m_graphicsTimeline;
         std::optional<Vk::ComputeTimeline> m_computeTimeline = std::nullopt;
 
-        Vk::FormatHelper  m_formatHelper;
+        Vk::FormatHelper m_formatHelper;
 
         Vk::MegaSet            m_megaSet;
         Vk::StagingPool        m_stagingPool;

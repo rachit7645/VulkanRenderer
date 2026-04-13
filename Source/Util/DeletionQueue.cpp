@@ -35,6 +35,7 @@ namespace Util
         std::stack<Deletor> temp = {};
         {
             const std::scoped_lock lock{m_mutex};
+
             std::swap(m_deletors, temp);
         }
 

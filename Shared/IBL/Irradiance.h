@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef IRRADIANCE_PUSH_CONSTANT
+#define IRRADIANCE_PUSH_CONSTANT
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_multiview            : enable
+#include "GLSL.h"
 
-#include "IBL/Convolution.h"
+#ifndef __cplusplus
+#include "Shared.glsl"
+#endif
 
-layout(location = 0) out vec3 worldPos;
+GLSL_NAMESPACE_BEGIN(Renderer::IBL::Irradiance)
 
-void main()
+GLSL_PUSH_CONSTANT_BEGIN
 {
-    worldPos    = Constants.Vertices.positions[gl_VertexIndex];
-    gl_Position = Constants.Matrices.matrices[gl_ViewIndex] * vec4(worldPos, 1.0f);
+    GLSL_BUFFER_POINTER(VertexBuffer) Vertices;
+    GLSL_BUFFER_POINTER(MatrixBuffer) Matrices;
 
-    // Trick to guarantee early depth test
-    gl_Position = gl_Position.xyww;
-}
+    u32 SamplerIndex;
+    u32 EnvMapIndex;
+} GLSL_PUSH_CONSTANT_END;
+
+GLSL_NAMESPACE_END
+
+#endif

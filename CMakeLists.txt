@@ -153,7 +153,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/volk/volk.h
     # ImGui Headers
     Externals/imgui/imgui.h
-    Externals/imgui/backends/imgui_impl_sdl2.h
+    Externals/imgui/backends/imgui_impl_sdl3.h
+    Externals/implot/implot.h
     # KTX Headers
     <ktx.h>
     # FMT Headers

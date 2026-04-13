@@ -53,7 +53,7 @@ namespace Vk
             .srcQueueFamilyIndex = barrier.srcQueueFamily,
             .dstQueueFamilyIndex = barrier.dstQueueFamily,
             .image               = image.handle,
-            .subresourceRange    = {
+            .subresourceRange    = VkImageSubresourceRange{
                 .aspectMask     = image.aspect,
                 .baseMipLevel   = barrier.baseMipLevel,
                 .levelCount     = barrier.levelCount,

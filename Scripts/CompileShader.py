@@ -77,11 +77,12 @@ def main():
         return 1
 
     script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent
+    project_root = script_dir.parent
+    shader_source_dir = project_root / 'Assets' / 'Shaders'
     output_dir = project_root / 'Bin' / 'Assets' / 'Shaders'
 
     try:
-        rel_path = shader_file.relative_to(script_dir)
+        rel_path = shader_file.relative_to(shader_source_dir)
     except ValueError:
         print(f"Shader file {shader_file} is not in the expected shader directory!")
         return 1
@@ -94,11 +95,8 @@ def main():
     if not args.release:
         flags.append('-gVS')
 
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent
-
     includes = [
-        f'-I{str(script_dir / "Include")}',
+        f'-I{str(shader_source_dir / "Include")}',
         f'-I{str(project_root / "Shared")}'
     ]
 
