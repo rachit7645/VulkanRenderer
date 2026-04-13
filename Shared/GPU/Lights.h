@@ -162,6 +162,44 @@ concept IsLightType = std::is_same_v<T, DirLight> ||
                       std::is_same_v<T, SpotLight> ||
                       std::is_same_v<T, ShadowedSpotLight>;
 
+struct LightsBuffer
+{
+    GPU::DirLight           sun                                                      = {};
+    u32                     pointLightCount                                          = 0;
+    GPU::PointLight         pointLights[GPU::MAX_POINT_LIGHT_COUNT]                  = {};
+    u32                     shadowedPointLightCount                                  = 0;
+    GPU::ShadowedPointLight shadowedPointLights[GPU::MAX_SHADOWED_POINT_LIGHT_COUNT] = {};
+    u32                     spotLightCount                                           = 0;
+    GPU::SpotLight          spotLights[GPU::MAX_SPOT_LIGHT_COUNT]                    = {};
+    u32                     shadowedSpotLightCount                                   = 0;
+    GPU::ShadowedSpotLight  shadowedSpotLights[GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT]   = {};
+    
+    static constexpr VkDeviceSize GetSunOffset()
+    {
+        return offsetof(GPU::LightsBuffer, sun);
+    }
+
+    static constexpr VkDeviceSize GetPointLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, pointLightCount);
+    }
+
+    static constexpr VkDeviceSize GetShadowedPointLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, shadowedPointLightCount);
+    }
+
+    static constexpr VkDeviceSize GetSpotLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, spotLightCount);
+    }
+
+    static constexpr VkDeviceSize GetShadowedSpotLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, shadowedSpotLightCount);
+    }
+};
+
 #endif
 
 #ifndef __cplusplus

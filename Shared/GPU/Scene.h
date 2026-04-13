@@ -40,7 +40,8 @@ GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
 {
     SceneMatrices currentMatrices;
     SceneMatrices previousMatrices;
-    GLSL_VEC3     cameraPosition;
+
+    GLSL_VEC3 cameraPosition;
 
     f32 nearPlane;
 

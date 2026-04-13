@@ -566,7 +566,7 @@ namespace Renderer::GBuffer
 
                 const auto constants = GBuffer::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
@@ -605,7 +605,7 @@ namespace Renderer::GBuffer
 
                 const auto constants = GBuffer::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
@@ -654,7 +654,7 @@ namespace Renderer::GBuffer
 
                 const auto constants = GBuffer::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
@@ -693,7 +693,7 @@ namespace Renderer::GBuffer
 
                 const auto constants = GBuffer::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,

@@ -89,7 +89,7 @@ namespace Renderer
         void Occlusion
         (
             const Vk::CommandBuffer& cmdBuffer,
-            const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const std::string_view sceneDepthID,
             const std::string_view gNormalID
         );
@@ -171,8 +171,7 @@ namespace Renderer
         Buffers::TileLightIndexBuffer m_tiledLightIndexBuffer;
         Buffers::ExposureBuffers      m_exposureBuffer;
 
-        Buffers::SceneBuffer                m_sceneBuffer;
-        std::optional<Buffers::SceneBuffer> m_sceneBufferCompute = std::nullopt;
+        Buffers::SceneBuffer m_sceneBuffer;
 
         std::optional<Engine::Scene> m_scene = std::nullopt;
 

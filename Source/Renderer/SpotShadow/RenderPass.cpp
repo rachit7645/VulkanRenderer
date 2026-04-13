@@ -127,7 +127,7 @@ namespace Renderer::SpotShadow
         Culling::Dispatch& culling
     )
     {
-        if (sceneBuffer.lightsBuffer.shadowedSpotLights.empty())
+        if (sceneBuffer.shadowedSpotLights.empty())
         {
             return;
         }
@@ -154,7 +154,7 @@ namespace Renderer::SpotShadow
                 .baseMipLevel   = 0,
                 .levelCount     = spotShadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = static_cast<u32>(sceneBuffer.lightsBuffer.shadowedSpotLights.size())
+                .layerCount     = static_cast<u32>(sceneBuffer.shadowedSpotLights.size())
             }
         );
 
@@ -172,22 +172,22 @@ namespace Renderer::SpotShadow
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {spotShadowMap.image.width, spotShadowMap.image.height}
+            .offset = {.x     = 0,                         .y      = 0                         },
+            .extent = {.width = spotShadowMap.image.width, .height = spotShadowMap.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         modelManager.geometryBuffer.Bind(cmdBuffer);
 
-        for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedSpotLights.size(); ++i)
+        for (usize i = 0; i < sceneBuffer.shadowedSpotLights.size(); ++i)
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
             culling.Frustum
             (
                 frameIndex,
-                sceneBuffer.lightsBuffer.shadowedSpotLights[i].matrix,
+                sceneBuffer.shadowedSpotLights[i].matrix,
                 cmdBuffer,
                 pipelineManager,
                 meshBuffer,
@@ -207,7 +207,7 @@ namespace Renderer::SpotShadow
                 .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                 .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
                 .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue         = {.depthStencil = {0.0f, 0x0}}
+                .clearValue         = {.depthStencil = {.depth = 0.0f, .stencil = 0x0}}
             };
 
             const VkRenderingInfo renderInfo =
@@ -216,8 +216,8 @@ namespace Renderer::SpotShadow
                 .pNext                = nullptr,
                 .flags                = 0,
                 .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {spotShadowMap.image.width, spotShadowMap.image.height}
+                    .offset = {.x     = 0,                         .y      = 0                         },
+                    .extent = {.width = spotShadowMap.image.width, .height = spotShadowMap.image.height}
                 },
                 .layerCount           = 1,
                 .viewMask             = 0,
@@ -243,7 +243,7 @@ namespace Renderer::SpotShadow
 
                     const auto constants = Opaque::Constants
                     {
-                        .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                        .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                         .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                         .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
@@ -280,7 +280,7 @@ namespace Renderer::SpotShadow
 
                     const auto constants = Opaque::Constants
                     {
-                        .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                        .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                         .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                         .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
@@ -327,7 +327,7 @@ namespace Renderer::SpotShadow
 
                     const auto constants = AlphaMasked::Constants
                     {
-                        .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                        .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                         .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                         .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
@@ -366,7 +366,7 @@ namespace Renderer::SpotShadow
 
                     const auto constants = AlphaMasked::Constants
                     {
-                        .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                        .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                         .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                         .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
@@ -420,7 +420,7 @@ namespace Renderer::SpotShadow
                 .baseMipLevel   = 0,
                 .levelCount     = spotShadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = static_cast<u32>(sceneBuffer.lightsBuffer.shadowedSpotLights.size())
+                .layerCount     = static_cast<u32>(sceneBuffer.shadowedSpotLights.size())
             }
         );
 

@@ -223,7 +223,7 @@ namespace Renderer::AO::VBAO
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::SceneBuffer::Buffers& sceneBuffers,
         const Objects::GlobalSamplers& samplers,
         const std::string_view sceneDepthID,
         const std::string_view gNormalID
@@ -267,7 +267,7 @@ namespace Renderer::AO::VBAO
             framebufferManager,
             megaSet,
             textureManager,
-            sceneBuffer,
+            sceneBuffers,
             samplers,
             gNormalID
         );
@@ -382,7 +382,7 @@ namespace Renderer::AO::VBAO
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::SceneBuffer::Buffers& sceneBuffers,
         const Objects::GlobalSamplers& samplers,
         const std::string_view gNormalID
     )
@@ -437,7 +437,7 @@ namespace Renderer::AO::VBAO
 
         const auto constants = Occlusion::Constants
         {
-            .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
+            .Scene                    = sceneBuffers.sceneBuffers[FIF].deviceAddress,
             .PointSamplerIndex        = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .LinearSamplerIndex       = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .HilbertLUTIndex          = textureManager.GetTexture(hilbertLUT).descriptorID,

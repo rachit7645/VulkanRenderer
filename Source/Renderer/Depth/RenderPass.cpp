@@ -156,7 +156,7 @@ namespace Renderer::Depth
         culling.Frustum
         (
             frameIndex,
-            sceneBuffer.matrices.jitteredProjectionView,
+            sceneBuffer.cullingJitteredProjectionView,
             cmdBuffer,
             pipelineManager,
             meshBuffer,
@@ -199,7 +199,7 @@ namespace Renderer::Depth
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {.depthStencil = {0.0f, 0x0}}
+            .clearValue         = {.depthStencil = {.depth = 0.0f, .stencil = 0x0}}
         };
 
         const VkRenderingInfo renderInfo =
@@ -208,8 +208,8 @@ namespace Renderer::Depth
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {depthAttachment.image.width, depthAttachment.image.height}
+                .offset = {.x     = 0,                           .y      = 0                           },
+                .extent = {.width = depthAttachment.image.width, .height = depthAttachment.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -235,8 +235,8 @@ namespace Renderer::Depth
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {depthAttachment.image.width, depthAttachment.image.height}
+            .offset = {.x     = 0,                           .y      = 0                           },
+            .extent = {.width = depthAttachment.image.width, .height = depthAttachment.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -257,7 +257,7 @@ namespace Renderer::Depth
 
                 const auto constants = Opaque::Constants
                 {
-                    .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
@@ -293,7 +293,7 @@ namespace Renderer::Depth
 
                 const auto constants = Opaque::Constants
                 {
-                    .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
@@ -339,7 +339,7 @@ namespace Renderer::Depth
 
                 const auto constants = AlphaMasked::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
@@ -377,7 +377,7 @@ namespace Renderer::Depth
 
                 const auto constants = AlphaMasked::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,

@@ -167,7 +167,7 @@ namespace Renderer::PointShadow
         Culling::Dispatch& culling
     ) const
     {
-        if (sceneBuffer.lightsBuffer.shadowedPointLights.empty())
+        if (sceneBuffer.shadowedPointLights.empty())
         {
             return;
         }
@@ -200,7 +200,7 @@ namespace Renderer::PointShadow
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+                .layerCount     = 6 * static_cast<u32>(sceneBuffer.shadowedPointLights.size())
             }
         )
         .WriteImageBarrier
@@ -237,15 +237,15 @@ namespace Renderer::PointShadow
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {shadowMap.image.width, shadowMap.image.height}
+            .offset = {.x     = 0,                     .y      = 0                     },
+            .extent = {.width = shadowMap.image.width, .height = shadowMap.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         modelManager.geometryBuffer.Bind(cmdBuffer);
 
-        for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedPointLights.size(); ++i)
+        for (usize i = 0; i < sceneBuffer.shadowedPointLights.size(); ++i)
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
@@ -256,7 +256,7 @@ namespace Renderer::PointShadow
                 culling.Frustum
                 (
                     frameIndex,
-                    sceneBuffer.lightsBuffer.shadowedPointLights[i].matrices[face],
+                    sceneBuffer.shadowedPointLights[i].matrices[face],
                     cmdBuffer,
                     pipelineManager,
                     meshBuffer,
@@ -290,7 +290,7 @@ namespace Renderer::PointShadow
                     .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
                     .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                    .clearValue         = {.depthStencil = {0.0f, 0x0}}
+                    .clearValue         = {.depthStencil = {.depth = 0.0f, .stencil = 0x0}}
                 };
 
                 const VkRenderingInfo renderInfo =
@@ -299,8 +299,8 @@ namespace Renderer::PointShadow
                     .pNext                = nullptr,
                     .flags                = 0,
                     .renderArea           = {
-                        .offset = {0, 0},
-                        .extent = {shadowMap.image.width, shadowMap.image.height}
+                        .offset = {.x     = 0,                     .y      = 0                     },
+                        .extent = {.width = shadowMap.image.width, .height = shadowMap.image.height}
                     },
                     .layerCount           = 1,
                     .viewMask             = 0,
@@ -326,7 +326,7 @@ namespace Renderer::PointShadow
 
                         const auto constants = Opaque::Constants
                         {
-                            .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                            .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                             .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
@@ -364,7 +364,7 @@ namespace Renderer::PointShadow
 
                         const auto constants = Opaque::Constants
                         {
-                            .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
+                            .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                             .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
@@ -412,7 +412,7 @@ namespace Renderer::PointShadow
 
                         const auto constants = AlphaMasked::Constants
                         {
-                            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                            .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                             .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
@@ -452,7 +452,7 @@ namespace Renderer::PointShadow
 
                         const auto constants = AlphaMasked::Constants
                         {
-                            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+                            .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                             .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
@@ -511,7 +511,7 @@ namespace Renderer::PointShadow
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+                .layerCount     = 6 * static_cast<u32>(sceneBuffer.shadowedPointLights.size())
             }
         )
         .WriteImageBarrier

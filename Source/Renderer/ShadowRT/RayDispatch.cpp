@@ -150,7 +150,7 @@ namespace Renderer::ShadowRT
         const auto constants = ShadowRT::Constants
         {
             .TLAS                = accelerationStructure.topLevelASes[FIF].deviceAddress,
-            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
+            .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
             .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
             .Indices             = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress,
             .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,

@@ -106,7 +106,6 @@ add_executable(VulkanRenderer
     Source/Renderer/Buffers/IndirectBuffer.cpp
     Source/Renderer/Buffers/MeshBuffer.cpp
     Source/Renderer/Buffers/SceneBuffer.cpp
-    Source/Renderer/Buffers/LightsBuffer.cpp
     Source/Renderer/Buffers/DrawCallBuffer.cpp
     Source/Renderer/Buffers/TileLightIndexBuffer.cpp
     Source/Renderer/Buffers/ExposureBuffers.cpp

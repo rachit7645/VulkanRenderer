@@ -202,7 +202,7 @@ namespace Renderer::Skybox
         const auto constants = Skybox::Constants
         {
             .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-            .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
+            .Scene        = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
             .SamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
             .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };

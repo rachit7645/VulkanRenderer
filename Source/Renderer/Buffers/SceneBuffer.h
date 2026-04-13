@@ -17,36 +17,74 @@
 #ifndef SCENE_BUFFER_H
 #define SCENE_BUFFER_H
 
-#include "LightsBuffer.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/Constants.h"
 #include "Engine/Scene.h"
 #include "GPU/Scene.h"
+#include "Renderer/RenderConfig.h"
 
 namespace Renderer::Buffers
 {
     class SceneBuffer
     {
     public:
-        SceneBuffer(VkDevice device, VmaAllocator allocator);
+        struct Buffers
+        {
+            Buffers(VkDevice device, VmaAllocator allocator);
 
-        void WriteScene
+            void Destroy(VmaAllocator allocator);
+
+            std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> sceneBuffers = {};
+            std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> lightBuffers = {};
+        };
+
+        SceneBuffer
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            const Renderer::RenderConfig& renderConfig
+        );
+
+        void Write
         (
             usize FIF,
             usize frameIndex,
             VmaAllocator allocator,
             VkExtent2D renderExtent,
             VkExtent2D displayExtent,
-            const Engine::Scene& scene
+            const Engine::Scene& scene,
+            const Renderer::RenderConfig& renderConfig
         );
 
         void Destroy(VmaAllocator allocator);
 
         GPU::SceneMatrices matrices = {};
 
-        Buffers::LightsBuffer lightsBuffer;
+        glm::mat4 cullingJitteredProjectionView = {};
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> buffers;
+        std::vector<GPU::ShadowedPointLight> shadowedPointLights;
+        std::vector<GPU::ShadowedSpotLight>  shadowedSpotLights;
+
+        SceneBuffer::Buffers graphicsBuffers;
+
+        std::optional<SceneBuffer::Buffers> computeBuffers = std::nullopt;
+    private:
+        void WriteScene
+        (
+            usize FIF,
+            usize frameIndex,
+            VmaAllocator allocator,
+            const Engine::Scene& scene,
+            const GPU::SceneMatrices& previousMatrices,
+            const std::span<const GPU::PointLight> uploadedPointLights,
+            const std::span<const GPU::SpotLight> uploadedSpotLights,
+            const SceneBuffer::Buffers& buffers
+        );
+
+        template <typename T> requires GPU::IsLightType<T>
+        void WriteLights(const Vk::Buffer& buffer, const std::span<const T> lights);
+
+        bool m_pauseCulling = false;
     };
 }
 

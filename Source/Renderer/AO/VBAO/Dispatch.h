@@ -45,7 +45,7 @@ namespace Renderer::AO::VBAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const Objects::GlobalSamplers& samplers,
             const std::string_view sceneDepthID,
             const std::string_view gNormalID
@@ -73,7 +73,7 @@ namespace Renderer::AO::VBAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const Objects::GlobalSamplers& samplers,
             const std::string_view gNormalID
         );

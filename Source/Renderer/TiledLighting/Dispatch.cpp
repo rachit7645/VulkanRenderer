@@ -261,7 +261,7 @@ namespace Renderer::TiledLighting
 
         const auto constants = Culling::Constants
         {
-            .Scene             = sceneBuffer.buffers[FIF].deviceAddress,
+            .Scene             = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
             .TileLightIndices  = tileLightIndexBuffer.resizableBuffer.buffer.deviceAddress,
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .TileDepthsIndex   = framebufferManager.GetFramebufferView("TiledLighting/TileDepthsView").sampledImageID,

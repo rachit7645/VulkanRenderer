@@ -56,13 +56,12 @@ namespace Renderer
           m_meshBuffer{m_context.device, m_context.allocator},
           m_indirectBuffer{m_context.device, m_context.allocator},
           m_exposureBuffer{m_context.device, m_context.allocator},
-          m_sceneBuffer{m_context.device, m_context.allocator}
+          m_sceneBuffer{m_context.device, m_context.allocator, m_renderConfig}
     {
         if (m_renderConfig.multiQueue.isSupported)
         {
             m_computeCmdBufferAllocator = Vk::CommandBufferAllocator(m_context.device, *m_context.queueFamilies.computeFamily);
             m_computeTimeline           = Vk::ComputeTimeline(m_context.device);
-            m_sceneBufferCompute        = Buffers::SceneBuffer(m_context.device, m_context.allocator);
         }
 
         InitImGui();
@@ -100,11 +99,6 @@ namespace Renderer
             if (m_computeCmdBufferAllocator.has_value())
             {
                 m_computeCmdBufferAllocator->Destroy(m_context.device);
-            }
-
-            if (m_sceneBufferCompute.has_value())
-            {
-                m_sceneBufferCompute->Destroy(m_context.allocator);
             }
 
             if (m_computeTimeline.has_value())
@@ -201,7 +195,7 @@ namespace Renderer
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             GBufferGeneration(cmdBuffer);
-            Occlusion(cmdBuffer, m_sceneBuffer, "SceneDepthView", "GNormalView");
+            Occlusion(cmdBuffer, m_sceneBuffer.graphicsBuffers, "SceneDepthView", "GNormalView");
             TraceRays(cmdBuffer);
             Lighting(cmdBuffer);
         cmdBuffer.EndRecording();
@@ -805,7 +799,7 @@ namespace Renderer
 
             Vk::EndLabel(asyncComputeCmdBuffer);
 
-            Occlusion(asyncComputeCmdBuffer, *m_sceneBufferCompute, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView");
+            Occlusion(asyncComputeCmdBuffer, *m_sceneBuffer.computeBuffers, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView");
 
             Vk::BeginLabel(asyncComputeCmdBuffer, "Async Compute -> Graphics | Release", {0.6726f, 0.6538f, 0.4518f, 1.0f});
 
@@ -1370,7 +1364,7 @@ namespace Renderer
     void RenderManager::Occlusion
     (
         const Vk::CommandBuffer& cmdBuffer,
-        const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::SceneBuffer::Buffers& sceneBuffers,
         const std::string_view sceneDepthID,
         const std::string_view gNormalID
     )
@@ -1384,7 +1378,7 @@ namespace Renderer
             m_framebufferManager,
             m_megaSet,
             m_modelManager.textureManager,
-            sceneBuffer,
+            sceneBuffers,
             m_samplers,
             sceneDepthID,
             gNormalID
@@ -1862,28 +1856,16 @@ namespace Renderer
             m_deletionQueues[m_FIF]
         );
 
-        m_sceneBuffer.WriteScene
+        m_sceneBuffer.Write
         (
             m_FIF,
             m_frameIndex,
             m_context.allocator,
             m_framebufferManager.renderExtent,
             m_framebufferManager.displayExtent,
-            *m_scene
+            *m_scene,
+            m_renderConfig
         );
-
-        if (m_sceneBufferCompute.has_value())
-        {
-            m_sceneBufferCompute->WriteScene
-            (
-                m_FIF,
-                m_frameIndex,
-                m_context.allocator,
-                m_framebufferManager.renderExtent,
-                m_framebufferManager.displayExtent,
-                *m_scene
-            );
-        }
 
         m_meshBuffer.LoadMeshes
         (
