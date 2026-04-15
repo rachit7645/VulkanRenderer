@@ -49,7 +49,7 @@ void main()
     vec2 uv = uv0 * barycentricCoords.x + uv1 * barycentricCoords.y + uv2 * barycentricCoords.z;
 
     // TODO: Compute a mip level to sample from
-    float alpha  = textureLod(sampler2D(Textures[nonuniformEXT(mesh.material.albedoID)], Samplers[Constants.TextureSamplerIndex]), uv, 0).a;
+    float alpha  = textureLod(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), uv, 0).a;
           alpha *= mesh.material.albedoFactor.a;
 
     if (alpha < mesh.material.alphaCutOff)

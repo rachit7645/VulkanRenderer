@@ -51,7 +51,7 @@ void main()
 {
     Mesh mesh = Constants.CurrentMeshes.meshes[Input.drawID];
 
-    vec3 albedo  = texture(sampler2D(Textures[nonuniformEXT(mesh.material.albedoID)], Samplers[Constants.TextureSamplerIndex]), Input.uv[mesh.material.albedoUVMapID]).rgb;
+    vec3 albedo  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.albedoUVMapID]).rgb;
          albedo *= mesh.material.albedoFactor.rgb;
 
     gAlbedoIoR.rgb = albedo.rgb;
@@ -59,7 +59,7 @@ void main()
 
     mat3 TBN = mat3(Input.T, Input.B, Input.N);
 
-    vec3 normal = texture(sampler2D(Textures[nonuniformEXT(mesh.material.normalID)], Samplers[Constants.TextureSamplerIndex]), Input.uv[mesh.material.normalUVMapID]).rgb;
+    vec3 normal = texture(nonuniformEXT(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.normalUVMapID]).rgb;
          normal = GetNormalFromMap(normal, TBN);
 
     if (!gl_FrontFacing)
@@ -69,7 +69,7 @@ void main()
 
     gNormal = PackNormal(normal);
 
-    vec3 aoRghMtl    = texture(sampler2D(Textures[nonuniformEXT(mesh.material.aoRghMtlID)], Samplers[Constants.TextureSamplerIndex]), Input.uv[mesh.material.aoRghMtlUVMapID]).rgb;
+    vec3 aoRghMtl    = texture(nonuniformEXT(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.aoRghMtlUVMapID]).rgb;
          aoRghMtl.g *= mesh.material.roughnessFactor;
          aoRghMtl.b *= mesh.material.metallicFactor;
 
@@ -80,7 +80,7 @@ void main()
     gRoughnessMetallicHorizon.g = aoRghMtl.b;
     gRoughnessMetallicHorizon.b = CalculateHorizonOcclusion(reflected, Input.N);
 
-    vec3 emmisive  = texture(sampler2D(Textures[nonuniformEXT(mesh.material.emmisiveID)], Samplers[Constants.TextureSamplerIndex]), Input.uv[mesh.material.emmisiveUVMapID]).rgb;
+    vec3 emmisive  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.emmisiveID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.emmisiveUVMapID]).rgb;
          emmisive *= mesh.material.emmisiveFactor;
          emmisive *= mesh.material.emmisiveStrength;
 
