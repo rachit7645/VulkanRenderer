@@ -18,7 +18,6 @@
 #define FRUSTUM_GLSL
 
 #include "GLSL.h"
-#include "AABB.h"
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
@@ -32,8 +31,7 @@ GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)
 {
     #ifdef __cplusplus
     explicit FrustumBuffer(const glm::mat4& projectionView)
-        : planes{},
-          aabb{}
+        : planes{}
     {
         // Left
         planes[0].normal.x = projectionView[0][3] + projectionView[0][0];
@@ -79,38 +77,10 @@ GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)
             normal   /= length;
             distance /= length;
         }
-
-        constexpr std::array<glm::vec4, 8> NDC_CORNERS =
-        {
-            glm::vec4{ -1.0f, -1.0f, 0.0f, 1.0f },  // Near Bottom-Left
-            glm::vec4{  1.0f, -1.0f, 0.0f, 1.0f }, // Near Bottom-Right
-            glm::vec4{  1.0f,  1.0f, 0.0f, 1.0f }, // Near Top-Right
-            glm::vec4{ -1.0f,  1.0f, 0.0f, 1.0f }, // Near Top-Left
-            glm::vec4{ -1.0f, -1.0f, 1.0f, 1.0f }, // Far  Bottom-Left
-            glm::vec4{  1.0f, -1.0f, 1.0f, 1.0f }, // Far  Bottom-Right
-            glm::vec4{  1.0f,  1.0f, 1.0f, 1.0f }, // Far  Top-Right
-            glm::vec4{ -1.0f,  1.0f, 1.0f, 1.0f }, // Far  Top-Left
-        };
-
-        const glm::mat4 inverseProjectionView = glm::inverse(projectionView);
-
-        aabb.min = glm::vec3(std::numeric_limits<f32>::max());
-        aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
-
-        for (const auto& NDC : NDC_CORNERS)
-        {
-            const glm::vec4 projectedPosition = inverseProjectionView * NDC;
-
-            const glm::vec3 corner = glm::vec3(projectedPosition) / projectedPosition.w;
-
-            aabb.min = glm::min(aabb.min, corner);
-            aabb.max = glm::max(aabb.max, corner);
-        }
     }
     #endif
 
     Plane planes[6];
-    AABB  aabb;
 };
 
 GLSL_NAMESPACE_END

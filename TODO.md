@@ -24,3 +24,5 @@
 * Nuke Shader Modules
 * Sky Rendering
 * Culling Statistics
+* Combine ModelManager and TextureManager Into AssetManager
+* Debug Renderer

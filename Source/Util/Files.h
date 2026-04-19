@@ -31,6 +31,7 @@ namespace Util::Files
     [[nodiscard]] usize GetSize(const std::string_view path);
     [[nodiscard]] std::string GetNameWithoutExtension(const std::string_view fileName);
     [[nodiscard]] std::string GetExtension(const std::string_view fileName);
+    [[nodiscard]] std::time_t GetLastWriteTime(const std::string_view fileName);
 
     [[nodiscard]] bool Exists(const std::string_view fileName);
 

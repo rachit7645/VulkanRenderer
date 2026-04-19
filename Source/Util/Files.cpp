@@ -20,8 +20,6 @@
 #include <filesystem>
 #include <fstream>
 
-namespace filesystem = std::filesystem;
-
 namespace Util::Files
 {
     constexpr auto ASSETS_DIRECTORY = "Assets/";
@@ -33,29 +31,38 @@ namespace Util::Files
 
     std::string GetDirectory(const std::string_view path)
     {
-        return filesystem::path(path).parent_path().string();
+        return std::filesystem::path(path).parent_path().string();
     }
 
     usize GetSize(const std::string_view path)
     {
         static_assert(sizeof(usize) >= sizeof(std::uintmax_t), "How???");
 
-        return static_cast<usize>(filesystem::file_size(path));
+        return static_cast<usize>(std::filesystem::file_size(path));
     }
 
     std::string GetNameWithoutExtension(const std::string_view fileName)
     {
-        return filesystem::path(fileName).stem().string();
+        return std::filesystem::path(fileName).stem().string();
     }
 
     std::string GetExtension(const std::string_view fileName)
     {
-        return filesystem::path(fileName).extension().string();
+        return std::filesystem::path(fileName).extension().string();
+    }
+    
+    std::time_t GetLastWriteTime(const std::string_view fileName)
+    {
+        const auto path                     = std::filesystem::path(fileName);
+        const auto lastWriteTime            = std::filesystem::last_write_time(path);
+        const auto lastWriteTimeSystemClock = std::chrono::clock_cast<std::chrono::system_clock>(lastWriteTime);
+
+        return std::chrono::system_clock::to_time_t(lastWriteTimeSystemClock);
     }
 
     bool Exists(const std::string_view fileName)
     {
-        return filesystem::exists(filesystem::path(fileName));
+        return std::filesystem::exists(std::filesystem::path(fileName));
     }
 
     std::vector<u8> ReadBytes(const std::string_view path)

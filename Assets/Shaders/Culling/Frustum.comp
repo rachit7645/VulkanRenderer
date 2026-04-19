@@ -91,72 +91,29 @@ void main()
     }
 }
 
-// https://iquilezles.org/articles/frustumcorrect/
 bool IsVisible(Mesh mesh, Instance instance)
 {
-    AABB    aabb    = AABB_Transform(mesh.aabb, instance.transform);
-    vec3[8] corners = AABB_GetCorners(aabb);
-
-    // Test #1: Check if the AABB is outside or inside of frustum
+    AABB aabb = AABB_Transform(mesh.aabb, instance.transform);
 
     for (uint i = 0; i < 6; ++i)
     {
         Plane plane = Constants.Frustum.planes[i];
 
-        uint outside = 0;
+        vec3 center  = 0.5f * (aabb.max + aabb.min);
+        vec3 extents = 0.5f * (aabb.max - aabb.min);
 
-        for (uint j = 0; j < 8; ++j)
-        {
-            if ((dot(plane.normal, corners[j]) + plane.distance) < 0.0f)
-            {
-                ++outside;
-            }
-        }
+        vec3 signs;
 
-        if (outside == 8)
+        signs.x = plane.normal.x >= 0.0f ? 1.0f : -1.0f;
+        signs.y = plane.normal.y >= 0.0f ? 1.0f : -1.0f;
+        signs.z = plane.normal.z >= 0.0f ? 1.0f : -1.0f;
+
+        vec3 pVertex = center + signs * extents;
+
+        if ((dot(plane.normal, pVertex) + plane.distance) < 0.0f)
         {
             return false;
         }
-    }
-
-    // Test #2: Check if the frustum is outside or inside of the AABB
-    // Instead of the corners of the frustum, the AABB of the frustum can be checked against the AABB instead
-    // This reduces the number of required comparisions in the second test from 48 to 6
-
-    // -X
-    if (Constants.Frustum.aabb.max.x < aabb.min.x)
-    {
-        return false;
-    }
-
-    // +X
-    if (Constants.Frustum.aabb.min.x > aabb.max.x)
-    {
-        return false;
-    }
-
-    // -Y
-    if (Constants.Frustum.aabb.max.y < aabb.min.y)
-    {
-        return false;
-    }
-
-    // +Y
-    if (Constants.Frustum.aabb.min.y > aabb.max.y)
-    {
-        return false;
-    }
-
-    // -Z
-    if (Constants.Frustum.aabb.max.z < aabb.min.z)
-    {
-        return false;
-    }
-
-    // +Z
-    if (Constants.Frustum.aabb.min.z > aabb.max.z)
-    {
-        return false;
     }
 
     return true;
