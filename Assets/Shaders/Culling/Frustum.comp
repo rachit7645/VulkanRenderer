@@ -103,13 +103,12 @@ bool IsVisible(Mesh mesh, Instance instance)
     {
         Plane plane = Constants.Frustum.planes[i];
 
-        vec3 signs;
-
-        signs.x = plane.normal.x >= 0.0f ? 1.0f : -1.0f;
-        signs.y = plane.normal.y >= 0.0f ? 1.0f : -1.0f;
-        signs.z = plane.normal.z >= 0.0f ? 1.0f : -1.0f;
-
-        vec3 pVertex = center + signs * extents;
+        vec3 pVertex = center + vec3
+        (
+            plane.normal.x >= 0.0f ? extents.x : -extents.x,
+            plane.normal.y >= 0.0f ? extents.y : -extents.y,
+            plane.normal.z >= 0.0f ? extents.z : -extents.z
+        );
 
         if ((dot(plane.normal, pVertex) + plane.distance) < 0.0f)
         {

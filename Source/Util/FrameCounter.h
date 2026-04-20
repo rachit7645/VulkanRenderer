@@ -38,11 +38,8 @@ namespace Util
 
         TimePoint m_startTime      = {};
         TimePoint m_frameStartTime = {};
-        TimePoint m_plotStartTime  = {};
 
         usize m_frameCount = 0;
-
-        std::vector<f32> m_plotFrameTimes;
     };
 }
 

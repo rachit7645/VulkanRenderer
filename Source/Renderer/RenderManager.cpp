@@ -2095,6 +2095,7 @@ namespace Renderer
                 return true;
 
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+            {
                 if (event.window.data1 > 0 && event.window.data2 > 0)
                 {
                     const glm::ivec2 newWindowSize = {event.window.data1, event.window.data2};
@@ -2105,30 +2106,50 @@ namespace Renderer
                         Resize();
                     }
                 }
+
                 break;
+            }
 
             case SDL_EVENT_WINDOW_MINIMIZED:
                 Resize();
-            break;
+                break;
 
             case SDL_EVENT_KEY_DOWN:
+            {
                 switch (event.key.scancode)
                 {
                 case SDL_SCANCODE_F1:
+                {
                     if (!SDL_SetWindowRelativeMouseMode(m_window.handle, !SDL_GetWindowRelativeMouseMode(m_window.handle)))
                     {
                         Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
                     }
+
                     break;
+                }
 
                 case SDL_SCANCODE_F2:
                     m_scene->camera.isEnabled = !m_scene->camera.isEnabled;
                     break;
 
+                case SDL_SCANCODE_F11:
+                {
+                    m_window.isFullscreen = !m_window.isFullscreen;
+
+                    if (!SDL_SetWindowFullscreen(m_window.handle, m_window.isFullscreen))
+                    {
+                        Logger::Error("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
+                    }
+
+                    break;
+                }
+
                 default:
                     break;
                 }
+
                 break;
+            }
 
             case SDL_EVENT_MOUSE_MOTION:
                 m_window.inputs.SetMousePosition(glm::vec2(event.motion.xrel, event.motion.yrel));
@@ -2139,13 +2160,17 @@ namespace Renderer
                 break;
 
             case SDL_EVENT_GAMEPAD_ADDED:
+            {
                 if (m_window.inputs.gamepad == nullptr)
                 {
                     m_window.inputs.FindGamepad();
                 }
+
                 break;
+            }
 
             case SDL_EVENT_GAMEPAD_REMOVED:
+            {
                 if (m_window.inputs.gamepad != nullptr && event.gdevice.which == m_window.inputs.GetGamepadID())
                 {
                     if (m_window.inputs.gamepad != nullptr)
@@ -2155,7 +2180,9 @@ namespace Renderer
 
                     m_window.inputs.FindGamepad();
                 }
+
                 break;
+            }
 
             default:
                 continue;

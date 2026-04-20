@@ -21,19 +21,13 @@
 
 namespace Util
 {
-    constexpr usize PLOT_FRAME_TIME_MAX_COUNT = 25;
-    constexpr auto  PLOT_UPDATE_FREQUENCY     = std::chrono::milliseconds(200);
-
     void FrameCounter::Reset()
     {
         m_FPS          = 0.0f;
         m_frameCount = 0;
 
-        m_plotFrameTimes.clear();
-
         m_startTime      = Clock::now();
         m_frameStartTime = m_startTime;
-        m_plotStartTime  = m_startTime;
     }
 
     void FrameCounter::Update()
@@ -42,7 +36,6 @@ namespace Util
 
         const auto frameDuration = now - m_frameStartTime;
         const auto cycleDuration = now - m_startTime;
-        const auto plotDuration  = now - m_plotStartTime;
 
         frameDelta       = std::chrono::duration<f32>(frameDuration).count();
         m_frameStartTime = now;
@@ -50,18 +43,6 @@ namespace Util
         ++m_frameCount;
 
         const f32 frameTime = std::chrono::duration<f32, std::milli>(frameDuration).count();
-
-        if (plotDuration >= PLOT_UPDATE_FREQUENCY)
-        {
-            if (m_plotFrameTimes.size() >= PLOT_FRAME_TIME_MAX_COUNT)
-            {
-                m_plotFrameTimes.erase(m_plotFrameTimes.begin());
-            }
-
-            m_plotFrameTimes.emplace_back(frameTime);
-
-            m_plotStartTime = now;
-        }
 
         if (cycleDuration >= std::chrono::seconds(1))
         {
@@ -79,32 +60,6 @@ namespace Util
             {
                 ImGui::Text("FPS        | %.3f",    m_FPS);
                 ImGui::Text("Frame Time | %.4f ms", frameTime);
-
-                ImGui::Separator();
-
-                if (ImPlot::BeginPlot("Frame Time", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImPlotFlags_NoLegend | ImPlotFlags_NoMenus | ImPlotFlags_NoBoxSelect | ImPlotFlags_NoMouseText))
-                {
-                    ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_AutoFit);
-                    ImPlot::SetupAxisLimits(ImAxis_X1, 0, PLOT_FRAME_TIME_MAX_COUNT, ImGuiCond_Always);
-                    ImPlot::SetupAxisLimitsConstraints(ImAxis_Y1, 0.0f, 50.0f);
-
-                    ImPlotSpec spec;
-                    spec.FillColor = IMPLOT_AUTO_COL;
-                    spec.FillAlpha = 0.3f;
-                    spec.Flags     = ImPlotLineFlags_Shaded;
-
-                    ImPlot::PlotLine
-                    (
-                        "##FrameTime",
-                        m_plotFrameTimes.data(),
-                        static_cast<s32>(m_plotFrameTimes.size()),
-                        1.0,
-                        0.0,
-                        spec
-                    );
-
-                    ImPlot::EndPlot();
-                }
 
                 ImGui::EndMenu();
             }
