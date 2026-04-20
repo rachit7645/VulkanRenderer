@@ -55,6 +55,8 @@
 #include "Engine/Scene.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderConfig.h"
+#include "Renderer/Debug/RenderPass.h"
+#include "Util/Log.h"
 
 #ifdef ENGINE_DLSS
 #include "Renderer/DLSS/Evaluation.h"
@@ -154,6 +156,7 @@ namespace Renderer
         ShadowRT::RayDispatch   m_shadowRT;
         TAA::RenderPass         m_taa;
         SpotShadow::RenderPass  m_spotShadow;
+        Debug::RenderPass       m_debug;
 
         Culling::Dispatch       m_culling;
         AO::VBAO::Dispatch      m_vbao;

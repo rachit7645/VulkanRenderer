@@ -22,7 +22,6 @@
 #include "Buffer.h"
 #include "BarrierWriter.h"
 #include "ResizableAllocator.h"
-#include "Extensions.h"
 #include "StagingPool.h"
 #include "Externals/VMA.h"
 #include "Util/Types.h"
@@ -42,7 +41,7 @@ namespace Vk
             GPU::GeometryInfo info;
         };
 
-        explicit VertexBuffer(const Vk::Extensions& extensions);
+        VertexBuffer();
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>;
 

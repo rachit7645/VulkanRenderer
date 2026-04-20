@@ -296,9 +296,9 @@ namespace Models
         textureManager.ImGuiDisplay();
     }
 
-    void ModelManager::Destroy(VkDevice device, VmaAllocator allocator)
+    void ModelManager::Destroy(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
-        geometryBuffer.Destroy(allocator);
+        geometryBuffer.Destroy(allocator, stagingPool);
         textureManager.Destroy(device, allocator);
 
         m_modelMap.clear();

@@ -45,9 +45,10 @@ namespace Renderer
           m_pointShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_gBuffer{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_lighting{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_shadowRT{m_megaSet, m_renderConfig,m_pipelineManager, m_framebufferManager},
+          m_shadowRT{m_megaSet, m_pipelineManager, m_framebufferManager},
           m_taa{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_spotShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_debug{m_context.device, m_context.allocator, m_swapchain, m_pipelineManager, m_stagingPool},
           m_culling{m_context.device, m_context.allocator, m_pipelineManager},
           m_vbao{m_megaSet, m_pipelineManager, m_framebufferManager},
           m_tiledLighting{m_megaSet, m_pipelineManager, m_framebufferManager},
@@ -78,12 +79,13 @@ namespace Renderer
 
             m_iblGenerator.Destroy(m_context.allocator);
             m_culling.Destroy(m_context.allocator);
+            m_debug.Destroy(m_context.allocator, m_stagingPool);
             m_shadowRT.Destroy(m_context.allocator);
             m_imGui.Destroy(m_context.allocator);
 
             m_megaSet.Destroy(m_context.device);
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
-            m_modelManager.Destroy(m_context.device, m_context.allocator);
+            m_modelManager.Destroy(m_context.device, m_context.allocator, m_stagingPool);
             m_pipelineManager.Destroy(m_context.device);
             m_stagingPool.Destroy(m_context.allocator);
 
@@ -987,15 +989,13 @@ namespace Renderer
                 TraceRays(rayDispatchCmdBuffer);
             rayDispatchCmdBuffer.EndRecording();
 
-            const VkPipelineStageFlags2 stageMask = m_renderConfig.rayTracing.isEnabled ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR : VK_PIPELINE_STAGE_2_CLEAR_BIT;
-
             const VkSemaphoreSubmitInfo gBufferGenerationWaitSemaphoreInfo =
             {
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
-                .stageMask   = stageMask,
+                .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
                 .deviceIndex = 0
             };
 
@@ -1013,7 +1013,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::RayDispatch),
-                .stageMask   = stageMask,
+                .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
                 .deviceIndex = 0
             };
 
@@ -1199,7 +1199,7 @@ namespace Renderer
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
                 .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::RayDispatch),
-                .stageMask   = m_renderConfig.rayTracing.isEnabled ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR : VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
                 .deviceIndex = 0
             };
 
@@ -1250,52 +1250,49 @@ namespace Renderer
     {
         Update(cmdBuffer);
 
-        if (m_renderConfig.rayTracing.isEnabled)
+        if (m_scene->haveRenderObjectsChanged)
         {
-            if (m_scene->haveRenderObjectsChanged)
+            if (m_accelerationStructure.has_value())
             {
-                if (m_accelerationStructure.has_value())
+                m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
                 {
-                    m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
-                    {
-                        as.Destroy(device, allocator);
-                    });
-                }
-
-                m_accelerationStructure = Vk::AccelerationStructure{};
-
-                m_accelerationStructure->BuildBottomLevelAS
-                (
-                    m_frameIndex,
-                    cmdBuffer,
-                    m_context,
-                    m_modelManager,
-                    m_scene->renderObjects,
-                    m_deletionQueues[m_FIF]
-                );
-
-                m_scene->haveRenderObjectsChanged = false;
+                    as.Destroy(device, allocator);
+                });
             }
 
-            m_accelerationStructure->TryCompactBottomLevelAS
-            (
-                cmdBuffer,
-                m_context.device,
-                m_context.allocator,
-                m_graphicsTimeline,
-                m_deletionQueues[m_FIF]
-            );
+            m_accelerationStructure = Vk::AccelerationStructure{};
 
-            m_accelerationStructure->BuildTopLevelAS
+            m_accelerationStructure->BuildBottomLevelAS
             (
-                m_FIF,
+                m_frameIndex,
                 cmdBuffer,
                 m_context,
                 m_modelManager,
                 m_scene->renderObjects,
                 m_deletionQueues[m_FIF]
             );
+
+            m_scene->haveRenderObjectsChanged = false;
         }
+
+        m_accelerationStructure->TryCompactBottomLevelAS
+        (
+            cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_graphicsTimeline,
+            m_deletionQueues[m_FIF]
+        );
+
+        m_accelerationStructure->BuildTopLevelAS
+        (
+            m_FIF,
+            cmdBuffer,
+            m_context,
+            m_modelManager,
+            m_scene->renderObjects,
+            m_deletionQueues[m_FIF]
+        );
 
         m_pointShadow.Render
         (
@@ -1389,12 +1386,9 @@ namespace Renderer
     {
         bool canPerformRayDispatch = false;
 
-        if (m_renderConfig.rayTracing.isEnabled)
+        if (m_accelerationStructure.has_value())
         {
-            if (m_accelerationStructure.has_value())
-            {
-                canPerformRayDispatch = m_accelerationStructure->topLevelASes[m_FIF].handle != VK_NULL_HANDLE;
-            }
+            canPerformRayDispatch = m_accelerationStructure->topLevelASes[m_FIF].handle != VK_NULL_HANDLE;
         }
 
         if (canPerformRayDispatch)
@@ -1508,6 +1502,20 @@ namespace Renderer
         );
 
         BlitToSwapchain(cmdBuffer);
+
+        m_debug.Render
+        (
+            m_FIF,
+            m_frameIndex,
+            cmdBuffer,
+            m_pipelineManager,
+            m_swapchain,
+            m_sceneBuffer,
+            m_meshBuffer,
+            m_indirectBuffer,
+            m_stagingPool,
+            m_deletionQueues[m_FIF]
+        );
 
         m_imGui.Render
         (

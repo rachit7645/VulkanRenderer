@@ -27,10 +27,6 @@
 namespace Vk
 {
     GeometryBuffer::GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool)
-        : indexBuffer(context.extensions),
-          positionBuffer(context.extensions),
-          uvBuffer(context.extensions),
-          vertexBuffer(context.extensions)
     {
         cubeBuffer = Vk::Buffer
         (
@@ -124,8 +120,6 @@ namespace Vk
         {
             Vk::BeginLabel(cmdBuffer, "Cube Transfer", {0.5117f, 0.0749f, 0.3901f, 1.0f});
 
-            constexpr VkDeviceSize VERTICES_SIZE = static_cast<VkDeviceSize>(3 * 36) * sizeof(f32);
-
             const VkBufferCopy2 copyRegion =
             {
                 .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
@@ -158,7 +152,7 @@ namespace Vk
                     .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .offset         = 0,
-                    .size           = VERTICES_SIZE
+                    .size           = m_pendingCubeUpload->memoryBlock.size
                 }
             );
 
@@ -355,7 +349,7 @@ namespace Vk
         return vertexBuffer.GetBuffer();
     }
 
-    void GeometryBuffer::Destroy(VmaAllocator allocator)
+    void GeometryBuffer::Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
         indexBuffer.Destroy(allocator);
         positionBuffer.Destroy(allocator);
@@ -365,6 +359,8 @@ namespace Vk
 
         if (m_pendingCubeUpload.has_value())
         {
+            stagingPool.Free(m_pendingCubeUpload.value());
+
             m_pendingCubeUpload = std::nullopt;
         }
     }

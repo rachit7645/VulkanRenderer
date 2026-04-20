@@ -120,6 +120,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Lighting/RenderPass.cpp
     Source/Renderer/TAA/RenderPass.cpp
     Source/Renderer/SpotShadow/RenderPass.cpp
+    Source/Renderer/Debug/RenderPass.cpp
     # Compute Pass Sources
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp

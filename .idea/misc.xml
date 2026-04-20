@@ -9,6 +9,7 @@
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="CidrRootsConfiguration">
     <excludeRoots>
+      <file path="$PROJECT_DIR$/Build/Debug" />
       <file path="$PROJECT_DIR$/Templates" />
     </excludeRoots>
   </component>

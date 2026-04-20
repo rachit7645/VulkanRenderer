@@ -253,7 +253,7 @@ namespace Renderer::PointShadow
             {
                 Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", face), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
 
-                culling.Frustum
+                culling.Execute
                 (
                     frameIndex,
                     sceneBuffer.shadowedPointLights[i].matrices[face],

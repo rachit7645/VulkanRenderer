@@ -177,9 +177,21 @@ namespace Vk
             swapchainMaintenanceFeatures.pNext = nullptr;
             #endif
 
+            VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
+            rayTracingMaintenance1Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+            rayTracingMaintenance1Features.pNext = &swapchainMaintenanceFeatures;
+
+            VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
+            rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+            rayTracingPipelineFeatures.pNext = &rayTracingMaintenance1Features;
+
+            VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
+            accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+            accelerationStructureFeatures.pNext = &rayTracingPipelineFeatures;
+
             VkPhysicalDeviceVulkan11Features vk11Features = {};
             vk11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-            vk11Features.pNext = &swapchainMaintenanceFeatures;
+            vk11Features.pNext = &accelerationStructureFeatures;
 
             VkPhysicalDeviceVulkan12Features vk12Features = {};
             vk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -255,16 +267,19 @@ namespace Vk
         const auto vk13Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
         const auto vk14Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan14Features>(featureSet.pNext);
 
-        const auto swapchainMaintenanceFeatures  = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
+        const auto swapchainMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
+
+        const auto accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureSet.pNext);
+        const auto rayTracingFeatures            = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureSet.pNext);
+        const auto rayTracingMaintenance1       = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(featureSet.pNext);
 
         #ifdef ENGINE_DEBUG
         const auto shaderRelaxedExtendedInstructionFeatures = Vk::FindStructureInChain<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(featureSet.pNext);
         #endif
 
         // Score parts
-        const usize discreteGPU       = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
-        const usize completeQueues    = queues.HasAllFamilies() ? 1000 : 0;
-        const usize rayTracingSupport = currentExtensions.HasRayTracing() ? 5000 : 0;
+        const usize discreteGPU    = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
+        const usize completeQueues = queues.HasAllFamilies() ? 1000 : 0;
 
         // Requirements
         const bool hasRequiredQueueFamilies = queues.HasRequiredFamilies();
@@ -279,6 +294,7 @@ namespace Vk
         // Need extensions to calculate these
         bool isSwapChainAdequate     = false;
         bool hasSwapchainMaintenance = false;
+        bool hasRayTracing           = false;
 
         #ifdef ENGINE_DEBUG
         bool hasShaderRelaxedExtendedInstruction = false;
@@ -294,6 +310,12 @@ namespace Vk
             #ifdef ENGINE_DEBUG
             hasShaderRelaxedExtendedInstruction = shaderRelaxedExtendedInstructionFeatures->shaderRelaxedExtendedInstruction;
             #endif
+
+            const bool hasAccelerationStructure = accelerationStructureFeatures->accelerationStructure;
+            const bool hasRayTracingPipeline    = rayTracingFeatures->rayTracingPipeline;
+            const bool hasRayTracingMaintenance = rayTracingMaintenance1->rayTracingMaintenance1;
+
+            hasRayTracing = hasAccelerationStructure && hasRayTracingPipeline && hasRayTracingMaintenance;
         }
 
         // Standard features
@@ -346,7 +368,7 @@ namespace Vk
         const bool hasStandard = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
                                  hasImageCubeArray && hasDepthClamp && hasInt64 && indexU32 && hasInt16;
 
-        const bool hasExtensions = isSwapChainAdequate && hasSwapchainMaintenance
+        const bool hasExtensions = isSwapChainAdequate && hasSwapchainMaintenance && hasRayTracing
                                    #ifdef ENGINE_DEBUG
                                    && hasShaderRelaxedExtendedInstruction
                                    #endif
@@ -364,7 +386,7 @@ namespace Vk
 
         const bool hasVk14 = hasMaintenance5 && hasPushDescriptor;
 
-        const usize totalScore = discreteGPU + completeQueues + rayTracingSupport;
+        const usize totalScore = discreteGPU + completeQueues;
 
         return (hasRequired && hasStandard && hasExtensions && hasVk11 && hasVk12 && hasVk13 && hasVk14) * totalScore;
     }
@@ -420,23 +442,12 @@ namespace Vk
         swapchainMaintenanceFeatures.sType                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
         swapchainMaintenanceFeatures.swapchainMaintenance1 = VK_TRUE;
 
-        if (extensions.HasRayTracing())
-        {
-            #ifdef ENGINE_DEBUG
-            swapchainMaintenanceFeatures.pNext             = &shaderRelaxedExtendedInstructionFeatures;
-            shaderRelaxedExtendedInstructionFeatures.pNext = &accelerationStructureFeatures;
-            #else
-            swapchainMaintenanceFeatures.pNext = &accelerationStructureFeatures;
-            #endif
-        }
-        else
-        {
-            #ifdef ENGINE_DEBUG
-            swapchainMaintenanceFeatures.pNext = &shaderRelaxedExtendedInstructionFeatures;
-            #else
-            swapchainMaintenanceFeatures.pNext = nullptr;
-            #endif
-        }
+        #ifdef ENGINE_DEBUG
+        swapchainMaintenanceFeatures.pNext             = &shaderRelaxedExtendedInstructionFeatures;
+        shaderRelaxedExtendedInstructionFeatures.pNext = &accelerationStructureFeatures;
+        #else
+        swapchainMaintenanceFeatures.pNext = &accelerationStructureFeatures;
+        #endif
 
         VkPhysicalDeviceVulkan11Features vk11Features = {};
         vk11Features.sType                    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;

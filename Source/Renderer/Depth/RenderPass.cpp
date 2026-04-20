@@ -153,7 +153,7 @@ namespace Renderer::Depth
     {
         Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        culling.Frustum
+        culling.Execute
         (
             frameIndex,
             sceneBuffer.cullingJitteredProjectionView,

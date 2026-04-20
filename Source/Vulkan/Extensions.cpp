@@ -43,6 +43,10 @@ namespace Vk
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME,
         #ifdef ENGINE_DEBUG
         VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME
         #endif
@@ -52,7 +56,6 @@ namespace Vk
     {
         QueryInstanceExtensions();
         QueryDeviceExtensions(device);
-        QueryDeviceFeatures(device);
     }
 
     std::vector<const char*> Extensions::GetInstanceExtensions()
@@ -100,14 +103,6 @@ namespace Vk
     std::vector<const char*> Extensions::GetDeviceExtensions(ENGINE_UNUSED VkInstance instance, ENGINE_UNUSED VkPhysicalDevice physicalDevice) const
     {
         auto extensions = std::vector(REQUIRED_DEVICE_EXTENSIONS.begin(), REQUIRED_DEVICE_EXTENSIONS.end());
-
-        if (HasRayTracing())
-        {
-            extensions.emplace_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-            extensions.emplace_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-            extensions.emplace_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-            extensions.emplace_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
-        }
 
         if (HasMemoryBudget())
         {
@@ -161,25 +156,6 @@ namespace Vk
         const bool hasRequiredDeviceExtensions   = std::ranges::all_of(REQUIRED_DEVICE_EXTENSIONS,   ExtensionChecker);
 
         return hasRequiredInstanceExtensions && hasRequiredDeviceExtensions;
-    }
-
-    bool Extensions::HasRayTracing() const
-    {
-        const bool hasASExtension = HasExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-        const bool hasASFeature   = m_accelerationStructureFeatures.accelerationStructure != 0u;
-        const bool hasAS          = hasASExtension && hasASFeature;
-
-        const bool hasDeferredHostOperations = HasExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-
-        const bool hasRayTracingPipelineExtension = HasExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-        const bool hasRayTracingPipelineFeature   = m_rayTracingPipelineFeatures.rayTracingPipeline != 0u;
-        const bool hasRayTracingPipeline          = hasRayTracingPipelineExtension && hasRayTracingPipelineFeature;
-
-        const bool hasRayTracingMaintenanceExtension = HasExtension(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
-        const bool hasRayTracingMaintenanceFeature   = m_rayTracingMaintenanceFeatures.rayTracingMaintenance1 != 0u;
-        const bool hasRayTracingMaintenance          = hasRayTracingMaintenanceExtension && hasRayTracingMaintenanceFeature;
-
-        return hasAS && hasDeferredHostOperations && hasRayTracingPipeline && hasRayTracingMaintenance;
     }
 
     bool Extensions::HasMemoryBudget() const
@@ -261,23 +237,5 @@ namespace Vk
         {
             m_extensionTable[name] = true;
         }
-    }
-
-    void Extensions::QueryDeviceFeatures(VkPhysicalDevice device)
-    {
-        m_rayTracingMaintenanceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
-        m_rayTracingMaintenanceFeatures.pNext = nullptr;
-
-        m_rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-        m_rayTracingPipelineFeatures.pNext = &m_rayTracingMaintenanceFeatures;
-
-        m_accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-        m_accelerationStructureFeatures.pNext = &m_rayTracingPipelineFeatures;
-
-        VkPhysicalDeviceFeatures2 features = {};
-        features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        features.pNext = &m_accelerationStructureFeatures;
-
-        vkGetPhysicalDeviceFeatures2(device, &features);
     }
 }

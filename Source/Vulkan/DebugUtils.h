@@ -180,7 +180,8 @@ namespace Vk
         Vk::CheckResult(vkSetDebugUtilsObjectNameEXT(
             device,
             &debugUtilsObjectNameInfo),
-        "Failed to set object name!");
+            "Failed to set object name!"
+        );
         #endif
     }
 

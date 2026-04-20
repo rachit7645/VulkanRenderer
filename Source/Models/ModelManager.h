@@ -33,7 +33,7 @@ namespace Models
     public:
         explicit ModelManager(const Vk::Context& context, Vk::StagingPool& stagingPool);
 
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Destroy(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool);
 
         [[nodiscard]] Models::ModelID Load(const std::string_view path);
 

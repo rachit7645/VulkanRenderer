@@ -49,7 +49,6 @@ namespace Renderer
         DLSS::DLSSConfig DLSSConfig;
         #endif
 
-        RenderConfig::Entry rayTracing = {};
         RenderConfig::Entry multiQueue = {};
         RenderConfig::Entry DLSS       = {};
     private:

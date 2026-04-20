@@ -184,7 +184,7 @@ namespace Renderer::SpotShadow
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
-            culling.Frustum
+            culling.Execute
             (
                 frameIndex,
                 sceneBuffer.shadowedSpotLights[i].matrix,

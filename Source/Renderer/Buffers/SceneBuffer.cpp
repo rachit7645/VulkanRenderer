@@ -66,7 +66,7 @@ namespace Renderer::Buffers
         {
             if (ImGui::BeginMenu("Renderer"))
             {
-                if (ImGui::CollapsingHeader("Debug"))
+                if (ImGui::CollapsingHeader("Culling"))
                 {
                     ImGui::Checkbox("Main View: Pause Culling", &m_pauseCulling);
                 }

@@ -42,23 +42,17 @@ namespace Vk
         #endif
 
         [[nodiscard]] bool HasRequiredExtensions() const;
-        [[nodiscard]] bool HasRayTracing()         const;
         [[nodiscard]] bool HasMemoryBudget()       const;
     private:
         [[nodiscard]] bool HasExtension(const std::string_view name) const;
 
         void QueryInstanceExtensions();
         void QueryDeviceExtensions(VkPhysicalDevice device);
-        void QueryDeviceFeatures(VkPhysicalDevice device);
 
         std::vector<VkExtensionProperties> m_instanceExtensions;
         std::vector<VkExtensionProperties> m_deviceExtensions;
 
         ankerl::unordered_dense::map<std::string, bool, Util::StringHash, std::equal_to<>> m_extensionTable;
-
-        VkPhysicalDeviceAccelerationStructureFeaturesKHR  m_accelerationStructureFeatures = {};
-        VkPhysicalDeviceRayTracingPipelineFeaturesKHR     m_rayTracingPipelineFeatures    = {};
-        VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR m_rayTracingMaintenanceFeatures = {};
     };
 }
 

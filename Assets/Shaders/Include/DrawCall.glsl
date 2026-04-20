@@ -34,10 +34,28 @@ layout(buffer_reference, scalar, buffer_reference_align = 4) buffer DrawCallBuff
     DrawCall drawCalls[];
 };
 
+layout(buffer_reference, scalar, buffer_reference_align = 4) buffer DrawCallBufferWithoutCount
+{
+    DrawCall drawCalls[];
+};
+
 layout(buffer_reference, scalar, buffer_reference_align = 4) buffer InstanceIndexBuffer
 {
     uint indices[];
 };
+
+DrawCall GenerateDrawCall(uint indexCount, uint instanceCount)
+{
+    DrawCall drawCall;
+
+    drawCall.indexCount    = indexCount;
+    drawCall.instanceCount = instanceCount;
+    drawCall.firstIndex    = 0;
+    drawCall.vertexOffset  = 0;
+    drawCall.firstInstance = 0;
+
+    return drawCall;
+}
 
 DrawCall GenerateDrawCall(SurfaceInfo surfaceInfo)
 {

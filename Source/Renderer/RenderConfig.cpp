@@ -25,11 +25,8 @@ namespace Renderer
         : DLSSConfig{context}
     #endif
     {
-        rayTracing.isSupported = context.extensions.HasRayTracing();
-        rayTracing.isEnabled   = rayTracing.isSupported;
-
         multiQueue.isSupported = context.queueFamilies.HasAllFamilies();
-        multiQueue.isEnabled   = multiQueue.isSupported && rayTracing.isSupported;
+        multiQueue.isEnabled   = multiQueue.isSupported;
 
         #ifdef ENGINE_DLSS
         DLSS.isSupported = DLSSConfig.isSupported;
@@ -48,7 +45,6 @@ namespace Renderer
             {
                 if (ImGui::CollapsingHeader("Config"))
                 {
-                    ImGui::Checkbox("Raytracing",  &rayTracing.isEnabled);
                     ImGui::Checkbox("Multi-Queue", &multiQueue.isEnabled);
                     ImGui::Checkbox("DLSS",        &DLSS.isEnabled);
                 }
@@ -64,7 +60,6 @@ namespace Renderer
 
     void RenderConfig::Validate()
     {
-        rayTracing.Validate();
         multiQueue.Validate();
         DLSS.Validate();
     }

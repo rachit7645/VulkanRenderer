@@ -33,7 +33,7 @@ namespace Vk
         GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
-        void Destroy(VmaAllocator allocator);
+        void Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool);
 
         void Update
         (
@@ -55,10 +55,10 @@ namespace Vk
         [[nodiscard]] const Vk::Buffer& GetUVBuffer()       const;
         [[nodiscard]] const Vk::Buffer& GetVertexBuffer()   const;
 
-        Vk::VertexBuffer<GPU::Index>    indexBuffer;
-        Vk::VertexBuffer<GPU::Position> positionBuffer;
-        Vk::VertexBuffer<GPU::UV>       uvBuffer;
-        Vk::VertexBuffer<GPU::Vertex>   vertexBuffer;
+        Vk::VertexBuffer<GPU::Index>    indexBuffer    = {};
+        Vk::VertexBuffer<GPU::Position> positionBuffer = {};
+        Vk::VertexBuffer<GPU::UV>       uvBuffer       = {};
+        Vk::VertexBuffer<GPU::Vertex>   vertexBuffer   = {};
 
         Vk::Buffer cubeBuffer;
     private:
