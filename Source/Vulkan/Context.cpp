@@ -305,6 +305,7 @@ namespace Vk
         const bool hasDepthClamp        = featureSet.features.depthClamp;
         const bool hasInt64             = featureSet.features.shaderInt64;
         const bool indexU32             = featureSet.features.fullDrawIndexUint32;
+        const bool hasInt16             = featureSet.features.shaderInt16;
 
         // Vulkan 1.1 features
         const bool hasRequiredMultiViewCount      = vk11Properties->maxMultiviewViewCount >= 6;
@@ -343,7 +344,7 @@ namespace Vk
         const bool hasRequired = hasRequiredQueueFamilies && hasRequiredExtensions;
 
         const bool hasStandard = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
-                                 hasImageCubeArray && hasDepthClamp && hasInt64 && indexU32;
+                                 hasImageCubeArray && hasDepthClamp && hasInt64 && indexU32 && hasInt16;
 
         const bool hasExtensions = isSwapChainAdequate && hasSwapchainMaintenance
                                    #ifdef ENGINE_DEBUG
@@ -438,8 +439,8 @@ namespace Vk
         }
 
         VkPhysicalDeviceVulkan11Features vk11Features = {};
-        vk11Features.sType                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-        vk11Features.pNext                = &swapchainMaintenanceFeatures;
+        vk11Features.sType                    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+        vk11Features.pNext                    = &swapchainMaintenanceFeatures;
         vk11Features.shaderDrawParameters     = VK_TRUE;
         vk11Features.multiview                = VK_TRUE;
         vk11Features.storageBuffer16BitAccess = VK_TRUE;
@@ -488,6 +489,7 @@ namespace Vk
         deviceFeatures.features.depthClamp           = VK_TRUE;
         deviceFeatures.features.shaderInt64          = VK_TRUE;
         deviceFeatures.features.fullDrawIndexUint32  = VK_TRUE;
+        deviceFeatures.features.shaderInt16          = VK_TRUE;
 
         const VkDeviceCreateInfo createInfo =
         {

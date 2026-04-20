@@ -33,21 +33,19 @@ using GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT;
 
 #endif
 
-// TODO: Consider using smaller integers
-
 struct TileLightIndices
 {
-    u32 pointLightCount;
-    u32 pointLightIndices[MAX_POINT_LIGHT_COUNT];
+    u16 pointLightCount;
+    u16 pointLightIndices[MAX_POINT_LIGHT_COUNT];
 
-    u32 shadowedPointLightCount;
-    u32 shadowedPointLightIndices[MAX_SHADOWED_POINT_LIGHT_COUNT];
+    u16 shadowedPointLightCount;
+    u16 shadowedPointLightIndices[MAX_SHADOWED_POINT_LIGHT_COUNT];
 
-    u32 spotLightCount;
-    u32 spotLightIndices[MAX_SPOT_LIGHT_COUNT];
+    u16 spotLightCount;
+    u16 spotLightIndices[MAX_SPOT_LIGHT_COUNT];
 
-    u32 shadowedSpotLightCount;
-    u32 shadowedSpotLightIndices[MAX_SHADOWED_SPOT_LIGHT_COUNT];
+    u16 shadowedSpotLightCount;
+    u16 shadowedSpotLightIndices[MAX_SHADOWED_SPOT_LIGHT_COUNT];
 };
 
 #ifndef __cplusplus

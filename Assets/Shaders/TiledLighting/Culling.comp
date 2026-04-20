@@ -85,10 +85,10 @@ void main()
 
     TileLightIndices indices;
 
-    indices.pointLightCount         = 0;
-    indices.shadowedPointLightCount = 0;
-    indices.spotLightCount          = 0;
-    indices.shadowedSpotLightCount  = 0;
+    indices.pointLightCount         = u16(0u);
+    indices.shadowedPointLightCount = u16(0u);
+    indices.spotLightCount          = u16(0u);
+    indices.shadowedSpotLightCount  = u16(0u);
 
     for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
     {
@@ -96,7 +96,7 @@ void main()
 
         if (Intersects(aabb, light))
         {
-            indices.pointLightIndices[indices.pointLightCount] = i;
+            indices.pointLightIndices[indices.pointLightCount] = u16(i);
             ++indices.pointLightCount;
         }
     }
@@ -107,7 +107,7 @@ void main()
 
         if (Intersects(aabb, light))
         {
-            indices.shadowedPointLightIndices[indices.shadowedPointLightCount] = i;
+            indices.shadowedPointLightIndices[indices.shadowedPointLightCount] = u16(i);
             ++indices.shadowedPointLightCount;
         }
     }
@@ -118,7 +118,7 @@ void main()
 
         if (Intersects(aabb, light))
         {
-            indices.spotLightIndices[indices.spotLightCount] = i;
+            indices.spotLightIndices[indices.spotLightCount] = u16(i);
             ++indices.spotLightCount;
         }
     }
@@ -129,7 +129,7 @@ void main()
 
         if (Intersects(aabb, light))
         {
-            indices.shadowedSpotLightIndices[indices.shadowedSpotLightCount] = i;
+            indices.shadowedSpotLightIndices[indices.shadowedSpotLightCount] = u16(i);
             ++indices.shadowedSpotLightCount;
         }
     }

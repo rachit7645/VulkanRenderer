@@ -95,12 +95,13 @@ bool IsVisible(Mesh mesh, Instance instance)
 {
     AABB aabb = AABB_Transform(mesh.aabb, instance.transform);
 
+    // Why does everything need a different representation for AABBs
+    vec3 center  = 0.5f * (aabb.max + aabb.min);
+    vec3 extents = 0.5f * (aabb.max - aabb.min);
+
     for (uint i = 0; i < 6; ++i)
     {
         Plane plane = Constants.Frustum.planes[i];
-
-        vec3 center  = 0.5f * (aabb.max + aabb.min);
-        vec3 extents = 0.5f * (aabb.max - aabb.min);
 
         vec3 signs;
 
