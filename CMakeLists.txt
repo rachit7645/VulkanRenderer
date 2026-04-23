@@ -232,7 +232,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 )
 
 # Library includes
-target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Shared/)
+target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Externals/taskflow/ Shared/)
 # No Vulkan prototypes
 target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
 
