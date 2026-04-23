@@ -28,7 +28,7 @@ namespace Util::Files
     [[nodiscard]] std::string GetAssetPath(const std::string_view prefix, const std::string_view fileName);
 
     [[nodiscard]] std::string GetDirectory(const std::string_view path);
-    [[nodiscard]] usize GetSize(const std::string_view path);
+    [[nodiscard]] usize       GetSize(const std::string_view path);
     [[nodiscard]] std::string GetNameWithoutExtension(const std::string_view fileName);
     [[nodiscard]] std::string GetExtension(const std::string_view fileName);
     [[nodiscard]] std::time_t GetLastWriteTime(const std::string_view fileName);
@@ -36,6 +36,9 @@ namespace Util::Files
     [[nodiscard]] bool Exists(const std::string_view fileName);
 
     [[nodiscard]] std::vector<u8> ReadBytes(const std::string_view path);
+                  void            WriteBytes(const std::string_view path, const std::span<const u8> binary);
+
+    [[nodiscard]] std::vector<std::string> GetFilesInDirectory(const std::string_view path);
 
     [[nodiscard]] constexpr std::string_view GetName(const std::string_view fileName)
     {

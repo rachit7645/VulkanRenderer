@@ -28,6 +28,7 @@ namespace Engine
 {
     Scene::Scene
     (
+        usize frameIndex,
         const Engine::Config& config,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
@@ -37,7 +38,9 @@ namespace Engine
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
         Renderer::IBL::Generator& iblGenerator,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -134,6 +137,7 @@ namespace Engine
             {
                 iblMaps = iblGenerator.Generate
                 (
+                    frameIndex,
                     cmdBuffer,
                     pipelineManager,
                     context,
@@ -142,6 +146,8 @@ namespace Engine
                     modelManager,
                     megaSet,
                     stagingPool,
+                    cacheManager,
+                    executor,
                     deletionQueue,
                     hdrMapAssetPath
                 );
@@ -157,17 +163,20 @@ namespace Engine
 
     void Scene::Update
     (
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Util::FrameCounter& frameCounter,
-        Engine::Inputs& inputs,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Renderer::Objects::GlobalSamplers& samplers,
+        Engine::Inputs& inputs,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
         Renderer::IBL::Generator& iblGenerator,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -202,6 +211,8 @@ namespace Engine
                                     context.allocator,
                                     megaSet,
                                     stagingPool,
+                                    cacheManager,
+                                    executor,
                                     deletionQueue
                                 );
 
@@ -450,6 +461,7 @@ namespace Engine
 
                             iblMaps = iblGenerator.Generate
                             (
+                                frameIndex,
                                 cmdBuffer,
                                 pipelineManager,
                                 context,
@@ -458,6 +470,8 @@ namespace Engine
                                 modelManager,
                                 megaSet,
                                 stagingPool,
+                                cacheManager,
+                                executor,
                                 deletionQueue,
                                 hdrMapAssetPath
                             );

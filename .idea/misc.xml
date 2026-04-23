@@ -10,8 +10,9 @@
   <component name="CidrRootsConfiguration">
     <excludeRoots>
       <file path="$PROJECT_DIR$/Build/Debug" />
+      <file path="$PROJECT_DIR$/Build/Profile" />
       <file path="$PROJECT_DIR$/Templates" />
     </excludeRoots>
   </component>
-  <component name="WestSettings"><![CDATA[{}]]></component>
+  <component name="WestSettings">{}</component>
 </project>

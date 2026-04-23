@@ -35,6 +35,7 @@
 #include "ShadowRT/RayDispatch.h"
 #include "TAA/RenderPass.h"
 #include "Culling/Dispatch.h"
+#include "Engine/CacheManager.h"
 #include "IBL/Generator.h"
 #include "SpotShadow/RenderPass.h"
 #include "TiledLighting/Dispatch.h"
@@ -110,7 +111,11 @@ namespace Renderer
 
         void InitImGui();
 
+        tf::Executor m_executor;
+
         Engine::Config m_config;
+
+        Engine::CacheManager m_cacheManager;
 
         usize m_FIF        = 0;
         usize m_frameIndex = 0;

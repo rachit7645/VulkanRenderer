@@ -21,6 +21,7 @@
 #include "Externals/ImGui.h"
 #include "Externals/Tracy.h"
 #include "Util/Log.h"
+#include "Util/Threads.h"
 #include "Vulkan/DebugUtils.h"
 #include "Vulkan/ImmediateSubmit.h"
 #include "Vulkan/Util.h"
@@ -28,7 +29,8 @@
 namespace Renderer
 {
     RenderManager::RenderManager()
-        : m_context{m_window.handle},
+        : m_executor{Util::GetWorkerThreadCount(), nullptr},
+          m_context{m_window.handle},
           m_renderConfig{m_context},
           m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
           m_swapchain{m_window.size, m_context, m_graphicsCmdBufferAllocator},
@@ -71,6 +73,8 @@ namespace Renderer
 
         m_globalDeletionQueue.PushDeletor([&] ()
         {
+            m_executor.wait_for_all();
+
             m_sceneBuffer.Destroy(m_context.allocator);
             m_exposureBuffer.Destroy(m_context.allocator);
             m_tiledLightIndexBuffer.Destroy(m_context.allocator);
@@ -1528,7 +1532,9 @@ namespace Renderer
             m_samplers,
             m_megaSet,
             m_stagingPool,
+            m_cacheManager,
             m_modelManager,
+            m_executor,
             m_deletionQueues[m_FIF]
         );
     }
@@ -1715,6 +1721,7 @@ namespace Renderer
         {
             m_scene = Engine::Scene
             (
+                m_frameIndex,
                 m_config,
                 cmdBuffer,
                 m_pipelineManager,
@@ -1724,7 +1731,9 @@ namespace Renderer
                 m_modelManager,
                 m_megaSet,
                 m_stagingPool,
+                m_cacheManager,
                 m_iblGenerator,
+                m_executor,
                 m_deletionQueues[m_FIF]
             );
 
@@ -1735,6 +1744,8 @@ namespace Renderer
                 m_context.allocator,
                 m_megaSet,
                 m_stagingPool,
+                m_cacheManager,
+                m_executor,
                 m_deletionQueues[m_FIF]
             );
         }
@@ -1777,6 +1788,7 @@ namespace Renderer
 
                     m_scene = Engine::Scene
                     (
+                        m_frameIndex,
                         m_config,
                         cmdBuffer,
                         m_pipelineManager,
@@ -1786,7 +1798,9 @@ namespace Renderer
                         m_modelManager,
                         m_megaSet,
                         m_stagingPool,
+                        m_cacheManager,
                         m_iblGenerator,
+                        m_executor,
                         m_deletionQueues[m_FIF]
                     );
 
@@ -1797,6 +1811,8 @@ namespace Renderer
                         m_context.allocator,
                         m_megaSet,
                         m_stagingPool,
+                        m_cacheManager,
+                        m_executor,
                         m_deletionQueues[m_FIF]
                     );
 
@@ -1845,22 +1861,27 @@ namespace Renderer
             m_context.allocator,
             m_megaSet,
             m_stagingPool,
+            m_cacheManager,
+            m_executor,
             m_deletionQueues[m_FIF]
         );
 
         m_scene->Update
         (
+            m_frameIndex,
             cmdBuffer,
             m_pipelineManager,
             m_frameCounter,
-            m_window.inputs,
             m_context,
             m_formatHelper,
             m_samplers,
+            m_window.inputs,
             m_modelManager,
             m_megaSet,
             m_stagingPool,
+            m_cacheManager,
             m_iblGenerator,
+            m_executor,
             m_deletionQueues[m_FIF]
         );
 
@@ -1893,6 +1914,15 @@ namespace Renderer
             m_megaSet,
             m_modelManager.textureManager,
             m_deletionQueues[m_FIF]
+        );
+
+        m_iblGenerator.Update
+        (
+            m_context.device,
+            m_context.allocator,
+            m_graphicsTimeline,
+            m_cacheManager,
+            m_executor
         );
 
         ImGuiDisplay();
@@ -2246,7 +2276,7 @@ namespace Renderer
         io.Fonts->AddFontFromFileTTF
         (
             Util::Files::GetAssetPath("Fonts/", "NotoCJK/NotoSansCJKjp-Regular.otf").c_str(),
-            18.0f,
+            0.0f,
             &config
         );
 
@@ -2271,6 +2301,8 @@ namespace Renderer
                     m_context.device,
                     m_context.allocator,
                     m_stagingPool,
+                    m_cacheManager,
+                    m_executor,
                     m_deletionQueues[m_FIF],
                     Vk::ImageUpload{
                         .type   = Vk::ImageUploadType::RAW,
@@ -2292,6 +2324,8 @@ namespace Renderer
                     m_context.allocator,
                     m_megaSet,
                     m_stagingPool,
+                    m_cacheManager,
+                    m_executor,
                     m_deletionQueues[m_FIF]
                 );
             }

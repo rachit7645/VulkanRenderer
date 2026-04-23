@@ -16,6 +16,8 @@
 
 #include "Generator.h"
 
+#include <vulkan/utility/vk_format_utils.h>
+
 #include "Externals/GLM.h"
 #include "IBL/EquirectangularToCubemap.h"
 #include "IBL/Irradiance.h"
@@ -28,9 +30,10 @@ namespace Renderer::IBL
     constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
     constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
-    constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
 
     constexpr u32 PREFILTER_SAMPLE_COUNT = 512;
+
+    constexpr auto BRDF_LUT_CACHE_FILE = "BRDF.cache";
     
     Generator::Generator
     (
@@ -143,8 +146,63 @@ namespace Renderer::IBL
         }
     }
 
+    void Generator::Update
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::GraphicsTimeline& timeline,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor
+    )
+    {
+        if (!m_readbackFrameIndex.has_value())
+        {
+            return;
+        }
+
+        const bool isReadbackReady = timeline.IsAtOrPastStage
+        (
+            m_readbackFrameIndex.value() + Vk::FRAMES_IN_FLIGHT,
+            Vk::GraphicsTimeline::Stage::SwapchainImageAcquired,
+            device
+        );
+
+        if (!isReadbackReady)
+        {
+            return;
+        }
+
+        const u8* pMappedData = static_cast<u8*>(m_brdfLutReadbackBuffer->hostAddress);
+
+        auto data = std::vector(pMappedData, pMappedData + m_brdfLutReadbackBuffer->size);
+
+        executor.silent_async([&cacheManager, readbackData = std::move(data)] mutable
+        {
+            cacheManager.InsertIntoCache(Engine::CacheEntry
+            {
+                .sourceFile  = std::nullopt,
+                .cacheFile   = BRDF_LUT_CACHE_FILE,
+                .assetType   = Engine::CachedAssetType::Texture,
+                .assetHeader = Engine::CachedTextureHeader{
+                    .width  = BRDF_LUT_SIZE.x,
+                    .height = BRDF_LUT_SIZE.y,
+                    .format = BRDF_LUT_FORMAT,
+                    .source = Engine::CachedTextureSource::BRDF_LUT,
+                    .pad0   = {}
+                },
+                .data        = std::move(readbackData),
+            });
+        });
+
+        m_brdfLutReadbackBuffer->Destroy(allocator);
+
+        m_brdfLutReadbackBuffer = std::nullopt;
+        m_readbackFrameIndex    = std::nullopt;
+    }
+
     IBL::IBLMaps Generator::Generate
     (
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
@@ -153,6 +211,8 @@ namespace Renderer::IBL
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view hdrMapAssetPath
     )
@@ -166,6 +226,8 @@ namespace Renderer::IBL
             modelManager,
             megaSet,
             stagingPool,
+            cacheManager,
+            executor,
             deletionQueue,
             hdrMapAssetPath
         );
@@ -219,11 +281,16 @@ namespace Renderer::IBL
 
         const auto brdfLutID = GenerateBRDFLUT
         (
+            frameIndex,
             cmdBuffer,
             pipelineManager,
             context,
             modelManager.textureManager,
-            megaSet
+            stagingPool,
+            megaSet,
+            cacheManager,
+            executor,
+            deletionQueue
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -244,6 +311,8 @@ namespace Renderer::IBL
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view hdrMapAssetPath
     )
@@ -255,6 +324,8 @@ namespace Renderer::IBL
             context.device,
             context.allocator,
             stagingPool,
+            cacheManager,
+            executor,
             deletionQueue,
             Vk::ImageUpload{
                 .type   = Vk::FileToImageUploadType(hdrMapAssetPath),
@@ -272,6 +343,8 @@ namespace Renderer::IBL
             context.allocator,
             megaSet,
             stagingPool,
+            cacheManager,
+            executor,
             deletionQueue
         );
 
@@ -910,11 +983,16 @@ namespace Renderer::IBL
 
     [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLUT
     (
+        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         Vk::TextureManager& textureManager,
-        Vk::MegaSet& megaSet
+        Vk::StagingPool& stagingPool,
+        Vk::MegaSet& megaSet,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
+        Util::DeletionQueue& deletionQueue
     )
     {
         if (m_brdfLutID.has_value())
@@ -922,161 +1000,263 @@ namespace Renderer::IBL
             return m_brdfLutID.value();
         }
 
-        Vk::BeginLabel(cmdBuffer, "BRDF LUT Generation", {0.9215f, 0.0274f, 0.8588f, 1.0f});
-
-        const auto& brdfLutPipeline = pipelineManager.GetPipeline("IBL/BRDF");
-
-        const auto brdfLut = Vk::Image
-        (
-            context.allocator,
-            {
-                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext                 = nullptr,
-                .flags                 = 0,
-                .imageType             = VK_IMAGE_TYPE_2D,
-                .format                = VK_FORMAT_R16G16_SFLOAT,
-                .extent                = {.width = BRDF_LUT_SIZE.x, .height = BRDF_LUT_SIZE.y, .depth = 1},
-                .mipLevels             = 1,
-                .arrayLayers           = 1,
-                .samples               = VK_SAMPLE_COUNT_1_BIT,
-                .tiling                = VK_IMAGE_TILING_OPTIMAL,
-                .usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices   = nullptr,
-                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-            },
-            VK_IMAGE_ASPECT_COLOR_BIT
-        );
-
-        const auto brdfLutView = Vk::ImageView
-        (
-            context.device,
-            brdfLut,
-            VK_IMAGE_VIEW_TYPE_2D,
-            {
-                .aspectMask     = brdfLut.aspect,
-                .baseMipLevel   = 0,
-                .levelCount     = brdfLut.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = brdfLut.arrayLayers
-            }
-        );
-
-        brdfLut.Barrier
-        (
-            cmdBuffer,
-            Vk::ImageBarrier{
-                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask   = VK_ACCESS_2_NONE,
-                .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel    = 0,
-                .levelCount      = brdfLut.mipLevels,
-                .baseArrayLayer  = 0,
-                .layerCount      = brdfLut.arrayLayers
-            }
-        );
-
-        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        if (cacheManager.IsInCache(BRDF_LUT_CACHE_FILE, Engine::CachedAssetType::Texture))
         {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = brdfLutView.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {}
-        };
-
-        const VkRenderingInfo renderInfo =
+            m_brdfLutID = textureManager.AddTexture
+            (
+                context.device,
+                context.allocator,
+                stagingPool,
+                cacheManager,
+                executor,
+                deletionQueue,
+                Vk::ImageUpload{
+                    .type   = Vk::ImageUploadType::CACHE,
+                    .flags  = Vk::ImageUploadFlags::None,
+                    .source = Vk::ImageUploadCache{
+                        .name       = "IBL/BRDFLookupTable",
+                        .cachedPath = BRDF_LUT_CACHE_FILE
+                    }
+                }
+            );
+        }
+        else
         {
-            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .pNext                = nullptr,
-            .flags                = 0,
-            .renderArea           = {
+            Vk::BeginLabel(cmdBuffer, "BRDF LUT Generation", {0.9215f, 0.0274f, 0.8588f, 1.0f});
+
+            const auto& brdfLutPipeline = pipelineManager.GetPipeline("IBL/BRDF");
+
+            const auto brdfLut = Vk::Image
+            (
+                context.allocator,
+                {
+                    .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                    .pNext                 = nullptr,
+                    .flags                 = 0,
+                    .imageType             = VK_IMAGE_TYPE_2D,
+                    .format                = BRDF_LUT_FORMAT,
+                    .extent                = {.width = BRDF_LUT_SIZE.x, .height = BRDF_LUT_SIZE.y, .depth = 1},
+                    .mipLevels             = 1,
+                    .arrayLayers           = 1,
+                    .samples               = VK_SAMPLE_COUNT_1_BIT,
+                    .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                    .usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                    .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                    .queueFamilyIndexCount = 0,
+                    .pQueueFamilyIndices   = nullptr,
+                    .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+                },
+                VK_IMAGE_ASPECT_COLOR_BIT
+            );
+
+            const auto brdfLutView = Vk::ImageView
+            (
+                context.device,
+                brdfLut,
+                VK_IMAGE_VIEW_TYPE_2D,
+                {
+                    .aspectMask     = brdfLut.aspect,
+                    .baseMipLevel   = 0,
+                    .levelCount     = brdfLut.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = brdfLut.arrayLayers
+                }
+            );
+
+            brdfLut.Barrier
+            (
+                cmdBuffer,
+                Vk::ImageBarrier{
+                    .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask   = VK_ACCESS_2_NONE,
+                    .dstStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dstAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .newLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel    = 0,
+                    .levelCount      = brdfLut.mipLevels,
+                    .baseArrayLayer  = 0,
+                    .layerCount      = brdfLut.arrayLayers
+                }
+            );
+
+            const VkRenderingAttachmentInfo colorAttachmentInfo =
+            {
+                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .pNext              = nullptr,
+                .imageView          = brdfLutView.handle,
+                .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .resolveMode        = VK_RESOLVE_MODE_NONE,
+                .resolveImageView   = VK_NULL_HANDLE,
+                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                .clearValue         = {}
+            };
+
+            const VkRenderingInfo renderInfo =
+            {
+                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                .pNext                = nullptr,
+                .flags                = 0,
+                .renderArea           = {
+                    .offset = {.x = 0, .y = 0},
+                    .extent = {.width = brdfLut.width, .height = brdfLut.height}
+                },
+                .layerCount           = 1,
+                .viewMask             = 0,
+                .colorAttachmentCount = 1,
+                .pColorAttachments    = &colorAttachmentInfo,
+                .pDepthAttachment     = nullptr,
+                .pStencilAttachment   = nullptr
+            };
+
+            vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+            brdfLutPipeline.Bind(cmdBuffer);
+
+            const VkViewport viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(brdfLut.width),
+                .height   = static_cast<f32>(brdfLut.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
+
+            vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+            const VkRect2D scissor =
+            {
                 .offset = {.x = 0, .y = 0},
                 .extent = {.width = brdfLut.width, .height = brdfLut.height}
-            },
-            .layerCount           = 1,
-            .viewMask             = 0,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &colorAttachmentInfo,
-            .pDepthAttachment     = nullptr,
-            .pStencilAttachment   = nullptr
-        };
+            };
 
-        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+            vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        brdfLutPipeline.Bind(cmdBuffer);
+            vkCmdDraw
+            (
+                cmdBuffer.handle,
+                3,
+                1,
+                0,
+                0
+            );
 
-        const VkViewport viewport =
-        {
-            .x        = 0.0f,
-            .y        = 0.0f,
-            .width    = static_cast<f32>(brdfLut.width),
-            .height   = static_cast<f32>(brdfLut.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
+            vkCmdEndRendering(cmdBuffer.handle);
 
-        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+            brdfLut.Barrier
+            (
+                cmdBuffer,
+                Vk::ImageBarrier{
+                    .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask   = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .newLayout       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel    = 0,
+                    .levelCount      = brdfLut.mipLevels,
+                    .baseArrayLayer  = 0,
+                    .layerCount      = brdfLut.arrayLayers
+                }
+            );
 
-        const VkRect2D scissor =
-        {
-            .offset = {.x = 0, .y = 0},
-            .extent = {.width = brdfLut.width, .height = brdfLut.height}
-        };
+            const auto BRDF_LUT_READBACK_SIZE = static_cast<VkDeviceSize>(Vk::GetTexelSize(BRDF_LUT_FORMAT) * static_cast<f64>(static_cast<u64>(BRDF_LUT_SIZE.x) * static_cast<u64>(BRDF_LUT_SIZE.y)));
 
-        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+            m_brdfLutReadbackBuffer = Vk::Buffer
+            (
+                context.allocator,
+                BRDF_LUT_READBACK_SIZE,
+                0,
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+                VMA_MEMORY_USAGE_AUTO
+            );
 
-        vkCmdDraw
-        (
-            cmdBuffer.handle,
-            3,
-            1,
-            0,
-            0
-        );
+            m_brdfLutReadbackBuffer->Barrier
+            (
+                cmdBuffer,
+                Vk::BufferBarrier{
+                    .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                    .srcAccessMask   = VK_ACCESS_2_NONE,
+                    .dstStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .dstAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .offset          = 0,
+                    .size            = m_brdfLutReadbackBuffer->size
+                }
+            );
 
-        vkCmdEndRendering(cmdBuffer.handle);
+            const VkBufferImageCopy2 copyRegion =
+            {
+                .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                .pNext             = nullptr,
+                .bufferOffset      = 0,
+                .bufferRowLength   = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource  = {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = brdfLut.arrayLayers
+                },
+                .imageOffset       = {.x     = 0,             .y      = 0,             .z     = 0},
+                .imageExtent       = {.width = brdfLut.width, .height = brdfLut.width, .depth = 1}
+            };
 
-        brdfLut.Barrier
-        (
-            cmdBuffer,
-            Vk::ImageBarrier{
-                .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel    = 0,
-                .levelCount      = brdfLut.mipLevels,
-                .baseArrayLayer  = 0,
-                .layerCount      = brdfLut.arrayLayers
-            }
-        );
+            const VkCopyImageToBufferInfo2 copyInfo =
+            {
+                .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
+                .pNext          = nullptr,
+                .srcImage       = brdfLut.handle,
+                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .dstBuffer      = m_brdfLutReadbackBuffer->handle,
+                .regionCount    = 1,
+                .pRegions       = &copyRegion
+            };
 
-        Vk::EndLabel(cmdBuffer);
+            vkCmdCopyImageToBuffer2(cmdBuffer.handle, &copyInfo);
 
-        m_brdfLutID = textureManager.AddTexture
-        (
-            megaSet,
-            context.device,
-            "IBL/BRDFLookupTable",
-            brdfLut,
-            brdfLutView
-        );
+            brdfLut.Barrier
+            (
+                cmdBuffer,
+                Vk::ImageBarrier{
+                    .srcStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
+                    .srcAccessMask   = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel    = 0,
+                    .levelCount      = brdfLut.mipLevels,
+                    .baseArrayLayer  = 0,
+                    .layerCount      = brdfLut.arrayLayers
+                }
+            );
+
+            Vk::EndLabel(cmdBuffer);
+
+            m_brdfLutID = textureManager.AddTexture
+            (
+                megaSet,
+                context.device,
+                "IBL/BRDFLookupTable",
+                brdfLut,
+                brdfLutView
+            );
+
+            m_readbackFrameIndex = frameIndex;
+        }
 
         return m_brdfLutID.value();
     }
@@ -1084,5 +1264,10 @@ namespace Renderer::IBL
     void Generator::Destroy(VmaAllocator allocator)
     {
         m_matrixBuffer.Destroy(allocator);
+
+        if (m_brdfLutReadbackBuffer.has_value())
+        {
+            m_brdfLutReadbackBuffer->Destroy(allocator);
+        }
     }
 }

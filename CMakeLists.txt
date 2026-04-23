@@ -45,6 +45,7 @@ add_executable(VulkanRenderer
 	Source/Engine/Inputs.cpp
     Source/Engine/Scene.cpp
     Source/Engine/Config.cpp
+    Source/Engine/CacheManager.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
@@ -54,6 +55,7 @@ add_executable(VulkanRenderer
     Source/Util/SIMD.cpp
     Source/Util/JSON.cpp
     Source/Util/String.cpp
+    Source/Util/Threads.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
@@ -276,7 +278,10 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Engine Debug Mode
     target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
     # Engine Profile Mode
-    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_PROFILE)
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_PROFILE TRACY_ENABLE)
+
+    # Detailed Callstack
+    # target_compile_definitions(VulkanRenderer PRIVATE TRACY_CALLSTACK=32)
 
     # Enable debug symbols
     if (MSVC)

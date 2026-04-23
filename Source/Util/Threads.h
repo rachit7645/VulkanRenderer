@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef HASH_H
-#define HASH_H
-
-#include <utility>
+#ifndef THREADS_H
+#define THREADS_H
 
 #include "Util/Types.h"
 
 namespace Util
 {
-    template <typename T>
-    constexpr usize HashCombine(usize seed, const T& value)
-    {
-        return seed ^= std::hash<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
+    u64 GetWorkerThreadCount();
 }
 
 #endif

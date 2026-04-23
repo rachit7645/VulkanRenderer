@@ -30,6 +30,11 @@ namespace Util
         return _cvtss_sh(glm::clamp(value, F16_MIN, F16_MAX), _MM_FROUND_TO_NEAREST_INT);
     }
 
+    f32 ConvertF16ToF32(f16 value)
+    {
+        return _cvtsh_ss(value);
+    }
+
     void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count)
     {
         usize i = 0;

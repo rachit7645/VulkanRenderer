@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef HASH_H
-#define HASH_H
-
-#include <utility>
-
-#include "Util/Types.h"
+#include "Threads.h"
 
 namespace Util
 {
-    template <typename T>
-    constexpr usize HashCombine(usize seed, const T& value)
+    u64 GetWorkerThreadCount()
     {
-        return seed ^= std::hash<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        const u64 concurrentThreadCount = std::thread::hardware_concurrency();
+
+        if (concurrentThreadCount <= 1)
+        {
+            return 1;
+        }
+
+        return concurrentThreadCount - 1;
     }
 }
-
-#endif

@@ -34,7 +34,6 @@ const float GBUFFER_HORIZON_FADE = 1.2f;
 
 // IBL Constants
 const uint IRRADIANCE_SAMPLE_COUNT = 1024u;
-const uint BRDF_LUT_SAMPLE_COUNT   = 1024u;
 
 // Point Shadow Constants
 const float POINT_SHADOW_BIAS = 0.0001f;

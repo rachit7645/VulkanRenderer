@@ -24,6 +24,9 @@ namespace Renderer::IBL
 {
     constexpr u32 PREFILTER_MIPMAP_LEVELS = 5;
 
+    constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
+    constexpr VkFormat   BRDF_LUT_FORMAT = VK_FORMAT_R16G16_SFLOAT;
+
     struct IBLMaps
     {
         void Destroy

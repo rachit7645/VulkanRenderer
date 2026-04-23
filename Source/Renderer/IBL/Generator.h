@@ -18,10 +18,12 @@
 #define IBL_PASS_H
 
 #include "IBLMaps.h"
+#include "Engine/CacheManager.h"
 #include "Models/ModelManager.h"
 #include "Renderer/Objects/GlobalSamplers.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/GraphicsTimeline.h"
 
 namespace Renderer::IBL
 {
@@ -37,8 +39,18 @@ namespace Renderer::IBL
             Vk::PipelineManager& pipelineManager
         );
 
+        void Update
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            const Vk::GraphicsTimeline& timeline,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor
+        );
+
         IBL::IBLMaps Generate
         (
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
@@ -47,6 +59,8 @@ namespace Renderer::IBL
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
         );
@@ -60,6 +74,8 @@ namespace Renderer::IBL
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
         );
@@ -104,17 +120,24 @@ namespace Renderer::IBL
 
         [[nodiscard]] Vk::TextureID GenerateBRDFLUT
         (
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             Vk::TextureManager& textureManager,
-            Vk::MegaSet& megaSet
+            Vk::StagingPool& stagingPool,
+            Vk::MegaSet& megaSet,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
+            Util::DeletionQueue& deletionQueue
         );
 
         Vk::Buffer m_matrixBuffer;
 
-        // Cache BRDF LUT
         std::optional<Vk::TextureID> m_brdfLutID = std::nullopt;
+
+        std::optional<Vk::Buffer> m_brdfLutReadbackBuffer = std::nullopt;
+        std::optional<usize>      m_readbackFrameIndex    = std::nullopt;
     };
 }
 

@@ -73,7 +73,9 @@ namespace Renderer::DearImGui
         const Objects::GlobalSamplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
         Models::ModelManager& modelManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -96,7 +98,9 @@ namespace Renderer::DearImGui
                 samplers,
                 megaSet,
                 stagingPool,
+                cacheManager,
                 modelManager,
+                executor,
                 deletionQueue,
                 drawData
             );
@@ -137,7 +141,9 @@ namespace Renderer::DearImGui
         const Objects::GlobalSamplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
         Models::ModelManager& modelManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
@@ -172,7 +178,9 @@ namespace Renderer::DearImGui
             cmdBuffer,
             megaSet,
             stagingPool,
+            cacheManager,
             modelManager,
+            executor,
             deletionQueue,
             drawData
         );
@@ -418,9 +426,10 @@ namespace Renderer::DearImGui
 
         if (needsManualFlushing)
         {
-            const std::array<VmaAllocation, 2> allocations = {vertexBuffer.allocation, indexBuffer.allocation};
-            const std::array<VkDeviceSize,  2> offsets     = {0, 0};
-            const std::array<VkDeviceSize,  2> sizes       = {vertexSize, indexSize};
+            constexpr std::array<VkDeviceSize,  2> offsets = {0, 0};
+
+            const std::array allocations = {vertexBuffer.allocation, indexBuffer.allocation};
+            const std::array sizes       = {vertexSize, indexSize};
 
             Vk::CheckResult(vmaFlushAllocations(
                 allocator,
@@ -440,7 +449,9 @@ namespace Renderer::DearImGui
         const Vk::CommandBuffer& cmdBuffer,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
         Models::ModelManager& modelManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
@@ -476,6 +487,8 @@ namespace Renderer::DearImGui
                     device,
                     allocator,
                     stagingPool,
+                    cacheManager,
+                    executor,
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = Vk::ImageUploadType::RAW,
@@ -554,6 +567,8 @@ namespace Renderer::DearImGui
             allocator,
             megaSet,
             stagingPool,
+            cacheManager,
+            executor,
             deletionQueue
         );
 

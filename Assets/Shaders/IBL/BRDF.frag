@@ -23,6 +23,7 @@
 #include "Constants.glsl"
 #include "PBR.glsl"
 #include "Sampling.glsl"
+#include "IBL/BRDF.h"
 
 layout(location = 0) in vec2 fragUV;
 

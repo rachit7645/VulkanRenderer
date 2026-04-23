@@ -26,6 +26,7 @@
 #include "BarrierWriter.h"
 #include "ImageView.h"
 #include "StagingPool.h"
+#include "Engine/CacheManager.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
@@ -37,6 +38,7 @@ namespace Vk
         EXR,
         KTX2,
         RAW,
+        CACHE
     };
 
     Vk::ImageUploadType FileToImageUploadType(const std::string_view file);
@@ -69,13 +71,19 @@ namespace Vk
         std::vector<u8> data   = {};
     };
 
+    struct ImageUploadCache
+    {
+        std::string name       = "Null/File";
+        std::string cachedPath = "Null/Cached/File";
+    };
+
     struct ImageUpdateRawMemory
     {
         VkRect2D        update = {};
         std::vector<u8> data   = {};
     };
 
-    using ImageUploadSource = std::variant<ImageUploadFile, ImageUploadMemory, ImageUploadRawMemory>;
+    using ImageUploadSource = std::variant<ImageUploadFile, ImageUploadMemory, ImageUploadRawMemory, ImageUploadCache>;
 
     struct ImageUpload
     {
@@ -98,6 +106,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
         );
@@ -260,6 +269,16 @@ namespace Vk
             Util::DeletionQueue& deletionQueue,
             const ImageUploadRawMemory& rawMemory,
             ImageUploadFlags flags
+        );
+
+        Vk::UploadedImage LoadCache
+        (
+            VkDevice device,
+            VmaAllocator allocator,
+            Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            Util::DeletionQueue& deletionQueue,
+            const ImageUploadCache& cache
         );
 
         void AppendUpload(Upload&& upload);

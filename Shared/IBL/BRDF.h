@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef HASH_H
-#define HASH_H
+#ifndef BRDF_H
+#define BRDF_H
 
-#include <utility>
+#include "GLSL.h"
 
-#include "Util/Types.h"
+GLSL_NAMESPACE_BEGIN(Renderer::IBL::BRDF)
 
-namespace Util
-{
-    template <typename T>
-    constexpr usize HashCombine(usize seed, const T& value)
-    {
-        return seed ^= std::hash<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-}
+GLSL_CONSTEXPR u32 BRDF_LUT_SAMPLE_COUNT = 1024u;
+
+GLSL_NAMESPACE_END
 
 #endif

@@ -48,7 +48,7 @@ namespace Vk
 
         const VmaAllocationCreateInfo allocCreateInfo =
         {
-            .flags          = allocationFlags,
+            .flags          = allocationFlags | VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
             .usage          = memoryUsage,
             .requiredFlags  = memoryProperties,
             .preferredFlags = 0,
@@ -73,7 +73,7 @@ namespace Vk
 
         hostAddress = allocationInfo.pMappedData;
 
-        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &memoryProperties);
+        vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &this->memoryProperties);
     }
 
     void Buffer::GetDeviceAddress(VkDevice device)

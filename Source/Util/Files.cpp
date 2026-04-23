@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "Files.h"
 #include "Log.h"
 
@@ -67,7 +66,6 @@ namespace Util::Files
 
     std::vector<u8> ReadBytes(const std::string_view path)
     {
-        // Open in binary mode
         auto bin = std::ifstream(path.data(), std::ios::binary | std::ios::in);
 
         if (!bin.is_open())
@@ -80,5 +78,32 @@ namespace Util::Files
         bin.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
 
         return binary;
+    }
+
+    void WriteBytes(const std::string_view path, const std::span<const u8> binary)
+    {
+        auto bin = std::ofstream(path.data(), std::ios::binary | std::ios::out);
+
+        if (!bin.is_open())
+        {
+            Logger::Error("Failed to load binary {}!\n", path);
+        }
+
+        bin.write(reinterpret_cast<const char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
+    }
+
+    std::vector<std::string> GetFilesInDirectory(const std::string_view path)
+    {
+        std::vector<std::string> files = {};
+
+        for (const auto& file : std::filesystem::recursive_directory_iterator(path))
+        {
+            if (std::filesystem::is_regular_file(file))
+            {
+                files.emplace_back(file.path().string());
+            }
+        }
+
+        return files;
     }
 }

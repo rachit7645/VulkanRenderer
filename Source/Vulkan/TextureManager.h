@@ -38,6 +38,8 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
         );
@@ -119,7 +121,6 @@ namespace Vk
 
         Vk::ImageUploader m_imageUploader;
 
-        tf::Executor                                                                m_executor;
         ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::UploadedImage>> m_futuresMap;
     };
 }

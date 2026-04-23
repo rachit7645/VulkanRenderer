@@ -137,7 +137,7 @@ vec3 CalculateLight
 }
 
 // Schlick's Approximation for IBL
-float GeometrySchlickGGX_IBL(float NdotV, float roughness)
+float GeometrySchlickGGXIBL(float NdotV, float roughness)
 {
     float a = roughness;
     float k = (a * a) / 2.0f;
@@ -154,8 +154,8 @@ float GeometrySmithIBL(vec3 N, vec3 V, vec3 L, float roughness)
     float NdotV = max(dot(N, V), 0.0f);
     float NdotL = max(dot(N, L), 0.0f);
 
-    float ggx1 = GeometrySchlickGGX_IBL(NdotL, roughness);
-    float ggx2 = GeometrySchlickGGX_IBL(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGXIBL(NdotL, roughness);
+    float ggx2 = GeometrySchlickGGXIBL(NdotV, roughness);
 
     return ggx1 * ggx2;
 }

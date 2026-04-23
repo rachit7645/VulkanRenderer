@@ -21,6 +21,7 @@
 #include <volk/volk.h>
 
 #include "Util.h"
+#include "Engine/CacheManager.h"
 #include "Util/Log.h"
 #include "Util/SIMD.h"
 #include "Util/Visitor.h"
@@ -58,6 +59,7 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUpload& upload
     )
@@ -99,6 +101,18 @@ namespace Vk
                     deletionQueue,
                     rawMemory,
                     upload.flags
+                );
+            },
+            [&] (const ImageUploadCache& cache) -> Vk::UploadedImage
+            {
+                return LoadCache
+                (
+                    device,
+                    allocator,
+                    stagingPool,
+                    cacheManager,
+                    deletionQueue,
+                    cache
                 );
             }
         }, upload.source);
@@ -323,8 +337,8 @@ namespace Vk
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
-        ImageUploadType type,
-        ImageUploadFlags flags
+        Vk::ImageUploadType type,
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -389,8 +403,8 @@ namespace Vk
        Vk::StagingPool& stagingPool,
        Util::DeletionQueue& deletionQueue,
        const Vk::ImageUploadMemory& memory,
-       ImageUploadType type,
-       ImageUploadFlags flags
+       Vk::ImageUploadType type,
+       Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -443,7 +457,7 @@ namespace Vk
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -494,7 +508,7 @@ namespace Vk
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUploadMemory& memory,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -548,7 +562,7 @@ namespace Vk
         const u8* data,
         u32 width,
         u32 height,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -661,7 +675,7 @@ namespace Vk
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -713,7 +727,7 @@ namespace Vk
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUploadMemory& memory,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -768,7 +782,7 @@ namespace Vk
         const f32* data,
         u32 width,
         u32 height,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -890,7 +904,7 @@ namespace Vk
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         try
@@ -1300,7 +1314,7 @@ namespace Vk
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue,
         const ImageUploadRawMemory& rawMemory,
-        ImageUploadFlags flags
+        Vk::ImageUploadFlags flags
     )
     {
         #ifdef ENGINE_PROFILE
@@ -1390,6 +1404,112 @@ namespace Vk
             .srcAccessMask   = VK_ACCESS_2_NONE,
             .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
             .generateMipmaps = generateMipmaps
+        });
+
+        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        {
+            stagingPool.Free(stagingMemoryBlock);
+        });
+
+        return Vk::UploadedImage
+        {
+            .image     = image,
+            .imageView = imageView
+        };
+    }
+
+    Vk::UploadedImage ImageUploader::LoadCache
+    (
+        VkDevice device,
+        VmaAllocator allocator,
+        Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        Util::DeletionQueue& deletionQueue,
+        const Vk::ImageUploadCache& cache
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        const auto cacheEntry    = cacheManager.GetFromCache(cache.cachedPath);
+        const auto textureHeader = std::get<Engine::CachedTextureHeader>(cacheEntry.assetHeader);
+
+        const auto pixelCount = static_cast<usize>(textureHeader.width) * static_cast<usize>(textureHeader.height);
+        const auto texelSize  = Vk::GetTexelSize(textureHeader.format);
+        const auto dataSize   = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
+
+        const auto stagingMemoryBlock = stagingPool.Allocate
+        (
+            device,
+            allocator,
+            dataSize,
+            vkuFormatTexelBlockSize(textureHeader.format)
+        );
+
+        std::memcpy(stagingMemoryBlock.hostAddress, cacheEntry.data.data(), dataSize);
+
+        std::vector<VkBufferImageCopy2> copyRegions = {};
+
+        copyRegions.emplace_back(VkBufferImageCopy2{
+            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+            .pNext             = nullptr,
+            .bufferOffset      = stagingMemoryBlock.memoryBlock.offset,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource  = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            },
+            .imageOffset = {.x     = 0,                   .y      = 0,                    .z     = 0},
+            .imageExtent = {.width = textureHeader.width, .height = textureHeader.height, .depth = 1}
+        });
+
+        const VkImageCreateInfo createInfo =
+        {
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = textureHeader.format,
+            .extent                = {.width = textureHeader.width, .height = textureHeader.height, .depth = 1},
+            .mipLevels             = 1,
+            .arrayLayers           = 1,
+            .samples               = VK_SAMPLE_COUNT_1_BIT,
+            .tiling                = VK_IMAGE_TILING_OPTIMAL,
+            .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr,
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
+
+        const auto imageView = Vk::ImageView
+        (
+            device,
+            image,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VkImageSubresourceRange{
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = image.arrayLayers
+            }
+        );
+
+        AppendUpload(Upload{
+            .image           = image,
+            .buffer          = stagingMemoryBlock.buffer,
+            .copyRegions     = copyRegions,
+            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask   = VK_ACCESS_2_NONE,
+            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+            .generateMipmaps = false
         });
 
         deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable

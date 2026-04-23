@@ -48,6 +48,8 @@ namespace Models
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
 

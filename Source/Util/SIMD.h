@@ -22,6 +22,7 @@
 namespace Util
 {
     f16 ConvertF32ToF16(f32 value);
+    f32 ConvertF16ToF32(f16 value);
 
     // `source` and `destination` must not be the same
     // Requires AVX2, F16C

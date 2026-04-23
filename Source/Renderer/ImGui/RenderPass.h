@@ -47,7 +47,9 @@ namespace Renderer::DearImGui
             const Objects::GlobalSamplers& samplers,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
             Models::ModelManager& modelManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -64,7 +66,9 @@ namespace Renderer::DearImGui
             const Objects::GlobalSamplers& samplers,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
             Models::ModelManager& modelManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
@@ -88,7 +92,9 @@ namespace Renderer::DearImGui
             const Vk::CommandBuffer& cmdBuffer,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
             Models::ModelManager& modelManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );

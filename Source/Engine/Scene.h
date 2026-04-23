@@ -33,6 +33,7 @@ namespace Engine
     public:
         Scene
         (
+            usize frameIndex,
             const Engine::Config& config,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
@@ -42,23 +43,28 @@ namespace Engine
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
             Renderer::IBL::Generator& iblGenerator,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
 
         void Update
         (
+            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Util::FrameCounter& frameCounter,
-            Engine::Inputs& inputs,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Renderer::Objects::GlobalSamplers& samplers,
+            Engine::Inputs& inputs,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
             Renderer::IBL::Generator& iblGenerator,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -77,6 +83,7 @@ namespace Engine
         Renderer::Objects::FreeCamera       camera        = {};
         Renderer::IBL::IBLMaps              iblMaps       = {};
 
+        // TODO: Better render object update flags
         // This does not account for render object internal changes
         // Only addition/deletion of render objects will update this
         bool haveRenderObjectsChanged = false;
