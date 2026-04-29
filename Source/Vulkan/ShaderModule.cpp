@@ -32,6 +32,10 @@ namespace Vk
 
     ShaderModule::ShaderModule(VkDevice device, const std::string_view path)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const auto assetPath    = Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
         const auto fullPath     = assetPath + SHADER_BINARY_EXT;
         const auto shaderBinary = Util::Files::ReadBytes(fullPath);

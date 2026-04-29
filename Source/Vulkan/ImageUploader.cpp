@@ -1183,7 +1183,7 @@ namespace Vk
         // Copy
         {
             #ifdef ENGINE_PROFILE
-            ZoneScopedN("Copy");
+            ZoneScopedN("Copy KTX2 To Staging Memory");
             #endif
 
             std::memcpy(stagingMemoryBlock.hostAddress, pTexture->pData, pTexture->dataSize);

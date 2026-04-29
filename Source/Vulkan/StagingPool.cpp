@@ -41,6 +41,7 @@ namespace Vk
             if (isVirtualBlockEmpty && isAllocationsEmpty && hasAtLeastOneStagingBufferLeft)
             {
                 iter->buffer.Destroy(allocator);
+                
                 vmaDestroyVirtualBlock(iter->virtualBlock);
 
                 iter = m_stagingBuffers.erase(iter);

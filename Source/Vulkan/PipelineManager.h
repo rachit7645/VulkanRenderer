@@ -31,10 +31,12 @@ namespace Vk
     public:
         void AddPipeline(const std::string_view id, const Vk::PipelineConfig& config);
 
-        void Update(VkDevice device, Util::DeletionQueue& deletionQueue);
-
-        void Reload(const std::string_view id);
-        void ReloadAll();
+        void Update
+        (
+            VkDevice device,
+            tf::Executor& executor,
+            Util::DeletionQueue& deletionQueue
+        );
 
         [[nodiscard]] Vk::Pipeline& GetPipeline(const std::string_view id);
         [[nodiscard]] const Vk::Pipeline& GetPipeline(const std::string_view id) const;
@@ -43,9 +45,30 @@ namespace Vk
 
         void Destroy(VkDevice device);
     private:
+        struct BuiltPipeline
+        {
+            std::string  id       = "Null/Pipeline";
+            Vk::Pipeline pipeline = {};
+        };
+
+        PipelineManager::BuiltPipeline BuildPipeline
+        (
+            VkDevice device,
+            const std::string& id,
+            Vk::PipelineConfig& config
+        );
+
+        void RecompilePipelineShaders(const std::string_view id);
+
         ankerl::unordered_dense::map<std::string, Vk::Pipeline,       Util::StringHash, std::equal_to<>> m_pipelines;
         ankerl::unordered_dense::map<std::string, Vk::PipelineConfig, Util::StringHash, std::equal_to<>> m_pipelineConfigs;
+
         ankerl::unordered_dense::map<std::string, Vk::PipelineConfig, Util::StringHash, std::equal_to<>> m_dirtyPipelineConfigs;
+
+        ankerl::unordered_dense::set<std::string, Util::StringHash, std::equal_to<>> m_reloadRequests;
+
+        std::mutex m_pipelineConfigsMutex;
+        std::mutex m_dirtyPipelineConfigsMutex;
     };
 }
 

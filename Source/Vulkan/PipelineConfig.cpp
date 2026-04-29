@@ -25,6 +25,10 @@ namespace Vk
 {
     void PipelineConfig::Build(VkDevice device)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         for (const auto& shader : m_shaders)
         {
             const auto& module = m_shaderModules.emplace_back(device, shader.path);
@@ -135,6 +139,10 @@ namespace Vk
 
     VkPipelineLayout PipelineConfig::BuildLayout(VkDevice device)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,

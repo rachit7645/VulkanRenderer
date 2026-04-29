@@ -49,128 +49,79 @@ namespace Vk
         }
     }
 
-    void PipelineManager::Update(VkDevice device, Util::DeletionQueue& deletionQueue)
+    void PipelineManager::Update
+    (
+        VkDevice device,
+        tf::Executor& executor,
+        Util::DeletionQueue& deletionQueue
+    )
     {
-        if (m_dirtyPipelineConfigs.empty())
+        if (m_dirtyPipelineConfigs.empty() && m_reloadRequests.empty())
         {
             return;
         }
 
-        std::vector<VkGraphicsPipelineCreateInfo> graphicsPipelineCreateInfos;
-        std::vector<std::string>                  graphicsPipelineIDs;
+        std::vector<std::future<void>> reloadFutures;
+        reloadFutures.reserve(m_reloadRequests.size());
 
-        std::vector<VkComputePipelineCreateInfo> computePipelineCreateInfos;
-        std::vector<std::string>                 computePipelineIDs;
-
-        std::vector<VkRayTracingPipelineCreateInfoKHR> rayTracingPipelineCreateInfos;
-        std::vector<std::string>                       rayTracingPipelineIDs;
-
-        for (auto& [id, config] : m_dirtyPipelineConfigs)
+        for (auto& id : m_reloadRequests)
         {
-            config.Build(device);
-
-            auto& pipeline = m_pipelines.emplace(id, Vk::Pipeline{}).first->second;
-
-            if (pipeline.handle != VK_NULL_HANDLE)
+            reloadFutures.emplace_back(executor.async([this, id] () mutable
             {
-                deletionQueue.PushDeletor([device, _pipeline = pipeline] ()
+                RecompilePipelineShaders(id);
+            }));
+        }
+
+        for (auto& future : reloadFutures)
+        {
+            if (!future.valid())
+            {
+                Logger::Error("{}\n", "Future is not valid!");
+            }
+
+            future.wait();
+        }
+
+        std::vector<std::future<PipelineManager::BuiltPipeline>> builtPipelineFutures;
+        builtPipelineFutures.reserve(m_dirtyPipelineConfigs.size());
+
+        for (auto& pipelineConfig : m_dirtyPipelineConfigs)
+        {
+            builtPipelineFutures.emplace_back(executor.async([this, device, &pipelineConfig] () mutable -> PipelineManager::BuiltPipeline
+            {
+                return BuildPipeline(device, pipelineConfig.first, pipelineConfig.second);
+            }));
+        }
+
+        for (auto& future : builtPipelineFutures)
+        {
+            if (!future.valid())
+            {
+                Logger::Error("{}\n", "Future is not valid!");
+            }
+
+            future.wait();
+
+            const auto builtPipeline = future.get();
+
+            auto iter = m_pipelines.find(builtPipeline.id);
+
+            if (iter != m_pipelines.end())
+            {
+                if (iter->second.handle != VK_NULL_HANDLE)
                 {
-                    _pipeline.Destroy(device);
-                });
+                    deletionQueue.PushDeletor([device, pipeline = iter->second] ()
+                    {
+                        pipeline.Destroy(device);
+                    });
+                }
+
+                iter->second = builtPipeline.pipeline;
             }
-
-            pipeline.bindPoint = config.GetPipelineType();
-            pipeline.layout    = config.BuildLayout(device);
-
-            Vk::SetDebugName(device, pipeline.layout, id + "/Pipeline/Layout");
-
-            switch (pipeline.bindPoint)
+            else
             {
-            case VK_PIPELINE_BIND_POINT_GRAPHICS:
-                graphicsPipelineCreateInfos.emplace_back(config.BuildGraphicsPipelineCreateInfo(pipeline.layout));
-                graphicsPipelineIDs.emplace_back(id);
-                break;
-
-            case VK_PIPELINE_BIND_POINT_COMPUTE:
-                computePipelineCreateInfos.emplace_back(config.BuildComputePipelineCreateInfo(pipeline.layout));
-                computePipelineIDs.emplace_back(id);
-                break;
-
-            case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
-                rayTracingPipelineCreateInfos.emplace_back(config.BuildRayTracingPipelineCreateInfo(pipeline.layout));
-                rayTracingPipelineIDs.emplace_back(id);
-                break;
-
-            default:
-                break;
+                m_pipelines.emplace(builtPipeline.id, builtPipeline.pipeline);
             }
-        }
-
-        const auto AssignHandles = [&] (const std::vector<std::string>& ids, const std::vector<VkPipeline>& handles)
-        {
-            for (usize i = 0; i < ids.size(); ++i)
-            {
-                const auto& id     = ids[i];
-                const auto  handle = handles[i];
-
-                auto& pipeline = GetPipeline(id);
-
-                pipeline.handle = handle;
-
-                Vk::SetDebugName(device, pipeline.handle, id + "/Pipeline");
-            }
-        };
-
-        if (!graphicsPipelineIDs.empty())
-        {
-            auto handles = std::vector<VkPipeline>(graphicsPipelineCreateInfos.size());
-
-            Vk::CheckResult(vkCreateGraphicsPipelines(
-                device,
-                nullptr,
-                graphicsPipelineCreateInfos.size(),
-                graphicsPipelineCreateInfos.data(),
-                nullptr,
-                handles.data()),
-                "Failed to create graphics pipelines!"
-            );
-
-            AssignHandles(graphicsPipelineIDs, handles);
-        }
-
-        if (!computePipelineIDs.empty())
-        {
-            auto handles = std::vector<VkPipeline>(computePipelineCreateInfos.size());
-
-            Vk::CheckResult(vkCreateComputePipelines(
-                device,
-                nullptr,
-                computePipelineCreateInfos.size(),
-                computePipelineCreateInfos.data(),
-                nullptr,
-                handles.data()),
-                "Failed to create compute pipelines!"
-            );
-
-            AssignHandles(computePipelineIDs, handles);
-        }
-
-        if (!rayTracingPipelineIDs.empty())
-        {
-            auto handles = std::vector<VkPipeline>(rayTracingPipelineCreateInfos.size());
-
-            Vk::CheckResult(vkCreateRayTracingPipelinesKHR(
-                device,
-                VK_NULL_HANDLE,
-                VK_NULL_HANDLE,
-                rayTracingPipelineCreateInfos.size(),
-                rayTracingPipelineCreateInfos.data(),
-                nullptr,
-                handles.data()),
-                "Failed to create ray tracing pipelines!"
-            );
-
-            AssignHandles(rayTracingPipelineIDs, handles);
         }
 
         for (auto& config : m_dirtyPipelineConfigs | std::views::values)
@@ -178,62 +129,8 @@ namespace Vk
             config.Destroy(device);
         }
 
+        m_reloadRequests.clear();
         m_dirtyPipelineConfigs.clear();
-    }
-
-    void PipelineManager::Reload(const std::string_view id)
-    {
-        const auto iter = m_pipelineConfigs.find(id);
-
-        if (iter == m_pipelineConfigs.cend())
-        {
-            Logger::Error("Can't reload an invalid pipeline! [ID={}]\n", id);
-        }
-
-        for (const auto& [path, _] : iter->second.GetShaders())
-        {
-            const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
-
-            const auto result = std::system(fmt::format(
-                "{} {}/CompileShader.py {} {}",
-                PYTHON_EXECUTABLE,
-                SCRIPT_LOCATION,
-                COMPILATION_FLAGS,
-                shaderAssetPath
-            ).c_str());
-
-            if (result != 0)
-            {
-                Logger::Warning("Pipeline Reload Failed! [Result={}]\n", result);
-
-                #ifdef ENGINE_DEBUG
-                return;
-                #endif
-            }
-        }
-
-        m_dirtyPipelineConfigs.emplace(iter->first, iter->second);
-    }
-
-    void PipelineManager::ReloadAll()
-    {
-        const auto result = std::system(fmt::format(
-            "{} {}/CompileShaders.py {}",
-            PYTHON_EXECUTABLE,
-            SCRIPT_LOCATION,
-            COMPILATION_FLAGS
-        ).c_str());
-
-        if (result != 0)
-        {
-            Logger::Warning("Pipeline Reload Failed! [Result={}]\n", result);
-
-            #ifdef ENGINE_DEBUG
-            return;
-            #endif
-        }
-
-        m_dirtyPipelineConfigs.insert(m_pipelineConfigs.begin(), m_pipelineConfigs.end());
     }
 
     Vk::Pipeline& PipelineManager::GetPipeline(const std::string_view id)
@@ -268,7 +165,10 @@ namespace Vk
             {
                 if (ImGui::Button("Reload All Pipelines"))
                 {
-                    ReloadAll();
+                    for (const auto& id : m_pipelineConfigs | std::views::keys)
+                    {
+                        m_reloadRequests.emplace(id);
+                    }
                 }
 
                 ImGui::TreePop();
@@ -286,7 +186,7 @@ namespace Vk
 
                     if (ImGui::Button("Reload Pipeline"))
                     {
-                        Reload(id);
+                        m_reloadRequests.emplace(id);
                     }
 
                     ImGui::TreePop();
@@ -294,6 +194,170 @@ namespace Vk
 
                 ImGui::Separator();
             }
+        }
+    }
+
+    PipelineManager::BuiltPipeline PipelineManager::BuildPipeline
+    (
+        VkDevice device,
+        const std::string& id,
+        Vk::PipelineConfig& config
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneNamed(zone, true);
+        zone.NameFmt("%s", id.c_str());
+        #endif
+
+        config.Build(device);
+
+        Vk::Pipeline pipeline = {};
+
+        pipeline.bindPoint = config.GetPipelineType();
+        pipeline.layout    = config.BuildLayout(device);
+
+        Vk::SetDebugName(device, pipeline.layout, id + "/Pipeline/Layout");
+
+        // Create Pipeline
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Create Pipeline");
+            #endif
+
+            switch (pipeline.bindPoint)
+            {
+            case VK_PIPELINE_BIND_POINT_GRAPHICS:
+            {
+                const auto createInfo = config.BuildGraphicsPipelineCreateInfo(pipeline.layout);
+
+                Vk::CheckResult(vkCreateGraphicsPipelines(
+                    device,
+                    nullptr,
+                    1,
+                    &createInfo,
+                    nullptr,
+                    &pipeline.handle),
+                    "Failed to create graphics pipelines!"
+                );
+
+                break;
+            }
+
+            case VK_PIPELINE_BIND_POINT_COMPUTE:
+            {
+                const auto createInfo = config.BuildComputePipelineCreateInfo(pipeline.layout);
+
+                Vk::CheckResult(vkCreateComputePipelines(
+                    device,
+                    nullptr,
+                    1,
+                    &createInfo,
+                    nullptr,
+                    &pipeline.handle),
+                    "Failed to create compute pipeline!"
+                );
+
+                break;
+            }
+
+            case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
+            {
+                const auto createInfo = config.BuildRayTracingPipelineCreateInfo(pipeline.layout);
+
+                Vk::CheckResult(vkCreateRayTracingPipelinesKHR(
+                    device,
+                    VK_NULL_HANDLE,
+                    VK_NULL_HANDLE,
+                    1,
+                    &createInfo,
+                    nullptr,
+                    &pipeline.handle),
+                    "Failed to create ray tracing pipelines!"
+                );
+
+                break;
+            }
+
+            default:
+                Logger::Error("Unsupported pipeline type! [ID={}] [Bind Point={}]\n", id, string_VkPipelineBindPoint(pipeline.bindPoint));
+            }
+        }
+
+        Vk::SetDebugName(device, pipeline.handle, id + "/Pipeline");
+
+        return PipelineManager::BuiltPipeline
+        {
+            .id       = id,
+            .pipeline = pipeline
+        };
+    }
+
+    void PipelineManager::RecompilePipelineShaders(const std::string_view id)
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneNamed(zone, true);
+        zone.NameFmt("%s", id.data());
+        #endif
+
+        bool reloadSucceeded = true;
+
+        Vk::PipelineConfig pipelineConfig = {};
+
+        // Get shader files
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Pipeline Config Lookup");
+            #endif
+
+            const std::scoped_lock lock{m_pipelineConfigsMutex};
+
+            const auto iter = m_pipelineConfigs.find(id);
+
+            if (iter == m_pipelineConfigs.cend())
+            {
+                Logger::Error("Can't reload an invalid pipeline! [ID={}]\n", id);
+            }
+
+            pipelineConfig = iter->second;
+        }
+
+        for (const auto& [path, _] : pipelineConfig.GetShaders())
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneNamed(zone, true);
+            zone.NameFmt("%s", path.c_str());
+            #endif
+
+            const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
+
+            const auto result = std::system(fmt::format(
+                "{} {}/CompileShader.py {} {}",
+                PYTHON_EXECUTABLE,
+                SCRIPT_LOCATION,
+                COMPILATION_FLAGS,
+                shaderAssetPath
+            ).c_str());
+
+            if (result != 0)
+            {
+                Logger::Warning("Pipeline Reload Failed! [Result={}]\n", result);
+
+                reloadSucceeded = false;
+
+                break;
+            }
+        }
+
+        // Append to dirty pipeline configs
+        if (reloadSucceeded)
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Dirty Pipeline Config Insertion");
+            #endif
+
+            const std::scoped_lock lock{m_dirtyPipelineConfigsMutex};
+
+            m_dirtyPipelineConfigs.emplace(id, pipelineConfig);
         }
     }
 

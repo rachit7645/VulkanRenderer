@@ -1713,7 +1713,7 @@ namespace Renderer
 
         m_renderConfig.Update();
 
-        m_pipelineManager.Update(m_context.device, m_deletionQueues[m_FIF]);
+        m_pipelineManager.Update(m_context.device, m_executor, m_deletionQueues[m_FIF]);
 
         m_stagingPool.Update(m_context.allocator);
 
