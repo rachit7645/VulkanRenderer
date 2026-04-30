@@ -58,7 +58,7 @@ namespace Renderer::DearImGui
                 VK_COLOR_COMPONENT_A_BIT
             )
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DearImGui::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
     }
 
@@ -343,6 +343,7 @@ namespace Renderer::DearImGui
 
             vertexBuffer = Vk::Buffer
             (
+                device,
                 allocator,
                 vertexSize,
                 0,
@@ -351,8 +352,6 @@ namespace Renderer::DearImGui
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
-
-            vertexBuffer.GetDeviceAddress(device);
 
             Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
         }
@@ -368,6 +367,7 @@ namespace Renderer::DearImGui
 
             indexBuffer = Vk::Buffer
             (
+                device,
                 allocator,
                 indexSize,
                 0,

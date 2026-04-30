@@ -73,9 +73,6 @@ namespace Vk
 
         std::set<Vk::MemoryBlock> m_usedBlocks = {};
         std::set<Vk::MemoryBlock> m_freeBlocks = {};
-
-        Vk::BarrierWriter m_barrierWriterOld = {};
-        Vk::BarrierWriter m_barrierWriterNew = {};
     };
 }
 

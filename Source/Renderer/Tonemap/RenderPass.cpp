@@ -45,7 +45,7 @@ namespace Renderer::ToneMap
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ToneMap::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer

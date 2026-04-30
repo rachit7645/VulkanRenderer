@@ -47,7 +47,7 @@ namespace Renderer::Lighting
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Lighting::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
         
         framebufferManager.AddFramebuffer
@@ -195,7 +195,7 @@ namespace Renderer::Lighting
             .GAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoIoRView").sampledImageID,
             .GNormalIndex            = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .GRghMtlIndex            = framebufferManager.GetFramebufferView("GRoughnessMetallicHorizonView").sampledImageID,
-            .GEmmisiveIndex          = framebufferManager.GetFramebufferView("GEmmisiveView").sampledImageID,
+            .GEmmisiveIndex          = framebufferManager.GetFramebufferView("GEmissiveView").sampledImageID,
             .SceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .IrradianceIndex         = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
             .PreFilterIndex          = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,

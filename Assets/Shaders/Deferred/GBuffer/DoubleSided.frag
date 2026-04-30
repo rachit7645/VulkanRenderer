@@ -44,7 +44,7 @@ layout(location = 0) in VertexData
 layout(location = 0) out vec4 gAlbedoIoR;
 layout(location = 1) out vec2 gNormal;
 layout(location = 2) out vec3 gRoughnessMetallicHorizon;
-layout(location = 3) out vec3 gEmmisive;
+layout(location = 3) out vec3 gEmissive;
 layout(location = 4) out vec2 gMotionVectors;
 
 void main()
@@ -80,11 +80,11 @@ void main()
     gRoughnessMetallicHorizon.g = aoRghMtl.b;
     gRoughnessMetallicHorizon.b = CalculateHorizonOcclusion(reflected, Input.N);
 
-    vec3 emmisive  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.emmisiveID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.emmisiveUVMapID]).rgb;
-         emmisive *= mesh.material.emmisiveFactor;
-         emmisive *= mesh.material.emmisiveStrength;
+    vec3 emissive  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.emissiveID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.emissiveUVMapID]).rgb;
+         emissive *= mesh.material.emissiveFactor;
+         emissive *= mesh.material.emissiveStrength;
 
-    gEmmisive = emmisive;
+    gEmissive = emissive;
 
     vec2 currentUV  = (Input.currentPosition.xy  / Input.currentPosition.z ) * 0.5f + 0.5f;
     vec2 previousUV = (Input.previousPosition.xy / Input.previousPosition.z) * 0.5f + 0.5f;

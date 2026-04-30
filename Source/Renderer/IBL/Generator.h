@@ -118,7 +118,7 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         );
 
-        [[nodiscard]] Vk::TextureID GenerateBRDFLUT
+        [[nodiscard]] Vk::TextureID GenerateBRDFLookupTable
         (
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,

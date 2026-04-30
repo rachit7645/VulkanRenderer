@@ -25,16 +25,16 @@ namespace Models
             .albedoID         = textureManager.GetTexture(albedoID).descriptorID,
             .normalID         = textureManager.GetTexture(normalID).descriptorID,
             .aoRghMtlID       = textureManager.GetTexture(aoRghMtlID).descriptorID,
-            .emmisiveID       = textureManager.GetTexture(emmisiveID).descriptorID,
+            .emissiveID       = textureManager.GetTexture(emissiveID).descriptorID,
             .albedoUVMapID    = albedoUVMapID,
             .normalUVMapID    = normalUVMapID,
             .aoRghMtlUVMapID  = aoRghMtlUVMapID,
-            .emmisiveUVMapID  = emmisiveUVMapID,
+            .emissiveUVMapID  = emissiveUVMapID,
             .albedoFactor     = albedoFactor,
             .roughnessFactor  = roughnessFactor,
             .metallicFactor   = metallicFactor,
-            .emmisiveFactor   = emmisiveFactor,
-            .emmisiveStrength = emmisiveStrength,
+            .emissiveFactor   = emissiveFactor,
+            .emissiveStrength = emissiveStrength,
             .alphaCutOff      = alphaCutOff,
             .ior              = ior,
             .flags            = flags
@@ -89,7 +89,7 @@ namespace Models
 
         textureManager.DestroyTexture
         (
-            emmisiveID,
+            emissiveID,
             device,
             allocator,
             megaSet,

@@ -21,6 +21,7 @@
 #include "Util.h"
 #include "Util/Maths.h"
 #include "Externals/FMT.h"
+#include "Vulkan/MeshIdentifier.h"
 
 namespace Vk
 {
@@ -62,6 +63,7 @@ namespace Vk
 
         auto transformBuffer = Vk::Buffer
         (
+            context.device,
             context.allocator,
             transformsSize,
             0,
@@ -70,8 +72,6 @@ namespace Vk
             VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
             VMA_MEMORY_USAGE_AUTO
         );
-
-        transformBuffer.GetDeviceAddress(context.device);
 
         std::memcpy
         (
@@ -189,6 +189,7 @@ namespace Vk
 
                 const auto buffer = Vk::Buffer
                 (
+                    context.device,
                     context.allocator,
                     blasBuildSizes.accelerationStructureSize,
                     0,
@@ -221,6 +222,7 @@ namespace Vk
 
                 auto scratchBuffer = Vk::Buffer
                 (
+                    context.device,
                     context.allocator,
                     blasBuildSizes.buildScratchSize,
                     context.physicalDeviceAccelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment,
@@ -229,8 +231,6 @@ namespace Vk
                     0,
                     VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
                 );
-
-                scratchBuffer.GetDeviceAddress(context.device);
 
                 blasBuildInfo.dstAccelerationStructure = blas;
                 blasBuildInfo.scratchData              = {.deviceAddress = scratchBuffer.deviceAddress};
@@ -343,7 +343,7 @@ namespace Vk
             return;
         }
 
-        // Wait Vk::FRAMES_IN_FLIGHT frames before trying to retrieve query results (Thanks Darian and devsh!)
+        // Wait Vk::FRAMES_IN_FLIGHT frames before trying to retrieve query results (Thanks Darian and DevSH!)
         const bool isQueryReady = timeline.IsAtOrPastStage
         (
             m_initialBLASBuildFrameIndex + Vk::FRAMES_IN_FLIGHT,
@@ -398,6 +398,7 @@ namespace Vk
 
             blas.buffer = Vk::Buffer
             (
+                device,
                 allocator,
                 compactedSizes[i],
                 0,
@@ -508,10 +509,10 @@ namespace Vk
 
         for (const auto& renderObject : renderObjects)
         {
-            uniqueModelIDs.insert(renderObject.modelID);
+            uniqueModelIDs.emplace(renderObject.modelID);
         }
 
-        ankerl::unordered_dense::map<std::pair<Models::ModelID, usize>, usize> meshIndexMap = {};
+        ankerl::unordered_dense::map<Vk::MeshIdentifier, usize> meshIndexMap = {};
 
         for (usize meshIndex = 0; const auto modelID : uniqueModelIDs)
         {
@@ -519,8 +520,14 @@ namespace Vk
 
             for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
             {
+                const Vk::MeshIdentifier meshIdentifier =
+                {
+                    .modelID        = modelID,
+                    .localMeshIndex = localMeshIndex
+                };
+
                 // (modelID, localMeshIndex) -> globalMeshIndex
-                meshIndexMap[{modelID, localMeshIndex}] = meshIndex++;
+                meshIndexMap.emplace(meshIdentifier, meshIndex++);
             }
         }
 
@@ -550,7 +557,13 @@ namespace Vk
                     instanceFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
                 }
 
-                const auto globalMeshIndex = meshIndexMap.at({renderObject.modelID, localMeshIndex});
+                const Vk::MeshIdentifier meshIdentifier =
+                {
+                    .modelID        = renderObject.modelID,
+                    .localMeshIndex = localMeshIndex
+                };
+
+                const auto globalMeshIndex = meshIndexMap.at(meshIdentifier);
 
                 instances.emplace_back(VkAccelerationStructureInstanceKHR{
                     .transform                              = glm::vk_cast(Maths::TransformMatrix(
@@ -578,6 +591,7 @@ namespace Vk
 
             m_instanceBuffers[FIF] = Vk::Buffer
             (
+                context.device,
                 context.allocator,
                 instancesSize,
                 0,
@@ -586,8 +600,6 @@ namespace Vk
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
-
-            m_instanceBuffers[FIF].GetDeviceAddress(context.device);
         }
 
         std::memcpy
@@ -683,6 +695,7 @@ namespace Vk
 
             topLevelASes[FIF].buffer = Vk::Buffer
             (
+                context.device,
                 context.allocator,
                 tlasBuildSizes.accelerationStructureSize,
                 0,
@@ -730,6 +743,7 @@ namespace Vk
 
             m_scratchBuffers[FIF] = Vk::Buffer
             (
+                context.device,
                 context.allocator,
                 tlasBuildSizes.buildScratchSize,
                 context.physicalDeviceAccelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment,
@@ -738,8 +752,6 @@ namespace Vk
                 0,
                 VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
             );
-
-            m_scratchBuffers[FIF].GetDeviceAddress(context.device);
         }
 
         tlasBuildInfo.dstAccelerationStructure = topLevelASes[FIF].handle;
@@ -764,7 +776,7 @@ namespace Vk
 
         topLevelASes[FIF].deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(context.device, &tlasDAInfo);
 
-        Vk::SetDebugName(context.device, topLevelASes[FIF].handle,            fmt::format("TLAS/{}",               FIF));
+        Vk::SetDebugName(context.device, topLevelASes[FIF].handle,        fmt::format("TLAS/{}",               FIF));
         Vk::SetDebugName(context.device, topLevelASes[FIF].buffer.handle, fmt::format("TLASBuffer/{}",         FIF));
         Vk::SetDebugName(context.device, m_instanceBuffers[FIF].handle,   fmt::format("TLASInstanceBuffer/{}", FIF));
         Vk::SetDebugName(context.device, m_scratchBuffers[FIF].handle,    fmt::format("TLASScratchBuffer/{}",  FIF));

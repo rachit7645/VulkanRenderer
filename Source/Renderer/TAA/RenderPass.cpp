@@ -50,7 +50,7 @@ namespace Renderer::TAA
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer

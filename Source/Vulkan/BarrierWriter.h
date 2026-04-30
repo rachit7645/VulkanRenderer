@@ -35,7 +35,7 @@ namespace Vk
 
         BarrierWriter& Clear();
 
-        bool IsEmpty() const;
+        [[nodiscard]] bool IsEmpty() const;
     private:
         std::vector<VkBufferMemoryBarrier2> m_bufferBarriers;
         std::vector<VkImageMemoryBarrier2>  m_imageBarriers;

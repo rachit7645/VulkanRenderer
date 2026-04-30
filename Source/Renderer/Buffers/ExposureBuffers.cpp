@@ -26,6 +26,7 @@ namespace Renderer::Buffers
     {
         histogramBuffer = Vk::Buffer
         (
+            device,
             allocator,
             Exposure::HISTOGRAM_SIZE * sizeof(u32),
             0,
@@ -37,6 +38,7 @@ namespace Renderer::Buffers
 
         luminanceBuffer = Vk::Buffer
         (
+            device,
             allocator,
             Vk::FRAMES_IN_FLIGHT * sizeof(f32),
             0,
@@ -45,9 +47,6 @@ namespace Renderer::Buffers
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
-
-        histogramBuffer.GetDeviceAddress(device);
-        luminanceBuffer.GetDeviceAddress(device);
 
         Vk::SetDebugName(device, histogramBuffer.handle, "Exposure/HistogramBuffer");
         Vk::SetDebugName(device, luminanceBuffer.handle, "Exposure/LuminanceBuffer");

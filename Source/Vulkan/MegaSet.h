@@ -46,11 +46,12 @@ namespace Vk
 
         void Destroy(VkDevice device);
 
-        VkDescriptorSet       descriptorSet    = VK_NULL_HANDLE;
-        VkDescriptorSetLayout descriptorLayout = VK_NULL_HANDLE;
+        VkDescriptorSet       handle = VK_NULL_HANDLE;
+        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
     private:
-        VkDescriptorPool     m_descriptorPool = VK_NULL_HANDLE;
-        Vk::DescriptorWriter m_writer         = {};
+        VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+
+        Vk::DescriptorWriter m_writer = {};
 
         Vk::DescriptorAllocator m_samplerAllocator      = {};
         Vk::DescriptorAllocator m_sampledImageAllocator = {};

@@ -312,6 +312,7 @@ namespace Renderer::Buffers
         {
             buffer = Vk::Buffer
             (
+                device,
                 allocator,
                 sizeof(GPU::SceneBuffer),
                 0,
@@ -320,14 +321,13 @@ namespace Renderer::Buffers
                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
                 VMA_MEMORY_USAGE_AUTO
             );
-
-            buffer.GetDeviceAddress(device);
         }
 
         for (auto& lightBuffer : lightBuffers)
         {
             lightBuffer = Vk::Buffer
             (
+                device,
                 allocator,
                 sizeof(GPU::LightsBuffer),
                 0,
@@ -355,8 +355,6 @@ namespace Renderer::Buffers
                     "Failed to flush allocation!"
                 );
             }
-
-            lightBuffer.GetDeviceAddress(device);
         }
     }
 

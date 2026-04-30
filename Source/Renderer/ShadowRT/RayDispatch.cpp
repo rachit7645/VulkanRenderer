@@ -43,7 +43,7 @@ namespace Renderer::ShadowRT
             .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
             .SetMaxRayRecursionDepth(1)
             .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
         
         framebufferManager.AddFramebuffer

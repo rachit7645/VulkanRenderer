@@ -30,10 +30,10 @@ namespace Models
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
     // Default texture paths
-    constexpr auto DEFAULT_ALBEDO     = "Albedo.ktx2";
-    constexpr auto DEFAULT_NORMAL     = "Normal.ktx2";
-    constexpr auto DEFAULT_AO_RGH_MTL = "Albedo.ktx2";
-    constexpr auto DEFAULT_EMMISIVE   = "Albedo.ktx2";
+    constexpr auto DEFAULT_ALBEDO_TEXTURE     = "Albedo.ktx2";
+    constexpr auto DEFAULT_NORMAL_TEXTURE     = "Normal.ktx2";
+    constexpr auto DEFAULT_AO_RGH_MTL_TEXTURE = "Albedo.ktx2";
+    constexpr auto DEFAULT_EMISSIVE_TEXTURE   = "Albedo.ktx2";
 
     void Model::LoadFromFile
     (
@@ -481,8 +481,8 @@ namespace Models
                 material.albedoFactor     = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
                 material.roughnessFactor  = mat.pbrData.roughnessFactor;
                 material.metallicFactor   = mat.pbrData.metallicFactor;
-                material.emmisiveFactor   = glm::fastgltf_cast(mat.emissiveFactor);
-                material.emmisiveStrength = mat.emissiveStrength;
+                material.emissiveFactor   = glm::fastgltf_cast(mat.emissiveFactor);
+                material.emissiveStrength = mat.emissiveStrength;
                 material.ior              = mat.ior;
 
                 if (mat.doubleSided)
@@ -514,7 +514,7 @@ namespace Models
                     directory,
                     asset,
                     baseColorTexture,
-                    DEFAULT_ALBEDO
+                    DEFAULT_ALBEDO_TEXTURE
                 );
 
                 material.albedoID      = textureInfo.id;
@@ -559,16 +559,16 @@ namespace Models
                     directory,
                     asset,
                     metallicRoughnessTexture,
-                    DEFAULT_AO_RGH_MTL
+                    DEFAULT_AO_RGH_MTL_TEXTURE
                 );
 
                 material.aoRghMtlID      = textureInfo.id;
                 material.aoRghMtlUVMapID = textureInfo.uvMapIndex;
             }
 
-            // Emmisive
+            // Emissive
             {
-                const auto& emmisiveTexture = mat.emissiveTexture;
+                const auto& emissiveTexture = mat.emissiveTexture;
 
                 const auto textureInfo = LoadTexture
                 (
@@ -581,12 +581,12 @@ namespace Models
                     deletionQueue,
                     directory,
                     asset,
-                    emmisiveTexture,
-                    DEFAULT_EMMISIVE
+                    emissiveTexture,
+                    DEFAULT_EMISSIVE_TEXTURE
                 );
 
-                material.emmisiveID      = textureInfo.id;
-                material.emmisiveUVMapID = textureInfo.uvMapIndex;
+                material.emissiveID      = textureInfo.id;
+                material.emissiveUVMapID = textureInfo.uvMapIndex;
             }
 
             meshes.emplace_back
@@ -780,7 +780,7 @@ namespace Models
                     .type   = Vk::ImageUploadType::KTX2,
                     .flags  = Vk::ImageUploadFlags::None,
                     .source = Vk::ImageUploadFile{
-                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
+                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL_TEXTURE)
                     }
                 }
             );

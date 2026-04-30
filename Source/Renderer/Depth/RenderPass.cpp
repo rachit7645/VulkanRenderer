@@ -59,7 +59,7 @@ namespace Renderer::Depth
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer

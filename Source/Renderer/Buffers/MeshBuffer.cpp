@@ -29,6 +29,7 @@ namespace Renderer::Buffers
         {
             m_meshBuffers[i] = Vk::Buffer
             (
+                device,
                 allocator,
                 MAX_MESH_COUNT * sizeof(GPU::Mesh),
                 0,
@@ -38,8 +39,6 @@ namespace Renderer::Buffers
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            m_meshBuffers[i].GetDeviceAddress(device);
-
             Vk::SetDebugName(device, m_meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
 
@@ -47,6 +46,7 @@ namespace Renderer::Buffers
         {
             m_instanceBuffers[i] = Vk::Buffer
             (
+                device,
                 allocator,
                 sizeof(u32) + MAX_MESH_COUNT * sizeof(GPU::Instance),
                 0,
@@ -70,8 +70,6 @@ namespace Renderer::Buffers
                     "Failed to flush allocation!"
                 );
             }
-
-            m_instanceBuffers[i].GetDeviceAddress(device);
 
             Vk::SetDebugName(device, m_instanceBuffers[i].handle, fmt::format("InstanceBuffer/{}", i));
         }

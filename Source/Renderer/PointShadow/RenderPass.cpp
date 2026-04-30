@@ -64,7 +64,7 @@ namespace Renderer::PointShadow
             .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
             
         framebufferManager.AddFramebuffer

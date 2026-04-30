@@ -139,7 +139,7 @@ namespace Vk
             context.device,
             &createInfo,
             nullptr,
-            &descriptorLayout),
+            &layout),
             "Failed to create mega set layout!"
         );
 
@@ -149,13 +149,13 @@ namespace Vk
             .pNext              = nullptr,
             .descriptorPool     = m_descriptorPool,
             .descriptorSetCount = 1,
-            .pSetLayouts        = &descriptorLayout
+            .pSetLayouts        = &layout
         };
 
         Vk::CheckResult(vkAllocateDescriptorSets(
             context.device,
             &allocInfo,
-            &descriptorSet),
+            &handle),
             "Failed to allocate mega set"
         );
 
@@ -164,8 +164,8 @@ namespace Vk
         m_storageImageAllocator = Vk::DescriptorAllocator(maxStorageImages);
 
         Vk::SetDebugName(context.device, m_descriptorPool, "MegaSet/DescriptorPool");
-        Vk::SetDebugName(context.device, descriptorLayout, "MegaSet/DescriptorLayout");
-        Vk::SetDebugName(context.device, descriptorSet,    "MegaSet/DescriptorSet");
+        Vk::SetDebugName(context.device, layout, "MegaSet/DescriptorLayout");
+        Vk::SetDebugName(context.device, handle,    "MegaSet/DescriptorSet");
     }
 
     Vk::DescriptorID MegaSet::WriteSampler(const Vk::Sampler& sampler)
@@ -174,7 +174,7 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet,
+            handle,
             std::to_underlying(DescriptorBinding::Samplers),
             id,
             sampler.handle,
@@ -192,7 +192,7 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet,
+            handle,
             std::to_underlying(DescriptorBinding::SampledImages),
             id,
             VK_NULL_HANDLE,
@@ -210,7 +210,7 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet,
+            handle,
             std::to_underlying(DescriptorBinding::StorageImages),
             id,
             VK_NULL_HANDLE,
@@ -314,6 +314,6 @@ namespace Vk
     void MegaSet::Destroy(VkDevice device)
     {
         vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
     }
 }

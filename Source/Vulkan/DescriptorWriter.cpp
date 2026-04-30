@@ -31,14 +31,14 @@ namespace Vk
         VkDescriptorType type
     )
     {
-        const auto& info = imageInfos.emplace_back(VkDescriptorImageInfo
+        const auto& info = m_imageInfos.emplace_back(VkDescriptorImageInfo
         {
             .sampler     = sampler,
             .imageView   = image,
             .imageLayout = layout
         });
 
-        writes.emplace_back(VkWriteDescriptorSet{
+        m_writes.emplace_back(VkWriteDescriptorSet{
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .pNext            = nullptr,
             .dstSet           = set,
@@ -65,14 +65,14 @@ namespace Vk
         VkDescriptorType type
     )
     {
-        const auto& info = bufferInfos.emplace_back(VkDescriptorBufferInfo
+        const auto& info = m_bufferInfos.emplace_back(VkDescriptorBufferInfo
         {
             .buffer = buffer,
             .offset = offset,
             .range  = size
         });
 
-        writes.emplace_back(VkWriteDescriptorSet{
+        m_writes.emplace_back(VkWriteDescriptorSet{
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .pNext            = nullptr,
             .dstSet           = set,
@@ -90,7 +90,7 @@ namespace Vk
 
     void DescriptorWriter::Update(VkDevice device)
     {
-        if (writes.empty())
+        if (m_writes.empty())
         {
             return;
         }
@@ -98,8 +98,8 @@ namespace Vk
         vkUpdateDescriptorSets
         (
             device,
-            static_cast<u32>(writes.size()),
-            writes.data(),
+            static_cast<u32>(m_writes.size()),
+            m_writes.data(),
             0,
             nullptr
         );
@@ -109,9 +109,9 @@ namespace Vk
 
     DescriptorWriter& DescriptorWriter::Clear()
     {
-        imageInfos.clear();
-        bufferInfos.clear();
-        writes.clear();
+        m_imageInfos.clear();
+        m_bufferInfos.clear();
+        m_writes.clear();
 
         return *this;
     }

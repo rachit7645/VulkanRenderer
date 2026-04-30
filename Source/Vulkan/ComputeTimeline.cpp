@@ -23,7 +23,7 @@ namespace Vk
 {
     ComputeTimeline::ComputeTimeline(VkDevice device)
     {
-        const VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
+        constexpr VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo =
         {
             .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
             .pNext         = nullptr,

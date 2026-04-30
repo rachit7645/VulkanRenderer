@@ -46,7 +46,7 @@ namespace Renderer::Skybox
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Skybox::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
     }
 

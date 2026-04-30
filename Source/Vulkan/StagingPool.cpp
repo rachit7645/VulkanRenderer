@@ -97,6 +97,7 @@ namespace Vk
 
             const auto buffer = Vk::Buffer
             (
+                device,
                 allocator,
                 stagingBufferSize,
                 0,

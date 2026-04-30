@@ -49,7 +49,7 @@ namespace Renderer::Bloom
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("Bloom/DownSample/Regular", Vk::PipelineConfig{}
@@ -62,7 +62,7 @@ namespace Renderer::Bloom
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("Bloom/UpSample", Vk::PipelineConfig{}
@@ -87,7 +87,7 @@ namespace Renderer::Bloom
                 VK_COLOR_COMPONENT_A_BIT
             )
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UpSample::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("Bloom/Combine", Vk::PipelineConfig{}
@@ -100,7 +100,7 @@ namespace Renderer::Bloom
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Combine::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer

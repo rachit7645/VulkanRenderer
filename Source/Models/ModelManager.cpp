@@ -246,7 +246,7 @@ namespace Models
                             ImGui::Text("Albedo                    | %u         | %llu", mesh.material.albedoUVMapID,   mesh.material.albedoID);
                             ImGui::Text("Normal                    | %u         | %llu", mesh.material.normalUVMapID,   mesh.material.normalID);
                             ImGui::Text("AO + Roughness + Metallic | %u         | %llu", mesh.material.aoRghMtlUVMapID, mesh.material.aoRghMtlID);
-                            ImGui::Text("Emmisive                  | %u         | %llu", mesh.material.emmisiveUVMapID, mesh.material.emmisiveID);
+                            ImGui::Text("Emissive                  | %u         | %llu", mesh.material.emissiveUVMapID, mesh.material.emissiveID);
 
                             ImGui::Separator();
                             ImGui::Text("Factor Name | Value");
@@ -262,17 +262,17 @@ namespace Models
                             ImGui::Text("Roughness   | %.3f", mesh.material.roughnessFactor);
                             ImGui::Text("Metallic    | %.3f", mesh.material.metallicFactor);
 
-                            ImGui::Text("Emmisive    | [%.3f, %.3f, %.3f]",
-                                mesh.material.emmisiveFactor.r,
-                                mesh.material.emmisiveFactor.g,
-                                mesh.material.emmisiveFactor.b
+                            ImGui::Text("Emissive    | [%.3f, %.3f, %.3f]",
+                                mesh.material.emissiveFactor.r,
+                                mesh.material.emissiveFactor.g,
+                                mesh.material.emissiveFactor.b
                             );
 
                             ImGui::Separator();
                             ImGui::Text("Misc              | Value");
                             ImGui::Separator();
 
-                            ImGui::Text("Emmisive Strength | %.3f", mesh.material.emmisiveStrength);
+                            ImGui::Text("Emissive Strength | %.3f", mesh.material.emissiveStrength);
                             ImGui::Text("Alpha Cutoff      | %.3f", mesh.material.alphaCutOff);
                             ImGui::Text("IoR               | %.3f", mesh.material.ior);
 

@@ -56,7 +56,7 @@ namespace Renderer::GBuffer
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("GBuffer/DoubleSided", Vk::PipelineConfig{}
@@ -74,7 +74,7 @@ namespace Renderer::GBuffer
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GBuffer::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer
@@ -271,7 +271,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebufferView
         (
             "GEmmisive",
-            "GEmmisiveView",
+            "GEmissiveView",
             VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -318,14 +318,14 @@ namespace Renderer::GBuffer
         const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoIoRView");
         const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");
         const auto& gRghMtlHrzView     = framebufferManager.GetFramebufferView("GRoughnessMetallicHorizonView");
-        const auto& gEmmisiveView      = framebufferManager.GetFramebufferView("GEmmisiveView");
+        const auto& gEmissiveView      = framebufferManager.GetFramebufferView("GEmissiveView");
         const auto& gMotionVectorsView = framebufferManager.GetFramebufferView("GMotionVectorsView");
         const auto& sceneDepthView     = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& gAlbedo        = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
         const auto& gNormal        = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
         const auto& gRghMtlHrz     = framebufferManager.GetFramebuffer(gRghMtlHrzView.framebuffer);
-        const auto& gEmmisive      = framebufferManager.GetFramebuffer(gEmmisiveView.framebuffer);
+        const auto& gEmissive      = framebufferManager.GetFramebuffer(gEmissiveView.framebuffer);
         const auto& gMotionVectors = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
         const auto& sceneDepth     = framebufferManager.GetFramebuffer(sceneDepthView.framebuffer);
 
@@ -384,7 +384,7 @@ namespace Renderer::GBuffer
             }
         )
         .WriteImageBarrier(
-            gEmmisive.image,
+            gEmissive.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -395,9 +395,9 @@ namespace Renderer::GBuffer
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
-                .levelCount     = gEmmisive.image.mipLevels,
+                .levelCount     = gEmissive.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = gEmmisive.image.arrayLayers
+                .layerCount     = gEmissive.image.arrayLayers
             }
         )
         .WriteImageBarrier(
@@ -465,7 +465,7 @@ namespace Renderer::GBuffer
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
-            .imageView          = gEmmisiveView.view.handle,
+            .imageView          = gEmissiveView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -784,7 +784,7 @@ namespace Renderer::GBuffer
             }
         )
         .WriteImageBarrier(
-            gEmmisive.image,
+            gEmissive.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -795,9 +795,9 @@ namespace Renderer::GBuffer
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .baseMipLevel   = 0,
-                .levelCount     = gEmmisive.image.mipLevels,
+                .levelCount     = gEmissive.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = gEmmisive.image.arrayLayers
+                .layerCount     = gEmissive.image.arrayLayers
             }
         )
         .WriteImageBarrier(

@@ -60,6 +60,7 @@ namespace Vk
 
         buffer = Vk::Buffer
         (
+            device,
             allocator,
             capacity,
             0,
@@ -68,8 +69,6 @@ namespace Vk
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
-
-        buffer.GetDeviceAddress(device);
 
         if (!copyOnResize)
         {

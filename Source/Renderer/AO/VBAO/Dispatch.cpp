@@ -36,21 +36,21 @@ namespace Renderer::AO::VBAO
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("VBAO/Occlusion", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/VBAO.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Occlusion::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("VBAO/Denoise", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer

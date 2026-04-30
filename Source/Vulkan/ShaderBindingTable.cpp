@@ -119,6 +119,7 @@ namespace Vk
 
         m_buffer = Vk::Buffer
         (
+            context.device,
             context.allocator,
             sbtSize,
             0,
@@ -165,8 +166,6 @@ namespace Vk
                 .size           = sbtSize
             }
         );
-
-        m_buffer.GetDeviceAddress(context.device);
 
         raygenRegion.deviceAddress = m_buffer.deviceAddress;
         missRegion.deviceAddress   = m_buffer.deviceAddress + raygenRegion.size;

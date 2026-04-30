@@ -34,14 +34,14 @@ namespace Renderer::TiledLighting
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("TiledLighting/Bounds.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Bounds::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("TiledLighting/Culling", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("TiledLighting/Culling.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer

@@ -64,6 +64,7 @@ namespace Renderer::Debug
 
         m_indexBuffer = Vk::Buffer
         (
+            device,
             allocator,
             INDICES_SIZE,
             0,
@@ -77,6 +78,7 @@ namespace Renderer::Debug
 
         m_drawCallBuffer = Vk::Buffer
         (
+            device,
             allocator,
             DRAW_CALL_BUFFER_COUNT * sizeof(VkDrawIndexedIndirectCommand),
             0,
@@ -85,8 +87,6 @@ namespace Renderer::Debug
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
-
-        m_drawCallBuffer.GetDeviceAddress(device);
 
         m_pendingIndexUpload = stagingPool.Allocate
         (

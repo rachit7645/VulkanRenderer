@@ -119,6 +119,7 @@ namespace Vk
 
         buffer = Vk::Buffer
         (
+            device,
             allocator,
             m_capacity,
             0,
@@ -127,11 +128,6 @@ namespace Vk
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
-
-        if (m_usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
-        {
-            buffer.GetDeviceAddress(device);
-        }
 
         // Copy old elements
 
@@ -152,6 +148,9 @@ namespace Vk
 
         std::vector<VkBufferCopy2> copyRegions = {};
 
+        Vk::BarrierWriter barrierWriterOld = {};
+        Vk::BarrierWriter barrierWriterNew = {};
+
         for (const auto& block : *m_resizeCopyBlocks)
         {
             if (!m_usedBlocks.contains(block))
@@ -167,7 +166,7 @@ namespace Vk
                 .size      = block.size
             });
 
-            m_barrierWriterOld.WriteBufferBarrier
+            barrierWriterOld.WriteBufferBarrier
             (
                 oldBuffer,
                 Vk::BufferBarrier{
@@ -182,7 +181,7 @@ namespace Vk
                 }
             );
 
-            m_barrierWriterNew.WriteBufferBarrier
+            barrierWriterNew.WriteBufferBarrier
             (
                 buffer,
                 Vk::BufferBarrier{
@@ -215,11 +214,11 @@ namespace Vk
             .pRegions    = copyRegions.data(),
         };
 
-        m_barrierWriterOld.Execute(cmdBuffer);
+        barrierWriterOld.Execute(cmdBuffer);
 
         vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
 
-        m_barrierWriterNew.Execute(cmdBuffer);
+        barrierWriterNew.Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }

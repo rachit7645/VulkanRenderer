@@ -26,9 +26,9 @@
 GLSL_NAMESPACE_BEGIN(GPU)
 
 GLSL_ENUM_CLASS_BEGIN(MaterialFlags, u32)
-    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, None,        0u << 0u)
-    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, DoubleSided, 1u << 1u)
-    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, AlphaMasked, 1u << 2u)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, None,        0)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, DoubleSided, 1u << 0u)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, AlphaMasked, 1u << 1u)
 GLSL_ENUM_CLASS_END
 
 struct Material
@@ -36,18 +36,18 @@ struct Material
     u32 albedoID;
     u32 normalID;
     u32 aoRghMtlID;
-    u32 emmisiveID;
+    u32 emissiveID;
 
     u32 albedoUVMapID;
     u32 normalUVMapID;
     u32 aoRghMtlUVMapID;
-    u32 emmisiveUVMapID;
+    u32 emissiveUVMapID;
 
     GLSL_VEC4 albedoFactor;
     f32       roughnessFactor;
     f32       metallicFactor;
-    GLSL_VEC3 emmisiveFactor;
-    f32       emmisiveStrength;
+    GLSL_VEC3 emissiveFactor;
+    f32       emissiveStrength;
 
     f32 alphaCutOff;
 

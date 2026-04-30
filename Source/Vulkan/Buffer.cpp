@@ -24,6 +24,7 @@ namespace Vk
 {
     Buffer::Buffer
     (
+        VkDevice device,
         VmaAllocator allocator,
         VkDeviceSize size,
         VkDeviceSize alignment,
@@ -74,24 +75,18 @@ namespace Vk
         hostAddress = allocationInfo.pMappedData;
 
         vmaGetMemoryTypeProperties(allocator, allocationInfo.memoryType, &this->memoryProperties);
-    }
 
-    void Buffer::GetDeviceAddress(VkDevice device)
-    {
-        if (handle == VK_NULL_HANDLE)
+        if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
         {
-            deviceAddress = 0;
-            return;
+            const VkBufferDeviceAddressInfo bdaInfo =
+            {
+                .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+                .pNext  = nullptr,
+                .buffer = handle
+            };
+
+            deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
         }
-
-        const VkBufferDeviceAddressInfo bdaInfo =
-        {
-            .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-            .pNext  = nullptr,
-            .buffer = handle
-        };
-
-        deviceAddress = vkGetBufferDeviceAddress(device, &bdaInfo);
     }
 
     void Buffer::Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::BufferBarrier& barrier) const

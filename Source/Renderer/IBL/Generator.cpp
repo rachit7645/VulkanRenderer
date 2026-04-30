@@ -58,7 +58,7 @@ namespace Renderer::IBL
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(EquirectangularToCubemap::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("IBL/Irradiance", Vk::PipelineConfig{}
@@ -71,7 +71,7 @@ namespace Renderer::IBL
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Irradiance::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("IBL/PreFilter", Vk::PipelineConfig{}
@@ -84,7 +84,7 @@ namespace Renderer::IBL
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PreFilter::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         constexpr std::array BRDF_COLOR_FORMATS = {VK_FORMAT_R16G16_SFLOAT};
@@ -114,6 +114,7 @@ namespace Renderer::IBL
 
         m_matrixBuffer = Vk::Buffer
         (
+            device,
             allocator,
             matrices.size() * sizeof(glm::mat4),
             0,
@@ -129,8 +130,6 @@ namespace Renderer::IBL
             matrices.data(),
             matrices.size() * sizeof(glm::mat4)
         );
-
-        m_matrixBuffer.GetDeviceAddress(device);
 
         Vk::SetDebugName(device, m_matrixBuffer.handle, "IBLMaps/MatrixBuffer");
 
@@ -279,7 +278,7 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        const auto brdfLutID = GenerateBRDFLUT
+        const auto brdfLutID = GenerateBRDFLookupTable
         (
             frameIndex,
             cmdBuffer,
@@ -981,7 +980,7 @@ namespace Renderer::IBL
         return preFilterID;
     }
 
-    [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLUT
+    [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLookupTable
     (
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
@@ -1171,6 +1170,7 @@ namespace Renderer::IBL
 
             m_brdfLutReadbackBuffer = Vk::Buffer
             (
+                context.device,
                 context.allocator,
                 BRDF_LUT_READBACK_SIZE,
                 0,

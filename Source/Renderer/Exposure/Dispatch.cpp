@@ -35,14 +35,14 @@ namespace Renderer::Exposure
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Exposure/Histogram.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Histogram::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         pipelineManager.AddPipeline("Exposure/Average", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Exposure/Average.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Average::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer

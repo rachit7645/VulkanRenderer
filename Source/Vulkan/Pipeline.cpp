@@ -37,7 +37,7 @@ namespace Vk
             layout,
             0,
             1,
-            &megaSet.descriptorSet,
+            &megaSet.handle,
             0,
             nullptr
         );
