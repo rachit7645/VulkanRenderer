@@ -43,3 +43,6 @@
 [submodule "ImPlot"]
 	path = Externals/implot
 	url = https://github.com/epezent/implot.git
+[submodule "lz4"]
+	path = Externals/lz4
+	url = https://github.com/lz4/lz4.git

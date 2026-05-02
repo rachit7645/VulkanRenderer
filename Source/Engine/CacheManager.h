@@ -32,13 +32,14 @@ namespace Engine
     {
         [[nodiscard]] bool Validate() const;
 
-        u32             magic      = 0;
-        u8              version    = 0;
-        CachedAssetType assetType  = CachedAssetType::Texture;
-        u16             pad0       = 0;
-        u64             headerSize = 0;
-        u64             dataSize   = 0;
-        u64             hash       = 0;
+        u32             magic                = 0;
+        u8              version              = 0;
+        CachedAssetType assetType            = CachedAssetType::Texture;
+        u16             pad0                 = 0;
+        u64             headerSize           = 0;
+        u64             compressedDataSize   = 0;
+        u64             uncompressedDataSize = 0;
+        u64             hash                 = 0;
     };
 
     enum class CachedTextureSource : u8

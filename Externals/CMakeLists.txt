@@ -220,3 +220,33 @@ if (DLSSAvailable)
     # Install DLSS
     install(IMPORTED_RUNTIME_ARTIFACTS DLSS)
 endif()
+
+# lz4 source files
+add_library(lz4 SHARED
+    lz4/lib/lz4.c
+    lz4/lib/lz4hc.c
+)
+
+# lz4 precompiled headers
+target_precompile_headers(lz4 PRIVATE
+    lz4/lib/lz4.h
+    lz4/lib/lz4hc.h
+)
+
+# Standard options
+target_compile_definitions(lz4 PRIVATE LZ4_DLL_EXPORT=1)
+
+# Compiler options
+if (MSVC)
+    target_compile_options(lz4 PRIVATE /w /O2)
+    target_compile_definitions(lz4 PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+else()
+    target_compile_options(lz4 PRIVATE -w -O3)
+endif()
+
+# Install
+install(
+    FILES $<TARGET_FILE:lz4>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)

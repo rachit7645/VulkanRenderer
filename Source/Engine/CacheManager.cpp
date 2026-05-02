@@ -29,7 +29,7 @@ namespace Engine
     constexpr auto CACHE_DIRECTORY = "Cache/";
 
     constexpr u32 CACHE_HEADER_MAGIC   = 0x4B4F4F43;
-    constexpr u8  CACHE_HEADER_VERSION = 1;
+    constexpr u8  CACHE_HEADER_VERSION = 2;
 
     u64 CachedAssetTypeToHeaderSize(Engine::CachedAssetType assetType)
     {
@@ -91,15 +91,34 @@ namespace Engine
             Logger::Error("Failed to load binary {}!\n", path);
         }
 
+        auto compressedDataSize = static_cast<usize>(LZ4_compressBound(static_cast<s32>(entry.data.size())));
+
+        auto compressedData = std::vector<u8>(compressedDataSize);
+
+        compressedDataSize = static_cast<usize>(LZ4_compress_HC
+        (
+            reinterpret_cast<const char*>(entry.data.data()),
+            reinterpret_cast<char*>(compressedData.data()),
+            static_cast<s32>(entry.data.size()),
+            static_cast<s32>(compressedData.size()),
+            LZ4HC_CLEVEL_DEFAULT
+        ));
+
+        if (compressedDataSize == 0)
+        {
+            Logger::Error("Failed to compress binary {}!\n", path);
+        }
+
         Engine::CacheHeader header =
         {
-            .magic         = CACHE_HEADER_MAGIC,
-            .version       = CACHE_HEADER_VERSION,
-            .assetType     = entry.assetType,
-            .pad0          = 0,
-            .headerSize    = CachedAssetTypeToHeaderSize(entry.assetType),
-            .dataSize      = entry.data.size(),
-            .hash          = 0
+            .magic                = CACHE_HEADER_MAGIC,
+            .version              = CACHE_HEADER_VERSION,
+            .assetType            = entry.assetType,
+            .pad0                 = 0,
+            .headerSize           = CachedAssetTypeToHeaderSize(entry.assetType),
+            .compressedDataSize   = compressedDataSize,
+            .uncompressedDataSize = entry.data.size(),
+            .hash                 = 0
         };
 
         std::visit(Util::Visitor{
@@ -118,7 +137,7 @@ namespace Engine
             }
         }, entry.assetHeader);
 
-        bin.write(reinterpret_cast<const char*>(entry.data.data()), static_cast<std::streamsize>(entry.data.size()));
+        bin.write(reinterpret_cast<const char*>(compressedData.data()), static_cast<std::streamsize>(compressedDataSize));
 
         bin.flush();
         bin.close();
@@ -244,9 +263,24 @@ namespace Engine
             Logger::Error("{}\n", "Unknown cached asset type!");
         }
 
-        auto data = std::vector<u8>(header.dataSize);
+        auto compressedData = std::vector<u8>(header.compressedDataSize);
 
-        bin.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
+        bin.read(reinterpret_cast<char*>(compressedData.data()), static_cast<std::streamsize>(compressedData.size()));
+
+        auto data = std::vector<u8>(header.uncompressedDataSize);
+
+        const auto uncompressedSize = static_cast<usize>(LZ4_decompress_safe
+        (
+            reinterpret_cast<const char*>(compressedData.data()),
+            reinterpret_cast<char*>(data.data()),
+            static_cast<s32>(compressedData.size()),
+            static_cast<s32>(data.size())
+        ));
+
+        if (uncompressedSize == 0 || uncompressedSize != header.uncompressedDataSize)
+        {
+            Logger::Error("Failed to decompress data! [File={}]\n", file);
+        }
 
         return Engine::CacheEntry
         {
@@ -291,7 +325,8 @@ namespace Engine
                version == CACHE_HEADER_VERSION &&
                assetType == Engine::CachedAssetType::Texture &&
                headerSize != 0 &&
-               dataSize != 0;
+               compressedDataSize != 0 &&
+               uncompressedDataSize != 0;
     }
 
     bool CachedTextureHeader::Validate() const

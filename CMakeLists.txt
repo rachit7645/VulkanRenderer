@@ -199,6 +199,9 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/openexr/src/lib/OpenEXR/ImfArray.h
     # Unordered Dense Headers
     Externals/unordered_dense/include/ankerl/unordered_dense.h
+    # lz4 Headers
+    Externals/lz4/lib/lz4.h
+    Externals/lz4/lib/lz4hc.h
     # C++ STL Headers
     <map>
     <unordered_map>
@@ -317,6 +320,7 @@ target_link_libraries(VulkanRenderer
     OpenEXR::OpenEXR
     unordered_dense::unordered_dense
     DearImGui
+    lz4
 )
 
 if (DLSSAvailable)
