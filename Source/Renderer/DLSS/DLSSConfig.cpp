@@ -40,14 +40,18 @@ namespace Renderer::DLSS
 
         if (result != NVSDK_NGX_Result_Success)
         {
-            Logger::Error("Failed to initialize DLSS SDK! [Error={}]", static_cast<u64>(result));
+            isSupported = false;
+
+            return;
         }
 
         result = NVSDK_NGX_VULKAN_GetCapabilityParameters(&parameters);
 
         if (result != NVSDK_NGX_Result_Success)
         {
-            Logger::Error("Failed to initialize query capability parameters! [Error={}]", static_cast<u64>(result));
+            isSupported = false;
+
+            return;
         }
 
         s32 DLSSSupported = 0;
@@ -56,8 +60,6 @@ namespace Renderer::DLSS
 
         if (result != NVSDK_NGX_Result_Success || DLSSSupported == 0)
         {
-            Logger::Info("DLSS not available! Falling back to TAA! [Error={}]", static_cast<u64>(result));
-
             isSupported = false;
 
             return;
@@ -69,6 +71,11 @@ namespace Renderer::DLSS
 
     glm::uvec2 DLSSConfig::GetInternalResolution(const glm::uvec2& swapchainSize)
     {
+        if (!isSupported)
+        {
+            Logger::Error("{}\n", "DLSS is not supported!");
+        }
+
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("Effects"))
@@ -175,6 +182,11 @@ namespace Renderer::DLSS
         Util::DeletionQueue& deletionQueue
     )
     {
+        if (!isSupported)
+        {
+            Logger::Error("{}\n", "DLSS is not supported!");
+        }
+
         if (!m_haveParametersChanged && handle != nullptr)
         {
             return;
@@ -222,8 +234,13 @@ namespace Renderer::DLSS
         m_haveParametersChanged = false;
     }
 
-    void DLSSConfig::Destroy(VkDevice device)
+    void DLSSConfig::Destroy(VkDevice device) const
     {
+        if (!isSupported)
+        {
+            Logger::Error("{}\n", "DLSS is not supported!");
+        }
+
         NVSDK_NGX_VULKAN_DestroyParameters(parameters);
 
         NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_Shutdown1(device);

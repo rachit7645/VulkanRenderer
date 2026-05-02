@@ -33,6 +33,7 @@ layout(location = 0) out VertexData
     vec3 T;
     vec3 B;
 
+    // (x, y, w) 
     noperspective vec3 currentPosition;
     noperspective vec3 previousPosition;
 

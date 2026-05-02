@@ -87,12 +87,14 @@ namespace Vk
 
         if (result != NVSDK_NGX_Result_Success)
         {
-            Logger::Error("Failed to load DLSS instance extensions! [Error={}]\n", static_cast<u64>(result));
+            Logger::Warning("Failed to load DLSS instance extensions! [Error={}]\n", static_cast<u64>(result));
         }
-
-        for (u32 i = 0; i < DLSSExtensionCount; ++i)
+        else
         {
-            extensions.emplace_back(DLSSExtensionProperties[i].extensionName);
+            for (u32 i = 0; i < DLSSExtensionCount; ++i)
+            {
+                extensions.emplace_back(DLSSExtensionProperties[i].extensionName);
+            }
         }
 
         #endif

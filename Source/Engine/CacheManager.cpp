@@ -299,12 +299,18 @@ namespace Engine
         m_cacheTable.emplace(cacheFile);
     }
 
-    // TODO: Deferred Invalidation (To avoid filesystem operations on the main thread)
     void CacheManager::InvalidateFromCacheTable(const std::string_view cacheFile)
     {
-        const std::scoped_lock lock{m_mutex};
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
 
-        m_cacheTable.erase(cacheFile);
+        // Remove from table
+        {
+            const std::scoped_lock lock{m_mutex};
+
+            m_cacheTable.erase(cacheFile);
+        }
 
         if (!std::filesystem::remove(cacheFile))
         {

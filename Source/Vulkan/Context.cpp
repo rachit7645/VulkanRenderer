@@ -634,12 +634,12 @@ namespace Vk
         Vk::SetDebugName(device, instance,       "Instance");
         Vk::SetDebugName(device, physicalDevice, "PhysicalDevice");
         Vk::SetDebugName(device, device,         "Device");
-        Vk::SetDebugName(device, surface,        "SDL3Surface");
-        Vk::SetDebugName(device, graphicsQueue,  "GraphicsQueue");
+        Vk::SetDebugName(device, surface,        "SDL3/Surface");
+        Vk::SetDebugName(device, graphicsQueue,  "Queue/Graphics");
 
         if (queueFamilies.computeFamily.has_value())
         {
-            Vk::SetDebugName(device, computeQueue, "ComputeQueue");
+            Vk::SetDebugName(device, computeQueue, "Queue/Compute");
         }
     }
 

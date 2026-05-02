@@ -28,7 +28,7 @@ namespace Renderer::DLSS
     public:
         explicit DLSSConfig(const Vk::Context& context);
 
-        void Destroy(VkDevice device);
+        void Destroy(VkDevice device) const;
 
         [[nodiscard]] glm::uvec2 GetInternalResolution(const glm::uvec2& swapchainSize);
 
