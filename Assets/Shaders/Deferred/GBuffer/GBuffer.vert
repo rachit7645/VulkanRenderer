@@ -31,7 +31,8 @@ layout(location = 0) out VertexData
 
     vec3 N;
     vec3 T;
-    vec3 B;
+
+    float TangentSign;
 
     // (x, y, w) 
     noperspective vec3 currentPosition;
@@ -72,6 +73,6 @@ void main()
 
     Output.N = normalize(currentInstance.normalMatrix * vertex.normal);
     Output.T = normalize(currentInstance.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
-    Output.T = normalize(Output.T - dot(Output.T, Output.N) * Output.N);
-    Output.B = normalize(cross(Output.N, Output.T)) * vertex.tangent.w;
+
+    Output.TangentSign = vertex.tangent.w;
 }

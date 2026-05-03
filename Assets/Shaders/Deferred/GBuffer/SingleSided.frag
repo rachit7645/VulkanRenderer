@@ -33,7 +33,8 @@ layout(location = 0) in VertexData
 
     vec3 N;
     vec3 T;
-    vec3 B;
+
+    float TangentSign;
 
     // (x, y, w) 
     noperspective vec3 currentPosition;
@@ -58,7 +59,10 @@ void main()
     gAlbedoIoR.rgb = albedo.rgb;
     gAlbedoIoR.a   = PackIoR(mesh.material.ior);
 
-    mat3 TBN = mat3(Input.T, Input.B, Input.N);
+    // http://www.mikktspace.com/
+    vec3 B = cross(Input.N, Input.T) * Input.TangentSign;
+
+    mat3 TBN = mat3(Input.T, B, Input.N);
 
     vec3 normal = texture(nonuniformEXT(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.normalUVMapID]).rgb;
          normal = GetNormalFromMap(normal, TBN);
@@ -74,7 +78,7 @@ void main()
 
     gRoughnessMetallicHorizon.r = aoRghMtl.g;
     gRoughnessMetallicHorizon.g = aoRghMtl.b;
-    gRoughnessMetallicHorizon.b = CalculateHorizonOcclusion(reflected, Input.N);
+    gRoughnessMetallicHorizon.b = CalculateHorizonOcclusion(reflected, normalize(Input.N));
 
     vec3 emissive  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.emissiveID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.emissiveUVMapID]).rgb;
          emissive *= mesh.material.emissiveFactor;
