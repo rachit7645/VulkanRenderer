@@ -558,7 +558,7 @@ namespace Renderer::IBL
             skyboxView
         );
 
-        deletionQueue.PushDeletor([device = context.device, skyboxRenderView] () mutable
+        deletionQueue.Push([device = context.device, skyboxRenderView] () mutable
         {
             skyboxRenderView.Destroy(device);
         });
@@ -969,7 +969,7 @@ namespace Renderer::IBL
             preFilterView
         );
 
-        deletionQueue.PushDeletor([device = context.device, preFilterRenderViews] () mutable
+        deletionQueue.Push([device = context.device, preFilterRenderViews] () mutable
         {
             for (const auto& view : preFilterRenderViews)
             {

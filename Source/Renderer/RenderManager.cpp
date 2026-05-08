@@ -71,7 +71,7 @@ namespace Renderer
 
         m_frameCounter.Reset();
 
-        m_globalDeletionQueue.PushDeletor([&] ()
+        m_globalDeletionQueue.Push([&] ()
         {
             m_executor.wait_for_all();
 
@@ -182,7 +182,7 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
-        m_deletionQueues[m_FIF].FlushQueue();
+        m_deletionQueues[m_FIF].Flush();
 
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
@@ -1258,7 +1258,7 @@ namespace Renderer
         {
             if (m_accelerationStructure.has_value())
             {
-                m_deletionQueues[m_FIF].PushDeletor([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
+                m_deletionQueues[m_FIF].Push([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
                 {
                     as.Destroy(device, allocator);
                 });
@@ -2331,7 +2331,7 @@ namespace Renderer
             }
         );
 
-        m_globalDeletionQueue.PushDeletor([&] ()
+        m_globalDeletionQueue.Push([&] ()
         {
             ImPlot::DestroyContext();
 
@@ -2346,9 +2346,9 @@ namespace Renderer
 
         for (auto& deletionQueue : m_deletionQueues)
         {
-            deletionQueue.FlushQueue();
+            deletionQueue.Flush();
         }
 
-        m_globalDeletionQueue.FlushQueue();
+        m_globalDeletionQueue.Flush();
     }
 }

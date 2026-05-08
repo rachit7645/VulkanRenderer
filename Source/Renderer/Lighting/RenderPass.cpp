@@ -147,8 +147,8 @@ namespace Renderer::Lighting
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {colorAttachment.image.width, colorAttachment.image.height}
+                .offset = {.x     = 0,                           .y      = 0                           },
+                .extent = {.width = colorAttachment.image.width, .height = colorAttachment.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -176,8 +176,8 @@ namespace Renderer::Lighting
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {colorAttachment.image.width, colorAttachment.image.height}
+            .offset = {.x     = 0,                           .y      = 0                           },
+            .extent = {.width = colorAttachment.image.width, .height = colorAttachment.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);

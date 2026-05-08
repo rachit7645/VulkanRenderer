@@ -26,12 +26,12 @@ namespace Util
     class DeletionQueue
     {
     public:
-        using Deletor = std::function<void()>;
+        using Deleter = std::function<void()>;
 
-        void PushDeletor(Deletor&& deletor);
-        void FlushQueue();
+        void Push(Deleter&& deleter);
+        void Flush();
     private:
-        std::stack<Deletor> m_deletors = {};
+        std::stack<Deleter> m_deleters = {};
         std::mutex          m_mutex    = {};
     };
 }

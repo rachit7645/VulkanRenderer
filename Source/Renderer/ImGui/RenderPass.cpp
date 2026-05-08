@@ -336,7 +336,7 @@ namespace Renderer::DearImGui
         {
             Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
-            deletionQueue.PushDeletor([allocator, vertexBuffer] () mutable
+            deletionQueue.Push([allocator, vertexBuffer] () mutable
             {
                 vertexBuffer.Destroy(allocator);
             });
@@ -360,7 +360,7 @@ namespace Renderer::DearImGui
         {
             Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 
-            deletionQueue.PushDeletor([allocator, indexBuffer] () mutable
+            deletionQueue.Push([allocator, indexBuffer] () mutable
             {
                 indexBuffer.Destroy(allocator);
             });

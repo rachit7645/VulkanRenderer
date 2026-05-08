@@ -25,5 +25,5 @@
 * Sky Rendering
 * Culling Statistics
 * Combine ModelManager and TextureManager Into AssetManager
-* Debug Renderer
+* Debug Renderer (Lights, Tile Lighting)
 * Cache to Avoid KTX2 Transcoding

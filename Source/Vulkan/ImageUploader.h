@@ -285,8 +285,6 @@ namespace Vk
 
         std::vector<Upload> m_pendingUploads;
         std::mutex          m_mutex;
-
-        Vk::BarrierWriter m_barrierWriter;
     };
 }
 

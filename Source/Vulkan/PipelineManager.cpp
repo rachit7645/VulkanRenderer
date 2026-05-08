@@ -110,7 +110,7 @@ namespace Vk
             {
                 if (iter->second.handle != VK_NULL_HANDLE)
                 {
-                    deletionQueue.PushDeletor([device, pipeline = iter->second] ()
+                    deletionQueue.Push([device, pipeline = iter->second] ()
                     {
                         pipeline.Destroy(device);
                     });
@@ -159,7 +159,7 @@ namespace Vk
 
     void PipelineManager::ImGuiDisplay()
     {
-        if (ImGui::CollapsingHeader("Pipeline Manager"))
+        if (ImGui::CollapsingHeader("Pipelines"))
         {
             if (ImGui::TreeNode("Reload"))
             {

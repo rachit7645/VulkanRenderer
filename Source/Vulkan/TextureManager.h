@@ -108,6 +108,12 @@ namespace Vk
             u64         referenceCount = 0;
         };
 
+        struct SamplerInfo
+        {
+            Vk::Sampler sampler        = {};
+            u64         referenceCount = 0;
+        };
+
         struct TextureNameInfo
         {
             std::string name;
@@ -117,7 +123,7 @@ namespace Vk
         TextureNameInfo GetTextureNameInfo(const ImageUploadSource& source);
 
         ankerl::unordered_dense::map<Vk::TextureID, TextureInfo> m_textureMap;
-        ankerl::unordered_dense::map<Vk::SamplerID, Vk::Sampler> m_samplerMap;
+        ankerl::unordered_dense::map<Vk::SamplerID, SamplerInfo> m_samplerMap;
 
         Vk::ImageUploader m_imageUploader;
 

@@ -106,7 +106,7 @@ namespace Vk
             }
         );
 
-        deletionQueue.PushDeletor([allocator = context.allocator, buffer = transformBuffer] () mutable
+        deletionQueue.Push([allocator = context.allocator, buffer = transformBuffer] () mutable
         {
             buffer.Destroy(allocator);
         });
@@ -240,7 +240,7 @@ namespace Vk
                 scratchBuffers.emplace_back(scratchBuffer);
                 blasBuildInfos.emplace_back(blasBuildInfo);
 
-                deletionQueue.PushDeletor([allocator = context.allocator, buffer = scratchBuffer] () mutable
+                deletionQueue.Push([allocator = context.allocator, buffer = scratchBuffer] () mutable
                 {
                     buffer.Destroy(allocator);
                 });
@@ -260,7 +260,7 @@ namespace Vk
 
         if (m_compactionQueryPool != VK_NULL_HANDLE)
         {
-            deletionQueue.PushDeletor([device = context.device, queryPool = m_compactionQueryPool] ()
+            deletionQueue.Push([device = context.device, queryPool = m_compactionQueryPool] ()
             {
                 vkDestroyQueryPool(device, queryPool, nullptr);
             });
@@ -389,7 +389,7 @@ namespace Vk
             auto oldBLAS   = blas.handle;
             auto oldBuffer = blas.buffer;
 
-            deletionQueue.PushDeletor([device, allocator, oldBLAS, oldBuffer] () mutable
+            deletionQueue.Push([device, allocator, oldBLAS, oldBuffer] () mutable
             {
                 vkDestroyAccelerationStructureKHR(device, oldBLAS, nullptr);
 
@@ -490,7 +490,7 @@ namespace Vk
     {
         if (renderObjects.empty() || m_bottomLevelASes.empty())
         {
-            deletionQueue.PushDeletor([device = context.device, as = topLevelASes[FIF].handle] () mutable
+            deletionQueue.Push([device = context.device, as = topLevelASes[FIF].handle] () mutable
             {
                 if (as != VK_NULL_HANDLE)
                 {
@@ -584,7 +584,7 @@ namespace Vk
 
         if (m_instanceBuffers[FIF].size < instancesSize)
         {
-            deletionQueue.PushDeletor([allocator = context.allocator, oldBuffer = m_instanceBuffers[FIF]] () mutable
+            deletionQueue.Push([allocator = context.allocator, oldBuffer = m_instanceBuffers[FIF]] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
@@ -688,7 +688,7 @@ namespace Vk
 
         if (topLevelASes[FIF].buffer.size < tlasBuildSizes.accelerationStructureSize)
         {
-            deletionQueue.PushDeletor([allocator = context.allocator, oldBuffer = topLevelASes[FIF].buffer] () mutable
+            deletionQueue.Push([allocator = context.allocator, oldBuffer = topLevelASes[FIF].buffer] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });
@@ -718,7 +718,7 @@ namespace Vk
             .deviceAddress = 0
         };
 
-        deletionQueue.PushDeletor([device = context.device, as = topLevelASes[FIF].handle] () mutable
+        deletionQueue.Push([device = context.device, as = topLevelASes[FIF].handle] () mutable
         {
             if (as != VK_NULL_HANDLE)
             {
@@ -736,7 +736,7 @@ namespace Vk
 
         if (m_scratchBuffers[FIF].size < tlasBuildSizes.buildScratchSize)
         {
-            deletionQueue.PushDeletor([allocator = context.allocator, oldBuffer = m_scratchBuffers[FIF]] () mutable
+            deletionQueue.Push([allocator = context.allocator, oldBuffer = m_scratchBuffers[FIF]] () mutable
             {
                 oldBuffer.Destroy(allocator);
             });

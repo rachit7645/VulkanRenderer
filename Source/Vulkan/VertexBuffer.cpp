@@ -122,7 +122,7 @@ namespace Vk
             0
         );
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });
@@ -198,11 +198,13 @@ namespace Vk
             deletionQueue
         );
 
+        Vk::BarrierWriter barrierWriter = {};
+
         for (const auto& uploads : m_pendingUploads | std::views::values)
         {
             for (const auto& upload : uploads)
             {
-                m_barrierWriter.WriteBufferBarrier
+                barrierWriter.WriteBufferBarrier
                 (
                    m_allocator.buffer,
                    Vk::BufferBarrier{
@@ -219,7 +221,7 @@ namespace Vk
             }
         }
 
-        m_barrierWriter.Execute(cmdBuffer);
+        barrierWriter.Execute(cmdBuffer);
 
         for (const auto& [buffer, uploads] : m_pendingUploads)
         {
@@ -253,7 +255,7 @@ namespace Vk
         {
             for (const auto& upload : uploads)
             {
-                m_barrierWriter.WriteBufferBarrier
+                barrierWriter.WriteBufferBarrier
                 (
                     m_allocator.buffer,
                     Vk::BufferBarrier{
@@ -270,7 +272,7 @@ namespace Vk
             }
         }
 
-        m_barrierWriter.Execute(cmdBuffer);
+        barrierWriter.Execute(cmdBuffer);
 
         m_pendingUploads.clear();
     }

@@ -102,7 +102,7 @@ namespace Vk
             );
         }
 
-        m_deletionQueue.PushDeletor([this] ()
+        m_deletionQueue.Push([this] ()
         {
             SDL_Vulkan_DestroySurface(instance, surface, nullptr);
         });
@@ -623,7 +623,7 @@ namespace Vk
 
         Vk::CheckResult(vmaCreateAllocator(&createInfo, &allocator), "Failed to create allocator!");
 
-        m_deletionQueue.PushDeletor([this] ()
+        m_deletionQueue.Push([this] ()
         {
             vmaDestroyAllocator(allocator);
         });
@@ -645,7 +645,7 @@ namespace Vk
 
     void Context::Destroy()
     {
-        m_deletionQueue.FlushQueue();
+        m_deletionQueue.Flush();
 
         vkDestroyDevice(device, nullptr);
 

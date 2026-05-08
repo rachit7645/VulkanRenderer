@@ -85,8 +85,6 @@ namespace Vk
         Vk::ResizableAllocator m_allocator = {};
 
         ankerl::unordered_dense::map<VkBuffer, std::vector<GeometryUpload>> m_pendingUploads;
-
-        Vk::BarrierWriter m_barrierWriter = {};
     };
 }
 

@@ -55,14 +55,14 @@ namespace Renderer::Debug
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetDepthState(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS)
             .AddDefaultBlendAttachment()
-            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(AABB::Constants))
+            .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AABB::Constants))
         );
 
-        constexpr std::array<u32, 24> AABB_INDICES = {0, 1, 1, 3, 3, 2, 2, 0, 4, 5, 5, 7, 7, 6, 6, 4, 0, 4, 1, 5, 2, 6, 3, 7};
+        constexpr std::array<u16, 24> AABB_INDICES = {0, 1, 1, 3, 3, 2, 2, 0, 4, 5, 5, 7, 7, 6, 6, 4, 0, 4, 1, 5, 2, 6, 3, 7};
 
-        constexpr VkDeviceSize INDICES_SIZE = sizeof(u32) * AABB_INDICES.size();
+        constexpr VkDeviceSize INDICES_SIZE = sizeof(u16) * AABB_INDICES.size();
 
-        m_indexBuffer = Vk::Buffer
+        m_aabbIndexBuffer = Vk::Buffer
         (
             device,
             allocator,
@@ -76,7 +76,7 @@ namespace Renderer::Debug
 
         constexpr usize DRAW_CALL_BUFFER_COUNT = 4;
 
-        m_drawCallBuffer = Vk::Buffer
+        m_aabbDrawCallBuffer = Vk::Buffer
         (
             device,
             allocator,
@@ -88,7 +88,7 @@ namespace Renderer::Debug
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        m_pendingIndexUpload = stagingPool.Allocate
+        m_pendingAABBIndexUpload = stagingPool.Allocate
         (
             device,
             allocator,
@@ -96,10 +96,10 @@ namespace Renderer::Debug
             0
         );
 
-        std::memcpy(m_pendingIndexUpload->hostAddress, AABB_INDICES.data(), INDICES_SIZE);
+        std::memcpy(m_pendingAABBIndexUpload->hostAddress, AABB_INDICES.data(), INDICES_SIZE);
 
-        Vk::SetDebugName(device, m_indexBuffer.handle,    "Debug/AABB/IndexBuffer");
-        Vk::SetDebugName(device, m_drawCallBuffer.handle, "Debug/AABB/DrawCalls");
+        Vk::SetDebugName(device, m_aabbIndexBuffer.handle,    "Debug/AABB/IndexBuffer");
+        Vk::SetDebugName(device, m_aabbDrawCallBuffer.handle, "Debug/AABB/DrawCalls");
     }
 
     void RenderPass::Render
@@ -122,7 +122,37 @@ namespace Renderer::Debug
             {
                 if (ImGui::CollapsingHeader("Debug Renderer"))
                 {
-                    ImGui::Checkbox("Render AABBs", &m_renderAABBDebug);
+                    ImGui::Checkbox("Render AABBs", &m_aabbDebugOptions.enabled);
+
+                    if (m_aabbDebugOptions.enabled)
+                    {
+                        auto AABBDebugOptionUI = [] (const std::string_view label, const std::string_view id, RenderPass::AABBDebugOption& debugOption) mutable
+                        {
+                            ImGui::Checkbox(label.data(), &debugOption.enabled);
+                            ImGui::SameLine();
+                            ImGui::ColorEdit3(id.data(), &debugOption.color[0], ImGuiColorEditFlags_NoInputs);
+                        };
+
+                        ImGui::Separator();
+
+                        if (ImGui::TreeNodeEx("Opaque", ImGuiTreeNodeFlags_DefaultOpen))
+                        {
+                            AABBDebugOptionUI("Single Sided", "##OpaqueSingleSided", m_aabbDebugOptions.opaque.singleSided);
+                            AABBDebugOptionUI("Double Sided", "##OpaqueDoubleSided", m_aabbDebugOptions.opaque.doubleSided);
+
+                            ImGui::TreePop();
+                        }
+
+                        ImGui::Separator();
+
+                        if (ImGui::TreeNodeEx("Alpha Masked", ImGuiTreeNodeFlags_DefaultOpen))
+                        {
+                            AABBDebugOptionUI("Single Sided", "##AlphaMaskedSingleSided", m_aabbDebugOptions.alphaMasked.singleSided);
+                            AABBDebugOptionUI("Double Sided", "##AlphaMaskedDoubleSided", m_aabbDebugOptions.alphaMasked.doubleSided);
+
+                            ImGui::TreePop();
+                        }
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -133,7 +163,7 @@ namespace Renderer::Debug
 
         Vk::BeginLabel(cmdBuffer, "Debug/AABB", {0.6117f, 0.5749f, 0.1901f, 1.0f});
 
-        if (m_pendingIndexUpload.has_value())
+        if (m_pendingAABBIndexUpload.has_value())
         {
             Vk::BeginLabel(cmdBuffer, "AABB Index Transfer", {0.6117f, 0.0749f, 0.3901f, 1.0f});
 
@@ -141,24 +171,24 @@ namespace Renderer::Debug
             {
                 .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
                 .pNext     = nullptr,
-                .srcOffset = m_pendingIndexUpload->memoryBlock.offset,
+                .srcOffset = m_pendingAABBIndexUpload->memoryBlock.offset,
                 .dstOffset = 0,
-                .size      = m_pendingIndexUpload->memoryBlock.size
+                .size      = m_pendingAABBIndexUpload->memoryBlock.size
             };
 
             const VkCopyBufferInfo2 copyInfo =
             {
                 .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
                 .pNext       = nullptr,
-                .srcBuffer   = m_pendingIndexUpload->buffer,
-                .dstBuffer   = m_indexBuffer.handle,
+                .srcBuffer   = m_pendingAABBIndexUpload->buffer,
+                .dstBuffer   = m_aabbIndexBuffer.handle,
                 .regionCount = 1,
                 .pRegions    = &copyRegion
             };
 
             vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
 
-            m_indexBuffer.Barrier
+            m_aabbIndexBuffer.Barrier
             (
                 cmdBuffer,
                 Vk::BufferBarrier{
@@ -169,21 +199,21 @@ namespace Renderer::Debug
                     .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .offset         = 0,
-                    .size           = m_pendingIndexUpload->memoryBlock.size
+                    .size           = m_pendingAABBIndexUpload->memoryBlock.size
                 }
             );
 
-            deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock = m_pendingIndexUpload.value()] () mutable
+            deletionQueue.Push([&stagingPool, stagingMemoryBlock = m_pendingAABBIndexUpload.value()] () mutable
             {
                 stagingPool.Free(stagingMemoryBlock);
             });
 
-            m_pendingIndexUpload = std::nullopt;
+            m_pendingAABBIndexUpload = std::nullopt;
 
             Vk::EndLabel(cmdBuffer);
         }
 
-        if (m_renderAABBDebug)
+        if (m_aabbDebugOptions.enabled)
         {
             GenerateAABBDrawCalls
             (
@@ -273,7 +303,7 @@ namespace Renderer::Debug
             }
         )
         .WriteBufferBarrier(
-            m_drawCallBuffer,
+            m_aabbDrawCallBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
                 .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
@@ -282,7 +312,7 @@ namespace Renderer::Debug
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = m_drawCallBuffer.size
+                .size           = m_aabbDrawCallBuffer.size
             }
         )
         .Execute(cmdBuffer);
@@ -297,7 +327,7 @@ namespace Renderer::Debug
             .CulledOpaqueDoubleSidedDrawCalls      = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.deviceAddress,
             .CulledAlphaMaskedDrawCalls            = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.deviceAddress,
             .CulledAlphaMaskedDoubleSidedDrawCalls = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.deviceAddress,
-            .DebugAABBDrawCalls                    = m_drawCallBuffer.deviceAddress
+            .DebugAABBDrawCalls                    = m_aabbDrawCallBuffer.deviceAddress
         };
 
         pipeline.PushConstants
@@ -369,7 +399,7 @@ namespace Renderer::Debug
             }
         )
         .WriteBufferBarrier(
-            m_drawCallBuffer,
+            m_aabbDrawCallBuffer,
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
@@ -378,7 +408,7 @@ namespace Renderer::Debug
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = m_drawCallBuffer.size
+                .size           = m_aabbDrawCallBuffer.size
             }
         )
         .Execute(cmdBuffer);
@@ -462,16 +492,16 @@ namespace Renderer::Debug
         vkCmdBindIndexBuffer
         (
             cmdBuffer.handle,
-            m_indexBuffer.handle,
+            m_aabbIndexBuffer.handle,
             0,
-            VK_INDEX_TYPE_UINT32
+            VK_INDEX_TYPE_UINT16
         );
 
         // Opaque
         {
             Vk::BeginLabel(cmdBuffer, "Opaque", glm::vec4(0.6091f, 0.7243f, 0.2549f, 1.0f));
 
-            // Single-Sided
+            if (m_aabbDebugOptions.opaque.singleSided.enabled)
             {
                 Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
 
@@ -480,20 +510,21 @@ namespace Renderer::Debug
                     .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
-                    .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress
+                    .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
+                    .Color           = m_aabbDebugOptions.opaque.singleSided.color
                 };
 
                 pipeline.PushConstants
                 (
                    cmdBuffer,
-                   VK_SHADER_STAGE_VERTEX_BIT,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                    constants
                 );
 
                 vkCmdDrawIndexedIndirect
                 (
                     cmdBuffer.handle,
-                    m_drawCallBuffer.handle,
+                    m_aabbDrawCallBuffer.handle,
                     0 * sizeof(VkDrawIndexedIndirectCommand),
                     1,
                     sizeof(VkDrawIndexedIndirectCommand)
@@ -502,7 +533,7 @@ namespace Renderer::Debug
                 Vk::EndLabel(cmdBuffer);
             }
 
-            // Double Sided
+            if (m_aabbDebugOptions.opaque.doubleSided.enabled)
             {
                 Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
 
@@ -512,19 +543,20 @@ namespace Renderer::Debug
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+                    .Color           = m_aabbDebugOptions.opaque.doubleSided.color
                 };
 
                 pipeline.PushConstants
                 (
                    cmdBuffer,
-                   VK_SHADER_STAGE_VERTEX_BIT,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                    constants
                 );
 
                 vkCmdDrawIndexedIndirect
                 (
                     cmdBuffer.handle,
-                    m_drawCallBuffer.handle,
+                    m_aabbDrawCallBuffer.handle,
                     1 * sizeof(VkDrawIndexedIndirectCommand),
                     1,
                     sizeof(VkDrawIndexedIndirectCommand)
@@ -540,7 +572,7 @@ namespace Renderer::Debug
         {
             Vk::BeginLabel(cmdBuffer, "Alpha Masked", glm::vec4(0.9091f, 0.2243f, 0.6549f, 1.0f));
 
-            // Single-Sided
+            if (m_aabbDebugOptions.alphaMasked.singleSided.enabled)
             {
                 Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
 
@@ -549,20 +581,21 @@ namespace Renderer::Debug
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
-                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
+                    .Color               = m_aabbDebugOptions.alphaMasked.singleSided.color
                 };
 
                 pipeline.PushConstants
                 (
                    cmdBuffer,
-                   VK_SHADER_STAGE_VERTEX_BIT,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                    constants
                 );
 
                 vkCmdDrawIndexedIndirect
                 (
                     cmdBuffer.handle,
-                    m_drawCallBuffer.handle,
+                    m_aabbDrawCallBuffer.handle,
                     2 * sizeof(VkDrawIndexedIndirectCommand),
                     1,
                     sizeof(VkDrawIndexedIndirectCommand)
@@ -571,7 +604,7 @@ namespace Renderer::Debug
                 Vk::EndLabel(cmdBuffer);
             }
 
-            // Double Sided
+            if (m_aabbDebugOptions.alphaMasked.doubleSided.enabled)
             {
                 Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
 
@@ -580,20 +613,21 @@ namespace Renderer::Debug
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
-                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress
+                    .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+                    .Color               = m_aabbDebugOptions.alphaMasked.doubleSided.color
                 };
 
                 pipeline.PushConstants
                 (
                    cmdBuffer,
-                   VK_SHADER_STAGE_VERTEX_BIT,
+                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                    constants
                 );
 
                 vkCmdDrawIndexedIndirect
                 (
                     cmdBuffer.handle,
-                    m_drawCallBuffer.handle,
+                    m_aabbDrawCallBuffer.handle,
                     3 * sizeof(VkDrawIndexedIndirectCommand),
                     1,
                     sizeof(VkDrawIndexedIndirectCommand)
@@ -612,14 +646,14 @@ namespace Renderer::Debug
 
     void RenderPass::Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
-        m_indexBuffer.Destroy(allocator);
-        m_drawCallBuffer.Destroy(allocator);
+        m_aabbIndexBuffer.Destroy(allocator);
+        m_aabbDrawCallBuffer.Destroy(allocator);
 
-        if (m_pendingIndexUpload.has_value())
+        if (m_pendingAABBIndexUpload.has_value())
         {
-            stagingPool.Free(m_pendingIndexUpload.value());
+            stagingPool.Free(m_pendingAABBIndexUpload.value());
 
-            m_pendingIndexUpload = std::nullopt;
+            m_pendingAABBIndexUpload = std::nullopt;
         }
     }
 }

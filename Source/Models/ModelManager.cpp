@@ -215,7 +215,7 @@ namespace Models
 
     void ModelManager::ImGuiDisplay()
     {
-        if (ImGui::CollapsingHeader("Model Manager"))
+        if (ImGui::CollapsingHeader("Models"))
         {
             for (const auto& [id, info] : m_modelMap)
             {

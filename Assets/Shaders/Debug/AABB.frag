@@ -27,5 +27,5 @@ layout(location = 0) out vec3 outColor;
 
 void main()
 {
-    outColor = SRGBToLinear(vec3(1.0f, 0.0f, 0.0f));
+    outColor = SRGBToLinear(Constants.Color);
 }

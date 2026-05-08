@@ -54,6 +54,19 @@ namespace Renderer::Debug
 
         void Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool);
     private:
+        struct AABBDebugOption
+        {
+            bool      enabled = true;
+            glm::vec3 color   = {};
+        };
+
+        struct AABBRenderOption
+        {
+            AABBDebugOption singleSided = {};
+            AABBDebugOption doubleSided = {};
+        };
+
+
         void GenerateAABBDrawCalls
         (
             const Vk::CommandBuffer& cmdBuffer,
@@ -73,12 +86,37 @@ namespace Renderer::Debug
             const Buffers::IndirectBuffer& indirectBuffer
         );
 
-        Vk::Buffer m_indexBuffer;
-        Vk::Buffer m_drawCallBuffer;
+        Vk::Buffer m_aabbIndexBuffer;
+        Vk::Buffer m_aabbDrawCallBuffer;
 
-        std::optional<Vk::StagingMemoryBlock> m_pendingIndexUpload = std::nullopt;
+        std::optional<Vk::StagingMemoryBlock> m_pendingAABBIndexUpload = std::nullopt;
 
-        bool m_renderAABBDebug = false;
+        struct AABBOptions
+        {
+            bool enabled = false;
+
+            AABBRenderOption opaque = {
+                .singleSided = {
+                    .enabled = true,
+                    .color   = {1.0f, 0.0f, 0.0f}
+                },
+                .doubleSided = {
+                    .enabled = true,
+                    .color   = {0.0f, 1.0f, 0.0f}
+                }
+            };
+
+            AABBRenderOption alphaMasked = {
+                .singleSided = {
+                    .enabled = true,
+                    .color   = {0.0f, 0.0f, 1.0f}
+                },
+                .doubleSided = {
+                    .enabled = true,
+                    .color   = {0.5f, 1.0f, 1.0f}
+                }
+            };
+        } m_aabbDebugOptions = {};
     };
 }
 

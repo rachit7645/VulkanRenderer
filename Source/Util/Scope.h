@@ -21,13 +21,12 @@
 
 namespace Util
 {
-    template<typename F>
+    template<typename Function>
     class ScopeGuard
     {
     public:
-        explicit ScopeGuard(F&& function)
-            : m_function(std::forward<F>(function)),
-              m_active(true)
+        explicit ScopeGuard(Function&& function)
+            : m_function(std::forward<Function>(std::move(function)))
         {
         }
     
@@ -55,14 +54,15 @@ namespace Util
             m_active = false;
         }
     private:
-        F    m_function;
-        bool m_active;
+        Function m_function;
+
+        bool m_active = true;
     };
     
-    template<typename F>
-    auto MakeScopeGuard(F&& function)
+    template<typename Function>
+    auto MakeScopeGuard(Function&& function)
     {
-        return ScopeGuard<std::decay_t<F>>(std::forward<F>(function));
+        return ScopeGuard<std::decay_t<Function>>(std::forward<Function>(function));
     }
 }
 

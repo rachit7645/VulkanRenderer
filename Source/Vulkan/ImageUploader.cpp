@@ -174,7 +174,7 @@ namespace Vk
             .generateMipmaps = false
         });
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });
@@ -189,11 +189,13 @@ namespace Vk
 
         const std::scoped_lock lock{m_mutex};
 
+        Vk::BarrierWriter barrierWriter = {};
+
         // ? -> Transfer Destination
         {
             for (const auto& upload : m_pendingUploads)
             {
-                m_barrierWriter.WriteImageBarrier
+                barrierWriter.WriteImageBarrier
                 (
                     upload.image,
                     Vk::ImageBarrier{
@@ -213,7 +215,7 @@ namespace Vk
                 );
             }
 
-            m_barrierWriter.Execute(cmdBuffer);
+            barrierWriter.Execute(cmdBuffer);
         }
 
         // Buffer to Image Copy
@@ -244,7 +246,7 @@ namespace Vk
                     continue;
                 }
 
-                m_barrierWriter.WriteImageBarrier
+                barrierWriter.WriteImageBarrier
                 (
                     upload.image,
                     Vk::ImageBarrier{
@@ -264,7 +266,7 @@ namespace Vk
                 );
             }
 
-            m_barrierWriter.Execute(cmdBuffer);
+            barrierWriter.Execute(cmdBuffer);
         }
 
         // Mipmap Generation
@@ -289,7 +291,7 @@ namespace Vk
                     continue;
                 }
 
-                m_barrierWriter.WriteImageBarrier
+                barrierWriter.WriteImageBarrier
                 (
                     upload.image,
                     Vk::ImageBarrier{
@@ -309,8 +311,10 @@ namespace Vk
                 );
             }
 
-            m_barrierWriter.Execute(cmdBuffer);
+            barrierWriter.Execute(cmdBuffer);
         }
+
+        barrierWriter.Clear();
 
         m_pendingUploads.clear();
     }
@@ -327,7 +331,6 @@ namespace Vk
         const std::scoped_lock lock{m_mutex};
 
         m_pendingUploads.clear();
-        m_barrierWriter.Clear();
     }
 
     Vk::UploadedImage ImageUploader::LoadFromFile
@@ -656,7 +659,7 @@ namespace Vk
             .generateMipmaps = generateMipmaps
         });
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });
@@ -885,7 +888,7 @@ namespace Vk
             .generateMipmaps = generateMipmaps
         });
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });
@@ -1046,7 +1049,7 @@ namespace Vk
                 .generateMipmaps = generateMipmaps
             });
 
-            deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+            deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
             {
                 stagingPool.Free(stagingMemoryBlock);
             });
@@ -1295,7 +1298,7 @@ namespace Vk
             .generateMipmaps = false
         });
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });
@@ -1406,7 +1409,7 @@ namespace Vk
             .generateMipmaps = generateMipmaps
         });
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });
@@ -1512,7 +1515,7 @@ namespace Vk
             .generateMipmaps = false
         });
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });

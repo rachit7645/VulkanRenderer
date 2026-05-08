@@ -18,25 +18,25 @@
 
 namespace Util
 {
-    void DeletionQueue::PushDeletor(Deletor&& deletor)
+    void DeletionQueue::Push(Deleter&& deleter)
     {
         const std::scoped_lock lock{m_mutex};
 
-        m_deletors.push(std::move(deletor));
+        m_deleters.push(std::move(deleter));
     }
 
-    void DeletionQueue::FlushQueue()
+    void DeletionQueue::Flush()
     {
-        if (m_deletors.empty())
+        if (m_deleters.empty())
         {
             return;
         }
 
-        std::stack<Deletor> temp = {};
+        std::stack<Deleter> temp = {};
         {
             const std::scoped_lock lock{m_mutex};
 
-            std::swap(m_deletors, temp);
+            std::swap(m_deleters, temp);
         }
 
         while (!temp.empty())

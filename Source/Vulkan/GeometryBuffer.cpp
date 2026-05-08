@@ -166,7 +166,7 @@ namespace Vk
 
         if (m_pendingCubeUpload.has_value())
         {
-            deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
+            deletionQueue.Push([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
             {
                 stagingPool.Free(stagingMemoryBlock);
             });
@@ -177,7 +177,7 @@ namespace Vk
 
     void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue)
     {
-        deletionQueue.PushDeletor([this, info] ()
+        deletionQueue.Push([this, info] ()
         {
             indexBuffer.Free(info.indexInfo);
             positionBuffer.Free(info.positionInfo);
@@ -248,7 +248,7 @@ namespace Vk
 
     void GeometryBuffer::ImGuiDisplay() const
     {
-        if (ImGui::CollapsingHeader("Geometry Buffer"))
+        if (ImGui::CollapsingHeader("Geometry"))
         {
             constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
                                               ImGuiTableFlags_BordersInnerV |

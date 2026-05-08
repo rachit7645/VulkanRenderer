@@ -75,7 +75,7 @@ namespace Vk
             0
         );
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });

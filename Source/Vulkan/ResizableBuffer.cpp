@@ -44,7 +44,7 @@ namespace Vk
 
         auto oldBuffer = buffer;
 
-        deletionQueue.PushDeletor([allocator, buffer = oldBuffer] () mutable
+        deletionQueue.Push([allocator, buffer = oldBuffer] () mutable
         {
            buffer.Destroy(allocator);
         });

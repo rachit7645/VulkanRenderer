@@ -24,9 +24,11 @@
 namespace Util
 {
     template <typename T>
-    constexpr usize HashCombine(usize seed, const T& value)
+    [[nodiscard]] constexpr usize HashCombine(usize seed, const T& value)
     {
-        return seed ^= std::hash<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= std::hash<T>{}(value) + 0x9E3779B97F4A7C15ull + (seed << 6) + (seed >> 2);
+
+        return seed;
     }
 }
 

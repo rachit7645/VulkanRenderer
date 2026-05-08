@@ -123,6 +123,8 @@ namespace Vk
 
         ankerl::unordered_dense::set<std::string> updatedFramebuffers = {};
 
+        Vk::BarrierWriter barrierWriter = {};
+
         for (auto& [name, framebuffer] : m_framebuffers)
         {
             const bool isFixedSize = std::holds_alternative<Vk::FramebufferSize>(framebuffer.sizeData);
@@ -144,7 +146,7 @@ namespace Vk
                 continue;
             }
 
-            deletionQueue.PushDeletor([allocator, image = framebuffer.image] () mutable
+            deletionQueue.Push([allocator, image = framebuffer.image] () mutable
             {
                 image.Destroy(allocator);
             });
@@ -219,7 +221,7 @@ namespace Vk
 
             updatedFramebuffers.insert(name);
 
-            m_barrierWriter.WriteImageBarrier
+            barrierWriter.WriteImageBarrier
             (
                 framebuffer.image,
                 Vk::ImageBarrier{
@@ -256,7 +258,7 @@ namespace Vk
                 deletionQueue
             );
 
-            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            deletionQueue.Push([device, view = framebufferView.view] ()
             {
                 view.Destroy(device);
             });
@@ -280,7 +282,7 @@ namespace Vk
             Vk::SetDebugName(device, framebufferView.view.handle, name);
         }
 
-        m_barrierWriter.Execute(cmdBuffer);
+        barrierWriter.Execute(cmdBuffer);
 
         megaSet.Update(device);
 
@@ -380,7 +382,7 @@ namespace Vk
                 deletionQueue
             );
 
-            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            deletionQueue.Push([device, view = framebufferView.view] ()
             {
                 view.Destroy(device);
             });
@@ -420,7 +422,7 @@ namespace Vk
                 deletionQueue
             );
 
-            deletionQueue.PushDeletor([device, view = framebufferView.view] ()
+            deletionQueue.Push([device, view = framebufferView.view] ()
             {
                 view.Destroy(device);
             });
@@ -481,7 +483,7 @@ namespace Vk
         {
             if (imageUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
             {
-                deletionQueue.PushDeletor([&megaSet, id = framebufferView.sampledImageID]
+                deletionQueue.Push([&megaSet, id = framebufferView.sampledImageID]
                 {
                     megaSet.FreeSampledImage(id);
                 });
@@ -489,7 +491,7 @@ namespace Vk
 
             if (imageUsage & VK_IMAGE_USAGE_STORAGE_BIT)
             {
-                deletionQueue.PushDeletor([&megaSet, id = framebufferView.storageImageID]
+                deletionQueue.Push([&megaSet, id = framebufferView.storageImageID]
                 {
                     megaSet.FreeStorageImage(id);
                 });
@@ -499,7 +501,7 @@ namespace Vk
 
     void FramebufferManager::ImGuiDisplay()
     {
-        if (ImGui::CollapsingHeader("Framebuffer Manager"))
+        if (ImGui::CollapsingHeader("Framebuffers"))
         {
             std::vector sortedFramebufferViews
             (

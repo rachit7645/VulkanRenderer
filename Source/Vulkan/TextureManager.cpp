@@ -126,8 +126,12 @@ namespace Vk
     {
         const auto id = std::hash<VkSamplerCreateInfo>()(createInfo);
 
-        if (m_samplerMap.contains(id))
+        auto iter = m_samplerMap.find(id);
+
+        if (iter != m_samplerMap.end())
         {
+            ++iter->second.referenceCount;
+
             return id;
         }
 
@@ -145,7 +149,10 @@ namespace Vk
 
         Vk::SetDebugName(device, sampler.handle, fmt::format("Sampler/{}", id));
 
-        m_samplerMap.emplace(id, sampler);
+        m_samplerMap.emplace(id, TextureManager::SamplerInfo{
+            .sampler        = sampler,
+            .referenceCount = 1
+        });
 
         megaSet.Update(device);
 
@@ -267,7 +274,12 @@ namespace Vk
             Logger::Error("Invalid sampler ID! [ID={}]\n", id);
         }
 
-        return iter->second;
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Sampler reference count is zero! [ID={}]\n", id);
+        }
+
+        return iter->second.sampler;
     }
 
     const Vk::Texture& TextureManager::GetTexture(Vk::TextureID id) const
@@ -301,7 +313,12 @@ namespace Vk
             Logger::Error("Invalid sampler ID! [ID={}]\n", id);
         }
 
-        return iter->second;
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Sampler reference count is zero! [ID={}]\n", id);
+        }
+
+        return iter->second.sampler;
     }
 
     void TextureManager::DestroyTexture
@@ -332,7 +349,7 @@ namespace Vk
             return;
         }
 
-        deletionQueue.PushDeletor([&megaSet, device, allocator, texture = iter->second.texture] () mutable
+        deletionQueue.Push([&megaSet, device, allocator, texture = iter->second.texture] () mutable
         {
             megaSet.FreeSampledImage(texture.descriptorID);
             texture.Destroy(device, allocator);
@@ -356,7 +373,19 @@ namespace Vk
             return;
         }
 
-        deletionQueue.PushDeletor([&megaSet, device, sampler = iter->second] () mutable
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Sampler already freed! [ID={}]\n", id);
+        }
+
+        --iter->second.referenceCount;
+
+        if (iter->second.referenceCount > 0)
+        {
+            return;
+        }
+
+        deletionQueue.Push([&megaSet, device, sampler = iter->second.sampler] () mutable
         {
             megaSet.FreeSampler(sampler.descriptorID);
             sampler.Destroy(device);
@@ -367,7 +396,7 @@ namespace Vk
 
     void TextureManager::ImGuiDisplay()
     {
-        if (ImGui::CollapsingHeader("Texture Manager"))
+        if (ImGui::CollapsingHeader("Textures"))
         {
             for (const auto& [id, info] : m_textureMap)
             {
@@ -385,15 +414,17 @@ namespace Vk
 
                 if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", texture.name.c_str()))
                 {
-                    ImGui::Text("ID               | %llu", id);
-                    ImGui::Text("Reference Count  | %llu", referenceCount);
-                    ImGui::Text("Descriptor Index | %u",   texture.descriptorID);
-                    ImGui::Text("Width            | %u",   texture.image.width);
-                    ImGui::Text("Height           | %u",   texture.image.height);
-                    ImGui::Text("Depth            | %u",   texture.image.depth);
-                    ImGui::Text("Mipmap Levels    | %u",   texture.image.mipLevels);
-                    ImGui::Text("Array Layers     | %u",   texture.image.arrayLayers);
-                    ImGui::Text("Format           | %s",   string_VkFormat(texture.image.format));
+                    ImGui::Text("ID                | %llu", id);
+                    ImGui::Text("Reference Count   | %llu", referenceCount);
+                    ImGui::Text("Descriptor Index  | %u",   texture.descriptorID);
+                    ImGui::Text("Image Handle      | %p",   texture.image.handle);
+                    ImGui::Text("Image View Handle | %p",   texture.imageView.handle);
+                    ImGui::Text("Width             | %u",   texture.image.width);
+                    ImGui::Text("Height            | %u",   texture.image.height);
+                    ImGui::Text("Depth             | %u",   texture.image.depth);
+                    ImGui::Text("Mipmap Levels     | %u",   texture.image.mipLevels);
+                    ImGui::Text("Array Layers      | %u",   texture.image.arrayLayers);
+                    ImGui::Text("Format            | %s",   string_VkFormat(texture.image.format));
 
                     ImGui::Separator();
 
@@ -407,6 +438,30 @@ namespace Vk
                     const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
 
                     ImGui::Image(texture.descriptorID, imageSize);
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::Separator();
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Samplers"))
+        {
+            for (const auto& [id, info] : m_samplerMap)
+            {
+                const auto& [sampler, referenceCount] = info;
+
+                if (referenceCount == 0)
+                {
+                    continue;
+                }
+
+                if (ImGui::TreeNode(std::bit_cast<void*>(id), "%llu", id))
+                {
+                    ImGui::Text("Reference Count  | %llu", referenceCount);
+                    ImGui::Text("Descriptor Index | %u",   sampler.descriptorID);
+                    ImGui::Text("Sampler Handle   | %p",   sampler.handle);
 
                     ImGui::TreePop();
                 }
@@ -466,7 +521,7 @@ namespace Vk
             texture.Destroy(device, allocator);
         }
 
-        for (const auto& sampler : m_samplerMap | std::views::values)
+        for (const auto& [sampler, _] : m_samplerMap | std::views::values)
         {
             sampler.Destroy(device);
         }

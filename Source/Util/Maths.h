@@ -70,7 +70,7 @@ namespace Maths
     }
 
     template<u32 HilbertWidth>
-    constexpr u32 HilbertIndex(u32 positionX, u32 positionY)
+    consteval u32 HilbertIndex(u32 positionX, u32 positionY)
     {
         u32 index = 0;
         
@@ -100,7 +100,7 @@ namespace Maths
     }
 
     template<u32 HilbertLevel>
-    constexpr auto GenerateHilbertSequence()
+    consteval auto GenerateHilbertSequence()
     {
         constexpr u32 HILBERT_WIDTH = 1u << HilbertLevel;
 

@@ -194,7 +194,7 @@ namespace Renderer::DLSS
 
         if (handle != nullptr)
         {
-            deletionQueue.PushDeletor([_handle = handle] ()
+            deletionQueue.Push([_handle = handle] ()
             {
                 NVSDK_NGX_VULKAN_ReleaseFeature(_handle);
             });

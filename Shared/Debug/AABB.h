@@ -33,6 +33,8 @@ GLSL_PUSH_CONSTANT_BEGIN
     GLSL_BUFFER_POINTER(MeshBuffer)          Meshes;
     GLSL_BUFFER_POINTER(InstanceBuffer)      Instances;
     GLSL_BUFFER_POINTER(InstanceIndexBuffer) InstanceIndices;
+
+    GLSL_VEC3 Color;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

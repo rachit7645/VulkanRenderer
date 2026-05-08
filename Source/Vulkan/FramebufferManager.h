@@ -184,8 +184,6 @@ namespace Vk
         ankerl::unordered_dense::map<std::string, FramebufferView, Util::StringHash, std::equal_to<>> m_framebufferViews;
 
         ankerl::unordered_dense::set<std::string, Util::StringHash, std::equal_to<>> m_fixedSizeFramebuffers;
-
-        Vk::BarrierWriter m_barrierWriter = {};
     };
 }
 
