@@ -20,7 +20,7 @@
 
 #include "Externals/GLM.h"
 
-namespace Util
+namespace SIMD
 {
     constexpr f32 F16_MIN = -65504.0f;
     constexpr f32 F16_MAX =  65504.0f;

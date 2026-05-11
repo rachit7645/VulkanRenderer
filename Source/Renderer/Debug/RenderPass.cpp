@@ -31,12 +31,14 @@ namespace Renderer::Debug
     (
         VkDevice device,
         VmaAllocator allocator,
+        const Vk::FormatHelper& formatHelper,
         const Vk::Swapchain& swapchain,
         Vk::PipelineManager& pipelineManager,
+        Vk::FramebufferManager& framebufferManager,
         Vk::StagingPool& stagingPool
     )
     {
-        // Pipelines
+        // Pipelines & Framebuffers
         {
             constexpr std::array DYNAMIC_STATES =
             {
@@ -54,28 +56,64 @@ namespace Renderer::Debug
 
             pipelineManager.AddPipeline("Debug/AABB", Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-                .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+                .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
                 .AttachShader("Debug/AABB.vert", VK_SHADER_STAGE_VERTEX_BIT)
                 .AttachShader("Debug/AABB.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
                 .SetDynamicStates(DYNAMIC_STATES)
                 .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
                 .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-                .SetDepthState(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS)
+                .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
                 .AddDefaultBlendAttachment()
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AABB::Constants))
             );
 
             pipelineManager.AddPipeline("Debug/Light/Sphere", Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
-                .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+                .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
                 .AttachShader("Debug/Sphere.vert", VK_SHADER_STAGE_VERTEX_BIT)
                 .AttachShader("Debug/Sphere.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
                 .SetDynamicStates(DYNAMIC_STATES)
                 .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
                 .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-                .SetDepthState(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS)
+                .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
                 .AddDefaultBlendAttachment()
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Sphere::Constants))
+            );
+
+            framebufferManager.AddFramebuffer
+            (
+                "Debug/Depth",
+                Vk::FramebufferCustomFormat::Depth,
+                VK_IMAGE_VIEW_TYPE_2D,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
+                {
+                    return Vk::FramebufferSize
+                    {
+                        .width       = displayExtent.width,
+                        .height      = displayExtent.height,
+                        .mipLevels   = 1,
+                        .arrayLayers = 1
+                    };
+                },
+                Vk::FramebufferInitialState{
+                    .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                }
+            );
+
+            framebufferManager.AddFramebufferView
+            (
+                "Debug/Depth",
+                "Debug/DepthView",
+                VK_IMAGE_VIEW_TYPE_2D,
+                Vk::FramebufferViewSize{
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                }
             );
         }
 
@@ -193,6 +231,7 @@ namespace Renderer::Debug
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
+        const Vk::FramebufferManager& framebufferManager,
         const Vk::Swapchain& swapchain,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
@@ -262,28 +301,33 @@ namespace Renderer::Debug
 
         if (m_aabbDebugOptions.enabled)
         {
-            Vk::BeginLabel(cmdBuffer, "AABB", {0.1117f, 0.5749f, 0.1601f, 1.0f});
-
             GenerateAABBDrawCalls
             (
                 cmdBuffer,
                 pipelineManager,
                 indirectBuffer
             );
+        }
 
+        BeginDebugRender
+        (
+            cmdBuffer,
+            framebufferManager,
+            swapchain
+        );
+
+        if (m_aabbDebugOptions.enabled)
+        {
             RenderDebugAABB
             (
                 FIF,
                 frameIndex,
                 cmdBuffer,
                 pipelineManager,
-                swapchain,
                 sceneBuffer,
                 meshBuffer,
                 indirectBuffer
             );
-
-            Vk::EndLabel(cmdBuffer);
         }
 
         if (m_enablePointLightDebug)
@@ -293,11 +337,12 @@ namespace Renderer::Debug
                 FIF,
                 cmdBuffer,
                 pipelineManager,
-                swapchain,
                 sceneBuffer,
                 scene
             );
         }
+
+        EndDebugRender(cmdBuffer, framebufferManager);
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -452,6 +497,136 @@ namespace Renderer::Debug
         Vk::EndLabel(cmdBuffer);
     }
 
+    void RenderPass::BeginDebugRender
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::FramebufferManager& framebufferManager,
+        const Vk::Swapchain& swapchain
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Render", {0.6117f, 0.3749f, 0.1901f, 1.0f});
+
+        const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
+
+        const auto& debugDepthView = framebufferManager.GetFramebufferView("Debug/DepthView");
+
+        const auto& debugDepth = framebufferManager.GetFramebuffer(debugDepthView.framebuffer);
+
+        debugDepth.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+                .dstAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = debugDepth.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = debugDepth.image.arrayLayers
+            }
+        );
+
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = currentImageView.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {}
+        };
+
+        const VkRenderingAttachmentInfo depthAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = debugDepthView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {.depthStencil = {.depth = 0.0f, .stencil = 0x0}}
+        };
+
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {.x = 0, .y = 0},
+                .extent = swapchain.extent
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = &depthAttachmentInfo,
+            .pStencilAttachment   = nullptr
+        };
+
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(swapchain.extent.width),
+            .height   = static_cast<f32>(swapchain.extent.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {.x = 0, .y = 0},
+            .extent = swapchain.extent
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+    }
+
+    void RenderPass::EndDebugRender(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager)
+    {
+        vkCmdEndRendering(cmdBuffer.handle);
+
+        const auto& debugDepth = framebufferManager.GetFramebuffer("Debug/Depth");
+
+        debugDepth.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                .srcAccessMask  = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = debugDepth.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = debugDepth.image.arrayLayers
+            }
+        );
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
     void RenderPass::GenerateAABBDrawCalls
     (
         const Vk::CommandBuffer& cmdBuffer,
@@ -459,7 +634,7 @@ namespace Renderer::Debug
         const Buffers::IndirectBuffer& indirectBuffer
     )
     {
-        Vk::BeginLabel(cmdBuffer, "Generate Draw Calls", {0.1657f, 0.5149f, 0.4901f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "AABB/GenerateDrawCalls", {0.1657f, 0.5149f, 0.4901f, 1.0f});
 
         Vk::BarrierWriter barrierWriter = {};
 
@@ -636,72 +811,16 @@ namespace Renderer::Debug
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
-        const Vk::Swapchain& swapchain,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer
     )
     {
-        Vk::BeginLabel(cmdBuffer, "Render AABB Debug", {0.1657f, 0.9149f, 0.4901f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "AABB/Render", {0.1657f, 0.9149f, 0.4901f, 1.0f});
 
         const auto& pipeline = pipelineManager.GetPipeline("Debug/AABB");
 
-        const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
-
-        const VkRenderingAttachmentInfo colorAttachmentInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = currentImageView.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {}
-        };
-
-        const VkRenderingInfo renderInfo =
-        {
-            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .pNext                = nullptr,
-            .flags                = 0,
-            .renderArea           = {
-                .offset = {.x = 0, .y = 0},
-                .extent = swapchain.extent
-            },
-            .layerCount           = 1,
-            .viewMask             = 0,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &colorAttachmentInfo,
-            .pDepthAttachment     = nullptr,
-            .pStencilAttachment   = nullptr
-        };
-
-        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
-
         pipeline.Bind(cmdBuffer);
-
-        const VkViewport viewport =
-        {
-            .x        = 0.0f,
-            .y        = 0.0f,
-            .width    = static_cast<f32>(swapchain.extent.width),
-            .height   = static_cast<f32>(swapchain.extent.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
-
-        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-        const VkRect2D scissor =
-        {
-            .offset = {.x = 0, .y = 0},
-            .extent = swapchain.extent
-        };
-
-        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         vkCmdBindIndexBuffer
         (
@@ -853,8 +972,6 @@ namespace Renderer::Debug
             Vk::EndLabel(cmdBuffer);
         }
 
-        vkCmdEndRendering(cmdBuffer.handle);
-
         Vk::EndLabel(cmdBuffer);
     }
 
@@ -863,71 +980,15 @@ namespace Renderer::Debug
         usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
-        const Vk::Swapchain& swapchain,
         const Buffers::SceneBuffer& sceneBuffer,
         const Engine::Scene& scene
     )
     {
-        Vk::BeginLabel(cmdBuffer, "Render Light Sphere Debug", {0.6657f, 0.9149f, 0.4901f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "Render/PointLights", {0.6657f, 0.9149f, 0.4901f, 1.0f});
 
         const auto& pipeline = pipelineManager.GetPipeline("Debug/Light/Sphere");
 
-        const auto& currentImageView = swapchain.imageViews[swapchain.imageIndex];
-
-        const VkRenderingAttachmentInfo colorAttachmentInfo =
-        {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = currentImageView.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {}
-        };
-
-        const VkRenderingInfo renderInfo =
-        {
-            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .pNext                = nullptr,
-            .flags                = 0,
-            .renderArea           = {
-                .offset = {.x = 0, .y = 0},
-                .extent = swapchain.extent
-            },
-            .layerCount           = 1,
-            .viewMask             = 0,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &colorAttachmentInfo,
-            .pDepthAttachment     = nullptr,
-            .pStencilAttachment   = nullptr
-        };
-
-        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
-
         pipeline.Bind(cmdBuffer);
-
-        const VkViewport viewport =
-        {
-            .x        = 0.0f,
-            .y        = 0.0f,
-            .width    = static_cast<f32>(swapchain.extent.width),
-            .height   = static_cast<f32>(swapchain.extent.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
-
-        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-        const VkRect2D scissor =
-        {
-            .offset = {.x = 0, .y = 0},
-            .extent = swapchain.extent
-        };
-
-        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         vkCmdBindIndexBuffer
         (
@@ -968,8 +1029,6 @@ namespace Renderer::Debug
                 0
             );
         }
-
-        vkCmdEndRendering(cmdBuffer.handle);
 
         Vk::EndLabel(cmdBuffer);
     }

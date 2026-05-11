@@ -15,9 +15,8 @@
  */
 
 #include "SceneBuffer.h"
-#include "Renderer/Buffers/SceneBuffer.h"
 
-#include "Renderer/Jitter.h"
+#include "Renderer/Util/Jitter.h"
 #include "Renderer/RenderConstants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"

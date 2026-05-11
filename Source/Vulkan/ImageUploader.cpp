@@ -812,7 +812,7 @@ namespace Vk
 
         if (toF16)
         {
-            Util::ConvertF32ToF16(data, static_cast<f16*>(stagingMemoryBlock.hostAddress), elemCount);
+            SIMD::ConvertF32ToF16(data, static_cast<f16*>(stagingMemoryBlock.hostAddress), elemCount);
         }
         else
         {
@@ -979,7 +979,7 @@ namespace Vk
             }
             else
             {
-                Util::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(stagingMemoryBlock.hostAddress), elemCount);
+                SIMD::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(stagingMemoryBlock.hostAddress), elemCount);
             }
 
             const std::vector copyRegions = {VkBufferImageCopy2{

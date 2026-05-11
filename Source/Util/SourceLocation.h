@@ -27,7 +27,7 @@ namespace Util
 {
     constexpr std::string_view GetFunctionName(const std::source_location& location)
     {
-        std::string_view fnName = location.function_name();
+        const std::string_view fnName = location.function_name();
 
         // Find parameter parentheses
         usize startPos = fnName.find('(');
@@ -39,7 +39,7 @@ namespace Util
         }
 
         // Find the space character before the function name
-        usize spacePos = fnName.rfind(' ', startPos);
+        const usize spacePos = fnName.rfind(' ', startPos);
 
         return fnName.substr(spacePos + 1, startPos - spacePos - 1);
     }

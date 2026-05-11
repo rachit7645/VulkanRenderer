@@ -19,17 +19,12 @@
 
 #include "Types.h"
 
-namespace Util
+namespace SIMD
 {
     f16 ConvertF32ToF16(f32 value);
     f32 ConvertF16ToF32(f16 value);
 
-    // `source` and `destination` must not be the same
-    // Requires AVX2, F16C
     void ConvertF32ToF16(const f32* __restrict__ source, f16* __restrict__ destination, usize count);
-
-    // `source` and `destination` must not be the same
-    // Requires AVX2, F16C
     void ConvertF16ToF32(const f16* __restrict__ source, f32* __restrict__ destination, usize count);
 }
 

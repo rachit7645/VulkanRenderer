@@ -33,8 +33,10 @@ namespace Renderer::Debug
         (
             VkDevice device,
             VmaAllocator allocator,
+            const Vk::FormatHelper& formatHelper,
             const Vk::Swapchain& swapchain,
             Vk::PipelineManager& pipelineManager,
+            Vk::FramebufferManager& framebufferManager,
             Vk::StagingPool& stagingPool
         );
 
@@ -44,6 +46,7 @@ namespace Renderer::Debug
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
+            const Vk::FramebufferManager& framebufferManager,
             const Vk::Swapchain& swapchain,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
@@ -74,6 +77,15 @@ namespace Renderer::Debug
             Util::DeletionQueue& deletionQueue
         );
 
+        void BeginDebugRender
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::Swapchain& swapchain
+        );
+
+        void EndDebugRender(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager);
+
         void GenerateAABBDrawCalls
         (
             const Vk::CommandBuffer& cmdBuffer,
@@ -87,7 +99,6 @@ namespace Renderer::Debug
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
-            const Vk::Swapchain& swapchain,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer
@@ -98,7 +109,6 @@ namespace Renderer::Debug
             usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
-            const Vk::Swapchain& swapchain,
             const Buffers::SceneBuffer& sceneBuffer,
             const Engine::Scene& scene
         );

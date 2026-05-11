@@ -101,7 +101,8 @@ add_executable(VulkanRenderer
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderObject.cpp
     Source/Renderer/RenderConfig.cpp
-    Source/Renderer/Jitter.cpp
+    # Renderer Util sources
+    Source/Renderer/Util/Jitter.cpp
     # Object sources
     Source/Renderer/Objects/FreeCamera.cpp
     Source/Renderer/Objects/Camera.cpp

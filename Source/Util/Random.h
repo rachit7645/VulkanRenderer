@@ -22,7 +22,7 @@
 
 namespace Util
 {
-    /// @brief Deterministic random number between a range
+    /// @brief Random number between a range
     /// @tparam T Number type
     /// @param min Range minimum
     /// @param max Range maximum
@@ -31,23 +31,8 @@ namespace Util
     [[nodiscard]] T RandRange(T min, T max)
     {
         static thread_local std::mt19937_64 generator(std::time(nullptr));
-        std::uniform_real_distribution<T> distributer(min, max);
-        return distributer(generator);
-    }
-
-    /// @brief More random number between a range
-    /// @tparam T Number type
-    /// @param min Range minimum
-    /// @param max Range maximum
-    /// @returns Random number ∈ [min, max)
-    template<typename T>
-    [[nodiscard]] T TrueRandRange(T min, T max)
-    {
-        std::random_device rd;
-        std::seed_seq ss{ rd(), rd() };
-        static thread_local std::mt19937_64 generator(ss);
-        std::uniform_real_distribution<T> distributer(min, max);
-        return distributer(generator);
+        std::uniform_real_distribution<T> distributor(min, max);
+        return distributor(generator);
     }
 }
 

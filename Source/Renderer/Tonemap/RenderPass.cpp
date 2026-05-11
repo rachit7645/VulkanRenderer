@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Util/Log.h"
-#include "Util/Ranges.h"
 #include "Vulkan/DebugUtils.h"
 #include "Tonemap/Tonemap.h"
 
