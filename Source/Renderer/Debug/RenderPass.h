@@ -48,6 +48,7 @@ namespace Renderer::Debug
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            const Engine::Scene& scene,
             Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
@@ -66,6 +67,12 @@ namespace Renderer::Debug
             AABBDebugOption doubleSided = {};
         };
 
+        void UploadData
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            Vk::StagingPool& stagingPool,
+            Util::DeletionQueue& deletionQueue
+        );
 
         void GenerateAABBDrawCalls
         (
@@ -86,10 +93,25 @@ namespace Renderer::Debug
             const Buffers::IndirectBuffer& indirectBuffer
         );
 
-        Vk::Buffer m_aabbIndexBuffer;
-        Vk::Buffer m_aabbDrawCallBuffer;
+        void RenderDebugPointLight
+        (
+            usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Vk::Swapchain& swapchain,
+            const Buffers::SceneBuffer& sceneBuffer,
+            const Engine::Scene& scene
+        );
 
-        std::optional<Vk::StagingMemoryBlock> m_pendingAABBIndexUpload = std::nullopt;
+        Vk::Buffer m_aabbIndexBuffer    = {};
+        Vk::Buffer m_aabbDrawCallBuffer = {};
+
+        Vk::Buffer m_sphereIndexBuffer  = {};
+        Vk::Buffer m_sphereVertexBuffer = {};
+
+        std::optional<Vk::StagingMemoryBlock> m_pendingAABBIndexUpload    = std::nullopt;
+        std::optional<Vk::StagingMemoryBlock> m_pendingSphereIndexUpload  = std::nullopt;
+        std::optional<Vk::StagingMemoryBlock> m_pendingSphereVertexUpload = std::nullopt;
 
         struct AABBOptions
         {
@@ -117,6 +139,8 @@ namespace Renderer::Debug
                 }
             };
         } m_aabbDebugOptions = {};
+
+        bool m_enablePointLightDebug = false;
     };
 }
 

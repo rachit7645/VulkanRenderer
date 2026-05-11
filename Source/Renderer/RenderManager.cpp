@@ -1517,6 +1517,7 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            *m_scene,
             m_stagingPool,
             m_deletionQueues[m_FIF]
         );

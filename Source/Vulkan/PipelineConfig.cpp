@@ -392,7 +392,8 @@ namespace Vk
 
     PipelineConfig& PipelineConfig::AddDefaultBlendAttachment()
     {
-        return AddBlendAttachment(
+        return AddBlendAttachment
+        (
             VK_FALSE,
             VK_BLEND_FACTOR_ONE,
             VK_BLEND_FACTOR_ZERO,

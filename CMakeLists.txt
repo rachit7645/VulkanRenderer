@@ -56,6 +56,7 @@ add_executable(VulkanRenderer
     Source/Util/JSON.cpp
     Source/Util/String.cpp
     Source/Util/Threads.cpp
+    Source/Util/WireframeSphere.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
