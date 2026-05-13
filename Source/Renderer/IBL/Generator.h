@@ -20,7 +20,7 @@
 #include "IBLMaps.h"
 #include "Engine/CacheManager.h"
 #include "Models/ModelManager.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/GraphicsTimeline.h"
@@ -55,7 +55,7 @@ namespace Renderer::IBL
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
@@ -86,7 +86,7 @@ namespace Renderer::IBL
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID hdrMapID,
@@ -99,7 +99,7 @@ namespace Renderer::IBL
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID
@@ -111,7 +111,7 @@ namespace Renderer::IBL
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID,

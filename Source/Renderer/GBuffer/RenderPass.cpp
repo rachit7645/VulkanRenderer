@@ -307,7 +307,7 @@ namespace Renderer::GBuffer
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "GBuffer Generation", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));

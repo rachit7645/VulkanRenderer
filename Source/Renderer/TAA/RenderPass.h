@@ -17,7 +17,7 @@
 #ifndef TAA_PASS_H
 #define TAA_PASS_H
 
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
@@ -44,7 +44,7 @@ namespace Renderer::TAA
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         void ResetHistory();

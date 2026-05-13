@@ -19,7 +19,7 @@
 
 #include "Vulkan/Context.h"
 #include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/TextureManager.h"
@@ -46,7 +46,7 @@ namespace Renderer::AO::VBAO
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer::Buffers& sceneBuffers,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             const std::string_view sceneDepthID,
             const std::string_view gNormalID
         );
@@ -60,7 +60,7 @@ namespace Renderer::AO::VBAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             const std::string_view sceneDepthID
         );
 
@@ -74,7 +74,7 @@ namespace Renderer::AO::VBAO
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer::Buffers& sceneBuffers,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             const std::string_view gNormalID
         );
 
@@ -85,7 +85,7 @@ namespace Renderer::AO::VBAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         f32 m_finalValuePower = 1.5f;

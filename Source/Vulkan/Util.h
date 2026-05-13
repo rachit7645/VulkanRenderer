@@ -24,7 +24,24 @@
 
 namespace Vk
 {
-    f64 GetTexelSize(VkFormat format);
+    [[nodiscard]] usize CalculatePhysicalDeviceScore
+    (
+        VkInstance instance,
+        VkPhysicalDevice physicalDevice,
+        VkSurfaceKHR surface,
+        const VkPhysicalDeviceProperties2& properties,
+        const VkPhysicalDeviceFeatures2& features
+    );
+
+    [[nodiscard]] VkFormat FindSupportedFormat
+    (
+       VkPhysicalDevice physicalDevice,
+       const std::span<const VkFormat> candidates,
+       VkImageTiling tiling,
+       VkFormatFeatureFlags2 features
+    );
+
+    [[nodiscard]] f64 GetTexelSize(VkFormat format);
 
     void CheckResult(VkResult result, const std::string_view message);
 }

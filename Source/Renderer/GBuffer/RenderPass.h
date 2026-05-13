@@ -23,7 +23,7 @@
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 
 namespace Renderer::GBuffer
 {
@@ -50,7 +50,7 @@ namespace Renderer::GBuffer
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
     };
 }

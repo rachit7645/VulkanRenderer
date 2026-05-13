@@ -19,7 +19,7 @@
 
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/TileLightIndexBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/PipelineManager.h"
@@ -48,7 +48,7 @@ namespace Renderer::TiledLighting
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
             Util::DeletionQueue& deletionQueue
         );
@@ -60,7 +60,7 @@ namespace Renderer::TiledLighting
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         void Culling
@@ -74,7 +74,7 @@ namespace Renderer::TiledLighting
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
             Util::DeletionQueue& deletionQueue
         );

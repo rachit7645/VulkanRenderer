@@ -27,14 +27,6 @@ namespace Vk
     public:
         explicit FormatHelper(VkPhysicalDevice physicalDevice);
 
-        [[nodiscard]] static VkFormat FindSupportedFormat
-        (
-           VkPhysicalDevice physicalDevice,
-           const std::span<const VkFormat> candidates,
-           VkImageTiling tiling,
-           VkFormatFeatureFlags2 features
-        );
-
         VkFormat colorAttachmentFormatLDR = VK_FORMAT_UNDEFINED;
         VkFormat colorAttachmentFormatHDR = VK_FORMAT_UNDEFINED;
 

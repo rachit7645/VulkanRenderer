@@ -23,7 +23,6 @@
 
 #include "Buffer.h"
 #include "Util/DeletionQueue.h"
-#include "Vulkan/BarrierWriter.h"
 #include "Vulkan/MemoryBlock.h"
 
 namespace Vk

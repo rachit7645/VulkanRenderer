@@ -91,7 +91,7 @@ namespace Renderer::ToneMap
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         const auto& pipeline = pipelineManager.GetPipeline("Tonemap");

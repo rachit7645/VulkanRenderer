@@ -23,7 +23,7 @@
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/ShaderBindingTable.h"
 #include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 
 namespace Renderer::ShadowRT
 {
@@ -49,7 +49,7 @@ namespace Renderer::ShadowRT
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             const Vk::AccelerationStructure& accelerationStructure,
             Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue

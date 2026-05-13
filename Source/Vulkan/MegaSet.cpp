@@ -39,9 +39,9 @@ namespace Vk
         constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
         constexpr u32 MAX_STORAGE_IMAGES = 1 << 10;
         
-        const auto maxSamplers      = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers,      MAX_SAMPLERS);
-        const auto maxSampledImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
-        const auto maxStorageImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
+        const auto maxSamplers      = std::min(context.properties.maxPerStageDescriptorUpdateAfterBindSamplers,      MAX_SAMPLERS);
+        const auto maxSampledImages = std::min(context.properties.maxPerStageDescriptorUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
+        const auto maxStorageImages = std::min(context.properties.maxPerStageDescriptorUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
 
         const std::array poolSizes =
         {

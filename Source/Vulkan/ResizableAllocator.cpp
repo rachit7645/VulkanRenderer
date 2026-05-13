@@ -17,6 +17,7 @@
 #include "ResizableAllocator.h"
 #include "Util/Log.h"
 #include "Util/Scope.h"
+#include "Vulkan/BarrierWriter.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Vk

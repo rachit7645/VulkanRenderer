@@ -17,16 +17,14 @@
 #include "FormatHelper.h"
 
 #include <array>
-#include <vulkan/vk_enum_string_helper.h>
-#include <volk/volk.h>
 
-#include "Util/Log.h"
+#include "Util.h"
 
 namespace Vk
 {
     FormatHelper::FormatHelper(VkPhysicalDevice physicalDevice)
     {
-        colorAttachmentFormatLDR = FindSupportedFormat
+        colorAttachmentFormatLDR = Vk::FindSupportedFormat
         (
             physicalDevice,
             std::array{VK_FORMAT_R8G8B8A8_UNORM},
@@ -37,7 +35,7 @@ namespace Vk
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
-        colorAttachmentFormatHDR = FindSupportedFormat
+        colorAttachmentFormatHDR = Vk::FindSupportedFormat
         (
             physicalDevice,
             std::array
@@ -53,59 +51,17 @@ namespace Vk
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT
         );
 
-        depthFormat = FindSupportedFormat
+        depthFormat = Vk::FindSupportedFormat
         (
             physicalDevice,
             std::array
             {
                 VK_FORMAT_D32_SFLOAT,
-                VK_FORMAT_D32_SFLOAT_S8_UINT,
-                VK_FORMAT_D24_UNORM_S8_UINT,
-                VK_FORMAT_X8_D24_UNORM_PACK32,
-                VK_FORMAT_D16_UNORM,
-                VK_FORMAT_D16_UNORM_S8_UINT,
+                VK_FORMAT_D32_SFLOAT_S8_UINT
             },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT |
             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT
-        );
-    }
-
-    VkFormat FormatHelper::FindSupportedFormat
-    (
-        VkPhysicalDevice physicalDevice,
-        const std::span<const VkFormat> candidates,
-        VkImageTiling tiling,
-        VkFormatFeatureFlags2 features
-    )
-    {
-        for (const auto format : candidates)
-        {
-            VkFormatProperties3 properties3 = {};
-            properties3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
-            properties3.pNext = nullptr;
-
-            VkFormatProperties2 properties2 = {};
-            properties2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-            properties2.pNext = &properties3;
-
-            vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &properties2);
-
-            const bool isValidLinear  = (tiling == VK_IMAGE_TILING_LINEAR)  && ((properties3.linearTilingFeatures  & features) == features);
-            const bool isValidOptimal = (tiling == VK_IMAGE_TILING_OPTIMAL) && ((properties3.optimalTilingFeatures & features) == features);
-
-            if (isValidLinear || isValidOptimal)
-            {
-                return format;
-            }
-        }
-
-        Logger::Error
-        (
-            "No valid formats found! [PhysicalDevice={}] [Tiling={}] [Features={}]\n",
-            std::bit_cast<void*>(physicalDevice),
-            string_VkImageTiling(tiling),
-            string_VkFormatFeatureFlags(features)
         );
     }
 }

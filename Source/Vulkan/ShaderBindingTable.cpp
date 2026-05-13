@@ -35,9 +35,9 @@ namespace Vk
     {
         Vk::BeginLabel(cmdBuffer, "Shader Binding Table Build", glm::vec4(0.4126f, 0.7488f, 0.5581f, 1.0f));
 
-        const VkDeviceSize shaderGroupHandleSize      = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
-        const VkDeviceSize shaderGroupHandleAlignment = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment;
-        const VkDeviceSize shaderGroupBaseAlignment   = context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment;
+        const VkDeviceSize shaderGroupHandleSize      = context.properties.shaderGroupHandleSize;
+        const VkDeviceSize shaderGroupHandleAlignment = context.properties.shaderGroupHandleAlignment;
+        const VkDeviceSize shaderGroupBaseAlignment   = context.properties.shaderGroupBaseAlignment;
 
         const u32          handleCount = 1 + missCount + hitCount;
         const VkDeviceSize handlesSize = handleCount * shaderGroupHandleSize;

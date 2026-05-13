@@ -224,7 +224,7 @@ namespace Renderer::AO::VBAO
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer::Buffers& sceneBuffers,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         const std::string_view sceneDepthID,
         const std::string_view gNormalID
     )
@@ -292,7 +292,7 @@ namespace Renderer::AO::VBAO
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         const std::string_view sceneDepthID
     )
     {
@@ -383,7 +383,7 @@ namespace Renderer::AO::VBAO
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer::Buffers& sceneBuffers,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         const std::string_view gNormalID
     )
     {
@@ -513,7 +513,7 @@ namespace Renderer::AO::VBAO
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));

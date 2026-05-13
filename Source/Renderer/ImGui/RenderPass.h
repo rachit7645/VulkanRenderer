@@ -18,7 +18,7 @@
 #define IMGUI_PASS_H
 
 #include "Models/ModelManager.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/Swapchain.h"
@@ -44,7 +44,7 @@ namespace Renderer::DearImGui
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Swapchain& swapchain,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             Engine::CacheManager& cacheManager,
@@ -63,7 +63,7 @@ namespace Renderer::DearImGui
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Swapchain& swapchain,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             Engine::CacheManager& cacheManager,

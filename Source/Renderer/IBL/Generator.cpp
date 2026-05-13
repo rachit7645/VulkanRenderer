@@ -19,6 +19,7 @@
 #include <vulkan/utility/vk_format_utils.h>
 
 #include "Externals/GLM.h"
+#include "IBL/BRDF.h"
 #include "IBL/EquirectangularToCubemap.h"
 #include "IBL/Irradiance.h"
 #include "IBL/PreFilter.h"
@@ -34,6 +35,18 @@ namespace Renderer::IBL
     constexpr u32 PREFILTER_SAMPLE_COUNT = 512;
 
     constexpr auto BRDF_LUT_CACHE_FILE = "BRDF.cache";
+
+    u64 GetBRDFLookupTableHash()
+    {
+        u64 hash = 0;
+
+        hash = Util::HashCombine(hash, BRDF_LUT_SIZE.x);
+        hash = Util::HashCombine(hash, BRDF_LUT_SIZE.y);
+        hash = Util::HashCombine(hash, BRDF_LUT_FORMAT);
+        hash = Util::HashCombine(hash, BRDF::BRDF_LUT_SAMPLE_COUNT);
+
+        return hash;
+    }
     
     Generator::Generator
     (
@@ -179,16 +192,14 @@ namespace Renderer::IBL
         {
             cacheManager.InsertIntoCache(Engine::CacheEntry
             {
-                .sourceFile  = std::nullopt,
                 .cacheFile   = BRDF_LUT_CACHE_FILE,
                 .assetType   = Engine::CachedAssetType::Texture,
                 .assetHeader = Engine::CachedTextureHeader{
                     .width  = BRDF_LUT_SIZE.x,
                     .height = BRDF_LUT_SIZE.y,
-                    .format = BRDF_LUT_FORMAT,
-                    .source = Engine::CachedTextureSource::BRDF_LUT,
-                    .pad0   = {}
+                    .format = BRDF_LUT_FORMAT
                 },
+                .hash        = GetBRDFLookupTableHash(),
                 .data        = std::move(readbackData),
             });
         });
@@ -206,7 +217,7 @@ namespace Renderer::IBL
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
@@ -358,7 +369,7 @@ namespace Renderer::IBL
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID hdrMapID,
@@ -572,7 +583,7 @@ namespace Renderer::IBL
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID
@@ -758,7 +769,7 @@ namespace Renderer::IBL
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID,
@@ -999,7 +1010,14 @@ namespace Renderer::IBL
             return m_brdfLutID.value();
         }
 
-        if (cacheManager.IsInCache(BRDF_LUT_CACHE_FILE, Engine::CachedAssetType::Texture))
+        const Engine::CacheLookup lookup =
+        {
+            .cachedFile = BRDF_LUT_CACHE_FILE,
+            .assetType  = Engine::CachedAssetType::Texture,
+            .hash       = GetBRDFLookupTableHash()
+        };
+
+        if (cacheManager.IsInCache(lookup))
         {
             m_brdfLutID = textureManager.AddTexture
             (

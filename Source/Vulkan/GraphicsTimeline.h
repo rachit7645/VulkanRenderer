@@ -29,7 +29,7 @@ namespace Vk
         enum class Stage : u64
         {
             SwapchainImageAcquired    = 0,
-            GbufferGenerationComplete = 1,
+            GBufferGenerationComplete = 1,
             RayDispatch               = 2,
             RenderFinished            = 3,
             Count

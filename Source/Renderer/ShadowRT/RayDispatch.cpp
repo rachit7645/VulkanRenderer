@@ -95,7 +95,7 @@ namespace Renderer::ShadowRT
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         const Vk::AccelerationStructure& accelerationStructure,
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue

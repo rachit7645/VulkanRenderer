@@ -96,7 +96,7 @@ namespace Renderer::Lighting
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         const IBL::IBLMaps& iblMaps
     )
     {

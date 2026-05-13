@@ -19,11 +19,9 @@
 #include <vector>
 #include <volk/volk.h>
 
-#include "Chain.h"
 #include "Constants.h"
 #include "DebugUtils.h"
 #include "Extensions.h"
-#include "SwapchainInfo.h"
 #include "Util.h"
 #include "Util/Log.h"
 
@@ -132,7 +130,7 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto properties           = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
+        auto vkProperties         = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
         auto vk11Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
         auto vk12Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
         auto asProperties         = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceAccelerationStructurePropertiesKHR>(deviceCount);
@@ -212,14 +210,24 @@ namespace Vk
             vkGetPhysicalDeviceProperties2(currentDevice, &propertySet);
             vkGetPhysicalDeviceFeatures2(currentDevice, &featureSet);
 
-            properties.emplace(currentDevice, propertySet);
+            vkProperties.emplace(currentDevice, propertySet);
             vk11Properties.emplace(currentDevice, vk11PropertySet);
             vk12Properties.emplace(currentDevice, vk12PropertySet);
             asProperties.emplace(currentDevice, asPropertySet);
             rtPipelineProperties.emplace(currentDevice, rtPipelinePropertySet);
 
             features.emplace(currentDevice, featureSet);
-            scores.emplace(currentDevice, CalculateScore(currentDevice, propertySet, featureSet));
+
+            const usize score = Vk::CalculatePhysicalDeviceScore
+            (
+                instance,
+                currentDevice,
+                surface,
+                propertySet,
+                featureSet
+            );
+
+            scores.emplace(currentDevice, score);
         }
 
         VkPhysicalDevice bestDevice   = VK_NULL_HANDLE;
@@ -240,155 +248,18 @@ namespace Vk
             Logger::Error("Failed to find any suitable physical device!");
         }
 
-        physicalDevice                                = bestDevice;
-        physicalDeviceLimits                          = properties[physicalDevice].properties.limits;
-        physicalDeviceVulkan12Properties              = vk12Properties[physicalDevice];
-        physicalDeviceAccelerationStructureProperties = asProperties[physicalDevice];
-        physicalDeviceRayTracingPipelineProperties    = rtPipelineProperties[physicalDevice];
-        physicalDeviceName                            = properties[physicalDevice].properties.deviceName;
+        physicalDevice     = bestDevice;
+        physicalDeviceName = vkProperties[physicalDevice].properties.deviceName;
+
+        properties = Vk::Properties
+        (
+            vkProperties[physicalDevice].properties.limits,
+            vk12Properties[physicalDevice],
+            asProperties[physicalDevice],
+            rtPipelineProperties[physicalDevice]
+        );
 
         Logger::Info("Selected GPU! [GPU={}]\n", physicalDeviceName);
-    }
-
-    usize Context::CalculateScore
-    (
-        VkPhysicalDevice currentPhysicalDevice,
-        const VkPhysicalDeviceProperties2& propertySet,
-        const VkPhysicalDeviceFeatures2& featureSet
-    ) const
-    {
-        const auto queues            = QueueFamilies(currentPhysicalDevice, surface);
-        const auto currentExtensions = Extensions(currentPhysicalDevice);
-
-        const auto vk11Properties = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Properties>(propertySet.pNext);
-
-        const auto vk11Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(featureSet.pNext);
-        const auto vk12Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(featureSet.pNext);
-        const auto vk13Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(featureSet.pNext);
-        const auto vk14Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan14Features>(featureSet.pNext);
-
-        const auto swapchainMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(featureSet.pNext);
-
-        const auto accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureSet.pNext);
-        const auto rayTracingFeatures            = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureSet.pNext);
-        const auto rayTracingMaintenance1       = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(featureSet.pNext);
-
-        #ifdef ENGINE_DEBUG
-        const auto shaderRelaxedExtendedInstructionFeatures = Vk::FindStructureInChain<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(featureSet.pNext);
-        #endif
-
-        // Score parts
-        const usize discreteGPU    = (propertySet.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) ? 10000 : 100;
-        const usize completeQueues = queues.HasAllFamilies() ? 1000 : 0;
-
-        // Requirements
-        const bool hasRequiredQueueFamilies = queues.HasRequiredFamilies();
-        const bool hasRequiredExtensions    = currentExtensions.HasRequiredExtensions();
-
-        #ifdef ENGINE_DLSS
-        const bool arePushDescriptorsRequired = std::ranges::contains(currentExtensions.GetDLSSDeviceExtensions(instance, currentPhysicalDevice), Util::ToLower(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME), Util::ToLower);
-        #else
-        constexpr bool arePushDescriptorsRequired = false;
-        #endif
-
-        // Need extensions to calculate these
-        bool isSwapChainAdequate     = false;
-        bool hasSwapchainMaintenance = false;
-        bool hasRayTracing           = false;
-
-        #ifdef ENGINE_DEBUG
-        bool hasShaderRelaxedExtendedInstruction = false;
-        #endif
-
-        if (hasRequiredExtensions)
-        {
-            const auto swapChainInfo = Vk::SwapchainInfo(currentPhysicalDevice, surface);
-
-            isSwapChainAdequate     = !(swapChainInfo.formats.empty() || swapChainInfo.presentModes.empty());
-            hasSwapchainMaintenance = swapchainMaintenanceFeatures->swapchainMaintenance1;
-
-            #ifdef ENGINE_DEBUG
-            hasShaderRelaxedExtendedInstruction = shaderRelaxedExtendedInstructionFeatures->shaderRelaxedExtendedInstruction;
-            #endif
-
-            const bool hasAccelerationStructure = accelerationStructureFeatures->accelerationStructure;
-            const bool hasRayTracingPipeline    = rayTracingFeatures->rayTracingPipeline;
-            const bool hasRayTracingMaintenance = rayTracingMaintenance1->rayTracingMaintenance1;
-
-            hasRayTracing = hasAccelerationStructure && hasRayTracingPipeline && hasRayTracingMaintenance;
-        }
-
-        // Standard features
-        const bool hasPushConstantSize  = propertySet.properties.limits.maxPushConstantsSize >= 128;
-        const bool hasAnisotropy        = featureSet.features.samplerAnisotropy;
-        const bool hasMultiDrawIndirect = featureSet.features.multiDrawIndirect;
-        const bool hasBC                = featureSet.features.textureCompressionBC;
-        const bool hasImageCubeArray    = featureSet.features.imageCubeArray;
-        const bool hasDepthClamp        = featureSet.features.depthClamp;
-        const bool hasInt64             = featureSet.features.shaderInt64;
-        const bool indexU32             = featureSet.features.fullDrawIndexUint32;
-        const bool hasInt16             = featureSet.features.shaderInt16;
-
-        // Vulkan 1.1 features
-        const bool hasRequiredMultiViewCount      = vk11Properties->maxMultiviewViewCount >= 6;
-        const bool hasShaderDrawParameters        = vk11Features->shaderDrawParameters;
-        const bool hasMultiView                   = vk11Features->multiview;
-        const bool hasSubgroupOperationsInCompute = vk11Properties->subgroupSupportedStages & VK_SHADER_STAGE_COMPUTE_BIT;
-        const bool hasSubgroupBasic               = vk11Properties->subgroupSupportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT;
-        const bool hasSubgroupArithmetic          = vk11Properties->subgroupSupportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT;
-        const bool hasStorageF16                  = vk11Features->storageBuffer16BitAccess;
-
-        // Vulkan 1.2 features
-        const bool hasBDA                            = vk12Features->bufferDeviceAddress;
-        const bool hasScalarLayout                   = vk12Features->scalarBlockLayout;
-        const bool hasDescriptorIndexing             = vk12Features->descriptorIndexing;
-        const bool hasSampledImageNonUniformIndexing = vk12Features->shaderSampledImageArrayNonUniformIndexing;
-        const bool hasStorageImageNonUniformIndexing = vk12Features->shaderStorageImageArrayNonUniformIndexing;
-        const bool hasRuntimeDescriptorArray         = vk12Features->runtimeDescriptorArray;
-        const bool hasPartiallyBoundDescriptors      = vk12Features->descriptorBindingPartiallyBound;
-        const bool hasSampledImageUpdateAfterBind    = vk12Features->descriptorBindingSampledImageUpdateAfterBind;
-        const bool hasStorageImageUpdateAfterBind    = vk12Features->descriptorBindingStorageImageUpdateAfterBind;
-        const bool hasUpdateUnusedWhilePending       = vk12Features->descriptorBindingUpdateUnusedWhilePending;
-        const bool hasDrawIndirectCount              = vk12Features->drawIndirectCount;
-        const bool hasTimelineSemaphore              = vk12Features->timelineSemaphore;
-        const bool hasShaderF16                      = vk12Features->shaderFloat16;
-
-        // Vulkan 1.3 features
-        const bool hasSync2          = vk13Features->synchronization2;
-        const bool hasDynRender      = vk13Features->dynamicRendering;
-        const bool hasMaintenance4   = vk13Features->maintenance4;
-        const bool hasDemoteToHelper = vk13Features->shaderDemoteToHelperInvocation;
-
-        // Vulkan 1.4 features
-        const bool hasMaintenance5   = vk14Features->maintenance5;
-        const bool hasPushDescriptor = vk14Features->pushDescriptor || !arePushDescriptorsRequired;
-
-        const bool hasRequired = hasRequiredQueueFamilies && hasRequiredExtensions;
-
-        const bool hasStandard = hasPushConstantSize && hasAnisotropy && hasMultiDrawIndirect && hasBC &&
-                                 hasImageCubeArray && hasDepthClamp && hasInt64 && indexU32 && hasInt16;
-
-        const bool hasExtensions = isSwapChainAdequate && hasSwapchainMaintenance && hasRayTracing
-                                   #ifdef ENGINE_DEBUG
-                                   && hasShaderRelaxedExtendedInstruction
-                                   #endif
-                                   ;
-
-        const bool hasVk11 = hasRequiredMultiViewCount && hasShaderDrawParameters && hasMultiView &&
-                             hasSubgroupOperationsInCompute && hasSubgroupBasic && hasSubgroupArithmetic && hasStorageF16;
-
-        const bool hasVk12 = hasBDA && hasScalarLayout && hasDescriptorIndexing && hasSampledImageNonUniformIndexing &&
-                             hasStorageImageNonUniformIndexing && hasRuntimeDescriptorArray && hasPartiallyBoundDescriptors &&
-                             hasSampledImageUpdateAfterBind && hasStorageImageUpdateAfterBind && hasUpdateUnusedWhilePending &&
-                             hasDrawIndirectCount && hasTimelineSemaphore && hasShaderF16;
-
-        const bool hasVk13 = hasSync2 && hasDynRender && hasMaintenance4 && hasDemoteToHelper;
-
-        const bool hasVk14 = hasMaintenance5 && hasPushDescriptor;
-
-        const usize totalScore = discreteGPU + completeQueues;
-
-        return (hasRequired && hasStandard && hasExtensions && hasVk11 && hasVk12 && hasVk13 && hasVk14) * totalScore;
     }
 
     void Context::CreateLogicalDevice()

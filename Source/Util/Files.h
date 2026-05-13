@@ -34,6 +34,7 @@ namespace Util::Files
     [[nodiscard]] std::time_t GetLastWriteTime(const std::string_view fileName);
 
     [[nodiscard]] bool Exists(const std::string_view fileName);
+    [[nodiscard]] bool Remove(const std::string_view fileName);
 
     [[nodiscard]] std::vector<u8> ReadBytes(const std::string_view path);
                   void            WriteBytes(const std::string_view path, const std::span<const u8> binary);

@@ -64,6 +64,11 @@ namespace Util::Files
         return std::filesystem::exists(std::filesystem::path(fileName));
     }
 
+    bool Remove(const std::string_view fileName)
+    {
+        return std::filesystem::remove(fileName);
+    }
+
     std::vector<u8> ReadBytes(const std::string_view path)
     {
         auto bin = std::ifstream(path.data(), std::ios::binary | std::ios::in);

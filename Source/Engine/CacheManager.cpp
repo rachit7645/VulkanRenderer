@@ -22,14 +22,13 @@
 #include "Util/Hash.h"
 #include "Util/Log.h"
 #include "Util/Visitor.h"
-#include "Vulkan/Texture.h"
 
 namespace Engine
 {
     constexpr auto CACHE_DIRECTORY = "Cache/";
 
     constexpr u32 CACHE_HEADER_MAGIC   = 0x4B4F4F43;
-    constexpr u8  CACHE_HEADER_VERSION = 2;
+    constexpr u8  CACHE_HEADER_VERSION = 3;
 
     u64 CachedAssetTypeToHeaderSize(Engine::CachedAssetType assetType)
     {
@@ -37,30 +36,6 @@ namespace Engine
         {
         case CachedAssetType::Texture:
             return sizeof(Engine::CachedTextureHeader);
-
-        default:
-            Logger::Error("{}\n", "Unknown cached asset type!");
-        }
-    }
-
-    u64 CachedTextureSourceToHash(Engine::CachedTextureSource source)
-    {
-        switch (source)
-        {
-        case CachedTextureSource::File:
-            Logger::Error("{}\n", "Not implemented!");
-
-        case CachedTextureSource::BRDF_LUT:
-        {
-            u64 hash = 0;
-
-            hash = Util::HashCombine(hash, Renderer::IBL::BRDF_LUT_SIZE.x);
-            hash = Util::HashCombine(hash, Renderer::IBL::BRDF_LUT_SIZE.y);
-            hash = Util::HashCombine(hash, Renderer::IBL::BRDF_LUT_FORMAT);
-            hash = Util::HashCombine(hash, Renderer::IBL::BRDF::BRDF_LUT_SAMPLE_COUNT);
-
-            return hash;
-        }
 
         default:
             Logger::Error("{}\n", "Unknown cached asset type!");
@@ -75,7 +50,7 @@ namespace Engine
         }
     }
 
-    void CacheManager::InsertIntoCache(const CacheEntry& entry)
+    void CacheManager::InsertIntoCache(const Engine::CacheEntry& entry)
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
@@ -118,15 +93,8 @@ namespace Engine
             .headerSize           = CachedAssetTypeToHeaderSize(entry.assetType),
             .compressedDataSize   = compressedDataSize,
             .uncompressedDataSize = entry.data.size(),
-            .hash                 = 0
+            .hash                 = entry.hash
         };
-
-        std::visit(Util::Visitor{
-            [&header] (const Engine::CachedTextureHeader& textureHeader)
-            {
-                header.hash = CachedTextureSourceToHash(textureHeader.source);
-            }
-        }, entry.assetHeader);
 
         bin.write(reinterpret_cast<const char*>(&header), sizeof(Engine::CacheHeader));
 
@@ -145,14 +113,14 @@ namespace Engine
         AppendToCacheTable(path);
     }
 
-    bool CacheManager::IsInCache(const std::string_view file, Engine::CachedAssetType assetType)
+    bool CacheManager::IsInCache(const Engine::CacheLookup& lookup)
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
-        zone.NameFmt("%s", file.data());
+        zone.NameFmt("%s", lookup.cachedFile.c_str());
         #endif
 
-        const std::string path = CACHE_DIRECTORY + std::string(file);
+        const std::string path = CACHE_DIRECTORY + std::string(lookup.cachedFile);
 
         if (!IsInCacheTable(path))
         {
@@ -179,7 +147,7 @@ namespace Engine
             return false;
         }
 
-        if (header.assetType != assetType)
+        if (header.assetType != lookup.assetType)
         {
             bin.close();
 
@@ -205,20 +173,20 @@ namespace Engine
                 return false;
             }
 
-            if (header.hash != CachedTextureSourceToHash(textureHeader.source))
-            {
-                bin.close();
-
-                InvalidateFromCacheTable(path);
-
-                return false;
-            }
-
             break;
         }
 
         default:
             Logger::Error("{}\n", "Unknown cached asset type!");
+        }
+
+        if (header.hash != lookup.hash)
+        {
+            bin.close();
+
+            InvalidateFromCacheTable(path);
+
+            return false;
         }
 
         return true;
@@ -269,7 +237,7 @@ namespace Engine
 
         auto data = std::vector<u8>(header.uncompressedDataSize);
 
-        const auto uncompressedSize = static_cast<usize>(LZ4_decompress_safe
+        const auto uncompressedSizeSigned = static_cast<ssize>(LZ4_decompress_safe
         (
             reinterpret_cast<const char*>(compressedData.data()),
             reinterpret_cast<char*>(data.data()),
@@ -277,17 +245,19 @@ namespace Engine
             static_cast<s32>(data.size())
         ));
 
-        if (uncompressedSize == 0 || uncompressedSize != header.uncompressedDataSize)
+        const auto uncompressedSize = static_cast<usize>(uncompressedSizeSigned);
+
+        if (uncompressedSizeSigned <= 0 || uncompressedSize != header.uncompressedDataSize)
         {
             Logger::Error("Failed to decompress data! [File={}]\n", file);
         }
 
         return Engine::CacheEntry
         {
-            .sourceFile  = std::nullopt,
             .cacheFile   = file.data(),
             .assetType   = header.assetType,
             .assetHeader = assetHeader,
+            .hash        = header.hash,
             .data        = std::move(data)
         };
     }
@@ -312,7 +282,7 @@ namespace Engine
             m_cacheTable.erase(cacheFile);
         }
 
-        if (!std::filesystem::remove(cacheFile))
+        if (!Util::Files::Remove(cacheFile))
         {
             Logger::Warning("Failed to remove cached file! [File={}]\n", cacheFile);
         }
@@ -329,7 +299,6 @@ namespace Engine
     {
         return magic == CACHE_HEADER_MAGIC &&
                version == CACHE_HEADER_VERSION &&
-               assetType == Engine::CachedAssetType::Texture &&
                headerSize != 0 &&
                compressedDataSize != 0 &&
                uncompressedDataSize != 0;
@@ -339,7 +308,6 @@ namespace Engine
     {
         return width != 0 &&
                height != 0 &&
-               format != VK_FORMAT_UNDEFINED &&
-               (source == CachedTextureSource::File || source == CachedTextureSource::BRDF_LUT);
+               format != VK_FORMAT_UNDEFINED;
     }
 }

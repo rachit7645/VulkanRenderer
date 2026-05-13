@@ -22,7 +22,7 @@
 #include "Buffers/SceneBuffer.h"
 #include "Buffers/TileLightIndexBuffer.h"
 #include "Buffers/ExposureBuffers.h"
-#include "Objects/GlobalSamplers.h"
+#include "Objects/Samplers.h"
 #include "Tonemap/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
@@ -148,7 +148,7 @@ namespace Renderer
 
         std::optional<Vk::AccelerationStructure> m_accelerationStructure;
 
-        Objects::GlobalSamplers m_samplers;
+        Objects::Samplers m_samplers;
 
         ToneMap::RenderPass     m_toneMap;
         Depth::RenderPass       m_depth;

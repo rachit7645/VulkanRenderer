@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "GlobalSamplers.h"
+#include "Samplers.h"
 
 #include "Renderer/IBL/IBLMaps.h"
 #include "Util/Maths.h"
 
 namespace Renderer::Objects
 {
-    GlobalSamplers::GlobalSamplers
+    Samplers::Samplers
     (
         const Vk::Context& context,
         Vk::MegaSet& megaSet,
@@ -237,7 +237,7 @@ namespace Renderer::Objects
         );
     }
 
-    void GlobalSamplers::Update
+    void Samplers::Update
     (
         const Vk::Context& context,
         const VkExtent2D& renderExtent,
@@ -255,7 +255,7 @@ namespace Renderer::Objects
             deletionQueue
         );
 
-        const auto anisotropy = std::min(16.0f, context.physicalDeviceLimits.maxSamplerAnisotropy);
+        const auto anisotropy = std::min(16.0f, context.properties.maxSamplerAnisotropy);
 
         const f32 renderXResolution  = Maths::Max2(glm::vec2(glm::vk_cast(renderExtent)));
         const f32 displayXResolution = Maths::Max2(glm::vec2(glm::vk_cast(swapchainExtent)));

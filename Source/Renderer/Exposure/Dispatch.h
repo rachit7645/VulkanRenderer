@@ -18,7 +18,7 @@
 #define EXPOSURE_DISPATCH_H
 
 #include "Renderer/Buffers/ExposureBuffers.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Util/FrameCounter.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/MegaSet.h"
@@ -46,7 +46,7 @@ namespace Renderer::Exposure
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::ExposureBuffers& exposureBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             const Util::FrameCounter& frameCounter
         );
 
@@ -60,7 +60,7 @@ namespace Renderer::Exposure
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::ExposureBuffers& exposureBuffer,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         void Average

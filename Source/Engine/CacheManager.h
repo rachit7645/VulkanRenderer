@@ -42,32 +42,31 @@ namespace Engine
         u64             hash                 = 0;
     };
 
-    enum class CachedTextureSource : u8
-    {
-        File,
-        BRDF_LUT
-    };
-
     struct CachedTextureHeader
     {
         [[nodiscard]] bool Validate() const;
 
-        u32                 width   = 0;
-        u32                 height  = 0;
-        VkFormat            format  = VK_FORMAT_UNDEFINED;
-        CachedTextureSource source  = CachedTextureSource::File;
-        u8                  pad0[3] = {};
+        u32      width   = 0;
+        u32      height  = 0;
+        VkFormat format  = VK_FORMAT_UNDEFINED;
     };
 
     using CachedAssetHeader = std::variant<CachedTextureHeader>;
 
     struct CacheEntry
     {
-        std::optional<std::string> sourceFile  = std::nullopt;
-        std::string                cacheFile   = "Null/Cache";
-        Engine::CachedAssetType    assetType   = CachedAssetType::Texture;
-        CachedAssetHeader          assetHeader = {};
-        std::vector<u8>            data        = {};
+        std::string             cacheFile   = "Null/Cache";
+        Engine::CachedAssetType assetType   = CachedAssetType::Texture;
+        CachedAssetHeader       assetHeader = {};
+        u64                     hash        = 0;
+        std::vector<u8>         data        = {};
+    };
+
+    struct CacheLookup
+    {
+        std::string             cachedFile = "Null/Cache";
+        Engine::CachedAssetType assetType  = CachedAssetType::Texture;
+        u64                     hash        = 0;
     };
 
     class CacheManager
@@ -75,11 +74,12 @@ namespace Engine
     public:
         CacheManager();
 
-        void InsertIntoCache(const CacheEntry& entry);
+        void InsertIntoCache(const Engine::CacheEntry& entry);
 
         // Checks and validates cached file
-        [[nodiscard]] bool IsInCache(const std::string_view file, Engine::CachedAssetType assetType);
-        // Loads data from cached file, call IsInCache before calling this!
+        [[nodiscard]] bool IsInCache(const Engine::CacheLookup& lookup);
+
+        // UNSAFE: Loads data from cached file WITHOUT DOING ANY VALIDATION, call IsInCache before calling this!
         [[nodiscard]] Engine::CacheEntry GetFromCache(const std::string_view file) const;
     private:
         void AppendToCacheTable(const std::string_view cacheFile);

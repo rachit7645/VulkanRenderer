@@ -136,7 +136,7 @@ namespace Renderer::TAA
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "TAA", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
@@ -311,8 +311,8 @@ namespace Renderer::TAA
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {resolved.image.width, resolved.image.height}
+                .offset = {.x     = 0,                    .y      = 0                    },
+                .extent = {.width = resolved.image.width, .height = resolved.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -340,8 +340,8 @@ namespace Renderer::TAA
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {resolved.image.width, resolved.image.height}
+            .offset = {.x     = 0,                    .y      = 0                    },
+            .extent = {.width = resolved.image.width, .height = resolved.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);

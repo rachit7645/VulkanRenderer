@@ -23,7 +23,7 @@
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/TileLightIndexBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 
 namespace Renderer::Lighting
 {
@@ -48,7 +48,7 @@ namespace Renderer::Lighting
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             const IBL::IBLMaps& iblMaps
         );
     };

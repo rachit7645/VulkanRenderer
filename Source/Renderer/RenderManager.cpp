@@ -638,7 +638,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GBufferGenerationComplete),
                 .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
@@ -940,7 +940,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GBufferGenerationComplete),
                 .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
@@ -998,7 +998,7 @@ namespace Renderer
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
                 .semaphore   = m_graphicsTimeline.semaphore,
-                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GbufferGenerationComplete),
+                .value       = m_graphicsTimeline.GetTimelineValue(m_frameIndex, Vk::GraphicsTimeline::Stage::GBufferGenerationComplete),
                 .stageMask   = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
                 .deviceIndex = 0
             };

@@ -87,7 +87,7 @@ namespace Renderer::Exposure
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::ExposureBuffers& exposureBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         const Util::FrameCounter& frameCounter
     )
     {
@@ -131,7 +131,7 @@ namespace Renderer::Exposure
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::ExposureBuffers& exposureBuffer,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         if (ImGui::BeginMainMenuBar())

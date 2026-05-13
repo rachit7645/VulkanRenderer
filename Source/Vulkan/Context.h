@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef VK_CONTEXT_H
-#define VK_CONTEXT_H
+#ifndef VULKAN_CONTEXT_H
+#define VULKAN_CONTEXT_H
 
 #include <vulkan/vulkan.h>
 
 #include "DebugCallback.h"
 #include "QueueFamilies.h"
 #include "Extensions.h"
-#include "Util/Types.h"
+#include "Properties.h"
 #include "Util/DeletionQueue.h"
 #include "Externals/VMA.h"
 #include "Externals/SDL.h"
@@ -39,14 +39,11 @@ namespace Vk
         VkInstance   instance = VK_NULL_HANDLE;
         VkSurfaceKHR surface  = VK_NULL_HANDLE;
 
-        VkPhysicalDevice                                   physicalDevice                                = VK_NULL_HANDLE;
-        VkPhysicalDeviceLimits                             physicalDeviceLimits                          = {};
-        VkPhysicalDeviceVulkan12Properties                 physicalDeviceVulkan12Properties              = {};
-        VkPhysicalDeviceAccelerationStructurePropertiesKHR physicalDeviceAccelerationStructureProperties = {};
-        VkPhysicalDeviceRayTracingPipelinePropertiesKHR    physicalDeviceRayTracingPipelineProperties    = {};
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
         VkDevice device = VK_NULL_HANDLE;
 
+        Vk::Properties    properties;
         Vk::QueueFamilies queueFamilies;
         Vk::Extensions    extensions;
 
@@ -62,13 +59,6 @@ namespace Vk
 
         void PickPhysicalDevice();
         void CreateLogicalDevice();
-
-        [[nodiscard]] usize CalculateScore
-        (
-            VkPhysicalDevice currentPhysicalDevice,
-            const VkPhysicalDeviceProperties2& propertySet,
-            const VkPhysicalDeviceFeatures2& featureSet
-        ) const;
 
         void CreateAllocator();
 

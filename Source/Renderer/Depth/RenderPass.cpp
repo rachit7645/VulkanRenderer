@@ -147,7 +147,7 @@ namespace Renderer::Depth
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Culling::Dispatch& culling
     )
     {

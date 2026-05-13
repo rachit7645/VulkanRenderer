@@ -59,7 +59,7 @@ namespace Renderer::Skybox
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         const IBL::IBLMaps& iblMaps
     )
     {

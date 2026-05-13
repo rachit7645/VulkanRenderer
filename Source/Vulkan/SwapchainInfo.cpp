@@ -48,6 +48,7 @@ namespace Vk
         );
 
         u32 presentModeCount = 0;
+
         Vk::CheckResult(vkGetPhysicalDeviceSurfacePresentModesKHR
         (
             device,
@@ -67,8 +68,8 @@ namespace Vk
             );
         }
 
-        // Make sure to resize
         presentModes.resize(presentModeCount);
+
         Vk::CheckResult(vkGetPhysicalDeviceSurfacePresentModesKHR
         (
             device,
@@ -79,6 +80,7 @@ namespace Vk
         );
 
         u32 formatCount = 0;
+
         Vk::CheckResult(vkGetPhysicalDeviceSurfaceFormats2KHR
         (
             device,
@@ -98,7 +100,6 @@ namespace Vk
             );
         }
 
-        // Make sure to resize kids!
         formats.resize(formatCount);
 
         constexpr VkSurfaceFormat2KHR emptyFormat =
@@ -106,7 +107,7 @@ namespace Vk
             .sType         = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
             .pNext         = nullptr,
             .surfaceFormat = {}
-        };;
+        };
 
         std::ranges::fill(formats, emptyFormat);
 

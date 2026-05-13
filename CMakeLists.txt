@@ -97,6 +97,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/StagingPool.cpp
     Source/Vulkan/ResizableBuffer.cpp
     Source/Vulkan/MeshIdentifier.cpp
+    Source/Vulkan/Properties.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderObject.cpp
@@ -106,7 +107,7 @@ add_executable(VulkanRenderer
     # Object sources
     Source/Renderer/Objects/FreeCamera.cpp
     Source/Renderer/Objects/Camera.cpp
-    Source/Renderer/Objects/GlobalSamplers.cpp
+    Source/Renderer/Objects/Samplers.cpp
     # Renderer Buffer sources
     Source/Renderer/Buffers/IndirectBuffer.cpp
     Source/Renderer/Buffers/MeshBuffer.cpp
@@ -141,6 +142,7 @@ add_executable(VulkanRenderer
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp
     Source/Models/Mesh.cpp
+    Source/Models/Material.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp

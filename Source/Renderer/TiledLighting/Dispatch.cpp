@@ -92,7 +92,7 @@ namespace Renderer::TiledLighting
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
         Util::DeletionQueue& deletionQueue
     )
@@ -135,7 +135,7 @@ namespace Renderer::TiledLighting
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "Bounds", glm::vec4(0.6098f, 0.8423f, 0.3599f, 1.0f));
@@ -222,7 +222,7 @@ namespace Renderer::TiledLighting
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
         Util::DeletionQueue& deletionQueue
     )

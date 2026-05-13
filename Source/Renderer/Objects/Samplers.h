@@ -21,10 +21,10 @@
 
 namespace Renderer::Objects
 {
-    class GlobalSamplers
+    class Samplers
     {
     public:
-        GlobalSamplers
+        Samplers
         (
             const Vk::Context& context,
             Vk::MegaSet& megaSet,
