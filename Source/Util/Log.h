@@ -19,6 +19,7 @@
 
 #include <string_view>
 #include <source_location>
+#include <stacktrace>
 #include <cstdlib>
 
 #include "Time.h"
@@ -26,6 +27,7 @@
 #include "Files.h"
 #include "Unused.h"
 #include "Externals/FMT.h"
+#include "fmt/compile.h"
 
 namespace Logger
 {
@@ -34,17 +36,16 @@ namespace Logger
         template <typename... Args>
         void Log
         (
-            FILE* file,
             const fmt::color& fgColor,
             const std::string_view type,
-            const std::source_location location,
+            const std::source_location& location,
             const std::string_view format,
             Args&&... args
         )
         {
             fmt::print
             (
-                file,
+                stdout,
                 fmt::fg(fgColor),
                 fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
@@ -60,19 +61,34 @@ namespace Logger
         (
             const fmt::color& fgColor,
             const std::string_view type,
-            const std::source_location location,
+            const std::source_location& location,
+            const std::stacktrace& stacktrace,
             const std::string_view format,
             Args&&... args
         )
         {
-            Log
+            const auto foreground = fmt::fg(fgColor);
+            const auto time       = Util::GetTime();
+            const auto name       = Util::Files::GetName(location.file_name());
+
+            fmt::print
             (
                 stderr,
-                fgColor,
+                foreground,
+                fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
-                location,
-                format,
+                time,
+                name,
+                location.line(),
                 std::forward<Args>(args)...
+            );
+
+            fmt::print
+            (
+                stderr,
+                foreground,
+                fmt::runtime("{}\n"),
+                std::to_string(stacktrace)
             );
 
             #ifdef ENGINE_DEBUG
@@ -90,12 +106,11 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-			const std::source_location location = std::source_location::current()
+			const std::source_location& location = std::source_location::current()
         )
         {
             Detail::Log
             (
-                stdout,
                 fmt::color::forest_green,
                 "INFO",
                 location,
@@ -112,12 +127,11 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-			const std::source_location location = std::source_location::current()
+			const std::source_location& location = std::source_location::current()
         )
         {
             Detail::Log
             (
-                stderr,
                 fmt::color::yellow,
                 "WARNING",
                 location,
@@ -134,13 +148,12 @@ namespace Logger
         (
             ENGINE_UNUSED const std::string_view format,
             ENGINE_UNUSED Args&&... args,
-            ENGINE_UNUSED const std::source_location location = std::source_location::current()
+            ENGINE_UNUSED const std::source_location& location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG
             Detail::Log
             (
-                stderr,
                 fmt::color::cyan,
                 "DEBUG",
                 location,
@@ -158,13 +171,12 @@ namespace Logger
         (
             ENGINE_UNUSED const std::string_view format,
             ENGINE_UNUSED Args&&... args,
-            ENGINE_UNUSED const std::source_location location = std::source_location::current()
+            ENGINE_UNUSED const std::source_location& location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG
             Detail::Log
             (
-                stderr,
                 fmt::color::orange,
                 "VULKAN",
                 location,
@@ -182,7 +194,8 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-			const std::source_location location = std::source_location::current()
+			const std::source_location& location = std::source_location::current(),
+			const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
             Detail::LogAndExit<-1>
@@ -190,6 +203,7 @@ namespace Logger
                 fmt::color::red,
                 "ERROR",
                 location,
+                stacktrace,
                 format,
                 std::forward<Args>(args)...
             );
@@ -203,7 +217,8 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-            const std::source_location location = std::source_location::current()
+            const std::source_location& location = std::source_location::current(),
+            const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
             Detail::LogAndExit<-1>
@@ -211,6 +226,7 @@ namespace Logger
                 fmt::color::orange_red,
                 "VKERROR",
                 location,
+                stacktrace,
                 format,
                 std::forward<Args>(args)...
             );
@@ -224,7 +240,8 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-            const std::source_location location = std::source_location::current()
+            const std::source_location& location = std::source_location::current(),
+            const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
             Detail::LogAndExit<-1>
@@ -232,6 +249,7 @@ namespace Logger
                 fmt::color::dark_red,
                 "ASSERT",
                 location,
+                stacktrace,
                 format,
                 std::forward<Args>(args)...
             );

@@ -233,6 +233,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <variant>
     <list>
     <queue>
+    <stacktrace>
     # C STL Headers
     <cstdint>
     <cstddef>
