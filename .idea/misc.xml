@@ -11,6 +11,7 @@
     <excludeRoots>
       <file path="$PROJECT_DIR$/Build/Debug" />
       <file path="$PROJECT_DIR$/Build/Profile" />
+      <file path="$PROJECT_DIR$/Build/Release" />
       <file path="$PROJECT_DIR$/Templates" />
     </excludeRoots>
   </component>

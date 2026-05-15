@@ -17,6 +17,8 @@
 #ifndef EXTERNALS_VMA_H
 #define EXTERNALS_VMA_H
 
+#include "Util/Assert.h"
+
 #if defined(__GNUC__) && !defined(__clang__)
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -30,6 +32,11 @@
     #pragma clang diagnostic ignored "-Wunused-private-field"
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
 #endif
+
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+
+#define VMA_ASSERT_LEAK(expression) ENGINE_ASSERT(expression)
 
 #include "vma/include/vk_mem_alloc.h"
 

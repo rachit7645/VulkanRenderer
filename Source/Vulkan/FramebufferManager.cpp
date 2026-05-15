@@ -89,7 +89,7 @@ namespace Vk
         #ifdef ENGINE_DLSS
         if (renderConfig.DLSS.isEnabled)
         {
-            auto DLSSExtent = glm::vk_cast(renderConfig.DLSSConfig.GetInternalResolution(glm::vk_cast(swapchain.extent)));
+            const auto DLSSExtent = glm::vk_cast(renderConfig.DLSSConfig.GetInternalResolution(glm::vk_cast(swapchain.extent)));
 
             if (DLSSExtent.width == renderExtent.width && DLSSExtent.height == renderExtent.height)
             {
@@ -434,10 +434,6 @@ namespace Vk
     FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const
     {
         return std::visit(Util::Visitor{
-            [] (std::monostate) -> Vk::FramebufferSize
-            {
-                Logger::Error("{}\n", "Invalid framebuffer size!");
-            },
             [] (const FramebufferSize& size) -> Vk::FramebufferSize
             {
                 return size;
@@ -479,23 +475,25 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (framebufferView.view.handle != VK_NULL_HANDLE)
+        if (framebufferView.view.handle == VK_NULL_HANDLE)
         {
-            if (imageUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
-            {
-                deletionQueue.Push([&megaSet, id = framebufferView.sampledImageID]
-                {
-                    megaSet.FreeSampledImage(id);
-                });
-            }
+            return;
+        }
 
-            if (imageUsage & VK_IMAGE_USAGE_STORAGE_BIT)
+        if (imageUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
+        {
+            deletionQueue.Push([&megaSet, id = framebufferView.sampledImageID]
             {
-                deletionQueue.Push([&megaSet, id = framebufferView.storageImageID]
-                {
-                    megaSet.FreeStorageImage(id);
-                });
-            }
+                megaSet.FreeSampledImage(id);
+            });
+        }
+
+        if (imageUsage & VK_IMAGE_USAGE_STORAGE_BIT)
+        {
+            deletionQueue.Push([&megaSet, id = framebufferView.storageImageID]
+            {
+                megaSet.FreeStorageImage(id);
+            });
         }
     }
 
@@ -503,88 +501,102 @@ namespace Vk
     {
         if (ImGui::CollapsingHeader("Framebuffers"))
         {
-            std::vector sortedFramebufferViews
-            (
-                m_framebufferViews.begin(),
-                m_framebufferViews.end()
-            );
-
-            auto CustomOrderedSort = [] (const std::string& a, const std::string& b)
+            for (const auto& [name, framebuffer] : m_framebuffers)
             {
-                usize i = 0;
-                usize j = 0;
-
-                while (i < a.length() && j < b.length())
-                {
-                    if (std::isdigit(a[i]) && std::isdigit(b[j]))
-                    {
-                        const usize aNumberStart = i;
-                        const usize bNumberStart = j;
-
-                        while (i < a.length() && std::isdigit(a[i]))
-                        {
-                            ++i;
-                        }
-
-                        while (j < b.length() && std::isdigit(b[j]))
-                        {
-                            ++j;
-                        }
-
-                        const usize aAsNumber = std::stoi(a.substr(aNumberStart, i - aNumberStart));
-                        const usize bAsNumber = std::stoi(b.substr(bNumberStart, j - bNumberStart));
-
-                        if (aAsNumber != bAsNumber)
-                        {
-                            return aAsNumber < bAsNumber;
-                        }
-
-                        i = aNumberStart;
-                        j = bNumberStart;
-                    }
-
-                    if (a[i] != b[j])
-                    {
-                        return a[i] < b[j];
-                    }
-
-                    ++i;
-                    ++j;
-                }
-
-                return a.length() < b.length();
-            };
-
-            std::ranges::sort(sortedFramebufferViews, [&CustomOrderedSort] (const auto& a, const auto& b)
-            {
-                return CustomOrderedSort(a.first, b.first);
-            });
-
-            for (const auto& [name, framebufferView] : sortedFramebufferViews)
-            {
-                const auto& framebuffer = GetFramebuffer(framebufferView.framebuffer);
-
                 if (ImGui::TreeNode(name.c_str()))
                 {
-                    ImGui::Text("Descriptor Index | %u",        framebufferView.sampledImageID);
-                    ImGui::Text("Width            | %u",        std::max(static_cast<u32>(framebuffer.image.width  * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
-                    ImGui::Text("Height           | %u",        std::max(static_cast<u32>(framebuffer.image.height * std::pow(0.5f, framebufferView.size.baseMipLevel)), 1u));
-                    ImGui::Text("Mipmap Levels    | [%u - %u]", framebufferView.size.baseMipLevel, framebufferView.size.baseMipLevel + framebufferView.size.levelCount);
-                    ImGui::Text("Array Layers     | [%u - %u]", framebufferView.size.baseArrayLayer, framebufferView.size.baseArrayLayer + framebufferView.size.layerCount);
-                    ImGui::Text("Format           | %s",        string_VkFormat(framebuffer.image.format));
+                    ImGui::Text("Handle          | %p", framebuffer.image.handle);
+                    ImGui::Text("Allocation      | %p", framebuffer.image.allocation);
 
                     ImGui::Separator();
 
-                    const f32 originalWidth  = static_cast<f32>(framebuffer.image.width);
-                    const f32 originalHeight = static_cast<f32>(framebuffer.image.height);
+                    ImGui::Text("Width           | %u", framebuffer.image.width);
+                    ImGui::Text("Height          | %u", framebuffer.image.height);
+                    ImGui::Text("Mipmap Levels   | %u", framebuffer.image.mipLevels);
+                    ImGui::Text("Array Layers    | %u", framebuffer.image.arrayLayers);
+                    ImGui::Text("Format          | %s", string_VkFormat(framebuffer.image.format));
+                    ImGui::Text("Aspect          | %s", string_VkImageAspectFlags(framebuffer.image.aspect).c_str());
 
-                    constexpr f32 MAX_SIZE = 1024.0f;
+                    ImGui::Separator();
 
-                    // Maintain aspect ratio
-                    const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
-                    const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
+                    const auto sizeDataType = std::visit(Util::Visitor{
+                        [] (ENGINE_UNUSED const FramebufferSize& size) -> std::string_view
+                        {
+                            return "Static";
+                        },
+                        [] (ENGINE_UNUSED const FramebufferResizeCallbackWithExtent& Callback) -> std::string_view
+                        {
+                            return "Dynamic";
+                        },
+                        [] (ENGINE_UNUSED const FramebufferResizeCallbackWithExtentAndDeletionQueue& Callback) -> std::string_view
+                        {
+                            return "Dynamic+";
+                        }
+                    }, framebuffer.sizeData);
 
-                    ImGui::Image(framebufferView.sampledImageID, imageSize);
+                    ImGui::Text("Image View Type | %s", string_VkImageViewType(framebuffer.imageViewType));
+                    ImGui::Text("Image Usage     | %s", string_VkImageUsageFlags(framebuffer.imageUsage).c_str());
+                    ImGui::Text("Size Data Type  | %s", sizeDataType.data());
+
+                    ImGui::Separator();
+
+                    ImGui::Text("Initial Stage   | %s", string_VkPipelineStageFlags2(framebuffer.initialState.stageMask).c_str());
+                    ImGui::Text("Initial Access  | %s", string_VkAccessFlags2(framebuffer.initialState.accessMask).c_str());
+                    ImGui::Text("Initial Layout  | %s", string_VkImageLayout(framebuffer.initialState.layout));
+
+                    for (const auto& [viewName, framebufferView] : m_framebufferViews)
+                    {
+                        if (framebufferView.framebuffer != name)
+                        {
+                            continue;
+                        }
+
+                        ImGui::Separator();
+
+                        if (ImGui::TreeNode(viewName.c_str()))
+                        {
+                            ImGui::Text("Handle                   | %p", framebufferView.view.handle);
+
+                            ImGui::Separator();
+
+                            if (framebuffer.imageUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
+                            {
+                                ImGui::Text("Sampled Image Descriptor | %u", framebufferView.sampledImageID);
+                            }
+
+                            if (framebuffer.imageUsage & VK_IMAGE_USAGE_STORAGE_BIT)
+                            {
+                                ImGui::Text("Storage Image Descriptor | %u", framebufferView.storageImageID);
+                            }
+
+                            ImGui::Text("Image View Type          | %s", string_VkImageViewType(framebufferView.type));
+
+                            ImGui::Separator();
+
+                            ImGui::Text("Base Mipmap Level        | %u", framebufferView.size.baseMipLevel);
+                            ImGui::Text("Mipmap Level Count       | %u", framebufferView.size.levelCount);
+                            ImGui::Text("Base Array Layer         | %u", framebufferView.size.baseArrayLayer);
+                            ImGui::Text("Array Layer Count        | %u", framebufferView.size.layerCount);
+
+                            if (framebuffer.imageUsage & VK_IMAGE_USAGE_SAMPLED_BIT)
+                            {
+                                ImGui::Separator();
+
+                                const f32 originalWidth  = static_cast<f32>(framebuffer.image.width);
+                                const f32 originalHeight = static_cast<f32>(framebuffer.image.height);
+
+                                constexpr f32 MAX_SIZE = 1024.0f;
+
+                                // Maintain aspect ratio
+                                const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
+                                const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
+
+                                ImGui::Image(framebufferView.sampledImageID, imageSize);
+                            }
+
+                            ImGui::TreePop();
+                        }
+                    }
 
                     ImGui::TreePop();
                 }

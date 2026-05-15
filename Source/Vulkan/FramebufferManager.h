@@ -83,9 +83,9 @@ namespace Vk
 
     using FramebufferSizeData = std::variant
     <
-        FramebufferSize,
-        FramebufferResizeCallbackWithExtent,
-        FramebufferResizeCallbackWithExtentAndDeletionQueue
+        FramebufferSize,                                    // Static
+        FramebufferResizeCallbackWithExtent,                // Dynamic
+        FramebufferResizeCallbackWithExtentAndDeletionQueue // Dynamic+
     >;
 
     struct Framebuffer

@@ -217,6 +217,27 @@ namespace Logger
         }
     };
 
+    template <typename... Args>
+    struct Assert
+    {
+        [[noreturn]] explicit Assert
+        (
+            const std::string_view format,
+            Args&&... args,
+            const std::source_location location = std::source_location::current()
+        )
+        {
+            Detail::LogAndExit<-1>
+            (
+                fmt::color::dark_red,
+                "ASSERT",
+                location,
+                format,
+                std::forward<Args>(args)...
+            );
+        }
+    };
+
     // Deduction guides
     template <typename... Args>
     Info(std::string_view, Args&&...) -> Info<Args...>;
@@ -230,6 +251,8 @@ namespace Logger
     Error(std::string_view, Args&&...) -> Error<Args...>;
     template <typename... Args>
     VulkanError(std::string_view, Args&&...) -> VulkanError<Args...>;
+    template <typename... Args>
+    Assert(std::string_view, Args&&...) -> Assert<Args...>;
 }
 
 #endif

@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef EXTERNALS_STB_H
-#define EXTERNALS_STB_H
+#ifndef ENGINE_ASSERT_H
+#define ENGINE_ASSERT_H
 
-#include "Util/Assert.h"
+#include "Log.h"
 
-#define STBI_ASSERT(expression) ENGINE_ASSERT(expression)
-
-#include "stb/stb_image.h"
+#ifdef ENGINE_DEBUG
+#define ENGINE_ASSERT(expression) \
+    do \
+    { \
+        if (!(expression)) \
+        { \
+            Logger::Assert("{}\n", #expression); \
+        } \
+    } while(0)
+#else
+#define ENGINE_ASSERT(expression)
+#endif
 
 #endif

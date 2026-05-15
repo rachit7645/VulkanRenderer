@@ -424,21 +424,21 @@ namespace Vk
 
     VkExtent2D Swapchain::ChooseSwapchainExtent(const glm::uvec2& size) const
     {
-        const auto& capabilities = m_swapChainInfo.capabilities;
+        const auto& capabilities = m_swapChainInfo.capabilities.surfaceCapabilities;
 
         // Special Case: If current extent is not (0xFFFFFFFF, 0xFFFFFFFF), use surface size as swapchain extent
-        if (capabilities.surfaceCapabilities.currentExtent.width  != std::numeric_limits<u32>::max() &&
-            capabilities.surfaceCapabilities.currentExtent.height != std::numeric_limits<u32>::max())
+        if (capabilities.currentExtent.width  != std::numeric_limits<u32>::max() &&
+            capabilities.currentExtent.height != std::numeric_limits<u32>::max())
         {
-            return capabilities.surfaceCapabilities.currentExtent;
+            return capabilities.currentExtent;
         }
 
-        const auto minSize = glm::uvec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
-        const auto maxSize = glm::uvec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
+        const auto minSize = glm::vk_cast(capabilities.minImageExtent);
+        const auto maxSize = glm::vk_cast(capabilities.maxImageExtent);
 
         const auto actualExtent = glm::clamp(size, minSize, maxSize);
 
-        return
+        return VkExtent2D
         {
             .width  = static_cast<u32>(actualExtent.x),
             .height = static_cast<u32>(actualExtent.y),

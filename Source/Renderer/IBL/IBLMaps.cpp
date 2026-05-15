@@ -54,9 +54,9 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        // Don't reset BRDF LUT ID
         skyboxID        = 0;
         preFilterMapID  = 0;
         irradianceMapID = 0;
+        brdfLutID       = 0;
     }
 }

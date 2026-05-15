@@ -30,18 +30,6 @@ namespace Engine
     constexpr u32 CACHE_HEADER_MAGIC   = 0x4B4F4F43;
     constexpr u8  CACHE_HEADER_VERSION = 3;
 
-    u64 CachedAssetTypeToHeaderSize(Engine::CachedAssetType assetType)
-    {
-        switch (assetType)
-        {
-        case CachedAssetType::Texture:
-            return sizeof(Engine::CachedTextureHeader);
-
-        default:
-            Logger::Error("{}\n", "Unknown cached asset type!");
-        }
-    }
-
     CacheManager::CacheManager()
     {
         for (const auto& file : Util::Files::GetFilesInDirectory(CACHE_DIRECTORY))
@@ -84,13 +72,25 @@ namespace Engine
             Logger::Error("Failed to compress binary {}!\n", path);
         }
 
-        Engine::CacheHeader header =
+        usize headerSize = 0;
+
+        switch (entry.assetType)
+        {
+        case CachedAssetType::Texture:
+            headerSize = sizeof(Engine::CachedTextureHeader);
+            break;
+
+        default:
+            Logger::Error("{}\n", "Unknown cached asset type!");
+        }
+
+        const Engine::CacheHeader header =
         {
             .magic                = CACHE_HEADER_MAGIC,
             .version              = CACHE_HEADER_VERSION,
             .assetType            = entry.assetType,
             .pad0                 = 0,
-            .headerSize           = CachedAssetTypeToHeaderSize(entry.assetType),
+            .headerSize           = headerSize,
             .compressedDataSize   = compressedDataSize,
             .uncompressedDataSize = entry.data.size(),
             .hash                 = entry.hash

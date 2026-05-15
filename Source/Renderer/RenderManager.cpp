@@ -1951,6 +1951,7 @@ namespace Renderer
                 if (ImGui::CollapsingHeader("Memory"))
                 {
                     std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets = {};
+
                     vmaGetHeapBudgets(m_context.allocator, budgets.data());
 
                     usize usedBytes       = 0;
@@ -2143,6 +2144,7 @@ namespace Renderer
                     if (m_window.size != newWindowSize)
                     {
                         m_window.size = newWindowSize;
+
                         Resize();
                     }
                 }
@@ -2162,7 +2164,7 @@ namespace Renderer
                 {
                     if (!SDL_SetWindowRelativeMouseMode(m_window.handle, !SDL_GetWindowRelativeMouseMode(m_window.handle)))
                     {
-                        Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
+                        Logger::Warning("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
                     }
 
                     break;
@@ -2178,7 +2180,7 @@ namespace Renderer
 
                     if (!SDL_SetWindowFullscreen(m_window.handle, m_window.isFullscreen))
                     {
-                        Logger::Error("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
+                        Logger::Warning("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
                     }
 
                     break;
