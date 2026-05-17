@@ -21,6 +21,7 @@
 #include "Util/Files.h"
 #include "Util/Hash.h"
 #include "Util/Log.h"
+#include "Util/Span.h"
 #include "Util/Visitor.h"
 
 namespace Engine
@@ -28,7 +29,7 @@ namespace Engine
     constexpr auto CACHE_DIRECTORY = "Cache/";
 
     constexpr u32 CACHE_HEADER_MAGIC   = 0x4B4F4F43;
-    constexpr u8  CACHE_HEADER_VERSION = 3;
+    constexpr u8  CACHE_HEADER_VERSION = 4;
 
     CacheManager::CacheManager()
     {
@@ -104,6 +105,11 @@ namespace Engine
                 bin.write(reinterpret_cast<const char*>(&textureHeader), sizeof(Engine::CachedTextureHeader));
             }
         }, entry.assetHeader);
+
+        if (entry.textureOffsetTable.has_value())
+        {
+            bin.write(reinterpret_cast<const char*>(entry.textureOffsetTable->data()), static_cast<std::streamsize>(entry.textureOffsetTable->size()));
+        }
 
         bin.write(reinterpret_cast<const char*>(compressedData.data()), static_cast<std::streamsize>(compressedDataSize));
 
@@ -214,6 +220,8 @@ namespace Engine
 
         Engine::CachedAssetHeader assetHeader = {};
 
+        std::optional<std::vector<u8>> textureOffsetTable = std::nullopt;
+
         switch (header.assetType)
         {
         case CachedAssetType::Texture:
@@ -221,6 +229,10 @@ namespace Engine
             Engine::CachedTextureHeader textureHeader = {};
 
             bin.read(reinterpret_cast<char*>(&textureHeader), sizeof(Engine::CachedTextureHeader));
+
+            textureOffsetTable = std::vector<u8>(textureHeader.offsetTableSize);
+
+            bin.read(reinterpret_cast<char*>(textureOffsetTable->data()), static_cast<std::streamsize>(textureOffsetTable->size()));
 
             assetHeader = textureHeader;
 
@@ -254,11 +266,12 @@ namespace Engine
 
         return Engine::CacheEntry
         {
-            .cacheFile   = file.data(),
-            .assetType   = header.assetType,
-            .assetHeader = assetHeader,
-            .hash        = header.hash,
-            .data        = std::move(data)
+            .cacheFile          = file.data(),
+            .assetType          = header.assetType,
+            .assetHeader        = assetHeader,
+            .hash               = header.hash,
+            .textureOffsetTable = textureOffsetTable,
+            .data               = std::move(data)
         };
     }
 
@@ -308,6 +321,22 @@ namespace Engine
     {
         return width != 0 &&
                height != 0 &&
-               format != VK_FORMAT_UNDEFINED;
+               mipLevels != 0 &&
+               format != VK_FORMAT_UNDEFINED &&
+               offsetTableSize != 0;
+    }
+
+    std::vector<u8> GenerateTextureOffsetTable(const std::span<const VkDeviceSize> mipmapOffsets)
+    {
+        const auto asBytes = Util::ToBytes(mipmapOffsets);
+
+        return {asBytes.begin(), asBytes.end()};
+    }
+
+    std::span<const VkDeviceSize> ExtractTextureOffsetTable(const std::span<const u8> offsetTable)
+    {
+        ENGINE_ASSERT(offsetTable.size() % sizeof(VkDeviceSize) == 0);
+
+        return {reinterpret_cast<const VkDeviceSize*>(offsetTable.data()), offsetTable.size_bytes() / sizeof(VkDeviceSize)};
     }
 }

@@ -1437,6 +1437,10 @@ namespace Vk
 
         const auto cacheEntry    = cacheManager.GetFromCache(cache.cachedPath);
         const auto textureHeader = std::get<Engine::CachedTextureHeader>(cacheEntry.assetHeader);
+        const auto offsetTable   = Engine::ExtractTextureOffsetTable(cacheEntry.textureOffsetTable.value());
+
+        // TODO: Temporary Assert
+        ENGINE_ASSERT(offsetTable.size() == textureHeader.mipLevels);
 
         const auto pixelCount = static_cast<usize>(textureHeader.width) * static_cast<usize>(textureHeader.height);
         const auto texelSize  = Vk::GetTexelSize(textureHeader.format);
@@ -1454,21 +1458,29 @@ namespace Vk
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 
-        copyRegions.emplace_back(VkBufferImageCopy2{
-            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
-            .pNext             = nullptr,
-            .bufferOffset      = stagingMemoryBlock.memoryBlock.offset,
-            .bufferRowLength   = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource  = {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .mipLevel       = 0,
-                .baseArrayLayer = 0,
-                .layerCount     = 1
-            },
-            .imageOffset = {.x     = 0,                   .y      = 0,                    .z     = 0},
-            .imageExtent = {.width = textureHeader.width, .height = textureHeader.height, .depth = 1}
-        });
+        for (u32 mipLevel = 0; mipLevel < textureHeader.mipLevels; ++mipLevel)
+        {
+            const u32 mipWidth  = std::max(textureHeader.width  >> mipLevel, 1u);
+            const u32 mipHeight = std::max(textureHeader.height >> mipLevel, 1u);
+
+            const VkDeviceSize offset = offsetTable[mipLevel];
+
+            copyRegions.emplace_back(VkBufferImageCopy2{
+                .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                .pNext             = nullptr,
+                .bufferOffset      = stagingMemoryBlock.memoryBlock.offset + offset,
+                .bufferRowLength   = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource  = {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .mipLevel       = mipLevel,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                },
+                .imageOffset       = {.x     = 0,        .y      = 0,         .z     = 0},
+                .imageExtent       = {.width = mipWidth, .height = mipHeight, .depth = 1}
+            });
+        }
 
         const VkImageCreateInfo createInfo =
         {
@@ -1478,7 +1490,7 @@ namespace Vk
             .imageType             = VK_IMAGE_TYPE_2D,
             .format                = textureHeader.format,
             .extent                = {.width = textureHeader.width, .height = textureHeader.height, .depth = 1},
-            .mipLevels             = 1,
+            .mipLevels             = textureHeader.mipLevels,
             .arrayLayers           = 1,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
             .tiling                = VK_IMAGE_TILING_OPTIMAL,

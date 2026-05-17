@@ -184,30 +184,40 @@ namespace Renderer::IBL
             return;
         }
 
-        const u8* pMappedData = static_cast<u8*>(m_brdfLutReadbackBuffer->hostAddress);
-
-        auto data = std::vector(pMappedData, pMappedData + m_brdfLutReadbackBuffer->size);
-
-        executor.silent_async([&cacheManager, readbackData = std::move(data)] mutable
+        executor.silent_async([this, allocator, &cacheManager] mutable
         {
+            const u8* pMappedData = static_cast<u8*>(m_brdfLutReadbackBuffer->hostAddress);
+
+            const auto readbackData = std::vector(pMappedData, pMappedData + m_brdfLutReadbackBuffer->size);
+
+            constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
+
+            const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+
             cacheManager.InsertIntoCache(Engine::CacheEntry
             {
                 .cacheFile   = BRDF_LUT_CACHE_FILE,
                 .assetType   = Engine::CachedAssetType::Texture,
                 .assetHeader = Engine::CachedTextureHeader{
-                    .width  = BRDF_LUT_SIZE.x,
-                    .height = BRDF_LUT_SIZE.y,
-                    .format = BRDF_LUT_FORMAT
+                    .width           = BRDF_LUT_SIZE.x,
+                    .height          = BRDF_LUT_SIZE.y,
+                    .mipLevels       = 1,
+                    .format          = BRDF_LUT_FORMAT,
+                    .offsetTableSize = textureOffsetTable.size(),
                 },
-                .hash        = GetBRDFLookupTableHash(),
-                .data        = std::move(readbackData),
+                .hash               = GetBRDFLookupTableHash(),
+                .textureOffsetTable = textureOffsetTable,
+                .data               = readbackData,
             });
+
+            // It is thread safe to write to this buffer
+            // The main thread does not access it after GenerateBRDFLookupTable
+            // Considering the timeline sync, that would be Vk::FRAMES_IN_FLIGHT frames ago
+            m_brdfLutReadbackBuffer->Destroy(allocator);
+            m_brdfLutReadbackBuffer = std::nullopt;
         });
 
-        m_brdfLutReadbackBuffer->Destroy(allocator);
-
-        m_brdfLutReadbackBuffer = std::nullopt;
-        m_readbackFrameIndex    = std::nullopt;
+        m_readbackFrameIndex = std::nullopt;
     }
 
     IBL::IBLMaps Generator::Generate

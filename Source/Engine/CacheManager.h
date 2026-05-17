@@ -46,20 +46,23 @@ namespace Engine
     {
         [[nodiscard]] bool Validate() const;
 
-        u32      width   = 0;
-        u32      height  = 0;
-        VkFormat format  = VK_FORMAT_UNDEFINED;
+        u32      width           = 0;
+        u32      height          = 0;
+        u32      mipLevels       = 0;
+        VkFormat format          = VK_FORMAT_UNDEFINED;
+        u64      offsetTableSize = 0;
     };
 
     using CachedAssetHeader = std::variant<CachedTextureHeader>;
 
     struct CacheEntry
     {
-        std::string             cacheFile   = "Null/Cache";
-        Engine::CachedAssetType assetType   = CachedAssetType::Texture;
-        CachedAssetHeader       assetHeader = {};
-        u64                     hash        = 0;
-        std::vector<u8>         data        = {};
+        std::string                    cacheFile          = "Null/Cache";
+        Engine::CachedAssetType        assetType          = CachedAssetType::Texture;
+        CachedAssetHeader              assetHeader        = {};
+        u64                            hash               = 0;
+        std::optional<std::vector<u8>> textureOffsetTable = std::nullopt;
+        std::vector<u8>                data               = {};
     };
 
     struct CacheLookup
@@ -68,6 +71,9 @@ namespace Engine
         Engine::CachedAssetType assetType  = CachedAssetType::Texture;
         u64                     hash        = 0;
     };
+
+    [[nodiscard]] std::vector<u8>               GenerateTextureOffsetTable(const std::span<const VkDeviceSize> mipmapOffsets);
+    [[nodiscard]] std::span<const VkDeviceSize> ExtractTextureOffsetTable(const std::span<const u8> offsetTable);
 
     class CacheManager
     {
