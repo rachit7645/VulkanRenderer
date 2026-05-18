@@ -202,6 +202,8 @@ namespace Renderer::IBL
                     .width           = BRDF_LUT_SIZE.x,
                     .height          = BRDF_LUT_SIZE.y,
                     .mipLevels       = 1,
+                    .arrayLayers     = 1,
+                    .faceCount       = 1,
                     .format          = BRDF_LUT_FORMAT,
                     .offsetTableSize = textureOffsetTable.size(),
                 },
@@ -972,7 +974,7 @@ namespace Renderer::IBL
             context.device,
             preFilterMap,
             VK_IMAGE_VIEW_TYPE_CUBE,
-            {
+            VkImageSubresourceRange{
                 .aspectMask     = preFilterMap.aspect,
                 .baseMipLevel   = 0,
                 .levelCount     = preFilterMap.mipLevels,
@@ -1020,14 +1022,14 @@ namespace Renderer::IBL
             return m_brdfLutID.value();
         }
 
-        const Engine::CacheLookup lookup =
+        const Engine::CacheQuery query =
         {
             .cachedFile = BRDF_LUT_CACHE_FILE,
             .assetType  = Engine::CachedAssetType::Texture,
             .hash       = GetBRDFLookupTableHash()
         };
 
-        if (cacheManager.IsInCache(lookup))
+        if (cacheManager.IsInCache(query))
         {
             m_brdfLutID = textureManager.AddTexture
             (

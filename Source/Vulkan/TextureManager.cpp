@@ -53,7 +53,7 @@ namespace Vk
             return id;
         }
 
-        m_futuresMap.emplace(id, executor.async([this, device, allocator, &stagingPool, &cacheManager, &deletionQueue, upload] ()
+        m_futuresMap.emplace(id, executor.async([this, device, allocator, &stagingPool, &cacheManager, &executor, &deletionQueue, upload] ()
         {
             return m_imageUploader.LoadImage
             (
@@ -61,6 +61,7 @@ namespace Vk
                 allocator,
                 stagingPool,
                 cacheManager,
+                executor,
                 deletionQueue,
                 upload
             );

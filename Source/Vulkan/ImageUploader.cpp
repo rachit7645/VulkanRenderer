@@ -32,6 +32,8 @@
 
 namespace Vk
 {
+    constexpr VkFormat SDR_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
+
     Vk::ImageUploadType FileToImageUploadType(const std::string_view file)
     {
         const auto extension = Util::Files::GetExtension(file);
@@ -54,12 +56,33 @@ namespace Vk
         return type;
     }
 
+    usize GetImageFileUploadHash(Vk::ImageUploadFlags flags, const std::string_view path)
+    {
+        usize hash = 0;
+
+        hash = Util::HashCombine(hash, static_cast<u8>(flags));
+        hash = Util::HashCombine(hash, Util::Files::GetLastWriteTime(path));
+
+        return hash;
+    }
+
+    std::string GetImageUploadCacheFileName(const std::string_view path)
+    {
+        return fmt::format
+        (
+            "{}_{}.cache",
+            Util::Files::GetName(path),
+            std::hash<std::string_view>{}(path)
+        );
+    }
+
     Vk::UploadedImage ImageUploader::LoadImage
     (
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
         Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUpload& upload
     )
@@ -72,6 +95,8 @@ namespace Vk
                     device,
                     allocator,
                     stagingPool,
+                    cacheManager,
+                    executor,
                     deletionQueue,
                     file.path,
                     upload.type,
@@ -338,6 +363,8 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         Vk::ImageUploadType type,
@@ -357,6 +384,8 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
+                cacheManager,
+                executor,
                 deletionQueue,
                 path,
                 flags
@@ -368,6 +397,8 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
+                cacheManager,
+                executor,
                 deletionQueue,
                 path,
                 flags
@@ -379,6 +410,8 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
+                cacheManager,
+                executor,
                 deletionQueue,
                 path,
                 flags
@@ -390,6 +423,8 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
+                cacheManager,
+                executor,
                 deletionQueue,
                 path
             );
@@ -458,6 +493,8 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         Vk::ImageUploadFlags flags
@@ -467,6 +504,36 @@ namespace Vk
         ZoneScoped;
         #endif
 
+        const auto cacheFile = GetImageUploadCacheFileName(path);
+
+        const usize hash = GetImageFileUploadHash(flags, path);
+
+        const Engine::CacheQuery query =
+        {
+            .cachedFile = cacheFile,
+            .assetType  = Engine::CachedAssetType::Texture,
+            .hash       = hash
+        };
+
+        if (cacheManager.IsInCache(query))
+        {
+            const auto cache = Vk::ImageUploadCache
+            {
+                .name       = Util::Files::GetNameWithoutExtension(path),
+                .cachedPath = cacheFile
+            };
+
+            return LoadCache
+            (
+                device,
+                allocator,
+                stagingPool,
+                cacheManager,
+                deletionQueue,
+                cache
+            );
+        }
+
         const bool toFlip = (flags & ImageUploadFlags::Flipped) == ImageUploadFlags::Flipped;
 
         s32 _width  = 0;
@@ -474,7 +541,7 @@ namespace Vk
 
         stbi_set_flip_vertically_on_load_thread(toFlip);
 
-        const u8* data = stbi_load
+        u8* data = stbi_load
         (
             path.data(),
             &_width,
@@ -491,7 +558,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadSTBIInternal
+        const auto uploadedImage = LoadSTBIInternal
         (
             device,
             allocator,
@@ -502,6 +569,48 @@ namespace Vk
             height,
             flags
         );
+
+        executor.silent_async([width, height, data, flags, cacheFile, hash, &cacheManager] ()
+        {
+            const usize        texelCount = static_cast<usize>(width) * height;
+            const usize        elemCount  = texelCount * STBI_rgb_alpha;
+            const VkDeviceSize dataSize   = elemCount * sizeof(u8);
+
+            auto imageData = std::vector<u8>(dataSize);
+
+            std::memcpy(imageData.data(), data, dataSize);
+
+            stbi_image_free(data);
+
+            const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
+
+            constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
+
+            const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+
+            const u32 mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
+
+            cacheManager.InsertIntoCache(Engine::CacheEntry
+            {
+                .cacheFile   = cacheFile,
+                .assetType   = Engine::CachedAssetType::Texture,
+                .assetHeader = Engine::CachedTextureHeader{
+                    .width           = width,
+                    .height          = height,
+                    .mipLevels       = generateMipmaps ? mipLevels : 1,
+                    .arrayLayers     = 1,
+                    .faceCount       = 1,
+                    .format          = SDR_FORMAT,
+                    .generateMipmaps = generateMipmaps,
+                    .offsetTableSize = textureOffsetTable.size(),
+                },
+                .hash               = hash,
+                .textureOffsetTable = textureOffsetTable,
+                .data               = imageData,
+            });
+        });
+
+        return uploadedImage;
     }
 
     Vk::UploadedImage ImageUploader::LoadSTBIMemory
@@ -525,7 +634,7 @@ namespace Vk
 
         stbi_set_flip_vertically_on_load_thread(toFlip);
 
-        const u8* data = stbi_load_from_memory
+        u8* data = stbi_load_from_memory
         (
             memory.data.data(),
             static_cast<s32>(memory.data.size()),
@@ -543,7 +652,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadSTBIInternal
+        const auto uploadedImage = LoadSTBIInternal
         (
             device,
             allocator,
@@ -554,6 +663,10 @@ namespace Vk
             height,
             flags
         );
+
+        stbi_image_free(data);
+
+        return uploadedImage;
     }
 
     Vk::UploadedImage ImageUploader::LoadSTBIInternal
@@ -574,8 +687,6 @@ namespace Vk
 
         const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
-        constexpr VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
-
         const usize        texelCount = static_cast<usize>(width) * height;
         const usize        elemCount  = texelCount * STBI_rgb_alpha;
         const VkDeviceSize dataSize   = elemCount * sizeof(u8);
@@ -585,12 +696,10 @@ namespace Vk
             device,
             allocator,
             dataSize,
-            vkuFormatTexelBlockSize(format)
+            vkuFormatTexelBlockSize(SDR_FORMAT)
         );
 
         std::memcpy(stagingMemoryBlock.hostAddress, data, dataSize);
-
-        stbi_image_free(std::bit_cast<void*>(data));
 
         const std::vector copyRegions = {VkBufferImageCopy2{
             .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
@@ -614,7 +723,7 @@ namespace Vk
             .pNext                 = nullptr,
             .flags                 = 0,
             .imageType             = VK_IMAGE_TYPE_2D,
-            .format                = format,
+            .format                = SDR_FORMAT,
             .extent                = {.width = width, .height = height, .depth = 1},
             .mipLevels             = 1,
             .arrayLayers           = 1,
@@ -676,6 +785,8 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         Vk::ImageUploadFlags flags
@@ -685,6 +796,36 @@ namespace Vk
         ZoneScoped;
         #endif
 
+        const auto cacheFile = GetImageUploadCacheFileName(path);
+
+        const usize hash = GetImageFileUploadHash(flags, path);
+
+        const Engine::CacheQuery query =
+        {
+            .cachedFile = cacheFile,
+            .assetType  = Engine::CachedAssetType::Texture,
+            .hash       = hash
+        };
+
+        if (cacheManager.IsInCache(query))
+        {
+            const auto cache = Vk::ImageUploadCache
+            {
+                .name       = Util::Files::GetNameWithoutExtension(path),
+                .cachedPath = cacheFile
+            };
+
+            return LoadCache
+            (
+                device,
+                allocator,
+                stagingPool,
+                cacheManager,
+                deletionQueue,
+                cache
+            );
+        }
+
         // Flags
         const bool toFlip = (flags & ImageUploadFlags::Flipped) == ImageUploadFlags::Flipped;
 
@@ -693,7 +834,7 @@ namespace Vk
 
         stbi_set_flip_vertically_on_load_thread(toFlip);
 
-        const f32* data = stbi_loadf
+        f32* data = stbi_loadf
         (
             path.data(),
             &_width,
@@ -710,7 +851,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadHDRInternal
+        const auto uploadedImage = LoadHDRInternal
         (
             device,
             allocator,
@@ -721,6 +862,59 @@ namespace Vk
             height,
             flags
         );
+
+        executor.silent_async([width, height, data, flags, cacheFile, hash, &cacheManager] ()
+        {
+            const bool toF16           = (flags & ImageUploadFlags::F16    ) == ImageUploadFlags::F16;
+            const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
+
+            const VkFormat format = toF16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
+
+            const usize        texelCount = static_cast<usize>(width) * height;
+            const usize        elemCount  = texelCount * STBI_rgb_alpha;
+            const VkDeviceSize elemSize   = toF16 ? sizeof(f16) : sizeof(f32);
+            const VkDeviceSize dataSize   = elemCount * elemSize;
+
+            auto imageData = std::vector<u8>(dataSize);
+
+            if (toF16)
+            {
+                SIMD::ConvertF32ToF16(data, reinterpret_cast<f16*>(imageData.data()), elemCount);
+            }
+            else
+            {
+                std::memcpy(imageData.data(), data, dataSize);
+            }
+
+            stbi_image_free(data);
+
+            constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
+
+            const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+
+            const u32 mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
+
+            cacheManager.InsertIntoCache(Engine::CacheEntry
+            {
+                .cacheFile   = cacheFile,
+                .assetType   = Engine::CachedAssetType::Texture,
+                .assetHeader = Engine::CachedTextureHeader{
+                    .width           = width,
+                    .height          = height,
+                    .mipLevels       = generateMipmaps ? mipLevels : 1,
+                    .arrayLayers     = 1,
+                    .faceCount       = 1,
+                    .format          = format,
+                    .generateMipmaps = generateMipmaps,
+                    .offsetTableSize = textureOffsetTable.size(),
+                },
+                .hash               = hash,
+                .textureOffsetTable = textureOffsetTable,
+                .data               = imageData,
+            });
+        });
+
+        return uploadedImage;
     }
 
     Vk::UploadedImage ImageUploader::LoadHDRMemory
@@ -745,7 +939,7 @@ namespace Vk
 
         stbi_set_flip_vertically_on_load_thread(toFlip);
 
-        const f32* data = stbi_loadf_from_memory
+        f32* data = stbi_loadf_from_memory
         (
             memory.data.data(),
             static_cast<s32>(memory.data.size()),
@@ -763,7 +957,7 @@ namespace Vk
         const u32 width  = _width;
         const u32 height = _height;
 
-        return LoadHDRInternal
+        const auto uploadedImage = LoadHDRInternal
         (
             device,
             allocator,
@@ -774,6 +968,10 @@ namespace Vk
             height,
             flags
         );
+
+        stbi_image_free(data);
+
+        return uploadedImage;
     }
 
     Vk::UploadedImage ImageUploader::LoadHDRInternal
@@ -818,8 +1016,6 @@ namespace Vk
         {
             std::memcpy(stagingMemoryBlock.hostAddress, data, dataSize);
         }
-
-        stbi_image_free(std::bit_cast<void*>(data));
 
         const std::vector copyRegions = {VkBufferImageCopy2{
             .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
@@ -905,6 +1101,8 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
         Vk::ImageUploadFlags flags
@@ -915,6 +1113,36 @@ namespace Vk
             #ifdef ENGINE_PROFILE
             ZoneScoped;
             #endif
+
+            const auto cacheFile = GetImageUploadCacheFileName(path);
+
+            const usize hash = GetImageFileUploadHash(flags, path);
+
+            const Engine::CacheQuery query =
+            {
+                .cachedFile = cacheFile,
+                .assetType  = Engine::CachedAssetType::Texture,
+                .hash       = hash
+            };
+
+            if (cacheManager.IsInCache(query))
+            {
+                const auto cache = Vk::ImageUploadCache
+                {
+                    .name       = Util::Files::GetNameWithoutExtension(path),
+                    .cachedPath = cacheFile
+                };
+
+                return LoadCache
+                (
+                    device,
+                    allocator,
+                    stagingPool,
+                    cacheManager,
+                    deletionQueue,
+                    cache
+                );
+            }
 
             Imf::RgbaInputFile file(path.data());
 
@@ -973,13 +1201,17 @@ namespace Vk
                 vkuFormatTexelBlockSize(format)
             );
 
+            auto imageData = std::vector<u8>(dataSize);
+
             if (toF16)
             {
                 std::memcpy(stagingMemoryBlock.hostAddress, &pixels[0][0], dataSize);
+                std::memcpy(imageData.data(),           &pixels[0][0], dataSize);
             }
             else
             {
                 SIMD::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(stagingMemoryBlock.hostAddress), elemCount);
+                SIMD::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), reinterpret_cast<f32*>(imageData.data()),          elemCount);
             }
 
             const std::vector copyRegions = {VkBufferImageCopy2{
@@ -1054,6 +1286,34 @@ namespace Vk
                 stagingPool.Free(stagingMemoryBlock);
             });
 
+            executor.silent_async([width, height, format, imageData, generateMipmaps, cacheFile, hash, &cacheManager] ()
+            {
+                constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
+
+                const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+
+                const u32 mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
+
+                cacheManager.InsertIntoCache(Engine::CacheEntry
+                {
+                    .cacheFile   = cacheFile,
+                    .assetType   = Engine::CachedAssetType::Texture,
+                    .assetHeader = Engine::CachedTextureHeader{
+                        .width           = static_cast<u32>(width),
+                        .height          = static_cast<u32>(height),
+                        .mipLevels       = generateMipmaps ? mipLevels : 1,
+                        .arrayLayers     = 1,
+                        .faceCount       = 1,
+                        .format          = format,
+                        .generateMipmaps = generateMipmaps,
+                        .offsetTableSize = textureOffsetTable.size(),
+                    },
+                    .hash               = hash,
+                    .textureOffsetTable = textureOffsetTable,
+                    .data               = imageData,
+                });
+            });
+
             return Vk::UploadedImage
             {
                 .image     = image,
@@ -1071,6 +1331,8 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
+        Engine::CacheManager& cacheManager,
+        tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
     )
@@ -1079,9 +1341,39 @@ namespace Vk
         ZoneScoped;
         #endif
 
+        const auto cacheFile = GetImageUploadCacheFileName(path);
+
+        const usize hash = Util::Files::GetLastWriteTime(path);
+
+        const Engine::CacheQuery query =
+        {
+            .cachedFile = cacheFile,
+            .assetType  = Engine::CachedAssetType::Texture,
+            .hash       = hash
+        };
+
+        if (cacheManager.IsInCache(query))
+        {
+            const auto cache = Vk::ImageUploadCache
+            {
+                .name       = Util::Files::GetNameWithoutExtension(path),
+                .cachedPath = cacheFile
+            };
+
+            return LoadCache
+            (
+                device,
+                allocator,
+                stagingPool,
+                cacheManager,
+                deletionQueue,
+                cache
+            );
+        }
+
         ktxTexture2* pTexture = nullptr;
 
-        const auto result = ktxTexture2_CreateFromNamedFile
+        auto result = ktxTexture2_CreateFromNamedFile
         (
             path.data(),
             KTX_TEXTURE_CREATE_NO_FLAGS,
@@ -1093,7 +1385,26 @@ namespace Vk
             Logger::Error("Failed to load KTX2 file! [Error={}] [Path={}]", ktxErrorString(result), path);
         }
 
-        return LoadKTX2Internal
+        if (pTexture->isVideo)
+        {
+            Logger::Error("{}\n", "Videos are not supported!");
+        }
+
+        if (ktxTexture2_NeedsTranscoding(pTexture))
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("TranscodeBasis");
+            #endif
+
+            result = ktxTexture2_TranscodeBasis(pTexture, KTX_TTF_BC7_RGBA, 0);
+
+            if (result != KTX_SUCCESS)
+            {
+                Logger::Error("Failed to transcode to BC7! [Error={}]", ktxErrorString(result));
+            }
+        }
+
+        const auto uploadedImage = LoadKTX2Internal
         (
             device,
             allocator,
@@ -1101,6 +1412,64 @@ namespace Vk
             deletionQueue,
             pTexture
         );
+
+        executor.silent_async([pTexture, cacheFile, hash, &cacheManager] ()
+        {
+            auto imageData = std::vector<u8>(pTexture->dataSize);
+
+            std::memcpy(imageData.data(), pTexture->pData, pTexture->dataSize);
+
+            std::vector<VkDeviceSize> textureOffsetTable = {};
+
+            for (u32 mipLevel = 0; mipLevel < pTexture->numLevels; ++mipLevel)
+            {
+                for (u32 arrayLayer = 0; arrayLayer < pTexture->numLayers; ++arrayLayer)
+                {
+                    for (u32 face = 0; face < pTexture->numFaces; ++face)
+                    {
+                        ktx_size_t offset = 0;
+
+                        ktxTexture2_GetImageOffset
+                        (
+                            pTexture,
+                            mipLevel,
+                            arrayLayer,
+                            face,
+                            &offset
+                        );
+
+                        textureOffsetTable.emplace_back(offset);
+                    }
+                }
+            }
+
+            const auto textureOffsetTableAsBytes = Engine::GenerateTextureOffsetTable(textureOffsetTable);
+
+            const auto cacheEntry = Engine::CacheEntry
+            {
+                .cacheFile   = cacheFile,
+                .assetType   = Engine::CachedAssetType::Texture,
+                .assetHeader = Engine::CachedTextureHeader{
+                    .width           = pTexture->baseWidth,
+                    .height          = pTexture->baseHeight,
+                    .mipLevels       = pTexture->numLevels,
+                    .arrayLayers     = pTexture->numLayers,
+                    .faceCount       = pTexture->numFaces,
+                    .format          = static_cast<VkFormat>(pTexture->vkFormat),
+                    .generateMipmaps = pTexture->generateMipmaps,
+                    .offsetTableSize = textureOffsetTableAsBytes.size(),
+                },
+                .hash               = hash,
+                .textureOffsetTable = textureOffsetTableAsBytes,
+                .data               = imageData,
+            };
+
+            ktxTexture2_Destroy(pTexture);
+
+            cacheManager.InsertIntoCache(cacheEntry);
+        });
+
+        return uploadedImage;
     }
 
     Vk::UploadedImage ImageUploader::LoadKTX2Memory
@@ -1118,7 +1487,7 @@ namespace Vk
 
         ktxTexture2* pTexture = nullptr;
 
-        const auto result = ktxTexture2_CreateFromMemory
+        auto result = ktxTexture2_CreateFromMemory
         (
             memory.data.data(),
             memory.data.size(),
@@ -1131,7 +1500,26 @@ namespace Vk
             Logger::Error("Failed to load KTX2 file! [Error={}] [Name={}]", ktxErrorString(result), memory.name);
         }
 
-        return LoadKTX2Internal
+        if (pTexture->isVideo)
+        {
+            Logger::Error("{}\n", "Videos are not supported!");
+        }
+
+        if (ktxTexture2_NeedsTranscoding(pTexture))
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("TranscodeBasis");
+            #endif
+
+            result = ktxTexture2_TranscodeBasis(pTexture, KTX_TTF_BC7_RGBA, 0);
+
+            if (result != KTX_SUCCESS)
+            {
+                Logger::Error("Failed to transcode to BC7! [Error={}]", ktxErrorString(result));
+            }
+        }
+
+        const auto uploadedImage = LoadKTX2Internal
         (
             device,
             allocator,
@@ -1139,6 +1527,10 @@ namespace Vk
             deletionQueue,
             pTexture
         );
+
+        ktxTexture2_Destroy(pTexture);
+
+        return uploadedImage;
     }
 
     Vk::UploadedImage ImageUploader::LoadKTX2Internal
@@ -1153,25 +1545,6 @@ namespace Vk
         #ifdef ENGINE_PROFILE
         ZoneScoped;
         #endif
-
-        if (pTexture->isVideo)
-        {
-            Logger::Error("{}\n", "Videos are not supported!");
-        }
-
-        if (ktxTexture2_NeedsTranscoding(pTexture))
-        {
-            #ifdef ENGINE_PROFILE
-            ZoneScopedN("TranscodeBasis");
-            #endif
-
-            const auto result = ktxTexture2_TranscodeBasis(pTexture, KTX_TTF_BC7_RGBA, 0);
-
-            if (result != KTX_SUCCESS)
-            {
-                Logger::Error("Failed to transcode to BC7! [Error={}]", ktxErrorString(result));
-            }
-        }
 
         const auto stagingMemoryBlock = stagingPool.Allocate
         (
@@ -1231,13 +1604,34 @@ namespace Vk
             }
         }
 
+        VkImageCreateFlags flags         = 0;
+        VkImageViewType    imageViewType = VK_IMAGE_VIEW_TYPE_2D;
+
+        if (pTexture->isCubemap)
+        {
+            flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+            if (pTexture->isArray)
+            {
+                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+            }
+            else
+            {
+                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+            }
+        }
+        else if (pTexture->isArray)
+        {
+            imageViewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        }
+
         const auto image = Vk::Image
         (
             allocator,
-            {
+            VkImageCreateInfo{
                 .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                 .pNext                 = nullptr,
-                .flags                 = 0,
+                .flags                 = flags,
                 .imageType             = VK_IMAGE_TYPE_2D,
                 .format                = static_cast<VkFormat>(pTexture->vkFormat),
                 .extent                = {.width = pTexture->baseWidth, .height = pTexture->baseHeight, .depth = 1},
@@ -1254,24 +1648,6 @@ namespace Vk
             VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
-
-        if (pTexture->isCubemap)
-        {
-            if (pTexture->isArray)
-            {
-                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-            }
-            else
-            {
-                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE;
-            }
-        }
-        else if (pTexture->isArray)
-        {
-            imageViewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-        }
-
         const auto imageView = Vk::ImageView
         (
             device,
@@ -1285,8 +1661,6 @@ namespace Vk
                 .layerCount     = image.arrayLayers
             }
         );
-
-        ktxTexture2_Destroy(pTexture);
 
         AppendUpload(Upload{
             .image           = image,
@@ -1432,66 +1806,94 @@ namespace Vk
     )
     {
         #ifdef ENGINE_PROFILE
-        ZoneScoped;
+        ZoneNamed(zone, true);
+        zone.NameFmt("%s", std::string(Util::Files::GetName(cache.cachedPath)).c_str());
         #endif
 
-        const auto cacheEntry    = cacheManager.GetFromCache(cache.cachedPath);
-        const auto textureHeader = std::get<Engine::CachedTextureHeader>(cacheEntry.assetHeader);
-        const auto offsetTable   = Engine::ExtractTextureOffsetTable(cacheEntry.textureOffsetTable.value());
-
-        // TODO: Temporary Assert
-        ENGINE_ASSERT(offsetTable.size() == textureHeader.mipLevels);
-
-        const auto pixelCount = static_cast<usize>(textureHeader.width) * static_cast<usize>(textureHeader.height);
-        const auto texelSize  = Vk::GetTexelSize(textureHeader.format);
-        const auto dataSize   = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
+        const auto cacheEntry  = cacheManager.GetFromCache(cache.cachedPath);
+        const auto header      = std::get<Engine::CachedTextureHeader>(cacheEntry.assetHeader);
+        const auto offsetTable = Engine::ExtractTextureOffsetTable(cacheEntry.textureOffsetTable.value());
 
         const auto stagingMemoryBlock = stagingPool.Allocate
         (
             device,
             allocator,
-            dataSize,
-            vkuFormatTexelBlockSize(textureHeader.format)
+            cacheEntry.data.size(),
+            vkuFormatTexelBlockSize(header.format)
         );
 
-        std::memcpy(stagingMemoryBlock.hostAddress, cacheEntry.data.data(), dataSize);
+        std::memcpy(stagingMemoryBlock.hostAddress, cacheEntry.data.data(), cacheEntry.data.size());
 
         std::vector<VkBufferImageCopy2> copyRegions = {};
 
-        for (u32 mipLevel = 0; mipLevel < textureHeader.mipLevels; ++mipLevel)
+        const u32 mipLevelsToCopy = header.generateMipmaps ? 1 : header.mipLevels;
+
+        for (u32 mipLevel = 0; mipLevel < mipLevelsToCopy; ++mipLevel)
         {
-            const u32 mipWidth  = std::max(textureHeader.width  >> mipLevel, 1u);
-            const u32 mipHeight = std::max(textureHeader.height >> mipLevel, 1u);
+            const u32 mipWidth  = std::max(header.width  >> mipLevel, 1u);
+            const u32 mipHeight = std::max(header.height >> mipLevel, 1u);
 
-            const VkDeviceSize offset = offsetTable[mipLevel];
+            for (u32 arrayLayer = 0; arrayLayer < header.arrayLayers; ++arrayLayer)
+            {
+                for (u32 face = 0; face < header.faceCount; ++face)
+                {
+                    const usize index = (mipLevel * header.arrayLayers * header.faceCount) + (arrayLayer * header.faceCount) + face;
 
-            copyRegions.emplace_back(VkBufferImageCopy2{
-                .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
-                .pNext             = nullptr,
-                .bufferOffset      = stagingMemoryBlock.memoryBlock.offset + offset,
-                .bufferRowLength   = 0,
-                .bufferImageHeight = 0,
-                .imageSubresource  = {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .mipLevel       = mipLevel,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                },
-                .imageOffset       = {.x     = 0,        .y      = 0,         .z     = 0},
-                .imageExtent       = {.width = mipWidth, .height = mipHeight, .depth = 1}
-            });
+                    const VkDeviceSize offset = offsetTable[index];
+
+                    copyRegions.emplace_back(VkBufferImageCopy2{
+                        .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                        .pNext             = nullptr,
+                        .bufferOffset      = stagingMemoryBlock.memoryBlock.offset + offset,
+                        .bufferRowLength   = 0,
+                        .bufferImageHeight = 0,
+                        .imageSubresource  = {
+                            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .mipLevel       = mipLevel,
+                            .baseArrayLayer = header.faceCount * arrayLayer + face,
+                            .layerCount     = 1
+                        },
+                        .imageOffset       = {.x     = 0,        .y      = 0,         .z     = 0},
+                        .imageExtent       = {.width = mipWidth, .height = mipHeight, .depth = 1}
+                    });
+                }
+            }
         }
 
-        const VkImageCreateInfo createInfo =
+        const bool isCubemap = header.faceCount > 1;
+        const bool isArray   = header.arrayLayers > 1;
+
+        VkImageCreateFlags flags         = 0;
+        VkImageViewType    imageViewType = VK_IMAGE_VIEW_TYPE_2D;
+
+        if (isCubemap)
+        {
+            flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+            if (isArray)
+            {
+                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+            }
+            else
+            {
+                imageViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+            }
+        }
+        else if (isArray)
+        {
+            imageViewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        }
+
+        VkImageCreateInfo createInfo =
         {
             .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .pNext                 = nullptr,
-            .flags                 = 0,
+            .flags                 = flags,
             .imageType             = VK_IMAGE_TYPE_2D,
-            .format                = textureHeader.format,
-            .extent                = {.width = textureHeader.width, .height = textureHeader.height, .depth = 1},
-            .mipLevels             = textureHeader.mipLevels,
-            .arrayLayers           = 1,
+            .format                = header.format,
+            .extent                = {.width = header.width, .height = header.height, .depth = 1},
+            .mipLevels             = header.mipLevels,
+            .arrayLayers           = header.arrayLayers * header.faceCount,
             .samples               = VK_SAMPLE_COUNT_1_BIT,
             .tiling                = VK_IMAGE_TILING_OPTIMAL,
             .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -1501,13 +1903,18 @@ namespace Vk
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
         };
 
+        if (header.generateMipmaps)
+        {
+            createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        }
+
         const auto image = Vk::Image(allocator, createInfo, VK_IMAGE_ASPECT_COLOR_BIT);
 
         const auto imageView = Vk::ImageView
         (
             device,
             image,
-            VK_IMAGE_VIEW_TYPE_2D,
+            imageViewType,
             VkImageSubresourceRange{
                 .aspectMask     = image.aspect,
                 .baseMipLevel   = 0,
@@ -1524,7 +1931,7 @@ namespace Vk
             .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
             .srcAccessMask   = VK_ACCESS_2_NONE,
             .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
-            .generateMipmaps = false
+            .generateMipmaps = header.generateMipmaps
         });
 
         deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable

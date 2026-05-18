@@ -46,11 +46,15 @@ namespace Engine
     {
         [[nodiscard]] bool Validate() const;
 
-        u32      width           = 0;
-        u32      height          = 0;
-        u32      mipLevels       = 0;
-        VkFormat format          = VK_FORMAT_UNDEFINED;
-        u64      offsetTableSize = 0;
+        u32             width           = 0;
+        u32             height          = 0;
+        u32             mipLevels       = 0;
+        u32             arrayLayers     = 0;
+        u32             faceCount       = 0;
+        VkFormat        format          = VK_FORMAT_UNDEFINED;
+        bool            generateMipmaps = false;
+        u8              padding[7]      = {};
+        u64             offsetTableSize = 0;
     };
 
     using CachedAssetHeader = std::variant<CachedTextureHeader>;
@@ -65,14 +69,14 @@ namespace Engine
         std::vector<u8>                data               = {};
     };
 
-    struct CacheLookup
+    struct CacheQuery
     {
         std::string             cachedFile = "Null/Cache";
         Engine::CachedAssetType assetType  = CachedAssetType::Texture;
         u64                     hash        = 0;
     };
 
-    [[nodiscard]] std::vector<u8>               GenerateTextureOffsetTable(const std::span<const VkDeviceSize> mipmapOffsets);
+    [[nodiscard]] std::vector<u8>               GenerateTextureOffsetTable(const std::span<const VkDeviceSize> offsets);
     [[nodiscard]] std::span<const VkDeviceSize> ExtractTextureOffsetTable(const std::span<const u8> offsetTable);
 
     class CacheManager
@@ -83,7 +87,7 @@ namespace Engine
         void InsertIntoCache(const Engine::CacheEntry& entry);
 
         // Checks and validates cached file
-        [[nodiscard]] bool IsInCache(const Engine::CacheLookup& lookup);
+        [[nodiscard]] bool IsInCache(const Engine::CacheQuery& query);
 
         // UNSAFE: Loads data from cached file WITHOUT DOING ANY VALIDATION, call IsInCache before calling this!
         [[nodiscard]] Engine::CacheEntry GetFromCache(const std::string_view file) const;

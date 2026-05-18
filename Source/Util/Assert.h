@@ -32,4 +32,10 @@
 #define ENGINE_ASSERT(expression)
 #endif
 
+#define ENGINE_TODO() \
+    do \
+    { \
+        Logger::Assert("{}\n", "Not implemented!"); \
+    } while(0)
+
 #endif

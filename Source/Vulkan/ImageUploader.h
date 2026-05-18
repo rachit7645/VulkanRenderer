@@ -107,6 +107,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
         );
@@ -143,6 +144,8 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadType type,
@@ -165,6 +168,8 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
@@ -197,6 +202,8 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
@@ -229,6 +236,8 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
@@ -239,6 +248,8 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Engine::CacheManager& cacheManager,
+            tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
         );
@@ -271,7 +282,7 @@ namespace Vk
             ImageUploadFlags flags
         );
 
-        Vk::UploadedImage LoadCache
+        [[nodiscard]] Vk::UploadedImage LoadCache
         (
             VkDevice device,
             VmaAllocator allocator,

@@ -29,7 +29,7 @@ namespace Engine
     constexpr auto CACHE_DIRECTORY = "Cache/";
 
     constexpr u32 CACHE_HEADER_MAGIC   = 0x4B4F4F43;
-    constexpr u8  CACHE_HEADER_VERSION = 4;
+    constexpr u8  CACHE_HEADER_VERSION = 5;
 
     CacheManager::CacheManager()
     {
@@ -119,14 +119,14 @@ namespace Engine
         AppendToCacheTable(path);
     }
 
-    bool CacheManager::IsInCache(const Engine::CacheLookup& lookup)
+    bool CacheManager::IsInCache(const Engine::CacheQuery& query)
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
-        zone.NameFmt("%s", lookup.cachedFile.c_str());
+        zone.NameFmt("%s", query.cachedFile.c_str());
         #endif
 
-        const std::string path = CACHE_DIRECTORY + std::string(lookup.cachedFile);
+        const std::string path = CACHE_DIRECTORY + std::string(query.cachedFile);
 
         if (!IsInCacheTable(path))
         {
@@ -153,7 +153,7 @@ namespace Engine
             return false;
         }
 
-        if (header.assetType != lookup.assetType)
+        if (header.assetType != query.assetType)
         {
             bin.close();
 
@@ -166,6 +166,15 @@ namespace Engine
         {
         case CachedAssetType::Texture:
         {
+            if (header.headerSize != sizeof(Engine::CachedTextureHeader))
+            {
+                bin.close();
+
+                InvalidateFromCacheTable(path);
+
+                return false;
+            }
+
             Engine::CachedTextureHeader textureHeader = {};
 
             bin.read(reinterpret_cast<char*>(&textureHeader), sizeof(Engine::CachedTextureHeader));
@@ -186,7 +195,7 @@ namespace Engine
             Logger::Error("{}\n", "Unknown cached asset type!");
         }
 
-        if (header.hash != lookup.hash)
+        if (header.hash != query.hash)
         {
             bin.close();
 
@@ -322,13 +331,15 @@ namespace Engine
         return width != 0 &&
                height != 0 &&
                mipLevels != 0 &&
+               arrayLayers != 0 &&
+               faceCount != 0 &&
                format != VK_FORMAT_UNDEFINED &&
                offsetTableSize != 0;
     }
 
-    std::vector<u8> GenerateTextureOffsetTable(const std::span<const VkDeviceSize> mipmapOffsets)
+    std::vector<u8> GenerateTextureOffsetTable(const std::span<const VkDeviceSize> offsets)
     {
-        const auto asBytes = Util::ToBytes(mipmapOffsets);
+        const auto asBytes = Util::ToBytes(offsets);
 
         return {asBytes.begin(), asBytes.end()};
     }
