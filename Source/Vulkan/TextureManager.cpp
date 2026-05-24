@@ -34,7 +34,6 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUpload& upload
@@ -53,14 +52,13 @@ namespace Vk
             return id;
         }
 
-        m_futuresMap.emplace(id, executor.async([this, device, allocator, &stagingPool, &cacheManager, &executor, &deletionQueue, upload] ()
+        m_futuresMap.emplace(id, executor.async([this, device, allocator, &stagingPool, &executor, &deletionQueue, upload] ()
         {
             return m_imageUploader.LoadImage
             (
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 upload
@@ -484,7 +482,7 @@ namespace Vk
             {
                 return TextureManager::TextureNameInfo
                 {
-                    .name = Util::Files::GetNameWithoutExtension(file.path),
+                    .name = Files::GetNameWithoutExtension(file.path),
                     .id   = file.path
                 };
             },

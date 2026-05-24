@@ -73,7 +73,6 @@ namespace Renderer::DearImGui
         const Objects::Samplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         Models::ModelManager& modelManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
@@ -98,7 +97,6 @@ namespace Renderer::DearImGui
                 samplers,
                 megaSet,
                 stagingPool,
-                cacheManager,
                 modelManager,
                 executor,
                 deletionQueue,
@@ -141,7 +139,6 @@ namespace Renderer::DearImGui
         const Objects::Samplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         Models::ModelManager& modelManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
@@ -178,7 +175,6 @@ namespace Renderer::DearImGui
             cmdBuffer,
             megaSet,
             stagingPool,
-            cacheManager,
             modelManager,
             executor,
             deletionQueue,
@@ -449,7 +445,6 @@ namespace Renderer::DearImGui
         const Vk::CommandBuffer& cmdBuffer,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         Models::ModelManager& modelManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
@@ -487,7 +482,6 @@ namespace Renderer::DearImGui
                     device,
                     allocator,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     Vk::ImageUpload{
@@ -567,7 +561,6 @@ namespace Renderer::DearImGui
             allocator,
             megaSet,
             stagingPool,
-            cacheManager,
             executor,
             deletionQueue
         );

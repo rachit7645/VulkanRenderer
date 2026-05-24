@@ -43,7 +43,6 @@ namespace Engine
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             Renderer::IBL::Generator& iblGenerator,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
@@ -62,7 +61,6 @@ namespace Engine
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             Renderer::IBL::Generator& iblGenerator,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue

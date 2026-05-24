@@ -19,7 +19,7 @@
 #include <filesystem>
 #include <fstream>
 
-namespace Util::Files
+namespace Files
 {
     constexpr auto ASSETS_DIRECTORY = "Assets/";
 

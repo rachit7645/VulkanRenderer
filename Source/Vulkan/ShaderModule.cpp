@@ -36,9 +36,9 @@ namespace Vk
         ZoneScoped;
         #endif
 
-        const auto assetPath    = Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
+        const auto assetPath    = Files::GetAssetPath(ASSETS_SHADERS_DIR, path);
         const auto fullPath     = assetPath + SHADER_BINARY_EXT;
-        const auto shaderBinary = Util::Files::ReadBytes(fullPath);
+        const auto shaderBinary = Files::ReadBytes(fullPath);
 
         const VkShaderModuleCreateInfo createInfo =
         {

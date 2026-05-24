@@ -18,7 +18,7 @@
 #define IBL_PASS_H
 
 #include "IBLMaps.h"
-#include "Engine/CacheManager.h"
+#include "Engine/Cache.h"
 #include "Models/ModelManager.h"
 #include "Renderer/Objects/Samplers.h"
 #include "Vulkan/PipelineManager.h"
@@ -44,7 +44,6 @@ namespace Renderer::IBL
             VkDevice device,
             VmaAllocator allocator,
             const Vk::GraphicsTimeline& timeline,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor
         );
 
@@ -59,7 +58,6 @@ namespace Renderer::IBL
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
@@ -74,7 +72,6 @@ namespace Renderer::IBL
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view hdrMapAssetPath
@@ -127,7 +124,6 @@ namespace Renderer::IBL
             Vk::TextureManager& textureManager,
             Vk::StagingPool& stagingPool,
             Vk::MegaSet& megaSet,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );

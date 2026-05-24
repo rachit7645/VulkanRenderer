@@ -45,7 +45,7 @@ add_executable(VulkanRenderer
 	Source/Engine/Inputs.cpp
     Source/Engine/Scene.cpp
     Source/Engine/Config.cpp
-    Source/Engine/CacheManager.cpp
+    Source/Engine/Cache.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp

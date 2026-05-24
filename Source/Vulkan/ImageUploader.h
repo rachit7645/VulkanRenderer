@@ -26,7 +26,7 @@
 #include "BarrierWriter.h"
 #include "ImageView.h"
 #include "StagingPool.h"
-#include "Engine/CacheManager.h"
+#include "Engine/Cache.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
@@ -106,7 +106,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
@@ -144,7 +143,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
@@ -168,7 +166,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
@@ -202,7 +199,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
@@ -236,7 +232,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path,
@@ -248,7 +243,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const std::string_view path
@@ -287,7 +281,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             Util::DeletionQueue& deletionQueue,
             const ImageUploadCache& cache
         );

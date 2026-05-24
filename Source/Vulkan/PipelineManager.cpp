@@ -328,7 +328,7 @@ namespace Vk
             zone.NameFmt("%s", path.c_str());
             #endif
 
-            const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Util::Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
+            const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
 
             const auto result = std::system(fmt::format(
                 "{} {}/CompileShader.py {} {}",

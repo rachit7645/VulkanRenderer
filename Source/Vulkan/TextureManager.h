@@ -38,7 +38,6 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload

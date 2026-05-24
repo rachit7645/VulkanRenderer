@@ -50,7 +50,7 @@ namespace Logger
                 fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
                 type,
                 Util::GetTime(),
-                Util::Files::GetName(location.file_name()),
+                Files::GetName(location.file_name()),
                 location.line(),
                 std::forward<Args>(args)...
             );
@@ -69,7 +69,7 @@ namespace Logger
         {
             const auto foreground = fmt::fg(fgColor);
             const auto time       = Util::GetTime();
-            const auto name       = Util::Files::GetName(location.file_name());
+            const auto name       = Files::GetName(location.file_name());
 
             fmt::print
             (

@@ -1534,7 +1534,6 @@ namespace Renderer
             m_samplers,
             m_megaSet,
             m_stagingPool,
-            m_cacheManager,
             m_modelManager,
             m_executor,
             m_deletionQueues[m_FIF]
@@ -1733,7 +1732,6 @@ namespace Renderer
                 m_modelManager,
                 m_megaSet,
                 m_stagingPool,
-                m_cacheManager,
                 m_iblGenerator,
                 m_executor,
                 m_deletionQueues[m_FIF]
@@ -1746,7 +1744,6 @@ namespace Renderer
                 m_context.allocator,
                 m_megaSet,
                 m_stagingPool,
-                m_cacheManager,
                 m_executor,
                 m_deletionQueues[m_FIF]
             );
@@ -1800,7 +1797,6 @@ namespace Renderer
                         m_modelManager,
                         m_megaSet,
                         m_stagingPool,
-                        m_cacheManager,
                         m_iblGenerator,
                         m_executor,
                         m_deletionQueues[m_FIF]
@@ -1813,7 +1809,6 @@ namespace Renderer
                         m_context.allocator,
                         m_megaSet,
                         m_stagingPool,
-                        m_cacheManager,
                         m_executor,
                         m_deletionQueues[m_FIF]
                     );
@@ -1863,7 +1858,6 @@ namespace Renderer
             m_context.allocator,
             m_megaSet,
             m_stagingPool,
-            m_cacheManager,
             m_executor,
             m_deletionQueues[m_FIF]
         );
@@ -1881,7 +1875,6 @@ namespace Renderer
             m_modelManager,
             m_megaSet,
             m_stagingPool,
-            m_cacheManager,
             m_iblGenerator,
             m_executor,
             m_deletionQueues[m_FIF]
@@ -1923,7 +1916,6 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_graphicsTimeline,
-            m_cacheManager,
             m_executor
         );
 
@@ -2279,7 +2271,7 @@ namespace Renderer
 
         io.Fonts->AddFontFromFileTTF
         (
-            Util::Files::GetAssetPath("Fonts/", "NotoCJK/NotoSansCJKjp-Regular.otf").c_str(),
+            Files::GetAssetPath("Fonts/", "NotoCJK/NotoSansCJKjp-Regular.otf").c_str(),
             0.0f,
             &config
         );
@@ -2305,7 +2297,6 @@ namespace Renderer
                     m_context.device,
                     m_context.allocator,
                     m_stagingPool,
-                    m_cacheManager,
                     m_executor,
                     m_deletionQueues[m_FIF],
                     Vk::ImageUpload{
@@ -2328,7 +2319,6 @@ namespace Renderer
                     m_context.allocator,
                     m_megaSet,
                     m_stagingPool,
-                    m_cacheManager,
                     m_executor,
                     m_deletionQueues[m_FIF]
                 );

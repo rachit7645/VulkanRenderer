@@ -23,7 +23,7 @@
 
 #include "Util/Types.h"
 
-namespace Util::Files
+namespace Files
 {
     [[nodiscard]] std::string GetAssetPath(const std::string_view prefix, const std::string_view fileName);
 

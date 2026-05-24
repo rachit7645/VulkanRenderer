@@ -21,7 +21,7 @@
 #include <volk/volk.h>
 
 #include "Util.h"
-#include "Engine/CacheManager.h"
+#include "Engine/Cache.h"
 #include "Util/Log.h"
 #include "Util/SIMD.h"
 #include "Util/Visitor.h"
@@ -36,7 +36,7 @@ namespace Vk
 
     Vk::ImageUploadType FileToImageUploadType(const std::string_view file)
     {
-        const auto extension = Util::Files::GetExtension(file);
+        const auto extension = Files::GetExtension(file);
 
         auto type = Vk::ImageUploadType::SDR;
 
@@ -61,7 +61,7 @@ namespace Vk
         usize hash = 0;
 
         hash = Util::HashCombine(hash, static_cast<u8>(flags));
-        hash = Util::HashCombine(hash, Util::Files::GetLastWriteTime(path));
+        hash = Util::HashCombine(hash, Files::GetLastWriteTime(path));
 
         return hash;
     }
@@ -71,7 +71,7 @@ namespace Vk
         return fmt::format
         (
             "{}_{}.cache",
-            Util::Files::GetName(path),
+            Files::GetName(path),
             std::hash<std::string_view>{}(path)
         );
     }
@@ -81,7 +81,6 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUpload& upload
@@ -95,7 +94,6 @@ namespace Vk
                     device,
                     allocator,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     file.path,
@@ -135,7 +133,6 @@ namespace Vk
                     device,
                     allocator,
                     stagingPool,
-                    cacheManager,
                     deletionQueue,
                     cache
                 );
@@ -363,7 +360,6 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
@@ -373,7 +369,7 @@ namespace Vk
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
-        zone.NameFmt("%s", std::string(Util::Files::GetName(path)).c_str());
+        zone.NameFmt("%s", std::string(Files::GetName(path)).c_str());
         #endif
 
         switch (type)
@@ -384,7 +380,6 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 path,
@@ -397,7 +392,6 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 path,
@@ -410,7 +404,6 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 path,
@@ -423,7 +416,6 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 path
@@ -493,7 +485,6 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
@@ -508,18 +499,18 @@ namespace Vk
 
         const usize hash = GetImageFileUploadHash(flags, path);
 
-        const Engine::CacheQuery query =
+        const Cache::Query query =
         {
             .cachedFile = cacheFile,
-            .assetType  = Engine::CachedAssetType::Texture,
+            .assetType  = Cache::AssetType::Texture,
             .hash       = hash
         };
 
-        if (cacheManager.IsInCache(query))
+        if (Cache::IsInCache(query))
         {
             const auto cache = Vk::ImageUploadCache
             {
-                .name       = Util::Files::GetNameWithoutExtension(path),
+                .name       = Files::GetNameWithoutExtension(path),
                 .cachedPath = cacheFile
             };
 
@@ -528,7 +519,6 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 deletionQueue,
                 cache
             );
@@ -570,7 +560,7 @@ namespace Vk
             flags
         );
 
-        executor.silent_async([width, height, data, flags, cacheFile, hash, &cacheManager] ()
+        executor.silent_async([width, height, data, flags, cacheFile, hash] ()
         {
             const usize        texelCount = static_cast<usize>(width) * height;
             const usize        elemCount  = texelCount * STBI_rgb_alpha;
@@ -586,15 +576,16 @@ namespace Vk
 
             constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
 
-            const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+            const auto textureOffsetTable = Cache::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
 
             const u32 mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
 
-            cacheManager.InsertIntoCache(Engine::CacheEntry
+            Cache::InsertIntoCache(Cache::Entry
             {
-                .cacheFile   = cacheFile,
-                .assetType   = Engine::CachedAssetType::Texture,
-                .assetHeader = Engine::CachedTextureHeader{
+                .cacheFile          = cacheFile,
+                .assetType          = Cache::AssetType::Texture,
+                .compressionType    = Cache::CompressionType::LZ4,
+                .assetHeader        = Cache::TextureHeader{
                     .width           = width,
                     .height          = height,
                     .mipLevels       = generateMipmaps ? mipLevels : 1,
@@ -785,7 +776,6 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
@@ -800,18 +790,18 @@ namespace Vk
 
         const usize hash = GetImageFileUploadHash(flags, path);
 
-        const Engine::CacheQuery query =
+        const Cache::Query query =
         {
             .cachedFile = cacheFile,
-            .assetType  = Engine::CachedAssetType::Texture,
+            .assetType  = Cache::AssetType::Texture,
             .hash       = hash
         };
 
-        if (cacheManager.IsInCache(query))
+        if (Cache::IsInCache(query))
         {
             const auto cache = Vk::ImageUploadCache
             {
-                .name       = Util::Files::GetNameWithoutExtension(path),
+                .name       = Files::GetNameWithoutExtension(path),
                 .cachedPath = cacheFile
             };
 
@@ -820,7 +810,6 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 deletionQueue,
                 cache
             );
@@ -863,7 +852,7 @@ namespace Vk
             flags
         );
 
-        executor.silent_async([width, height, data, flags, cacheFile, hash, &cacheManager] ()
+        executor.silent_async([width, height, data, flags, cacheFile, hash] ()
         {
             const bool toF16           = (flags & ImageUploadFlags::F16    ) == ImageUploadFlags::F16;
             const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
@@ -890,15 +879,16 @@ namespace Vk
 
             constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
 
-            const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+            const auto textureOffsetTable = Cache::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
 
             const u32 mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
 
-            cacheManager.InsertIntoCache(Engine::CacheEntry
+            Cache::InsertIntoCache(Cache::Entry
             {
-                .cacheFile   = cacheFile,
-                .assetType   = Engine::CachedAssetType::Texture,
-                .assetHeader = Engine::CachedTextureHeader{
+                .cacheFile          = cacheFile,
+                .assetType          = Cache::AssetType::Texture,
+                .compressionType    = Cache::CompressionType::LZ4,
+                .assetHeader        = Cache::TextureHeader{
                     .width           = width,
                     .height          = height,
                     .mipLevels       = generateMipmaps ? mipLevels : 1,
@@ -1101,7 +1091,6 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path,
@@ -1118,18 +1107,18 @@ namespace Vk
 
             const usize hash = GetImageFileUploadHash(flags, path);
 
-            const Engine::CacheQuery query =
+            const Cache::Query query =
             {
                 .cachedFile = cacheFile,
-                .assetType  = Engine::CachedAssetType::Texture,
+                .assetType  = Cache::AssetType::Texture,
                 .hash       = hash
             };
 
-            if (cacheManager.IsInCache(query))
+            if (Cache::IsInCache(query))
             {
                 const auto cache = Vk::ImageUploadCache
                 {
-                    .name       = Util::Files::GetNameWithoutExtension(path),
+                    .name       = Files::GetNameWithoutExtension(path),
                     .cachedPath = cacheFile
                 };
 
@@ -1138,7 +1127,6 @@ namespace Vk
                     device,
                     allocator,
                     stagingPool,
-                    cacheManager,
                     deletionQueue,
                     cache
                 );
@@ -1286,19 +1274,20 @@ namespace Vk
                 stagingPool.Free(stagingMemoryBlock);
             });
 
-            executor.silent_async([width, height, format, imageData, generateMipmaps, cacheFile, hash, &cacheManager] ()
+            executor.silent_async([width, height, format, imageData, generateMipmaps, cacheFile, hash] ()
             {
                 constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
 
-                const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+                const auto textureOffsetTable = Cache::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
 
                 const u32 mipLevels = static_cast<u32>(std::floor(std::log2(std::max(width, height))) + 1);
 
-                cacheManager.InsertIntoCache(Engine::CacheEntry
+                Cache::InsertIntoCache(Cache::Entry
                 {
-                    .cacheFile   = cacheFile,
-                    .assetType   = Engine::CachedAssetType::Texture,
-                    .assetHeader = Engine::CachedTextureHeader{
+                    .cacheFile          = cacheFile,
+                    .assetType          = Cache::AssetType::Texture,
+                    .compressionType    = Cache::CompressionType::LZ4,
+                    .assetHeader        = Cache::TextureHeader{
                         .width           = static_cast<u32>(width),
                         .height          = static_cast<u32>(height),
                         .mipLevels       = generateMipmaps ? mipLevels : 1,
@@ -1331,7 +1320,6 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
@@ -1343,20 +1331,20 @@ namespace Vk
 
         const auto cacheFile = GetImageUploadCacheFileName(path);
 
-        const usize hash = Util::Files::GetLastWriteTime(path);
+        const usize hash = Files::GetLastWriteTime(path);
 
-        const Engine::CacheQuery query =
+        const Cache::Query query =
         {
             .cachedFile = cacheFile,
-            .assetType  = Engine::CachedAssetType::Texture,
+            .assetType  = Cache::AssetType::Texture,
             .hash       = hash
         };
 
-        if (cacheManager.IsInCache(query))
+        if (Cache::IsInCache(query))
         {
             const auto cache = Vk::ImageUploadCache
             {
-                .name       = Util::Files::GetNameWithoutExtension(path),
+                .name       = Files::GetNameWithoutExtension(path),
                 .cachedPath = cacheFile
             };
 
@@ -1365,7 +1353,6 @@ namespace Vk
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 deletionQueue,
                 cache
             );
@@ -1426,7 +1413,7 @@ namespace Vk
             pTexture
         );
 
-        executor.silent_async([pTexture, cacheFile, hash, &cacheManager] ()
+        executor.silent_async([pTexture, cacheFile, hash] ()
         {
             auto imageData = std::vector<u8>(pTexture->dataSize);
 
@@ -1456,13 +1443,14 @@ namespace Vk
                 }
             }
 
-            const auto textureOffsetTableAsBytes = Engine::GenerateTextureOffsetTable(textureOffsetTable);
+            const auto textureOffsetTableAsBytes = Cache::GenerateTextureOffsetTable(textureOffsetTable);
 
-            const auto cacheEntry = Engine::CacheEntry
+            const auto cacheEntry = Cache::Entry
             {
-                .cacheFile   = cacheFile,
-                .assetType   = Engine::CachedAssetType::Texture,
-                .assetHeader = Engine::CachedTextureHeader{
+                .cacheFile          = cacheFile,
+                .assetType          = Cache::AssetType::Texture,
+                .compressionType    = Cache::CompressionType::LZ4,
+                .assetHeader        = Cache::TextureHeader{
                     .width           = pTexture->baseWidth,
                     .height          = pTexture->baseHeight,
                     .mipLevels       = pTexture->numLevels,
@@ -1479,7 +1467,7 @@ namespace Vk
 
             ktxTexture2_Destroy(pTexture);
 
-            cacheManager.InsertIntoCache(cacheEntry);
+            Cache::InsertIntoCache(cacheEntry);
         });
 
         return uploadedImage;
@@ -1826,19 +1814,18 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         Util::DeletionQueue& deletionQueue,
         const Vk::ImageUploadCache& cache
     )
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
-        zone.NameFmt("%s", std::string(Util::Files::GetName(cache.cachedPath)).c_str());
+        zone.NameFmt("%s", std::string(Files::GetName(cache.cachedPath)).c_str());
         #endif
 
-        const auto cacheEntry  = cacheManager.GetFromCache(cache.cachedPath);
-        const auto header      = std::get<Engine::CachedTextureHeader>(cacheEntry.assetHeader);
-        const auto offsetTable = Engine::ExtractTextureOffsetTable(cacheEntry.textureOffsetTable.value());
+        const auto cacheEntry  = Cache::GetFromCache(cache.cachedPath);
+        const auto header      = std::get<Cache::TextureHeader>(cacheEntry.assetHeader);
+        const auto offsetTable = Cache::ExtractTextureOffsetTable(cacheEntry.textureOffsetTable.value());
 
         const auto stagingMemoryBlock = stagingPool.Allocate
         (

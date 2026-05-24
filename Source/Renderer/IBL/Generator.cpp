@@ -163,7 +163,6 @@ namespace Renderer::IBL
         VkDevice device,
         VmaAllocator allocator,
         const Vk::GraphicsTimeline& timeline,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor
     )
     {
@@ -184,7 +183,7 @@ namespace Renderer::IBL
             return;
         }
 
-        executor.silent_async([this, allocator, &cacheManager] mutable
+        executor.silent_async([this, allocator] mutable
         {
             const u8* pMappedData = static_cast<u8*>(m_brdfLutReadbackBuffer->hostAddress);
 
@@ -192,13 +191,14 @@ namespace Renderer::IBL
 
             constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
 
-            const auto textureOffsetTable = Engine::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
+            const auto textureOffsetTable = Cache::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
 
-            cacheManager.InsertIntoCache(Engine::CacheEntry
+            Cache::InsertIntoCache(Cache::Entry
             {
-                .cacheFile   = BRDF_LUT_CACHE_FILE,
-                .assetType   = Engine::CachedAssetType::Texture,
-                .assetHeader = Engine::CachedTextureHeader{
+                .cacheFile          = BRDF_LUT_CACHE_FILE,
+                .assetType          = Cache::AssetType::Texture,
+                .compressionType    = Cache::CompressionType::LZ4,
+                .assetHeader        = Cache::TextureHeader{
                     .width           = BRDF_LUT_SIZE.x,
                     .height          = BRDF_LUT_SIZE.y,
                     .mipLevels       = 1,
@@ -233,7 +233,6 @@ namespace Renderer::IBL
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view hdrMapAssetPath
@@ -248,7 +247,6 @@ namespace Renderer::IBL
             modelManager,
             megaSet,
             stagingPool,
-            cacheManager,
             executor,
             deletionQueue,
             hdrMapAssetPath
@@ -310,7 +308,6 @@ namespace Renderer::IBL
             modelManager.textureManager,
             stagingPool,
             megaSet,
-            cacheManager,
             executor,
             deletionQueue
         );
@@ -333,7 +330,6 @@ namespace Renderer::IBL
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view hdrMapAssetPath
@@ -346,7 +342,6 @@ namespace Renderer::IBL
             context.device,
             context.allocator,
             stagingPool,
-            cacheManager,
             executor,
             deletionQueue,
             Vk::ImageUpload{
@@ -365,7 +360,6 @@ namespace Renderer::IBL
             context.allocator,
             megaSet,
             stagingPool,
-            cacheManager,
             executor,
             deletionQueue
         );
@@ -1012,7 +1006,6 @@ namespace Renderer::IBL
         Vk::TextureManager& textureManager,
         Vk::StagingPool& stagingPool,
         Vk::MegaSet& megaSet,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
@@ -1022,21 +1015,20 @@ namespace Renderer::IBL
             return m_brdfLutID.value();
         }
 
-        const Engine::CacheQuery query =
+        const Cache::Query query =
         {
             .cachedFile = BRDF_LUT_CACHE_FILE,
-            .assetType  = Engine::CachedAssetType::Texture,
+            .assetType  = Cache::AssetType::Texture,
             .hash       = GetBRDFLookupTableHash()
         };
 
-        if (cacheManager.IsInCache(query))
+        if (Cache::IsInCache(query))
         {
             m_brdfLutID = textureManager.AddTexture
             (
                 context.device,
                 context.allocator,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 Vk::ImageUpload{

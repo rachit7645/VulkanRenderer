@@ -42,7 +42,6 @@ namespace Models
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view path
@@ -58,8 +57,8 @@ namespace Models
             Logger::Error("Model already loaded! [Path={}]", path);
         }
 
-        const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
-        const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
+        const std::string assetPath      = Files::GetAssetPath(MODEL_ASSETS_DIR, path);
+        const std::string assetDirectory = Files::GetDirectory(assetPath);
 
         fastgltf::Parser parser
         (
@@ -117,7 +116,6 @@ namespace Models
             geometryBuffer,
             textureManager,
             stagingPool,
-            cacheManager,
             executor,
             deletionQueue,
             assetDirectory,
@@ -134,7 +132,6 @@ namespace Models
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
@@ -156,7 +153,6 @@ namespace Models
                     geometryBuffer,
                     textureManager,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     directory,
@@ -175,7 +171,6 @@ namespace Models
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
@@ -201,7 +196,6 @@ namespace Models
                 geometryBuffer,
                 textureManager,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 directory,
@@ -220,7 +214,6 @@ namespace Models
                 geometryBuffer,
                 textureManager,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 directory,
@@ -238,7 +231,6 @@ namespace Models
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
@@ -554,7 +546,6 @@ namespace Models
                     allocator,
                     textureManager,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     directory,
@@ -581,7 +572,6 @@ namespace Models
                     allocator,
                     textureManager,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     directory,
@@ -608,7 +598,6 @@ namespace Models
                     allocator,
                     textureManager,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     directory,
@@ -635,7 +624,6 @@ namespace Models
                     allocator,
                     textureManager,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     directory,
@@ -752,7 +740,6 @@ namespace Models
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
@@ -772,14 +759,13 @@ namespace Models
                 device,
                 allocator,
                 stagingPool,
-                cacheManager,
                 executor,
                 deletionQueue,
                 Vk::ImageUpload{
                     .type   = Vk::ImageUploadType::KTX2,
                     .flags  = Vk::ImageUploadFlags::None,
                     .source = Vk::ImageUploadFile{
-                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
+                        .path = Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
                     }
                 }
             );
@@ -865,7 +851,6 @@ namespace Models
                     device,
                     allocator,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     Vk::ImageUpload{
@@ -887,7 +872,6 @@ namespace Models
                     device,
                     allocator,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     Vk::ImageUpload{
@@ -928,7 +912,6 @@ namespace Models
                             device,
                             allocator,
                             stagingPool,
-                            cacheManager,
                             executor,
                             deletionQueue,
                             Vk::ImageUpload{

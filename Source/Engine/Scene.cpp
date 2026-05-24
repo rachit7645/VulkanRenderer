@@ -38,7 +38,6 @@ namespace Engine
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         Renderer::IBL::Generator& iblGenerator,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
@@ -54,7 +53,7 @@ namespace Engine
 
             Logger::Info("Loading scene! [Scene={}]\n", config.scene);
 
-            const auto path = Util::Files::GetAssetPath("Scenes/", config.scene + ".json");
+            const auto path = Files::GetAssetPath("Scenes/", config.scene + ".json");
             const auto json = simdjson::padded_string::load(path);
 
             JSON::CheckError(json, "Failed to load json file!");
@@ -135,9 +134,9 @@ namespace Engine
             // HDR Map
             JSON::CheckError(document["IBL"].get_string(m_loadedHDRMapPath), "Failed to load IBL!");
 
-            const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
+            const auto hdrMapAssetPath = Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
 
-            if (Util::Files::Exists(hdrMapAssetPath))
+            if (Files::Exists(hdrMapAssetPath))
             {
                 iblMaps = iblGenerator.Generate
                 (
@@ -150,7 +149,6 @@ namespace Engine
                     modelManager,
                     megaSet,
                     stagingPool,
-                    cacheManager,
                     executor,
                     deletionQueue,
                     hdrMapAssetPath
@@ -178,7 +176,6 @@ namespace Engine
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
         Renderer::IBL::Generator& iblGenerator,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
@@ -202,9 +199,9 @@ namespace Engine
 
                         if (ImGui::Button("Load") && !m_loadedModelPath.empty())
                         {
-                            const auto modelAssetPath = Util::Files::GetAssetPath("GFX/", m_loadedModelPath);
+                            const auto modelAssetPath = Files::GetAssetPath("GFX/", m_loadedModelPath);
 
-                            if (Util::Files::Exists(modelAssetPath))
+                            if (Files::Exists(modelAssetPath))
                             {
                                 m_loadedRenderObject.modelID = modelManager.Load(m_loadedModelPath);
 
@@ -215,7 +212,6 @@ namespace Engine
                                     context.allocator,
                                     megaSet,
                                     stagingPool,
-                                    cacheManager,
                                     executor,
                                     deletionQueue
                                 );
@@ -450,9 +446,9 @@ namespace Engine
 
                     if (ImGui::Button("Load") && !m_loadedHDRMapPath.empty())
                     {
-                        const auto hdrMapAssetPath = Util::Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
+                        const auto hdrMapAssetPath = Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
 
-                        if (Util::Files::Exists(hdrMapAssetPath))
+                        if (Files::Exists(hdrMapAssetPath))
                         {
                             iblMaps.Destroy
                             (
@@ -474,7 +470,6 @@ namespace Engine
                                 modelManager,
                                 megaSet,
                                 stagingPool,
-                                cacheManager,
                                 executor,
                                 deletionQueue,
                                 hdrMapAssetPath
