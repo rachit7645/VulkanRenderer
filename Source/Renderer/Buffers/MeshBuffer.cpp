@@ -16,6 +16,7 @@
 
 #include "MeshBuffer.h"
 
+#include "Models/MeshIdentifier.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 #include "Util/Log.h"
@@ -90,8 +91,8 @@ namespace Renderer::Buffers
             uniqueModelIDs.insert(renderObject.modelID);
         }
 
-        std::vector<GPU::Mesh>                                                 meshes       = {};
-        ankerl::unordered_dense::map<std::pair<Models::ModelID, usize>, usize> meshIndexMap = {};
+        std::vector<GPU::Mesh>                                      meshes       = {};
+        ankerl::unordered_dense::map<Models::MeshIdentifier, usize> meshIndexMap = {};
 
         for (const auto modelID : uniqueModelIDs)
         {
@@ -101,8 +102,14 @@ namespace Renderer::Buffers
             {
                 const auto& mesh = model.meshes[localMeshIndex];
 
+                const Models::MeshIdentifier meshIdentifier =
+                {
+                    .modelID        = modelID,
+                    .localMeshIndex = localMeshIndex
+                };
+
                 // (modelID, localMeshIndex) -> globalMeshIndex
-                meshIndexMap[{modelID, localMeshIndex}] = meshes.size();
+                meshIndexMap.emplace(meshIdentifier, meshes.size());
 
                 meshes.emplace_back
                 (
@@ -133,7 +140,13 @@ namespace Renderer::Buffers
                 const auto transform    = globalTransform * mesh.transform;
                 const auto normalMatrix = Maths::NormalMatrix(transform);
 
-                const auto globalMeshIndex = meshIndexMap.at({renderObject.modelID, localMeshIndex});
+                const Models::MeshIdentifier meshIdentifier =
+                {
+                    .modelID        = renderObject.modelID,
+                    .localMeshIndex = localMeshIndex
+                };
+
+                const auto globalMeshIndex = meshIndexMap.at(meshIdentifier);
 
                 instances.emplace_back
                 (

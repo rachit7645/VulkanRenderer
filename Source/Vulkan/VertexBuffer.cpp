@@ -119,7 +119,7 @@ namespace Vk
             device,
             allocator,
             writeSize,
-            0
+            alignof(T)
         );
 
         deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable

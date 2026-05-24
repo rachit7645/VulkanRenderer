@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "MeshIdentifier.h"
+#include "Models/MeshIdentifier.h"
 
-namespace Vk
+namespace Models
 {
     bool MeshIdentifier::operator==(const MeshIdentifier& other) const noexcept
     {

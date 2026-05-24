@@ -48,6 +48,16 @@ namespace Models
         const std::string_view path
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneNamed(zone, true);
+        zone.NameFmt("%s", path.data());
+        #endif
+
+        if (isLoaded)
+        {
+            Logger::Error("Model already loaded! [Path={}]", path);
+        }
+
         const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
 
@@ -131,6 +141,10 @@ namespace Models
         const fastgltf::Asset& asset
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         for (const auto& scene : asset.scenes)
         {
             for (const auto nodeIndex : scene.nodeIndices)
@@ -170,6 +184,10 @@ namespace Models
         glm::mat4 nodeMatrix
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const auto& node = asset.nodes[nodeIndex];
 
         nodeMatrix = GetTransformMatrix(node, nodeMatrix);
@@ -229,6 +247,10 @@ namespace Models
         const glm::mat4& nodeMatrix
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         for (const auto& primitive : mesh.primitives)
         {
             if (primitive.type != fastgltf::PrimitiveType::Triangles)
@@ -238,6 +260,8 @@ namespace Models
                     "Unsupported primitive type! [Type={}]\n",
                     static_cast<std::underlying_type_t<fastgltf::PrimitiveType>>(primitive.type)
                 );
+
+                continue;
             }
 
             // Geometry data
@@ -246,6 +270,10 @@ namespace Models
 
             // Indices
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Indices");
+                #endif
+
                 if (!primitive.indicesAccessor.has_value())
                 {
                     Logger::Error("{}\n", "Primitive does not contain indices accessor!");
@@ -342,6 +370,10 @@ namespace Models
 
             // Positions
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Positions");
+                #endif
+
                 const auto& positionAccessor = GetAccessor
                 (
                     asset,
@@ -383,20 +415,22 @@ namespace Models
 
             // UV Maps
             {
-                const auto uv0AccessorIndex = GetAccessorIndex
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load UVs");
+                #endif
+
+                const auto uv0AccessorIndex = GetUVAccessorIndex
                 (
                     asset,
                     primitive,
-                    "TEXCOORD_0",
-                    fastgltf::AccessorType::Vec2
+                    "TEXCOORD_0"
                 );
 
-                const auto uv1AccessorIndex = GetAccessorIndex
+                const auto uv1AccessorIndex = GetUVAccessorIndex
                 (
                     asset,
                     primitive,
-                    "TEXCOORD_1",
-                    fastgltf::AccessorType::Vec2
+                    "TEXCOORD_1"
                 );
 
                 const auto [data, info] = geometryBuffer.uvBuffer.Allocate
@@ -436,6 +470,10 @@ namespace Models
 
             // Vertices
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Tangents and Normals");
+                #endif
+
                 const auto& tangentAccessor = GetAccessor
                 (
                     asset,
@@ -478,6 +516,10 @@ namespace Models
 
             // Material Factors
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Material Factors");
+                #endif
+
                 material.albedoFactor     = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
                 material.roughnessFactor  = mat.pbrData.roughnessFactor;
                 material.metallicFactor   = mat.pbrData.metallicFactor;
@@ -500,6 +542,10 @@ namespace Models
 
             // Albedo
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Albedo");
+                #endif
+
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
                 const auto textureInfo = LoadTexture
@@ -523,6 +569,10 @@ namespace Models
 
             // Normal
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Normal Map");
+                #endif
+
                 const auto& normalTexture = mat.normalTexture;
 
                 const auto textureInfo = LoadTexture
@@ -536,7 +586,8 @@ namespace Models
                     deletionQueue,
                     directory,
                     asset,
-                    normalTexture
+                    normalTexture,
+                    DEFAULT_NORMAL_TEXTURE
                 );
 
                 material.normalID      = textureInfo.id;
@@ -545,6 +596,10 @@ namespace Models
 
             // AO + Roughness + Metallic
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Roughness and Metallic");
+                #endif
+
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
                 const auto textureInfo = LoadTexture
@@ -568,6 +623,10 @@ namespace Models
 
             // Emissive
             {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("Load Emissive");
+                #endif
+
                 const auto& emissiveTexture = mat.emissiveTexture;
 
                 const auto textureInfo = LoadTexture
@@ -601,7 +660,7 @@ namespace Models
 
     glm::mat4 Model::GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base)
     {
-        return std::visit(Util::Visitor {
+        return std::visit(Util::Visitor{
             [&] (const fastgltf::math::fmat4x4& matrix)
             {
                 return base * glm::fastgltf_cast(matrix);
@@ -626,14 +685,18 @@ namespace Models
         fastgltf::AccessorType type
     )
     {
-        const auto attributeIt = primitive.findAttribute(attribute);
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
 
-        if (attributeIt == primitive.attributes.cend())
+        const auto iter = primitive.findAttribute(attribute);
+
+        if (iter == primitive.attributes.cend())
         {
             Logger::Error("Failed to find attribute! [Attribute={}]\n", attribute);
         }
 
-        const auto& accessor = asset.accessors[attributeIt->accessorIndex];
+        const auto& accessor = asset.accessors[iter->accessorIndex];
 
         if (accessor.type != type)
         {
@@ -648,36 +711,41 @@ namespace Models
         return accessor;
     }
 
-    std::optional<usize> Model::GetAccessorIndex
+    std::optional<usize> Model::GetUVAccessorIndex
     (
         const fastgltf::Asset& asset,
         const fastgltf::Primitive& primitive,
-        const std::string_view attribute,
-        fastgltf::AccessorType type
+        const std::string_view attribute
     )
     {
-        const auto attributeIt = primitive.findAttribute(attribute);
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
 
-        if (attributeIt == primitive.attributes.cend())
+        const auto iter = primitive.findAttribute(attribute);
+
+        if (iter == primitive.attributes.cend())
         {
             return std::nullopt;
         }
 
-        const auto& accessor = asset.accessors[attributeIt->accessorIndex];
+        const auto& accessor = asset.accessors[iter->accessorIndex];
 
-        if (accessor.type != type)
+        if (accessor.type != fastgltf::AccessorType::Vec2)
         {
             Logger::Error
             (
-                "Invalid accessor type! [AccessorType={}] [Required={}]\n",
+                "Invalid UV accessor type! [AccessorType={}] [Required={}]\n",
                 static_cast<std::underlying_type_t<fastgltf::AccessorType>>(accessor.type),
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(type)
+                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(fastgltf::AccessorType::Vec2)
             );
         }
 
-        return attributeIt->accessorIndex;
+        return iter->accessorIndex;
     }
 
+    template<typename T>
+    requires fastgltf::IsTextureInfo<T>
     Model::TextureInfo Model::LoadTexture
     (
         VkDevice device,
@@ -689,10 +757,14 @@ namespace Models
         Util::DeletionQueue& deletionQueue,
         const std::string_view directory,
         const fastgltf::Asset& asset,
-        const std::optional<fastgltf::TextureInfo>& textureInfo,
+        const std::optional<T>& textureInfo,
         const std::string_view defaultTexture
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (!textureInfo.has_value())
         {
             const auto id = textureManager.AddTexture
@@ -728,118 +800,8 @@ namespace Models
                 textureInfo->texCoordIndex
             );
         }
-
-        const auto id = LoadTextureInternal
-        (
-            device,
-            allocator,
-            textureManager,
-            stagingPool,
-            cacheManager,
-            executor,
-            deletionQueue,
-            directory,
-            asset,
-            textureInfo->textureIndex
-        );
-
-        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
-
-        return Model::TextureInfo
-        {
-            .id         = id,
-            .uvMapIndex = index
-        };
-    }
-
-    Model::TextureInfo Model::LoadTexture
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view directory,
-        const fastgltf::Asset& asset,
-        const std::optional<fastgltf::NormalTextureInfo>& textureInfo
-    )
-    {
-        if (!textureInfo.has_value())
-        {
-            const auto id = textureManager.AddTexture
-            (
-                device,
-                allocator,
-                stagingPool,
-                cacheManager,
-                executor,
-                deletionQueue,
-                Vk::ImageUpload{
-                    .type   = Vk::ImageUploadType::KTX2,
-                    .flags  = Vk::ImageUploadFlags::None,
-                    .source = Vk::ImageUploadFile{
-                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL_TEXTURE)
-                    }
-                }
-            );
-
-            return Model::TextureInfo
-            {
-                .id         = id,
-                .uvMapIndex = 0
-            };
-        }
-
-        if (textureInfo->texCoordIndex > 1)
-        {
-            Logger::Warning
-            (
-                "Normal texture uses more than two UV channels! [TextureIndex={}] [TexCoordIndex={}]\n",
-                textureInfo->textureIndex,
-                textureInfo->texCoordIndex
-            );
-        }
-
-        const auto id = LoadTextureInternal
-        (
-            device,
-            allocator,
-            textureManager,
-            stagingPool,
-            cacheManager,
-            executor,
-            deletionQueue,
-            directory,
-            asset,
-            textureInfo->textureIndex
-        );
-
-        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
-
-        return Model::TextureInfo
-        {
-            .id         = id,
-            .uvMapIndex = index
-        };
-    }
-
-    Vk::TextureID Model::LoadTextureInternal
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Engine::CacheManager& cacheManager,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view directory,
-        const fastgltf::Asset& asset,
-        usize textureIndex
-    )
-    {
-        const auto& texture = asset.textures[textureIndex];
+        
+        const auto& texture = asset.textures[textureInfo->textureIndex];
 
         usize imageIndex = 0;
         auto  type       = Vk::ImageUploadType::KTX2;
@@ -859,18 +821,18 @@ namespace Models
         }
         else
         {
-            Logger::Error("Image index not found! [TextureIndex={}]\n", textureIndex);
+            Logger::Error("Image index not found! [TextureIndex={}]\n", textureInfo->textureIndex);
         }
 
         const auto& image = asset.images[imageIndex];
 
-        return std::visit(Util::Visitor{
+        const auto id = std::visit(Util::Visitor{
             [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
             {
                 Logger::Error
                 (
                     "Unsupported source! [TextureIndex={}] [ImageIndex={}]\n",
-                    textureIndex,
+                    textureInfo->textureIndex,
                     imageIndex
                 );
 
@@ -883,7 +845,7 @@ namespace Models
                     Logger::Error
                     (
                         "Unsupported file byte offset! [TextureIndex={}] [FileByteOffset={}]\n",
-                        textureIndex,
+                        textureInfo->textureIndex,
                         filePath.fileByteOffset
                     );
                 }
@@ -893,7 +855,7 @@ namespace Models
                     Logger::Error
                     (
                         "Only local paths are supported! [TextureIndex={}] [UriPath={}]\n",
-                        textureIndex,
+                        textureInfo->textureIndex,
                         filePath.uri.c_str()
                     );
                 }
@@ -950,7 +912,7 @@ namespace Models
                         Logger::Error
                         (
                             "Unsupported buffer source! [TextureIndex={}] [ImageIndex={}]\n",
-                            textureIndex,
+                            textureInfo->textureIndex,
                             imageIndex
                         );
 
@@ -982,6 +944,14 @@ namespace Models
                 }, buffer.data);
             },
         }, image.data);
+
+        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
+
+        return Model::TextureInfo
+        {
+            .id         = id,
+            .uvMapIndex = index
+        };
     }
 
     void Model::Destroy

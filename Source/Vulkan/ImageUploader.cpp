@@ -1403,6 +1403,19 @@ namespace Vk
                 Logger::Error("Failed to transcode to BC7! [Error={}]", ktxErrorString(result));
             }
         }
+        else
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Image Data");
+            #endif
+
+            result = ktxTexture2_LoadImageData(pTexture, nullptr, 0);
+
+            if (result != KTX_SUCCESS)
+            {
+                Logger::Error("Failed to load image data! [Error={}]", ktxErrorString(result));
+            }
+        }
 
         const auto uploadedImage = LoadKTX2Internal
         (
@@ -1515,7 +1528,20 @@ namespace Vk
 
             if (result != KTX_SUCCESS)
             {
-                Logger::Error("Failed to transcode to BC7! [Error={}]", ktxErrorString(result));
+                Logger::Error("Failed to transcode! [Error={}]", ktxErrorString(result));
+            }
+        }
+        else
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Image Data");
+            #endif
+
+            result = ktxTexture2_LoadImageData(pTexture, nullptr, 0);
+
+            if (result != KTX_SUCCESS)
+            {
+                Logger::Error("Failed to load image data! [Error={}]", ktxErrorString(result));
             }
         }
 

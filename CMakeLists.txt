@@ -96,7 +96,6 @@ add_executable(VulkanRenderer
     Source/Vulkan/MemoryBlock.cpp
     Source/Vulkan/StagingPool.cpp
     Source/Vulkan/ResizableBuffer.cpp
-    Source/Vulkan/MeshIdentifier.cpp
     Source/Vulkan/Properties.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
@@ -143,6 +142,7 @@ add_executable(VulkanRenderer
 	Source/Models/ModelManager.cpp
     Source/Models/Mesh.cpp
     Source/Models/Material.cpp
+    Source/Models/MeshIdentifier.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp

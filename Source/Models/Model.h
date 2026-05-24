@@ -120,14 +120,15 @@ namespace Models
             fastgltf::AccessorType type
         );
 
-        [[nodiscard]] static std::optional<usize> GetAccessorIndex
+        [[nodiscard]] static std::optional<usize> GetUVAccessorIndex
         (
             const fastgltf::Asset& asset,
             const fastgltf::Primitive& primitive,
-            const std::string_view attribute,
-            fastgltf::AccessorType type
+            const std::string_view attribute
         );
 
+        template<typename T>
+        requires fastgltf::IsTextureInfo<T>
         [[nodiscard]] static TextureInfo LoadTexture
         (
             VkDevice device,
@@ -139,36 +140,8 @@ namespace Models
             Util::DeletionQueue& deletionQueue,
             const std::string_view directory,
             const fastgltf::Asset& asset,
-            const std::optional<fastgltf::TextureInfo>& textureInfo,
+            const std::optional<T>& textureInfo,
             const std::string_view defaultTexture
-        );
-
-        [[nodiscard]] static TextureInfo LoadTexture
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view directory,
-            const fastgltf::Asset& asset,
-            const std::optional<fastgltf::NormalTextureInfo>& textureInfo
-        );
-
-        [[nodiscard]] static Vk::TextureID LoadTextureInternal
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Engine::CacheManager& cacheManager,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view directory,
-            const fastgltf::Asset& asset,
-            usize textureIndex
         );
     };
 }

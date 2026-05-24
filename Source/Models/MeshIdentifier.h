@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef ACCELERATION_STRUCTURE_MESH_INDENTIFIER_H
-#define ACCELERATION_STRUCTURE_MESH_INDENTIFIER_H
+#ifndef MESH_INDENTIFIER_H
+#define MESH_INDENTIFIER_H
 
 #include "Models/ModelManager.h"
 
-namespace Vk
+namespace Models
 {
     struct MeshIdentifier
     {
@@ -31,9 +31,9 @@ namespace Vk
 }
 
 template <>
-struct std::hash<Vk::MeshIdentifier>
+struct std::hash<Models::MeshIdentifier>
 {
-    std::size_t operator()(const Vk::MeshIdentifier& identifier) const noexcept
+    std::size_t operator()(const Models::MeshIdentifier& identifier) const noexcept
     {
         std::size_t hash = 0;
 

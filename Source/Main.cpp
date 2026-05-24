@@ -23,7 +23,7 @@
 int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
 {
     #ifdef ENGINE_DEBUG
-    // Set stderr to line buffering mode (does this even work on windows lol)
+    // Set stderr to line buffering mode (does this even work on Windows lol)
     // setvbuf(stderr, nullptr, _IOLBF, 0);
     #endif
 

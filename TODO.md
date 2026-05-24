@@ -26,4 +26,5 @@
 * Culling Statistics
 * Combine ModelManager and TextureManager Into AssetManager
 * Debug Renderer (Spot Lights, Tile Lighting)
-* Cache to Avoid KTX2 Transcoding
+* Compress cached file data directly to file
+* Decompress cached file data directly to GPU-visible memory

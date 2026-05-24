@@ -20,7 +20,7 @@
 
 namespace DLSS
 {
-    void DebugCallback(ENGINE_UNUSED const char* message, ENGINE_UNUSED NVSDK_NGX_Logging_Level level, ENGINE_UNUSED NVSDK_NGX_Feature feature)
+    void NVSDK_CONV DebugCallback(ENGINE_UNUSED const char* message, ENGINE_UNUSED NVSDK_NGX_Logging_Level level, ENGINE_UNUSED NVSDK_NGX_Feature feature)
     {
         // Logger::Debug("{}\n", message);
     }

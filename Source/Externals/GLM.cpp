@@ -48,9 +48,9 @@ namespace glm
     {
         VkTransformMatrixKHR vkTransform = {};
 
-        for (usize row = 0; row < 3; ++row)
+        for (s32 row = 0; row < 3; ++row)
         {
-            for (usize col = 0; col < 4; ++col)
+            for (s32 col = 0; col < 4; ++col)
             {
                 vkTransform.matrix[row][col] = matrix[col][row];
             }

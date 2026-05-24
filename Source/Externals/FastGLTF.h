@@ -23,4 +23,10 @@
 #include "fastgltf/include/fastgltf/glm_element_traits.hpp"
 #include "fastgltf/include/fastgltf/math.hpp"
 
+namespace fastgltf
+{
+    template<typename T>
+    concept IsTextureInfo = std::is_same_v<T, TextureInfo> || std::is_same_v<T, NormalTextureInfo>;
+}
+
 #endif

@@ -212,9 +212,9 @@ namespace Renderer::IBL
                 .data               = readbackData,
             });
 
-            // It is thread safe to write to this buffer
+            // It is thread safe to delete this buffer
             // The main thread does not access it after GenerateBRDFLookupTable
-            // Considering the timeline sync, that would be Vk::FRAMES_IN_FLIGHT frames ago
+            // Considering the synchronization via the timeline semaphore, that would be "Vk::FRAMES_IN_FLIGHT" frames ago
             m_brdfLutReadbackBuffer->Destroy(allocator);
             m_brdfLutReadbackBuffer = std::nullopt;
         });

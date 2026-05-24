@@ -49,10 +49,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK sceneColorNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = sceneColorView.view.handle,
                     .Image            = sceneColor.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = sceneColor.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -71,10 +71,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK resolvedSceneColorNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = resolvedSceneColorView.view.handle,
                     .Image            = resolvedSceneColor.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = resolvedSceneColor.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -93,10 +93,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK sceneDepthNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = sceneDepthView.view.handle,
                     .Image            = sceneDepth.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = sceneDepth.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -115,10 +115,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK gMotionVectorsNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = gMotionVectorsView.view.handle,
                     .Image            = gMotionVectors.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = gMotionVectors.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -137,10 +137,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK exposureValueNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = exposureValueView.view.handle,
                     .Image            = exposureValue.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = exposureValue.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,

@@ -21,7 +21,7 @@
 #include "Util.h"
 #include "Util/Maths.h"
 #include "Externals/FMT.h"
-#include "Vulkan/MeshIdentifier.h"
+#include "Models/MeshIdentifier.h"
 
 namespace Vk
 {
@@ -512,7 +512,7 @@ namespace Vk
             uniqueModelIDs.emplace(renderObject.modelID);
         }
 
-        ankerl::unordered_dense::map<Vk::MeshIdentifier, usize> meshIndexMap = {};
+        ankerl::unordered_dense::map<Models::MeshIdentifier, usize> meshIndexMap = {};
 
         for (usize meshIndex = 0; const auto modelID : uniqueModelIDs)
         {
@@ -520,7 +520,7 @@ namespace Vk
 
             for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
             {
-                const Vk::MeshIdentifier meshIdentifier =
+                const Models::MeshIdentifier meshIdentifier =
                 {
                     .modelID        = modelID,
                     .localMeshIndex = localMeshIndex
@@ -557,7 +557,7 @@ namespace Vk
                     instanceFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
                 }
 
-                const Vk::MeshIdentifier meshIdentifier =
+                const Models::MeshIdentifier meshIdentifier =
                 {
                     .modelID        = renderObject.modelID,
                     .localMeshIndex = localMeshIndex

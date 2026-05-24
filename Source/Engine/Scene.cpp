@@ -44,6 +44,10 @@ namespace Engine
         Util::DeletionQueue& deletionQueue
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         try
         {
             simdjson::ondemand::parser parser;
