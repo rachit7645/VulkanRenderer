@@ -19,11 +19,8 @@ project(Externals)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
-if (MSVC)
-    add_compile_options(/arch:AVX2)
-else()
-    add_compile_options(-mavx2 -mf16c)
-endif()
+# This is hacky but whatever
+add_compile_options(-mavx2 -mf16c -mpclmul -mbmi -mlzcnt)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
@@ -40,7 +37,7 @@ function(engine_add_external directory)
     # Parse optional arguments
     set(options EXCLUDE_FROM_ALL ENABLE_LTO)
     set(oneValueArgs INSTALL_TARGET)
-    set(multiValueArgs "")
+    set(multiValueArgs COMPILE_OPTIONS)
     cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
     # Add subdirectory
@@ -50,20 +47,27 @@ function(engine_add_external directory)
         add_subdirectory(${directory})
     endif()
 
+    # Get target
+    if (ARG_INSTALL_TARGET)
+        # Get the actual target if it's an ALIAS
+        get_target_property(AliasedTarget ${ARG_INSTALL_TARGET} ALIASED_TARGET)
+
+        if (AliasedTarget)
+            set(ActualTarget ${AliasedTarget})
+        else()
+            set(ActualTarget ${ARG_INSTALL_TARGET})
+        endif()
+    endif()
+
     # Enable LTO
     if (ARG_ENABLE_LTO AND ARG_INSTALL_TARGET)
         if (LTOSupported)
-            # Get the actual target if it's an ALIAS
-            get_target_property(AliasedTarget ${ARG_INSTALL_TARGET} ALIASED_TARGET)
-
-            if (AliasedTarget)
-                set(ActualTarget ${AliasedTarget})
-            else()
-                set(ActualTarget ${ARG_INSTALL_TARGET})
-            endif()
-
             set_target_properties(${ActualTarget} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
+    endif()
+
+    if (ARG_COMPILE_OPTIONS AND ARG_INSTALL_TARGET)
+        target_compile_options(${ActualTarget} PRIVATE ${ARG_COMPILE_OPTIONS})
     endif()
 
     # Handle manual installation
@@ -98,7 +102,8 @@ set(FMT_INSTALL OFF CACHE BOOL "Disable fmt installation" FORCE)
 set(FMT_MODULE  OFF CACHE BOOL "Disable fmt modules"      FORCE)
 
 # fastgltf Config
-set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
+set(FASTGLTF_COMPILE_AS_CPP20 ON  CACHE BOOL "Use C++20"                     FORCE)
+set(FASTGLTF_ENABLE_INSTALL   OFF CACHE BOOL "Disable fastgltf installation" FORCE)
 
 # OpenEXR Config
 set(OPENEXR_INSTALL        OFF CACHE BOOL "Disable openexr installation"       FORCE)
@@ -107,15 +112,18 @@ set(OPENEXR_BUILD_EXAMPLES OFF CACHE BOOL "Disable building openexr examples"  F
 set(OPENEXR_INSTALL_TOOLS  OFF CACHE BOOL "Disable openexr tools installation" FORCE)
 
 # External Libraries
-engine_add_external(vma                                                                          )
-engine_add_external(volk                                                                         )
-engine_add_external(unordered_dense                                                              )
-engine_add_external(glm                              ENABLE_LTO INSTALL_TARGET glm::glm          )
-engine_add_external(fmt                              ENABLE_LTO INSTALL_TARGET fmt::fmt          )
-engine_add_external(sdl             EXCLUDE_FROM_ALL            INSTALL_TARGET SDL3::SDL3-shared )
-engine_add_external(simdjson        EXCLUDE_FROM_ALL            INSTALL_TARGET simdjson::simdjson)
-engine_add_external(fastgltf        EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
-engine_add_external(openexr         EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
+engine_add_external(vma)
+engine_add_external(volk)
+engine_add_external(unordered_dense)
+
+engine_add_external(glm ENABLE_LTO INSTALL_TARGET glm::glm)
+engine_add_external(fmt ENABLE_LTO INSTALL_TARGET fmt::fmt)
+
+engine_add_external(simdjson EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
+engine_add_external(sdl      EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(fastgltf EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
+
+engine_add_external(openexr EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR)
 
 # Vulkan Headers
 target_link_libraries(volk PRIVATE Vulkan::Headers)
@@ -166,11 +174,7 @@ target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc imp
 target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
 
 # Compiler options
-if (MSVC)
-    target_compile_options(DearImGui PRIVATE /w /O2)
-else()
-    target_compile_options(DearImGui PRIVATE -w -O3)
-endif()
+target_compile_options(DearImGui PRIVATE -w -O3)
 
 # Windows options
 if (WIN32)
@@ -180,9 +184,9 @@ endif()
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
 
-# DLSS SDK will only build on MSVC-Style Windows Compilers and Linux
+# DLSS SDK will only build on Clang on Windows
 if (WIN32)
-    if (MSVC)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(DLSSAvailable ON)
     else()
         set(DLSSAvailable OFF)
@@ -241,11 +245,7 @@ target_precompile_headers(lz4 PRIVATE
 target_compile_definitions(lz4 PRIVATE LZ4_DLL_EXPORT=1)
 
 # Compiler options
-if (MSVC)
-    target_compile_options(lz4 PRIVATE /w /O2)
-else()
-    target_compile_options(lz4 PRIVATE -w -O3)
-endif()
+target_compile_options(lz4 PRIVATE -w -O3)
 
 # Windows options
 if (WIN32)

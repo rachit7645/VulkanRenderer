@@ -31,6 +31,7 @@
     #pragma clang diagnostic ignored "-Wnullability-completeness"
     #pragma clang diagnostic ignored "-Wunused-private-field"
     #pragma clang diagnostic ignored "-Wmissing-field-initializers"
+    #pragma clang diagnostic ignored "-Wnullability-extension"
 #endif
 
 #define VMA_STATIC_VULKAN_FUNCTIONS 0

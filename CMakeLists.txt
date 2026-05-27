@@ -31,10 +31,14 @@ find_package(KTX    REQUIRED)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
-# Force clang output
+# Only GCC/Clang are supported
 if (MSVC)
-    add_compile_options(/clang:-fdiagnostics-format=clang)
-    add_compile_options(/clang:-fcolor-diagnostics)
+    message(FATAL_ERROR "MSVC is not supported!")
+endif()
+
+# Force clang color output
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-fcolor-diagnostics)
 endif()
 
 # Sub-directories
@@ -255,16 +259,9 @@ target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Externals/t
 target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
 
 # Compiler options
-if (MSVC)
-    target_compile_options(VulkanRenderer PRIVATE /O2)
-    target_compile_options(VulkanRenderer PRIVATE /W4)
-    target_compile_options(VulkanRenderer PRIVATE /utf-8)
-    target_compile_options(VulkanRenderer PRIVATE /arch:AVX2)
-else()
-    target_compile_options(VulkanRenderer PRIVATE -O3)
-    target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
-    target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c)
-endif()
+target_compile_options(VulkanRenderer PRIVATE -O3)
+target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c -mpclmul -mbmi -mlzcnt)
 
 # Windows options
 if (WIN32)
@@ -304,11 +301,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # target_compile_definitions(VulkanRenderer PRIVATE TRACY_CALLSTACK=32)
 
     # Enable debug symbols
-    if (MSVC)
-        target_compile_options(VulkanRenderer PRIVATE /Zi)
-    else()
-        target_compile_options(VulkanRenderer PRIVATE -g)
-    endif()
+    target_compile_options(VulkanRenderer PRIVATE -g)
 
     # Add Tracy
     target_link_libraries(VulkanRenderer TracyClient)

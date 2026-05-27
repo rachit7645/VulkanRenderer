@@ -416,8 +416,8 @@ namespace Vk
                     ImGui::Text("ID                | %llu", id);
                     ImGui::Text("Reference Count   | %llu", referenceCount);
                     ImGui::Text("Descriptor Index  | %u",   texture.descriptorID);
-                    ImGui::Text("Image Handle      | %p",   texture.image.handle);
-                    ImGui::Text("Image View Handle | %p",   texture.imageView.handle);
+                    ImGui::Text("Image Handle      | %p",   std::bit_cast<void*>(texture.image.handle));
+                    ImGui::Text("Image View Handle | %p",   std::bit_cast<void*>(texture.imageView.handle));
                     ImGui::Text("Width             | %u",   texture.image.width);
                     ImGui::Text("Height            | %u",   texture.image.height);
                     ImGui::Text("Depth             | %u",   texture.image.depth);
@@ -460,7 +460,7 @@ namespace Vk
                 {
                     ImGui::Text("Reference Count  | %llu", referenceCount);
                     ImGui::Text("Descriptor Index | %u",   sampler.descriptorID);
-                    ImGui::Text("Sampler Handle   | %p",   sampler.handle);
+                    ImGui::Text("Sampler Handle   | %p",   std::bit_cast<void*>(sampler.handle));
 
                     ImGui::TreePop();
                 }

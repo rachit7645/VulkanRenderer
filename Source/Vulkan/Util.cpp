@@ -29,7 +29,7 @@ namespace Vk
 {
     usize CalculatePhysicalDeviceScore
     (
-        VkInstance instance,
+        ENGINE_UNUSED VkInstance instance,
         VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface,
         const VkPhysicalDeviceProperties2& properties,

@@ -505,8 +505,8 @@ namespace Vk
             {
                 if (ImGui::TreeNode(name.c_str()))
                 {
-                    ImGui::Text("Handle          | %p", framebuffer.image.handle);
-                    ImGui::Text("Allocation      | %p", framebuffer.image.allocation);
+                    ImGui::Text("Handle          | %p", std::bit_cast<void*>(framebuffer.image.handle));
+                    ImGui::Text("Allocation      | %p", std::bit_cast<void*>(framebuffer.image.allocation));
 
                     ImGui::Separator();
 
@@ -555,7 +555,7 @@ namespace Vk
 
                         if (ImGui::TreeNode(viewName.c_str()))
                         {
-                            ImGui::Text("Handle                   | %p", framebufferView.view.handle);
+                            ImGui::Text("Handle                   | %p", std::bit_cast<void*>(framebufferView.view.handle));
 
                             ImGui::Separator();
 
