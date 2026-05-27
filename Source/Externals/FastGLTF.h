@@ -17,6 +17,9 @@
 #ifndef EXTERNALS_FASTGLTF_H
 #define EXTERNALS_FASTGLTF_H
 
+#include "GLM.h"
+#include "Util/Types.h"
+
 #include "fastgltf/include/fastgltf/core.hpp"
 #include "fastgltf/include/fastgltf/types.hpp"
 #include "fastgltf/include/fastgltf/tools.hpp"
@@ -27,6 +30,23 @@ namespace fastgltf
 {
     template<typename T>
     concept IsTextureInfo = std::is_same_v<T, TextureInfo> || std::is_same_v<T, NormalTextureInfo>;
+
+    [[nodiscard]] glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
+
+    [[nodiscard]] const fastgltf::Accessor& GetAccessor
+    (
+        const fastgltf::Asset& asset,
+        const fastgltf::Primitive& primitive,
+        const std::string_view attribute,
+        fastgltf::AccessorType type
+    );
+
+    [[nodiscard]] std::optional<usize> GetUVAccessorIndex
+    (
+        const fastgltf::Asset& asset,
+        const fastgltf::Primitive& primitive,
+        const std::string_view attribute
+    );
 }
 
 #endif

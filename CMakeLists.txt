@@ -31,6 +31,12 @@ find_package(KTX    REQUIRED)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
+# Force clang output
+if (MSVC)
+    add_compile_options(/clang:-fdiagnostics-format=clang)
+    add_compile_options(/clang:-fcolor-diagnostics)
+endif()
+
 # Sub-directories
 add_subdirectory(Externals)
 add_subdirectory(Assets)
@@ -147,6 +153,7 @@ add_executable(VulkanRenderer
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp
     Source/Externals/STB.cpp
+    Source/Externals/FastGLTF.cpp
 )
 
 # Precompiled Headers
@@ -253,11 +260,15 @@ if (MSVC)
     target_compile_options(VulkanRenderer PRIVATE /W4)
     target_compile_options(VulkanRenderer PRIVATE /utf-8)
     target_compile_options(VulkanRenderer PRIVATE /arch:AVX2)
-    target_compile_definitions(VulkanRenderer PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 else()
     target_compile_options(VulkanRenderer PRIVATE -O3)
     target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c)
+endif()
+
+# Windows options
+if (WIN32)
+    target_compile_definitions(VulkanRenderer PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 
 # Debug config

@@ -185,7 +185,7 @@ namespace Models
 
         const auto& node = asset.nodes[nodeIndex];
 
-        nodeMatrix = GetTransformMatrix(node, nodeMatrix);
+        nodeMatrix = fastgltf::GetTransformMatrix(node, nodeMatrix);
 
         if (node.meshIndex.has_value())
         {
@@ -366,7 +366,7 @@ namespace Models
                 ZoneScopedN("Load Positions");
                 #endif
 
-                const auto& positionAccessor = GetAccessor
+                const auto& positionAccessor = fastgltf::GetAccessor
                 (
                     asset,
                     primitive,
@@ -397,7 +397,7 @@ namespace Models
                 });
             }
 
-            const auto& normalAccessor = GetAccessor
+            const auto& normalAccessor = fastgltf::GetAccessor
             (
                 asset,
                 primitive,
@@ -411,14 +411,14 @@ namespace Models
                 ZoneScopedN("Load UVs");
                 #endif
 
-                const auto uv0AccessorIndex = GetUVAccessorIndex
+                const auto uv0AccessorIndex = fastgltf::GetUVAccessorIndex
                 (
                     asset,
                     primitive,
                     "TEXCOORD_0"
                 );
 
-                const auto uv1AccessorIndex = GetUVAccessorIndex
+                const auto uv1AccessorIndex = fastgltf::GetUVAccessorIndex
                 (
                     asset,
                     primitive,
@@ -466,7 +466,7 @@ namespace Models
                 ZoneScopedN("Load Tangents and Normals");
                 #endif
 
-                const auto& tangentAccessor = GetAccessor
+                const auto& tangentAccessor = fastgltf::GetAccessor
                 (
                     asset,
                     primitive,
@@ -646,92 +646,6 @@ namespace Models
         }
     }
 
-    glm::mat4 Model::GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base)
-    {
-        return std::visit(Util::Visitor{
-            [&] (const fastgltf::math::fmat4x4& matrix)
-            {
-                return base * glm::fastgltf_cast(matrix);
-            },
-            [&] (const fastgltf::TRS& trs)
-            {
-                return base * Maths::TransformMatrix
-                (
-                    glm::fastgltf_cast(trs.translation),
-                    glm::eulerAngles(glm::fastgltf_cast(trs.rotation)),
-                    glm::fastgltf_cast(trs.scale)
-                );
-            }
-        }, node.transform);
-    }
-
-    const fastgltf::Accessor& Model::GetAccessor
-    (
-        const fastgltf::Asset& asset,
-        const fastgltf::Primitive& primitive,
-        const std::string_view attribute,
-        fastgltf::AccessorType type
-    )
-    {
-        #ifdef ENGINE_PROFILE
-        ZoneScoped;
-        #endif
-
-        const auto iter = primitive.findAttribute(attribute);
-
-        if (iter == primitive.attributes.cend())
-        {
-            Logger::Error("Failed to find attribute! [Attribute={}]\n", attribute);
-        }
-
-        const auto& accessor = asset.accessors[iter->accessorIndex];
-
-        if (accessor.type != type)
-        {
-            Logger::Error
-            (
-                "Invalid accessor type! [AccessorType={}] [Required={}]\n",
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(accessor.type),
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(type)
-            );
-        }
-
-        return accessor;
-    }
-
-    std::optional<usize> Model::GetUVAccessorIndex
-    (
-        const fastgltf::Asset& asset,
-        const fastgltf::Primitive& primitive,
-        const std::string_view attribute
-    )
-    {
-        #ifdef ENGINE_PROFILE
-        ZoneScoped;
-        #endif
-
-        const auto iter = primitive.findAttribute(attribute);
-
-        if (iter == primitive.attributes.cend())
-        {
-            return std::nullopt;
-        }
-
-        const auto& accessor = asset.accessors[iter->accessorIndex];
-
-        if (accessor.type != fastgltf::AccessorType::Vec2)
-        {
-            Logger::Error
-            (
-                "Invalid UV accessor type! [AccessorType={}] [Required={}]\n",
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(accessor.type),
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(fastgltf::AccessorType::Vec2)
-            );
-        }
-
-        return iter->accessorIndex;
-    }
-
     template<typename T>
     requires fastgltf::IsTextureInfo<T>
     Model::TextureInfo Model::LoadTexture
@@ -786,7 +700,7 @@ namespace Models
                 textureInfo->texCoordIndex
             );
         }
-        
+
         const auto& texture = asset.textures[textureInfo->textureIndex];
 
         usize imageIndex = 0;

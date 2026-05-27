@@ -168,9 +168,13 @@ target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTex
 # Compiler options
 if (MSVC)
     target_compile_options(DearImGui PRIVATE /w /O2)
-    target_compile_definitions(DearImGui PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 else()
     target_compile_options(DearImGui PRIVATE -w -O3)
+endif()
+
+# Windows options
+if (WIN32)
+    target_compile_definitions(DearImGui PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 
 # Link libraries
@@ -239,9 +243,13 @@ target_compile_definitions(lz4 PRIVATE LZ4_DLL_EXPORT=1)
 # Compiler options
 if (MSVC)
     target_compile_options(lz4 PRIVATE /w /O2)
-    target_compile_definitions(lz4 PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 else()
     target_compile_options(lz4 PRIVATE -w -O3)
+endif()
+
+# Windows options
+if (WIN32)
+    target_compile_definitions(lz4 PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 
 # Install

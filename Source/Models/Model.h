@@ -106,26 +106,9 @@ namespace Models
             const glm::mat4& nodeMatrix
         );
 
-        [[nodiscard]] static glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
-
-        [[nodiscard]] static const fastgltf::Accessor& GetAccessor
-        (
-            const fastgltf::Asset& asset,
-            const fastgltf::Primitive& primitive,
-            const std::string_view attribute,
-            fastgltf::AccessorType type
-        );
-
-        [[nodiscard]] static std::optional<usize> GetUVAccessorIndex
-        (
-            const fastgltf::Asset& asset,
-            const fastgltf::Primitive& primitive,
-            const std::string_view attribute
-        );
-
         template<typename T>
         requires fastgltf::IsTextureInfo<T>
-        [[nodiscard]] static TextureInfo LoadTexture
+        [[nodiscard]] Model::TextureInfo LoadTexture
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -138,6 +121,11 @@ namespace Models
             const std::optional<T>& textureInfo,
             const std::string_view defaultTexture
         );
+    };
+
+    namespace Detail
+    {
+
     };
 }
 

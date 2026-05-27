@@ -194,7 +194,7 @@ namespace Cache
             .assetHeader        = assetHeader,
             .hash               = header.hash,
             .textureOffsetTable = textureOffsetTable,
-            .data               = std::move(data)
+            .data               = data
         };
     }
     
@@ -262,7 +262,7 @@ namespace Cache
                 ZoneScopedN("LZ4HC Compression");
                 #endif
 
-                usize compressedDataSize = static_cast<usize>(LZ4_compressBound(static_cast<s32>(uncompressedData.size())));
+                auto compressedDataSize = static_cast<usize>(LZ4_compressBound(static_cast<s32>(uncompressedData.size())));
 
                 auto compressedData = std::vector<u8>(compressedDataSize);
 
