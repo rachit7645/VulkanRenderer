@@ -30,11 +30,15 @@ namespace Renderer
 
         #ifdef ENGINE_DLSS
         DLSS.isSupported = DLSSConfig.isSupported;
+        antiAliasingMode = DLSS.isSupported ? AntiAliasingMode::DLSS : AntiAliasingMode::TAA;
+        DLSS.isEnabled   = antiAliasingMode == AntiAliasingMode::DLSS;
         #else
         DLSS.isSupported = false;
+        DLSS.isEnabled   = false;
+        antiAliasingMode = AntiAliasingMode::TAA;
         #endif
 
-        DLSS.isEnabled = DLSS.isSupported;
+        m_currentAntiAliasingMode = static_cast<s32>(std::to_underlying(antiAliasingMode));
     }
 
     void RenderConfig::Update()
@@ -46,7 +50,45 @@ namespace Renderer
                 if (ImGui::CollapsingHeader("Config"))
                 {
                     ImGui::Checkbox("Multi-Queue", &multiQueue.isEnabled);
-                    ImGui::Checkbox("DLSS",        &DLSS.isEnabled);
+
+                    ImGui::Separator();
+
+                    // Anti-aliasing mode selection
+                    {
+                        constexpr std::array ANTI_ALIASING_NAMES =
+                        {
+                            "None",
+                            "TAA",
+                            #ifdef ENGINE_DLSS
+                            "DLSS"
+                            #endif
+                        };
+
+                        constexpr std::array ANTI_ALIASING_MODES =
+                        {
+                            AntiAliasingMode::None,
+                            AntiAliasingMode::TAA,
+                            #ifdef ENGINE_DLSS
+                            AntiAliasingMode::DLSS
+                            #endif
+                        };
+
+                        #ifdef ENGINE_DLSS
+                        const s32 itemCount = DLSS.isSupported ? ANTI_ALIASING_NAMES.size() : ANTI_ALIASING_NAMES.size() - 1;
+                        #else
+                        constexpr s32 itemCount = ANTI_ALIASING_NAMES.size();
+                        #endif
+
+                        if (ImGui::Combo("Anti-Aliasing Mode", &m_currentAntiAliasingMode, ANTI_ALIASING_NAMES.data(), itemCount))
+                        {
+                            antiAliasingMode = ANTI_ALIASING_MODES[m_currentAntiAliasingMode];
+                        }
+
+                        #ifdef ENGINE_DLSS
+                        // This field is unused, but I'll keep it updated
+                        DLSS.isEnabled = antiAliasingMode == AntiAliasingMode::DLSS;
+                        #endif
+                    }
                 }
 
                 ImGui::EndMenu();

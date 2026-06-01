@@ -26,14 +26,14 @@
 
 namespace Vk
 {
-    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
+    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
     {
         if (!IsSurfaceValid(size, context))
         {
             Logger::Error("{}\n", "Invalid surface!");
         }
 
-        CreateSwapChain(context, cmdBufferAllocator);
+        CreateSwapChain(context);
         CreateStaticSyncObjects(context.device);
     }
 
@@ -45,10 +45,10 @@ namespace Vk
         return extent.width != 0 && extent.height != 0;
     }
 
-    void Swapchain::RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
+    void Swapchain::RecreateSwapChain(const Vk::Context& context)
     {
         DestroySwapchain(context.device);
-        CreateSwapChain(context, cmdBufferAllocator);
+        CreateSwapChain(context);
     }
 
     VkResult Swapchain::Present(VkDevice device, VkQueue queue)
@@ -113,7 +113,7 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
+    void Swapchain::CreateSwapChain(const Vk::Context& context)
     {
         surfaceFormat = ChooseSurfaceFormat();
         presentMode   = ChoosePresentationMode();
@@ -204,6 +204,7 @@ namespace Vk
 
         images.resize(imageHandles.size());
         imageViews.resize(imageHandles.size());
+        imageLayouts.resize(imageHandles.size());
 
         for (usize i = 0; i < imageHandles.size(); ++i)
         {
@@ -233,45 +234,11 @@ namespace Vk
                 }
             );
 
+            imageLayouts[i] = VK_IMAGE_LAYOUT_UNDEFINED;
+
             Vk::SetDebugName(context.device, images[i].handle,     fmt::format("Swapchain/Image{}", i));
             Vk::SetDebugName(context.device, imageViews[i].handle, fmt::format("Swapchain/ImageView{}", i));
         }
-
-        // Transition for presentation
-        Vk::ImmediateSubmit
-        (
-            context.device,
-            context.graphicsQueue,
-            cmdBufferAllocator,
-            [&] (const Vk::CommandBuffer& cmdBuffer)
-            {
-                Vk::BarrierWriter barrierWriter = {};
-
-                for (const auto& image : images)
-                {
-                    barrierWriter.WriteImageBarrier
-                    (
-                        image,
-                        Vk::ImageBarrier{
-                            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
-                            .srcAccessMask   = VK_ACCESS_2_NONE,
-                            .dstStageMask    = VK_PIPELINE_STAGE_2_NONE,
-                            .dstAccessMask   = VK_ACCESS_2_NONE,
-                            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
-                            .newLayout       = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                            .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                            .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                            .baseMipLevel    = 0,
-                            .levelCount      = image.mipLevels,
-                            .baseArrayLayer  = 0,
-                            .layerCount      = image.arrayLayers
-                        }
-                    );
-                }
-
-                barrierWriter.Execute(cmdBuffer);
-            }
-        );
 
         CreateSyncObjects(context.device);
     }
@@ -498,6 +465,7 @@ namespace Vk
 
         images.clear();
         imageViews.clear();
+        imageLayouts.clear();
     }
 
     void Swapchain::Destroy(VkDevice device)

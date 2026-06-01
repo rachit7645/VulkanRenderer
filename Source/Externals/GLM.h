@@ -17,6 +17,7 @@
 #ifndef EXTERNALS_GLM_H
 #define EXTERNALS_GLM_H
 
+#define GLM_FORCE_AVX2
 #define GLM_FORCE_INTRINSICS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_SILENT_WARNINGS
@@ -78,7 +79,7 @@ namespace glm
     VkExtent2D           vk_cast(const uvec2& vector);
 
     // GLM Conversions
-    glm::f16vec2 glm_cast(const glm::vec2& vector);
+    f16vec2 glm_cast(const glm::vec2& vector);
 }
 
 #endif

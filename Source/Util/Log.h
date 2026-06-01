@@ -26,8 +26,8 @@
 #include "Types.h"
 #include "Files.h"
 #include "Unused.h"
+#include "Debug.h"
 #include "Externals/FMT.h"
-#include "fmt/compile.h"
 
 namespace Logger
 {
@@ -90,6 +90,8 @@ namespace Logger
                 fmt::runtime("{}\n"),
                 std::to_string(stacktrace)
             );
+
+            Util::TriggerBreakpoint();
 
             #ifdef ENGINE_DEBUG
             while (true) {}

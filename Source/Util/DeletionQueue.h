@@ -26,7 +26,7 @@ namespace Util
     class DeletionQueue
     {
     public:
-        using Deleter = std::function<void()>;
+        using Deleter = std::move_only_function<void()>;
 
         void Push(Deleter&& deleter);
         void Flush();

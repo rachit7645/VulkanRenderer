@@ -196,7 +196,12 @@ namespace Renderer::DLSS
         {
             deletionQueue.Push([_handle = handle] ()
             {
-                NVSDK_NGX_VULKAN_ReleaseFeature(_handle);
+                const NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_ReleaseFeature(_handle);
+
+                if (result != NVSDK_NGX_Result_Success)
+                {
+                    Logger::Error("Failed to release DLSS Feature! [Error={}]", static_cast<u64>(result));
+                }
             });
         }
 
@@ -241,9 +246,14 @@ namespace Renderer::DLSS
             Logger::Error("{}\n", "DLSS is not supported!");
         }
 
-        NVSDK_NGX_VULKAN_DestroyParameters(parameters);
+        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_DestroyParameters(parameters);
 
-        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_Shutdown1(device);
+        if (result != NVSDK_NGX_Result_Success)
+        {
+            Logger::Error("Failed to destroy DLSS parameters! [Error={}]", static_cast<u64>(result));
+        }
+
+        result = NVSDK_NGX_VULKAN_Shutdown1(device);
 
         if (result != NVSDK_NGX_Result_Success)
         {

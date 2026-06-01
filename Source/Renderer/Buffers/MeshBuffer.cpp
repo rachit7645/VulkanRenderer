@@ -61,13 +61,30 @@ namespace Renderer::Buffers
 
             std::memcpy(m_instanceBuffers[i].hostAddress, &ZERO, sizeof(u32));
 
+            for (usize instanceIndex = 0; instanceIndex < MAX_MESH_COUNT; ++instanceIndex)
+            {
+                constexpr GPU::Instance ZERO_INSTANCE =
+                {
+                    .meshIndex    = 0,
+                    .transform    = glm::identity<glm::mat4>(),
+                    .normalMatrix = glm::identity<glm::mat3>()
+                };
+
+                std::memcpy
+                (
+                    static_cast<u8*>(m_instanceBuffers[i].hostAddress) + sizeof(u32) + instanceIndex * sizeof(GPU::Instance),
+                    &ZERO_INSTANCE,
+                    sizeof(GPU::Instance)
+                );
+            }
+
             if (!(m_instanceBuffers[i].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
             {
                 Vk::CheckResult(vmaFlushAllocation(
                     allocator,
                     m_instanceBuffers[i].allocation,
                     0,
-                    sizeof(u32)),
+                    m_instanceBuffers[i].size),
                     "Failed to flush allocation!"
                 );
             }

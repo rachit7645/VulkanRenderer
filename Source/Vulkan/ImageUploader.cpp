@@ -204,12 +204,12 @@ namespace Vk
 
     void ImageUploader::FlushUploads(const Vk::CommandBuffer& cmdBuffer)
     {
-        if (!HasPendingUploads())
+        const std::scoped_lock lock{m_mutex};
+
+        if (m_pendingUploads.empty())
         {
             return;
         }
-
-        const std::scoped_lock lock{m_mutex};
 
         Vk::BarrierWriter barrierWriter = {};
 

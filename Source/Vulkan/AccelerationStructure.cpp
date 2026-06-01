@@ -53,7 +53,9 @@ namespace Vk
 
         for (const auto modelID : uniqueModelIDs)
         {
-            for (const auto& mesh : modelManager.GetModel(modelID).meshes)
+            const auto& model = modelManager.GetModel(modelID);
+
+            for (const auto& mesh : model.meshes)
             {
                 transforms.emplace_back(glm::vk_cast(mesh.transform));
             }

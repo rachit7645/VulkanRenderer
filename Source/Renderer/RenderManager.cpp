@@ -33,7 +33,7 @@ namespace Renderer
           m_context{m_window.handle},
           m_renderConfig{m_context},
           m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
-          m_swapchain{m_window.size, m_context, m_graphicsCmdBufferAllocator},
+          m_swapchain{m_window.size, m_context},
           m_graphicsTimeline{m_context.device},
           m_formatHelper{m_context.physicalDevice},
           m_megaSet{m_context},
@@ -1252,6 +1252,32 @@ namespace Renderer
 
     void RenderManager::GBufferGeneration(const Vk::CommandBuffer& cmdBuffer)
     {
+        if (auto& layout = m_swapchain.imageLayouts[m_swapchain.imageIndex]; layout == VK_IMAGE_LAYOUT_UNDEFINED)
+        {
+            const auto& swapchainImage = m_swapchain.images[m_swapchain.imageIndex];
+
+            swapchainImage.Barrier
+            (
+                cmdBuffer,
+                Vk::ImageBarrier{
+                   .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                   .srcAccessMask   = VK_ACCESS_2_NONE,
+                   .dstStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                   .dstAccessMask   = VK_ACCESS_2_NONE,
+                   .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                   .newLayout       = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                   .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                   .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                   .baseMipLevel    = 0,
+                   .levelCount      = swapchainImage.mipLevels,
+                   .baseArrayLayer  = 0,
+                   .layerCount      = swapchainImage.arrayLayers
+               }
+            );
+
+            layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        }
+
         Update(cmdBuffer);
 
         if (m_scene->haveRenderObjectsChanged)
@@ -1470,7 +1496,7 @@ namespace Renderer
             m_scene->iblMaps
         );
 
-        TAA(cmdBuffer);
+        AntiAliasing(cmdBuffer);
 
         m_bloom.Render
         (
@@ -1540,21 +1566,143 @@ namespace Renderer
         );
     }
 
-    void RenderManager::TAA(const Vk::CommandBuffer& cmdBuffer)
+    void RenderManager::AntiAliasing(const Vk::CommandBuffer& cmdBuffer)
     {
-        #ifdef ENGINE_DLSS
-        if (m_renderConfig.DLSS.isEnabled)
+        switch (m_renderConfig.antiAliasingMode)
         {
-            m_DLSS.Evaluate
-            (
-                m_frameIndex,
-                cmdBuffer,
-                m_framebufferManager,
-                m_frameCounter,
-                m_renderConfig.DLSSConfig
-            );
+        case RenderConfig::AntiAliasingMode::None:
+        {
+            Vk::BeginLabel(cmdBuffer, "Blit To Resolved", glm::vec4(0.4098f, 0.2843f, 0.7529f, 1.0f));
+
+            const auto& sceneColorView = m_framebufferManager.GetFramebufferView("SceneColorView");
+            const auto& resolvedView   = m_framebufferManager.GetFramebufferView("ResolvedSceneColorView");
+
+            const auto& sceneColor = m_framebufferManager.GetFramebuffer(sceneColorView.framebuffer);
+            const auto& resolved   = m_framebufferManager.GetFramebuffer(resolvedView.framebuffer);
+
+            Vk::BarrierWriter barrierWriter = {};
+
+            barrierWriter
+            .WriteImageBarrier(
+                sceneColor.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneColor.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneColor.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                resolved.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = resolved.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = resolved.image.arrayLayers
+                }
+            )
+            .Execute(cmdBuffer);
+
+            const VkImageBlit2 blitRegion =
+            {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+                .pNext = nullptr,
+                .srcSubresource = {
+                    .aspectMask     = sceneColor.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneColor.image.arrayLayers
+                },
+                .srcOffsets = {
+                    {.x = 0, .y = 0, .z = 0},
+                    {.x = static_cast<s32>(sceneColor.image.width), .y = static_cast<s32>(sceneColor.image.height), .z = 1}
+                },
+                .dstSubresource = {
+                    .aspectMask     = resolved.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = resolved.image.arrayLayers
+                },
+                .dstOffsets = {
+                    {.x = 0, .y = 0, .z = 0},
+                    {.x = static_cast<s32>(resolved.image.width), .y = static_cast<s32>(resolved.image.height), .z = 1}
+                }
+            };
+
+            const VkBlitImageInfo2 blitImageInfo =
+            {
+                .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                .pNext          = nullptr,
+                .srcImage       = sceneColor.image.handle,
+                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .dstImage       = resolved.image.handle,
+                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .regionCount    = 1,
+                .pRegions       = &blitRegion,
+                .filter         = VK_FILTER_LINEAR
+            };
+
+            vkCmdBlitImage2(cmdBuffer.handle, &blitImageInfo);
+
+            barrierWriter
+            .WriteImageBarrier(
+                sceneColor.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = sceneColor.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = sceneColor.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                resolved.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = resolved.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = resolved.image.arrayLayers
+                }
+            )
+            .Execute(cmdBuffer);
+
+            Vk::EndLabel(cmdBuffer);
+
+            break;
         }
-        else
+
+        case RenderConfig::AntiAliasingMode::TAA:
         {
             m_taa.Render
             (
@@ -1566,19 +1714,29 @@ namespace Renderer
                 m_modelManager.textureManager,
                 m_samplers
             );
+
+            break;
         }
-        #else
-        m_taa.Render
-        (
-            m_frameIndex,
-            cmdBuffer,
-            m_pipelineManager,
-            m_framebufferManager,
-            m_megaSet,
-            m_modelManager.textureManager,
-            m_samplers
-        );
+
+        #ifdef ENGINE_DLSS
+        case RenderConfig::AntiAliasingMode::DLSS:
+        {
+            m_DLSS.Evaluate
+            (
+                m_frameIndex,
+                cmdBuffer,
+                m_framebufferManager,
+                m_frameCounter,
+                m_renderConfig.DLSSConfig
+            );
+
+            break;
+        }
         #endif
+
+        default:
+            Logger::Error("{}\n", "Unknown anti-aliasing mode!");
+        }
     }
 
     void RenderManager::BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer)
@@ -1840,7 +1998,7 @@ namespace Renderer
         );
 
         #ifdef ENGINE_DLSS
-        if (m_renderConfig.DLSS.isEnabled)
+        if (m_renderConfig.antiAliasingMode == RenderConfig::AntiAliasingMode::DLSS)
         {
             m_renderConfig.DLSSConfig.UpdateDLSSFeature
             (
@@ -2234,7 +2392,7 @@ namespace Renderer
             return;
         }
 
-        m_swapchain.RecreateSwapChain(m_context, m_graphicsCmdBufferAllocator);
+        m_swapchain.RecreateSwapChain(m_context);
 
         m_taa.ResetHistory();
         m_exposure.ResetLuminance();

@@ -16,6 +16,7 @@
 
 #include "GLM.h"
 
+#include "Util/Assert.h"
 #include "Util/SIMD.h"
 #include "Util/Types.h"
 
@@ -69,7 +70,7 @@ namespace glm
         return {.width = vector.x, .height = vector.y};
     }
 
-    glm::f16vec2 glm_cast(const glm::vec2& vector)
+    f16vec2 glm_cast(const vec2& vector)
     {
         return {SIMD::ConvertF32ToF16(vector.x), SIMD::ConvertF32ToF16(vector.y)};
     }

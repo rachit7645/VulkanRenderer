@@ -39,7 +39,7 @@ namespace Vk
             .image            = image.handle,
             .viewType         = viewType,
             .format           = image.format,
-            .components       = {
+            .components       = VkComponentMapping{
                 .r = VK_COMPONENT_SWIZZLE_IDENTITY,
                 .g = VK_COMPONENT_SWIZZLE_IDENTITY,
                 .b = VK_COMPONENT_SWIZZLE_IDENTITY,

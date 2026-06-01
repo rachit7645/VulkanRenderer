@@ -99,7 +99,7 @@ namespace Renderer
 
         void TraceRays(const Vk::CommandBuffer& cmdBuffer);
         void Lighting(const Vk::CommandBuffer& cmdBuffer);
-        void TAA(const Vk::CommandBuffer& cmdBuffer);
+        void AntiAliasing(const Vk::CommandBuffer& cmdBuffer);
         void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer);
 
         void Update(const Vk::CommandBuffer& cmdBuffer);

@@ -26,17 +26,16 @@
 #include "ImageView.h"
 #include "Context.h"
 #include "Constants.h"
-#include "CommandBufferAllocator.h"
 
 namespace Vk
 {
     class Swapchain
     {
     public:
-        Swapchain(const glm::ivec2& size, const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
+        Swapchain(const glm::ivec2& size, const Vk::Context& context);
 
         bool IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context);
-        void RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
+        void RecreateSwapChain(const Vk::Context& context);
 
         void Destroy(VkDevice device);
 
@@ -49,8 +48,9 @@ namespace Vk
         VkPresentModeKHR   presentMode   = VK_PRESENT_MODE_FIFO_KHR;
         VkExtent2D         extent        = {};
 
-        std::vector<Vk::Image>     images      = {};
-        std::vector<Vk::ImageView> imageViews  = {};
+        std::vector<Vk::Image>     images       = {};
+        std::vector<Vk::ImageView> imageViews   = {};
+        std::vector<VkImageLayout> imageLayouts = {};
 
         u32 imageIndex = 0;
 
@@ -59,7 +59,7 @@ namespace Vk
         std::vector<VkSemaphore> renderFinishedSemaphores = {};
         std::vector<VkFence>     presentFences            = {};
     private:
-        void CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
+        void CreateSwapChain(const Vk::Context& context);
         void DestroySwapchain(VkDevice device);
 
         void CreateStaticSyncObjects(VkDevice device);

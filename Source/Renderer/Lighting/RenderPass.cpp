@@ -54,7 +54,7 @@ namespace Renderer::Lighting
             "SceneColor",
             Vk::FramebufferCustomFormat::ColorHDR,
             VK_IMAGE_VIEW_TYPE_2D,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return

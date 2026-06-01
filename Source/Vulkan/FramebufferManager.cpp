@@ -87,7 +87,7 @@ namespace Vk
         }
 
         #ifdef ENGINE_DLSS
-        if (renderConfig.DLSS.isEnabled)
+        if (renderConfig.antiAliasingMode == Renderer::RenderConfig::AntiAliasingMode::DLSS)
         {
             const auto DLSSExtent = glm::vk_cast(renderConfig.DLSSConfig.GetInternalResolution(glm::vk_cast(swapchain.extent)));
 

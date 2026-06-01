@@ -31,6 +31,16 @@ namespace Renderer
     class RenderConfig
     {
     public:
+        enum class AntiAliasingMode : u8
+        {
+            // For the r/ftaa bros (not recommended!)
+            None,
+            TAA,
+            #ifdef ENGINE_DLSS
+            DLSS
+            #endif
+        };
+
         struct Entry
         {
             void Validate();
@@ -51,8 +61,12 @@ namespace Renderer
 
         RenderConfig::Entry multiQueue = {};
         RenderConfig::Entry DLSS       = {};
+
+        AntiAliasingMode antiAliasingMode = AntiAliasingMode::TAA;
     private:
         void Validate();
+
+        s32 m_currentAntiAliasingMode = 0;
     };
 }
 
