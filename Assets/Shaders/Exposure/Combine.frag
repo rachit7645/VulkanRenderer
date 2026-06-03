@@ -18,19 +18,18 @@
 
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_buffer_reference     : enable
 
-#include "Tonemap.glsl"
 #include "MegaSet.glsl"
-#include "Tonemap/Tonemap.h"
+#include "Exposure/Combine.h"
 
 layout(location = 0) in vec2 fragUV;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec3 outColor;
 
 void main()
 {
-    vec3 hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
+    vec3  hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
+    float exposure = texture(sampler2D(Textures[Constants.ExposureIndex],   Samplers[Constants.PointSamplerIndex]), vec2(0.0f)).r;
 
-    outColor = vec4(ACESFitted(hdrColor), 1.0f);
+    outColor = hdrColor * pow(2.0f, exposure);
 }

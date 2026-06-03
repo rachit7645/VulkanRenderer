@@ -16,6 +16,7 @@
 
 #include "Dispatch.h"
 
+#include "Exposure/Combine.h"
 #include "Exposure/Histogram.h"
 #include "Exposure/Average.h"
 #include "Vulkan/Constants.h"
@@ -26,11 +27,16 @@ namespace Renderer::Exposure
 {
     Dispatch::Dispatch
     (
+        const Vk::FormatHelper& formatHelper,
         const Vk::MegaSet& megaSet,
         Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
     {
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+
         pipelineManager.AddPipeline("Exposure/Histogram", Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Exposure/Histogram.comp", VK_SHADER_STAGE_COMPUTE_BIT)
@@ -44,6 +50,19 @@ namespace Renderer::Exposure
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Average::Constants))
             .AddDescriptorLayout(megaSet.layout)
         );
+
+        pipelineManager.AddPipeline("Exposure/Combine", Vk::PipelineConfig{}
+           .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+           .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+           .AttachShader("Misc/Triangle.vert",    VK_SHADER_STAGE_VERTEX_BIT)
+           .AttachShader("Exposure/Combine.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+           .SetDynamicStates(DYNAMIC_STATES)
+           .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+           .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
+           .AddDefaultBlendAttachment()
+           .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Combine::Constants))
+           .AddDescriptorLayout(megaSet.layout)
+       );
 
         framebufferManager.AddFramebuffer
         (
@@ -64,10 +83,46 @@ namespace Renderer::Exposure
             }
         );
 
+        framebufferManager.AddFramebuffer
+        (
+            "ExposedSceneColor",
+            Vk::FramebufferCustomFormat::ColorHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = displayExtent.width,
+                    .height      = displayExtent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
         framebufferManager.AddFramebufferView
         (
             "Exposure/Value",
             "Exposure/ValueView",
+            VK_IMAGE_VIEW_TYPE_2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "ExposedSceneColor",
+            "ExposedSceneColorView",
             VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
@@ -113,6 +168,16 @@ namespace Renderer::Exposure
             megaSet,
             exposureBuffer,
             frameCounter
+        );
+
+        Combine
+        (
+            cmdBuffer,
+            pipelineManager,
+            framebufferManager,
+            megaSet,
+            textureManager,
+            samplers
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -467,6 +532,146 @@ namespace Renderer::Exposure
             }
         )
         .Execute(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void Dispatch::Combine
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
+        const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
+        const Objects::Samplers& samplers
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Combine", {0.8736f, 0.4598f, 0.7548f, 1.0f});
+
+        const auto& pipeline = pipelineManager.GetPipeline("Exposure/Combine");
+
+        const auto& exposedSceneColorView = framebufferManager.GetFramebufferView("ExposedSceneColorView");
+        const auto& exposedSceneColor     = framebufferManager.GetFramebuffer(exposedSceneColorView.framebuffer);
+
+        exposedSceneColor.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = exposedSceneColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = exposedSceneColor.image.arrayLayers
+            }
+        );
+
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = exposedSceneColorView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {}
+        };
+
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {.x     = 0,                             .y      = 0                             },
+                .extent = {.width = exposedSceneColor.image.width, .height = exposedSceneColor.image.height}
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
+
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+        pipeline.Bind(cmdBuffer);
+
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(exposedSceneColor.image.width),
+            .height   = static_cast<f32>(exposedSceneColor.image.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {.x     = 0,                             .y      = 0                             },
+            .extent = {.width = exposedSceneColor.image.width, .height = exposedSceneColor.image.height}
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+        const auto constants = Combine::Constants
+        {
+            .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
+            .ExposureIndex     = framebufferManager.GetFramebufferView("Exposure/ValueView").sampledImageID
+        };
+
+        pipeline.PushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            constants
+        );
+
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
+
+        vkCmdDraw
+        (
+            cmdBuffer.handle,
+            3,
+            1,
+            0,
+            0
+        );
+
+        vkCmdEndRendering(cmdBuffer.handle);
+
+        exposedSceneColor.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = exposedSceneColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = exposedSceneColor.image.arrayLayers
+            }
+        );
 
         Vk::EndLabel(cmdBuffer);
     }

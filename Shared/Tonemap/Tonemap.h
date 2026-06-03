@@ -25,7 +25,6 @@ GLSL_PUSH_CONSTANT_BEGIN
 {
     u32 PointSamplerIndex;
     u32 SceneColorIndex;
-    u32 ExposureIndex;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

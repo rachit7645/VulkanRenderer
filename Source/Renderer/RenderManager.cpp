@@ -54,7 +54,7 @@ namespace Renderer
           m_culling{m_context.device, m_context.allocator, m_pipelineManager},
           m_vbao{m_megaSet, m_pipelineManager, m_framebufferManager},
           m_tiledLighting{m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_exposure{m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_exposure{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_iblGenerator{m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager},
           m_meshBuffer{m_context.device, m_context.allocator},
           m_indirectBuffer{m_context.device, m_context.allocator},
@@ -1499,16 +1499,6 @@ namespace Renderer
 
         AntiAliasing(cmdBuffer);
 
-        m_bloom.Render
-        (
-            cmdBuffer,
-            m_pipelineManager,
-            m_framebufferManager,
-            m_megaSet,
-            m_modelManager.textureManager,
-            m_samplers
-        );
-
         m_exposure.Execute
         (
             m_FIF,
@@ -1520,6 +1510,16 @@ namespace Renderer
             m_exposureBuffer,
             m_samplers,
             m_frameCounter
+        );
+
+        m_bloom.Render
+        (
+            cmdBuffer,
+            m_pipelineManager,
+            m_framebufferManager,
+            m_megaSet,
+            m_modelManager.textureManager,
+            m_samplers
         );
 
         m_toneMap.Render

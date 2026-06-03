@@ -178,8 +178,7 @@ namespace Renderer::ToneMap
         const auto constants = ToneMap::Constants
         {
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID,
-            .ExposureIndex     = framebufferManager.GetFramebufferView("Exposure/ValueView").sampledImageID
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID
         };
 
         pipeline.PushConstants

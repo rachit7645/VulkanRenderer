@@ -32,6 +32,7 @@ namespace Renderer::Exposure
     public:
         Dispatch
         (
+            const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
             Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
@@ -72,6 +73,16 @@ namespace Renderer::Exposure
             const Vk::MegaSet& megaSet,
             const Buffers::ExposureBuffers& exposureBuffer,
             const Util::FrameCounter& frameCounter
+        );
+
+        void Combine
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager,
+            const Objects::Samplers& samplers
         );
 
         bool m_hasLuminanceBeenReset = false;

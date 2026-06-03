@@ -267,7 +267,7 @@ namespace Renderer::Bloom
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
-        auto srcView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
+        auto srcView = framebufferManager.GetFramebufferView("ExposedSceneColorView");
         auto dstView = framebufferManager.GetFramebufferView("BloomView/0");
 
         for (u32 mip = 0; mip < bloomBuffer.image.mipLevels; ++mip)
@@ -671,7 +671,7 @@ namespace Renderer::Bloom
         const auto constants = Combine::Constants
         {
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .SceneColorIndex   = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("ExposedSceneColorView").sampledImageID,
             .BloomIndex        = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
             .BloomStrength     = m_bloomStrength
         };

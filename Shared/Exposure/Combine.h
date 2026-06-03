@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-#version 460
+#ifndef EXPOSURE_COMBINE_PUSH_CONSTANT
+#define EXPOSURE_COMBINE_PUSH_CONSTANT
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_buffer_reference     : enable
+#include "GLSL.h"
 
-#include "Tonemap.glsl"
-#include "MegaSet.glsl"
-#include "Tonemap/Tonemap.h"
+GLSL_NAMESPACE_BEGIN(Renderer::Exposure::Combine)
 
-layout(location = 0) in vec2 fragUV;
-
-layout(location = 0) out vec4 outColor;
-
-void main()
+GLSL_PUSH_CONSTANT_BEGIN
 {
-    vec3 hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
+    u32 PointSamplerIndex;
+    u32 SceneColorIndex;
+    u32 ExposureIndex;
+} GLSL_PUSH_CONSTANT_END;
 
-    outColor = vec4(ACESFitted(hdrColor), 1.0f);
-}
+GLSL_NAMESPACE_END
+
+#endif
