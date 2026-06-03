@@ -22,6 +22,7 @@
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 #include "Externals/ImGui.h"
+#include "Renderer/Util/Jitter.h"
 
 namespace Renderer::AO::VBAO
 {
@@ -219,6 +220,7 @@ namespace Renderer::AO::VBAO
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Renderer::RenderConfig& renderConfig,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
@@ -263,6 +265,7 @@ namespace Renderer::AO::VBAO
             FIF,
             frameIndex,
             cmdBuffer,
+            renderConfig,
             pipelineManager,
             framebufferManager,
             megaSet,
@@ -378,6 +381,7 @@ namespace Renderer::AO::VBAO
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Renderer::RenderConfig& renderConfig,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
@@ -435,6 +439,13 @@ namespace Renderer::AO::VBAO
 
         occlusionPipeline.Bind(cmdBuffer);
 
+        const usize phaseCount = Renderer::GetPhaseCount
+        (
+            renderConfig.antiAliasingMode,
+            framebufferManager.renderExtent,
+            framebufferManager.displayExtent
+        );
+
         const auto constants = Occlusion::Constants
         {
             .Scene                    = sceneBuffers.sceneBuffers[FIF].deviceAddress,
@@ -445,7 +456,7 @@ namespace Renderer::AO::VBAO
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView").sampledImageID,
             .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBAO/DepthDifferencesView").storageImageID,
             .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBAO/NoisyAOView").storageImageID,
-            .TemporalIndex            = static_cast<u32>(frameIndex % BASE_JITTER_PHASE_COUNT),
+            .TemporalIndex            = static_cast<u32>(frameIndex % phaseCount),
             .Thickness                = m_thickness
         };
 

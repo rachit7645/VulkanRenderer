@@ -397,6 +397,8 @@ namespace Vk
     {
         if (ImGui::CollapsingHeader("Textures"))
         {
+            VkDeviceSize totalMemoryUsed = 0;
+
             for (const auto& [id, info] : m_textureMap)
             {
                 const auto& [texture, referenceCount] = info;
@@ -411,19 +413,22 @@ namespace Vk
                     continue;
                 }
 
+                totalMemoryUsed += texture.image.size;
+
                 if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", texture.name.c_str()))
                 {
-                    ImGui::Text("ID                | %llu", id);
-                    ImGui::Text("Reference Count   | %llu", referenceCount);
-                    ImGui::Text("Descriptor Index  | %u",   texture.descriptorID);
-                    ImGui::Text("Image Handle      | %p",   std::bit_cast<void*>(texture.image.handle));
-                    ImGui::Text("Image View Handle | %p",   std::bit_cast<void*>(texture.imageView.handle));
-                    ImGui::Text("Width             | %u",   texture.image.width);
-                    ImGui::Text("Height            | %u",   texture.image.height);
-                    ImGui::Text("Depth             | %u",   texture.image.depth);
-                    ImGui::Text("Mipmap Levels     | %u",   texture.image.mipLevels);
-                    ImGui::Text("Array Layers      | %u",   texture.image.arrayLayers);
-                    ImGui::Text("Format            | %s",   string_VkFormat(texture.image.format));
+                    ImGui::Text("ID                | %llu",       id);
+                    ImGui::Text("Reference Count   | %llu",       referenceCount);
+                    ImGui::Text("Descriptor Index  | %u",         texture.descriptorID);
+                    ImGui::Text("Image Handle      | %p",         std::bit_cast<void*>(texture.image.handle));
+                    ImGui::Text("Image View Handle | %p",         std::bit_cast<void*>(texture.imageView.handle));
+                    ImGui::Text("Width             | %u",         texture.image.width);
+                    ImGui::Text("Height            | %u",         texture.image.height);
+                    ImGui::Text("Depth             | %u",         texture.image.depth);
+                    ImGui::Text("Mipmap Levels     | %u",         texture.image.mipLevels);
+                    ImGui::Text("Array Layers      | %u",         texture.image.arrayLayers);
+                    ImGui::Text("Format            | %s",         string_VkFormat(texture.image.format));
+                    ImGui::Text("Memory Used       | %llu Bytes", texture.image.size);
 
                     ImGui::Separator();
 
@@ -443,6 +448,8 @@ namespace Vk
 
                 ImGui::Separator();
             }
+
+            ImGui::Text("Total Texture Memory Usage | %llu Bytes", totalMemoryUsed);
         }
 
         if (ImGui::CollapsingHeader("Samplers"))

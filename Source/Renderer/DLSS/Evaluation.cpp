@@ -156,7 +156,13 @@ namespace Renderer::DLSS
             .ReadWrite = false
         };
 
-        const auto jitter = Renderer::GetJitterInPixels(frameIndex, framebufferManager.renderExtent, framebufferManager.displayExtent);
+        const auto jitter = Renderer::GetJitterInPixels
+        (
+            frameIndex,
+            RenderConfig::AntiAliasingMode::DLSS,
+            framebufferManager.renderExtent,
+            framebufferManager.displayExtent
+        );
 
         NVSDK_NGX_VK_DLSS_Eval_Params DLSSEvaluationParameters =
         {

@@ -26,6 +26,51 @@
 
 namespace Vk
 {
+    namespace Detail
+    {
+        template<typename T>
+        void SetupGeometryBufferTableRow(const Vk::VertexBuffer<T>& buffer)
+        {
+            const VkDeviceSize bufferSize      = buffer.GetBuffer().size;
+            const VkDeviceSize usedMemory      = buffer.count * sizeof(T);
+            const VkDeviceSize availableMemory = bufferSize - usedMemory;
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+
+            // When do I get match constexpr Bjarne?
+            if constexpr (std::is_same_v<T, GPU::Index>)
+            {
+                ImGui::Text("Index");
+            }
+            else if constexpr (std::is_same_v<T, GPU::Position>)
+            {
+                ImGui::Text("Position");
+            }
+            else if constexpr (std::is_same_v<T, GPU::UV>)
+            {
+                ImGui::Text("UV");
+            }
+            else if constexpr (std::is_same_v<T, GPU::Vertex>)
+            {
+                ImGui::Text("Vertex");
+            }
+            else
+            {
+                static_assert(false, "Unsupported vertex type!");
+            }
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%u", buffer.count);
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%llu", usedMemory);
+            ImGui::TableSetColumnIndex(3);
+            ImGui::Text("%llu", availableMemory);
+            ImGui::TableSetColumnIndex(4);
+            ImGui::Text("%llu", bufferSize);
+        };
+    }
+
     GeometryBuffer::GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool)
     {
         cubeBuffer = Vk::Buffer
@@ -267,53 +312,44 @@ namespace Vk
 
                 ImGui::TableHeadersRow();
 
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("Index");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%u", indexBuffer.count);
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%llu", indexBuffer.count * sizeof(GPU::Index));
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%llu", GetIndexBuffer().size - (indexBuffer.count * sizeof(GPU::Index)));
-                ImGui::TableSetColumnIndex(4);
-                ImGui::Text("%llu", GetIndexBuffer().size);
+                Detail::SetupGeometryBufferTableRow(indexBuffer);
+                Detail::SetupGeometryBufferTableRow(positionBuffer);
+                Detail::SetupGeometryBufferTableRow(uvBuffer);
+                Detail::SetupGeometryBufferTableRow(vertexBuffer);
+
+                ImGui::EndTable();
+            }
+
+            if (ImGui::BeginTable("##GeometryBufferTableTotal", 4, flags))
+            {
+                const VkDeviceSize totalUsed = indexBuffer.count * sizeof(GPU::Index) +
+                                               positionBuffer.count * sizeof(GPU::Position) +
+                                               uvBuffer.count * sizeof(GPU::UV) +
+                                               vertexBuffer.count * sizeof(GPU::Vertex);
+
+                const VkDeviceSize totalAllocated = indexBuffer.GetBuffer().size +
+                                                    positionBuffer.GetBuffer().size +
+                                                    uvBuffer.GetBuffer().size +
+                                                    vertexBuffer.GetBuffer().size;
+
+                ImGui::TableSetupColumn("Total");
+                ImGui::TableSetupColumn("Used");
+                ImGui::TableSetupColumn("Available");
+                ImGui::TableSetupColumn("Allocated");
+
+                ImGui::TableSetupScrollFreeze(0, 0);
+
+                ImGui::TableHeadersRow();
 
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text("Position");
+                ImGui::Text("");
                 ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%u", positionBuffer.count);
+                ImGui::Text("%llu", totalUsed);
                 ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%llu", positionBuffer.count * sizeof(GPU::Position));
+                ImGui::Text("%llu", totalAllocated - totalUsed);
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%llu", GetPositionBuffer().size - (positionBuffer.count * sizeof(GPU::Position)));
-                ImGui::TableSetColumnIndex(4);
-                ImGui::Text("%llu", GetPositionBuffer().size);
-
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("UV");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%u", uvBuffer.count);
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%llu", uvBuffer.count * sizeof(GPU::UV));
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%llu", GetUVBuffer().size - (uvBuffer.count * sizeof(GPU::UV)));
-                ImGui::TableSetColumnIndex(4);
-                ImGui::Text("%llu", GetUVBuffer().size);
-
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("Vertex");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%u", vertexBuffer.count);
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%llu", vertexBuffer.count * sizeof(GPU::Vertex));
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%llu", GetVertexBuffer().size - (vertexBuffer.count * sizeof(GPU::Vertex)));
-                ImGui::TableSetColumnIndex(4);
-                ImGui::Text("%llu", GetVertexBuffer().size);
+                ImGui::Text("%llu", totalAllocated);
 
                 ImGui::EndTable();
             }

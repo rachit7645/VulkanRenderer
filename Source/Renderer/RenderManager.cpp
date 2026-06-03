@@ -1401,6 +1401,7 @@ namespace Renderer
             m_FIF,
             m_frameIndex,
             cmdBuffer,
+            m_renderConfig,
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,

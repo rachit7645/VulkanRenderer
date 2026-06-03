@@ -22,10 +22,9 @@
 
 namespace Renderer
 {
-    constexpr f32       DEFAULT_FOV             = glm::radians(80.0f);
-    constexpr f32       NEAR_PLANE              = 0.1f;
-    constexpr glm::vec3 WORLD_UP                = {0.0f, 1.0f, 0.0f};
-    constexpr usize     BASE_JITTER_PHASE_COUNT = 64;
+    constexpr f32       DEFAULT_FOV = glm::radians(80.0f);
+    constexpr f32       NEAR_PLANE  = 0.1f;
+    constexpr glm::vec3 WORLD_UP    = {0.0f, 1.0f, 0.0f};
 }
 
 #endif

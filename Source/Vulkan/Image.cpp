@@ -49,15 +49,19 @@ namespace Vk
             .minAlignment   = 0
         };
 
+        VmaAllocationInfo allocationInfo = {};
+
         Vk::CheckResult(vmaCreateImage(
             allocator,
             &createInfo,
             &allocationCreateInfo,
             &handle,
             &allocation,
-            nullptr),
+            &allocationInfo),
             "Failed to create image!"
         );
+
+        size = allocationInfo.size;
     }
 
     Image::Image
@@ -92,7 +96,8 @@ namespace Vk
                mipLevels == rhs.mipLevels &&
                arrayLayers == rhs.arrayLayers &&
                format == rhs.format &&
-               aspect == rhs.aspect;
+               aspect == rhs.aspect &&
+               size == rhs.size;
     }
 
     void Image::Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::ImageBarrier& barrier) const

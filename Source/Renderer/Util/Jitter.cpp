@@ -16,21 +16,14 @@
 
 #include "Jitter.h"
 
+#include "Renderer/RenderConfig.h"
 #include "Renderer/RenderConstants.h"
 #include "Util/Maths.h"
 
 namespace Renderer
 {
-    glm::vec2 GetJitterInPixels(usize frameIndex, VkExtent2D renderExtent, VkExtent2D displayExtent)
+    glm::vec2 CalculateJitter(usize frameIndex, usize phaseCount)
     {
-        const f32 renderXResolution  = Maths::Max2(glm::vec2(glm::vk_cast(renderExtent)));
-        const f32 displayXResolution = Maths::Max2(glm::vec2(glm::vk_cast(displayExtent)));
-
-        const f32 multiplier  = displayXResolution / renderXResolution;
-        const f32 multiplier2 = multiplier * multiplier;
-
-        const auto phaseCount = static_cast<usize>(std::ceil(static_cast<f32>(Renderer::BASE_JITTER_PHASE_COUNT) * multiplier2));
-
         const usize index = frameIndex % phaseCount;
 
         auto jitter  = glm::vec2(Maths::Halton(index, 2), Maths::Halton(index, 3));
@@ -39,10 +32,69 @@ namespace Renderer
         return jitter;
     }
 
-    glm::vec2 GetJitter(usize frameIndex, VkExtent2D renderExtent, VkExtent2D displayExtent)
+    usize GetPhaseCount(RenderConfig::AntiAliasingMode antiAliasingMode, VkExtent2D renderExtent, VkExtent2D displayExtent)
     {
-        const auto jitter = GetJitterInPixels(frameIndex, renderExtent, displayExtent);
+        constexpr usize BASE_JITTER_PHASE_COUNT      = 64;
+        constexpr usize BASE_DLSS_JITTER_PHASE_COUNT = 8;
 
-        return jitter / glm::vec2(renderExtent.width, renderExtent.height);
+        switch (antiAliasingMode)
+        {
+        case RenderConfig::AntiAliasingMode::None:
+        case RenderConfig::AntiAliasingMode::TAA:
+            return BASE_JITTER_PHASE_COUNT;
+
+        #ifdef ENGINE_DLSS
+        case RenderConfig::AntiAliasingMode::DLSS:
+        {
+            const f32 renderXResolution  = Maths::Max2(glm::vec2(glm::vk_cast(renderExtent)));
+            const f32 displayXResolution = Maths::Max2(glm::vec2(glm::vk_cast(displayExtent)));
+
+            const f32 multiplier  = displayXResolution / renderXResolution;
+            const f32 multiplier2 = multiplier * multiplier;
+
+            return std::ceil(static_cast<f32>(BASE_DLSS_JITTER_PHASE_COUNT) * multiplier2);
+        }
+        #endif
+
+        default:
+            Logger::Error("Unknown anti-aliasing mode!");
+        }
+    }
+
+    glm::vec2 GetJitterInPixels
+    (
+        usize frameIndex,
+        RenderConfig::AntiAliasingMode antiAliasingMode,
+        VkExtent2D renderExtent,
+        VkExtent2D displayExtent
+    )
+    {
+        if (antiAliasingMode == RenderConfig::AntiAliasingMode::None)
+        {
+            return glm::vec2(0.0f);
+        }
+
+        const usize phaseCount = GetPhaseCount(antiAliasingMode, renderExtent, displayExtent);
+
+        return CalculateJitter(frameIndex, phaseCount);
+    }
+
+    glm::vec2 GetJitter
+    (
+        usize frameIndex,
+        RenderConfig::AntiAliasingMode antiAliasingMode,
+        VkExtent2D renderExtent,
+        VkExtent2D displayExtent
+    )
+    {
+        const auto jitter = GetJitterInPixels
+        (
+            frameIndex,
+            antiAliasingMode,
+            renderExtent,
+            displayExtent
+        );
+
+        return jitter / glm::vec2(glm::vk_cast(renderExtent));
     }
 }

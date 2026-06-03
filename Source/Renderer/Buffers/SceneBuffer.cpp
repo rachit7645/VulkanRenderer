@@ -103,14 +103,13 @@ namespace Renderer::Buffers
             Renderer::NEAR_PLANE
         );
 
-        #ifdef ENGINE_DLSS
-        const bool needsJitterApplied = (renderConfig.antiAliasingMode == RenderConfig::AntiAliasingMode::DLSS) ||
-                                        (renderConfig.antiAliasingMode == RenderConfig::AntiAliasingMode::TAA);
-        #else
-        const bool needsJitterApplied = renderConfig.antiAliasingMode == RenderConfig::AntiAliasingMode::TAA;
-        #endif
-
-        const auto jitter = needsJitterApplied ? Renderer::GetJitter(frameIndex, renderExtent, displayExtent) : glm::vec2(0.0f);
+        const auto jitter = Renderer::GetJitter
+        (
+            frameIndex,
+            renderConfig.antiAliasingMode,
+            renderExtent,
+            displayExtent
+        );
 
         auto jitteredProjection = projection;
 

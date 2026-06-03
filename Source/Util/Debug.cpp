@@ -20,7 +20,7 @@
 
 #ifdef _WIN32
 #include <Windows.h>
-#elif defined(__linux__)
+#elifdef __linux__
 #include <fstream>
 #include <string>
 #endif
@@ -31,7 +31,7 @@ namespace Util
     {
         #ifdef _WIN32
         return ::IsDebuggerPresent();
-        #elif defined(__linux__)
+        #elifdef __linux__
         constexpr std::string_view kTracerPid = "TracerPid:";
 
         auto status = std::ifstream("/proc/self/status");

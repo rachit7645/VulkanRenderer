@@ -62,6 +62,8 @@ namespace Vk
 
         VkFormat           format = VK_FORMAT_UNDEFINED;
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE;
+
+        VkDeviceSize size = 0;
     };
 }
 

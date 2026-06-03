@@ -18,12 +18,28 @@
 #define JITTER_H
 
 #include "Externals/GLM.h"
+#include "Renderer/RenderConfig.h"
 #include "Util/Types.h"
 
 namespace Renderer
 {
-    glm::vec2 GetJitterInPixels(usize frameIndex, VkExtent2D renderExtent, VkExtent2D displayExtent);
-    glm::vec2 GetJitter(usize frameIndex, VkExtent2D renderExtent, VkExtent2D displayExtent);
+    usize GetPhaseCount(RenderConfig::AntiAliasingMode antiAliasingMode, VkExtent2D renderExtent, VkExtent2D displayExtent);
+
+    glm::vec2 GetJitterInPixels
+    (
+        usize frameIndex,
+        RenderConfig::AntiAliasingMode antiAliasingMode,
+        VkExtent2D renderExtent,
+        VkExtent2D displayExtent
+    );
+
+    glm::vec2 GetJitter
+    (
+        usize frameIndex,
+        RenderConfig::AntiAliasingMode antiAliasingMode,
+        VkExtent2D renderExtent,
+        VkExtent2D displayExtent
+    );
 }
 
 #endif
