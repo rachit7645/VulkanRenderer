@@ -58,19 +58,19 @@
     "Sun": {
         "Direction" : [-0.69,  -0.69,  -0.23 ],
         "Color"     : [ 0.4784, 0.7372, 0.745],
-        "Intensity" : [ 3.0,    3.0,    3.0  ]
+        "Intensity" : 10.0
     },
     "PointLights": [
         {
             "Position"  : [-5.0, 1.0,  -0.5  ],
             "Color"     : [ 0.0, 0.945, 0.945],
-            "Intensity" : [ 0.0, 21.0,  15.0 ],
+            "Intensity" : 18.0,
             "Range"     : 10.0
         },
         {
             "Position"  : [5.0, 0.7,  -0.8 ],
             "Color"     : [0.0, 0.031, 1.0 ],
-            "Intensity" : [0.0, 18.0,  30.0],
+            "Intensity" : 24.0,
             "Range"     : 2.4
         }
     ],
@@ -78,7 +78,7 @@
         {
             "Position"  : [ 10.0,  2.0, -4.0],
             "Color"     : [ 1.0,   0.0,  0.0],
-            "Intensity" : [ 80.0,  1.0,  1.0],
+            "Intensity" : 80.0,
             "Direction" : [-0.25, -0.1,  0.5],
             "CutOff"    : [ 10.0, 30.0],
             "Range"     : 30.0
@@ -86,7 +86,7 @@
         {
             "Position"  : [ 4.0,   1.0, -0.5 ],
             "Color"     : [ 0.941, 0.0,  1.0 ],
-            "Intensity" : [ 60.0,  0.0,  60.0],
+            "Intensity" : 60.0,
             "Direction" : [-1.0,  -0.15, 0.0],
             "CutOff"    : [ 10.0,  50.0],
             "Range"     : 20.0

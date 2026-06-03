@@ -285,9 +285,9 @@ namespace Engine
                 {
                     if (ImGui::TreeNode("Sun"))
                     {
-                        ImGui::DragFloat3("Direction", &sun.direction[0], 0.01f, -1.0f, 1.0f, "%.2f");
-                        ImGui::ColorEdit3("Color",     &sun.color[0]);
-                        ImGui::DragFloat3("Intensity", &sun.intensity[0], 0.5f, 0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Direction",      &sun.direction[0], 0.01f, -1.0f, 1.0f, "%.2f");
+                        ImGui::ColorEdit3("Color",          &sun.color[0]);
+                        ImGui::DragFloat ("Intensity (lx)", &sun.intensity,    0.5f,   0.0f, 0.0f, "%.2f");
 
                         sun.direction = glm::normalize(sun.direction);
 
@@ -300,10 +300,10 @@ namespace Engine
                     {
                         if (ImGui::TreeNode("Add Point Light"))
                         {
-                            ImGui::DragFloat3("Position",  &m_loadedPointLight.position[0],  1.0f,  0.0f, 0.0f, "%.2f");
-                            ImGui::ColorEdit3("Color",     &m_loadedPointLight.color[0]);
-                            ImGui::DragFloat3("Intensity", &m_loadedPointLight.intensity[0], 0.5f,  0.0f, 0.0f, "%.2f");
-                            ImGui::DragFloat( "Range",     &m_loadedPointLight.range,        0.01f, 0.0f, 0.0f, "%.3f");
+                            ImGui::DragFloat3("Position",       &m_loadedPointLight.position[0], 1.0f,  0.0f, 0.0f, "%.2f");
+                            ImGui::ColorEdit3("Color",          &m_loadedPointLight.color[0]);
+                            ImGui::DragFloat ("Intensity (cd)", &m_loadedPointLight.intensity,   0.5f,  0.0f, 0.0f, "%.2f");
+                            ImGui::DragFloat ("Range (m)",      &m_loadedPointLight.range,       0.01f, 0.0f, 0.0f, "%.3f");
 
                             if (ImGui::Button("Add"))
                             {
@@ -332,10 +332,10 @@ namespace Engine
 
                             if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                             {
-                                ImGui::DragFloat3("Position",  &iter->position[0],  1.0f,  0.0f, 0.0f, "%.2f");
-                                ImGui::ColorEdit3("Color",     &iter->color[0]);
-                                ImGui::DragFloat3("Intensity", &iter->intensity[0], 0.5f,  0.0f, 0.0f, "%.2f");
-                                ImGui::DragFloat( "Range",     &iter->range,        0.01f, 0.0f, 0.0f, "%.3f");
+                                ImGui::DragFloat3("Position",       &iter->position[0], 1.0f,  0.0f, 0.0f, "%.2f");
+                                ImGui::ColorEdit3("Color",          &iter->color[0]);
+                                ImGui::DragFloat ("Intensity (cd)", &iter->intensity,   0.5f,  0.0f, 0.0f, "%.2f");
+                                ImGui::DragFloat ("Range (m)",      &iter->range,       0.01f, 0.0f, 0.0f, "%.3f");
 
                                 if (ImGui::Button("Delete"))
                                 {
@@ -369,12 +369,12 @@ namespace Engine
 
                         if (ImGui::TreeNode("Add Spot Light"))
                         {
-                            ImGui::DragFloat3("Position",  &m_loadedSpotLight.position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
-                            ImGui::ColorEdit3("Color",     &m_loadedSpotLight.color[0]);
-                            ImGui::DragFloat3("Intensity", &m_loadedSpotLight.intensity[0], 0.5f,       0.0f, 0.0f,          "%.2f");
-                            ImGui::DragFloat3("Direction", &m_loadedSpotLight.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
-                            ImGui::DragFloat2("Cut Off",   &m_loadedSpotLight.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
-                            ImGui::DragFloat( "Range",     &m_loadedSpotLight.range,        0.01f,      0.0f, 0.0f,          "%.3f");
+                            ImGui::DragFloat3("Position",       &m_loadedSpotLight.position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
+                            ImGui::ColorEdit3("Color",          &m_loadedSpotLight.color[0]);
+                            ImGui::DragFloat ("Intensity (cd)", &m_loadedSpotLight.intensity,    0.5f,       0.0f, 0.0f,          "%.2f");
+                            ImGui::DragFloat3("Direction",      &m_loadedSpotLight.direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
+                            ImGui::DragFloat2("Cut Off",        &m_loadedSpotLight.cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
+                            ImGui::DragFloat ("Range (m)",      &m_loadedSpotLight.range,        0.01f,      0.0f, 0.0f,          "%.3f");
 
                             if (ImGui::Button("Add"))
                             {
@@ -405,12 +405,12 @@ namespace Engine
 
                             if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                             {
-                                ImGui::DragFloat3("Position",  &iter->position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
-                                ImGui::ColorEdit3("Color",     &iter->color[0]);
-                                ImGui::DragFloat3("Intensity", &iter->intensity[0], 0.5f,       0.0f, 0.0f,          "%.2f");
-                                ImGui::DragFloat3("Direction", &iter->direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
-                                ImGui::DragFloat2("Cut Off",   &iter->cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
-                                ImGui::DragFloat( "Range",     &iter->range,        0.01f,      0.0f, 0.0f,          "%.3f");
+                                ImGui::DragFloat3("Position",       &iter->position[0],  1.0f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::ColorEdit3("Color",          &iter->color[0]);
+                                ImGui::DragFloat ("Intensity (cd)", &iter->intensity,    0.5f,       0.0f, 0.0f,          "%.2f");
+                                ImGui::DragFloat3("Direction",      &iter->direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
+                                ImGui::DragFloat2("Cut Off",        &iter->cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
+                                ImGui::DragFloat ("Range (m)",      &iter->range,        0.01f,      0.0f, 0.0f,          "%.3f");
 
                                 if (ImGui::Button("Delete"))
                                 {

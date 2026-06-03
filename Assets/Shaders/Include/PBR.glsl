@@ -132,7 +132,6 @@ vec3 CalculateLight
     // 1 - FresnelTotalInternalReflection
     diffuse *= 1.0f - FresnelSchlick(F0, NdotV);
 
-    // Radiance is not a physically correct parameter, but we keep it for artist (me) control
     return (diffuse + specular) * NdotL * radiance;
 }
 

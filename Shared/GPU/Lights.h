@@ -43,15 +43,15 @@ struct DirLight
 {
     GLSL_VEC3 direction;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
+    f32       intensity; // In Lux
 };
 
 struct PointLight
 {
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
-    f32       range;
+    f32       intensity; // In Candela
+    f32       range;     // In Meters
 };
 
 struct ShadowedPointLight
@@ -92,8 +92,8 @@ struct ShadowedPointLight
 
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
-    f32       range;
+    f32       intensity;   // In Candela
+    f32       range;       // In Meters
     GLSL_MAT4 matrices[6];
 };
 
@@ -101,10 +101,10 @@ struct SpotLight
 {
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
+    f32       intensity; // In Candela
     GLSL_VEC3 direction;
     GLSL_VEC2 cutOff;
-    f32       range;
+    f32       range;     // In Meters
 };
 
 struct ShadowedSpotLight
@@ -146,10 +146,10 @@ struct ShadowedSpotLight
 
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
+    f32       intensity; // In Candela
     GLSL_VEC3 direction;
     GLSL_VEC2 cutOff;
-    f32       range;
+    f32       range;     // In Meters
     GLSL_MAT4 matrix;
 };
 
@@ -256,12 +256,14 @@ float CalculateAttenuation(vec3 position, float range, vec3 fragPosition)
 
 float CalculateSpotIntensity(vec3 L, vec3 direction, vec2 cutOff)
 {
-    float theta     = dot(L, normalize(-direction));
-    vec2  cutOffCos = cos(cutOff);
-    float epsilon   = cutOffCos.x - cutOffCos.y;
-    float intensity = smoothstep(0.0f, 1.0f, (theta - cutOffCos.y) / epsilon);
+    float cosTheta = dot(L, normalize(-direction));
+    float cosInner = cos(cutOff.x);
+    float cosOuter = cos(cutOff.y);
 
-    return intensity;
+    float epsilon   = max(cosInner - cosOuter, 1e-5f);
+    float intensity = saturate((cosTheta - cosOuter) / epsilon);
+
+    return intensity * intensity;
 }
 
 LightInfo GetLightInfo(DirLight light)

@@ -136,7 +136,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Intensity"].get<glm::vec3>(light.intensity); error != error_code::SUCCESS)
+        if (const auto error = object["Intensity"].get<f32>(light.intensity); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -164,7 +164,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Intensity"].get<glm::vec3>(light.intensity); error != error_code::SUCCESS)
+        if (const auto error = object["Intensity"].get<f32>(light.intensity); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -197,7 +197,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Intensity"].get<glm::vec3>(light.intensity); error != error_code::SUCCESS)
+        if (const auto error = object["Intensity"].get<f32>(light.intensity); error != error_code::SUCCESS)
         {
             return error;
         }
