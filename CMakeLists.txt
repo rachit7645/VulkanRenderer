@@ -106,7 +106,6 @@ add_executable(VulkanRenderer
     Source/Vulkan/PipelineManager.cpp
     Source/Vulkan/MemoryBlock.cpp
     Source/Vulkan/StagingPool.cpp
-    Source/Vulkan/ResizableBuffer.cpp
     Source/Vulkan/Properties.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp

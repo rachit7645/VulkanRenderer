@@ -21,34 +21,43 @@
 
 namespace Renderer::Buffers
 {
-    TileLightIndexBuffer::TileLightIndexBuffer()
-        : resizableBuffer(Vk::ResizableBufferFlags::None)
-    {
-    }
-
     void TileLightIndexBuffer::Update
     (
+        usize tileCount,
         VkDevice device,
         VmaAllocator allocator,
-        const Vk::CommandBuffer& cmdBuffer,
-        usize tileCount,
         Util::DeletionQueue& deletionQueue
     )
     {
-        resizableBuffer.Reserve
+        const VkDeviceSize requiredSize = tileCount * sizeof(TiledLighting::TileLightIndices);
+
+        if (buffer.size >= requiredSize)
+        {
+            return;
+        }
+
+        deletionQueue.Push([allocator, _buffer = buffer] mutable
+        {
+           _buffer.Destroy(allocator);
+        });
+
+        buffer = Vk::Buffer
         (
             device,
             allocator,
-            cmdBuffer,
-            tileCount * sizeof(TiledLighting::TileLightIndices),
-            deletionQueue
+            requiredSize,
+            0,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            0,
+            VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
 
-        Vk::SetDebugName(device, resizableBuffer.buffer.handle, "TileLightIndexBuffer");
+        Vk::SetDebugName(device, buffer.handle, "TileLightIndexBuffer");
     }
 
     void TileLightIndexBuffer::Destroy(VmaAllocator allocator)
     {
-        resizableBuffer.Destroy(allocator);
+        buffer.Destroy(allocator);
     }
 }

@@ -2275,6 +2275,8 @@ namespace Renderer
 
     bool RenderManager::HandleEvents()
     {
+        m_window.inputs.Reset();
+
         SDL_Event event = {};
 
         while ((m_isSwapchainOk ? SDL_PollEvent(&event) : SDL_WaitEvent(&event)))
@@ -2345,7 +2347,7 @@ namespace Renderer
             }
 
             case SDL_EVENT_MOUSE_MOTION:
-                m_window.inputs.SetMousePosition(glm::vec2(event.motion.xrel, event.motion.yrel));
+                m_window.inputs.SetRelativeMouseMovement(glm::vec2(event.motion.xrel, event.motion.yrel));
                 break;
 
             case SDL_EVENT_MOUSE_WHEEL:

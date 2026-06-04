@@ -1445,7 +1445,7 @@ namespace Vk
 
             const auto textureOffsetTableAsBytes = Cache::GenerateTextureOffsetTable(textureOffsetTable);
 
-            const auto cacheEntry = Cache::Entry
+            const Cache::Entry cacheEntry =
             {
                 .cacheFile          = cacheFile,
                 .assetType          = Cache::AssetType::Texture,

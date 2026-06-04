@@ -64,14 +64,14 @@
         {
             "Position"  : [-5.0, 1.0,  -0.5  ],
             "Color"     : [ 0.0, 0.945, 0.945],
-            "Intensity" : 18.0,
+            "Intensity" : 20.0,
             "Range"     : 10.0
         },
         {
             "Position"  : [5.0, 0.7,  -0.8 ],
             "Color"     : [0.0, 0.031, 1.0 ],
-            "Intensity" : 24.0,
-            "Range"     : 2.4
+            "Intensity" : 26.0,
+            "Range"     : 2.7
         }
     ],
     "SpotLights" : [

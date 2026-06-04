@@ -56,7 +56,7 @@ namespace Engine
             Logger::Error("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
         }
 
-        inputs = Inputs(true);
+        inputs.Initialize();
     }
 
     void Window::Destroy()

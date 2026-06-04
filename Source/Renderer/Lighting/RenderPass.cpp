@@ -16,7 +16,6 @@
 
 #include "RenderPass.h"
 
-#include "Util/Log.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
@@ -186,7 +185,7 @@ namespace Renderer::Lighting
         const auto constants = Lighting::Constants
         {
             .Scene                   = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-            .TileLightIndices        = tileLightIndexBuffer.resizableBuffer.buffer.deviceAddress,
+            .TileLightIndices        = tileLightIndexBuffer.buffer.deviceAddress,
             .GBufferSamplerIndex     = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .IBLSamplerIndex         = textureManager.GetSampler(samplers.iblSamplerID).descriptorID,
             .PointShadowSamplerIndex = textureManager.GetSampler(samplers.pointShadowSamplerID).descriptorID,

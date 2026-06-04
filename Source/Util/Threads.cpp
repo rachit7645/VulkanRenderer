@@ -27,6 +27,7 @@ namespace Util
             return 1;
         }
 
+        // Reserve the Main thread
         return concurrentThreadCount - 1;
     }
 }

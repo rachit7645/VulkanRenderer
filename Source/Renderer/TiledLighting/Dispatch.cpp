@@ -231,16 +231,17 @@ namespace Renderer::TiledLighting
 
         const auto& tileDepths = framebufferManager.GetFramebuffer("TiledLighting/TileDepths");
 
+        const usize tileCount = static_cast<usize>(tileDepths.image.width) * tileDepths.image.height;
+
         tileLightIndexBuffer.Update
         (
+            tileCount,
             device,
             allocator,
-            cmdBuffer,
-            tileDepths.image.width * tileDepths.image.height,
             deletionQueue
         );
 
-        tileLightIndexBuffer.resizableBuffer.buffer.Barrier
+        tileLightIndexBuffer.buffer.Barrier
         (
             cmdBuffer,
             Vk::BufferBarrier{
@@ -251,7 +252,7 @@ namespace Renderer::TiledLighting
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = tileLightIndexBuffer.resizableBuffer.buffer.size
+                .size           = tileLightIndexBuffer.buffer.size
             }
         );
 
@@ -262,7 +263,7 @@ namespace Renderer::TiledLighting
         const auto constants = Culling::Constants
         {
             .Scene             = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-            .TileLightIndices  = tileLightIndexBuffer.resizableBuffer.buffer.deviceAddress,
+            .TileLightIndices  = tileLightIndexBuffer.buffer.deviceAddress,
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .TileDepthsIndex   = framebufferManager.GetFramebufferView("TiledLighting/TileDepthsView").sampledImageID,
             .MaxTileID         = glm::uvec2(tileDepths.image.width - 1, tileDepths.image.height - 1)
@@ -285,7 +286,7 @@ namespace Renderer::TiledLighting
             1
         );
 
-        tileLightIndexBuffer.resizableBuffer.buffer.Barrier
+        tileLightIndexBuffer.buffer.Barrier
         (
             cmdBuffer,
             Vk::BufferBarrier{
@@ -296,7 +297,7 @@ namespace Renderer::TiledLighting
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = tileLightIndexBuffer.resizableBuffer.buffer.size
+                .size           = tileLightIndexBuffer.buffer.size
             }
         );
 

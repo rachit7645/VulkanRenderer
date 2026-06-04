@@ -136,7 +136,7 @@ namespace Renderer::Objects
 
         if (inputs.WasMouseMoved())
         {
-            const auto mouseDelta = inputs.GetMousePosition();
+            const auto mouseDelta = inputs.GetRelativeMouseMovement();
 
             const glm::vec2 angularMovement = speed * mouseDelta;
 

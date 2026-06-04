@@ -290,6 +290,7 @@ namespace Engine
                         ImGui::DragFloat ("Intensity (lx)", &sun.intensity,    0.5f,   0.0f, 0.0f, "%.2f");
 
                         sun.direction = glm::normalize(sun.direction);
+                        sun.intensity = std::max(sun.intensity, 0.0f);
 
                         ImGui::TreePop();
                     }
@@ -307,6 +308,8 @@ namespace Engine
 
                             if (ImGui::Button("Add"))
                             {
+                                m_loadedPointLight.intensity = std::max(m_loadedPointLight.intensity, 0.0f);
+
                                 pointLights.emplace_back(m_loadedPointLight);
 
                                 m_loadedPointLight = {};
@@ -336,6 +339,8 @@ namespace Engine
                                 ImGui::ColorEdit3("Color",          &iter->color[0]);
                                 ImGui::DragFloat ("Intensity (cd)", &iter->intensity,   0.5f,  0.0f, 0.0f, "%.2f");
                                 ImGui::DragFloat ("Range (m)",      &iter->range,       0.01f, 0.0f, 0.0f, "%.3f");
+
+                                iter->intensity = std::max(iter->intensity, 0.0f);
 
                                 if (ImGui::Button("Delete"))
                                 {
@@ -378,6 +383,7 @@ namespace Engine
 
                             if (ImGui::Button("Add"))
                             {
+                                m_loadedSpotLight.intensity = std::max(m_loadedSpotLight.intensity, 0.0f);
                                 m_loadedSpotLight.direction = glm::normalize(m_loadedSpotLight.direction);
 
                                 spotLights.emplace_back(m_loadedSpotLight);
@@ -411,6 +417,8 @@ namespace Engine
                                 ImGui::DragFloat3("Direction",      &iter->direction[0], 0.05f,     -1.0f, 1.0f,          "%.2f");
                                 ImGui::DragFloat2("Cut Off",        &iter->cutOff[0],    ONE_DEGREE, 0.0f, HALF_ROTATION, "%.2f");
                                 ImGui::DragFloat ("Range (m)",      &iter->range,        0.01f,      0.0f, 0.0f,          "%.3f");
+
+                                iter->intensity = std::max(iter->intensity, 0.0f);
 
                                 if (ImGui::Button("Delete"))
                                 {

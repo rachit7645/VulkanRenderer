@@ -25,19 +25,18 @@ namespace Engine
     class Inputs
     {
     public:
-        Inputs() = default;
+        void Initialize();
+        void Reset();
 
-        explicit Inputs(bool enableJoyConFixes);
-
-        void SetMousePosition(const glm::vec2& position);
+        void SetRelativeMouseMovement(const glm::vec2& movement);
         void SetMouseScroll(const glm::vec2& scroll);
 
         void FindGamepad();
 
         [[nodiscard]] bool IsKeyPressed(SDL_Scancode key) const;
 
-        [[nodiscard]] const glm::vec2& GetMousePosition();
-        [[nodiscard]] const glm::vec2& GetMouseScroll();
+        [[nodiscard]] const glm::vec2& GetRelativeMouseMovement() const;
+        [[nodiscard]] const glm::vec2& GetMouseScroll() const;
 
         [[nodiscard]] glm::vec2 GetLeftStickDirection()  const;
         [[nodiscard]] glm::vec2 GetRightStickDirection() const;
@@ -50,22 +49,19 @@ namespace Engine
         void ImGuiDisplay();
         void Destroy();
 
-        [[nodiscard]] glm::vec2 GetNormalisedAxisDirection
+        SDL_Gamepad* gamepad = nullptr;
+    private:
+        [[nodiscard]] glm::vec2 GetAxisDirection
         (
             SDL_GamepadAxis axisHorizontal,
             SDL_GamepadAxis axisVertical,
             const glm::vec2& deadZone
         ) const;
 
-        SDL_Gamepad* gamepad = nullptr;
-    private:
-        const bool* m_keys = nullptr;
+        std::span<const bool> m_keys = {};
 
-        glm::vec2 m_mousePosition = {};
-        glm::vec2 m_mouseScroll   = {};
-
-        bool m_wasMouseMoved    = false;
-        bool m_wasMouseScrolled = false;
+        glm::vec2 m_relativeMouseMovement = {};
+        glm::vec2 m_mouseScroll           = {};
     };
 }
 

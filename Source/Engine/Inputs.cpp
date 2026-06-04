@@ -18,33 +18,45 @@
 
 #include "Externals/ImGui.h"
 #include "Util/Types.h"
+#include "Util/Log.h"
 
 namespace Engine
 {
-    Inputs::Inputs(bool enableJoyConFixes)
-        : m_keys(SDL_GetKeyboardState(nullptr))
+    void Inputs::Initialize()
     {
-        if (enableJoyConFixes)
+        s32 count = 0;
+
+        const bool* pointer = SDL_GetKeyboardState(&count);
+
+        if (pointer == nullptr || count == 0)
         {
-            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH,            "1");
-            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED,   "0");
-            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
-            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS,          "1");
-            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
-            SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
+            Logger::Error("{}\n", "Failed to get keyboard state!");
         }
+
+        m_keys = std::span(pointer, pointer + count);
+
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH,            "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED,   "0");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS,          "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
     }
 
-    void Inputs::SetMousePosition(const glm::vec2& position)
+    void Inputs::Reset()
     {
-        m_mousePosition = position;
-        m_wasMouseMoved = true;
+        m_relativeMouseMovement = {};
+        m_mouseScroll           = {};
+    }
+
+    void Inputs::SetRelativeMouseMovement(const glm::vec2& movement)
+    {
+        m_relativeMouseMovement = movement;
     }
 
     void Inputs::SetMouseScroll(const glm::vec2& scroll)
     {
-        m_mouseScroll      = scroll;
-        m_wasMouseScrolled = true;
+        m_mouseScroll = scroll;
     }
 
     void Inputs::FindGamepad()
@@ -73,26 +85,27 @@ namespace Engine
 
     bool Inputs::IsKeyPressed(SDL_Scancode key) const
     {
+        if (key >= m_keys.size())
+        {
+            return false;
+        }
+
         return m_keys[key];
     }
 
-    const glm::vec2& Inputs::GetMousePosition()
+    const glm::vec2& Inputs::GetRelativeMouseMovement() const
     {
-        m_wasMouseMoved = false;
-
-        return m_mousePosition;
+        return m_relativeMouseMovement;
     }
 
-    const glm::vec2& Inputs::GetMouseScroll()
+    const glm::vec2& Inputs::GetMouseScroll() const
     {
-        m_wasMouseScrolled = false;
-
         return m_mouseScroll;
     }
 
     glm::vec2 Inputs::GetLeftStickDirection() const
     {
-        return GetNormalisedAxisDirection
+        return GetAxisDirection
         (
             SDL_GAMEPAD_AXIS_LEFTX,
             SDL_GAMEPAD_AXIS_LEFTY,
@@ -102,7 +115,7 @@ namespace Engine
 
     glm::vec2 Inputs::GetRightStickDirection() const
     {
-        return GetNormalisedAxisDirection
+        return GetAxisDirection
         (
             SDL_GAMEPAD_AXIS_RIGHTX,
             SDL_GAMEPAD_AXIS_RIGHTY,
@@ -117,15 +130,15 @@ namespace Engine
 
     bool Inputs::WasMouseMoved() const
     {
-        return m_wasMouseMoved;
+        return m_relativeMouseMovement != glm::vec2{};
     }
 
     bool Inputs::WasMouseScrolled() const
     {
-        return m_wasMouseScrolled;
+        return m_mouseScroll != glm::vec2{};
     }
 
-    glm::vec2 Inputs::GetNormalisedAxisDirection
+    glm::vec2 Inputs::GetAxisDirection
     (
         SDL_GamepadAxis axisHorizontal,
         SDL_GamepadAxis axisVertical,
@@ -154,19 +167,7 @@ namespace Engine
             normalized.y = 0.0f;
         }
 
-        auto direction = glm::normalize(normalized);
-
-        if (std::isnan(direction.x) || std::isinf(direction.x))
-        {
-            direction.x = 0.0f;
-        }
-
-        if (std::isnan(direction.y) || std::isinf(direction.y))
-        {
-            direction.y = 0.0f;
-        }
-
-        return direction;
+        return glm::clamp(normalized, -1.0f, 1.0f);
     }
 
     void Inputs::ImGuiDisplay()
@@ -178,19 +179,23 @@ namespace Engine
                 if (ImGui::CollapsingHeader("Input"))
                 {
                     glm::vec2 mousePos = {};
+
                     // Realtime(ish) mouse position
                     SDL_GetMouseState(&mousePos.x, &mousePos.y);
 
                     ImGui::DragFloat2("Mouse Position", &mousePos[0]);
-                    ImGui::DragFloat2("Mouse Relative", &m_mousePosition[0]);
+                    ImGui::DragFloat2("Mouse Relative", &m_relativeMouseMovement[0]);
                     ImGui::DragFloat2("Mouse Scroll",   &m_mouseScroll[0]);
 
                     if (gamepad != nullptr)
                     {
                         ImGui::Text("%s", SDL_GetGamepadName(gamepad));
 
-                        ImGui::DragFloat2("LStick", &GetLeftStickDirection()[0],  1.0f, 0.0f, 0.0f, "%.3f");
-                        ImGui::DragFloat2("RStick", &GetRightStickDirection()[0], 1.0f, 0.0f, 0.0f, "%.3f");
+                        glm::vec2 lStick = GetLeftStickDirection();
+                        glm::vec2 rStick = GetRightStickDirection();
+
+                        ImGui::DragFloat2("LStick", &lStick[0],  1.0f, 0.0f, 0.0f, "%.3f");
+                        ImGui::DragFloat2("RStick", &rStick[0],  1.0f, 0.0f, 0.0f, "%.3f");
                     }
                 }
 
@@ -203,6 +208,11 @@ namespace Engine
 
     void Inputs::Destroy()
     {
+        Reset();
+
         SDL_CloseGamepad(gamepad);
+
+        gamepad = nullptr;
+        m_keys  = {};
     }
 }

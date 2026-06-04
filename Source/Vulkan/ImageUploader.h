@@ -26,7 +26,6 @@
 #include "BarrierWriter.h"
 #include "ImageView.h"
 #include "StagingPool.h"
-#include "Engine/Cache.h"
 #include "Util/DeletionQueue.h"
 
 namespace Vk
