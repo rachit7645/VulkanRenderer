@@ -33,43 +33,24 @@ namespace Engine
     public:
         Scene
         (
-            usize frameIndex,
             const Engine::Config& config,
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::PipelineManager& pipelineManager,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Renderer::Objects::Samplers& samplers,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet,
-            Vk::StagingPool& stagingPool,
-            Renderer::IBL::Generator& iblGenerator,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue
+            Renderer::IBL::Generator& iblGenerator
         );
 
         void Update
         (
-            usize frameIndex,
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::PipelineManager& pipelineManager,
             const Util::FrameCounter& frameCounter,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Renderer::Objects::Samplers& samplers,
             Engine::Inputs& inputs,
             Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet,
-            Vk::StagingPool& stagingPool,
-            Renderer::IBL::Generator& iblGenerator,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue
+            Renderer::IBL::Generator& iblGenerator
         );
 
         void Destroy
         (
             const Vk::Context& context,
             Models::ModelManager& modelManager,
+            Renderer::IBL::Generator& iblGenerator,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
         );
@@ -79,7 +60,7 @@ namespace Engine
         std::vector<GPU::PointLight>        pointLights   = {};
         std::vector<GPU::SpotLight>         spotLights    = {};
         Renderer::Objects::FreeCamera       camera        = {};
-        Renderer::IBL::IBLMaps              iblMaps       = {};
+        Renderer::IBL::IBLID                iblMapsID       = 0;
 
         // TODO: Better render object update flags
         // This does not account for render object internal changes

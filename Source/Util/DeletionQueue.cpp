@@ -27,14 +27,16 @@ namespace Util
 
     void DeletionQueue::Flush()
     {
-        if (m_deleters.empty())
-        {
-            return;
-        }
-
         std::stack<Deleter> temp = {};
+
+        // Lock
         {
             const std::scoped_lock lock{m_mutex};
+
+            if (m_deleters.empty())
+            {
+                return;
+            }
 
             std::swap(m_deleters, temp);
         }

@@ -76,6 +76,23 @@ namespace Models
         }
     }
 
+    bool ModelManager::IsModelLoaded(Models::ModelID id) const
+    {
+        const auto iter = m_modelMap.find(id);
+
+        if (iter == m_modelMap.end())
+        {
+            Logger::Error("Invalid model ID! [ID={}]\n", id);
+        }
+
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Model already freed! [ID={}]\n", id);
+        }
+
+        return iter->second.model.isLoaded;
+    }
+
     const Model& ModelManager::GetModel(Models::ModelID id) const
     {
         const auto iter = m_modelMap.find(id);

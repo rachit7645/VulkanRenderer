@@ -39,7 +39,8 @@ namespace Models
 
         void Free(Models::ModelID id);
 
-        [[nodiscard]] const Model& GetModel(Models::ModelID id) const;
+        [[nodiscard]] bool         IsModelLoaded(Models::ModelID id) const;
+        [[nodiscard]] const Model& GetModel     (Models::ModelID id) const;
 
         void Update
         (

@@ -73,8 +73,6 @@ namespace Renderer
 
         m_globalDeletionQueue.Push([&] ()
         {
-            m_executor.wait_for_all();
-
             m_sceneBuffer.Destroy(m_context.allocator);
             m_exposureBuffer.Destroy(m_context.allocator);
             m_tiledLightIndexBuffer.Destroy(m_context.allocator);
@@ -1481,7 +1479,7 @@ namespace Renderer
             m_sceneBuffer,
             m_tiledLightIndexBuffer,
             m_samplers,
-            m_scene->iblMaps
+            m_iblGenerator.GetIBLMaps(m_scene->iblMapsID)
         );
 
         m_skybox.Render
@@ -1494,7 +1492,7 @@ namespace Renderer
             m_modelManager,
             m_sceneBuffer,
             m_samplers,
-            m_scene->iblMaps
+            m_iblGenerator.GetIBLMaps(m_scene->iblMapsID)
         );
 
         AntiAliasing(cmdBuffer);
@@ -1881,19 +1879,9 @@ namespace Renderer
         {
             m_scene = Engine::Scene
             (
-                m_frameIndex,
                 m_config,
-                cmdBuffer,
-                m_pipelineManager,
-                m_context,
-                m_formatHelper,
-                m_samplers,
                 m_modelManager,
-                m_megaSet,
-                m_stagingPool,
-                m_iblGenerator,
-                m_executor,
-                m_deletionQueues[m_FIF]
+                m_iblGenerator
             );
 
             m_modelManager.Update
@@ -1937,6 +1925,7 @@ namespace Renderer
                         (
                             m_context,
                             m_modelManager,
+                            m_iblGenerator,
                             m_megaSet,
                             m_deletionQueues[m_FIF]
                         );
@@ -1946,19 +1935,9 @@ namespace Renderer
 
                     m_scene = Engine::Scene
                     (
-                        m_frameIndex,
                         m_config,
-                        cmdBuffer,
-                        m_pipelineManager,
-                        m_context,
-                        m_formatHelper,
-                        m_samplers,
                         m_modelManager,
-                        m_megaSet,
-                        m_stagingPool,
-                        m_iblGenerator,
-                        m_executor,
-                        m_deletionQueues[m_FIF]
+                        m_iblGenerator
                     );
 
                     m_modelManager.Update
@@ -2010,6 +1989,30 @@ namespace Renderer
         }
         #endif
 
+        m_scene->Update
+        (
+            m_frameCounter,
+            m_window.inputs,
+            m_modelManager,
+            m_iblGenerator
+        );
+
+        m_iblGenerator.Update
+        (
+            m_frameIndex,
+            cmdBuffer,
+            m_pipelineManager,
+            m_context,
+            m_formatHelper,
+            m_graphicsTimeline,
+            m_samplers,
+            m_modelManager,
+            m_megaSet,
+            m_stagingPool,
+            m_executor,
+            m_deletionQueues[m_FIF]
+        );
+
         m_modelManager.Update
         (
             cmdBuffer,
@@ -2017,24 +2020,6 @@ namespace Renderer
             m_context.allocator,
             m_megaSet,
             m_stagingPool,
-            m_executor,
-            m_deletionQueues[m_FIF]
-        );
-
-        m_scene->Update
-        (
-            m_frameIndex,
-            cmdBuffer,
-            m_pipelineManager,
-            m_frameCounter,
-            m_context,
-            m_formatHelper,
-            m_samplers,
-            m_window.inputs,
-            m_modelManager,
-            m_megaSet,
-            m_stagingPool,
-            m_iblGenerator,
             m_executor,
             m_deletionQueues[m_FIF]
         );
@@ -2068,14 +2053,6 @@ namespace Renderer
             m_megaSet,
             m_modelManager.textureManager,
             m_deletionQueues[m_FIF]
-        );
-
-        m_iblGenerator.Update
-        (
-            m_context.device,
-            m_context.allocator,
-            m_graphicsTimeline,
-            m_executor
         );
 
         ImGuiDisplay();
@@ -2498,6 +2475,8 @@ namespace Renderer
     RenderManager::~RenderManager()
     {
         Vk::CheckResult(vkDeviceWaitIdle(m_context.device), "Device failed to idle!");
+
+        m_executor.wait_for_all();
 
         for (auto& deletionQueue : m_deletionQueues)
         {

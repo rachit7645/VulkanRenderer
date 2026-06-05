@@ -164,8 +164,8 @@ namespace Vk
         m_storageImageAllocator = Vk::DescriptorAllocator(maxStorageImages);
 
         Vk::SetDebugName(context.device, m_descriptorPool, "MegaSet/DescriptorPool");
-        Vk::SetDebugName(context.device, layout, "MegaSet/DescriptorLayout");
-        Vk::SetDebugName(context.device, handle,    "MegaSet/DescriptorSet");
+        Vk::SetDebugName(context.device, layout,           "MegaSet/DescriptorLayout");
+        Vk::SetDebugName(context.device, handle,           "MegaSet/DescriptorSet");
     }
 
     Vk::DescriptorID MegaSet::WriteSampler(const Vk::Sampler& sampler)

@@ -27,6 +27,8 @@
 
 namespace Renderer::IBL
 {
+    using IBLID = u64;
+
     class Generator
     {
     public:
@@ -41,13 +43,49 @@ namespace Renderer::IBL
 
         void Update
         (
-            VkDevice device,
-            VmaAllocator allocator,
+            usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            const Vk::GraphicsTimeline& timeline,
+            const Objects::Samplers& samplers,
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
+            tf::Executor& executor,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        IBL::IBLID GenerateIBL(const std::string_view hdrMapAssetPath);
+
+        void DestroyIBL
+        (
+            IBLID id,
+            const Vk::Context& context,
+            Vk::TextureManager& textureManager,
+            Vk::MegaSet& megaSet,
+            Util::DeletionQueue& deletionQueue
+        );
+
+        IBL::IBLMaps GetIBLMaps(IBL::IBLID id);
+
+        void Destroy(VmaAllocator allocator);
+    private:
+        struct LoadedIBLMaps
+        {
+            IBL::IBLID   id      = 0;
+            IBL::IBLMaps iblMaps = {};
+        };
+
+        void TryReadback
+        (
+            const Vk::Context& context,
             const Vk::GraphicsTimeline& timeline,
             tf::Executor& executor
         );
 
-        IBL::IBLMaps Generate
+        IBL::IBLMaps LoadIBLMaps
         (
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
@@ -59,12 +97,9 @@ namespace Renderer::IBL
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view hdrMapAssetPath
+            Util::DeletionQueue& deletionQueue
         );
 
-        void Destroy(VmaAllocator allocator);
-    private:
         [[nodiscard]] Vk::TextureID LoadHDRMap
         (
             const Vk::CommandBuffer& cmdBuffer,
@@ -73,8 +108,7 @@ namespace Renderer::IBL
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view hdrMapAssetPath
+            Util::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateSkybox
@@ -128,12 +162,15 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         );
 
-        Vk::Buffer m_matrixBuffer;
+        Vk::Buffer m_matrixBuffer = {};
 
-        std::optional<Vk::TextureID> m_brdfLutID = std::nullopt;
+        std::optional<std::string> m_pathToLoad = std::nullopt;
 
-        std::optional<Vk::Buffer> m_brdfLutReadbackBuffer = std::nullopt;
-        std::optional<usize>      m_readbackFrameIndex    = std::nullopt;
+        std::optional<Generator::LoadedIBLMaps> m_loadedIBLMaps = std::nullopt;
+
+        std::optional<Vk::TextureID> m_brdfLutID             = std::nullopt;
+        std::optional<Vk::Buffer>    m_brdfLutReadbackBuffer = std::nullopt;
+        std::optional<usize>         m_readbackFrameIndex    = std::nullopt;
     };
 }
 

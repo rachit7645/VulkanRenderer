@@ -160,8 +160,124 @@ namespace Renderer::IBL
 
     void Generator::Update
     (
-        VkDevice device,
-        VmaAllocator allocator,
+        usize frameIndex,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        const Vk::GraphicsTimeline& timeline,
+        const Objects::Samplers& samplers,
+        Models::ModelManager& modelManager,
+        Vk::MegaSet& megaSet,
+        Vk::StagingPool& stagingPool,
+        tf::Executor& executor,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        if (m_pathToLoad.has_value())
+        {
+            if (m_loadedIBLMaps.has_value())
+            {
+                const u64 id = std::hash<std::string>{}(*m_pathToLoad);
+
+                if (id != m_loadedIBLMaps->id)
+                {
+                    m_loadedIBLMaps->iblMaps.Destroy
+                    (
+                        context.device,
+                        context.allocator,
+                        modelManager.textureManager,
+                        megaSet,
+                        deletionQueue
+                    );
+
+                    m_loadedIBLMaps = std::nullopt;
+                }
+            }
+
+            if (!m_loadedIBLMaps.has_value())
+            {
+                m_loadedIBLMaps = Generator::LoadedIBLMaps
+                {
+                    .id      = std::hash<std::string>{}(*m_pathToLoad),
+                    .iblMaps = LoadIBLMaps(
+                        frameIndex,
+                        cmdBuffer,
+                        pipelineManager,
+                        context,
+                        formatHelper,
+                        samplers,
+                        modelManager,
+                        megaSet,
+                        stagingPool,
+                        executor,
+                        deletionQueue
+                    )
+                };
+            }
+
+            m_pathToLoad = std::nullopt;
+        }
+
+        TryReadback(context, timeline, executor);
+    }
+
+    IBL::IBLID Generator::GenerateIBL(const std::string_view hdrMapAssetPath)
+    {
+        m_pathToLoad = hdrMapAssetPath.data();
+
+        return std::hash<std::string>{}(*m_pathToLoad);
+    }
+
+    void Generator::DestroyIBL
+    (
+        IBLID id,
+        const Vk::Context& context,
+        Vk::TextureManager& textureManager,
+        Vk::MegaSet& megaSet,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        if (!m_loadedIBLMaps.has_value())
+        {
+            Logger::Error("{}\n", "No loaded IBL maps!");
+        }
+
+        if (id != m_loadedIBLMaps->id)
+        {
+            Logger::Error("{}\n", "Invalid IBL Map ID!");
+        }
+
+        m_loadedIBLMaps->iblMaps.Destroy
+        (
+            context.device,
+            context.allocator,
+            textureManager,
+            megaSet,
+            deletionQueue
+        );
+
+        m_loadedIBLMaps = std::nullopt;
+    }
+
+    IBL::IBLMaps Generator::GetIBLMaps(IBL::IBLID id)
+    {
+        if (!m_loadedIBLMaps.has_value())
+        {
+            Logger::Error("{}\n", "No loaded IBL maps!");
+        }
+
+        if (id != m_loadedIBLMaps->id)
+        {
+            Logger::Error("{}\n", "Invalid IBL Map ID!");
+        }
+
+        return m_loadedIBLMaps->iblMaps;
+    }
+
+    void Generator::TryReadback
+    (
+        const Vk::Context& context,
         const Vk::GraphicsTimeline& timeline,
         tf::Executor& executor
     )
@@ -175,7 +291,7 @@ namespace Renderer::IBL
         (
             m_readbackFrameIndex.value() + Vk::FRAMES_IN_FLIGHT,
             Vk::GraphicsTimeline::Stage::SwapchainImageAcquired,
-            device
+            context.device
         );
 
         if (!isReadbackReady)
@@ -183,7 +299,7 @@ namespace Renderer::IBL
             return;
         }
 
-        executor.silent_async([this, allocator] mutable
+        executor.silent_async([this, allocator = context.allocator] mutable
         {
             const u8* pMappedData = static_cast<u8*>(m_brdfLutReadbackBuffer->hostAddress);
 
@@ -222,7 +338,7 @@ namespace Renderer::IBL
         m_readbackFrameIndex = std::nullopt;
     }
 
-    IBL::IBLMaps Generator::Generate
+    IBL::IBLMaps Generator::LoadIBLMaps
     (
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
@@ -234,8 +350,7 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
         tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view hdrMapAssetPath
+        Util::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "IBL Map Generation", {0.9215f, 0.8470f, 0.0274f, 1.0f});
@@ -248,8 +363,7 @@ namespace Renderer::IBL
             megaSet,
             stagingPool,
             executor,
-            deletionQueue,
-            hdrMapAssetPath
+            deletionQueue
         );
 
         const auto skyboxID = GenerateSkybox
@@ -331,8 +445,7 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
         tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view hdrMapAssetPath
+        Util::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
@@ -345,10 +458,10 @@ namespace Renderer::IBL
             executor,
             deletionQueue,
             Vk::ImageUpload{
-                .type   = Vk::FileToImageUploadType(hdrMapAssetPath),
+                .type   = Vk::FileToImageUploadType(*m_pathToLoad),
                 .flags  = Vk::ImageUploadFlags::F16,
                 .source = Vk::ImageUploadFile{
-                    .path = hdrMapAssetPath.data()
+                    .path = *m_pathToLoad
                 }
             }
         );

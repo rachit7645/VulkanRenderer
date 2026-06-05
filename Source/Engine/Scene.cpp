@@ -28,19 +28,9 @@ namespace Engine
 {
     Scene::Scene
     (
-        usize frameIndex,
         const Engine::Config& config,
-        const Vk::CommandBuffer& cmdBuffer,
-        const Vk::PipelineManager& pipelineManager,
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Renderer::Objects::Samplers& samplers,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet,
-        Vk::StagingPool& stagingPool,
-        Renderer::IBL::Generator& iblGenerator,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue
+        Renderer::IBL::Generator& iblGenerator
     )
     {
         #ifdef ENGINE_PROFILE
@@ -138,21 +128,7 @@ namespace Engine
 
             if (Files::Exists(hdrMapAssetPath))
             {
-                iblMaps = iblGenerator.Generate
-                (
-                    frameIndex,
-                    cmdBuffer,
-                    pipelineManager,
-                    context,
-                    formatHelper,
-                    samplers,
-                    modelManager,
-                    megaSet,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
-                    hdrMapAssetPath
-                );
+                iblMapsID = iblGenerator.GenerateIBL(hdrMapAssetPath);
             }
 
             m_loadedHDRMapPath.clear();
@@ -165,20 +141,10 @@ namespace Engine
 
     void Scene::Update
     (
-        usize frameIndex,
-        const Vk::CommandBuffer& cmdBuffer,
-        const Vk::PipelineManager& pipelineManager,
         const Util::FrameCounter& frameCounter,
-        const Vk::Context& context,
-        const Vk::FormatHelper& formatHelper,
-        const Renderer::Objects::Samplers& samplers,
         Engine::Inputs& inputs,
         Models::ModelManager& modelManager,
-        Vk::MegaSet& megaSet,
-        Vk::StagingPool& stagingPool,
-        Renderer::IBL::Generator& iblGenerator,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue
+        Renderer::IBL::Generator& iblGenerator
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -204,17 +170,6 @@ namespace Engine
                             if (Files::Exists(modelAssetPath))
                             {
                                 m_loadedRenderObject.modelID = modelManager.Load(m_loadedModelPath);
-
-                                modelManager.Update
-                                (
-                                    cmdBuffer,
-                                    context.device,
-                                    context.allocator,
-                                    megaSet,
-                                    stagingPool,
-                                    executor,
-                                    deletionQueue
-                                );
 
                                 renderObjects.emplace_back(m_loadedRenderObject);
 
@@ -246,7 +201,14 @@ namespace Engine
 
                         if (ImGui::TreeNode(fmt::format("[{}]", i).c_str()))
                         {
-                            ImGui::Text("Model | %s", modelManager.GetModel(iter->modelID).name.c_str());
+                            std::string name = "Unknown";
+
+                            if (modelManager.IsModelLoaded(iter->modelID))
+                            {
+                                name = modelManager.GetModel(iter->modelID).name;
+                            }
+
+                            ImGui::Text("Model | %s", name.c_str());
 
                             ImGui::Separator();
 
@@ -458,30 +420,7 @@ namespace Engine
 
                         if (Files::Exists(hdrMapAssetPath))
                         {
-                            iblMaps.Destroy
-                            (
-                                context.device,
-                                context.allocator,
-                                modelManager.textureManager,
-                                megaSet,
-                                deletionQueue
-                            );
-
-                            iblMaps = iblGenerator.Generate
-                            (
-                                frameIndex,
-                                cmdBuffer,
-                                pipelineManager,
-                                context,
-                                formatHelper,
-                                samplers,
-                                modelManager,
-                                megaSet,
-                                stagingPool,
-                                executor,
-                                deletionQueue,
-                                hdrMapAssetPath
-                            );
+                            iblMapsID = iblGenerator.GenerateIBL(hdrMapAssetPath);
                         }
 
                         m_loadedHDRMapPath.clear();
@@ -501,14 +440,15 @@ namespace Engine
     (
         const Vk::Context& context,
         Models::ModelManager& modelManager,
+        Renderer::IBL::Generator& iblGenerator,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
     )
     {
-        iblMaps.Destroy
+        iblGenerator.DestroyIBL
         (
-            context.device,
-            context.allocator,
+            iblMapsID,
+            context,
             modelManager.textureManager,
             megaSet,
             deletionQueue
