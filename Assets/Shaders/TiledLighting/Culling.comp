@@ -92,6 +92,11 @@ void main()
 
     for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
     {
+        if (indices.pointLightCount >= MAX_POINT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         PointLight light = Constants.Scene.PointLights.lights[i];
 
         if (Intersects(aabb, light))
@@ -103,6 +108,11 @@ void main()
 
     for (uint i = 0; i < Constants.Scene.ShadowedPointLights.count; ++i)
     {
+        if (indices.shadowedPointLightCount >= MAX_SHADOWED_POINT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         ShadowedPointLight light = Constants.Scene.ShadowedPointLights.lights[i];
 
         if (Intersects(aabb, light))
@@ -114,6 +124,11 @@ void main()
 
     for (uint i = 0; i < Constants.Scene.SpotLights.count; ++i)
     {
+        if (indices.spotLightCount >= MAX_SPOT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         SpotLight light = Constants.Scene.SpotLights.lights[i];
 
         if (Intersects(aabb, light))
@@ -125,6 +140,11 @@ void main()
 
     for (uint i = 0; i < Constants.Scene.ShadowedSpotLights.count; ++i)
     {
+        if (indices.shadowedSpotLightCount >= MAX_SHADOWED_SPOT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         ShadowedSpotLight light = Constants.Scene.ShadowedSpotLights.lights[i];
 
         if (Intersects(aabb, light))

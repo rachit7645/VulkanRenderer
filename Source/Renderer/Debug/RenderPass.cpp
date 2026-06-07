@@ -236,7 +236,6 @@ namespace Renderer::Debug
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Engine::Scene& scene,
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
@@ -337,8 +336,7 @@ namespace Renderer::Debug
                 FIF,
                 cmdBuffer,
                 pipelineManager,
-                sceneBuffer,
-                scene
+                sceneBuffer
             );
         }
 
@@ -980,8 +978,7 @@ namespace Renderer::Debug
         usize FIF,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
-        const Buffers::SceneBuffer& sceneBuffer,
-        const Engine::Scene& scene
+        const Buffers::SceneBuffer& sceneBuffer
     )
     {
         Vk::BeginLabel(cmdBuffer, "Render/PointLights", {0.6657f, 0.9149f, 0.4901f, 1.0f});
@@ -998,7 +995,39 @@ namespace Renderer::Debug
             VK_INDEX_TYPE_UINT32
         );
 
-        for (const auto& pointLight : scene.pointLights)
+        for (const auto& pointLight : sceneBuffer.pointLights)
+        {
+            const auto constants = Sphere::Constants
+            {
+                .Scene     = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+                .Positions = m_sphereVertexBuffer.deviceAddress,
+                .Transform = Maths::TransformMatrix(
+                    pointLight.position,
+                    glm::vec3(0.0f),
+                    glm::vec3(pointLight.range)
+                ),
+                .Color     = pointLight.color * pointLight.intensity
+            };
+
+            pipeline.PushConstants
+            (
+               cmdBuffer,
+               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+               constants
+            );
+
+            vkCmdDrawIndexed
+            (
+                cmdBuffer.handle,
+                m_sphereIndexBuffer.size / sizeof(u32),
+                1,
+                0,
+                0,
+                0
+            );
+        }
+
+        for (const auto& pointLight : sceneBuffer.shadowedPointLights)
         {
             const auto constants = Sphere::Constants
             {

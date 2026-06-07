@@ -47,7 +47,7 @@ namespace Vk
 
     void Swapchain::RecreateSwapChain(const Vk::Context& context)
     {
-        DestroySwapchain(context.device);
+        DestroySwapchainResources(context.device);
         CreateSwapChain(context);
     }
 
@@ -437,7 +437,7 @@ namespace Vk
         return imageCount;
     }
 
-    void Swapchain::DestroySwapchain(VkDevice device)
+    void Swapchain::DestroySwapchainResources(VkDevice device)
     {
         Vk::CheckResult(vkWaitForFences(
             device,
@@ -466,11 +466,13 @@ namespace Vk
         images.clear();
         imageViews.clear();
         imageLayouts.clear();
+        presentFences.clear();
+        renderFinishedSemaphores.clear();
     }
 
     void Swapchain::Destroy(VkDevice device)
     {
-        DestroySwapchain(device);
+        DestroySwapchainResources(device);
 
         vkDestroySwapchainKHR(device, handle, nullptr);
 

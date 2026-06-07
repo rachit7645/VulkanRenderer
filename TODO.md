@@ -29,3 +29,4 @@
 * Compress cached file data directly to file
 * Decompress cached file data directly to GPU-visible memory
 * De-couple Engine::Scene from the Renderer
+* Async Old Swapchain Deletion

@@ -64,7 +64,8 @@ namespace Models
         (
             fastgltf::Extensions::KHR_texture_basisu |
             fastgltf::Extensions::KHR_materials_ior |
-            fastgltf::Extensions::KHR_materials_emissive_strength
+            fastgltf::Extensions::KHR_materials_emissive_strength |
+            fastgltf::Extensions::KHR_lights_punctual
         );
 
         auto data = fastgltf::GltfDataBuffer::FromPath(assetPath);
@@ -203,6 +204,11 @@ namespace Models
                 asset.meshes[node.meshIndex.value()],
                 nodeMatrix
             );
+        }
+
+        if (node.lightIndex.has_value())
+        {
+            LoadLight(asset.lights[node.lightIndex.value()], nodeMatrix);
         }
 
         for (const auto child : node.children)
@@ -643,6 +649,53 @@ namespace Models
                 nodeMatrix,
                 aabb
             );
+        }
+    }
+
+    void Model::LoadLight(const fastgltf::Light& light, const glm::mat4& nodeMatrix)
+    {
+        switch (light.type)
+        {
+        // Only one directional light is supported
+        // That light is reserved by Engine::Scene
+        // So we can't add any others
+        case fastgltf::LightType::Directional:
+            break;
+
+        case fastgltf::LightType::Spot:
+        {
+            spotLights.emplace_back(Models::LocalSpotLight{
+                .transform = nodeMatrix,
+                .light     = GPU::SpotLight{
+                    .position  = glm::vec3(0.0f),
+                    .color     = glm::fastgltf_cast(light.color),
+                    .intensity = light.intensity,
+                    .direction = glm::vec3(0.0f, 0.0f, -1.0f),
+                    .cutOff    = glm::vec2(light.innerConeAngle.value_or(0.0f), light.outerConeAngle.value_or(0.0f)),
+                    .range     = light.range.value_or(0.0f)
+                }
+            });
+
+            break;
+        }
+
+        case fastgltf::LightType::Point:
+        {
+            pointLights.emplace_back(Models::LocalPointLight{
+                .transform = nodeMatrix,
+                .light     = GPU::PointLight{
+                    .position  = glm::vec3(0.0f),
+                    .color     = glm::fastgltf_cast(light.color),
+                    .intensity = light.intensity,
+                    .range     = light.range.value_or(0.0f)
+                }
+            });
+
+            break;
+        }
+
+        default:
+            Logger::Error("{}\n", "Invalid light type!");
         }
     }
 

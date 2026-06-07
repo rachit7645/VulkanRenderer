@@ -21,6 +21,7 @@
 #include <string_view>
 
 #include "Mesh.h"
+#include "LocalLights.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
@@ -53,9 +54,11 @@ namespace Models
             Util::DeletionQueue& deletionQueue
         );
 
-        std::string               name     = "Null/Model";
-        std::vector<Models::Mesh> meshes   = {};
-        bool                      isLoaded = false;
+        std::string                          name        = "Null/Model";
+        std::vector<Models::Mesh>            meshes      = {};
+        std::vector<Models::LocalPointLight> pointLights = {};
+        std::vector<Models::LocalSpotLight>  spotLights  = {};
+        bool                                 isLoaded    = false;
     private:
         struct TextureInfo
         {
@@ -105,6 +108,8 @@ namespace Models
             const fastgltf::Mesh& mesh,
             const glm::mat4& nodeMatrix
         );
+
+        void LoadLight(const fastgltf::Light& light, const glm::mat4& nodeMatrix);
 
         template<typename T>
         requires fastgltf::IsTextureInfo<T>

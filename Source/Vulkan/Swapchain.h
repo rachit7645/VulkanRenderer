@@ -60,7 +60,7 @@ namespace Vk
         std::vector<VkFence>     presentFences            = {};
     private:
         void CreateSwapChain(const Vk::Context& context);
-        void DestroySwapchain(VkDevice device);
+        void DestroySwapchainResources(VkDevice device);
 
         void CreateStaticSyncObjects(VkDevice device);
         void CreateSyncObjects(VkDevice device);

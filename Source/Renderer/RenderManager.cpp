@@ -1543,7 +1543,6 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            *m_scene,
             m_stagingPool,
             m_deletionQueues[m_FIF]
         );
@@ -2032,7 +2031,8 @@ namespace Renderer
             m_framebufferManager.renderExtent,
             m_framebufferManager.displayExtent,
             *m_scene,
-            m_renderConfig
+            m_renderConfig,
+            m_modelManager
         );
 
         m_meshBuffer.LoadMeshes

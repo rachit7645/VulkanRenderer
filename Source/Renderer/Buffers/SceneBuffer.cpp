@@ -58,7 +58,8 @@ namespace Renderer::Buffers
         VkExtent2D renderExtent,
         VkExtent2D displayExtent,
         const Engine::Scene& scene,
-        const Renderer::RenderConfig& renderConfig
+        const Renderer::RenderConfig& renderConfig,
+        const Models::ModelManager& modelManager
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -76,24 +77,49 @@ namespace Renderer::Buffers
             ImGui::EndMainMenuBar();
         }
 
-        const usize shadowedPointLightCount = std::min<usize>(scene.pointLights.size(), GPU::MAX_SHADOWED_POINT_LIGHT_COUNT);
-        const usize shadowedSpotLightCount  = std::min<usize>(scene.spotLights.size(),  GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT);
+        pointLights = scene.pointLights;
+        spotLights  = scene.spotLights;
+
+        for (const auto& renderObject : scene.renderObjects)
+        {
+            const auto& model = modelManager.GetModel(renderObject.modelID);
+
+            const auto globalTransform = Maths::TransformMatrix
+            (
+               renderObject.position,
+               renderObject.rotation,
+               renderObject.scale
+            );
+
+            for (const auto& light : model.pointLights)
+            {
+                pointLights.emplace_back(light.Transform(globalTransform));
+            }
+
+            for (const auto& light : model.spotLights)
+            {
+                spotLights.emplace_back(light.Transform(globalTransform));
+            }
+        }
+
+        const usize shadowedPointLightCount = std::min<usize>(pointLights.size(), GPU::MAX_SHADOWED_POINT_LIGHT_COUNT);
+        const usize shadowedSpotLightCount  = std::min<usize>(spotLights.size(),  GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT);
 
         shadowedPointLights.resize(shadowedPointLightCount);
         shadowedSpotLights.resize(shadowedSpotLightCount);
 
         for (usize i = 0; i < shadowedPointLightCount; ++i)
         {
-            shadowedPointLights[i] = GPU::ShadowedPointLight(scene.pointLights[i]);
+            shadowedPointLights[i] = GPU::ShadowedPointLight(pointLights[i]);
         }
 
         for (usize i = 0; i < shadowedSpotLightCount; ++i)
         {
-            shadowedSpotLights[i] = GPU::ShadowedSpotLight(scene.spotLights[i]);
+            shadowedSpotLights[i] = GPU::ShadowedSpotLight(spotLights[i]);
         }
 
-        const auto uploadedPointLights = std::span(scene.pointLights).subspan(shadowedPointLightCount);
-        const auto uploadedSpotLights  = std::span(scene.spotLights).subspan(shadowedSpotLightCount);
+        const auto uploadedPointLights = std::span(pointLights).subspan(shadowedPointLightCount);
+        const auto uploadedSpotLights  = std::span(spotLights).subspan(shadowedSpotLightCount);
 
         const auto projection = Maths::InfiniteProjectionReverseZ
         (

@@ -24,28 +24,33 @@ GLSL_NAMESPACE_BEGIN(Renderer::TiledLighting)
 
 GLSL_CONSTEXPR u32 TILE_SIZE = 16;
 
+GLSL_CONSTEXPR u32 MAX_POINT_LIGHTS_PER_TILE          = 12;
+GLSL_CONSTEXPR u32 MAX_SHADOWED_POINT_LIGHTS_PER_TILE =  4;
+GLSL_CONSTEXPR u32 MAX_SPOT_LIGHTS_PER_TILE           = 12;
+GLSL_CONSTEXPR u32 MAX_SHADOWED_SPOT_LIGHTS_PER_TILE  =  4;
+
 #ifdef __cplusplus
 
-using GPU::MAX_POINT_LIGHT_COUNT;
-using GPU::MAX_SHADOWED_POINT_LIGHT_COUNT;
-using GPU::MAX_SPOT_LIGHT_COUNT;
-using GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT;
+static_assert(TiledLighting::MAX_POINT_LIGHTS_PER_TILE          <= GPU::MAX_POINT_LIGHT_COUNT);
+static_assert(TiledLighting::MAX_SHADOWED_POINT_LIGHTS_PER_TILE <= GPU::MAX_SHADOWED_POINT_LIGHT_COUNT);
+static_assert(TiledLighting::MAX_SPOT_LIGHTS_PER_TILE           <= GPU::MAX_SPOT_LIGHT_COUNT);
+static_assert(TiledLighting::MAX_SHADOWED_SPOT_LIGHTS_PER_TILE  <= GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT);
 
 #endif
 
 struct TileLightIndices
 {
     u16 pointLightCount;
-    u16 pointLightIndices[MAX_POINT_LIGHT_COUNT];
+    u16 pointLightIndices[MAX_POINT_LIGHTS_PER_TILE];
 
     u16 shadowedPointLightCount;
-    u16 shadowedPointLightIndices[MAX_SHADOWED_POINT_LIGHT_COUNT];
+    u16 shadowedPointLightIndices[MAX_SHADOWED_POINT_LIGHTS_PER_TILE];
 
     u16 spotLightCount;
-    u16 spotLightIndices[MAX_SPOT_LIGHT_COUNT];
+    u16 spotLightIndices[MAX_SPOT_LIGHTS_PER_TILE];
 
     u16 shadowedSpotLightCount;
-    u16 shadowedSpotLightIndices[MAX_SHADOWED_SPOT_LIGHT_COUNT];
+    u16 shadowedSpotLightIndices[MAX_SHADOWED_SPOT_LIGHTS_PER_TILE];
 };
 
 #ifndef __cplusplus

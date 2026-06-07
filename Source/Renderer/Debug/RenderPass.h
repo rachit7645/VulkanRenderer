@@ -51,7 +51,6 @@ namespace Renderer::Debug
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const Engine::Scene& scene,
             Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
@@ -109,8 +108,7 @@ namespace Renderer::Debug
             usize FIF,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
-            const Buffers::SceneBuffer& sceneBuffer,
-            const Engine::Scene& scene
+            const Buffers::SceneBuffer& sceneBuffer
         );
 
         Vk::Buffer m_aabbIndexBuffer    = {};

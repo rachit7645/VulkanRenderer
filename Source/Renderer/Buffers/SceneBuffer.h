@@ -53,7 +53,8 @@ namespace Renderer::Buffers
             VkExtent2D renderExtent,
             VkExtent2D displayExtent,
             const Engine::Scene& scene,
-            const Renderer::RenderConfig& renderConfig
+            const Renderer::RenderConfig& renderConfig,
+            const Models::ModelManager& modelManager
         );
 
         void Destroy(VmaAllocator allocator);
@@ -62,8 +63,10 @@ namespace Renderer::Buffers
 
         glm::mat4 cullingJitteredProjectionView = {};
 
-        std::vector<GPU::ShadowedPointLight> shadowedPointLights;
-        std::vector<GPU::ShadowedSpotLight>  shadowedSpotLights;
+        std::vector<GPU::PointLight>         pointLights         = {};
+        std::vector<GPU::ShadowedPointLight> shadowedPointLights = {};
+        std::vector<GPU::SpotLight>          spotLights          = {};
+        std::vector<GPU::ShadowedSpotLight>  shadowedSpotLights  = {};
 
         SceneBuffer::Buffers graphicsBuffers;
 
