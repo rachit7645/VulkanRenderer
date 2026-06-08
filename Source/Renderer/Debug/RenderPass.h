@@ -111,11 +111,25 @@ namespace Renderer::Debug
             const Buffers::SceneBuffer& sceneBuffer
         );
 
+        void GenerateCullingStatistics
+        (
+            usize FIF,
+            usize frameIndex,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Buffers::MeshBuffer& meshBuffer,
+            const Buffers::IndirectBuffer& indirectBuffer
+        );
+
         Vk::Buffer m_aabbIndexBuffer    = {};
         Vk::Buffer m_aabbDrawCallBuffer = {};
 
         Vk::Buffer m_sphereIndexBuffer  = {};
         Vk::Buffer m_sphereVertexBuffer = {};
+
+        Vk::Buffer m_cullingStatisticsBuffer = {};
+
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_cullingStatisticsReadbackBuffers = {};
 
         std::optional<Vk::StagingMemoryBlock> m_pendingAABBIndexUpload    = std::nullopt;
         std::optional<Vk::StagingMemoryBlock> m_pendingSphereIndexUpload  = std::nullopt;
@@ -148,7 +162,8 @@ namespace Renderer::Debug
             };
         } m_aabbDebugOptions = {};
 
-        bool m_enablePointLightDebug = false;
+        bool m_enablePointLightDebug     = false;
+        bool m_enableCullingStatistics = false;
     };
 }
 

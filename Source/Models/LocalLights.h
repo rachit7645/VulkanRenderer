@@ -23,7 +23,7 @@ namespace Models
 {
     struct LocalPointLight
     {
-        GPU::PointLight Transform(const glm::mat4& matrix) const;
+        [[nodiscard]] GPU::PointLight Transform(const glm::mat4& matrix) const;
 
         glm::mat4       transform;
         GPU::PointLight light;
@@ -31,7 +31,7 @@ namespace Models
 
     struct LocalSpotLight
     {
-        GPU::SpotLight Transform(const glm::mat4& matrix) const;
+        [[nodiscard]] GPU::SpotLight Transform(const glm::mat4& matrix) const;
 
         glm::mat4      transform;
         GPU::SpotLight light;

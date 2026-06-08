@@ -27,6 +27,8 @@ namespace Files
 {
     [[nodiscard]] std::string GetAssetPath(const std::string_view prefix, const std::string_view fileName);
 
+    [[nodiscard]] bool CreateDirectory(const std::string_view path);
+
     [[nodiscard]] std::string GetDirectory(const std::string_view path);
     [[nodiscard]] usize       GetSize(const std::string_view path);
     [[nodiscard]] std::string GetNameWithoutExtension(const std::string_view fileName);

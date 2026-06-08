@@ -373,7 +373,7 @@ namespace Renderer::Culling
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
@@ -399,7 +399,7 @@ namespace Renderer::Culling
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
@@ -425,7 +425,7 @@ namespace Renderer::Culling
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
@@ -451,7 +451,7 @@ namespace Renderer::Culling
             Vk::BufferBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,

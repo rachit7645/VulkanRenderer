@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef CULLING_DEBUG_H
-#define CULLING_DEBUG_H
+#ifndef AABB_DRAW_CALL_DEBUG_H
+#define AABB_DRAW_CALL_DEBUG_H
 
 #include "GLSL.h"
 #include "GPU/Mesh.h"

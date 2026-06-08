@@ -19,6 +19,7 @@
 #include "Debug/GenerateDrawCalls.h"
 #include "Debug/AABB.h"
 #include "Debug/Sphere.h"
+#include "Debug/GenerateCullingStatistics.h"
 #include "Util/WireframeSphere.h"
 #include "Vulkan/DebugUtils.h"
 
@@ -38,7 +39,7 @@ namespace Renderer::Debug
         Vk::StagingPool& stagingPool
     )
     {
-        // Pipelines & Framebuffers
+        // Pipelines
         {
             constexpr std::array DYNAMIC_STATES =
             {
@@ -80,6 +81,15 @@ namespace Renderer::Debug
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Sphere::Constants))
             );
 
+            pipelineManager.AddPipeline("Debug/Culling/GenerateStatistics", Vk::PipelineConfig{}
+                .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
+                .AttachShader("Debug/GenerateCullingStatistics.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+                .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::Constants))
+            );
+        }
+
+        // Framebuffers
+        {
             framebufferManager.AddFramebuffer
             (
                 "Debug/Depth",
@@ -219,10 +229,53 @@ namespace Renderer::Debug
             }
         }
 
-        Vk::SetDebugName(device, m_aabbIndexBuffer.handle,    "Debug/AABB/IndexBuffer");
-        Vk::SetDebugName(device, m_aabbDrawCallBuffer.handle, "Debug/AABB/DrawCalls");
-        Vk::SetDebugName(device, m_sphereIndexBuffer.handle,  "Debug/Lights/Sphere/IndexBuffer");
-        Vk::SetDebugName(device, m_sphereVertexBuffer.handle, "Debug/Lights/Sphere/VertexBuffer");
+        // Culling Statistics
+        {
+            m_cullingStatisticsBuffer = Vk::Buffer
+            (
+                device,
+                allocator,
+                sizeof(Culling::CullingStatisticsBuffer),
+                0,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                0,
+                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+            );
+
+            for (auto& buffer : m_cullingStatisticsReadbackBuffers)
+            {
+                buffer = Vk::Buffer
+                (
+                    device,
+                    allocator,
+                    sizeof(Culling::CullingStatisticsBuffer),
+                    0,
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                    VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+                    VMA_MEMORY_USAGE_AUTO
+                );
+
+                constexpr Culling::CullingStatisticsBuffer ZERO = {};
+
+                std::memcpy(buffer.hostAddress, &ZERO, sizeof(Culling::CullingStatisticsBuffer));
+            }
+        }
+
+        // Naming
+        {
+            Vk::SetDebugName(device, m_aabbIndexBuffer.handle,         "Debug/AABB/IndexBuffer");
+            Vk::SetDebugName(device, m_aabbDrawCallBuffer.handle,      "Debug/AABB/DrawCalls");
+            Vk::SetDebugName(device, m_sphereIndexBuffer.handle,       "Debug/Lights/Sphere/IndexBuffer");
+            Vk::SetDebugName(device, m_sphereVertexBuffer.handle,      "Debug/Lights/Sphere/VertexBuffer");
+            Vk::SetDebugName(device, m_cullingStatisticsBuffer.handle, "Debug/Culling/StatisticsBuffer");
+
+            for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
+            {
+                Vk::SetDebugName(device, m_cullingStatisticsReadbackBuffers[i].handle, fmt::format("Debug/Culling/StatisticsBuffer/Readback/{}", i));
+            }
+        }
     }
 
     void RenderPass::Render
@@ -281,6 +334,53 @@ namespace Renderer::Debug
                     ImGui::Separator();
 
                     ImGui::Checkbox("Render Point Lights", &m_enablePointLightDebug);
+
+                    ImGui::Separator();
+
+                    ImGui::Checkbox("Generate Culling Statistics", &m_enableCullingStatistics);
+
+                    if (m_enableCullingStatistics)
+                    {
+                        constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
+                                                          ImGuiTableFlags_BordersInnerV |
+                                                          ImGuiTableFlags_BordersOuterH |
+                                                          ImGuiTableFlags_BordersOuterV;
+
+                        if (ImGui::BeginTable("##CullingStatisticsTable", 4, flags))
+                        {
+                            const auto* statistics = static_cast<const Culling::CullingStatisticsBuffer*>(m_cullingStatisticsReadbackBuffers[FIF].hostAddress);
+
+                            auto CullingStatisticsDebugUI = [] (const std::string_view name, const Culling::MeshCullingStatistics& statistics)
+                            {
+                                ImGui::TableNextRow();
+                                ImGui::TableSetColumnIndex(0);
+                                ImGui::Text("%s", name.data());
+                                ImGui::TableSetColumnIndex(1);
+                                ImGui::Text("%u", statistics.instanceCount);
+                                ImGui::TableSetColumnIndex(2);
+                                ImGui::Text("%u", statistics.vertexCount);
+                                ImGui::TableSetColumnIndex(3);
+                                ImGui::Text("%u", statistics.indexCount);
+                            };
+
+                            ImGui::TableSetupColumn("Type");
+                            ImGui::TableSetupColumn("Instance Count");
+                            ImGui::TableSetupColumn("Vertex Count");
+                            ImGui::TableSetupColumn("Index Count");
+
+                            ImGui::TableSetupScrollFreeze(0, 0);
+
+                            ImGui::TableHeadersRow();
+
+                            CullingStatisticsDebugUI("Opaque",                 statistics->opaque);
+                            CullingStatisticsDebugUI("OpaqueDoubleSided",      statistics->opaqueDoubleSided);
+                            CullingStatisticsDebugUI("AlphaMasked",            statistics->alphaMasked);
+                            CullingStatisticsDebugUI("AlphaMaskedDoubleSided", statistics->alphaMaskedDoubleSided);
+                            CullingStatisticsDebugUI("Total",                  statistics->total);
+
+                            ImGui::EndTable();
+                        }
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -341,6 +441,19 @@ namespace Renderer::Debug
         }
 
         EndDebugRender(cmdBuffer, framebufferManager);
+
+        if (m_enableCullingStatistics)
+        {
+            GenerateCullingStatistics
+            (
+                FIF,
+                frameIndex,
+                cmdBuffer,
+                pipelineManager,
+                meshBuffer,
+                indirectBuffer
+            );
+        }
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -1062,6 +1175,214 @@ namespace Renderer::Debug
         Vk::EndLabel(cmdBuffer);
     }
 
+    void RenderPass::GenerateCullingStatistics
+    (
+        usize FIF,
+        usize frameIndex,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
+        const Buffers::MeshBuffer& meshBuffer,
+        const Buffers::IndirectBuffer& indirectBuffer
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Culling/GenerateStatistics", {0.1657f, 0.1149f, 0.3901f, 1.0f});
+
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            m_cullingStatisticsBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = m_cullingStatisticsBuffer.size
+            }
+        )
+        .Execute(cmdBuffer);
+
+        const auto& pipeline = pipelineManager.GetPipeline("Debug/Culling/GenerateStatistics");
+
+        pipeline.Bind(cmdBuffer);
+
+        const auto constants = Culling::Constants
+        {
+            .Meshes                                      = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+            .Instances                                   = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
+            .CulledOpaqueDrawCalls                       = indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.deviceAddress,
+            .CulledOpaqueInstanceIndices                 = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
+            .CulledOpaqueDoubleSidedDrawCalls            = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.deviceAddress,
+            .CulledOpaqueDoubleSidedInstanceIndices      = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+            .CulledAlphaMaskedDrawCalls                  = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer.deviceAddress,
+            .CulledAlphaMaskedInstanceIndices            = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
+            .CulledAlphaMaskedDoubleSidedDrawCalls       = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.deviceAddress,
+            .CulledAlphaMaskedDoubleSidedInstanceIndices = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
+            .CullingStatistics                           = m_cullingStatisticsBuffer.deviceAddress
+        };
+
+        pipeline.PushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_COMPUTE_BIT,
+            constants
+        );
+
+        vkCmdDispatch
+        (
+            cmdBuffer.handle,
+            1,
+            1,
+            1
+        );
+
+        barrierWriter
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = sizeof(u32)
+            }
+        )
+        .WriteBufferBarrier(
+            m_cullingStatisticsBuffer,
+            Vk::BufferBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .offset         = 0,
+                .size           = m_cullingStatisticsBuffer.size
+            }
+        )
+        .Execute(cmdBuffer);
+
+        constexpr VkBufferCopy2 copyRegion =
+        {
+            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+            .pNext     = nullptr,
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size      = sizeof(Culling::CullingStatisticsBuffer)
+        };
+
+        const VkCopyBufferInfo2 copyInfo =
+        {
+            .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+            .pNext       = nullptr,
+            .srcBuffer   = m_cullingStatisticsBuffer.handle,
+            .dstBuffer   = m_cullingStatisticsReadbackBuffers[FIF].handle,
+            .regionCount = 1,
+            .pRegions    = &copyRegion
+        };
+
+        vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
     void RenderPass::Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
         m_aabbIndexBuffer.Destroy(allocator);
@@ -1069,6 +1390,13 @@ namespace Renderer::Debug
 
         m_sphereIndexBuffer.Destroy(allocator);
         m_sphereVertexBuffer.Destroy(allocator);
+
+        m_cullingStatisticsBuffer.Destroy(allocator);
+
+        for (auto& buffer : m_cullingStatisticsReadbackBuffers)
+        {
+            buffer.Destroy(allocator);
+        }
 
         if (m_pendingAABBIndexUpload.has_value())
         {

@@ -39,6 +39,11 @@ namespace Cache
 
         const std::string path = CACHE_DIRECTORY + std::string(entry.cacheFile);
 
+        if (Files::CreateDirectory(CACHE_DIRECTORY))
+        {
+            Logger::Debug("{}\n", "Created cache directory!");
+        };
+
         auto bin = std::ofstream(path, std::ios::binary | std::ios::out);
 
         if (!bin.is_open())

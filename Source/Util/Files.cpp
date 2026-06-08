@@ -28,6 +28,11 @@ namespace Files
         return fmt::format("{}{}{}", ASSETS_DIRECTORY, prefix, fileName);
     }
 
+    bool CreateDirectory(const std::string_view directory)
+    {
+        return std::filesystem::create_directory(std::filesystem::path(directory));
+    }
+
     std::string GetDirectory(const std::string_view path)
     {
         return std::filesystem::path(path).parent_path().string();
@@ -66,7 +71,7 @@ namespace Files
 
     bool Remove(const std::string_view fileName)
     {
-        return std::filesystem::remove(fileName);
+        return std::filesystem::remove(std::filesystem::path(fileName));
     }
 
     std::vector<u8> ReadBytes(const std::string_view path)

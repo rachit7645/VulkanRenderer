@@ -1,0 +1,80 @@
+/*
+ * Copyright (c) 2023 - 2026 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Debug/GenerateCullingStatistics.h"
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+MeshCullingStatistics WriteMeshStatistics(DrawCallBuffer drawCallBuffer, InstanceIndexBuffer instanceIndexBuffer);
+MeshCullingStatistics Add(MeshCullingStatistics A, MeshCullingStatistics B);
+
+void main()
+{
+    MeshCullingStatistics opaque                 = WriteMeshStatistics(Constants.CulledOpaqueDrawCalls,                 Constants.CulledOpaqueInstanceIndices);
+    MeshCullingStatistics opaqueDoubleSided      = WriteMeshStatistics(Constants.CulledOpaqueDoubleSidedDrawCalls,      Constants.CulledOpaqueDoubleSidedInstanceIndices);
+    MeshCullingStatistics alphaMasked            = WriteMeshStatistics(Constants.CulledAlphaMaskedDrawCalls,            Constants.CulledAlphaMaskedInstanceIndices);
+    MeshCullingStatistics alphaMaskedDoubleSided = WriteMeshStatistics(Constants.CulledAlphaMaskedDoubleSidedDrawCalls, Constants.CulledAlphaMaskedDoubleSidedInstanceIndices);
+
+    MeshCullingStatistics total = ZeroMeshCullingStatistics();
+
+    total = Add(total, opaque);
+    total = Add(total, opaqueDoubleSided);
+    total = Add(total, alphaMasked);
+    total = Add(total, alphaMaskedDoubleSided);
+
+    Constants.CullingStatistics.opaque                 = opaque;
+    Constants.CullingStatistics.opaqueDoubleSided      = opaqueDoubleSided;
+    Constants.CullingStatistics.alphaMasked            = alphaMasked;
+    Constants.CullingStatistics.alphaMaskedDoubleSided = alphaMaskedDoubleSided;
+    Constants.CullingStatistics.total                  = total;
+}
+
+MeshCullingStatistics WriteMeshStatistics(DrawCallBuffer drawCallBuffer, InstanceIndexBuffer instanceIndexBuffer)
+{
+    MeshCullingStatistics statistics = ZeroMeshCullingStatistics();
+
+    statistics.instanceCount = drawCallBuffer.count;
+
+    for (uint i = 0; i < statistics.instanceCount; ++i)
+    {
+        uint        instanceIndex = instanceIndexBuffer.indices[i];
+        Instance    instance      = Constants.Instances.instances[instanceIndex];
+        uint        meshIndex     = instance.meshIndex;
+        Mesh        mesh          = Constants.Meshes.meshes[meshIndex];
+        SurfaceInfo surfaceInfo   = mesh.surfaceInfo;
+
+        statistics.vertexCount += surfaceInfo.vertexInfo.count;
+        statistics.indexCount  += surfaceInfo.indexInfo.count;
+    }
+
+    return statistics;
+}
+
+// Wish I had operator overloading.....
+MeshCullingStatistics Add(MeshCullingStatistics A, MeshCullingStatistics B)
+{
+    A.instanceCount += B.instanceCount;
+    A.vertexCount   += B.vertexCount;
+    A.indexCount    += B.indexCount;
+
+    return A;
+}

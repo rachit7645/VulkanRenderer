@@ -21,7 +21,6 @@
 #include "Util/Files.h"
 #include "Util/Enum.h"
 #include "Util/Types.h"
-#include "Util/Maths.h"
 #include "Util/Visitor.h"
 
 namespace Models
@@ -65,7 +64,8 @@ namespace Models
             fastgltf::Extensions::KHR_texture_basisu |
             fastgltf::Extensions::KHR_materials_ior |
             fastgltf::Extensions::KHR_materials_emissive_strength |
-            fastgltf::Extensions::KHR_lights_punctual
+            fastgltf::Extensions::KHR_lights_punctual |
+            fastgltf::Extensions::KHR_mesh_quantization
         );
 
         auto data = fastgltf::GltfDataBuffer::FromPath(assetPath);
