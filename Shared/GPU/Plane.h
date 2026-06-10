@@ -27,7 +27,7 @@ struct Plane
     f32       distance;
 };
 
-GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)
+GLSL_BUFFER(FrustumBuffer, readonly)
 {
     #ifdef __cplusplus
     explicit FrustumBuffer(const glm::mat4& projectionView)

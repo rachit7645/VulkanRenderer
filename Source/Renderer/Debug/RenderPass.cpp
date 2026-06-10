@@ -16,18 +16,16 @@
 
 #include "RenderPass.h"
 
-#include "Debug/GenerateDrawCalls.h"
-#include "Debug/AABB.h"
+#include "Debug/AABB/GenerateDrawCalls.h"
+#include "Debug/AABB/AABB.h"
 #include "Debug/Sphere.h"
 #include "Debug/GenerateCullingStatistics.h"
+#include "Debug/GenerateTiledLightingStatistics.h"
 #include "Util/WireframeSphere.h"
 #include "Vulkan/DebugUtils.h"
 
 namespace Renderer::Debug
 {
-    constexpr usize LIGHT_SPHERE_STACKS = 32;
-    constexpr usize LIGHT_SPHERE_SLICES = 32;
-
     RenderPass::RenderPass
     (
         VkDevice device,
@@ -51,21 +49,21 @@ namespace Renderer::Debug
 
             pipelineManager.AddPipeline("Debug/AABB/GenerateDrawCalls", Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-                .AttachShader("Debug/GenerateDrawCalls.comp", VK_SHADER_STAGE_COMPUTE_BIT)
-                .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Generate::Constants))
+                .AttachShader("Debug/AABB/GenerateDrawCalls.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+                .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(AABB::Generate::Constants))
             );
 
             pipelineManager.AddPipeline("Debug/AABB", Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
                 .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
-                .AttachShader("Debug/AABB.vert", VK_SHADER_STAGE_VERTEX_BIT)
-                .AttachShader("Debug/AABB.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+                .AttachShader("Debug/AABB/AABB.vert", VK_SHADER_STAGE_VERTEX_BIT)
+                .AttachShader("Debug/AABB/AABB.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
                 .SetDynamicStates(DYNAMIC_STATES)
                 .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
                 .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
                 .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
                 .AddDefaultBlendAttachment()
-                .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AABB::Constants))
+                .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AABB::Render::Constants))
             );
 
             pipelineManager.AddPipeline("Debug/Light/Sphere", Vk::PipelineConfig{}
@@ -85,6 +83,12 @@ namespace Renderer::Debug
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
                 .AttachShader("Debug/GenerateCullingStatistics.comp", VK_SHADER_STAGE_COMPUTE_BIT)
                 .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::Constants))
+            );
+
+            pipelineManager.AddPipeline("Debug/TiledLighting/GenerateStatistics", Vk::PipelineConfig{}
+                .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
+                .AttachShader("Debug/GenerateTiledLightingStatistics.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+                .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(TiledLighting::Constants))
             );
         }
 
@@ -172,6 +176,9 @@ namespace Renderer::Debug
 
         // Light Sphere
         {
+            constexpr usize LIGHT_SPHERE_STACKS = 32;
+            constexpr usize LIGHT_SPHERE_SLICES = 32;
+
             const auto lightSphere = Maths::WireframeSphere(LIGHT_SPHERE_STACKS, LIGHT_SPHERE_SLICES);
 
             // Indices
@@ -263,17 +270,53 @@ namespace Renderer::Debug
             }
         }
 
+        // Tiled Lighting Statistics
+        {
+            m_tiledLightingStatisticsBuffer = Vk::Buffer
+            (
+                device,
+                allocator,
+                sizeof(TiledLighting::TiledLightingStatisticsBuffer),
+                0,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                0,
+                VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+            );
+
+            for (auto& buffer : m_tiledLightingStatisticsReadbackBuffers)
+            {
+                buffer = Vk::Buffer
+                (
+                    device,
+                    allocator,
+                    sizeof(TiledLighting::TiledLightingStatisticsBuffer),
+                    0,
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                    VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+                    VMA_MEMORY_USAGE_AUTO
+                );
+
+                constexpr TiledLighting::TiledLightingStatisticsBuffer ZERO = {};
+
+                std::memcpy(buffer.hostAddress, &ZERO, sizeof(TiledLighting::TiledLightingStatisticsBuffer));
+            }
+        }
+
         // Naming
         {
-            Vk::SetDebugName(device, m_aabbIndexBuffer.handle,         "Debug/AABB/IndexBuffer");
-            Vk::SetDebugName(device, m_aabbDrawCallBuffer.handle,      "Debug/AABB/DrawCalls");
-            Vk::SetDebugName(device, m_sphereIndexBuffer.handle,       "Debug/Lights/Sphere/IndexBuffer");
-            Vk::SetDebugName(device, m_sphereVertexBuffer.handle,      "Debug/Lights/Sphere/VertexBuffer");
-            Vk::SetDebugName(device, m_cullingStatisticsBuffer.handle, "Debug/Culling/StatisticsBuffer");
+            Vk::SetDebugName(device, m_aabbIndexBuffer.handle,               "Debug/AABB/IndexBuffer");
+            Vk::SetDebugName(device, m_aabbDrawCallBuffer.handle,            "Debug/AABB/DrawCalls");
+            Vk::SetDebugName(device, m_sphereIndexBuffer.handle,             "Debug/Lights/Sphere/IndexBuffer");
+            Vk::SetDebugName(device, m_sphereVertexBuffer.handle,            "Debug/Lights/Sphere/VertexBuffer");
+            Vk::SetDebugName(device, m_cullingStatisticsBuffer.handle,       "Debug/Culling/StatisticsBuffer");
+            Vk::SetDebugName(device, m_tiledLightingStatisticsBuffer.handle, "Debug/TiledLighting/StatisticsBuffer");
 
             for (usize i = 0; i < Vk::FRAMES_IN_FLIGHT; ++i)
             {
-                Vk::SetDebugName(device, m_cullingStatisticsReadbackBuffers[i].handle, fmt::format("Debug/Culling/StatisticsBuffer/Readback/{}", i));
+                Vk::SetDebugName(device, m_cullingStatisticsReadbackBuffers[i].handle,       fmt::format("Debug/Culling/StatisticsBuffer/Readback/{}",       i));
+                Vk::SetDebugName(device, m_tiledLightingStatisticsReadbackBuffers[i].handle, fmt::format("Debug/TiledLighting/StatisticsBuffer/Readback/{}", i));
             }
         }
     }
@@ -289,97 +332,130 @@ namespace Renderer::Debug
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
+        const Buffers::TileLightIndexBuffer& tiledLightIndexBuffer,
         Vk::StagingPool& stagingPool,
         Util::DeletionQueue& deletionQueue
     )
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Renderer"))
+            if (ImGui::BeginMenu("Debug"))
             {
-                if (ImGui::CollapsingHeader("Debug Renderer"))
+                constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
+                                                  ImGuiTableFlags_BordersInnerV |
+                                                  ImGuiTableFlags_BordersOuterH |
+                                                  ImGuiTableFlags_BordersOuterV;
+
+                ImGui::Checkbox("Render AABBs", &m_aabbDebugOptions.enabled);
+
+                if (m_aabbDebugOptions.enabled)
                 {
-                    ImGui::Checkbox("Render AABBs", &m_aabbDebugOptions.enabled);
-
-                    if (m_aabbDebugOptions.enabled)
+                    auto AABBDebugOptionUI = [] (const std::string_view label, const std::string_view id, RenderPass::AABBDebugOption& debugOption) mutable
                     {
-                        auto AABBDebugOptionUI = [] (const std::string_view label, const std::string_view id, RenderPass::AABBDebugOption& debugOption) mutable
-                        {
-                            ImGui::Checkbox(label.data(), &debugOption.enabled);
-                            ImGui::SameLine();
-                            ImGui::ColorEdit3(id.data(), &debugOption.color[0], ImGuiColorEditFlags_NoInputs);
-                        };
+                        ImGui::Checkbox(label.data(), &debugOption.enabled);
+                        ImGui::SameLine();
+                        ImGui::ColorEdit3(id.data(), &debugOption.color[0], ImGuiColorEditFlags_NoInputs);
+                    };
 
-                        ImGui::Separator();
+                    ImGui::Separator();
 
-                        if (ImGui::TreeNodeEx("Opaque", ImGuiTreeNodeFlags_DefaultOpen))
-                        {
-                            AABBDebugOptionUI("Single Sided", "##OpaqueSingleSided", m_aabbDebugOptions.opaque.singleSided);
-                            AABBDebugOptionUI("Double Sided", "##OpaqueDoubleSided", m_aabbDebugOptions.opaque.doubleSided);
+                    if (ImGui::TreeNodeEx("Opaque", ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        AABBDebugOptionUI("Single Sided", "##OpaqueSingleSided", m_aabbDebugOptions.opaque.singleSided);
+                        AABBDebugOptionUI("Double Sided", "##OpaqueDoubleSided", m_aabbDebugOptions.opaque.doubleSided);
 
-                            ImGui::TreePop();
-                        }
-
-                        ImGui::Separator();
-
-                        if (ImGui::TreeNodeEx("Alpha Masked", ImGuiTreeNodeFlags_DefaultOpen))
-                        {
-                            AABBDebugOptionUI("Single Sided", "##AlphaMaskedSingleSided", m_aabbDebugOptions.alphaMasked.singleSided);
-                            AABBDebugOptionUI("Double Sided", "##AlphaMaskedDoubleSided", m_aabbDebugOptions.alphaMasked.doubleSided);
-
-                            ImGui::TreePop();
-                        }
+                        ImGui::TreePop();
                     }
 
                     ImGui::Separator();
 
-                    ImGui::Checkbox("Render Point Lights", &m_enablePointLightDebug);
-
-                    ImGui::Separator();
-
-                    ImGui::Checkbox("Generate Culling Statistics", &m_enableCullingStatistics);
-
-                    if (m_enableCullingStatistics)
+                    if (ImGui::TreeNodeEx("Alpha Masked", ImGuiTreeNodeFlags_DefaultOpen))
                     {
-                        constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
-                                                          ImGuiTableFlags_BordersInnerV |
-                                                          ImGuiTableFlags_BordersOuterH |
-                                                          ImGuiTableFlags_BordersOuterV;
+                        AABBDebugOptionUI("Single Sided", "##AlphaMaskedSingleSided", m_aabbDebugOptions.alphaMasked.singleSided);
+                        AABBDebugOptionUI("Double Sided", "##AlphaMaskedDoubleSided", m_aabbDebugOptions.alphaMasked.doubleSided);
 
-                        if (ImGui::BeginTable("##CullingStatisticsTable", 4, flags))
+                        ImGui::TreePop();
+                    }
+                }
+
+                ImGui::Separator();
+
+                ImGui::Checkbox("Render Point Lights", &m_enablePointLightDebug);
+
+                m_enableCullingStatistics = ImGui::CollapsingHeader("Culling Statistics");
+
+                if (m_enableCullingStatistics)
+                {
+                    if (ImGui::BeginTable("##CullingStatisticsTable", 4, flags))
+                    {
+                        const auto* statistics = static_cast<const Culling::CullingStatisticsBuffer*>(m_cullingStatisticsReadbackBuffers[FIF].hostAddress);
+
+                        auto CullingStatisticsDebugUI = [] (const std::string_view name, const Culling::MeshCullingStatistics& statistics)
                         {
-                            const auto* statistics = static_cast<const Culling::CullingStatisticsBuffer*>(m_cullingStatisticsReadbackBuffers[FIF].hostAddress);
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("%s", name.data());
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::Text("%u", statistics.instanceCount);
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text("%u", statistics.vertexCount);
+                            ImGui::TableSetColumnIndex(3);
+                            ImGui::Text("%u", statistics.indexCount);
+                        };
 
-                            auto CullingStatisticsDebugUI = [] (const std::string_view name, const Culling::MeshCullingStatistics& statistics)
-                            {
-                                ImGui::TableNextRow();
-                                ImGui::TableSetColumnIndex(0);
-                                ImGui::Text("%s", name.data());
-                                ImGui::TableSetColumnIndex(1);
-                                ImGui::Text("%u", statistics.instanceCount);
-                                ImGui::TableSetColumnIndex(2);
-                                ImGui::Text("%u", statistics.vertexCount);
-                                ImGui::TableSetColumnIndex(3);
-                                ImGui::Text("%u", statistics.indexCount);
-                            };
+                        ImGui::TableSetupColumn("Type");
+                        ImGui::TableSetupColumn("Instance Count");
+                        ImGui::TableSetupColumn("Vertex Count");
+                        ImGui::TableSetupColumn("Index Count");
 
-                            ImGui::TableSetupColumn("Type");
-                            ImGui::TableSetupColumn("Instance Count");
-                            ImGui::TableSetupColumn("Vertex Count");
-                            ImGui::TableSetupColumn("Index Count");
+                        ImGui::TableSetupScrollFreeze(0, 0);
 
-                            ImGui::TableSetupScrollFreeze(0, 0);
+                        ImGui::TableHeadersRow();
 
-                            ImGui::TableHeadersRow();
+                        CullingStatisticsDebugUI("Opaque",                 statistics->opaque);
+                        CullingStatisticsDebugUI("OpaqueDoubleSided",      statistics->opaqueDoubleSided);
+                        CullingStatisticsDebugUI("AlphaMasked",            statistics->alphaMasked);
+                        CullingStatisticsDebugUI("AlphaMaskedDoubleSided", statistics->alphaMaskedDoubleSided);
+                        CullingStatisticsDebugUI("Total",                  statistics->total);
 
-                            CullingStatisticsDebugUI("Opaque",                 statistics->opaque);
-                            CullingStatisticsDebugUI("OpaqueDoubleSided",      statistics->opaqueDoubleSided);
-                            CullingStatisticsDebugUI("AlphaMasked",            statistics->alphaMasked);
-                            CullingStatisticsDebugUI("AlphaMaskedDoubleSided", statistics->alphaMaskedDoubleSided);
-                            CullingStatisticsDebugUI("Total",                  statistics->total);
+                        ImGui::EndTable();
+                    }
+                }
 
-                            ImGui::EndTable();
-                        }
+                m_enableTiledLightingStatistics = ImGui::CollapsingHeader("Tiled Lighting Statistics");
+
+                if (m_enableTiledLightingStatistics)
+                {
+                    if (ImGui::BeginTable("##TiledLightingStatisticsTable", 3, flags))
+                    {
+                        const auto* statistics = static_cast<const TiledLighting::TiledLightingStatisticsBuffer*>(m_tiledLightingStatisticsReadbackBuffers[FIF].hostAddress);
+
+                        auto TiledLightingDebugUI = [] (const std::string_view name, f32 averageLightsPerTile, f32 coverageRatio)
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("%s", name.data());
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::Text("%.3f", averageLightsPerTile);
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text("%.3f", 100.0f * coverageRatio);
+                        };
+
+                        ImGui::TableSetupColumn("Type");
+                        ImGui::TableSetupColumn("Average Lights Per Tile");
+                        ImGui::TableSetupColumn("% Coverage");
+
+                        ImGui::TableSetupScrollFreeze(0, 0);
+
+                        ImGui::TableHeadersRow();
+
+                        TiledLightingDebugUI("Point",                  statistics->averagePointLightsPerTile,         statistics->pointLightCoverage);
+                        TiledLightingDebugUI("Point (Shadow Casting)", statistics->averageShadowedPointLightsPerTile, statistics->shadowedPointLightCoverage);
+                        TiledLightingDebugUI("Spot",                   statistics->averageSpotLightsPerTile,          statistics->spotLightCoverage);
+                        TiledLightingDebugUI("Spot (Shadow Casting)",  statistics->averageShadowedSpotLightsPerTile,  statistics->shadowedSpotLightCoverage);
+                        TiledLightingDebugUI("Total",                  statistics->averageLightsPerTile,              statistics->lightCoverage);
+
+                        ImGui::EndTable();
                     }
                 }
 
@@ -452,6 +528,19 @@ namespace Renderer::Debug
                 pipelineManager,
                 meshBuffer,
                 indirectBuffer
+            );
+        }
+
+        if (m_enableTiledLightingStatistics)
+        {
+            GenerateTiledLightingStatistics
+            (
+                FIF,
+                cmdBuffer,
+                pipelineManager,
+                framebufferManager,
+                sceneBuffer,
+                tiledLightIndexBuffer
             );
         }
 
@@ -821,7 +910,7 @@ namespace Renderer::Debug
 
         pipeline.Bind(cmdBuffer);
 
-        const Generate::Constants constants =
+        const AABB::Generate::Constants constants =
         {
             .CulledOpaqueDrawCalls                 = indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.deviceAddress,
             .CulledOpaqueDoubleSidedDrawCalls      = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.drawCallBuffer.deviceAddress,
@@ -949,7 +1038,7 @@ namespace Renderer::Debug
             {
                 Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
 
-                const auto constants = AABB::Constants
+                const auto constants = AABB::Render::Constants
                 {
                     .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
@@ -981,7 +1070,7 @@ namespace Renderer::Debug
             {
                 Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
 
-                const auto constants = AABB::Constants
+                const auto constants = AABB::Render::Constants
                 {
                     .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
@@ -1020,7 +1109,7 @@ namespace Renderer::Debug
             {
                 Vk::BeginLabel(cmdBuffer, "Single Sided", glm::vec4(0.3091f, 0.7243f, 0.2549f, 1.0f));
 
-                const auto constants = AABB::Constants
+                const auto constants = AABB::Render::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
@@ -1052,7 +1141,7 @@ namespace Renderer::Debug
             {
                 Vk::BeginLabel(cmdBuffer, "Double Sided", glm::vec4(0.6091f, 0.2213f, 0.2549f, 1.0f));
 
-                const auto constants = AABB::Constants
+                const auto constants = AABB::Render::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
@@ -1383,6 +1472,93 @@ namespace Renderer::Debug
         Vk::EndLabel(cmdBuffer);
     }
 
+    void RenderPass::GenerateTiledLightingStatistics
+    (
+        usize FIF,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
+        const Vk::FramebufferManager& framebufferManager,
+        const Buffers::SceneBuffer& sceneBuffer,
+        const Buffers::TileLightIndexBuffer& tileLightIndexBuffer
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "TiledLighting/GenerateStatistics", {0.7657f, 0.1149f, 0.3901f, 1.0f});
+
+        m_tiledLightingStatisticsBuffer.Barrier(cmdBuffer, Vk::BufferBarrier{
+            .srcStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+            .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+            .dstStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .dstAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+            .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+            .offset         = 0,
+            .size           = m_tiledLightingStatisticsBuffer.size
+        });
+
+        const auto& pipeline = pipelineManager.GetPipeline("Debug/TiledLighting/GenerateStatistics");
+
+        pipeline.Bind(cmdBuffer);
+
+        const auto& tileDepths = framebufferManager.GetFramebuffer("TiledLighting/TileDepths");
+
+        const auto constants = TiledLighting::Constants
+        {
+            .Scene            = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+            .TileLightIndices = tileLightIndexBuffer.buffer.deviceAddress,
+            .Statistics       = m_tiledLightingStatisticsBuffer.deviceAddress,
+            .TileCount        = glm::uvec2(tileDepths.image.width, tileDepths.image.height)
+        };
+
+        pipeline.PushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_COMPUTE_BIT,
+            constants
+        );
+
+        vkCmdDispatch
+        (
+            cmdBuffer.handle,
+            1,
+            1,
+            1
+        );
+
+        m_tiledLightingStatisticsBuffer.Barrier(cmdBuffer, Vk::BufferBarrier{
+            .srcStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask  = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+            .dstStageMask   = VK_PIPELINE_STAGE_2_COPY_BIT,
+            .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+            .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+            .offset         = 0,
+            .size           = m_tiledLightingStatisticsBuffer.size
+        });
+
+        constexpr VkBufferCopy2 copyRegion =
+        {
+            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+            .pNext     = nullptr,
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size      = sizeof(TiledLighting::TiledLightingStatisticsBuffer)
+        };
+
+        const VkCopyBufferInfo2 copyInfo =
+        {
+            .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+            .pNext       = nullptr,
+            .srcBuffer   = m_tiledLightingStatisticsBuffer.handle,
+            .dstBuffer   = m_tiledLightingStatisticsReadbackBuffers[FIF].handle,
+            .regionCount = 1,
+            .pRegions    = &copyRegion
+        };
+
+        vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
     void RenderPass::Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
         m_aabbIndexBuffer.Destroy(allocator);
@@ -1392,8 +1568,14 @@ namespace Renderer::Debug
         m_sphereVertexBuffer.Destroy(allocator);
 
         m_cullingStatisticsBuffer.Destroy(allocator);
+        m_tiledLightingStatisticsBuffer.Destroy(allocator);
 
         for (auto& buffer : m_cullingStatisticsReadbackBuffers)
+        {
+            buffer.Destroy(allocator);
+        }
+
+        for (auto& buffer : m_tiledLightingStatisticsReadbackBuffers)
         {
             buffer.Destroy(allocator);
         }

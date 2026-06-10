@@ -1543,6 +1543,7 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
+            m_tiledLightIndexBuffer,
             m_stagingPool,
             m_deletionQueues[m_FIF]
         );
@@ -2173,7 +2174,7 @@ namespace Renderer
                         ImGui::TableSetColumnIndex(1);
                         ImGui::Text("%u", *m_context.queueFamilies.graphicsFamily);
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::Text("%p", std::bit_cast<void*>(m_context.graphicsQueue));
+                        ImGui::Text("%p", reinterpret_cast<void*>(m_context.graphicsQueue));
 
                         if (m_renderConfig.multiQueue.isSupported)
                         {
@@ -2183,7 +2184,7 @@ namespace Renderer
                             ImGui::TableSetColumnIndex(1);
                             ImGui::Text("%u", *m_context.queueFamilies.computeFamily);
                             ImGui::TableSetColumnIndex(2);
-                            ImGui::Text("%p", std::bit_cast<void*>(m_context.computeQueue));
+                            ImGui::Text("%p", reinterpret_cast<void*>(m_context.computeQueue));
                         }
 
                         ImGui::EndTable();

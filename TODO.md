@@ -23,7 +23,6 @@
 * More ImGui Widgets To Display Information
 * Nuke Shader Modules
 * Sky Rendering
-* Culling Statistics
 * Combine ModelManager and TextureManager Into AssetManager
 * Debug Renderer (Spot Lights, Tile Lighting)
 * Compress cached file data directly to file

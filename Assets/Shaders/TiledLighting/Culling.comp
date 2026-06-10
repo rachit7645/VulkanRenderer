@@ -46,6 +46,15 @@ void main()
         return;
     }
 
+    uint tileIndex = (Constants.MaxTileID.x + 1) * tileID.y + tileID.x;
+
+    TileLightIndices indices;
+
+    indices.pointLightCount         = u16(0u);
+    indices.shadowedPointLightCount = u16(0u);
+    indices.spotLightCount          = u16(0u);
+    indices.shadowedSpotLightCount  = u16(0u);
+
     vec2 viewportSize = vec2(textureSize(Textures[Constants.TileDepthsIndex], 0));
     vec2 pixelCenter  = vec2(tileID) + vec2(0.5f);
     vec2 uv           = pixelCenter / viewportSize;
@@ -54,6 +63,13 @@ void main()
 
     float minDepth = depths.r;
     float maxDepth = depths.g;
+
+    if (minDepth == 0.0f && minDepth == maxDepth)
+    {
+        Constants.TileLightIndices.indices[tileIndex] = indices;
+
+        return;
+    }
 
     vec2 minUV = vec2(tileID)     / viewportSize;
     vec2 maxUV = vec2(tileID + 1) / viewportSize;
@@ -82,13 +98,6 @@ void main()
         aabb.min = min(aabb.min, maxWorldPosition);
         aabb.max = max(aabb.max, maxWorldPosition);
     }
-
-    TileLightIndices indices;
-
-    indices.pointLightCount         = u16(0u);
-    indices.shadowedPointLightCount = u16(0u);
-    indices.spotLightCount          = u16(0u);
-    indices.shadowedSpotLightCount  = u16(0u);
 
     for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
     {
@@ -154,7 +163,7 @@ void main()
         }
     }
 
-    Constants.TileLightIndices.indices[(Constants.MaxTileID.x + 1) * tileID.y + tileID.x] = indices;
+    Constants.TileLightIndices.indices[tileIndex] = indices;
 }
 
 // AABB-Sphere
@@ -170,6 +179,7 @@ bool Intersects(AABB aabb, vec3 position, float range)
 }
 
 // AABB-Cone
+// https://bartwronski.com/2017/04/13/cull-that-cone/
 bool Intersects(AABB aabb, vec3 position, vec3 direction, float outerCutOff, float range)
 {
     vec3 center  = 0.5f * (aabb.max + aabb.min);
@@ -186,7 +196,7 @@ bool Intersects(AABB aabb, vec3 position, vec3 direction, float outerCutOff, flo
         return true;
     }
 
-    float angle        = 2.0f * outerCutOff;
+    float angle        = outerCutOff;
     float closestPoint = cos(angle) * sqrt(D) - diffDotDir * sin(angle);
 
     bool angleCull = closestPoint > sphereRadius;

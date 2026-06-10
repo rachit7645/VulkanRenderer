@@ -24,7 +24,7 @@
 #include "DrawCall.glsl"
 #endif
 
-GLSL_NAMESPACE_BEGIN(Renderer::Debug::Generate)
+GLSL_NAMESPACE_BEGIN(Renderer::Debug::AABB::Generate)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {

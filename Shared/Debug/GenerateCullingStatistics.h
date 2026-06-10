@@ -34,7 +34,7 @@ struct MeshCullingStatistics
     u32 indexCount;
 };
 
-GLSL_SHADER_STORAGE_BUFFER(CullingStatisticsBuffer, writeonly)
+GLSL_BUFFER(CullingStatisticsBuffer, writeonly)
 {
     MeshCullingStatistics opaque;
     MeshCullingStatistics opaqueDoubleSided;

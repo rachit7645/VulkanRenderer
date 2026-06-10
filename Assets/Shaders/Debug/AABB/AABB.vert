@@ -20,12 +20,18 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Color.glsl"
-#include "Debug/AABB.h"
-
-layout(location = 0) out vec3 outColor;
+#include "Debug/AABB/AABB.h"
 
 void main()
 {
-    outColor = SRGBToLinear(Constants.Color);
+    uint     instanceIndex = Constants.InstanceIndices.indices[gl_InstanceIndex];
+    Instance instance      = Constants.Instances.instances[instanceIndex];
+    Mesh     mesh          = Constants.Meshes.meshes[instance.meshIndex];
+
+    AABB    aabb    = AABB_Transform(mesh.aabb, instance.transform);
+    vec3[8] corners = AABB_GetCorners(aabb);
+
+    vec3 position = corners[gl_VertexIndex];
+
+    gl_Position = Constants.Scene.currentMatrices.projectionView * vec4(position, 1.0f);
 }

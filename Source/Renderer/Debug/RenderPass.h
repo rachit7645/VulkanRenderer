@@ -20,6 +20,7 @@
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
+#include "Renderer/Buffers/TileLightIndexBuffer.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/PipelineManager.h"
@@ -51,6 +52,7 @@ namespace Renderer::Debug
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
+            const Buffers::TileLightIndexBuffer& tiledLightIndexBuffer,
             Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
@@ -121,15 +123,27 @@ namespace Renderer::Debug
             const Buffers::IndirectBuffer& indirectBuffer
         );
 
+        void GenerateTiledLightingStatistics
+        (
+            usize FIF,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Vk::FramebufferManager& framebufferManager,
+            const Buffers::SceneBuffer& sceneBuffer,
+            const Buffers::TileLightIndexBuffer& tileLightIndexBuffer
+        );
+
         Vk::Buffer m_aabbIndexBuffer    = {};
         Vk::Buffer m_aabbDrawCallBuffer = {};
 
         Vk::Buffer m_sphereIndexBuffer  = {};
         Vk::Buffer m_sphereVertexBuffer = {};
 
-        Vk::Buffer m_cullingStatisticsBuffer = {};
+        Vk::Buffer m_cullingStatisticsBuffer       = {};
+        Vk::Buffer m_tiledLightingStatisticsBuffer = {};
 
-        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_cullingStatisticsReadbackBuffers = {};
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_cullingStatisticsReadbackBuffers       = {};
+        std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_tiledLightingStatisticsReadbackBuffers = {};
 
         std::optional<Vk::StagingMemoryBlock> m_pendingAABBIndexUpload    = std::nullopt;
         std::optional<Vk::StagingMemoryBlock> m_pendingSphereIndexUpload  = std::nullopt;
@@ -162,8 +176,9 @@ namespace Renderer::Debug
             };
         } m_aabbDebugOptions = {};
 
-        bool m_enablePointLightDebug     = false;
-        bool m_enableCullingStatistics = false;
+        bool m_enablePointLightDebug         = false;
+        bool m_enableCullingStatistics       = false;
+        bool m_enableTiledLightingStatistics = false;
     };
 }
 

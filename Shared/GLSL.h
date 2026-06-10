@@ -38,7 +38,7 @@ using GLSL_F16VEC2 = glm::f16vec2;
 using GLSL_MAT3 = glm::mat3;
 using GLSL_MAT4 = glm::mat4;
 
-#define GLSL_SHADER_STORAGE_BUFFER(BufferName, ReadOnlyOrWriteOnly) struct BufferName
+#define GLSL_BUFFER(BufferName, ReadOnlyOrWriteOnly) struct BufferName
 
 #define GLSL_BUFFER_POINTER(BufferType) VkDeviceAddress
 
@@ -89,7 +89,7 @@ using GLSL_MAT4 = glm::mat4;
 #define GLSL_MAT3 mat3
 #define GLSL_MAT4 mat4
 
-#define GLSL_SHADER_STORAGE_BUFFER(BufferName, ReadOnlyOrWriteOnly) \
+#define GLSL_BUFFER(BufferName, ReadOnlyOrWriteOnly) \
     layout(buffer_reference, scalar) ReadOnlyOrWriteOnly buffer BufferName
 
 #define GLSL_BUFFER_POINTER(BufferType) BufferType

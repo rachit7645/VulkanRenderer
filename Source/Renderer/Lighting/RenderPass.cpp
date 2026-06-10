@@ -193,7 +193,7 @@ namespace Renderer::Lighting
             .GAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoIoRView").sampledImageID,
             .GNormalIndex            = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .GRghMtlIndex            = framebufferManager.GetFramebufferView("GRoughnessMetallicHorizonView").sampledImageID,
-            .GEmmisiveIndex          = framebufferManager.GetFramebufferView("GEmissiveView").sampledImageID,
+            .GEmissiveIndex          = framebufferManager.GetFramebufferView("GEmissiveView").sampledImageID,
             .SceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .IrradianceIndex         = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
             .PreFilterIndex          = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,
@@ -202,7 +202,7 @@ namespace Renderer::Lighting
             .PointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
             .SpotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
             .AOIndex                 = framebufferManager.GetFramebufferView("VBAO/OcclusionView").sampledImageID,
-            .MaxTileID               = glm::uvec2(tileDepths.image.width - 1, tileDepths.image.height - 1)
+            .TileCount               = glm::uvec2(tileDepths.image.width, tileDepths.image.height)
         };
 
         pipeline.PushConstants

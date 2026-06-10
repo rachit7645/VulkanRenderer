@@ -36,7 +36,7 @@ struct SceneMatrices
     GLSL_MAT4 inverseJitteredProjectionView;
 };
 
-GLSL_SHADER_STORAGE_BUFFER(SceneBuffer, readonly)
+GLSL_BUFFER(SceneBuffer, readonly)
 {
     SceneMatrices currentMatrices;
     SceneMatrices previousMatrices;

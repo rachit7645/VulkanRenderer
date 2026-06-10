@@ -38,8 +38,7 @@ void main()
     uvec2 pixelCoord   = uvec2(viewportSize * fragUV);
 
     uvec2 tileID    = pixelCoord / TILE_SIZE;
-    uvec2 tileCount = Constants.MaxTileID + 1;
-    uint  tileIndex = tileCount.x * tileID.y + tileID.x;
+    uint  tileIndex = Constants.TileCount.x * tileID.y + tileID.x;
 
     TileLightIndices tileLightIndices = Constants.TileLightIndices.indices[tileIndex];
 
@@ -199,7 +198,7 @@ void main()
         brdf
     );
 
-    vec3 emissive = texture(sampler2D(Textures[Constants.GEmmisiveIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).rgb;
+    vec3 emissive = texture(sampler2D(Textures[Constants.GEmissiveIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).rgb;
 
     Lo += emissive;
 
