@@ -45,6 +45,8 @@ namespace Renderer::Debug
         (
             usize FIF,
             usize frameIndex,
+            VkDevice device,
+            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
@@ -113,6 +115,17 @@ namespace Renderer::Debug
             const Buffers::SceneBuffer& sceneBuffer
         );
 
+        void RenderDebugSpotLight
+        (
+            usize FIF,
+            VkDevice device,
+            VmaAllocator allocator,
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Buffers::SceneBuffer& sceneBuffer,
+            Util::DeletionQueue& deletionQueue
+        );
+
         void GenerateCullingStatistics
         (
             usize FIF,
@@ -138,6 +151,9 @@ namespace Renderer::Debug
 
         Vk::Buffer m_sphereIndexBuffer  = {};
         Vk::Buffer m_sphereVertexBuffer = {};
+
+        Vk::Buffer m_coneIndexBuffer  = {};
+        Vk::Buffer m_coneVertexBuffer = {};
 
         Vk::Buffer m_cullingStatisticsBuffer       = {};
         Vk::Buffer m_tiledLightingStatisticsBuffer = {};
@@ -177,6 +193,7 @@ namespace Renderer::Debug
         } m_aabbDebugOptions = {};
 
         bool m_enablePointLightDebug         = false;
+        bool m_enableSpotLightDebug          = false;
         bool m_enableCullingStatistics       = false;
         bool m_enableTiledLightingStatistics = false;
     };

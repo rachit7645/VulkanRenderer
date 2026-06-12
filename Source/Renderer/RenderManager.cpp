@@ -1536,6 +1536,8 @@ namespace Renderer
         (
             m_FIF,
             m_frameIndex,
+            m_context.device,
+            m_context.allocator,
             cmdBuffer,
             m_pipelineManager,
             m_framebufferManager,

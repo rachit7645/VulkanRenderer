@@ -331,6 +331,10 @@ namespace Engine
 
                     if (ImGui::TreeNode("Spot"))
                     {
+                        ImGui::Checkbox("Normalize", &m_normalizeSpotLights);
+
+                        ImGui::Separator();
+
                         constexpr f32 ONE_DEGREE    = glm::radians(1.0f);
                         constexpr f32 HALF_ROTATION = std::numbers::pi;
 
@@ -387,7 +391,10 @@ namespace Engine
                                     toDelete = true;
                                 }
 
-                                iter->direction = glm::normalize(iter->direction);
+                                if (m_normalizeSpotLights)
+                                {
+                                    iter->direction = glm::normalize(iter->direction);
+                                }
 
                                 ImGui::TreePop();
                             }

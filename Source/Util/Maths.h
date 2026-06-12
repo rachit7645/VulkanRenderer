@@ -22,25 +22,26 @@
 
 namespace Maths
 {
-    glm::mat4 TransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
-    glm::mat4 ProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane);
-    glm::mat4 InfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
-    glm::mat3 NormalMatrix(const glm::mat4& transform);
+    [[nodiscard]] glm::mat4 TransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale);
+    [[nodiscard]] glm::mat4 ProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane, f32 farPlane);
+    [[nodiscard]] glm::mat4 InfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
+    [[nodiscard]] glm::mat3 NormalMatrix(const glm::mat4& transform);
+    [[nodiscard]] glm::vec3 SafeCross(const glm::vec3& A, const glm::vec3& B, const glm::vec3& fallback, f32 epsilon);
 
     template<typename T>
-    constexpr T Max2(const glm::vec<2, T>& vector)
+    [[nodiscard]] constexpr T Max2(const glm::vec<2, T>& vector)
     {
         return glm::max(vector.x, vector.y);
     }
 
     template<typename T>
-    constexpr T ExponentialDecay(T current, T target, f32 rate, f32 dt)
+    [[nodiscard]] constexpr T ExponentialDecay(T current, T target, f32 rate, f32 dt)
     {
         return target + (current - target) * std::exp(-rate * dt);
     }
 
     template<>
-    constexpr glm::quat ExponentialDecay(glm::quat current, glm::quat target, f32 rate, f32 dt)
+    [[nodiscard]] constexpr glm::quat ExponentialDecay(glm::quat current, glm::quat target, f32 rate, f32 dt)
     {
         // Ensure we go through the shortest arc
         if (glm::dot(current, target) < 0.0f)
@@ -51,7 +52,7 @@ namespace Maths
         return glm::slerp(current, target, 1.0f - std::exp(-rate * dt));
     }
 
-    constexpr f32 Halton(usize index, usize base)
+    [[nodiscard]] constexpr f32 Halton(usize index, usize base)
     {
         f64 result = 0.0;
         f64 f      = 1.0 / static_cast<f64>(base);
@@ -70,7 +71,7 @@ namespace Maths
     }
 
     template<u32 HilbertWidth>
-    consteval u32 HilbertIndex(u32 positionX, u32 positionY)
+    [[nodiscard]] consteval u32 HilbertIndex(u32 positionX, u32 positionY)
     {
         u32 index = 0;
         
@@ -100,7 +101,7 @@ namespace Maths
     }
 
     template<u32 HilbertLevel>
-    consteval auto GenerateHilbertSequence()
+    [[nodiscard]] consteval auto GenerateHilbertSequence()
     {
         constexpr u32 HILBERT_WIDTH = 1u << HilbertLevel;
 

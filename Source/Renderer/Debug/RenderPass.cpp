@@ -21,6 +21,7 @@
 #include "Debug/Sphere.h"
 #include "Debug/GenerateCullingStatistics.h"
 #include "Debug/GenerateTiledLightingStatistics.h"
+#include "Util/WireframeCone.h"
 #include "Util/WireframeSphere.h"
 #include "Vulkan/DebugUtils.h"
 
@@ -325,6 +326,8 @@ namespace Renderer::Debug
     (
         usize FIF,
         usize frameIndex,
+        VkDevice device,
+        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
@@ -381,6 +384,10 @@ namespace Renderer::Debug
                 ImGui::Separator();
 
                 ImGui::Checkbox("Render Point Lights", &m_enablePointLightDebug);
+
+                ImGui::Separator();
+
+                ImGui::Checkbox("Render Spot Lights", &m_enableSpotLightDebug);
 
                 m_enableCullingStatistics = ImGui::CollapsingHeader("Culling Statistics");
 
@@ -513,6 +520,20 @@ namespace Renderer::Debug
                 cmdBuffer,
                 pipelineManager,
                 sceneBuffer
+            );
+        }
+
+        if (m_enableSpotLightDebug)
+        {
+            RenderDebugSpotLight
+            (
+                FIF,
+                device,
+                allocator,
+                cmdBuffer,
+                pipelineManager,
+                sceneBuffer,
+                deletionQueue
             );
         }
 
@@ -1208,7 +1229,7 @@ namespace Renderer::Debug
                     glm::vec3(0.0f),
                     glm::vec3(pointLight.range)
                 ),
-                .Color     = pointLight.color * pointLight.intensity
+                .Color     = pointLight.color
             };
 
             pipeline.PushConstants
@@ -1240,7 +1261,7 @@ namespace Renderer::Debug
                     glm::vec3(0.0f),
                     glm::vec3(pointLight.range)
                 ),
-                .Color     = pointLight.color * pointLight.intensity
+                .Color     = pointLight.color
             };
 
             pipeline.PushConstants
@@ -1259,6 +1280,244 @@ namespace Renderer::Debug
                 0,
                 0
             );
+        }
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void RenderPass::RenderDebugSpotLight
+    (
+        usize FIF,
+        VkDevice device,
+        VmaAllocator allocator,
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
+        const Buffers::SceneBuffer& sceneBuffer,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        constexpr usize LIGHT_CONE_STACKS = 32;
+        constexpr usize LIGHT_CONE_SLICES = 32;
+
+        // Mildy scuffed transform logic, but it works for now
+        auto ComputeTransform = [] (const glm::vec3& position, const glm::vec3& direction, f32 range) -> glm::mat4
+        {
+            constexpr glm::mat4 identity = glm::identity<glm::mat4>();
+
+            const glm::vec3 normalizedDirection = glm::normalize(-direction);
+
+            const glm::vec3 axis  = glm::normalize(Maths::SafeCross(Renderer::WORLD_UP, normalizedDirection, glm::vec3(1.0f, 0.0f, 0.0f), 1e-6f));
+            const f32       angle = glm::acos(glm::clamp(glm::dot(Renderer::WORLD_UP, normalizedDirection), -1.0f, 1.0f));
+
+            const glm::quat rotationQuat = glm::angleAxis(angle, axis);
+
+            const glm::mat4 rotation    = glm::mat4_cast(rotationQuat);
+            const glm::mat4 translation = glm::translate(identity, position - range * normalizedDirection);
+
+            return translation * rotation;
+        };
+
+        Vk::BeginLabel(cmdBuffer, "Render/SpotLights", {0.6157f, 0.9149f, 0.7901f, 1.0f});
+
+        std::vector<Maths::WireframeCone> cones = {};
+
+        for (const auto& light : sceneBuffer.spotLights)
+        {
+            const f32 height = light.range;
+            const f32 base   = std::tanf(light.cutOff.y) * height;
+
+            cones.emplace_back
+            (
+                base,
+                height,
+                LIGHT_CONE_STACKS,
+                LIGHT_CONE_SLICES
+            );
+        }
+
+        for (const auto& light : sceneBuffer.shadowedSpotLights)
+        {
+            const f32 height = light.range;
+            const f32 base   = std::tanf(light.cutOff.y) * height;
+
+            cones.emplace_back
+            (
+                base,
+                height,
+                LIGHT_CONE_STACKS,
+                LIGHT_CONE_SLICES
+            );
+        }
+
+        u32 totalVertexCount = 0;
+        u32 totalIndexCount  = 0;
+
+        for (const auto& cone : cones)
+        {
+            totalIndexCount  += cone.indices.size();
+            totalVertexCount += cone.vertices.size();
+        }
+
+        const VkDeviceSize requiredIndexSize  = totalIndexCount  * sizeof(u32);
+        const VkDeviceSize requiredVertexSize = totalVertexCount * sizeof(glm::vec3);
+
+        if (m_coneIndexBuffer.size < requiredIndexSize)
+        {
+            deletionQueue.Push([allocator, buffer = m_coneIndexBuffer] () mutable
+            {
+                buffer.Destroy(allocator);
+            });
+
+            m_coneIndexBuffer = Vk::Buffer
+            (
+                device,
+                allocator,
+                requiredIndexSize,
+                0,
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
+                VMA_MEMORY_USAGE_AUTO
+            );
+
+            Vk::SetDebugName(device, m_coneIndexBuffer.handle, "Debug/Lights/Cone/IndexBuffer");
+        }
+
+        if (m_coneVertexBuffer.size < requiredVertexSize)
+        {
+            deletionQueue.Push([allocator, buffer = m_coneVertexBuffer] () mutable
+            {
+                buffer.Destroy(allocator);
+            });
+
+            m_coneVertexBuffer = Vk::Buffer
+            (
+                device,
+                allocator,
+                requiredVertexSize,
+                0,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
+                VMA_MEMORY_USAGE_AUTO
+            );
+
+            Vk::SetDebugName(device, m_coneVertexBuffer.handle, "Debug/Lights/Cone/VertexBuffer");
+        }
+
+        const auto& pipeline = pipelineManager.GetPipeline("Debug/Light/Sphere");
+
+        pipeline.Bind(cmdBuffer);
+
+        vkCmdBindIndexBuffer
+        (
+            cmdBuffer.handle,
+            m_coneIndexBuffer.handle,
+            0,
+            VK_INDEX_TYPE_UINT32
+        );
+
+        usize coneIndex = 0;
+
+        u32 indexOffset  = 0;
+        u32 vertexOffset = 0;
+
+        for (const auto& light : sceneBuffer.spotLights)
+        {
+            const auto& cone = cones[coneIndex];
+
+            std::memcpy
+            (
+                static_cast<u8*>(m_coneIndexBuffer.hostAddress) + sizeof(u32) * indexOffset,
+                cone.indices.data(),
+                sizeof(u32) * cone.indices.size()
+            );
+
+            std::memcpy
+            (
+                static_cast<u8*>(m_coneVertexBuffer.hostAddress) + sizeof(glm::vec3) * vertexOffset,
+                cone.vertices.data(),
+                sizeof(glm::vec3) * cone.vertices.size()
+            );
+
+            const auto constants = Sphere::Constants
+            {
+                .Scene     = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+                .Positions = m_coneVertexBuffer.deviceAddress,
+                .Transform = ComputeTransform(light.position, light.direction, light.range),
+                .Color     = light.color
+            };
+
+            pipeline.PushConstants
+            (
+               cmdBuffer,
+               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+               constants
+            );
+
+            vkCmdDrawIndexed
+            (
+                cmdBuffer.handle,
+                cone.indices.size(),
+                1,
+                indexOffset,
+                static_cast<s32>(vertexOffset),
+                0
+            );
+
+            indexOffset  += cone.indices.size();
+            vertexOffset += cone.vertices.size();
+
+            ++coneIndex;
+        }
+
+        for (const auto& light : sceneBuffer.shadowedSpotLights)
+        {
+            const auto& cone = cones[coneIndex];
+
+            std::memcpy
+            (
+                static_cast<u8*>(m_coneIndexBuffer.hostAddress) + sizeof(u32) * indexOffset,
+                cone.indices.data(),
+                sizeof(u32) * cone.indices.size()
+            );
+
+            std::memcpy
+            (
+                static_cast<u8*>(m_coneVertexBuffer.hostAddress) + sizeof(glm::vec3) * vertexOffset,
+                cone.vertices.data(),
+                sizeof(glm::vec3) * cone.vertices.size()
+            );
+
+            const auto constants = Sphere::Constants
+            {
+                .Scene     = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+                .Positions = m_coneVertexBuffer.deviceAddress,
+                .Transform = ComputeTransform(light.position, light.direction, light.range),
+                .Color     = light.color
+            };
+
+            pipeline.PushConstants
+            (
+               cmdBuffer,
+               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+               constants
+            );
+
+            vkCmdDrawIndexed
+            (
+                cmdBuffer.handle,
+                cone.indices.size(),
+                1,
+                indexOffset,
+                static_cast<s32>(vertexOffset),
+                0
+            );
+
+            indexOffset  += cone.indices.size();
+            vertexOffset += cone.vertices.size();
+
+            ++coneIndex;
         }
 
         Vk::EndLabel(cmdBuffer);
@@ -1566,6 +1825,9 @@ namespace Renderer::Debug
 
         m_sphereIndexBuffer.Destroy(allocator);
         m_sphereVertexBuffer.Destroy(allocator);
+
+        m_coneIndexBuffer.Destroy(allocator);
+        m_coneVertexBuffer.Destroy(allocator);
 
         m_cullingStatisticsBuffer.Destroy(allocator);
         m_tiledLightingStatisticsBuffer.Destroy(allocator);

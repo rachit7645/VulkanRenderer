@@ -76,8 +76,8 @@ namespace Renderer::Buffers
             ImGui::EndMainMenuBar();
         }
 
-        pointLights = scene.pointLights;
-        spotLights  = scene.spotLights;
+        auto builtPointLightList = scene.pointLights;
+        auto builtSpotLightList  = scene.spotLights;
 
         for (const auto& renderObject : scene.renderObjects)
         {
@@ -92,33 +92,36 @@ namespace Renderer::Buffers
 
             for (const auto& light : model.pointLights)
             {
-                pointLights.emplace_back(light.Transform(globalTransform));
+                builtPointLightList.emplace_back(light.Transform(globalTransform));
             }
 
             for (const auto& light : model.spotLights)
             {
-                spotLights.emplace_back(light.Transform(globalTransform));
+                builtSpotLightList.emplace_back(light.Transform(globalTransform));
             }
         }
 
-        const usize shadowedPointLightCount = std::min<usize>(pointLights.size(), GPU::MAX_SHADOWED_POINT_LIGHT_COUNT);
-        const usize shadowedSpotLightCount  = std::min<usize>(spotLights.size(),  GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT);
+        const usize shadowedPointLightCount = std::min<usize>(builtPointLightList.size(), GPU::MAX_SHADOWED_POINT_LIGHT_COUNT);
+        const usize shadowedSpotLightCount  = std::min<usize>(builtSpotLightList.size(),  GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT);
 
         shadowedPointLights.resize(shadowedPointLightCount);
         shadowedSpotLights.resize(shadowedSpotLightCount);
 
         for (usize i = 0; i < shadowedPointLightCount; ++i)
         {
-            shadowedPointLights[i] = GPU::ShadowedPointLight(pointLights[i]);
+            shadowedPointLights[i] = GPU::ShadowedPointLight(builtPointLightList[i]);
         }
 
         for (usize i = 0; i < shadowedSpotLightCount; ++i)
         {
-            shadowedSpotLights[i] = GPU::ShadowedSpotLight(spotLights[i]);
+            shadowedSpotLights[i] = GPU::ShadowedSpotLight(builtSpotLightList[i]);
         }
 
-        const auto uploadedPointLights = std::span(pointLights).subspan(shadowedPointLightCount);
-        const auto uploadedSpotLights  = std::span(spotLights).subspan(shadowedSpotLightCount);
+        const auto uploadedPointLights = std::span(builtPointLightList).subspan(shadowedPointLightCount);
+        const auto uploadedSpotLights  = std::span(builtSpotLightList).subspan(shadowedSpotLightCount);
+
+        pointLights = std::ranges::to<std::vector>(uploadedPointLights);
+        spotLights  = std::ranges::to<std::vector>(uploadedSpotLights);
 
         const auto projection = Maths::InfiniteProjectionReverseZ
         (
@@ -174,8 +177,6 @@ namespace Renderer::Buffers
             allocator,
             scene,
             previousMatrices,
-            uploadedPointLights,
-            uploadedSpotLights,
             graphicsBuffers
         );
 
@@ -188,8 +189,6 @@ namespace Renderer::Buffers
                 allocator,
                 scene,
                 previousMatrices,
-                uploadedPointLights,
-                uploadedSpotLights,
                 *computeBuffers
             );
         }
@@ -202,14 +201,14 @@ namespace Renderer::Buffers
         VmaAllocator allocator,
         const Engine::Scene& scene,
         const GPU::SceneMatrices& previousMatrices,
-        const std::span<const GPU::PointLight> uploadedPointLights,
-        const std::span<const GPU::SpotLight> uploadedSpotLights,
         const SceneBuffer::Buffers& buffers
     )
     {
         const auto& lightsBuffer = buffers.lightBuffers[FIF];
 
+        const std::span<const GPU::PointLight>         uploadedPointLights         = pointLights;
         const std::span<const GPU::ShadowedPointLight> uploadedShadowedPointLights = shadowedPointLights;
+        const std::span<const GPU::SpotLight>          uploadedSpotLights          = spotLights;
         const std::span<const GPU::ShadowedSpotLight>  uploadedShadowedSpotLights  = shadowedSpotLights;
 
         std::memcpy

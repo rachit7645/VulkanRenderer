@@ -68,4 +68,18 @@ namespace Maths
             glm::cross(glm::vec3(transform[0]), glm::vec3(transform[1]))
         };
     }
+
+    glm::vec3 SafeCross(const glm::vec3& A, const glm::vec3& B, const glm::vec3& fallback, f32 epsilon)
+    {
+        const glm::vec3 result = glm::cross(A, B);
+
+        const f32 length = glm::length(result);
+
+        if (length < epsilon)
+        {
+            return fallback;
+        }
+
+        return result;
+    }
 }

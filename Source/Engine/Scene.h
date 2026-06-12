@@ -72,6 +72,8 @@ namespace Engine
         Renderer::RenderObject m_loadedRenderObject = {};
         GPU::PointLight        m_loadedPointLight   = {};
         GPU::SpotLight         m_loadedSpotLight    = {};
+
+        bool m_normalizeSpotLights = true;
     };
 }
 

@@ -69,7 +69,8 @@ struct ShadowedPointLight
         constexpr f32 ASPECT_RATIO = static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
                                      static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y);
 
-        constexpr f32 FAR_PLANE = 512.0f;
+        // TODO: This range is incorrect!
+        constexpr f32 FAR_PLANE = 256.0f;
 
         auto projection = Maths::ProjectionReverseZ
         (

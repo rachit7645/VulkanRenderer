@@ -79,8 +79,6 @@ namespace Renderer::Buffers
             VmaAllocator allocator,
             const Engine::Scene& scene,
             const GPU::SceneMatrices& previousMatrices,
-            const std::span<const GPU::PointLight> uploadedPointLights,
-            const std::span<const GPU::SpotLight> uploadedSpotLights,
             const SceneBuffer::Buffers& buffers
         );
 
