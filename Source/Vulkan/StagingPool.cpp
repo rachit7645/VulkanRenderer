@@ -51,8 +51,8 @@ namespace Vk
                 Logger::Error
                 (
                     "Huh. How did we get here... Invalid allocation tracking! [Buffer={}] [Block={}]\n",
-                    std::bit_cast<void*>(iter->buffer.handle),
-                    std::bit_cast<void*>(iter->virtualBlock)
+                    reinterpret_cast<void*>(iter->buffer.handle),
+                    reinterpret_cast<void*>(iter->virtualBlock)
                 );
             }
             else
@@ -159,7 +159,7 @@ namespace Vk
             Logger::Error
             (
                 "Allocation not found in matching buffer! [Buffer={}] [Offset={}] [Size={}]",
-                std::bit_cast<void*>(stagingMemoryBlock.buffer),
+                reinterpret_cast<void*>(stagingMemoryBlock.buffer),
                 stagingMemoryBlock.memoryBlock.offset,
                 stagingMemoryBlock.memoryBlock.size
             );
@@ -168,7 +168,7 @@ namespace Vk
         Logger::Error
         (
             "Allocation not found! [Buffer={}] [Offset={}] [Size={}]",
-            std::bit_cast<void*>(stagingMemoryBlock.buffer),
+            reinterpret_cast<void*>(stagingMemoryBlock.buffer),
             stagingMemoryBlock.memoryBlock.offset,
             stagingMemoryBlock.memoryBlock.size
         );
@@ -224,8 +224,8 @@ namespace Vk
                 Logger::Warning
                 (
                     "Not all allocations were freed! [Buffer={}] [Virtual Block={}] [Allocation Count={}]",
-                    std::bit_cast<void*>(stagingBuffer.buffer.handle),
-                    std::bit_cast<void*>(stagingBuffer.virtualBlock),
+                    reinterpret_cast<void*>(stagingBuffer.buffer.handle),
+                    reinterpret_cast<void*>(stagingBuffer.virtualBlock),
                     stagingBuffer.allocations.size()
                 );
             }

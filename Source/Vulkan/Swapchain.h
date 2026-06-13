@@ -32,10 +32,10 @@ namespace Vk
     class Swapchain
     {
     public:
-        Swapchain(const glm::ivec2& size, const Vk::Context& context);
+        Swapchain(const glm::ivec2& size, const Vk::Context& context, tf::Executor& executor);
 
         bool IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context);
-        void RecreateSwapChain(const Vk::Context& context);
+        void RecreateSwapChain(const Vk::Context& context, tf::Executor& executor);
 
         void Destroy(VkDevice device);
 
@@ -59,8 +59,9 @@ namespace Vk
         std::vector<VkSemaphore> renderFinishedSemaphores = {};
         std::vector<VkFence>     presentFences            = {};
     private:
-        void CreateSwapChain(const Vk::Context& context);
+        void CreateSwapChain(const Vk::Context& context, tf::Executor& executor);
         void DestroySwapchainResources(VkDevice device);
+        void ClearSwapchainResources();
 
         void CreateStaticSyncObjects(VkDevice device);
         void CreateSyncObjects(VkDevice device);

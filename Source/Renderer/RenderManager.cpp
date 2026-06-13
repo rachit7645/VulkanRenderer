@@ -33,7 +33,7 @@ namespace Renderer
           m_context{m_window.handle},
           m_renderConfig{m_context},
           m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
-          m_swapchain{m_window.size, m_context},
+          m_swapchain{m_window.size, m_context, m_executor},
           m_graphicsTimeline{m_context.device},
           m_formatHelper{m_context.physicalDevice},
           m_megaSet{m_context},
@@ -2375,7 +2375,7 @@ namespace Renderer
             return;
         }
 
-        m_swapchain.RecreateSwapChain(m_context);
+        m_swapchain.RecreateSwapChain(m_context, m_executor);
 
         m_taa.ResetHistory();
         m_exposure.ResetLuminance();

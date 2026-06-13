@@ -68,7 +68,7 @@ namespace Vk
         switch (severity)
         {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            Logger::VulkanError("{}\n", pCallbackData->pMessage);
+            Logger::Vulkan("{}\n", pCallbackData->pMessage);
             break;
         default:
             Logger::Vulkan("{}\n", pCallbackData->pMessage);

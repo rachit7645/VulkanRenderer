@@ -16,8 +16,6 @@
 
 #include "Swapchain.h"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #include "BarrierWriter.h"
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
@@ -26,14 +24,14 @@
 
 namespace Vk
 {
-    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context)
+    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context, tf::Executor& executor)
     {
         if (!IsSurfaceValid(size, context))
         {
             Logger::Error("{}\n", "Invalid surface!");
         }
 
-        CreateSwapChain(context);
+        CreateSwapChain(context, executor);
         CreateStaticSyncObjects(context.device);
     }
 
@@ -45,10 +43,9 @@ namespace Vk
         return extent.width != 0 && extent.height != 0;
     }
 
-    void Swapchain::RecreateSwapChain(const Vk::Context& context)
+    void Swapchain::RecreateSwapChain(const Vk::Context& context, tf::Executor& executor)
     {
-        DestroySwapchainResources(context.device);
-        CreateSwapChain(context);
+        CreateSwapChain(context, executor);
     }
 
     VkResult Swapchain::Present(VkDevice device, VkQueue queue)
@@ -113,7 +110,7 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Vk::Context& context)
+    void Swapchain::CreateSwapChain(const Vk::Context& context, tf::Executor& executor)
     {
         surfaceFormat = ChooseSurfaceFormat();
         presentMode   = ChoosePresentationMode();
@@ -171,7 +168,41 @@ namespace Vk
 
         if (createInfo.oldSwapchain != VK_NULL_HANDLE)
         {
-            vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
+            executor.silent_async(
+            [
+                device = context.device,
+                swapchain = createInfo.oldSwapchain,
+                presentFences = this->presentFences,
+                imageViews = this->imageViews,
+                renderFinishedSemaphores = this->renderFinishedSemaphores
+            ]
+            {
+                Vk::CheckResult(vkWaitForFences(
+                    device,
+                    presentFences.size(),
+                    presentFences.data(),
+                    VK_TRUE,
+                    std::numeric_limits<u64>::max()),
+                    "Failed to wait for fences!"
+                );
+
+                for (auto& imageView : imageViews)
+                {
+                    imageView.Destroy(device);
+                }
+
+                for (const auto fence : presentFences)
+                {
+                    vkDestroyFence(device, fence, nullptr);
+                }
+
+                for (const auto semaphore : renderFinishedSemaphores)
+                {
+                    vkDestroySemaphore(device, semaphore, nullptr);
+                }
+
+                vkDestroySwapchainKHR(device, swapchain, nullptr);
+            });
         }
 
         Vk::CheckResult(vkGetSwapchainImagesKHR(
@@ -187,8 +218,8 @@ namespace Vk
             Logger::Error
             (
                 "Failed to get any swapchain images! [handle={}] [device={}]\n",
-                std::bit_cast<void*>(handle),
-                std::bit_cast<void*>(context.device)
+                reinterpret_cast<void*>(handle),
+                reinterpret_cast<void*>(context.device)
             );
         }
 
@@ -201,6 +232,8 @@ namespace Vk
             imageHandles.data()),
             "Failed to get swapchain images!"
         );
+
+        ClearSwapchainResources();
 
         images.resize(imageHandles.size());
         imageViews.resize(imageHandles.size());
@@ -336,8 +369,8 @@ namespace Vk
             VK_FORMAT_B8G8R8A8_UNORM
         };
 
-        // Really, there's no way this is gonna happen lol
-        [[unlikely]] if (formats.empty())
+        // Really, there's no way this can happen
+        if (formats.empty()) [[unlikely]]
         {
             Logger::Error("{}\n", "No surface formats found!");
         }
@@ -374,19 +407,27 @@ namespace Vk
     {
         const auto& presentModes = m_swapChainInfo.presentModes;
 
-        // FIFO is guaranteed to be supported (Lame)
-        VkPresentModeKHR currentPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+        constexpr std::array PREFERRED_MODES = {VK_PRESENT_MODE_MAILBOX_KHR};
 
-        for (const auto availablePresentMode : presentModes)
+        // Really, there's no way this can happen
+        if (presentModes.empty()) [[unlikely]]
         {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            Logger::Error("{}\n", "No present modes found!");
+        }
+
+        for (const auto preferredPresentMode : PREFERRED_MODES)
+        {
+            for (const auto availablePresentMode : presentModes)
             {
-                currentPresentMode = availablePresentMode;
-                break;
+                if (availablePresentMode == preferredPresentMode)
+                {
+                    return availablePresentMode;
+                }
             }
         }
 
-        return currentPresentMode;
+        // FIFO is guaranteed to be supported (Lame)
+        return VK_PRESENT_MODE_FIFO_KHR;
     }
 
     VkExtent2D Swapchain::ChooseSwapchainExtent(const glm::uvec2& size) const
@@ -463,6 +504,11 @@ namespace Vk
             vkDestroySemaphore(device, semaphore, nullptr);
         }
 
+        ClearSwapchainResources();
+    }
+
+    void Swapchain::ClearSwapchainResources()
+    {
         images.clear();
         imageViews.clear();
         imageLayouts.clear();
