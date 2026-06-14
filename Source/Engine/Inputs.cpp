@@ -109,7 +109,7 @@ namespace Engine
         (
             SDL_GAMEPAD_AXIS_LEFTX,
             SDL_GAMEPAD_AXIS_LEFTY,
-            {0.1f, 0.1f}
+            {0.15f, 0.15f}
         );
     }
 
@@ -121,6 +121,16 @@ namespace Engine
             SDL_GAMEPAD_AXIS_RIGHTY,
             {0.3f, 0.3f}
         );
+    }
+
+    f32 Inputs::GetLeftTriggerMovement() const
+    {
+        return GetAxisNormalized(SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
+    }
+
+    f32 Inputs::GetRightTriggerMovement() const
+    {
+        return GetAxisNormalized(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
     }
 
     SDL_JoystickID Inputs::GetGamepadID() const
@@ -147,15 +157,10 @@ namespace Engine
     {
         if (gamepad == nullptr)
         {
-            return {0, 0};
+            return {0.0f, 0.0};
         }
 
-        const s16 x = SDL_GetGamepadAxis(gamepad, axisHorizontal);
-        const s16 y = SDL_GetGamepadAxis(gamepad, axisVertical);
-
-        constexpr auto AXIS_MAX = static_cast<f32>(SDL_JOYSTICK_AXIS_MAX);
-
-        auto normalized = glm::vec2(x, y) / AXIS_MAX;
+        auto normalized = glm::vec2(GetAxisNormalized(axisHorizontal), GetAxisNormalized(axisVertical));
 
         if (std::abs(normalized.x) < deadZone.x)
         {
@@ -166,6 +171,20 @@ namespace Engine
         {
             normalized.y = 0.0f;
         }
+
+        return normalized;
+    }
+
+    f32 Inputs::GetAxisNormalized(SDL_GamepadAxis axis) const
+    {
+        if (gamepad == nullptr)
+        {
+            return 0.0f;
+        }
+
+        const s16 value = SDL_GetGamepadAxis(gamepad, axis);
+
+        const f32 normalized = static_cast<f32>(value) / static_cast<f32>(SDL_JOYSTICK_AXIS_MAX);
 
         return glm::clamp(normalized, -1.0f, 1.0f);
     }

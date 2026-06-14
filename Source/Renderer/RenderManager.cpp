@@ -2308,16 +2308,8 @@ namespace Renderer
                     break;
 
                 case SDL_SCANCODE_F11:
-                {
-                    m_window.isFullscreen = !m_window.isFullscreen;
-
-                    if (!SDL_SetWindowFullscreen(m_window.handle, m_window.isFullscreen))
-                    {
-                        Logger::Warning("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
-                    }
-
+                    m_window.ToggleFullScreen();
                     break;
-                }
 
                 default:
                     break;
@@ -2348,12 +2340,28 @@ namespace Renderer
             {
                 if (m_window.inputs.gamepad != nullptr && event.gdevice.which == m_window.inputs.GetGamepadID())
                 {
-                    if (m_window.inputs.gamepad != nullptr)
-                    {
-                        SDL_CloseGamepad(m_window.inputs.gamepad);
-                    }
+                    SDL_CloseGamepad(m_window.inputs.gamepad);
 
                     m_window.inputs.FindGamepad();
+                }
+
+                break;
+            }
+
+            case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            {
+                switch (event.gbutton.button)
+                {
+                case SDL_GAMEPAD_BUTTON_DPAD_UP:
+                    m_window.ToggleFullScreen();
+                    break;
+
+                case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+                    m_scene->camera.isEnabled = !m_scene->camera.isEnabled;
+                    break;
+
+                default:
+                    break;
                 }
 
                 break;

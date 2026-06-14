@@ -41,6 +41,9 @@ namespace Engine
         [[nodiscard]] glm::vec2 GetLeftStickDirection()  const;
         [[nodiscard]] glm::vec2 GetRightStickDirection() const;
 
+        [[nodiscard]] f32 GetLeftTriggerMovement()  const;
+        [[nodiscard]] f32 GetRightTriggerMovement() const;
+
         [[nodiscard]] SDL_JoystickID GetGamepadID() const;
 
         [[nodiscard]] bool WasMouseMoved() const;
@@ -57,6 +60,8 @@ namespace Engine
             SDL_GamepadAxis axisVertical,
             const glm::vec2& deadZone
         ) const;
+
+        [[nodiscard]] f32 GetAxisNormalized(SDL_GamepadAxis axis) const;
 
         std::span<const bool> m_keys = {};
 

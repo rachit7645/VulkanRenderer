@@ -60,7 +60,7 @@ namespace Engine
         std::vector<GPU::PointLight>        pointLights   = {};
         std::vector<GPU::SpotLight>         spotLights    = {};
         Renderer::Objects::FreeCamera       camera        = {};
-        Renderer::IBL::IBLID                iblMapsID       = 0;
+        Renderer::IBL::IBLID                iblMapsID     = 0;
 
         // TODO: Better render object update flags
         // This does not account for render object internal changes

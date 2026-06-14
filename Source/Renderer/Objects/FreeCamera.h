@@ -39,12 +39,12 @@ namespace Renderer::Objects
             f32 zoom
         );
 
-        void Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs) override;
+        void Update(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs) override;
         void ImGuiDisplay() override;
     private:
-        void Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
+        void Rotate(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
         void Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
-        void Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs);
+        void Zoom(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
 
         f32 m_speed       = 15.0f;
         f32 m_sprint      = 1.85f;

@@ -30,3 +30,4 @@
 * De-couple Engine::Scene from the Renderer
 * Save Engine::Scene To JSON
 * Separate Scene Editor from Engine::Scene
+* Move Camera to Engine

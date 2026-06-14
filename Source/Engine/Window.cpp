@@ -51,12 +51,22 @@ namespace Engine
             Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
         }
 
-        if (!SDL_SetWindowFullscreen(handle, isFullscreen))
+        if (!SDL_SetWindowFullscreen(handle, m_isFullscreen))
         {
             Logger::Error("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
         }
 
         inputs.Initialize();
+    }
+
+    void Window::ToggleFullScreen()
+    {
+        m_isFullscreen = !m_isFullscreen;
+
+        if (!SDL_SetWindowFullscreen(handle, m_isFullscreen))
+        {
+            Logger::Warning("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
+        }
     }
 
     void Window::Destroy()

@@ -26,7 +26,7 @@ namespace Renderer::Objects
     constexpr f32 MOVEMENT_RATE = 16.0f;
     constexpr f32 ZOOM_RATE     = 16.0f;
 
-    constexpr f32 STICK_ROTATION_MULTIPLIER = 0.04f;
+    constexpr f32 STICK_ROTATION_MULTIPLIER = 2.0f;
 
     constexpr f32 MIN_FOV = glm::radians(10.0f);
     constexpr f32 MAX_FOV = glm::radians(120.0f);
@@ -62,7 +62,7 @@ namespace Renderer::Objects
     {
     }
 
-    void FreeCamera::Update(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
+    void FreeCamera::Update(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         if (!isEnabled)
         {
@@ -120,14 +120,20 @@ namespace Renderer::Objects
         }
 
         const glm::vec2 leftStickDirection = inputs.GetLeftStickDirection();
+        const f32       leftTrigger        = inputs.GetLeftTriggerMovement();
+        const f32       rightTrigger       = inputs.GetRightTriggerMovement();
 
         // Forward/Backward
         m_targetPosition -= leftStickDirection.y * front * velocity;
         // Left/Right
         m_targetPosition += leftStickDirection.x * right * velocity;
+        // Up
+        m_targetPosition += WORLD_UP * rightTrigger * velocity;
+        // Down
+        m_targetPosition -= WORLD_UP * leftTrigger * velocity;
     }
 
-    void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
+    void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         const f32 speed = m_sensitivity * frameCounter.frameDelta;
 
@@ -144,7 +150,9 @@ namespace Renderer::Objects
             deltaPitch += angularMovement.y;
         }
 
-        const glm::vec2 rightStickDirection = inputs.GetRightStickDirection();
+        glm::vec2 rightStickDirection = inputs.GetRightStickDirection();
+
+        rightStickDirection.x *= -1.0f;
 
         deltaYaw   += rightStickDirection.x * speed * STICK_ROTATION_MULTIPLIER;
         deltaPitch += rightStickDirection.y * speed * STICK_ROTATION_MULTIPLIER;
@@ -158,7 +166,7 @@ namespace Renderer::Objects
         m_targetOrientation = glm::normalize(m_yaw * m_pitch);
     }
 
-    void FreeCamera::Zoom(const Util::FrameCounter& frameCounter, Engine::Inputs& inputs)
+    void FreeCamera::Zoom(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         if (!inputs.WasMouseScrolled())
         {
