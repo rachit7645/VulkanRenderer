@@ -78,10 +78,14 @@ void main()
     // TODO: Consider a better self-intersection prevention method
     vec3 origin = worldPosition + normal * bias;
 
-    uint  rayFlags = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT;
-    uint  cullMask = 0xFF;
-    float tmin     = 0.001f;
-    float tmax     = 1e27f;
+    const uint  rayFlags        = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT;
+    const uint  cullMask        = 0xFFu;
+    const float tmin            = 0.001f;
+    const float tmax            = 1e27f;
+    const uint  sbtRecordOffset = 0u;
+    const uint  sbtRecordSize   = 0u;
+    const uint  missIndex       = 0u;
+    const int   payloadLocation = 0;
 
     float totalShadow = 0.0f;
 
@@ -103,14 +107,14 @@ void main()
             accelerationStructureEXT(Constants.TLAS),
             rayFlags,
             cullMask,
-            0, // SBT Record Offset
-            0, // SBT Record Stride
-            0, // Miss Index
+            sbtRecordOffset,
+            sbtRecordSize,
+            missIndex,
             origin,
             tmin,
             rayDirection,
             tmax,
-            0 // Payload Location
+            payloadLocation
         );
 
         totalShadow += shadowAmount;

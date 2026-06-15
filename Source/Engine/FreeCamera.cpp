@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+#include "Inputs.h"
 #include "FreeCamera.h"
 #include "Renderer/RenderConstants.h"
-#include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
 #include "Util/Maths.h"
 
-namespace Renderer::Objects
+namespace Engine
 {
     constexpr f32 ROTATION_RATE = 24.0f;
     constexpr f32 MOVEMENT_RATE = 16.0f;
@@ -57,7 +57,7 @@ namespace Renderer::Objects
           m_targetPosition{position},
           m_targetOrientation{orientation},
           m_targetFOV{FOV},
-          m_yaw{glm::normalize(glm::angleAxis(rotation.y, WORLD_UP))},
+          m_yaw{glm::normalize(glm::angleAxis(rotation.y, Renderer::WORLD_UP))},
           m_pitch{glm::normalize(glm::angleAxis(rotation.x, glm::vec3(1.0f, 0.0f, 0.0f)))}
     {
     }
@@ -112,11 +112,11 @@ namespace Renderer::Objects
 
         if (inputs.IsKeyPressed(KEY_UP))
         {
-            m_targetPosition += WORLD_UP * velocity;
+            m_targetPosition += Renderer::WORLD_UP * velocity;
         }
         else if (inputs.IsKeyPressed(KEY_DOWN))
         {
-            m_targetPosition -= WORLD_UP * velocity;
+            m_targetPosition -= Renderer::WORLD_UP * velocity;
         }
 
         const glm::vec2 leftStickDirection = inputs.GetLeftStickDirection();
@@ -128,9 +128,9 @@ namespace Renderer::Objects
         // Left/Right
         m_targetPosition += leftStickDirection.x * right * velocity;
         // Up
-        m_targetPosition += WORLD_UP * rightTrigger * velocity;
+        m_targetPosition += Renderer::WORLD_UP * rightTrigger * velocity;
         // Down
-        m_targetPosition -= WORLD_UP * leftTrigger * velocity;
+        m_targetPosition -= Renderer::WORLD_UP * leftTrigger * velocity;
     }
 
     void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
@@ -157,7 +157,7 @@ namespace Renderer::Objects
         deltaYaw   += rightStickDirection.x * speed * STICK_ROTATION_MULTIPLIER;
         deltaPitch += rightStickDirection.y * speed * STICK_ROTATION_MULTIPLIER;
 
-        const glm::quat deltaYawQuat   = glm::angleAxis(-deltaYaw,   WORLD_UP);
+        const glm::quat deltaYawQuat   = glm::angleAxis(-deltaYaw,   Renderer::WORLD_UP);
         const glm::quat deltaPitchQuat = glm::angleAxis( deltaPitch, glm::vec3(1.0f, 0.0f, 0.0f));
 
         m_yaw   = glm::normalize(deltaYawQuat   * m_yaw);

@@ -21,9 +21,9 @@
 #include "Engine/Inputs.h"
 #include "Externals/GLM.h"
 
-namespace Renderer::Objects
+namespace Engine
 {
-    class FreeCamera final : public Camera
+    class FreeCamera final : public Engine::Camera
     {
     public:
         FreeCamera() = default;

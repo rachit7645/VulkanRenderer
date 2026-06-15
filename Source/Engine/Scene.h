@@ -18,8 +18,8 @@
 #define SCENE_H
 
 #include "Config.h"
+#include "FreeCamera.h"
 #include "Renderer/RenderObject.h"
-#include "Renderer/Objects/FreeCamera.h"
 #include "Renderer/IBL/IBLMaps.h"
 #include "Renderer/IBL/Generator.h"
 #include "Models/ModelManager.h"
@@ -41,7 +41,7 @@ namespace Engine
         void Update
         (
             const Util::FrameCounter& frameCounter,
-            Engine::Inputs& inputs,
+            const Engine::Inputs& inputs,
             Models::ModelManager& modelManager,
             Renderer::IBL::Generator& iblGenerator
         );
@@ -59,7 +59,7 @@ namespace Engine
         GPU::DirLight                       sun           = {};
         std::vector<GPU::PointLight>        pointLights   = {};
         std::vector<GPU::SpotLight>         spotLights    = {};
-        Renderer::Objects::FreeCamera       camera        = {};
+        Engine::FreeCamera                  camera        = {};
         Renderer::IBL::IBLID                iblMapsID     = 0;
 
         // TODO: Better render object update flags

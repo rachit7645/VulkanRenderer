@@ -17,10 +17,8 @@
 #ifndef POST_PROCESS_PASS_H
 #define POST_PROCESS_PASS_H
 
-#include "Renderer/Buffers/ExposureBuffers.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Objects/Camera.h"
 #include "Renderer/Objects/Samplers.h"
 #include "Vulkan/PipelineManager.h"
 

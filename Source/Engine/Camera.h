@@ -17,12 +17,12 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "Inputs.h"
+#include "Constants.h"
 #include "Externals/GLM.h"
-#include "Renderer/RenderConstants.h"
-#include "Engine/Inputs.h"
 #include "Util/FrameCounter.h"
 
-namespace Renderer::Objects
+namespace Engine
 {
     class Camera
     {
@@ -44,7 +44,7 @@ namespace Renderer::Objects
 
         glm::vec3 position    = {0.0f, 0.0f, 0.0f};
         glm::quat orientation = glm::identity<glm::quat>();
-        f32       FOV         = Renderer::DEFAULT_FOV;
+        f32       FOV         = Engine::DEFAULT_FOV;
 
         bool isEnabled = true;
     private:

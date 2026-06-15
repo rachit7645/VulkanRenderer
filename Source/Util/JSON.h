@@ -19,7 +19,7 @@
 
 #include "GPU/Lights.h"
 #include "Externals/SIMDJSON.h"
-#include "Renderer/Objects/FreeCamera.h"
+#include "Engine/FreeCamera.h"
 
 namespace JSON
 {
@@ -224,7 +224,7 @@ namespace simdjson
     }
 
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::FreeCamera& camera)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, Engine::FreeCamera& camera)
     {
         ondemand::object object;
 
@@ -280,7 +280,7 @@ namespace simdjson
         rotation = glm::radians(rotation);
         FOV      = glm::radians(FOV);
 
-        camera = Renderer::Objects::FreeCamera
+        camera = Engine::FreeCamera
         (
             position,
             rotation,

@@ -119,7 +119,7 @@ namespace Engine
             }
 
             // Camera
-            JSON::CheckError(document["Camera"]["FreeCamera"].get<Renderer::Objects::FreeCamera>(camera), "Failed to load free camera!");
+            JSON::CheckError(document["Camera"]["FreeCamera"].get<Engine::FreeCamera>(camera), "Failed to load free camera!");
 
             // HDR Map
             JSON::CheckError(document["IBL"].get_string(m_loadedHDRMapPath), "Failed to load IBL!");
@@ -142,7 +142,7 @@ namespace Engine
     void Scene::Update
     (
         const Util::FrameCounter& frameCounter,
-        Engine::Inputs& inputs,
+        const Engine::Inputs& inputs,
         Models::ModelManager& modelManager,
         Renderer::IBL::Generator& iblGenerator
     )

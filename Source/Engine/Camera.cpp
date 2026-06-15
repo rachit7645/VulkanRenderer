@@ -18,7 +18,7 @@
 
 #include "Externals/ImGui.h"
 
-namespace Renderer::Objects
+namespace Engine
 {
     Camera::Camera
     (

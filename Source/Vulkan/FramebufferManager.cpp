@@ -501,8 +501,12 @@ namespace Vk
     {
         if (ImGui::CollapsingHeader("Framebuffers"))
         {
+            VkDeviceSize totalMemoryUsed = 0;
+
             for (const auto& [name, framebuffer] : m_framebuffers)
             {
+                totalMemoryUsed += framebuffer.image.size;
+
                 if (ImGui::TreeNode(name.c_str()))
                 {
                     ImGui::Text("Handle          | %p", std::bit_cast<void*>(framebuffer.image.handle));
@@ -603,6 +607,8 @@ namespace Vk
 
                 ImGui::Separator();
             }
+
+            ImGui::Text("Total Framebuffer Memory Usage | %llu Bytes", totalMemoryUsed);
         }
     }
 

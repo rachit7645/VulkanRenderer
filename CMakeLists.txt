@@ -56,6 +56,8 @@ add_executable(VulkanRenderer
     Source/Engine/Scene.cpp
     Source/Engine/Config.cpp
     Source/Engine/Cache.cpp
+    Source/Engine/Camera.cpp
+    Source/Engine/FreeCamera.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
@@ -115,8 +117,6 @@ add_executable(VulkanRenderer
     # Renderer Util sources
     Source/Renderer/Util/Jitter.cpp
     # Object sources
-    Source/Renderer/Objects/FreeCamera.cpp
-    Source/Renderer/Objects/Camera.cpp
     Source/Renderer/Objects/Samplers.cpp
     # Renderer Buffer sources
     Source/Renderer/Buffers/IndirectBuffer.cpp
