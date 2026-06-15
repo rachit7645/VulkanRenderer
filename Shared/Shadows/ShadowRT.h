@@ -39,6 +39,8 @@ GLSL_PUSH_CONSTANT_BEGIN
     u32 GNormalIndex;
     u32 SceneDepthIndex;
     u32 OutputImage;
+
+    u32 TemporalPhaseCount;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

@@ -43,8 +43,11 @@ const float SPOT_SHADOW_MIN_BIAS = 0.0001f;
 const float SPOT_SHADOW_MAX_BIAS = 0.001f;
 
 // RT Shadow Constants
-const float RT_SHADOW_MIN_BIAS = 0.0005f;
-const float RT_SHADOW_MAX_BIAS = 0.005f;
+const float RT_SHADOW_MIN_BIAS        = 0.0005f;
+const float RT_SHADOW_MAX_BIAS        = 0.005f;
+const uint  RT_SHADOW_RAY_COUNT       = 1;
+const float RT_SUN_ANGULAR_RADIUS     = 0.00872665f; // 0.5 degrees
+const float RT_COS_SUN_ANGULAR_RADIUS = cos(RT_SUN_ANGULAR_RADIUS);
 
 // TAA Constants
 const float TAA_DEFAULT_HISTORY_BLEND_RATE = 0.1f;

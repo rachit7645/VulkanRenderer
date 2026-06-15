@@ -19,6 +19,7 @@
 #include "Vulkan/DebugUtils.h"
 #include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
+#include "Renderer/Util/Jitter.h"
 #include "Shadows/ShadowRT.h"
 
 namespace Renderer::ShadowRT
@@ -88,6 +89,7 @@ namespace Renderer::ShadowRT
         usize FIF,
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Renderer::RenderConfig& renderConfig,
         const Vk::Context& context,
         const Vk::MegaSet& megaSet,
         const Models::ModelManager& modelManager,
@@ -154,7 +156,8 @@ namespace Renderer::ShadowRT
             .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
-            .OutputImage         = shadowMapView.storageImageID
+            .OutputImage         = shadowMapView.storageImageID,
+            .TemporalPhaseCount  = static_cast<u32>(Renderer::GetPhaseCount(renderConfig.antiAliasingMode, framebufferManager.renderExtent, framebufferManager.displayExtent))
         };
 
         pipeline.PushConstants

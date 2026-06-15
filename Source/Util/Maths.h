@@ -54,20 +54,20 @@ namespace Maths
 
     [[nodiscard]] constexpr f32 Halton(usize index, usize base)
     {
-        f64 result = 0.0;
-        f64 f      = 1.0 / static_cast<f64>(base);
+        f32 result = 0.0f;
+        f32 f      = 1.0f / static_cast<f32>(base);
 
         index += 1;
 
         while (index > 0)
         {
-            result += f * static_cast<f64>(index % base);
+            result += f * static_cast<f32>(index % base);
 
             index /= base;
-            f     /= static_cast<f64>(base);
+            f     /= static_cast<f32>(base);
         }
 
-        return static_cast<f32>(result);
+        return result;
     }
 
     template<u32 HilbertWidth>

@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+// References Used:
+// Ray Tracing Gems v1.9 (Unofficial)
+// Chapter 25: Hybrid Rendering for Real-Time Ray Tracing
+// 25.2.1: Shadows
+
 #version 460 core
 
 #extension GL_GOOGLE_include_directive : enable
@@ -25,6 +30,8 @@
 #include "Encoding.glsl"
 #include "Constants.glsl"
 #include "Math.glsl"
+#include "Random.glsl"
+#include "Sampling.glsl"
 #include "Shadows/ShadowRT.h"
 
 layout(location = 0) rayPayloadEXT float shadowAmount;
@@ -43,12 +50,26 @@ void main()
         return;
     }
 
+    uint pixelIndex  = gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x;
+    uint frameIndex  = uint(Constants.Scene.frameIndex);
+    uint haltonIndex = Constants.TemporalPhaseCount * pixelIndex + frameIndex;
+
+    uint rngState = pixelIndex ^ (20232026u * frameIndex);
+         rngState = PCG(rngState);
+
+    float jitter0 = Random(rngState);
+    float jitter1 = Random(rngState);
+
     vec3 worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
 
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     vec3 normal  = UnpackNormal(gNormal.rg);
 
     vec3 direction = normalize(-Constants.Scene.Sun.light.direction);
+    vec3 tangent   = vec3(0.0f);
+    vec3 bitangent = vec3(0.0f);
+
+    BuildOrthonormalBasis(direction, tangent, bitangent);
 
     float cosTheta = saturate(dot(normal, direction));
     float bias     = RT_SHADOW_MIN_BIAS * TanArcCos(cosTheta);
@@ -62,23 +83,40 @@ void main()
     float tmin     = 0.001f;
     float tmax     = 1e27f;
 
-    // Assume that the ray hits something, i.e, the point is in shadow
-    shadowAmount = 1.0f;
+    float totalShadow = 0.0f;
 
-    traceRayEXT
-    (
-        accelerationStructureEXT(Constants.TLAS),
-        rayFlags,
-        cullMask,
-        0, // SBT Record Offset
-        0, // SBT Record Stride
-        0, // Miss Index
-        origin,
-        tmin,
-        direction,
-        tmax,
-        0 // Payload Location
-    );
+    for (uint i = 0; i < RT_SHADOW_RAY_COUNT; ++i)
+    {
+        uint  sampleIndex  = RT_SHADOW_RAY_COUNT * haltonIndex + i;
+        float random0      = fract(HaltonBase2(sampleIndex) + jitter0);
+        float random1      = fract(Halton(sampleIndex, 3u)  + jitter1);
+        vec2  randomPoint  = vec2(random0, random1);
 
-    imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f - shadowAmount, 0.0f, 0.0f, 0.0f));
+        vec3 randomDirection = UniformSampleCone(randomPoint, RT_COS_SUN_ANGULAR_RADIUS);
+        vec3 rayDirection    = normalize(randomDirection.x * tangent + randomDirection.y * bitangent + randomDirection.z * direction);
+
+        // Assume that the ray hits something, i.e, the point is in shadow
+        shadowAmount = 1.0f;
+
+        traceRayEXT
+        (
+            accelerationStructureEXT(Constants.TLAS),
+            rayFlags,
+            cullMask,
+            0, // SBT Record Offset
+            0, // SBT Record Stride
+            0, // Miss Index
+            origin,
+            tmin,
+            rayDirection,
+            tmax,
+            0 // Payload Location
+        );
+
+        totalShadow += shadowAmount;
+    }
+
+    totalShadow /= float(RT_SHADOW_RAY_COUNT);
+
+    imageStore(Images[Constants.OutputImage], ivec2(gl_LaunchIDEXT.xy), vec4(1.0f - totalShadow, 0.0f, 0.0f, 0.0f));
 }

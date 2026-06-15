@@ -42,6 +42,7 @@ namespace Renderer::ShadowRT
             usize FIF,
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Renderer::RenderConfig& renderConfig,
             const Vk::Context& context,
             const Vk::MegaSet& megaSet,
             const Models::ModelManager& modelManager,

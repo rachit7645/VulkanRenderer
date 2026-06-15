@@ -1,6 +1,6 @@
 ### TODO
 
-* Soft RT Shadows for Directional Lights
+* Denoising for Soft RT Shadows for Directional Lights
 * RT Shadows for Point and Spot Lights
 * FSR3
 * RTAO
@@ -31,3 +31,4 @@
 * Save Engine::Scene To JSON
 * Separate Scene Editor from Engine::Scene
 * Move Camera to Engine
+* Framebuffers Total Memory Consumption UI
