@@ -23,7 +23,12 @@
 
 namespace Renderer
 {
-    usize GetPhaseCount(RenderConfig::AntiAliasingMode antiAliasingMode, VkExtent2D renderExtent, VkExtent2D displayExtent);
+    usize GetPhaseCount
+    (
+        RenderConfig::AntiAliasingMode antiAliasingMode,
+        ENGINE_UNUSED VkExtent2D renderExtent,
+        ENGINE_UNUSED VkExtent2D displayExtent
+    );
 
     glm::vec2 GetJitterInPixels
     (

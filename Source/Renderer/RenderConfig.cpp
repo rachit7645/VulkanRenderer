@@ -92,6 +92,15 @@ namespace Renderer
                         DLSS.isEnabled = antiAliasingMode == AntiAliasingMode::DLSS;
                         #endif
                     }
+
+                    ImGui::Separator();
+
+                    #ifdef ENGINE_DLSS
+                    if (antiAliasingMode != AntiAliasingMode::DLSS)
+                    #endif
+                    {
+                        ImGui::DragFloat("Resolution Scale", &resolutionScale, 0.01f, 0.1f, 0.0f);
+                    }
                 }
 
                 ImGui::EndMenu();

@@ -88,6 +88,29 @@ namespace Renderer::DLSS
 
                     ImGui::Separator();
 
+                    usize allocatedVRAM      = 0;
+                    u32   optimizationLevel  = 0;
+                    u32   isDevSnippetBranch = 0;
+
+                    const NVSDK_NGX_Result result =  NGX_DLSS_GET_STATS_2
+                    (
+                        parameters,
+                        &allocatedVRAM,
+                        &optimizationLevel,
+                        &isDevSnippetBranch
+                    );
+
+                    if (result != NVSDK_NGX_Result_Success)
+                    {
+                        Logger::Error("Failed to query DLSS statistics! [Error={}]\n", static_cast<u64>(result));
+                    }
+
+                    ImGui::Text("Allocated VRAM     | %llu bytes", allocatedVRAM);
+                    ImGui::Text("Optimization Level | %u",         optimizationLevel);
+                    ImGui::Text("Dev Branch         | %s",         isDevSnippetBranch ? "true" : "false");
+
+                    ImGui::Separator();
+
                     constexpr std::array DLSS_MODE_NAMES =
                     {
                         "Performance",

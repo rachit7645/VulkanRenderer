@@ -184,7 +184,7 @@ endif()
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
 
-# DLSS SDK will only build on Clang on Windows
+# On Windows, DLSS SDK will only build on Clang
 if (WIN32)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(DLSSAvailable ON)

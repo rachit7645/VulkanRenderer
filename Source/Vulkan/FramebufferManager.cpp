@@ -100,24 +100,26 @@ namespace Vk
             displayExtent = swapchain.extent;
         }
         else
+        #endif
         {
-            if (swapchain.extent.width == renderExtent.width && swapchain.extent.height == renderExtent.height)
+            VkExtent2D scaledRenderExtent = glm::vk_cast(glm::uvec2(glm::ceil(renderConfig.resolutionScale * glm::vec2(glm::vk_cast(swapchain.extent)))));
+
+            if (scaledRenderExtent.width == 0 || scaledRenderExtent.height == 0)
+            {
+                scaledRenderExtent = swapchain.extent;
+            }
+
+            const bool didScalingChange = scaledRenderExtent.width != renderExtent.width  || scaledRenderExtent.height != renderExtent.height;
+            const bool didDisplayChange = swapchain.extent.width   != displayExtent.width || swapchain.extent.height   != displayExtent.height;
+
+            if (!didScalingChange && !didDisplayChange)
             {
                 return;
             }
 
-            renderExtent  = swapchain.extent;
+            renderExtent  = scaledRenderExtent;
             displayExtent = swapchain.extent;
         }
-        #else
-        if (swapchain.extent.width == renderExtent.width && swapchain.extent.height == renderExtent.height)
-        {
-            return;
-        }
-
-        renderExtent  = swapchain.extent;
-        displayExtent = swapchain.extent;
-        #endif
 
         Vk::BeginLabel(cmdBuffer, "FramebufferManager::Update", {0.6421f, 0.1234f, 0.0316f, 1.0f});
 
@@ -509,8 +511,8 @@ namespace Vk
 
                 if (ImGui::TreeNode(name.c_str()))
                 {
-                    ImGui::Text("Handle          | %p", std::bit_cast<void*>(framebuffer.image.handle));
-                    ImGui::Text("Allocation      | %p", std::bit_cast<void*>(framebuffer.image.allocation));
+                    ImGui::Text("Handle          | %p", reinterpret_cast<void*>(framebuffer.image.handle));
+                    ImGui::Text("Allocation      | %p", reinterpret_cast<void*>(framebuffer.image.allocation));
 
                     ImGui::Separator();
 
@@ -559,7 +561,7 @@ namespace Vk
 
                         if (ImGui::TreeNode(viewName.c_str()))
                         {
-                            ImGui::Text("Handle                   | %p", std::bit_cast<void*>(framebufferView.view.handle));
+                            ImGui::Text("Handle                   | %p", reinterpret_cast<void*>(framebufferView.view.handle));
 
                             ImGui::Separator();
 

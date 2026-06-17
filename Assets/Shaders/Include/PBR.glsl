@@ -56,6 +56,7 @@ float DistributionGGX(float NdotH, float a)
 }
 
 // Smith's Self Shadowing
+// Eric Heitz's Height-Correlated Visibility
 // V = G / (4 · NoL · NoV)
 float VisibilitySmithGGX(float NdotL, float NdotV, float a)
 {
@@ -101,6 +102,7 @@ vec3 CalculateLight
     float reflectance
 )
 {
+    // From DevSH's PBR Discussion
     // SingleScatterOut = F(H, L) * G(H, L, V) * D(H, ...) / (4 * V ⋅ N * L ⋅ N) + FresnelTransmissionThroughAllMicrofacets * (1 - FresnelTotalInternalReflection) * Lambertian
 
     vec3 F0 = CalculateF0(albedo, metallic, reflectance);

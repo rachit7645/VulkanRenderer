@@ -63,6 +63,8 @@ namespace Renderer
         RenderConfig::Entry DLSS       = {};
 
         AntiAliasingMode antiAliasingMode = AntiAliasingMode::TAA;
+
+        f32 resolutionScale = 1.0f;
     private:
         void Validate();
 

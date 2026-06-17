@@ -32,10 +32,14 @@ namespace Renderer
         return jitter;
     }
 
-    usize GetPhaseCount(RenderConfig::AntiAliasingMode antiAliasingMode, VkExtent2D renderExtent, VkExtent2D displayExtent)
+    usize GetPhaseCount
+    (
+        RenderConfig::AntiAliasingMode antiAliasingMode,
+        ENGINE_UNUSED VkExtent2D renderExtent,
+        ENGINE_UNUSED VkExtent2D displayExtent
+    )
     {
-        constexpr usize BASE_JITTER_PHASE_COUNT      = 64;
-        constexpr usize BASE_DLSS_JITTER_PHASE_COUNT = 8;
+        constexpr usize BASE_JITTER_PHASE_COUNT = 64;
 
         switch (antiAliasingMode)
         {
@@ -46,6 +50,8 @@ namespace Renderer
         #ifdef ENGINE_DLSS
         case RenderConfig::AntiAliasingMode::DLSS:
         {
+            constexpr usize BASE_DLSS_JITTER_PHASE_COUNT = 8;
+
             const f32 renderXResolution  = Maths::Max2(glm::vec2(glm::vk_cast(renderExtent)));
             const f32 displayXResolution = Maths::Max2(glm::vec2(glm::vk_cast(displayExtent)));
 

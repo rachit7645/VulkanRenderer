@@ -1789,15 +1789,15 @@ namespace Renderer
 
         const VkImageBlit2 blitRegion =
         {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
-            .pNext = nullptr,
+            .sType          = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+            .pNext          = nullptr,
             .srcSubresource = {
                 .aspectMask     = finalColor.image.aspect,
                 .mipLevel       = 0,
                 .baseArrayLayer = 0,
                 .layerCount     = finalColor.image.arrayLayers
             },
-            .srcOffsets = {
+            .srcOffsets     = {
                 {.x = 0, .y = 0, .z = 0},
                 {.x = static_cast<s32>(finalColor.image.width), .y = static_cast<s32>(finalColor.image.height), .z = 1}
             },
@@ -1807,7 +1807,7 @@ namespace Renderer
                 .baseArrayLayer = 0,
                 .layerCount     = swapchainImage.arrayLayers
             },
-            .dstOffsets = {
+            .dstOffsets     = {
                 {.x = 0, .y = 0, .z = 0},
                 {.x = static_cast<s32>(swapchainImage.width), .y = static_cast<s32>(swapchainImage.height), .z = 1}
             }
