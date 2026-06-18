@@ -42,6 +42,10 @@ namespace Engine
 
     void Camera::ImGuiDisplay()
     {
+        ImGui::Checkbox("Enabled", &isEnabled);
+
+        ImGui::Separator();
+
         ImGui::DragFloat3("Position", &position[0], 1.0f, 0.0f, 0.0f, "%.2f");
 
         if (m_enableQuaternionInputMode)

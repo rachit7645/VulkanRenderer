@@ -54,6 +54,7 @@
 #include "Util/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Engine/Scene.h"
+#include "Engine/SceneEditor.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderConfig.h"
 #include "Renderer/Debug/RenderPass.h"
@@ -179,7 +180,7 @@ namespace Renderer
 
         Buffers::SceneBuffer m_sceneBuffer;
 
-        std::optional<Engine::Scene> m_scene = std::nullopt;
+        Engine::SceneEditor m_sceneEditor;
 
         bool m_isSwapchainOk = true;
     };

@@ -93,6 +93,16 @@ namespace Engine
         return m_keys[key];
     }
 
+    bool Inputs::IsButtonPressed(SDL_GamepadButton button) const
+    {
+        if (gamepad == nullptr)
+        {
+            return false;
+        }
+
+        return SDL_GetGamepadButton(gamepad, button);
+    }
+
     const glm::vec2& Inputs::GetRelativeMouseMovement() const
     {
         return m_relativeMouseMovement;

@@ -34,6 +34,7 @@ namespace Engine
         void FindGamepad();
 
         [[nodiscard]] bool IsKeyPressed(SDL_Scancode key) const;
+        [[nodiscard]] bool IsButtonPressed(SDL_GamepadButton button) const;
 
         [[nodiscard]] const glm::vec2& GetRelativeMouseMovement() const;
         [[nodiscard]] const glm::vec2& GetMouseScroll() const;

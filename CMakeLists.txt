@@ -58,6 +58,7 @@ add_executable(VulkanRenderer
     Source/Engine/Cache.cpp
     Source/Engine/Camera.cpp
     Source/Engine/FreeCamera.cpp
+    Source/Engine/SceneEditor.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp

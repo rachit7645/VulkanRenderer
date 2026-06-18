@@ -17,7 +17,6 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "Config.h"
 #include "FreeCamera.h"
 #include "Renderer/RenderObject.h"
 #include "Renderer/IBL/IBLMaps.h"
@@ -31,21 +30,6 @@ namespace Engine
     class Scene
     {
     public:
-        Scene
-        (
-            const Engine::Config& config,
-            Models::ModelManager& modelManager,
-            Renderer::IBL::Generator& iblGenerator
-        );
-
-        void Update
-        (
-            const Util::FrameCounter& frameCounter,
-            const Engine::Inputs& inputs,
-            Models::ModelManager& modelManager,
-            Renderer::IBL::Generator& iblGenerator
-        );
-
         void Destroy
         (
             const Vk::Context& context,
@@ -61,19 +45,12 @@ namespace Engine
         std::vector<GPU::SpotLight>         spotLights    = {};
         Engine::FreeCamera                  camera        = {};
         Renderer::IBL::IBLID                iblMapsID     = 0;
+        bool                                isLoaded      = false;
 
         // TODO: Better render object update flags
         // This does not account for render object internal changes
         // Only addition/deletion of render objects will update this
         bool haveRenderObjectsChanged = false;
-    private:
-        std::string            m_loadedHDRMapPath   = {};
-        std::string            m_loadedModelPath    = {};
-        Renderer::RenderObject m_loadedRenderObject = {};
-        GPU::PointLight        m_loadedPointLight   = {};
-        GPU::SpotLight         m_loadedSpotLight    = {};
-
-        bool m_normalizeSpotLights = true;
     };
 }
 

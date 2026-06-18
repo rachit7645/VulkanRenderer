@@ -1278,7 +1278,7 @@ namespace Renderer
 
         Update(cmdBuffer);
 
-        if (m_scene->haveRenderObjectsChanged)
+        if (m_sceneEditor.scene.haveRenderObjectsChanged)
         {
             if (m_accelerationStructure.has_value())
             {
@@ -1296,11 +1296,9 @@ namespace Renderer
                 cmdBuffer,
                 m_context,
                 m_modelManager,
-                m_scene->renderObjects,
+                m_sceneEditor.scene.renderObjects,
                 m_deletionQueues[m_FIF]
             );
-
-            m_scene->haveRenderObjectsChanged = false;
         }
 
         m_accelerationStructure->TryCompactBottomLevelAS
@@ -1318,7 +1316,7 @@ namespace Renderer
             cmdBuffer,
             m_context,
             m_modelManager,
-            m_scene->renderObjects,
+            m_sceneEditor.scene.renderObjects,
             m_deletionQueues[m_FIF]
         );
 
@@ -1480,7 +1478,7 @@ namespace Renderer
             m_sceneBuffer,
             m_tiledLightIndexBuffer,
             m_samplers,
-            m_iblGenerator.GetIBLMaps(m_scene->iblMapsID)
+            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene.iblMapsID)
         );
 
         m_skybox.Render
@@ -1493,7 +1491,7 @@ namespace Renderer
             m_modelManager,
             m_sceneBuffer,
             m_samplers,
-            m_iblGenerator.GetIBLMaps(m_scene->iblMapsID)
+            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene.iblMapsID)
         );
 
         AntiAliasing(cmdBuffer);
@@ -1878,96 +1876,6 @@ namespace Renderer
 
         m_stagingPool.Update(m_context.allocator);
 
-        if (!m_scene.has_value())
-        {
-            m_scene = Engine::Scene
-            (
-                m_config,
-                m_modelManager,
-                m_iblGenerator
-            );
-
-            m_modelManager.Update
-            (
-                cmdBuffer,
-                m_context.device,
-                m_context.allocator,
-                m_megaSet,
-                m_stagingPool,
-                m_executor,
-                m_deletionQueues[m_FIF]
-            );
-        }
-
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Scene"))
-            {
-                bool toReload = false;
-
-                ImGui::InputText("Scene", &m_config.scene);
-
-                if (ImGui::Button("Load From File"))
-                {
-                    toReload = true;
-                }
-
-                ImGui::SameLine();
-
-                if (ImGui::Button("Reload From Config"))
-                {
-                    m_config = Engine::Config();
-                    toReload = true;
-                }
-
-                if (toReload)
-                {
-                    if (m_scene.has_value())
-                    {
-                        m_scene->Destroy
-                        (
-                            m_context,
-                            m_modelManager,
-                            m_iblGenerator,
-                            m_megaSet,
-                            m_deletionQueues[m_FIF]
-                        );
-
-                        m_scene = std::nullopt;
-                    }
-
-                    m_scene = Engine::Scene
-                    (
-                        m_config,
-                        m_modelManager,
-                        m_iblGenerator
-                    );
-
-                    m_modelManager.Update
-                    (
-                        cmdBuffer,
-                        m_context.device,
-                        m_context.allocator,
-                        m_megaSet,
-                        m_stagingPool,
-                        m_executor,
-                        m_deletionQueues[m_FIF]
-                    );
-
-                    m_taa.ResetHistory();
-                    m_exposure.ResetLuminance();
-
-                    #ifdef ENGINE_DLSS
-                    m_renderConfig.DLSSConfig.resetNeeded = true;
-                    #endif
-                }
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
-
         m_framebufferManager.Update
         (
             cmdBuffer,
@@ -1992,13 +1900,26 @@ namespace Renderer
         }
         #endif
 
-        m_scene->Update
+        const bool sceneChanged = m_sceneEditor.Update
         (
+            m_context,
             m_frameCounter,
             m_window.inputs,
             m_modelManager,
-            m_iblGenerator
+            m_iblGenerator,
+            m_megaSet,
+            m_deletionQueues[m_FIF]
         );
+
+        if (sceneChanged)
+        {
+            m_taa.ResetHistory();
+            m_exposure.ResetLuminance();
+
+            #ifdef ENGINE_DLSS
+            m_renderConfig.DLSSConfig.resetNeeded = true;
+            #endif
+        }
 
         m_iblGenerator.Update
         (
@@ -2034,7 +1955,7 @@ namespace Renderer
             m_context.allocator,
             m_framebufferManager.renderExtent,
             m_framebufferManager.displayExtent,
-            *m_scene,
+            m_sceneEditor.scene,
             m_renderConfig,
             m_modelManager
         );
@@ -2044,10 +1965,10 @@ namespace Renderer
             m_frameIndex,
             m_context.allocator,
             m_modelManager,
-            m_scene->renderObjects
+            m_sceneEditor.scene.renderObjects
         );
 
-        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_scene->renderObjects);
+        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_sceneEditor.scene.renderObjects);
 
         m_samplers.Update
         (
@@ -2304,10 +2225,6 @@ namespace Renderer
                     break;
                 }
 
-                case SDL_SCANCODE_F2:
-                    m_scene->camera.isEnabled = !m_scene->camera.isEnabled;
-                    break;
-
                 case SDL_SCANCODE_F11:
                     m_window.ToggleFullScreen();
                     break;
@@ -2355,10 +2272,6 @@ namespace Renderer
                 {
                 case SDL_GAMEPAD_BUTTON_DPAD_UP:
                     m_window.ToggleFullScreen();
-                    break;
-
-                case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-                    m_scene->camera.isEnabled = !m_scene->camera.isEnabled;
                     break;
 
                 default:
