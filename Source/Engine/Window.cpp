@@ -23,7 +23,7 @@ namespace Engine
 {
     Window::Window()
     {
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD))
         {
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
         }
@@ -55,8 +55,6 @@ namespace Engine
         {
             Logger::Error("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
         }
-
-        inputs.Initialize();
     }
 
     void Window::ToggleFullScreen()
@@ -71,8 +69,6 @@ namespace Engine
 
     void Window::Destroy()
     {
-        inputs.Destroy();
-
         SDL_DestroyWindow(handle);
         SDL_Quit();
     }

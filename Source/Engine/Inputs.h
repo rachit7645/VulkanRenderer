@@ -25,7 +25,8 @@ namespace Engine
     class Inputs
     {
     public:
-        void Initialize();
+        Inputs();
+
         void Reset();
 
         void SetRelativeMouseMovement(const glm::vec2& movement);
@@ -51,6 +52,7 @@ namespace Engine
         [[nodiscard]] bool WasMouseScrolled() const;
 
         void ImGuiDisplay();
+
         void Destroy();
 
         SDL_Gamepad* gamepad = nullptr;

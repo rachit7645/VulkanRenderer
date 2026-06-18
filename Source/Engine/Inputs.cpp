@@ -22,7 +22,7 @@
 
 namespace Engine
 {
-    void Inputs::Initialize()
+    Inputs::Inputs()
     {
         s32 count = 0;
 
@@ -35,12 +35,12 @@ namespace Engine
 
         m_keys = std::span(pointer, pointer + count);
 
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH,            "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED,   "0");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS,          "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
+        SDL::SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH,            "1");
+        SDL::SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_HOME_LED,   "0");
+        SDL::SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED, "1");
+        SDL::SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS,          "1");
+        SDL::SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOYCON_HOME_LED,   "0");
+        SDL::SetHint(SDL_HINT_JOYSTICK_HIDAPI_COMBINE_JOY_CONS,  "1");
     }
 
     void Inputs::Reset()

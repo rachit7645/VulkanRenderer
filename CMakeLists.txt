@@ -161,6 +161,7 @@ add_executable(VulkanRenderer
 	Source/Externals/VMA.cpp
     Source/Externals/STB.cpp
     Source/Externals/FastGLTF.cpp
+    Source/Externals/SDL.cpp
 )
 
 # Precompiled Headers

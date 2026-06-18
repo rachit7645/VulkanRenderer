@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef EXTERNALS_SDL_H
-#define EXTERNALS_SDL_H
+#include "Externals/SDL.h"
 
-#include "sdl/include/SDL3/SDL.h"
-#include "sdl/include/SDL3/SDL_vulkan.h"
+#include "Util/Log.h"
 
 namespace SDL
 {
-    void SetHint(const char* name, const char* value);
+    void SetHint(const char* name, const char* value)
+    {
+        if (!SDL_SetHint(name, value))
+        {
+            Logger::Warning
+            (
+                "SDL_SetHint failed! [Hint={}] [Value={}] [Error={}]\n",
+                name != nullptr  ? name  : "nullptr",
+                value != nullptr ? value : "nullptr",
+                SDL_GetError()
+            );
+        }
+    }
 }
-
-#endif

@@ -64,8 +64,6 @@ namespace Engine
 
     void FreeCamera::Update(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
-        isEnabled = !inputs.IsKeyPressed(SDL_SCANCODE_F2) && !inputs.IsButtonPressed(SDL_GAMEPAD_BUTTON_DPAD_DOWN);
-
         if (!isEnabled)
         {
             return;

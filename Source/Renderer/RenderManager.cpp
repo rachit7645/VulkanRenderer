@@ -1904,7 +1904,7 @@ namespace Renderer
         (
             m_context,
             m_frameCounter,
-            m_window.inputs,
+            m_inputs,
             m_modelManager,
             m_iblGenerator,
             m_megaSet,
@@ -1985,7 +1985,7 @@ namespace Renderer
 
     void RenderManager::ImGuiDisplay()
     {
-        m_window.inputs.ImGuiDisplay();
+        m_inputs.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
         {
@@ -2177,7 +2177,7 @@ namespace Renderer
 
     bool RenderManager::HandleEvents()
     {
-        m_window.inputs.Reset();
+        m_inputs.Reset();
 
         SDL_Event event = {};
 
@@ -2237,18 +2237,18 @@ namespace Renderer
             }
 
             case SDL_EVENT_MOUSE_MOTION:
-                m_window.inputs.SetRelativeMouseMovement(glm::vec2(event.motion.xrel, event.motion.yrel));
+                m_inputs.SetRelativeMouseMovement(glm::vec2(event.motion.xrel, event.motion.yrel));
                 break;
 
             case SDL_EVENT_MOUSE_WHEEL:
-                m_window.inputs.SetMouseScroll(glm::vec2(event.wheel.x, event.wheel.y));
+                m_inputs.SetMouseScroll(glm::vec2(event.wheel.x, event.wheel.y));
                 break;
 
             case SDL_EVENT_GAMEPAD_ADDED:
             {
-                if (m_window.inputs.gamepad == nullptr)
+                if (m_inputs.gamepad == nullptr)
                 {
-                    m_window.inputs.FindGamepad();
+                    m_inputs.FindGamepad();
                 }
 
                 break;
@@ -2256,11 +2256,11 @@ namespace Renderer
 
             case SDL_EVENT_GAMEPAD_REMOVED:
             {
-                if (m_window.inputs.gamepad != nullptr && event.gdevice.which == m_window.inputs.GetGamepadID())
+                if (m_inputs.gamepad != nullptr && event.gdevice.which == m_inputs.GetGamepadID())
                 {
-                    SDL_CloseGamepad(m_window.inputs.gamepad);
+                    SDL_CloseGamepad(m_inputs.gamepad);
 
-                    m_window.inputs.FindGamepad();
+                    m_inputs.FindGamepad();
                 }
 
                 break;

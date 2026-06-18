@@ -125,7 +125,9 @@ namespace Renderer
         std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues      = {};
 
         Engine::Window m_window;
-        Vk::Context    m_context;
+        Engine::Inputs m_inputs;
+
+        Vk::Context m_context;
 
         Renderer::RenderConfig m_renderConfig;
 
