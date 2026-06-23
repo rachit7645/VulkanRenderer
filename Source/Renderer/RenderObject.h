@@ -24,8 +24,6 @@ namespace Renderer
 {
     struct RenderObject
     {
-        void Destroy(Models::ModelManager& modelManager) const;
-
         Models::ModelID modelID  = 0;
         glm::vec3       position = {};
         glm::vec3       rotation = {};

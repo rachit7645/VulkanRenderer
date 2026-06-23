@@ -1278,7 +1278,7 @@ namespace Renderer
 
         Update(cmdBuffer);
 
-        if (m_sceneEditor.scene.haveRenderObjectsChanged)
+        if (m_sceneEditor.scene->haveRenderObjectsChanged)
         {
             if (m_accelerationStructure.has_value())
             {
@@ -1296,7 +1296,7 @@ namespace Renderer
                 cmdBuffer,
                 m_context,
                 m_modelManager,
-                m_sceneEditor.scene.renderObjects,
+                m_sceneEditor.scene->renderObjects,
                 m_deletionQueues[m_FIF]
             );
         }
@@ -1316,7 +1316,7 @@ namespace Renderer
             cmdBuffer,
             m_context,
             m_modelManager,
-            m_sceneEditor.scene.renderObjects,
+            m_sceneEditor.scene->renderObjects,
             m_deletionQueues[m_FIF]
         );
 
@@ -1478,7 +1478,7 @@ namespace Renderer
             m_sceneBuffer,
             m_tiledLightIndexBuffer,
             m_samplers,
-            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene.iblMapsID)
+            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID)
         );
 
         m_skybox.Render
@@ -1491,7 +1491,7 @@ namespace Renderer
             m_modelManager,
             m_sceneBuffer,
             m_samplers,
-            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene.iblMapsID)
+            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID)
         );
 
         AntiAliasing(cmdBuffer);
@@ -1955,7 +1955,7 @@ namespace Renderer
             m_context.allocator,
             m_framebufferManager.renderExtent,
             m_framebufferManager.displayExtent,
-            m_sceneEditor.scene,
+            *m_sceneEditor.scene,
             m_renderConfig,
             m_modelManager
         );
@@ -1965,10 +1965,10 @@ namespace Renderer
             m_frameIndex,
             m_context.allocator,
             m_modelManager,
-            m_sceneEditor.scene.renderObjects
+            m_sceneEditor.scene->renderObjects
         );
 
-        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_sceneEditor.scene.renderObjects);
+        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_sceneEditor.scene->renderObjects);
 
         m_samplers.Update
         (
@@ -2225,6 +2225,10 @@ namespace Renderer
                     break;
                 }
 
+                case SDL_SCANCODE_F2:
+                    m_sceneEditor.scene->camera.isEnabled = !m_sceneEditor.scene->camera.isEnabled;
+                    break;
+
                 case SDL_SCANCODE_F11:
                     m_window.ToggleFullScreen();
                     break;
@@ -2272,6 +2276,10 @@ namespace Renderer
                 {
                 case SDL_GAMEPAD_BUTTON_DPAD_UP:
                     m_window.ToggleFullScreen();
+                    break;
+
+                case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+                    m_sceneEditor.scene->camera.isEnabled = !m_sceneEditor.scene->camera.isEnabled;
                     break;
 
                 default:

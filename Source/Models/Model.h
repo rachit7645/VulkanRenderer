@@ -41,7 +41,7 @@ namespace Models
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue,
-            const std::string_view path
+            const std::string_view filePath
         );
 
         void Destroy
@@ -55,6 +55,7 @@ namespace Models
         );
 
         std::string                          name        = "Null/Model";
+        std::string                          path        = "Null/Model/Path";
         std::vector<Models::Mesh>            meshes      = {};
         std::vector<Models::LocalPointLight> pointLights = {};
         std::vector<Models::LocalSpotLight>  spotLights  = {};
@@ -126,12 +127,7 @@ namespace Models
             const std::optional<T>& textureInfo,
             const std::string_view defaultTexture
         );
-    };
-
-    namespace Detail
-    {
-
-    };
+    };;
 }
 
 #endif

@@ -26,6 +26,11 @@
 
 namespace Engine
 {
+    SceneEditor::SceneEditor()
+    {
+        m_sceneToLoad = config.scene;
+    }
+
     bool SceneEditor::Update
     (
         const Vk::Context& context,
@@ -37,20 +42,23 @@ namespace Engine
         Util::DeletionQueue& deletionQueue
     )
     {
-        // Reset this flag every frame
-        scene.haveRenderObjectsChanged = false;
+        if (scene.has_value())
+        {
+            // Reset this flag every frame
+            scene->haveRenderObjectsChanged = false;
+        }
 
         // Certain temporal effects need to be informed when a full scene change occurs
         bool sceneChanged = false;
 
-        bool toReload = !scene.isLoaded;
+        bool toReload = !scene.has_value();
 
-        // UI Part #1: Scene Load/Reload
+        // UI Part #1: Scene Load/Reload/Save
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("Scene"))
             {
-                ImGui::InputText("Scene", &config.scene);
+                ImGui::InputText("Scene", &m_sceneToLoad);
 
                 if (ImGui::Button("Load From File"))
                 {
@@ -61,8 +69,16 @@ namespace Engine
 
                 if (ImGui::Button("Reload From Config"))
                 {
-                    config   = Engine::Config();
-                    toReload = true;
+                    config        = Engine::Config{};
+                    m_sceneToLoad = config.scene;
+                    toReload      = true;
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::Button("Save To File"))
+                {
+                    Save(modelManager);
                 }
 
                 ImGui::EndMenu();
@@ -73,7 +89,7 @@ namespace Engine
 
         if (toReload)
         {
-            if (scene.isLoaded)
+            if (scene.has_value())
             {
                 Destroy
                 (
@@ -115,9 +131,9 @@ namespace Engine
                             {
                                 m_loadedRenderObject.modelID = modelManager.Load(m_loadedModelPath);
 
-                                scene.renderObjects.emplace_back(m_loadedRenderObject);
+                                scene->renderObjects.emplace_back(m_loadedRenderObject);
 
-                                scene.haveRenderObjectsChanged = true;
+                                scene->haveRenderObjectsChanged = true;
                             }
 
                             m_loadedRenderObject = {};
@@ -139,7 +155,7 @@ namespace Engine
 
                     usize i = 0;
 
-                    for (auto iter = scene.renderObjects.begin(); iter != scene.renderObjects.end(); ++i)
+                    for (auto iter = scene->renderObjects.begin(); iter != scene->renderObjects.end(); ++i)
                     {
                         bool toDelete = false;
 
@@ -170,11 +186,11 @@ namespace Engine
 
                         if (toDelete)
                         {
-                            iter->Destroy(modelManager);
+                            modelManager.Free(iter->modelID);
 
-                            iter = scene.renderObjects.erase(iter);
+                            iter = scene->renderObjects.erase(iter);
 
-                            scene.haveRenderObjectsChanged = true;
+                            scene->haveRenderObjectsChanged = true;
                         }
                         else
                         {
@@ -191,12 +207,12 @@ namespace Engine
                 {
                     if (ImGui::TreeNode("Sun"))
                     {
-                        ImGui::DragFloat3("Direction",      &scene.sun.direction[0], 0.01f, -1.0f, 1.0f, "%.2f");
-                        ImGui::ColorEdit3("Color",          &scene.sun.color[0]);
-                        ImGui::DragFloat ("Intensity (lx)", &scene.sun.intensity,    0.5f,   0.0f, 0.0f, "%.2f");
+                        ImGui::DragFloat3("Direction",      &scene->sun.direction[0], 0.01f, -1.0f, 1.0f, "%.2f");
+                        ImGui::ColorEdit3("Color",          &scene->sun.color[0]);
+                        ImGui::DragFloat ("Intensity (lx)", &scene->sun.intensity,    0.5f,   0.0f, 0.0f, "%.2f");
 
-                        scene.sun.direction = glm::normalize(scene.sun.direction);
-                        scene.sun.intensity = std::max(scene.sun.intensity, 0.0f);
+                        scene->sun.direction = glm::normalize(scene->sun.direction);
+                        scene->sun.intensity = std::max(scene->sun.intensity, 0.0f);
 
                         ImGui::TreePop();
                     }
@@ -216,7 +232,7 @@ namespace Engine
                             {
                                 m_loadedPointLight.intensity = std::max(m_loadedPointLight.intensity, 0.0f);
 
-                                scene.pointLights.emplace_back(m_loadedPointLight);
+                                scene->pointLights.emplace_back(m_loadedPointLight);
 
                                 m_loadedPointLight = {};
                             }
@@ -235,7 +251,7 @@ namespace Engine
 
                         usize i = 0;
 
-                        for (auto iter = scene.pointLights.begin(); iter != scene.pointLights.end(); ++i)
+                        for (auto iter = scene->pointLights.begin(); iter != scene->pointLights.end(); ++i)
                         {
                             bool toDelete = false;
 
@@ -258,7 +274,7 @@ namespace Engine
 
                             if (toDelete)
                             {
-                                iter = scene.pointLights.erase(iter);
+                                iter = scene->pointLights.erase(iter);
                             }
                             else
                             {
@@ -296,7 +312,7 @@ namespace Engine
                                 m_loadedSpotLight.intensity = std::max(m_loadedSpotLight.intensity, 0.0f);
                                 m_loadedSpotLight.direction = glm::normalize(m_loadedSpotLight.direction);
 
-                                scene.spotLights.emplace_back(m_loadedSpotLight);
+                                scene->spotLights.emplace_back(m_loadedSpotLight);
 
                                 m_loadedSpotLight = {};
                             }
@@ -315,7 +331,7 @@ namespace Engine
 
                         usize i = 0;
 
-                        for (auto iter = scene.spotLights.begin(); iter != scene.spotLights.end(); ++i)
+                        for (auto iter = scene->spotLights.begin(); iter != scene->spotLights.end(); ++i)
                         {
                             bool toDelete = false;
 
@@ -345,7 +361,7 @@ namespace Engine
 
                             if (toDelete)
                             {
-                                iter = scene.spotLights.erase(iter);
+                                iter = scene->spotLights.erase(iter);
                             }
                             else
                             {
@@ -359,7 +375,7 @@ namespace Engine
                     }
                 }
 
-                scene.camera.ImGuiDisplay();
+                scene->camera.ImGuiDisplay();
 
                 if (ImGui::CollapsingHeader("IBL"))
                 {
@@ -371,7 +387,9 @@ namespace Engine
 
                         if (Files::Exists(hdrMapAssetPath))
                         {
-                            scene.iblMapsID = iblGenerator.GenerateIBL(hdrMapAssetPath);
+                            scene->iblMapsID = iblGenerator.GenerateIBL(hdrMapAssetPath);
+
+                            m_savedHDRMapPath = m_loadedHDRMapPath;
                         }
 
                         m_loadedHDRMapPath.clear();
@@ -384,7 +402,7 @@ namespace Engine
             ImGui::EndMainMenuBar();
         }
 
-        scene.camera.Update(frameCounter, inputs);
+        scene->camera.Update(frameCounter, inputs);
 
         return sceneChanged;
     }
@@ -399,115 +417,116 @@ namespace Engine
         ZoneScoped;
         #endif
 
-        if (scene.isLoaded)
+        if (scene.has_value())
         {
             Logger::Warning("{}\n", "Scene already loaded! Did you forget to destroy the existing scene?");
 
             return;
         }
 
-        try
+        simdjson::ondemand::parser parser;
+
+        Logger::Info("Loading scene! [Scene={}]\n", m_sceneToLoad);
+
+        const auto path = Files::GetAssetPath("Scenes/", m_sceneToLoad + ".json");
+
+        if (!Files::Exists(path))
         {
-            simdjson::ondemand::parser parser;
-
-            Logger::Info("Loading scene! [Scene={}]\n", config.scene);
-
-            const auto path = Files::GetAssetPath("Scenes/", config.scene + ".json");
-            const auto json = simdjson::padded_string::load(path);
-
-            JSON::CheckError(json, "Failed to load json file!");
-
-            auto document = parser.iterate(json);
-
-            JSON::CheckError(document, "Failed to parse json file!");
-
-            // Render Objects
-            {
-                auto objects = document["RenderObjects"].get_array();
-
-                JSON::CheckError(objects, "Failed to load render objects!");
-
-                for (auto object : objects)
-                {
-                    Renderer::RenderObject renderObject;
-
-                    auto model = object["Model"].get_string();
-
-                    JSON::CheckError(model, "Failed to load model path!");
-
-                    renderObject.modelID = modelManager.Load(model.value());
-
-                    JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
-                    JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");
-                    JSON::CheckError(object["Scale"   ].get<glm::vec3>(renderObject.scale   ), "Failed to load scale!"   );
-
-                    renderObject.rotation = glm::radians(renderObject.rotation);
-
-                    scene.renderObjects.emplace_back(renderObject);
-
-                    scene.haveRenderObjectsChanged = true;
-                }
-            }
-
-            // Lights
-            {
-                // Sun
-                JSON::CheckError(document["Sun"].get<GPU::DirLight>(scene.sun), "Failed to load the sun light!");
-
-                // Point Lights
-                {
-                    auto lights = document["PointLights"].get_array();
-
-                    JSON::CheckError(lights, "Failed to load point lights!");
-
-                    for (auto light : lights)
-                    {
-                        GPU::PointLight pointLight = {};
-
-                        JSON::CheckError(light.get<GPU::PointLight>(pointLight), "Failed to load point light!");
-
-                        scene.pointLights.emplace_back(pointLight);
-                    }
-                }
-
-                // Spot Lights
-                {
-                    auto lights = document["SpotLights"].get_array();
-
-                    JSON::CheckError(lights, "Failed to load spot lights!");
-
-                    for (auto light : lights)
-                    {
-                        GPU::SpotLight spotLight = {};
-
-                        JSON::CheckError(light.get<GPU::SpotLight>(spotLight), "Failed to load spot light!");
-
-                        scene.spotLights.emplace_back(spotLight);
-                    }
-                }
-            }
-
-            // Camera
-            JSON::CheckError(document["Camera"]["FreeCamera"].get<Engine::FreeCamera>(scene.camera), "Failed to load free camera!");
-
-            // HDR Map
-            JSON::CheckError(document["IBL"].get_string(m_loadedHDRMapPath), "Failed to load IBL!");
-
-            const auto hdrMapAssetPath = Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
-
-            if (Files::Exists(hdrMapAssetPath))
-            {
-                scene.iblMapsID = iblGenerator.GenerateIBL(hdrMapAssetPath);
-            }
-
-            m_loadedHDRMapPath.clear();
-
-            scene.isLoaded = true;
+            Logger::Error("Failed to load scene! [Scene={}]", m_sceneToLoad);
         }
-        catch (const std::exception& e)
+
+        const auto json = simdjson::padded_string::load(path);
+
+        JSON::CheckError(json, "Failed to load json file!");
+
+        auto document = parser.iterate(json);
+
+        JSON::CheckError(document, "Failed to parse json file!");
+
+        scene = Engine::Scene{};
+
+        // Render Objects
         {
-            Logger::Error("Failed to load scene! [Error={}]\n", e.what());
+            auto objects = document["RenderObjects"].get_array();
+
+            JSON::CheckError(objects, "Failed to load render objects!");
+
+            for (auto object : objects)
+            {
+                Renderer::RenderObject renderObject;
+
+                auto model = object["Model"].get_string();
+
+                JSON::CheckError(model, "Failed to load model path!");
+
+                renderObject.modelID = modelManager.Load(model.value_unsafe());
+
+                JSON::CheckError(object["Position"].get<glm::vec3>(renderObject.position), "Failed to load position!");
+                JSON::CheckError(object["Rotation"].get<glm::vec3>(renderObject.rotation), "Failed to load rotation!");
+                JSON::CheckError(object["Scale"   ].get<glm::vec3>(renderObject.scale   ), "Failed to load scale!"   );
+
+                renderObject.rotation = glm::radians(renderObject.rotation);
+
+                scene->renderObjects.emplace_back(renderObject);
+
+                scene->haveRenderObjectsChanged = true;
+            }
         }
+
+        // Lights
+        {
+            // Sun
+            JSON::CheckError(document["Sun"].get<GPU::DirLight>(scene->sun), "Failed to load the sun light!");
+
+            // Point Lights
+            {
+                auto lights = document["PointLights"].get_array();
+
+                JSON::CheckError(lights, "Failed to load point lights!");
+
+                for (auto light : lights)
+                {
+                    GPU::PointLight pointLight = {};
+
+                    JSON::CheckError(light.get<GPU::PointLight>(pointLight), "Failed to load point light!");
+
+                    scene->pointLights.emplace_back(pointLight);
+                }
+            }
+
+            // Spot Lights
+            {
+                auto lights = document["SpotLights"].get_array();
+
+                JSON::CheckError(lights, "Failed to load spot lights!");
+
+                for (auto light : lights)
+                {
+                    GPU::SpotLight spotLight = {};
+
+                    JSON::CheckError(light.get<GPU::SpotLight>(spotLight), "Failed to load spot light!");
+
+                    scene->spotLights.emplace_back(spotLight);
+                }
+            }
+        }
+
+        // Camera
+        JSON::CheckError(document["Camera"]["FreeCamera"].get<Engine::FreeCamera>(scene->camera), "Failed to load free camera!");
+
+        // HDR Map
+        JSON::CheckError(document["IBL"].get_string(m_loadedHDRMapPath), "Failed to load IBL!");
+
+        const auto hdrMapAssetPath = Files::GetAssetPath("GFX/IBL/", m_loadedHDRMapPath);
+
+        if (Files::Exists(hdrMapAssetPath))
+        {
+            scene->iblMapsID = iblGenerator.GenerateIBL(hdrMapAssetPath);
+
+            m_savedHDRMapPath = m_loadedHDRMapPath;
+        }
+
+        m_loadedHDRMapPath.clear();
     }
 
     void SceneEditor::Destroy
@@ -519,15 +538,109 @@ namespace Engine
         Util::DeletionQueue& deletionQueue
     )
     {
-        scene.Destroy
+        if (!scene.has_value())
+        {
+            return;
+        }
+
+        iblGenerator.DestroyIBL
         (
+            scene->iblMapsID,
             context,
-            modelManager,
-            iblGenerator,
+            modelManager.textureManager,
             megaSet,
             deletionQueue
         );
 
-        scene = {};
+        for (auto& renderObject : scene->renderObjects)
+        {
+            modelManager.Free(renderObject.modelID);
+        }
+
+        scene = std::nullopt;
+    }
+
+    void SceneEditor::Save(const Models::ModelManager& modelManager)
+    {
+        if (!scene.has_value())
+        {
+            return;
+        }
+
+        simdjson::builder::string_builder builder;
+
+        builder.start_object();
+
+        // Render Objects
+        // Can't make a tag_invoke for these, since they need access to ModelManager
+        {
+            builder.escape_and_append_with_quotes<"RenderObjects">();
+            builder.append_colon();
+
+            builder.start_array();
+
+            for (usize i = 0; i < scene->renderObjects.size(); ++i)
+            {
+                const auto& renderObject = scene->renderObjects[i];
+
+                builder.start_object();
+
+                builder.append_key_value<"Model">(modelManager.GetModel(renderObject.modelID).path);
+                builder.append_comma();
+
+                builder.append_key_value<"Position">(renderObject.position);
+                builder.append_comma();
+
+                builder.append_key_value<"Rotation">(glm::degrees(renderObject.rotation));
+                builder.append_comma();
+
+                builder.append_key_value<"Scale">(renderObject.scale);
+
+                builder.end_object();
+
+                if (i < scene->renderObjects.size() - 1)
+                {
+                    builder.append_comma();
+                }
+            }
+
+            builder.end_array();
+            builder.append_comma();
+        }
+
+        builder.append_key_value<"Sun">(scene->sun);
+        builder.append_comma();
+
+        builder.append_key_value<"PointLights">(scene->pointLights);
+        builder.append_comma();
+
+        builder.append_key_value<"SpotLights">(scene->spotLights);
+        builder.append_comma();
+
+        builder.escape_and_append_with_quotes<"Camera">();
+        builder.append_colon();
+        builder.start_object();
+        builder.append_key_value<"FreeCamera">(scene->camera);
+        builder.end_object();
+        builder.append_comma();
+
+        builder.append_key_value<"IBL">(m_savedHDRMapPath);
+
+        builder.end_object();
+
+        const auto view = builder.view();
+
+        JSON::CheckError(view.error(), "Failed to write to JSON!");
+
+        const auto path = Files::GetAssetPath("Scenes/", m_sceneToLoad + ".json");
+
+        auto output = std::ofstream(path, std::ios::out);
+
+        if (!output.is_open())
+        {
+            Logger::Error("Failed to open scene! [Scene={}]\n", m_sceneToLoad);
+        }
+
+        output << view.value_unsafe();
     }
 }

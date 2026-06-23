@@ -27,25 +27,14 @@
 
 namespace Engine
 {
-    class Scene
+    struct Scene
     {
-    public:
-        void Destroy
-        (
-            const Vk::Context& context,
-            Models::ModelManager& modelManager,
-            Renderer::IBL::Generator& iblGenerator,
-            Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
-        );
-
         std::vector<Renderer::RenderObject> renderObjects = {};
         GPU::DirLight                       sun           = {};
         std::vector<GPU::PointLight>        pointLights   = {};
         std::vector<GPU::SpotLight>         spotLights    = {};
         Engine::FreeCamera                  camera        = {};
         Renderer::IBL::IBLID                iblMapsID     = 0;
-        bool                                isLoaded      = false;
 
         // TODO: Better render object update flags
         // This does not account for render object internal changes

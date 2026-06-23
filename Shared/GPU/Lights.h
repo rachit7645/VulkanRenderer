@@ -18,7 +18,6 @@
 #define LIGHTS_GLSL
 
 #include "GLSL.h"
-#include "AABB.h"
 
 #ifdef __cplusplus
 #include "Renderer/RenderConstants.h"

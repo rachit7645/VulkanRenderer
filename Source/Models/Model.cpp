@@ -43,7 +43,7 @@ namespace Models
         Vk::StagingPool& stagingPool,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
-        const std::string_view path
+        const std::string_view filePath
     )
     {
         #ifdef ENGINE_PROFILE
@@ -55,6 +55,8 @@ namespace Models
         {
             Logger::Error("Model already loaded! [Path={}]", path);
         }
+
+        path = std::string(filePath);
 
         const std::string assetPath      = Files::GetAssetPath(MODEL_ASSETS_DIR, path);
         const std::string assetDirectory = Files::GetDirectory(assetPath);

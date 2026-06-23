@@ -25,6 +25,8 @@ namespace Engine
     class SceneEditor
     {
     public:
+        SceneEditor();
+
         bool Update
         (
             const Vk::Context& context,
@@ -37,7 +39,8 @@ namespace Engine
         );
 
         Engine::Config config = {};
-        Engine::Scene  scene  = {};
+
+        std::optional<Engine::Scene> scene = std::nullopt;
     private:
         void Load
         (
@@ -54,6 +57,10 @@ namespace Engine
             Util::DeletionQueue& deletionQueue
         );
 
+        void Save(const Models::ModelManager& modelManager);
+
+        std::string m_sceneToLoad = "Null/Scene";
+
         std::string            m_loadedHDRMapPath   = {};
         std::string            m_loadedModelPath    = {};
         Renderer::RenderObject m_loadedRenderObject = {};
@@ -61,6 +68,8 @@ namespace Engine
         GPU::SpotLight         m_loadedSpotLight    = {};
 
         bool m_normalizeSpotLightDirection = true;
+
+        std::string m_savedHDRMapPath = {};
     };
 }
 

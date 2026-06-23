@@ -50,10 +50,10 @@ namespace Engine
         f32 zoom
     )
         : Camera{position, rotation, FOV},
-          m_speed{speed},
-          m_sprint{sprint},
-          m_sensitivity{sensitivity},
-          m_zoom{zoom},
+          speed{speed},
+          sprint{sprint},
+          sensitivity{sensitivity},
+          zoom{zoom},
           m_targetPosition{position},
           m_targetOrientation{orientation},
           m_targetFOV{FOV},
@@ -85,11 +85,11 @@ namespace Engine
         const glm::vec3 front = glm::normalize(m_targetOrientation * glm::vec3(0.0f, 0.0f, -1.0f));
         const glm::vec3 right = glm::normalize(m_targetOrientation * glm::vec3(1.0f, 0.0f,  0.0f));
 
-        f32 velocity = m_speed * frameCounter.frameDelta;
+        f32 velocity = speed * frameCounter.frameDelta;
 
         if (inputs.IsKeyPressed(KEY_SPRINT))
         {
-            velocity *= m_sprint;
+            velocity *= sprint;
         }
 
         if (inputs.IsKeyPressed(KEY_FORWARD))
@@ -135,7 +135,7 @@ namespace Engine
 
     void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
-        const f32 speed = m_sensitivity * frameCounter.frameDelta;
+        const f32 speed = sensitivity * frameCounter.frameDelta;
 
         f32 deltaPitch = 0.0f;
         f32 deltaYaw   = 0.0f;
@@ -173,7 +173,7 @@ namespace Engine
             return;
         }
 
-        m_targetFOV -= inputs.GetMouseScroll().y * m_zoom * frameCounter.frameDelta;
+        m_targetFOV -= inputs.GetMouseScroll().y * zoom * frameCounter.frameDelta;
         m_targetFOV  = glm::clamp(m_targetFOV, MIN_FOV, MAX_FOV);
     }
 
@@ -183,10 +183,10 @@ namespace Engine
         {
             Camera::ImGuiDisplay();
 
-            ImGui::DragFloat("Speed",       &m_speed,       1.0f, 0.0f, 0.0f, "%.3f");
-            ImGui::DragFloat("Sprint",      &m_sprint,      1.0f, 0.0f, 0.0f, "%.3f");
-            ImGui::DragFloat("Sensitivity", &m_sensitivity, 1.0f, 0.0f, 0.0f, "%.3f");
-            ImGui::DragFloat("Zoom",        &m_zoom,        1.0f, 0.0f, 0.0f, "%.3f");
+            ImGui::DragFloat("Speed",       &speed,       1.0f, 0.0f, 0.0f, "%.3f");
+            ImGui::DragFloat("Sprint",      &sprint,      1.0f, 0.0f, 0.0f, "%.3f");
+            ImGui::DragFloat("Sensitivity", &sensitivity, 1.0f, 0.0f, 0.0f, "%.3f");
+            ImGui::DragFloat("Zoom",        &zoom,        1.0f, 0.0f, 0.0f, "%.3f");
         }
     }
 }

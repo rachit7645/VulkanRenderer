@@ -36,7 +36,7 @@ void main()
     ivec2 pixelCoord   = ivec2(gl_GlobalInvocationID.xy);
     ivec2 viewportSize = textureSize(Textures[Constants.HDRColorIndex], 0);
 
-    bool isThreadValid = !any(greaterThan(pixelCoord, viewportSize));
+    bool isThreadValid = !any(greaterThanEqual(pixelCoord, viewportSize));
 
     uint localIndex = gl_LocalInvocationIndex;
 

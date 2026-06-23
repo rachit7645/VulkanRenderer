@@ -44,6 +44,7 @@ namespace Models
             m_modelMap.emplace(id, ModelInfo{
                 .model          = {
                     .name     = Files::GetNameWithoutExtension(path),
+                    .path     = std::string(path),
                     .meshes   = {},
                     .isLoaded = false
                 },

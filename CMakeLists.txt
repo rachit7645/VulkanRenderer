@@ -53,7 +53,6 @@ add_executable(VulkanRenderer
 	Source/Engine/Application.cpp
 	Source/Engine/Window.cpp
 	Source/Engine/Inputs.cpp
-    Source/Engine/Scene.cpp
     Source/Engine/Config.cpp
     Source/Engine/Cache.cpp
     Source/Engine/Camera.cpp
@@ -113,7 +112,6 @@ add_executable(VulkanRenderer
     Source/Vulkan/Properties.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
-    Source/Renderer/RenderObject.cpp
     Source/Renderer/RenderConfig.cpp
     # Renderer Util sources
     Source/Renderer/Util/Jitter.cpp

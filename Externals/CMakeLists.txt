@@ -111,6 +111,9 @@ set(OPENEXR_BUILD_TOOLS    OFF CACHE BOOL "Disable building openexr tools"     F
 set(OPENEXR_BUILD_EXAMPLES OFF CACHE BOOL "Disable building openexr examples"  FORCE)
 set(OPENEXR_INSTALL_TOOLS  OFF CACHE BOOL "Disable openexr tools installation" FORCE)
 
+# SIMD JSON Config
+set(SIMDJSON_EXCEPTIONS OFF CACHE BOOL "Disable SIMDJSON Exceptions" FORCE)
+
 # External Libraries
 engine_add_external(vma)
 engine_add_external(volk)
