@@ -89,6 +89,7 @@ namespace Renderer
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
             m_modelManager.Destroy(m_context.device, m_context.allocator, m_stagingPool);
             m_pipelineManager.Destroy(m_context.device);
+            m_imageDownloader.Destroy(m_context.allocator);
             m_stagingPool.Destroy(m_context.allocator);
 
             m_graphicsTimeline.Destroy(m_context.device);
@@ -1923,16 +1924,15 @@ namespace Renderer
 
         m_iblGenerator.Update
         (
-            m_frameIndex,
             cmdBuffer,
             m_pipelineManager,
             m_context,
             m_formatHelper,
-            m_graphicsTimeline,
             m_samplers,
             m_modelManager,
             m_megaSet,
             m_stagingPool,
+            m_imageDownloader,
             m_executor,
             m_deletionQueues[m_FIF]
         );
@@ -1946,6 +1946,16 @@ namespace Renderer
             m_stagingPool,
             m_executor,
             m_deletionQueues[m_FIF]
+        );
+
+        m_imageDownloader.Update
+        (
+            m_frameIndex,
+            m_context.device,
+            m_context.allocator,
+            cmdBuffer,
+            m_graphicsTimeline,
+            m_executor
         );
 
         m_sceneBuffer.Write

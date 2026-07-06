@@ -210,12 +210,23 @@ namespace Vk
 
     f64 GetTexelSize(VkFormat format)
     {
-        const f64        texelBlockSize = vkuFormatTexelBlockSize(format);
+        const u32        texelBlockSize = vkuFormatTexelBlockSize(format);
         const VkExtent3D blockExtent    = vkuFormatTexelBlockExtent(format);
 
         const usize texelsPerBlock = static_cast<usize>(blockExtent.width) * static_cast<usize>(blockExtent.height) * static_cast<usize>(blockExtent.depth);
 
-        return texelBlockSize / static_cast<f64>(std::min(texelsPerBlock, 1ull));
+        return texelBlockSize / static_cast<f64>(std::max(texelsPerBlock, 1ull));
+    }
+
+    VkDeviceSize GetImageSize(VkFormat format, u32 width, u32 height)
+    {
+        const usize      texelBlockSize = vkuFormatTexelBlockSize(format);
+        const VkExtent3D blockExtent    = vkuFormatTexelBlockExtent(format);
+
+        const usize blockCountX = (static_cast<usize>(width)  + blockExtent.width  - 1) / std::max<usize>(blockExtent.width,  1);
+        const usize blockCountY = (static_cast<usize>(height) + blockExtent.height - 1) / std::max<usize>(blockExtent.height, 1);
+
+        return blockCountX * blockCountY * texelBlockSize;
     }
 
     void CheckResult(VkResult result, const std::string_view message)

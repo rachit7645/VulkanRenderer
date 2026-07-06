@@ -1714,9 +1714,12 @@ namespace Vk
 
         const bool generateMipmaps = (flags & ImageUploadFlags::Mipmaps) == ImageUploadFlags::Mipmaps;
 
-        const auto pixelCount = static_cast<usize>(rawMemory.width) * static_cast<usize>(rawMemory.height);
-        const auto texelSize  = Vk::GetTexelSize(rawMemory.format);
-        const auto dataSize   = static_cast<VkDeviceSize>(static_cast<f64>(pixelCount) * texelSize);
+        const VkDeviceSize dataSize = Vk::GetImageSize
+        (
+            rawMemory.format,
+            rawMemory.width,
+            rawMemory.height
+        );
 
         const auto stagingMemoryBlock = stagingPool.Allocate
         (

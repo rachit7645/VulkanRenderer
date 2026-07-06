@@ -110,6 +110,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/MemoryBlock.cpp
     Source/Vulkan/StagingPool.cpp
     Source/Vulkan/Properties.cpp
+    Source/Vulkan/ImageDownloader.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderConfig.cpp

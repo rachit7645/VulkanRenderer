@@ -36,7 +36,7 @@ namespace Renderer::IBL
 
     constexpr auto BRDF_LUT_CACHE_FILE = "BRDF.cache";
 
-    u64 GetBRDFLookupTableHash()
+    constexpr u64 GetBRDFLookupTableHash()
     {
         u64 hash = 0;
 
@@ -160,66 +160,65 @@ namespace Renderer::IBL
 
     void Generator::Update
     (
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        const Vk::GraphicsTimeline& timeline,
         const Objects::Samplers& samplers,
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (m_pathToLoad.has_value())
+        if (!m_pathToLoad.has_value())
         {
-            if (m_loadedIBLMaps.has_value())
-            {
-                const u64 id = std::hash<std::string>{}(*m_pathToLoad);
-
-                if (id != m_loadedIBLMaps->id)
-                {
-                    m_loadedIBLMaps->iblMaps.Destroy
-                    (
-                        context.device,
-                        context.allocator,
-                        modelManager.textureManager,
-                        megaSet,
-                        deletionQueue
-                    );
-
-                    m_loadedIBLMaps = std::nullopt;
-                }
-            }
-
-            if (!m_loadedIBLMaps.has_value())
-            {
-                m_loadedIBLMaps = Generator::LoadedIBLMaps
-                {
-                    .id      = std::hash<std::string>{}(*m_pathToLoad),
-                    .iblMaps = LoadIBLMaps(
-                        frameIndex,
-                        cmdBuffer,
-                        pipelineManager,
-                        context,
-                        formatHelper,
-                        samplers,
-                        modelManager,
-                        megaSet,
-                        stagingPool,
-                        executor,
-                        deletionQueue
-                    )
-                };
-            }
-
-            m_pathToLoad = std::nullopt;
+            return;
         }
 
-        TryReadback(context, timeline, executor);
+        if (m_loadedIBLMaps.has_value())
+        {
+            const IBL::IBLID id = std::hash<std::string>{}(*m_pathToLoad);
+
+            if (id != m_loadedIBLMaps->id)
+            {
+                m_loadedIBLMaps->iblMaps.Destroy
+                (
+                    context.device,
+                    context.allocator,
+                    modelManager.textureManager,
+                    megaSet,
+                    deletionQueue
+                );
+
+                m_loadedIBLMaps = std::nullopt;
+            }
+        }
+
+        if (!m_loadedIBLMaps.has_value())
+        {
+            m_loadedIBLMaps = Generator::LoadedIBLMaps
+            {
+                .id      = std::hash<std::string>{}(*m_pathToLoad),
+                .iblMaps = LoadIBLMaps(
+                    cmdBuffer,
+                    pipelineManager,
+                    context,
+                    formatHelper,
+                    samplers,
+                    modelManager,
+                    megaSet,
+                    stagingPool,
+                    imageDownloader,
+                    executor,
+                    deletionQueue
+                )
+            };
+        }
+
+        m_pathToLoad = std::nullopt;
     }
 
     IBL::IBLID Generator::GenerateIBL(const std::string_view hdrMapAssetPath)
@@ -275,72 +274,8 @@ namespace Renderer::IBL
         return m_loadedIBLMaps->iblMaps;
     }
 
-    void Generator::TryReadback
-    (
-        const Vk::Context& context,
-        const Vk::GraphicsTimeline& timeline,
-        tf::Executor& executor
-    )
-    {
-        if (!m_readbackFrameIndex.has_value())
-        {
-            return;
-        }
-
-        const bool isReadbackReady = timeline.IsAtOrPastStage
-        (
-            m_readbackFrameIndex.value() + Vk::FRAMES_IN_FLIGHT,
-            Vk::GraphicsTimeline::Stage::SwapchainImageAcquired,
-            context.device
-        );
-
-        if (!isReadbackReady)
-        {
-            return;
-        }
-
-        executor.silent_async([this, allocator = context.allocator] mutable
-        {
-            const u8* pMappedData = static_cast<u8*>(m_brdfLutReadbackBuffer->hostAddress);
-
-            const auto readbackData = std::vector(pMappedData, pMappedData + m_brdfLutReadbackBuffer->size);
-
-            constexpr std::array<VkDeviceSize, 1> TEXTURE_OFFSET_TABLE = {0};
-
-            const auto textureOffsetTable = Cache::GenerateTextureOffsetTable(TEXTURE_OFFSET_TABLE);
-
-            Cache::InsertIntoCache(Cache::Entry
-            {
-                .cacheFile          = BRDF_LUT_CACHE_FILE,
-                .assetType          = Cache::AssetType::Texture,
-                .compressionType    = Cache::CompressionType::LZ4,
-                .assetHeader        = Cache::TextureHeader{
-                    .width           = BRDF_LUT_SIZE.x,
-                    .height          = BRDF_LUT_SIZE.y,
-                    .mipLevels       = 1,
-                    .arrayLayers     = 1,
-                    .faceCount       = 1,
-                    .format          = BRDF_LUT_FORMAT,
-                    .offsetTableSize = textureOffsetTable.size(),
-                },
-                .hash               = GetBRDFLookupTableHash(),
-                .textureOffsetTable = textureOffsetTable,
-                .data               = readbackData,
-            });
-
-            // It is thread safe to delete this buffer
-            // The main thread does not access it after GenerateBRDFLookupTable
-            // Considering the synchronization via the timeline semaphore, that would be "Vk::FRAMES_IN_FLIGHT" frames ago
-            m_brdfLutReadbackBuffer->Destroy(allocator);
-            m_brdfLutReadbackBuffer = std::nullopt;
-        });
-
-        m_readbackFrameIndex = std::nullopt;
-    }
-
     IBL::IBLMaps Generator::LoadIBLMaps
     (
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
@@ -349,6 +284,7 @@ namespace Renderer::IBL
         Models::ModelManager& modelManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
@@ -415,13 +351,13 @@ namespace Renderer::IBL
 
         const auto brdfLutID = GenerateBRDFLookupTable
         (
-            frameIndex,
             cmdBuffer,
             pipelineManager,
             context,
             modelManager.textureManager,
             stagingPool,
             megaSet,
+            imageDownloader,
             executor,
             deletionQueue
         );
@@ -1112,13 +1048,13 @@ namespace Renderer::IBL
 
     [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLookupTable
     (
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::Context& context,
         Vk::TextureManager& textureManager,
         Vk::StagingPool& stagingPool,
         Vk::MegaSet& megaSet,
+        Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
@@ -1288,87 +1224,9 @@ namespace Renderer::IBL
                 Vk::ImageBarrier{
                     .srcStageMask    = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                     .srcAccessMask   = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                    .dstStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .dstAccessMask   = VK_ACCESS_2_TRANSFER_READ_BIT,
-                    .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                    .newLayout       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                    .baseMipLevel    = 0,
-                    .levelCount      = brdfLut.mipLevels,
-                    .baseArrayLayer  = 0,
-                    .layerCount      = brdfLut.arrayLayers
-                }
-            );
-
-            const auto BRDF_LUT_READBACK_SIZE = static_cast<VkDeviceSize>(Vk::GetTexelSize(BRDF_LUT_FORMAT) * static_cast<f64>(static_cast<u64>(BRDF_LUT_SIZE.x) * static_cast<u64>(BRDF_LUT_SIZE.y)));
-
-            m_brdfLutReadbackBuffer = Vk::Buffer
-            (
-                context.device,
-                context.allocator,
-                BRDF_LUT_READBACK_SIZE,
-                0,
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
-                VMA_MEMORY_USAGE_AUTO
-            );
-
-            m_brdfLutReadbackBuffer->Barrier
-            (
-                cmdBuffer,
-                Vk::BufferBarrier{
-                    .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
-                    .srcAccessMask   = VK_ACCESS_2_NONE,
-                    .dstStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .dstAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                    .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                    .offset          = 0,
-                    .size            = m_brdfLutReadbackBuffer->size
-                }
-            );
-
-            const VkBufferImageCopy2 copyRegion =
-            {
-                .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
-                .pNext             = nullptr,
-                .bufferOffset      = 0,
-                .bufferRowLength   = 0,
-                .bufferImageHeight = 0,
-                .imageSubresource  = {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .mipLevel       = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount     = brdfLut.arrayLayers
-                },
-                .imageOffset       = {.x     = 0,             .y      = 0,             .z     = 0},
-                .imageExtent       = {.width = brdfLut.width, .height = brdfLut.width, .depth = 1}
-            };
-
-            const VkCopyImageToBufferInfo2 copyInfo =
-            {
-                .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
-                .pNext          = nullptr,
-                .srcImage       = brdfLut.handle,
-                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                .dstBuffer      = m_brdfLutReadbackBuffer->handle,
-                .regionCount    = 1,
-                .pRegions       = &copyRegion
-            };
-
-            vkCmdCopyImageToBuffer2(cmdBuffer.handle, &copyInfo);
-
-            brdfLut.Barrier
-            (
-                cmdBuffer,
-                Vk::ImageBarrier{
-                    .srcStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
-                    .srcAccessMask   = VK_ACCESS_2_TRANSFER_READ_BIT,
                     .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                     .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                    .oldLayout       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .oldLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
@@ -1381,6 +1239,15 @@ namespace Renderer::IBL
 
             Vk::EndLabel(cmdBuffer);
 
+            imageDownloader.RequestDownload(Vk::ImageDownload{
+                .image                  = brdfLut,
+                .postDownloadAction     = Vk::PostDownloadAction::Cache,
+                .postDownloadActionData = Vk::PostDownloadCache{
+                    .cacheFile = BRDF_LUT_CACHE_FILE,
+                    .hash      = GetBRDFLookupTableHash()
+                }
+            });
+
             m_brdfLutID = textureManager.AddTexture
             (
                 megaSet,
@@ -1389,8 +1256,6 @@ namespace Renderer::IBL
                 brdfLut,
                 brdfLutView
             );
-
-            m_readbackFrameIndex = frameIndex;
         }
 
         return m_brdfLutID.value();
@@ -1399,10 +1264,5 @@ namespace Renderer::IBL
     void Generator::Destroy(VmaAllocator allocator)
     {
         m_matrixBuffer.Destroy(allocator);
-
-        if (m_brdfLutReadbackBuffer.has_value())
-        {
-            m_brdfLutReadbackBuffer->Destroy(allocator);
-        }
     }
 }

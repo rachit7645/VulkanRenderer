@@ -24,6 +24,7 @@
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/FormatHelper.h"
 #include "Vulkan/GraphicsTimeline.h"
+#include "Vulkan/ImageDownloader.h"
 
 namespace Renderer::IBL
 {
@@ -43,16 +44,15 @@ namespace Renderer::IBL
 
         void Update
         (
-            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            const Vk::GraphicsTimeline& timeline,
             const Objects::Samplers& samplers,
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
@@ -78,16 +78,8 @@ namespace Renderer::IBL
             IBL::IBLMaps iblMaps = {};
         };
 
-        void TryReadback
-        (
-            const Vk::Context& context,
-            const Vk::GraphicsTimeline& timeline,
-            tf::Executor& executor
-        );
-
         IBL::IBLMaps LoadIBLMaps
         (
-            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
@@ -96,6 +88,7 @@ namespace Renderer::IBL
             Models::ModelManager& modelManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
@@ -151,13 +144,13 @@ namespace Renderer::IBL
 
         [[nodiscard]] Vk::TextureID GenerateBRDFLookupTable
         (
-            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             Vk::TextureManager& textureManager,
             Vk::StagingPool& stagingPool,
             Vk::MegaSet& megaSet,
+            Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
@@ -168,9 +161,7 @@ namespace Renderer::IBL
 
         std::optional<Generator::LoadedIBLMaps> m_loadedIBLMaps = std::nullopt;
 
-        std::optional<Vk::TextureID> m_brdfLutID             = std::nullopt;
-        std::optional<Vk::Buffer>    m_brdfLutReadbackBuffer = std::nullopt;
-        std::optional<usize>         m_readbackFrameIndex    = std::nullopt;
+        std::optional<Vk::TextureID> m_brdfLutID = std::nullopt;
     };
 }
 

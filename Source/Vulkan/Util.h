@@ -43,6 +43,8 @@ namespace Vk
 
     [[nodiscard]] f64 GetTexelSize(VkFormat format);
 
+    [[nodiscard]] VkDeviceSize GetImageSize(VkFormat format, u32 width, u32 height);
+
     void CheckResult(VkResult result, const std::string_view message);
 }
 

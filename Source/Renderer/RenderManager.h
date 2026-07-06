@@ -146,6 +146,7 @@ namespace Renderer
         Vk::FramebufferManager m_framebufferManager;
         Models::ModelManager   m_modelManager;
         Vk::PipelineManager    m_pipelineManager;
+        Vk::ImageDownloader    m_imageDownloader;
 
         std::optional<Vk::AccelerationStructure> m_accelerationStructure;
 
