@@ -20,7 +20,7 @@ include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
 # This is hacky but whatever
-add_compile_options(-mavx2 -mf16c -mpclmul -mbmi -mlzcnt)
+add_compile_options(-mavx2 -mf16c -mpclmul -mbmi -mbmi2 -mlzcnt)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
@@ -114,6 +114,12 @@ set(OPENEXR_INSTALL_TOOLS  OFF CACHE BOOL "Disable openexr tools installation" F
 # SIMD JSON Config
 set(SIMDJSON_EXCEPTIONS OFF CACHE BOOL "Disable SIMDJSON Exceptions" FORCE)
 
+# zstd Config
+set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "Disable building zstd programs"            FORCE)
+set(ZSTD_BUILD_SHARED   ON  CACHE BOOL "Build zstd as a shared library"            FORCE)
+set(ZSTD_BUILD_STATIC   OFF CACHE BOOL "Disable building zstd as a static library" FORCE)
+set(ZSTD_BUILD_TESTS    OFF CACHE BOOL "Disable building zstd tests"               FORCE)
+
 # External Libraries
 engine_add_external(vma)
 engine_add_external(volk)
@@ -126,10 +132,14 @@ engine_add_external(simdjson EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
 engine_add_external(sdl      EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
 engine_add_external(fastgltf EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
 
-engine_add_external(openexr EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR)
+engine_add_external(openexr          EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR)
+engine_add_external(zstd/build/cmake EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET libzstd_shared)
 
 # Vulkan Headers
 target_link_libraries(volk PRIVATE Vulkan::Headers)
+
+# ZSTD Export Symbols
+target_compile_definitions(libzstd_shared PRIVATE ZSTD_DLL_EXPORT=1)
 
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
@@ -139,7 +149,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "Localhost Only Mode"  FORCE)
     set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
 
-    # Add Tracy (Requires v0.11.1!)
+    # Add Tracy
     engine_add_external(tracy EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
 endif()
 
@@ -253,6 +263,11 @@ target_compile_options(lz4 PRIVATE -w -O3)
 # Windows options
 if (WIN32)
     target_compile_definitions(lz4 PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
+
+# LZ4 LTO
+if (LTOSupported)
+    set_target_properties(lz4 PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # Install

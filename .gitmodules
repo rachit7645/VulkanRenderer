@@ -46,3 +46,6 @@
 [submodule "lz4"]
 	path = Externals/lz4
 	url = https://github.com/lz4/lz4.git
+[submodule "zstd"]
+	path = Externals/zstd
+	url = https://github.com/facebook/zstd.git

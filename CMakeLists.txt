@@ -98,7 +98,6 @@ add_executable(VulkanRenderer
     Source/Vulkan/ShaderBindingTable.cpp
     Source/Vulkan/DescriptorAllocator.cpp
     Source/Vulkan/CommandBufferAllocator.cpp
-    Source/Vulkan/ImmediateSubmit.cpp
     Source/Vulkan/GraphicsTimeline.cpp
     Source/Vulkan/ImageUploader.cpp
     Source/Vulkan/PipelineConfig.cpp
@@ -331,6 +330,7 @@ target_link_libraries(VulkanRenderer
     glm::glm
     OpenEXR::OpenEXR
     unordered_dense::unordered_dense
+    libzstd_shared
     DearImGui
     lz4
 )

@@ -31,7 +31,8 @@ namespace Cache
     enum class CompressionType : u8
     {
         None,
-        LZ4
+        LZ4,
+        ZSTD
     };
 
     struct Header
@@ -81,7 +82,14 @@ namespace Cache
     {
         std::string      cachedFile = "Null/Cache";
         Cache::AssetType assetType  = AssetType::Texture;
-        u64              hash        = 0;
+        u64              hash       = 0;
+    };
+
+    struct Hit
+    {
+        Cache::AssetHeader        assetHeader        = {};
+        Cache::TextureOffsetTable textureOffsetTable = std::nullopt;
+        std::vector<u8>           data               = {};
     };
 
     [[nodiscard]] std::vector<u8>               GenerateTextureOffsetTable(const std::span<const VkDeviceSize> offsets);
@@ -93,7 +101,7 @@ namespace Cache
     [[nodiscard]] bool IsInCache(const Cache::Query& query);
 
     // UNSAFE: Loads data from cached file WITHOUT DOING ANY VALIDATION, call IsInCache before calling this!
-    [[nodiscard]] Cache::Entry GetFromCache(const std::string_view file);
+    [[nodiscard]] Cache::Hit GetFromCache(const std::string_view file);
 
     namespace Detail
     {

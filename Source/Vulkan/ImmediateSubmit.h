@@ -17,23 +17,100 @@
 #ifndef IMMEDIATE_SUBMIT_H
 #define IMMEDIATE_SUBMIT_H
 
-#include <functional>
 #include <source_location>
 #include <vulkan/vulkan.h>
 
 #include "CommandBuffer.h"
 #include "CommandBufferAllocator.h"
+#include "Util.h"
+#include "DebugUtils.h"
+#include "Util/SourceLocation.h"
+#include "Externals/FMT.h"
 
 namespace Vk
 {
+    template<typename F>
     void ImmediateSubmit
     (
         VkDevice device,
         VkQueue queue,
         Vk::CommandBufferAllocator& cmdBufferAllocator,
-        const std::function<void(const Vk::CommandBuffer&)>& CmdFunction,
+        F&& CmdFunction,
         const std::source_location location = std::source_location::current()
-    );
+    )
+    {
+        const auto cmdBuffer = cmdBufferAllocator.AllocateGlobalCommandBuffer(device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        constexpr VkFenceCreateInfo fenceCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        VkFence fence = VK_NULL_HANDLE;
+
+        Vk::CheckResult(vkCreateFence(
+            device,
+            &fenceCreateInfo,
+            nullptr,
+            &fence),
+            "Failed to create fence!"
+        );
+
+        const auto name = fmt::format("ImmediateSubmit/{}", Util::GetFunctionName(location));
+
+        Vk::SetDebugName(device, fence, name);
+
+        cmdBuffer.Reset(0);
+
+        cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            Vk::BeginLabel(cmdBuffer, name, glm::vec4(glm::vec3(0.0f), 1.0f));
+                std::forward<F>(CmdFunction)(cmdBuffer);
+            Vk::EndLabel(cmdBuffer);
+        cmdBuffer.EndRecording();
+
+        const VkCommandBufferSubmitInfo cmdBufferInfo =
+        {
+            .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+            .pNext         = nullptr,
+            .commandBuffer = cmdBuffer.handle,
+            .deviceMask    = 0
+        };
+
+        const VkSubmitInfo2 submitInfo =
+        {
+            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+            .pNext                    = nullptr,
+            .flags                    = 0,
+            .waitSemaphoreInfoCount   = 0,
+            .pWaitSemaphoreInfos      = nullptr,
+            .commandBufferInfoCount   = 1,
+            .pCommandBufferInfos      = &cmdBufferInfo,
+            .signalSemaphoreInfoCount = 0,
+            .pSignalSemaphoreInfos    = nullptr
+        };
+
+        Vk::CheckResult(vkQueueSubmit2(
+            queue,
+            1,
+            &submitInfo,
+            fence),
+            "Failed to submit immediate command buffer!"
+        );
+
+        Vk::CheckResult(vkWaitForFences(
+            device,
+            1,
+            &fence,
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Error while waiting for command buffer to be executed!"
+        );
+
+        vkDestroyFence(device, fence, nullptr);
+        cmdBufferAllocator.FreeGlobalCommandBuffer(cmdBuffer);
+    }
 }
 
 #endif

@@ -127,7 +127,7 @@ namespace Models
             const std::optional<T>& textureInfo,
             const std::string_view defaultTexture
         );
-    };;
+    };
 }
 
 #endif

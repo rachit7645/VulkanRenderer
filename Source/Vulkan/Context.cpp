@@ -463,7 +463,8 @@ namespace Vk
             .vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2,
             .vkGetDeviceBufferMemoryRequirements     = vkGetDeviceBufferMemoryRequirements,
             .vkGetDeviceImageMemoryRequirements      = vkGetDeviceImageMemoryRequirements,
-            .vkGetMemoryWin32HandleKHR               = nullptr
+            .vkGetMemoryWin32HandleKHR               = nullptr,
+            .vkGetPhysicalDeviceProperties2KHR       = vkGetPhysicalDeviceProperties2
         };
 
         VmaAllocatorCreateFlags flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT |

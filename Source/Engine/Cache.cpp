@@ -23,12 +23,14 @@
 #include "Util/Log.h"
 #include "Util/Span.h"
 #include "Util/Visitor.h"
+#include "Externals/LZ4.h"
+#include "Externals/ZSTD.h"
 
 namespace Cache
 {
     constexpr auto CACHE_DIRECTORY      = "Cache/";
     constexpr u32  CACHE_HEADER_MAGIC   = 0x4B4F4F43;
-    constexpr u8   CACHE_HEADER_VERSION = 6;
+    constexpr u8   CACHE_HEADER_VERSION = 7;
 
     void InsertIntoCache(const Cache::Entry& entry)
     {
@@ -58,6 +60,7 @@ namespace Cache
             .magic                = CACHE_HEADER_MAGIC,
             .version              = CACHE_HEADER_VERSION,
             .assetType            = entry.assetType,
+            .compressionType      = entry.compressionType,
             .pad0                 = 0,
             .headerSize           = Detail::GetAssetHeaderSize(entry.assetType),
             .compressedDataSize   = compressedData.size(),
@@ -80,11 +83,6 @@ namespace Cache
 
     bool IsInCache(const Cache::Query& query)
     {
-        // NOTE: I could verify the compression type per cached file.
-        // But I don't really see the point in a cached file changing its compression type.
-        // So that case will be undefined behavior for now.
-        // This can be a security issue, and it might be worth forcing the query to specify the compression type.
-
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
         zone.NameFmt("%s", query.cachedFile.c_str());
@@ -169,7 +167,7 @@ namespace Cache
         return true;
     }
 
-    Cache::Entry GetFromCache(const std::string_view file)
+    Cache::Hit GetFromCache(const std::string_view file)
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
@@ -191,13 +189,9 @@ namespace Cache
 
         const auto data = Detail::LoadAndDecompressData(bin, header);
 
-        return Cache::Entry
+        return Cache::Hit
         {
-            .cacheFile          = file.data(),
-            .assetType          = header.assetType,
-            .compressionType    = header.compressionType,
             .assetHeader        = assetHeader,
-            .hash               = header.hash,
             .textureOffsetTable = textureOffsetTable,
             .data               = data
         };
@@ -283,6 +277,40 @@ namespace Cache
                 if (compressedDataSize == 0)
                 {
                     Logger::Error("{}\n", "Failed to compress data!");
+                }
+
+                compressedData.resize(compressedDataSize);
+
+                return compressedData;
+            }
+
+            case CompressionType::ZSTD:
+            {
+                #ifdef ENGINE_PROFILE
+                ZoneScopedN("ZSTD Compression");
+                #endif
+
+                usize compressedDataSize = ZSTD_compressBound(uncompressedData.size());
+
+                if (ZSTD_isError(compressedDataSize))
+                {
+                    Logger::Error("Failed to get maximum compressed data size! [Error={}]\n", ZSTD_getErrorName(compressedDataSize));
+                }
+
+                auto compressedData = std::vector<u8>(compressedDataSize);
+
+                compressedDataSize = ZSTD_compress
+                (
+                    compressedData.data(),
+                    compressedData.size(),
+                    uncompressedData.data(),
+                    uncompressedData.size(),
+                    ZSTD_CLEVEL_DEFAULT
+                );
+
+                if (ZSTD_isError(compressedDataSize))
+                {
+                    Logger::Error("Failed to compress data! [Error={}]\n", ZSTD_getErrorName(compressedDataSize));
                 }
 
                 compressedData.resize(compressedDataSize);
@@ -425,16 +453,23 @@ namespace Cache
             ZoneScoped;
             #endif
 
-            auto data = std::vector<u8>(header.uncompressedDataSize);
+            std::vector<u8> uncompressedData = {};
 
             switch (header.compressionType)
             {
             case CompressionType::None:
-                bin.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
+            {
+                uncompressedData.resize(header.uncompressedDataSize);
+
+                bin.read(reinterpret_cast<char*>(uncompressedData.data()), static_cast<std::streamsize>(uncompressedData.size()));
+
                 break;
+            }
 
             case CompressionType::LZ4:
             {
+                uncompressedData.resize(header.uncompressedDataSize);
+
                 auto compressedData = std::vector<u8>(header.compressedDataSize);
 
                 bin.read(reinterpret_cast<char*>(compressedData.data()), static_cast<std::streamsize>(compressedData.size()));
@@ -442,9 +477,9 @@ namespace Cache
                 const auto uncompressedSizeSigned = static_cast<ssize>(LZ4_decompress_safe
                 (
                     reinterpret_cast<const char*>(compressedData.data()),
-                    reinterpret_cast<char*>(data.data()),
+                    reinterpret_cast<char*>(uncompressedData.data()),
                     static_cast<s32>(compressedData.size()),
-                    static_cast<s32>(data.size())
+                    static_cast<s32>(uncompressedData.size())
                 ));
 
                 const auto uncompressedSize = static_cast<usize>(uncompressedSizeSigned);
@@ -457,11 +492,58 @@ namespace Cache
                 break;
             }
 
+            case CompressionType::ZSTD:
+            {
+                auto compressedData = std::vector<u8>(header.compressedDataSize);
+
+                bin.read(reinterpret_cast<char*>(compressedData.data()), static_cast<std::streamsize>(compressedData.size()));
+
+                usize frameContentSize = ZSTD_getFrameContentSize(compressedData.data(), compressedData.size());
+
+                if (ZSTD_isError(frameContentSize))
+                {
+                    if (frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN)
+                    {
+                        Logger::Warning("{}\n", "Unknown frame content size! We might be screwed chat...");
+
+                        frameContentSize = header.uncompressedDataSize;
+                    }
+                    else
+                    {
+                        Logger::Error("Failed to decompress data! [Error={}]\n", ZSTD_getErrorName(frameContentSize));
+                    }
+                }
+
+                uncompressedData.resize(frameContentSize);
+
+                const usize uncompressedSize = ZSTD_decompress
+                (
+                    uncompressedData.data(),
+                    uncompressedData.size(),
+                    compressedData.data(),
+                    compressedData.size()
+                );
+
+                if (ZSTD_isError(uncompressedSize))
+                {
+                    Logger::Error("Failed to decompress data! [Error={}]\n", ZSTD_getErrorName(uncompressedSize));
+                }
+
+                if (uncompressedSize != frameContentSize || uncompressedSize != header.uncompressedDataSize)
+                {
+                    Logger::Warning("{}\n", "Mismatched decompressed sizes!");
+                }
+
+                uncompressedData.resize(uncompressedSize);
+
+                break;
+            }
+
             default:
                 Logger::Error("{}\n", "Unknown compression type!");
             }
 
-            return data;
+            return uncompressedData;
         }
 
         void Invalidate(std::ifstream& bin, const std::string_view file)
