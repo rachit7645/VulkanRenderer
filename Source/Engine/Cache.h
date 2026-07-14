@@ -43,8 +43,7 @@ namespace Cache
         u8                     version              = 0;
         Cache::AssetType       assetType            = AssetType::Texture;
         Cache::CompressionType compressionType      = CompressionType::LZ4;
-        u8                     pad0                 = 0;
-        u64                    headerSize           = 0;
+        u8                     headerSize           = 0;
         u64                    compressedDataSize   = 0;
         u64                    uncompressedDataSize = 0;
         u64                    hash                 = 0;
@@ -105,7 +104,7 @@ namespace Cache
 
     namespace Detail
     {
-        [[nodiscard]] usize GetAssetHeaderSize(const Cache::AssetType assetType);
+        [[nodiscard]] u8 GetAssetHeaderSize(const Cache::AssetType assetType);
 
         [[nodiscard]] std::vector<u8> CompressData(Cache::CompressionType compressionType, const std::vector<u8>& uncompressedData);
 

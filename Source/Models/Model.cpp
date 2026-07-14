@@ -20,6 +20,7 @@
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Util/Enum.h"
+#include "Util/Span.h"
 #include "Util/Types.h"
 #include "Util/Visitor.h"
 
@@ -27,12 +28,6 @@ namespace Models
 {
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
-
-    // Default texture paths
-    constexpr auto DEFAULT_ALBEDO_TEXTURE     = "Albedo.ktx2";
-    constexpr auto DEFAULT_NORMAL_TEXTURE     = "Normal.ktx2";
-    constexpr auto DEFAULT_AO_RGH_MTL_TEXTURE = "Albedo.ktx2";
-    constexpr auto DEFAULT_EMISSIVE_TEXTURE   = "Albedo.ktx2";
 
     void Model::LoadFromFile
     (
@@ -546,6 +541,9 @@ namespace Models
                 ZoneScopedN("Load Albedo");
                 #endif
 
+                constexpr auto        DEFAULT_ALBEDO_NAME  = "Default/Albedo";
+                constexpr glm::u8vec4 DEFAULT_ALBEDO_VALUE = {255, 255, 255, 255};
+
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
                 const auto textureInfo = LoadTexture
@@ -559,7 +557,8 @@ namespace Models
                     directory,
                     asset,
                     baseColorTexture,
-                    DEFAULT_ALBEDO_TEXTURE
+                    DEFAULT_ALBEDO_NAME,
+                    DEFAULT_ALBEDO_VALUE
                 );
 
                 material.albedoID      = textureInfo.id;
@@ -571,6 +570,9 @@ namespace Models
                 #ifdef ENGINE_PROFILE
                 ZoneScopedN("Load Normal Map");
                 #endif
+
+                constexpr auto        DEFAULT_NORMAL_NAME  = "Default/NormalMap";
+                constexpr glm::u8vec4 DEFAULT_NORMAL_VALUE = {128, 128, 255, 255};
 
                 const auto& normalTexture = mat.normalTexture;
 
@@ -585,7 +587,8 @@ namespace Models
                     directory,
                     asset,
                     normalTexture,
-                    DEFAULT_NORMAL_TEXTURE
+                    DEFAULT_NORMAL_NAME,
+                    DEFAULT_NORMAL_VALUE
                 );
 
                 material.normalID      = textureInfo.id;
@@ -597,6 +600,9 @@ namespace Models
                 #ifdef ENGINE_PROFILE
                 ZoneScopedN("Load Roughness and Metallic");
                 #endif
+
+                constexpr auto        DEFAULT_AO_RGH_MTL_NAME  = "Default/RoughnessMetallic";
+                constexpr glm::u8vec4 DEFAULT_AO_RGH_MTL_VALUE = {255, 255, 0, 255};
 
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
@@ -611,7 +617,8 @@ namespace Models
                     directory,
                     asset,
                     metallicRoughnessTexture,
-                    DEFAULT_AO_RGH_MTL_TEXTURE
+                    DEFAULT_AO_RGH_MTL_NAME,
+                    DEFAULT_AO_RGH_MTL_VALUE
                 );
 
                 material.aoRghMtlID      = textureInfo.id;
@@ -623,6 +630,9 @@ namespace Models
                 #ifdef ENGINE_PROFILE
                 ZoneScopedN("Load Emissive");
                 #endif
+
+                constexpr auto        DEFAULT_EMISSIVE_NAME  = "Default/Emissive";
+                constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {0, 0, 0, 255};
 
                 const auto& emissiveTexture = mat.emissiveTexture;
 
@@ -637,7 +647,8 @@ namespace Models
                     directory,
                     asset,
                     emissiveTexture,
-                    DEFAULT_EMISSIVE_TEXTURE
+                    DEFAULT_EMISSIVE_NAME,
+                    DEFAULT_EMISSIVE_VALUE
                 );
 
                 material.emissiveID      = textureInfo.id;
@@ -714,7 +725,8 @@ namespace Models
         const std::string_view directory,
         const fastgltf::Asset& asset,
         const std::optional<T>& textureInfo,
-        const std::string_view defaultTexture
+        const std::string_view defaultName,
+        const glm::u8vec4& defaultData
     )
     {
         #ifdef ENGINE_PROFILE
@@ -731,10 +743,14 @@ namespace Models
                 executor,
                 deletionQueue,
                 Vk::ImageUpload{
-                    .type   = Vk::ImageUploadType::KTX2,
+                    .type   = Vk::ImageUploadType::RAW,
                     .flags  = Vk::ImageUploadFlags::None,
-                    .source = Vk::ImageUploadFile{
-                        .path = Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
+                    .source = Vk::ImageUploadRawMemory{
+                        .name   = defaultName.data(),
+                        .width  = 1,
+                        .height = 1,
+                        .format = VK_FORMAT_R8G8B8A8_UNORM,
+                        .data   = std::vector(&defaultData[0], &defaultData[3])
                     }
                 }
             );

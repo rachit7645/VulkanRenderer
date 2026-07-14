@@ -125,7 +125,8 @@ namespace Models
             const std::string_view directory,
             const fastgltf::Asset& asset,
             const std::optional<T>& textureInfo,
-            const std::string_view defaultTexture
+            const std::string_view defaultName,
+            const glm::u8vec4& defaultData
         );
     };
 }

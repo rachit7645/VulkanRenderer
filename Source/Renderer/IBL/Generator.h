@@ -142,6 +142,17 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         );
 
+        [[nodiscard]] Vk::TextureID ShrinkSkybox
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
+            const Vk::FormatHelper& formatHelper,
+            Models::ModelManager& modelManager,
+            Vk::MegaSet& megaSet,
+            Vk::TextureID skyboxID,
+            Util::DeletionQueue& deletionQueue
+        );
+
         [[nodiscard]] Vk::TextureID GenerateBRDFLookupTable
         (
             const Vk::CommandBuffer& cmdBuffer,

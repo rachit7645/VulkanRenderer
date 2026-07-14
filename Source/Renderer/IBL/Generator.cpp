@@ -28,7 +28,7 @@
 
 namespace Renderer::IBL
 {
-    constexpr glm::uvec2 SKYBOX_SIZE     = {2048, 2048};
+    constexpr glm::uvec2 SKYBOX_SIZE     = {1024, 1024};
     constexpr glm::uvec2 IRRADIANCE_SIZE = {128,  128};
     constexpr glm::uvec2 PRE_FILTER_SIZE = {1024, 1024};
 
@@ -291,7 +291,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "IBL Map Generation", {0.9215f, 0.8470f, 0.0274f, 1.0f});
 
-        const auto hdrMapID = LoadHDRMap
+        const Vk::TextureID hdrMapID = LoadHDRMap
         (
             cmdBuffer,
             context,
@@ -302,7 +302,7 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        const auto skyboxID = GenerateSkybox
+        Vk::TextureID skyboxID = GenerateSkybox
         (
             cmdBuffer,
             pipelineManager,
@@ -324,7 +324,7 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        const auto irradianceMapID = GenerateIrradianceMap
+        const Vk::TextureID irradianceMapID = GenerateIrradianceMap
         (
             cmdBuffer,
             pipelineManager,
@@ -336,7 +336,7 @@ namespace Renderer::IBL
             skyboxID
         );
 
-        const auto preFilterMapID = GeneratePreFilterMap
+        const Vk::TextureID preFilterMapID = GeneratePreFilterMap
         (
             cmdBuffer,
             pipelineManager,
@@ -349,7 +349,18 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        const auto brdfLutID = GenerateBRDFLookupTable
+        skyboxID = ShrinkSkybox
+        (
+            cmdBuffer,
+            context,
+            formatHelper,
+            modelManager,
+            megaSet,
+            skyboxID,
+            deletionQueue
+        );
+
+        const Vk::TextureID brdfLutID = GenerateBRDFLookupTable
         (
             cmdBuffer,
             pipelineManager,
@@ -818,7 +829,7 @@ namespace Renderer::IBL
         );
     }
 
-    [[nodiscard]] Vk::TextureID Generator::GeneratePreFilterMap
+    Vk::TextureID Generator::GeneratePreFilterMap
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
@@ -1046,7 +1057,173 @@ namespace Renderer::IBL
         return preFilterID;
     }
 
-    [[nodiscard]] Vk::TextureID Generator::GenerateBRDFLookupTable
+    Vk::TextureID Generator::ShrinkSkybox
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
+        const Vk::FormatHelper& formatHelper,
+        Models::ModelManager& modelManager,
+        Vk::MegaSet& megaSet,
+        Vk::TextureID skyboxID,
+        Util::DeletionQueue& deletionQueue
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Shrink Skybox", {0.2928f, 0.2794f, 0.6607f, 1.0f});
+
+        const auto& skyboxWithMipmaps = modelManager.textureManager.GetTexture(skyboxID);
+
+        const auto skybox = Vk::Image
+        (
+            context.allocator,
+            VkImageCreateInfo{
+                .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext                 = nullptr,
+                .flags                 = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+                .imageType             = VK_IMAGE_TYPE_2D,
+                .format                = formatHelper.colorAttachmentFormatHDR,
+                .extent                = {.width = SKYBOX_SIZE.x, .height = SKYBOX_SIZE.y, .depth = 1},
+                .mipLevels             = 1,
+                .arrayLayers           = 6,
+                .samples               = VK_SAMPLE_COUNT_1_BIT,
+                .tiling                = VK_IMAGE_TILING_OPTIMAL,
+                .usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices   = nullptr,
+                .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+            },
+            VK_IMAGE_ASPECT_COLOR_BIT
+        );
+
+        Vk::BarrierWriter barrierWriter = {};
+
+        barrierWriter
+        .WriteImageBarrier(skyboxWithMipmaps.image,
+            Vk::ImageBarrier{
+                .srcStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .dstAccessMask   = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = skyboxWithMipmaps.image.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = skyboxWithMipmaps.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(skybox,
+            Vk::ImageBarrier{
+                .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask   = VK_ACCESS_2_NONE,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .dstAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = skybox.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = skybox.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
+
+        const VkImageCopy2 copyRegion =
+        {
+            .sType          = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+            .pNext          = nullptr,
+            .srcSubresource = VkImageSubresourceLayers{
+                .aspectMask     = skyboxWithMipmaps.image.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = skyboxWithMipmaps.image.arrayLayers
+            },
+            .srcOffset      = {.x = 0, .y = 0, .z = 0},
+            .dstSubresource = VkImageSubresourceLayers{
+                .aspectMask     = skybox.aspect,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = skybox.arrayLayers
+            },
+            .dstOffset      = {.x     = 0,            .y = 0,                  .z     = 0},
+            .extent         = {.width = skybox.width, .height = skybox.height, .depth = 1}
+        };
+
+        const VkCopyImageInfo2 copyInfo =
+        {
+            .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+            .pNext          = nullptr,
+            .srcImage       = skyboxWithMipmaps.image.handle,
+            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .dstImage       = skybox.handle,
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = 1,
+            .pRegions       = &copyRegion
+        };
+
+        vkCmdCopyImage2(cmdBuffer.handle, &copyInfo);
+
+        skybox.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask    = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .srcAccessMask   = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask    = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel    = 0,
+                .levelCount      = skybox.mipLevels,
+                .baseArrayLayer  = 0,
+                .layerCount      = skybox.arrayLayers
+            }
+        );
+
+        modelManager.textureManager.DestroyTexture
+        (
+            skyboxID,
+            context.device,
+            context.allocator,
+            megaSet,
+            deletionQueue
+        );
+
+        const auto skyboxView = Vk::ImageView
+        (
+            context.device,
+            skybox,
+            VK_IMAGE_VIEW_TYPE_CUBE,
+            VkImageSubresourceRange{
+                .aspectMask     = skybox.aspect,
+                .baseMipLevel   = 0,
+                .levelCount     = skybox.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = skybox.arrayLayers
+            }
+        );
+
+        skyboxID = modelManager.textureManager.AddTexture
+        (
+            megaSet,
+            context.device,
+            "IBL/Skybox",
+            skybox,
+            skyboxView
+        );
+
+        Vk::EndLabel(cmdBuffer);
+
+        return skyboxID;
+    }
+
+    Vk::TextureID Generator::GenerateBRDFLookupTable
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,

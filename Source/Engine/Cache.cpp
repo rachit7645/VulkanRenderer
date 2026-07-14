@@ -30,7 +30,7 @@ namespace Cache
 {
     constexpr auto CACHE_DIRECTORY      = "Cache/";
     constexpr u32  CACHE_HEADER_MAGIC   = 0x4B4F4F43;
-    constexpr u8   CACHE_HEADER_VERSION = 7;
+    constexpr u8   CACHE_HEADER_VERSION = 8;
 
     void InsertIntoCache(const Cache::Entry& entry)
     {
@@ -61,7 +61,6 @@ namespace Cache
             .version              = CACHE_HEADER_VERSION,
             .assetType            = entry.assetType,
             .compressionType      = entry.compressionType,
-            .pad0                 = 0,
             .headerSize           = Detail::GetAssetHeaderSize(entry.assetType),
             .compressedDataSize   = compressedData.size(),
             .uncompressedDataSize = entry.data.size(),
@@ -232,16 +231,31 @@ namespace Cache
 
     namespace Detail
     {
-        usize GetAssetHeaderSize(const Cache::AssetType assetType)
+        u8 GetAssetHeaderSize(const Cache::AssetType assetType)
         {
+            usize headerSize = 0;
+
             switch (assetType)
             {
             case AssetType::Texture:
-                return sizeof(Cache::TextureHeader);
+                headerSize = sizeof(Cache::TextureHeader);
+                break;
 
             default:
                 Logger::Error("{}\n", "Invalid asset type!");
             };
+
+            if (headerSize > std::numeric_limits<u8>::max())
+            {
+                Logger::Error
+                (
+                    "Asset header size is too large! [Size={}] [Max={}]",
+                    headerSize,
+                    std::numeric_limits<u8>::max()
+                );
+            }
+
+            return static_cast<u8>(headerSize);
         }
 
         std::vector<u8> CompressData(Cache::CompressionType compressionType, const std::vector<u8>& uncompressedData)

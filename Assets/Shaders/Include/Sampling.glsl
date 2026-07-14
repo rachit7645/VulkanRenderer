@@ -60,8 +60,8 @@ void BuildOrthonormalBasis(vec3 N, out vec3 T, out vec3 B)
     float a = -1.0f / (sign + N.z);
     float b = N.x * N.y * a;
 
-    T = vec3(1.0f + sign * N.x * N.x * a, sign * b, -sign * N.x);
-    B = vec3(b, sign + N.y * N.y * a, -N.y);
+    T = vec3(1.0f + sign * N.x * N.x * a, sign * b,             -sign * N.x);
+    B = vec3(b,                           sign + N.y * N.y * a, -N.y);
 }
 
 // PBR Book
