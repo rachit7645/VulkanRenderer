@@ -38,15 +38,15 @@ namespace Models
             Util::DeletionQueue& deletionQueue
         );
 
-        Vk::TextureID albedoID   = 0;
-        Vk::TextureID normalID   = 0;
-        Vk::TextureID aoRghMtlID = 0;
-        Vk::TextureID emissiveID = 0;
+        Vk::TextureID albedoID   = {};
+        Vk::TextureID normalID   = {};
+        Vk::TextureID aoRghMtlID = {};
+        Vk::TextureID emissiveID = {};
 
-        u32 albedoUVMapID   = 0;
-        u32 normalUVMapID   = 0;
-        u32 aoRghMtlUVMapID = 0;
-        u32 emissiveUVMapID = 0;
+        u8 albedoUVMapID   = 0;
+        u8 normalUVMapID   = 0;
+        u8 aoRghMtlUVMapID = 0;
+        u8 emissiveUVMapID = 0;
 
         glm::vec4 albedoFactor     = {1.0f, 1.0f, 1.0f, 1.0f};
         f32       roughnessFactor  = 1.0f;

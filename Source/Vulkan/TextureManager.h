@@ -21,15 +21,14 @@
 #include "ImageUploader.h"
 #include "Sampler.h"
 #include "MegaSet.h"
+#include "SamplerID.h"
+#include "TextureID.h"
 #include "Util/Types.h"
 #include "Externals/Taskflow.h"
 #include "Externals/UnorderedDense.h"
 
 namespace Vk
 {
-    using TextureID = u64;
-    using SamplerID = u64;
-
     class TextureManager
     {
     public:
@@ -64,7 +63,7 @@ namespace Vk
 
         void UpdateTexture
         (
-            Vk::TextureID id,
+            const Vk::TextureID id,
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
@@ -72,15 +71,15 @@ namespace Vk
             const Vk::ImageUpdateRawMemory& updateRawMemory
         );
 
-        [[nodiscard]] Vk::Texture& GetTexture(Vk::TextureID id);
-        [[nodiscard]] Vk::Sampler& GetSampler(Vk::SamplerID id);
+        [[nodiscard]] Vk::Texture& GetTexture(const Vk::TextureID id);
+        [[nodiscard]] Vk::Sampler& GetSampler(const Vk::SamplerID id);
 
-        [[nodiscard]] const Vk::Texture& GetTexture(Vk::TextureID id) const;
-        [[nodiscard]] const Vk::Sampler& GetSampler(Vk::SamplerID id) const;
+        [[nodiscard]] const Vk::Texture& GetTexture(const Vk::TextureID id) const;
+        [[nodiscard]] const Vk::Sampler& GetSampler(const Vk::SamplerID id) const;
 
         void DestroyTexture
         (
-            Vk::TextureID id,
+            const Vk::TextureID id,
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
@@ -89,7 +88,7 @@ namespace Vk
 
         void DestroySampler
         (
-            Vk::SamplerID id,
+            const Vk::SamplerID id,
             VkDevice device,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
@@ -129,5 +128,4 @@ namespace Vk
         ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::UploadedImage>> m_futuresMap;
     };
 }
-
 #endif

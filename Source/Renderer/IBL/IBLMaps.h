@@ -38,10 +38,10 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         );
 
-        Vk::TextureID skyboxID        = 0;
-        Vk::TextureID irradianceMapID = 0;
-        Vk::TextureID preFilterMapID  = 0;
-        Vk::TextureID brdfLutID       = 0;
+        Vk::TextureID skyboxID        = {};
+        Vk::TextureID irradianceMapID = {};
+        Vk::TextureID preFilterMapID  = {};
+        Vk::TextureID brdfLutID       = {};
     };
 }
 

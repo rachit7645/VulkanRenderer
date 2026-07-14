@@ -110,6 +110,8 @@ add_executable(VulkanRenderer
     Source/Vulkan/StagingPool.cpp
     Source/Vulkan/Properties.cpp
     Source/Vulkan/ImageDownloader.cpp
+    Source/Vulkan/SamplerID.cpp
+    Source/Vulkan/TextureID.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderConfig.cpp

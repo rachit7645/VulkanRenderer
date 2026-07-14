@@ -54,9 +54,9 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        skyboxID        = 0;
-        preFilterMapID  = 0;
-        irradianceMapID = 0;
-        brdfLutID       = 0;
+        skyboxID        = {};
+        preFilterMapID  = {};
+        irradianceMapID = {};
+        brdfLutID       = {};
     }
 }

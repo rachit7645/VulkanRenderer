@@ -41,7 +41,7 @@ namespace Vk
     {
         const auto nameInfo = GetTextureNameInfo(upload.source);
 
-        const Vk::TextureID id = std::hash<std::string_view>()(nameInfo.id);
+        const Vk::TextureID id = {.value = std::hash<std::string_view>()(nameInfo.id)};
 
         auto iter = m_textureMap.find(id);
 
@@ -88,7 +88,7 @@ namespace Vk
         const Vk::ImageView& imageView
     )
     {
-        const Vk::TextureID id = std::hash<std::string_view>()(name);
+        const Vk::TextureID id = {.value = std::hash<std::string_view>()(name)};
 
         if (m_textureMap.contains(id))
         {
@@ -123,7 +123,7 @@ namespace Vk
         const VkSamplerCreateInfo& createInfo
     )
     {
-        const auto id = std::hash<VkSamplerCreateInfo>()(createInfo);
+        const Vk::SamplerID id = {.value = std::hash<VkSamplerCreateInfo>()(createInfo)};
 
         auto iter = m_samplerMap.find(id);
 
@@ -146,7 +146,7 @@ namespace Vk
 
         sampler.descriptorID = megaSet.WriteSampler(sampler);
 
-        Vk::SetDebugName(device, sampler.handle, fmt::format("Sampler/{}", id));
+        Vk::SetDebugName(device, sampler.handle, fmt::format("Sampler/{}", id.value));
 
         m_samplerMap.emplace(id, TextureManager::SamplerInfo{
             .sampler        = sampler,
@@ -190,7 +190,7 @@ namespace Vk
 
             if (!future.valid())
             {
-                Logger::Error("Future is not valid! [ID={}]", id);
+                Logger::Error("Future is not valid! [ID={}]", id.value);
             }
 
             future.wait();
@@ -221,7 +221,7 @@ namespace Vk
 
     void TextureManager::UpdateTexture
     (
-        Vk::TextureID id,
+        const Vk::TextureID id,
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
@@ -242,79 +242,79 @@ namespace Vk
         );
     }
 
-    Vk::Texture& TextureManager::GetTexture(Vk::TextureID id)
+    Vk::Texture& TextureManager::GetTexture(const Vk::TextureID id)
     {
         auto iter = m_textureMap.find(id);
 
         if (iter == m_textureMap.end())
         {
-            Logger::Error("Invalid texture id! [ID={}]\n", id);
+            Logger::Error("Invalid texture id! [ID={}]\n", id.value);
         }
 
         if (!iter->second.texture.isLoaded)
         {
-            Logger::Error("Texture not yet loaded! [ID={}]\n", id);
+            Logger::Error("Texture not yet loaded! [ID={}]\n", id.value);
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Texture reference count is zero! [ID={}]\n", id);
+            Logger::Error("Texture reference count is zero! [ID={}]\n", id.value);
         }
 
         return iter->second.texture;
     }
 
-    Vk::Sampler& TextureManager::GetSampler(Vk::SamplerID id)
+    Vk::Sampler& TextureManager::GetSampler(const Vk::SamplerID id)
     {
         auto iter = m_samplerMap.find(id);
 
         if (iter == m_samplerMap.end())
         {
-            Logger::Error("Invalid sampler ID! [ID={}]\n", id);
+            Logger::Error("Invalid sampler ID! [ID={}]\n", id.value);
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Sampler reference count is zero! [ID={}]\n", id);
+            Logger::Error("Sampler reference count is zero! [ID={}]\n", id.value);
         }
 
         return iter->second.sampler;
     }
 
-    const Vk::Texture& TextureManager::GetTexture(Vk::TextureID id) const
+    const Vk::Texture& TextureManager::GetTexture(const Vk::TextureID id) const
     {
         const auto iter = m_textureMap.find(id);
 
         if (iter == m_textureMap.cend())
         {
-            Logger::Error("Invalid texture id! [ID={}]\n", id);
+            Logger::Error("Invalid texture id! [ID={}]\n", id.value);
         }
 
         if (!iter->second.texture.isLoaded)
         {
-            Logger::Error("Texture not yet loaded! [ID={}]\n", id);
+            Logger::Error("Texture not yet loaded! [ID={}]\n", id.value);
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Texture reference count is zero! [ID={}]\n", id);
+            Logger::Error("Texture reference count is zero! [ID={}]\n", id.value);
         }
 
         return iter->second.texture;
     }
 
-    const Vk::Sampler& TextureManager::GetSampler(Vk::SamplerID id) const
+    const Vk::Sampler& TextureManager::GetSampler(const Vk::SamplerID id) const
     {
         const auto iter = m_samplerMap.find(id);
 
         if (iter == m_samplerMap.cend())
         {
-            Logger::Error("Invalid sampler ID! [ID={}]\n", id);
+            Logger::Error("Invalid sampler ID! [ID={}]\n", id.value);
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Sampler reference count is zero! [ID={}]\n", id);
+            Logger::Error("Sampler reference count is zero! [ID={}]\n", id.value);
         }
 
         return iter->second.sampler;
@@ -322,7 +322,7 @@ namespace Vk
 
     void TextureManager::DestroyTexture
     (
-        Vk::TextureID id,
+        const Vk::TextureID id,
         VkDevice device,
         VmaAllocator allocator,
         Vk::MegaSet& megaSet,
@@ -338,7 +338,7 @@ namespace Vk
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Texture already freed! [ID={}]\n", id);
+            Logger::Error("Texture already freed! [ID={}]\n", id.value);
         }
 
         --iter->second.referenceCount;
@@ -359,7 +359,7 @@ namespace Vk
 
     void TextureManager::DestroySampler
     (
-        Vk::SamplerID id,
+        const Vk::SamplerID id,
         VkDevice device,
         Vk::MegaSet& megaSet,
         Util::DeletionQueue& deletionQueue
@@ -374,7 +374,7 @@ namespace Vk
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Sampler already freed! [ID={}]\n", id);
+            Logger::Error("Sampler already freed! [ID={}]\n", id.value);
         }
 
         --iter->second.referenceCount;
@@ -415,13 +415,13 @@ namespace Vk
 
                 totalMemoryUsed += texture.image.size;
 
-                if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", texture.name.c_str()))
+                if (ImGui::TreeNode(std::bit_cast<void*>(id.value), "%s", texture.name.c_str()))
                 {
-                    ImGui::Text("ID                | %llu",       id);
+                    ImGui::Text("ID                | %llu",       id.value);
                     ImGui::Text("Reference Count   | %llu",       referenceCount);
                     ImGui::Text("Descriptor Index  | %u",         texture.descriptorID);
-                    ImGui::Text("Image Handle      | %p",         std::bit_cast<void*>(texture.image.handle));
-                    ImGui::Text("Image View Handle | %p",         std::bit_cast<void*>(texture.imageView.handle));
+                    ImGui::Text("Image Handle      | %p",         static_cast<void*>(texture.image.handle));
+                    ImGui::Text("Image View Handle | %p",         static_cast<void*>(texture.imageView.handle));
                     ImGui::Text("Width             | %u",         texture.image.width);
                     ImGui::Text("Height            | %u",         texture.image.height);
                     ImGui::Text("Depth             | %u",         texture.image.depth);
@@ -463,11 +463,11 @@ namespace Vk
                     continue;
                 }
 
-                if (ImGui::TreeNode(std::bit_cast<void*>(id), "%llu", id))
+                if (ImGui::TreeNode(std::bit_cast<void*>(id.value), "%llu", id.value))
                 {
                     ImGui::Text("Reference Count  | %llu", referenceCount);
                     ImGui::Text("Descriptor Index | %u",   sampler.descriptorID);
-                    ImGui::Text("Sampler Handle   | %p",   std::bit_cast<void*>(sampler.handle));
+                    ImGui::Text("Sampler Handle   | %p",   static_cast<void*>(sampler.handle));
 
                     ImGui::TreePop();
                 }

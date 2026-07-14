@@ -52,7 +52,7 @@ namespace Renderer::AO::VBAO
             const std::string_view gNormalID
         );
 
-        Vk::TextureID hilbertLUT = 0;
+        Vk::TextureID hilbertLUT = {};
     private:
         void PreFilterDepth
         (

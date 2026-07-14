@@ -807,7 +807,7 @@ namespace Models
                     imageIndex
                 );
 
-                return 0;
+                return {};
             },
             [&] (const fastgltf::sources::URI& filePath) -> Vk::TextureID
             {
@@ -885,7 +885,7 @@ namespace Models
                             imageIndex
                         );
 
-                        return 0;
+                        return {};
                     },
                     [&] (const fastgltf::sources::Array& array) -> Vk::TextureID
                     {

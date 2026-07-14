@@ -259,10 +259,10 @@ namespace Models
                             ImGui::Text("Texture Name              | UV Map ID | ID");
                             ImGui::Separator();
 
-                            ImGui::Text("Albedo                    | %u         | %llu", mesh.material.albedoUVMapID,   mesh.material.albedoID);
-                            ImGui::Text("Normal                    | %u         | %llu", mesh.material.normalUVMapID,   mesh.material.normalID);
-                            ImGui::Text("AO + Roughness + Metallic | %u         | %llu", mesh.material.aoRghMtlUVMapID, mesh.material.aoRghMtlID);
-                            ImGui::Text("Emissive                  | %u         | %llu", mesh.material.emissiveUVMapID, mesh.material.emissiveID);
+                            ImGui::Text("Albedo                    | %u         | %llu", mesh.material.albedoUVMapID,   mesh.material.albedoID.value);
+                            ImGui::Text("Normal                    | %u         | %llu", mesh.material.normalUVMapID,   mesh.material.normalID.value);
+                            ImGui::Text("AO + Roughness + Metallic | %u         | %llu", mesh.material.aoRghMtlUVMapID, mesh.material.aoRghMtlID.value);
+                            ImGui::Text("Emissive                  | %u         | %llu", mesh.material.emissiveUVMapID, mesh.material.emissiveID.value);
 
                             ImGui::Separator();
                             ImGui::Text("Factor Name | Value");
