@@ -632,7 +632,7 @@ namespace Models
                 #endif
 
                 constexpr auto        DEFAULT_EMISSIVE_NAME  = "Default/Emissive";
-                constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {0, 0, 0, 255};
+                constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {255, 255, 255, 255};
 
                 const auto& emissiveTexture = mat.emissiveTexture;
 
