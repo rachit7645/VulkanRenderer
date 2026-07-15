@@ -126,6 +126,8 @@ namespace Vk
         Vk::ImageUploader m_imageUploader;
 
         ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::UploadedImage>> m_futuresMap;
+
+        std::mutex m_mutex;
     };
 }
 #endif

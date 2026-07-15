@@ -16,8 +16,6 @@
 
 #include "GeometryBuffer.h"
 
-#include <cstddef>
-
 #include "Util/Log.h"
 #include "DebugUtils.h"
 #include "Models/Model.h"
@@ -61,7 +59,7 @@ namespace Vk
             }
 
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%u", buffer.count);
+            ImGui::Text("%u", buffer.count.load());
             ImGui::TableSetColumnIndex(2);
             ImGui::Text("%llu", usedMemory);
             ImGui::TableSetColumnIndex(3);
@@ -356,7 +354,7 @@ namespace Vk
         }
     }
 
-    bool GeometryBuffer::HasPendingUploads() const
+    bool GeometryBuffer::HasPendingUploads()
     {
         return indexBuffer.HasPendingUploads() || positionBuffer.HasPendingUploads() ||
                uvBuffer.HasPendingUploads() || vertexBuffer.HasPendingUploads() ||

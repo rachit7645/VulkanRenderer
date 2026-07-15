@@ -23,6 +23,14 @@
 
 namespace Vk
 {
+    static_assert
+    (
+        std::atomic<u32>::is_always_lock_free,
+        "Make sure that atomic operations with VertexBuffer<T>::count are always lock free. "
+        "This is not required for correctness, so it can be disabled without any issues. "
+        "But it will be a (albeit minor) slowdown."
+    );
+
     template <typename T> requires GPU::IsVertexType<T>
     VertexBuffer<T>::VertexBuffer()
     {
@@ -127,6 +135,9 @@ namespace Vk
             stagingPool.Free(stagingMemoryBlock);
         });
 
+        // Shared state is accessed from this point onwards
+        const std::scoped_lock lock{m_mutex};
+
         const auto allocation = m_allocator.Allocate(writeSize);
 
         const auto info = GPU::GeometryInfo
@@ -156,6 +167,8 @@ namespace Vk
     template <typename T> requires GPU::IsVertexType<T>
     void VertexBuffer<T>::Free(const GPU::GeometryInfo& info)
     {
+        const std::scoped_lock lock{m_mutex};
+
         const Vk::MemoryBlock block =
         {
             .offset = info.offset * sizeof(T),
@@ -185,7 +198,9 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
-        if (!HasPendingUploads())
+        const std::scoped_lock lock{m_mutex};
+
+        if (m_pendingUploads.empty())
         {
             return;
         }
@@ -278,8 +293,10 @@ namespace Vk
     }
 
     template <typename T> requires GPU::IsVertexType<T>
-    bool VertexBuffer<T>::HasPendingUploads() const
+    bool VertexBuffer<T>::HasPendingUploads()
     {
+        const std::scoped_lock lock{m_mutex};
+
         return !m_pendingUploads.empty();
     }
 

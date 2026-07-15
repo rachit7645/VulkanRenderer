@@ -39,6 +39,8 @@ namespace Vk
         const Vk::ImageUpload& upload
     )
     {
+        const std::scoped_lock lock{m_mutex};
+
         const auto nameInfo = GetTextureNameInfo(upload.source);
 
         const Vk::TextureID id = {.value = std::hash<std::string_view>()(nameInfo.id)};
@@ -88,6 +90,8 @@ namespace Vk
         const Vk::ImageView& imageView
     )
     {
+        const std::scoped_lock lock{m_mutex};
+
         const Vk::TextureID id = {.value = std::hash<std::string_view>()(name)};
 
         if (m_textureMap.contains(id))
@@ -160,7 +164,9 @@ namespace Vk
 
     void TextureManager::Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet)
     {
-        if (!HasPendingUploads())
+        const std::scoped_lock lock{m_mutex};
+
+        if (!m_imageUploader.HasPendingUploads() && m_futuresMap.empty())
         {
             return;
         }
@@ -195,10 +201,10 @@ namespace Vk
 
             future.wait();
 
-            const auto uploadedImage = future.get();
+            const auto upload = future.get();
 
-            texture.image     = uploadedImage.image;
-            texture.imageView = uploadedImage.imageView;
+            texture.image     = upload.image;
+            texture.imageView = upload.imageView;
 
             texture.descriptorID = megaSet.WriteSampledImage(texture.imageView);
 
@@ -479,6 +485,8 @@ namespace Vk
 
     bool TextureManager::HasPendingUploads()
     {
+        const std::scoped_lock lock{m_mutex};
+
         return m_imageUploader.HasPendingUploads() || !m_futuresMap.empty();
     }
 

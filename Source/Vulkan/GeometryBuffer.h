@@ -48,7 +48,7 @@ namespace Vk
 
         void ImGuiDisplay() const;
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
 
         [[nodiscard]] const Vk::Buffer& GetIndexBuffer()    const;
         [[nodiscard]] const Vk::Buffer& GetPositionBuffer() const;

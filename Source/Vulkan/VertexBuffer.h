@@ -67,11 +67,11 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
 
         [[nodiscard]] const Vk::Buffer& GetBuffer() const;
 
-        u32 count = 0;
+        std::atomic<u32> count = 0;
     private:
         struct GeometryUpload
         {
@@ -85,6 +85,8 @@ namespace Vk
         Vk::ResizableAllocator m_allocator = {};
 
         ankerl::unordered_dense::map<VkBuffer, std::vector<GeometryUpload>> m_pendingUploads;
+
+        std::mutex m_mutex;
     };
 }
 
