@@ -348,8 +348,9 @@ namespace Models
 
                 case fastgltf::ComponentType::UnsignedInt:
                 {
-                    // Assume indices are u32s
-                    fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data.data());
+                    static_assert(std::is_same_v<GPU::Index, u32>, "Assume indices are u32s for faster copying.");
+
+                    fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data);
 
                     break;
                 }
@@ -362,6 +363,8 @@ namespace Models
                     );
                 }
             }
+
+            Vk::VertexBuffer::Allocation vertexAllocation = {};
 
             // Positions
             {
@@ -377,16 +380,16 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                const auto [data, info] = geometryBuffer.positionBuffer.Allocate
+                vertexAllocation = geometryBuffer.vertexBuffer.Allocate
                 (
+                    positionAccessor.count,
                     device,
                     allocator,
-                    positionAccessor.count,
                     stagingPool,
                     deletionQueue
                 );
 
-                surfaceInfo.positionInfo = info;
+                surfaceInfo.vertexInfo = vertexAllocation.info;
 
                 aabb.min = glm::vec3(std::numeric_limits<f32>::max());
                 aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
@@ -396,7 +399,7 @@ namespace Models
                     aabb.min = glm::min(aabb.min, position);
                     aabb.max = glm::max(aabb.max, position);
 
-                    std::memcpy(&data[index], &position, sizeof(GPU::Position));
+                    std::memcpy(&vertexAllocation.position[index], &position, sizeof(GPU::Position));
                 });
             }
 
@@ -428,17 +431,6 @@ namespace Models
                     "TEXCOORD_1"
                 );
 
-                const auto [data, info] = geometryBuffer.uvBuffer.Allocate
-                (
-                    device,
-                    allocator,
-                    normalAccessor.count,
-                    stagingPool,
-                    deletionQueue
-                );
-
-                surfaceInfo.uvInfo = info;
-
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
                     GPU::UV uvs = {};
@@ -459,7 +451,7 @@ namespace Models
                     uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::f16vec2(0, 0));
                     uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::f16vec2(0, 0));
 
-                    std::memcpy(&data[i], &uvs, sizeof(GPU::UV));
+                    std::memcpy(&vertexAllocation.uv[i], &uvs, sizeof(GPU::UV));
                 }
             }
 
@@ -477,17 +469,6 @@ namespace Models
                     fastgltf::AccessorType::Vec4
                 );
 
-                const auto [data, info] = geometryBuffer.vertexBuffer.Allocate
-                (
-                    device,
-                    allocator,
-                    normalAccessor.count,
-                    stagingPool,
-                    deletionQueue
-                );
-
-                surfaceInfo.vertexInfo = info;
-
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
                     const auto vertex = GPU::Vertex
@@ -496,7 +477,7 @@ namespace Models
                         .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i)
                     };
 
-                    std::memcpy(&data[i], &vertex, sizeof(GPU::Vertex));
+                    std::memcpy(&vertexAllocation.normalAndTangent[i], &vertex, sizeof(GPU::Vertex));
                 }
             }
 

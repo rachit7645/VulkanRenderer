@@ -21,9 +21,10 @@
 
 #include "Buffer.h"
 #include "CommandBuffer.h"
-#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 #include "Context.h"
 #include "Util/DeletionQueue.h"
+#include "Vulkan/VertexBuffer.h"
 
 namespace Vk
 {
@@ -55,10 +56,8 @@ namespace Vk
         [[nodiscard]] const Vk::Buffer& GetUVBuffer()       const;
         [[nodiscard]] const Vk::Buffer& GetVertexBuffer()   const;
 
-        Vk::VertexBuffer<GPU::Index>    indexBuffer    = {};
-        Vk::VertexBuffer<GPU::Position> positionBuffer = {};
-        Vk::VertexBuffer<GPU::UV>       uvBuffer       = {};
-        Vk::VertexBuffer<GPU::Vertex>   vertexBuffer   = {};
+        Vk::IndexBuffer  indexBuffer  = {};
+        Vk::VertexBuffer vertexBuffer = {};
 
         Vk::Buffer cubeBuffer;
     private:

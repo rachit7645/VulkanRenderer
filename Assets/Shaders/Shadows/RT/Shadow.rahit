@@ -39,7 +39,7 @@ void main()
     uint i1 = Constants.Indices.indices[indexOffset + 1];
     uint i2 = Constants.Indices.indices[indexOffset + 2];
 
-    uint uvOffset      = mesh.surfaceInfo.uvInfo.offset;
+    uint uvOffset      = mesh.surfaceInfo.vertexInfo.offset;
     uint albedoUVMapID = mesh.material.albedoUVMapID;
 
     vec2 uv0 = Constants.UVs.uvs[uvOffset + i0].uv[albedoUVMapID];

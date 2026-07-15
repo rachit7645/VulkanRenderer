@@ -174,6 +174,8 @@ namespace Models
             m_modelMap.erase(iter);
         }
 
+        std::vector<std::future<void>> modelLoadFutures = {};
+
         for (const auto& [id, path] : m_requestedModelLoads)
         {
             const auto iter = m_modelMap.find(id);
@@ -199,21 +201,36 @@ namespace Models
                 continue;
             }
 
-            iter->second.model.LoadFromFile
-            (
-                device,
-                allocator,
-                geometryBuffer,
-                textureManager,
-                stagingPool,
-                executor,
-                deletionQueue,
-                path
-            );
+            modelLoadFutures.emplace_back(executor.async([this, path, device, allocator, &stagingPool, &executor, &deletionQueue, &model = iter->second.model] () mutable
+            {
+                model.LoadFromFile
+                (
+                    device,
+                    allocator,
+                    geometryBuffer,
+                    textureManager,
+                    stagingPool,
+                    executor,
+                    deletionQueue,
+                    path
+                );
+            }));
         }
 
         m_requestedModelDeletions.clear();
         m_requestedModelLoads.clear();
+
+        for (auto& future : modelLoadFutures)
+        {
+            if (!future.valid())
+            {
+                Logger::Error("{}\n", "Future is not valid!");
+            }
+
+            future.wait();
+        }
+
+        modelLoadFutures.clear();
 
         geometryBuffer.Update
         (
@@ -251,9 +268,8 @@ namespace Models
                             ImGui::Text("Info Name | Offset/Count");
                             ImGui::Separator();
 
-                            ImGui::Text("Indices   | %u/%u", mesh.surfaceInfo.indexInfo.offset,    mesh.surfaceInfo.indexInfo.count);
-                            ImGui::Text("Positions | %u/%u", mesh.surfaceInfo.positionInfo.offset, mesh.surfaceInfo.positionInfo.count);
-                            ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset,   mesh.surfaceInfo.vertexInfo.count);
+                            ImGui::Text("Indices   | %u/%u", mesh.surfaceInfo.indexInfo.offset,  mesh.surfaceInfo.indexInfo.count);
+                            ImGui::Text("Vertices  | %u/%u", mesh.surfaceInfo.vertexInfo.offset, mesh.surfaceInfo.vertexInfo.count);
 
                             ImGui::Separator();
                             ImGui::Text("Texture Name              | UV Map ID | ID");

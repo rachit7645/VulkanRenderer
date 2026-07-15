@@ -475,7 +475,14 @@ namespace Cache
             {
                 uncompressedData.resize(header.uncompressedDataSize);
 
-                bin.read(reinterpret_cast<char*>(uncompressedData.data()), static_cast<std::streamsize>(uncompressedData.size()));
+                // Load From Disk
+                {
+                    #ifdef ENGINE_PROFILE
+                    ZoneScopedN("Load From Disk");
+                    #endif
+
+                    bin.read(reinterpret_cast<char*>(uncompressedData.data()), static_cast<std::streamsize>(uncompressedData.size()));
+                }
 
                 break;
             }
@@ -486,15 +493,31 @@ namespace Cache
 
                 auto compressedData = std::vector<u8>(header.compressedDataSize);
 
-                bin.read(reinterpret_cast<char*>(compressedData.data()), static_cast<std::streamsize>(compressedData.size()));
+                // Load From Disk
+                {
+                    #ifdef ENGINE_PROFILE
+                    ZoneScopedN("Load From Disk");
+                    #endif
 
-                const auto uncompressedSizeSigned = static_cast<ssize>(LZ4_decompress_safe
-                (
-                    reinterpret_cast<const char*>(compressedData.data()),
-                    reinterpret_cast<char*>(uncompressedData.data()),
-                    static_cast<s32>(compressedData.size()),
-                    static_cast<s32>(uncompressedData.size())
-                ));
+                    bin.read(reinterpret_cast<char*>(compressedData.data()), static_cast<std::streamsize>(compressedData.size()));
+                }
+
+                ssize uncompressedSizeSigned = 0;
+
+                // LZ4 Decompress
+                {
+                    #ifdef ENGINE_PROFILE
+                    ZoneScopedN("LZ4 Decompress");
+                    #endif
+
+                    uncompressedSizeSigned = static_cast<ssize>(LZ4_decompress_safe
+                    (
+                        reinterpret_cast<const char*>(compressedData.data()),
+                        reinterpret_cast<char*>(uncompressedData.data()),
+                        static_cast<s32>(compressedData.size()),
+                        static_cast<s32>(uncompressedData.size())
+                    ));
+                }
 
                 const auto uncompressedSize = static_cast<usize>(uncompressedSizeSigned);
 
@@ -510,7 +533,14 @@ namespace Cache
             {
                 auto compressedData = std::vector<u8>(header.compressedDataSize);
 
-                bin.read(reinterpret_cast<char*>(compressedData.data()), static_cast<std::streamsize>(compressedData.size()));
+                // Load From Disk
+                {
+                    #ifdef ENGINE_PROFILE
+                    ZoneScopedN("Load From Disk");
+                    #endif
+
+                    bin.read(reinterpret_cast<char*>(compressedData.data()), static_cast<std::streamsize>(compressedData.size()));
+                }
 
                 usize frameContentSize = ZSTD_getFrameContentSize(compressedData.data(), compressedData.size());
 
@@ -530,13 +560,22 @@ namespace Cache
 
                 uncompressedData.resize(frameContentSize);
 
-                const usize uncompressedSize = ZSTD_decompress
-                (
-                    uncompressedData.data(),
-                    uncompressedData.size(),
-                    compressedData.data(),
-                    compressedData.size()
-                );
+                usize uncompressedSize = 0;
+
+                // ZSTD Decompress
+                {
+                    #ifdef ENGINE_PROFILE
+                    ZoneScopedN("ZSTD Decompress");
+                    #endif
+
+                    uncompressedSize = ZSTD_decompress
+                    (
+                        uncompressedData.data(),
+                        uncompressedData.size(),
+                        compressedData.data(),
+                        compressedData.size()
+                    );
+                }
 
                 if (ZSTD_isError(uncompressedSize))
                 {

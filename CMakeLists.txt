@@ -102,8 +102,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/ImageUploader.cpp
     Source/Vulkan/PipelineConfig.cpp
     Source/Vulkan/BarrierWriter.cpp
-    Source/Vulkan/VertexBuffer.cpp
-    Source/Vulkan/ResizableAllocator.cpp
+    Source/Vulkan/IndexBuffer.cpp
     Source/Vulkan/ComputeTimeline.cpp
     Source/Vulkan/PipelineManager.cpp
     Source/Vulkan/MemoryBlock.cpp
@@ -112,6 +111,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/ImageDownloader.cpp
     Source/Vulkan/SamplerID.cpp
     Source/Vulkan/TextureID.cpp
+    Source/Vulkan/VertexBuffer.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderConfig.cpp
@@ -265,7 +265,7 @@ target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_I
 # Compiler options
 target_compile_options(VulkanRenderer PRIVATE -O3)
 target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
-target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c -mpclmul -mbmi -mlzcnt)
+target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c -mpclmul -mbmi -mbmi2 -mlzcnt)
 
 # Windows options
 if (WIN32)

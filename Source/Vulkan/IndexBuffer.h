@@ -14,33 +14,40 @@
  * limitations under the License.
  */
 
-#ifndef VERTEX_BUFFER2_H
-#define VERTEX_BUFFER2_H
+#ifndef VERTEX_BUFFER_H
+#define VERTEX_BUFFER_H
 
-#include "GPU/Surface.h"
-#include "GPU/Vertex.h"
+#include <vulkan/vulkan.h>
+
+#include "Buffer.h"
+#include "BarrierWriter.h"
+#include "StagingPool.h"
+#include "Externals/VMA.h"
+#include "Util/Types.h"
 #include "Util/DeletionQueue.h"
-#include "Vulkan/Buffer.h"
-#include "Vulkan/StagingPool.h"
+#include "GPU/Vertex.h"
+#include "GPU/Surface.h"
 
 namespace Vk
 {
-    class VertexBuffer
+    class IndexBuffer
     {
     public:
         struct Allocation
         {
-            GPU::Position*    position;
-            GPU::UV*          uv;
-            GPU::Vertex*      normalAndTangent;
+            GPU::Index*       index;
             GPU::GeometryInfo info;
         };
 
-        VertexBuffer::Allocation Allocate
+        void Bind(const Vk::CommandBuffer& cmdBuffer) const;
+
+        void Destroy(VmaAllocator allocator);
+
+        IndexBuffer::Allocation Allocate
         (
-            u32 elementCount,
             VkDevice device,
             VmaAllocator allocator,
+            usize writeCount,
             Vk::StagingPool& stagingPool,
             Util::DeletionQueue& deletionQueue
         );
@@ -57,32 +64,20 @@ namespace Vk
 
         [[nodiscard]] bool HasPendingUploads();
 
-        void Destroy(VmaAllocator allocator);
+        Vk::Buffer buffer = {};
 
-        Vk::Buffer positionBuffer         = {};
-        Vk::Buffer uvBuffer               = {};
-        Vk::Buffer normalAndTangentBuffer = {};
-
-        u32 count;
+        u32 count = 0;
     private:
         struct GeometryUpload
         {
-            GPU::GeometryInfo info = {};
-
-            VkBuffer     positionStagingBuffer = VK_NULL_HANDLE;
-            VkDeviceSize positionSourceOffset  = 0;
-
-            VkBuffer     uvStagingBuffer = VK_NULL_HANDLE;
-            VkDeviceSize uvSourceOffset  = 0;
-
-            VkBuffer     normalAndTangentStagingBuffer = VK_NULL_HANDLE;
-            VkDeviceSize normalAndTangentSourceOffset  = 0;
+            GPU::GeometryInfo info         = {};
+            VkDeviceSize      sourceOffset = 0;
         };
 
         struct ResizeInfo
         {
             u32                            requiredCapacity = 0;
-            std::vector<GPU::GeometryInfo> blocksToCopy = {};
+            std::vector<GPU::GeometryInfo> blocksToCopy     = {};
         };
 
         void MergeFreeBlocks();
@@ -99,12 +94,12 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
-        std::optional<VertexBuffer::ResizeInfo> m_resizeInfo;
+        std::optional<IndexBuffer::ResizeInfo> m_resizeInfo;
 
         std::vector<GPU::GeometryInfo> m_usedBlocks = {};
         std::vector<GPU::GeometryInfo> m_freeBlocks = {};
 
-        std::vector<VertexBuffer::GeometryUpload> m_pendingUploads = {};
+        ankerl::unordered_dense::map<VkBuffer, std::vector<GeometryUpload>> m_pendingUploads;
 
         std::mutex m_mutex;
     };

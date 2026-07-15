@@ -120,6 +120,10 @@ namespace Renderer
 
     void RenderManager::Render()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         WaitForTimeline();
 
         if (!m_isSwapchainOk)
@@ -145,6 +149,10 @@ namespace Renderer
 
     void RenderManager::WaitForTimeline()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (m_frameIndex < Vk::FRAMES_IN_FLIGHT)
         {
             return;
@@ -160,6 +168,10 @@ namespace Renderer
 
     void RenderManager::AcquireSwapchainImage()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const auto result = m_swapchain.AcquireSwapChainImage(m_context.device, m_FIF);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -181,6 +193,10 @@ namespace Renderer
 
     void RenderManager::BeginFrame()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         m_deletionQueues[m_FIF].Flush();
 
         ImGui_ImplSDL3_NewFrame();
@@ -196,6 +212,10 @@ namespace Renderer
 
     void RenderManager::RenderGraphicsQueueOnly()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const auto cmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -257,6 +277,10 @@ namespace Renderer
 
     void RenderManager::RenderMultiQueue()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         Vk::BarrierWriter barrierWriter = {};
 
         // GBuffer Generation
@@ -2159,6 +2183,10 @@ namespace Renderer
 
     void RenderManager::EndFrame()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         m_graphicsTimeline.TimelineToRenderFinished
         (
             m_frameIndex,
