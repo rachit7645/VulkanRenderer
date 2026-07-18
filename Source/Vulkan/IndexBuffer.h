@@ -64,6 +64,8 @@ namespace Vk
 
         [[nodiscard]] bool HasPendingUploads();
 
+        void ImGuiDisplay();
+
         Vk::Buffer buffer = {};
 
         u32 count = 0;
@@ -94,6 +96,8 @@ namespace Vk
             Util::DeletionQueue& deletionQueue
         );
 
+        void DisplayMemoryMapAndStatistics();
+
         std::optional<IndexBuffer::ResizeInfo> m_resizeInfo;
 
         std::vector<GPU::GeometryInfo> m_usedBlocks = {};
@@ -103,6 +107,15 @@ namespace Vk
 
         std::mutex m_mutex;
     };
+
+    namespace Detail
+    {
+        struct UIGeometryInfo
+        {
+            GPU::GeometryInfo info   = {};
+            bool              isFree = false;
+        };
+    }
 }
 
 #endif

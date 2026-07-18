@@ -2025,11 +2025,6 @@ namespace Renderer
         {
             if (ImGui::BeginMenu("Renderer"))
             {
-                constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
-                                                  ImGuiTableFlags_BordersInnerV |
-                                                  ImGuiTableFlags_BordersOuterH |
-                                                  ImGuiTableFlags_BordersOuterV;
-
                 m_modelManager.ImGuiDisplay();
                 m_framebufferManager.ImGuiDisplay();
                 m_megaSet.ImGuiDisplay();
@@ -2056,7 +2051,7 @@ namespace Renderer
                         blockCount      += budget.statistics.blockCount;
                     }
 
-                    if (ImGui::BeginTable("##DeviceMemoryTable", 7, flags))
+                    if (ImGui::BeginTable("##DeviceMemoryTable", 7, ImGuiTableFlags_Borders))
                     {
                         ImGui::TableSetupColumn("Heap");
                         ImGui::TableSetupColumn("Used");
@@ -2116,7 +2111,7 @@ namespace Renderer
 
                 if (ImGui::CollapsingHeader("Queues"))
                 {
-                    if (ImGui::BeginTable("##DeviceQueueTable", 3, flags))
+                    if (ImGui::BeginTable("##DeviceQueueTable", 3, ImGuiTableFlags_Borders))
                     {
                         ImGui::TableSetupColumn("Queue");
                         ImGui::TableSetupColumn("Family Index");

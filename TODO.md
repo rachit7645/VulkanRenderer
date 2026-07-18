@@ -9,7 +9,6 @@
 * Pull all dependencies from git submodules
 * Render Graph
 * Transparent / Translucent Meshes
-* Async Model Loading
 * Global Illumination
 * Fog
 * Volumetric Lighting

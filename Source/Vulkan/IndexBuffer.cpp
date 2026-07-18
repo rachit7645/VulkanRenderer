@@ -62,6 +62,11 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
+        if (writeCount == 0)
+        {
+            Logger::Error("{}\n", "Can't allocate zero elements!");
+        }
+
         const VkDeviceSize writeSize = writeCount * sizeof(GPU::Index);
 
         const auto stagingMemoryBlock = stagingPool.Allocate
@@ -113,6 +118,11 @@ namespace Vk
     void IndexBuffer::Free(const GPU::GeometryInfo& info)
     {
         const std::scoped_lock lock{m_mutex};
+
+        if (info.count == 0)
+        {
+            Logger::Error("Block has a count of zero! [Offset={}]\n", info.offset);
+        }
 
         if (std::ranges::contains(m_freeBlocks, info))
         {
@@ -253,7 +263,26 @@ namespace Vk
 
         return !m_pendingUploads.empty();
     }
-    
+
+    void IndexBuffer::ImGuiDisplay()
+    {
+        const std::scoped_lock lock{m_mutex};
+
+        if (ImGui::CollapsingHeader("Index Buffer"))
+        {
+            const usize totalBlockCount = m_usedBlocks.size() + m_freeBlocks.size();
+
+            if (totalBlockCount == 0)
+            {
+                ImGui::TextColored(ImVec4{1.0f, 0.0f, 0.0f, 1.0f}, "No blocks allocated!");
+            }
+            else
+            {
+                DisplayMemoryMapAndStatistics();
+            }
+        }
+    }
+
     void IndexBuffer::MergeFreeBlocks()
     {
         if (m_freeBlocks.size() <= 1)
@@ -363,29 +392,35 @@ namespace Vk
         const auto lastUsedIter = std::ranges::max_element(m_usedBlocks, OrderByOffset);
         const auto lastFreeIter = std::ranges::max_element(m_freeBlocks, OrderByOffset);
 
-        GPU::GeometryInfo lastBlock = {};
-
         const bool lastUsedValid = lastUsedIter != m_usedBlocks.end();
         const bool lastFreeValid = lastFreeIter != m_freeBlocks.end();
 
-        if (lastUsedValid && !lastFreeValid)
+        // This also implies that lastFreeValid == true
+        bool isLastBlockAFreeBlock = false;
+
+        if (!lastUsedValid && lastFreeValid)
         {
-            lastBlock = *lastUsedIter;
-        }
-        else if (!lastUsedValid && lastFreeValid)
-        {
-            lastBlock = *lastFreeIter;
+            isLastBlockAFreeBlock = true;
         }
         else if (lastUsedValid && lastFreeValid)
         {
-            lastBlock = std::max(*lastUsedIter, *lastFreeIter, OrderByOffset);
+            isLastBlockAFreeBlock = OrderByOffset(*lastUsedIter, *lastFreeIter);
         }
 
-        const u32 totalAllocatedCount = lastBlock.offset + lastBlock.count;
+        u32 appendOffset = 0;
 
-        constexpr f32 GROWTH_FACTOR = 1.2f;
+        if (isLastBlockAFreeBlock)
+        {
+            appendOffset = lastFreeIter->offset;
+        }
+        else if (lastUsedValid)
+        {
+            appendOffset = lastUsedIter->offset + lastUsedIter->count;
+        }
 
-        const u32 newAllocatedCount = elementCount + static_cast<u32>(std::ceil(GROWTH_FACTOR * totalAllocatedCount));
+        constexpr f64 GROWTH_FACTOR = 1.2;
+
+        const u32 newAllocatedCount = elementCount + static_cast<u32>(std::ceil(GROWTH_FACTOR * static_cast<f64>(appendOffset)));
 
         if (m_resizeInfo.has_value())
         {
@@ -402,18 +437,27 @@ namespace Vk
 
         const GPU::GeometryInfo allocated =
         {
-            .offset = lastBlock.offset + lastBlock.count,
+            .offset = appendOffset,
             .count  = elementCount
         };
 
         const GPU::GeometryInfo remaining =
         {
             .offset = allocated.offset  + allocated.count,
-            .count  = newAllocatedCount - (elementCount + totalAllocatedCount)
+            .count  = newAllocatedCount - (elementCount + appendOffset)
         };
 
         m_usedBlocks.emplace_back(allocated);
-        m_freeBlocks.emplace_back(remaining);
+
+        if (isLastBlockAFreeBlock)
+        {
+            m_freeBlocks.erase(lastFreeIter);
+        }
+
+        if (remaining.count != 0)
+        {
+            m_freeBlocks.emplace_back(remaining);
+        }
 
         return allocated;
     }
@@ -543,5 +587,177 @@ namespace Vk
         barrierWriterNew.Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
+    }
+
+    void IndexBuffer::DisplayMemoryMapAndStatistics()
+    {
+        constexpr f32 BLOCK_HEIGHT = 20.0f;
+
+        constexpr f32 X_PADDING    = 15.0f;
+        constexpr f32 Y_PADDING    = 5.0f;
+        constexpr f32 MIN_X_EXTENT = 5.0f;
+        constexpr f32 MAX_Y_EXTENT = 2.0f * Y_PADDING + BLOCK_HEIGHT;
+
+        constexpr f32 MAX_WIDTH_FRACTION = 0.9f;
+
+        constexpr u32 USED_COLOR    = IM_COL32(50,  110, 200, 255);
+        constexpr u32 FREE_COLOR    = IM_COL32(200, 90,  50,  255);
+        constexpr u32 OUTLINE_COLOR = IM_COL32(0,   0,   0,   150);
+
+        constexpr f32 OUTLINE_THICKNESS = 1.1f;
+
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+        ImGui::Text("Memory Map");
+
+        const ImVec2 origin       = ImGui::GetCursorScreenPos();
+        const ImVec2 paddedOrigin = origin + ImVec2{X_PADDING, Y_PADDING};
+
+        std::vector<Detail::UIGeometryInfo> combinedUIBlocks = {};
+
+        usize totalUsed = 0;
+        usize totalFree = 0;
+
+        // Combine and Sort
+        {
+            combinedUIBlocks.reserve(m_usedBlocks.size() + m_freeBlocks.size());
+
+            for (const auto& block : m_usedBlocks)
+            {
+                combinedUIBlocks.emplace_back(Detail::UIGeometryInfo
+                {
+                    .info   = block,
+                    .isFree = false
+                });
+
+                totalUsed += block.count;
+            }
+
+            for (const auto& block : m_freeBlocks)
+            {
+                combinedUIBlocks.emplace_back(Detail::UIGeometryInfo
+                {
+                    .info   = block,
+                    .isFree = true
+                });
+
+                totalFree += block.count;
+            }
+
+            std::ranges::sort(combinedUIBlocks, [] (const auto& A, const auto& B)
+            {
+                return A.info.offset < B.info.offset;
+            });
+        }
+
+        f32 elementsPerPixel = 1.0f;
+
+        // Compute Canvas Size
+        {
+            const auto& lastCombinedBlock = combinedUIBlocks.back();
+
+            const u32 totalAllocated = lastCombinedBlock.info.offset + lastCombinedBlock.info.count;
+
+            const f32 targetWidth = MAX_WIDTH_FRACTION * viewport->WorkSize.x;
+            const f32 usableWidth = std::max(targetWidth - 2.0f * X_PADDING, 1.0f);
+
+            elementsPerPixel = static_cast<f32>(totalAllocated) / usableWidth;
+
+            ImGui::Dummy(ImVec2{targetWidth, MAX_Y_EXTENT});
+        }
+
+        for (const auto& block : combinedUIBlocks)
+        {
+            const ImVec2 pMin =
+            {
+                paddedOrigin.x + static_cast<f32>(block.info.offset) / elementsPerPixel,
+                paddedOrigin.y
+            };
+
+            const ImVec2 pMax =
+            {
+                paddedOrigin.x + std::max(static_cast<f32>(block.info.offset + block.info.count) / elementsPerPixel, MIN_X_EXTENT),
+                paddedOrigin.y + BLOCK_HEIGHT
+            };
+
+            drawList->AddRectFilled
+            (
+                pMin,
+                pMax,
+                block.isFree ? FREE_COLOR : USED_COLOR
+            );
+
+            drawList->AddRect
+            (
+                pMin,
+                pMax,
+                OUTLINE_COLOR,
+                0.0f,
+                OUTLINE_THICKNESS
+            );
+
+            if (ImGui::IsMouseHoveringRect(pMin, pMax))
+            {
+                ImGui::SetTooltip("%s | Offset=%u | Count=%u", block.isFree ? "Free" : "Used", block.info.offset, block.info.count);
+            }
+        }
+
+        if (ImGui::BeginTable("##IndexBufferSubAllocatorStatisticsTable", 5, ImGuiTableFlags_Borders))
+        {
+            ImGui::TableSetupColumn("Type");
+            ImGui::TableSetupColumn("Block Count");
+            ImGui::TableSetupColumn("Element Count");
+            ImGui::TableSetupColumn("Bytes");
+            ImGui::TableSetupColumn("Percentage");
+            ImGui::TableHeadersRow();
+
+            const usize usedBytes      = totalUsed * sizeof(GPU::Index);
+            const usize freeBytes      = totalFree * sizeof(GPU::Index);
+            const usize allocatedBytes = (totalUsed + totalFree) * sizeof(GPU::Index);
+
+            const f64 usedFraction      = static_cast<f64>(usedBytes)      / static_cast<f64>(buffer.size);
+            const f64 freeFraction      = static_cast<f64>(freeBytes)      / static_cast<f64>(buffer.size);
+            const f64 allocatedFraction = static_cast<f64>(allocatedBytes) / static_cast<f64>(buffer.size);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Used");
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", m_usedBlocks.size());
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", totalUsed);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", usedBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%.3f%%", 100.0 * usedFraction);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Free");
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", m_freeBlocks.size());
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", totalFree);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", freeBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%.3f%%", 100.0 * freeFraction);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Allocated");
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", m_usedBlocks.size() + m_freeBlocks.size());
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", totalUsed + totalFree);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", allocatedBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%.3f%%", 100.0 * allocatedFraction);
+
+            ImGui::EndTable();
+        }
     }
 }

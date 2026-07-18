@@ -221,6 +221,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     # lz4 Headers
     Externals/lz4/lib/lz4.h
     Externals/lz4/lib/lz4hc.h
+    # zstd Headers
+    Externals/zstd/lib/zstd.h
     # C++ STL Headers
     <map>
     <unordered_map>
@@ -255,12 +257,13 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <cstdlib>
     <cassert>
     <cmath>
+    <cstdio>
 )
 
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Externals/taskflow/ Shared/)
 # No Vulkan prototypes
-target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
+target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull IMGUI_DEFINE_MATH_OPERATORS=1)
 
 # Compiler options
 target_compile_options(VulkanRenderer PRIVATE -O3)
@@ -270,6 +273,10 @@ target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c -mpclmul -mbmi -mbmi
 # Windows options
 if (WIN32)
     target_compile_definitions(VulkanRenderer PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+
+    # Disables the console window
+    # No console output will be available when this is enabled
+    # set_target_properties(VulkanRenderer PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
 # Debug config

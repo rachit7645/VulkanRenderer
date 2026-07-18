@@ -196,6 +196,11 @@ namespace Vk
     {
         const std::scoped_lock lock{m_mutex};
 
+        if (info.count == 0)
+        {
+            Logger::Error("Block has a count of zero! [Offset={}]\n", info.offset);
+        }
+
         if (std::ranges::contains(m_freeBlocks, info))
         {
             Logger::Error("Block already freed! [Offset={}] [Count={}]\n", info.offset, info.count);
@@ -558,36 +563,42 @@ namespace Vk
     GPU::GeometryInfo VertexBuffer::AppendAtEnd(u32 elementCount)
     {
         const auto OrderByOffset = [] (const GPU::GeometryInfo& a, const GPU::GeometryInfo& b)
-            {
-                return a.offset < b.offset;
-            };
+        {
+            return a.offset < b.offset;
+        };
 
         const auto lastUsedIter = std::ranges::max_element(m_usedBlocks, OrderByOffset);
         const auto lastFreeIter = std::ranges::max_element(m_freeBlocks, OrderByOffset);
 
-        GPU::GeometryInfo lastBlock = {};
-
         const bool lastUsedValid = lastUsedIter != m_usedBlocks.end();
         const bool lastFreeValid = lastFreeIter != m_freeBlocks.end();
 
-        if (lastUsedValid && !lastFreeValid)
+        // This also implies that lastFreeValid == true
+        bool isLastBlockAFreeBlock = false;
+
+        if (!lastUsedValid && lastFreeValid)
         {
-            lastBlock = *lastUsedIter;
-        }
-        else if (!lastUsedValid && lastFreeValid)
-        {
-            lastBlock = *lastFreeIter;
+            isLastBlockAFreeBlock = true;
         }
         else if (lastUsedValid && lastFreeValid)
         {
-            lastBlock = std::max(*lastUsedIter, *lastFreeIter, OrderByOffset);
+            isLastBlockAFreeBlock = OrderByOffset(*lastUsedIter, *lastFreeIter);
         }
 
-        const u32 totalAllocatedCount = lastBlock.offset + lastBlock.count;
+        u32 appendOffset = 0;
 
-        constexpr f32 GROWTH_FACTOR = 1.2f;
+        if (isLastBlockAFreeBlock)
+        {
+            appendOffset = lastFreeIter->offset;
+        }
+        else if (lastUsedValid)
+        {
+            appendOffset = lastUsedIter->offset + lastUsedIter->count;
+        }
 
-        const u32 newAllocatedCount = elementCount + static_cast<u32>(std::ceil(GROWTH_FACTOR * totalAllocatedCount));
+        constexpr f64 GROWTH_FACTOR = 1.2;
+
+        const u32 newAllocatedCount = elementCount + static_cast<u32>(std::ceil(GROWTH_FACTOR * static_cast<f64>(appendOffset)));
 
         if (m_resizeInfo.has_value())
         {
@@ -604,18 +615,27 @@ namespace Vk
 
         const GPU::GeometryInfo allocated =
         {
-            .offset = lastBlock.offset + lastBlock.count,
+            .offset = appendOffset,
             .count  = elementCount
         };
 
         const GPU::GeometryInfo remaining =
         {
             .offset = allocated.offset  + allocated.count,
-            .count  = newAllocatedCount - (elementCount + totalAllocatedCount)
+            .count  = newAllocatedCount - (elementCount + appendOffset)
         };
 
         m_usedBlocks.emplace_back(allocated);
-        m_freeBlocks.emplace_back(remaining);
+
+        if (isLastBlockAFreeBlock)
+        {
+            m_freeBlocks.erase(lastFreeIter);
+        }
+
+        if (remaining.count != 0)
+        {
+            m_freeBlocks.emplace_back(remaining);
+        }
 
         return allocated;
     }

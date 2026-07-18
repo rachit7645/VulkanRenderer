@@ -246,12 +246,7 @@ namespace Vk
     {
         if (ImGui::CollapsingHeader("MegaSet"))
         {
-            constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
-                                              ImGuiTableFlags_BordersInnerV |
-                                              ImGuiTableFlags_BordersOuterH |
-                                              ImGuiTableFlags_BordersOuterV;
-
-            if (ImGui::BeginTable("##MegaSetTable", 6, flags))
+            if (ImGui::BeginTable("##MegaSetTable", 6, ImGuiTableFlags_Borders))
             {
                 ImGui::TableSetupColumn("Binding");
                 ImGui::TableSetupColumn("Type");

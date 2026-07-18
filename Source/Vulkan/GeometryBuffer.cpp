@@ -212,71 +212,9 @@ namespace Vk
         std::memcpy(m_pendingCubeUpload->hostAddress, CUBE_VERTICES.data(), VERTICES_SIZE);
     }
 
-    void GeometryBuffer::ImGuiDisplay() const
+    void GeometryBuffer::ImGuiDisplay()
     {
-        /*
-        if (ImGui::CollapsingHeader("Geometry"))
-        {
-            constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
-                                              ImGuiTableFlags_BordersInnerV |
-                                              ImGuiTableFlags_BordersOuterH |
-                                              ImGuiTableFlags_BordersOuterV;
-
-            if (ImGui::BeginTable("##GeometryBufferTable", 5, flags))
-            {
-                ImGui::TableSetupColumn("Buffer");
-                ImGui::TableSetupColumn("Count");
-                ImGui::TableSetupColumn("Used");
-                ImGui::TableSetupColumn("Available");
-                ImGui::TableSetupColumn("Allocated");
-
-                ImGui::TableSetupScrollFreeze(0, 0);
-
-                ImGui::TableHeadersRow();
-
-                Detail::SetupGeometryBufferTableRow(indexBuffer);
-                Detail::SetupGeometryBufferTableRow(positionBuffer);
-                Detail::SetupGeometryBufferTableRow(uvBuffer);
-                Detail::SetupGeometryBufferTableRow(vertexBuffer);
-
-                ImGui::EndTable();
-            }
-
-            if (ImGui::BeginTable("##GeometryBufferTableTotal", 4, flags))
-            {
-                const VkDeviceSize totalUsed = indexBuffer.count * sizeof(GPU::Index) +
-                                               vertexBuffer2.count * sizeof(GPU::Position) +
-                                               vertexBuffer2.count * sizeof(GPU::UV) +
-                                               vertexBuffer2.count * sizeof(GPU::Vertex);
-
-                const VkDeviceSize totalAllocated = indexBuffer.GetBuffer().size +
-                                                    positionBuffer.GetBuffer().size +
-                                                    uvBuffer.GetBuffer().size +
-                                                    vertexBuffer.GetBuffer().size;
-
-                ImGui::TableSetupColumn("Total");
-                ImGui::TableSetupColumn("Used");
-                ImGui::TableSetupColumn("Available");
-                ImGui::TableSetupColumn("Allocated");
-
-                ImGui::TableSetupScrollFreeze(0, 0);
-
-                ImGui::TableHeadersRow();
-
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%llu", totalUsed);
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%llu", totalAllocated - totalUsed);
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%llu", totalAllocated);
-
-                ImGui::EndTable();
-            }
-        }
-        */
+        indexBuffer.ImGuiDisplay();
     }
 
     bool GeometryBuffer::HasPendingUploads()

@@ -344,11 +344,6 @@ namespace Renderer::Debug
         {
             if (ImGui::BeginMenu("Debug"))
             {
-                constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH |
-                                                  ImGuiTableFlags_BordersInnerV |
-                                                  ImGuiTableFlags_BordersOuterH |
-                                                  ImGuiTableFlags_BordersOuterV;
-
                 ImGui::Checkbox("Render AABBs", &m_aabbDebugOptions.enabled);
 
                 if (m_aabbDebugOptions.enabled)
@@ -393,7 +388,7 @@ namespace Renderer::Debug
 
                 if (m_enableCullingStatistics)
                 {
-                    if (ImGui::BeginTable("##CullingStatisticsTable", 4, flags))
+                    if (ImGui::BeginTable("##CullingStatisticsTable", 4, ImGuiTableFlags_Borders))
                     {
                         const auto* statistics = static_cast<const Culling::CullingStatisticsBuffer*>(m_cullingStatisticsReadbackBuffers[FIF].hostAddress);
 
@@ -433,7 +428,7 @@ namespace Renderer::Debug
 
                 if (m_enableTiledLightingStatistics)
                 {
-                    if (ImGui::BeginTable("##TiledLightingStatisticsTable", 3, flags))
+                    if (ImGui::BeginTable("##TiledLightingStatisticsTable", 3, ImGuiTableFlags_Borders))
                     {
                         const auto* statistics = static_cast<const TiledLighting::TiledLightingStatisticsBuffer*>(m_tiledLightingStatisticsReadbackBuffers[FIF].hostAddress);
 
