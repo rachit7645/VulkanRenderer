@@ -47,7 +47,7 @@ void main()
     float reflectance = IoRToReflectance(UnpackIoR(gAlbedoIoR.a));
 
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    vec3 normal  = UnpackNormal(gNormal.rg);
+    vec3 normal  = UnpackNormalFromGBuffer(gNormal.rg);
 
     vec4  gRghMtlHrz = texture(sampler2D(Textures[Constants.GRghMtlIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
     float roughness  = gRghMtlHrz.r;

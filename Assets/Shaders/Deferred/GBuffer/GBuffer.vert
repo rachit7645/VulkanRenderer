@@ -22,6 +22,7 @@
 
 #include "GPU/Material.h"
 #include "Deferred/GBuffer.h"
+#include "Encoding.glsl"
 
 layout(location = 0) out VertexData
 {
@@ -71,7 +72,10 @@ void main()
 
     Output.drawID = currentInstance.meshIndex;
 
-    Output.N = normalize(currentInstance.normalMatrix * vertex.normal);
+    vec2 unquantizedNormal = unpackSnorm2x16(vertex.normal);
+    vec3 unpackedNormal    = UnpackOctahedron(unquantizedNormal);
+
+    Output.N = normalize(currentInstance.normalMatrix * unpackedNormal);
     Output.T = normalize(currentInstance.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
 
     Output.TangentSign = vertex.tangent.w;

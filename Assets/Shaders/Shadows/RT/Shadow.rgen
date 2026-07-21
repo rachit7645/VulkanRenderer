@@ -63,7 +63,7 @@ void main()
     vec3 worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
 
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
-    vec3 normal  = UnpackNormal(gNormal.rg);
+    vec3 normal  = UnpackNormalFromGBuffer(gNormal.rg);
 
     vec3 direction = normalize(-Constants.Scene.Sun.light.direction);
     vec3 tangent   = vec3(0.0f);

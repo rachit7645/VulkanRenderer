@@ -74,7 +74,7 @@ void main()
     vec3 normal = texture(nonuniformEXT(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.normalUVMapID]).rgb;
          normal = GetNormalFromMap(normal, TBN);
 
-    gNormal = PackNormal(normal);
+    gNormal = PackNormalFromMapToGBuffer(normal);
 
     vec3 aoRghMtl    = texture(nonuniformEXT(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.aoRghMtlUVMapID]).rgb;
          aoRghMtl.g *= mesh.material.roughnessFactor;

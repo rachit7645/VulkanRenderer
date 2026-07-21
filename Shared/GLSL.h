@@ -34,6 +34,7 @@ using GLSL_VEC4 = glm::vec4;
 using GLSL_UVEC2 = glm::uvec2;
 
 using GLSL_F16VEC2 = glm::f16vec2;
+using GLSL_U16VEC2 = glm::u16vec2;
 
 using GLSL_MAT3 = glm::mat3;
 using GLSL_MAT4 = glm::mat4;
@@ -64,6 +65,8 @@ using GLSL_MAT4 = glm::mat4;
 #define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) EnumClassName
 
 #define GLSL_CONSTEXPR constexpr
+
+#define GLSL_ARRAY(UnderlyingType, Name, Count) std::array<UnderlyingType, Count> Name
 
 #else
 
@@ -110,6 +113,8 @@ using GLSL_MAT4 = glm::mat4;
 #define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) UnderlyingType
 
 #define GLSL_CONSTEXPR const
+
+#define GLSL_ARRAY(UnderlyingType, Name, Count) UnderlyingType Name[Count]
 
 #endif
 

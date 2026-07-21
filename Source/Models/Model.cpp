@@ -20,7 +20,6 @@
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Util/Enum.h"
-#include "Util/Span.h"
 #include "Util/Types.h"
 #include "Util/Visitor.h"
 
@@ -471,9 +470,16 @@ namespace Models
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
+                    const auto normal = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor, i);
+
+                    const glm::vec3 unitNormal = glm::normalize(normal);
+
+                    const glm::vec2 packedNormal          = Maths::PackOctahedron(unitNormal);
+                    const u32       packedNormalQuantized = glm::packSnorm2x16(packedNormal);
+
                     const auto vertex = GPU::Vertex
                     {
-                        .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
+                        .normal  = packedNormalQuantized,
                         .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i)
                     };
 
@@ -727,7 +733,7 @@ namespace Models
                     .type   = Vk::ImageUploadType::RAW,
                     .flags  = Vk::ImageUploadFlags::None,
                     .source = Vk::ImageUploadRawMemory{
-                        .name   = defaultName.data(),
+                        .name   = std::string(defaultName),
                         .width  = 1,
                         .height = 1,
                         .format = VK_FORMAT_R8G8B8A8_UNORM,
@@ -830,8 +836,8 @@ namespace Models
             },
             [&] (const fastgltf::sources::Array& array) -> Vk::TextureID
             {
-                const auto arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + 0);
-                const auto arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + array.bytes.size());
+                const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data());
+                const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + array.bytes.size());
 
                 return textureManager.AddTexture
                 (
@@ -870,8 +876,8 @@ namespace Models
                     },
                     [&] (const fastgltf::sources::Array& array) -> Vk::TextureID
                     {
-                        const auto arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + 0);
-                        const auto arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + bufferView.byteLength);
+                        const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset);
+                        const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + bufferView.byteLength);
 
                         return textureManager.AddTexture
                         (

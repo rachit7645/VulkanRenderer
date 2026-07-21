@@ -18,6 +18,14 @@
 
 namespace Maths
 {
+    namespace Detail
+    {
+        glm::vec2 OctahedronWrap(const glm::vec2& vector)
+        {
+            return (1.0f - glm::abs(glm::vec2(vector.y, vector.x))) * glm::vec2(vector.x >= 0.0f ? 1.0f : -1.0f, vector.y >= 0.0f ? 1.0f : -1.0f);
+        }
+    }
+
     glm::mat4 TransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
     {
         auto matrix = glm::identity<glm::mat4>();
@@ -79,6 +87,17 @@ namespace Maths
         {
             return fallback;
         }
+
+        return result;
+    }
+
+    glm::vec2 PackOctahedron(const glm::vec3& vector)
+    {
+        glm::vec2 result = glm::vec2(vector.x, vector.y);
+
+        result /= abs(vector.x) + abs(vector.y) + abs(vector.z);
+
+        result = vector.z >= 0.0f ? result : Detail::OctahedronWrap(result);
 
         return result;
     }

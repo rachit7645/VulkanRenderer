@@ -23,12 +23,12 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 struct UV
 {
-    GLSL_F16VEC2 uv[2];
+    GLSL_ARRAY(GLSL_F16VEC2, uv, 2);
 };
 
 struct Vertex
 {
-    GLSL_VEC3 normal;
+    u32       normal;
     GLSL_VEC4 tangent;
 };
 

@@ -27,28 +27,39 @@ vec2 OctahedronWrap(vec2 vector)
     return (1.0f - abs(vector.yx)) * vec2(vector.x >= 0.0f ? 1.0f : -1.0f, vector.y >= 0.0f ? 1.0f : -1.0f);
 }
 
-vec2 PackNormal(vec3 normal)
+vec2 PackOctahedron(vec3 vector)
 {
-    normal /= abs(normal.x) + abs(normal.y) + abs(normal.z);
+    vector /= abs(vector.x) + abs(vector.y) + abs(vector.z);
 
-    normal.xy = normal.z >= 0.0f ? normal.xy : OctahedronWrap(normal.xy);
-    normal.xy = normal.xy * 0.5f + 0.5f;
+    vector.xy = vector.z >= 0.0f ? vector.xy : OctahedronWrap(vector.xy);
+
+    return vector.xy;
+}
+
+vec3 UnpackOctahedron(vec2 packedVector)
+{
+    vec3 vector = vec3(packedVector.x, packedVector.y, 1.0f - abs(packedVector.x) - abs(packedVector.y));
+
+    float flag = max(-vector.z, 0.0f);
+
+    vector.x += vector.x >= 0.0f ? -flag : flag;
+    vector.y += vector.y >= 0.0f ? -flag : flag;
+
+    return normalize(vector);
+}
+
+vec2 PackNormalFromMapToGBuffer(vec3 normal)
+{
+    normal.xy = PackOctahedron(normal) * 0.5f + 0.5f;
 
     return normal.xy;
 }
 
-vec3 UnpackNormal(vec2 pNormal)
+vec3 UnpackNormalFromGBuffer(vec2 pNormal)
 {
     pNormal = pNormal * 2.0f - 1.0f;
 
-    vec3 normal = vec3(pNormal.x, pNormal.y, 1.0f - abs(pNormal.x) - abs(pNormal.y));
-
-    float flag = max(-normal.z, 0.0f);
-
-    normal.x += normal.x >= 0.0f ? -flag : flag;
-    normal.y += normal.y >= 0.0f ? -flag : flag;
-
-    return normalize(normal);
+    return UnpackOctahedron(pNormal);
 }
 
 float PackIoR(float ior)

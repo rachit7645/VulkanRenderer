@@ -27,6 +27,7 @@ namespace Maths
     [[nodiscard]] glm::mat4 InfiniteProjectionReverseZ(f32 FOV, f32 aspectRatio, f32 nearPlane);
     [[nodiscard]] glm::mat3 NormalMatrix(const glm::mat4& transform);
     [[nodiscard]] glm::vec3 SafeCross(const glm::vec3& A, const glm::vec3& B, const glm::vec3& fallback, f32 epsilon);
+    [[nodiscard]] glm::vec2 PackOctahedron(const glm::vec3& vector);
 
     template<typename T>
     [[nodiscard]] constexpr T Max2(const glm::vec<2, T>& vector)

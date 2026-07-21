@@ -181,7 +181,7 @@ vec3 LoadViewSpaceNormal(vec2 uv)
 {
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
 
-    vec3 normal = UnpackNormal(gNormal.rg);
+    vec3 normal = UnpackNormalFromGBuffer(gNormal.rg);
          normal = mat3(Constants.Scene.currentMatrices.view) * normal;
          normal = normalize(normal);
 
