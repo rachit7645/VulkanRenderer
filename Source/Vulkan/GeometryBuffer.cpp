@@ -215,6 +215,7 @@ namespace Vk
     void GeometryBuffer::ImGuiDisplay()
     {
         indexBuffer.ImGuiDisplay();
+        vertexBuffer.ImGuiDisplay();
     }
 
     bool GeometryBuffer::HasPendingUploads()

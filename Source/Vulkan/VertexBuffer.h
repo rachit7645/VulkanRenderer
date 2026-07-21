@@ -57,6 +57,8 @@ namespace Vk
 
         [[nodiscard]] bool HasPendingUploads();
 
+        void ImGuiDisplay();
+
         void Destroy(VmaAllocator allocator);
 
         Vk::Buffer positionBuffer         = {};
@@ -98,6 +100,8 @@ namespace Vk
             VmaAllocator allocator,
             Util::DeletionQueue& deletionQueue
         );
+
+        void DisplayMemoryMapAndStatistics();
 
         std::optional<VertexBuffer::ResizeInfo> m_resizeInfo;
 

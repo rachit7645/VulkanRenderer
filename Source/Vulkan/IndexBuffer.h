@@ -107,15 +107,6 @@ namespace Vk
 
         std::mutex m_mutex;
     };
-
-    namespace Detail
-    {
-        struct UIGeometryInfo
-        {
-            GPU::GeometryInfo info   = {};
-            bool              isFree = false;
-        };
-    }
 }
 
 #endif

@@ -16,8 +16,9 @@
 
 #include "VertexBuffer.h"
 
+#include "DebugUtils.h"
+#include "DebugUIShared.h"
 #include "Util/Scope.h"
-#include "Vulkan/DebugUtils.h"
 
 namespace Vk
 {
@@ -452,6 +453,25 @@ namespace Vk
         const std::scoped_lock lock{m_mutex};
 
         return !m_pendingUploads.empty();
+    }
+
+    void VertexBuffer::ImGuiDisplay()
+    {
+        const std::scoped_lock lock{m_mutex};
+
+        if (ImGui::CollapsingHeader("Vertex Buffer"))
+        {
+            const usize totalBlockCount = m_usedBlocks.size() + m_freeBlocks.size();
+
+            if (totalBlockCount == 0)
+            {
+                ImGui::TextColored(ImVec4{1.0f, 0.0f, 0.0f, 1.0f}, "No blocks allocated!");
+            }
+            else
+            {
+                DisplayMemoryMapAndStatistics();
+            }
+        }
     }
 
     void VertexBuffer::Destroy(VmaAllocator allocator)
@@ -893,5 +913,205 @@ namespace Vk
         barrierWriterNew.Execute(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
+    }
+
+    void VertexBuffer::DisplayMemoryMapAndStatistics()
+    {
+        constexpr f32 BLOCK_HEIGHT = 20.0f;
+
+        constexpr f32 X_PADDING    = 15.0f;
+        constexpr f32 Y_PADDING    = 5.0f;
+        constexpr f32 MIN_X_EXTENT = 5.0f;
+        constexpr f32 MAX_Y_EXTENT = 2.0f * Y_PADDING + BLOCK_HEIGHT;
+
+        constexpr f32 MAX_WIDTH_FRACTION = 0.9f;
+
+        constexpr u32 USED_COLOR    = IM_COL32(50,  110, 200, 255);
+        constexpr u32 FREE_COLOR    = IM_COL32(200, 90,  50,  255);
+        constexpr u32 OUTLINE_COLOR = IM_COL32(0,   0,   0,   150);
+
+        constexpr f32 OUTLINE_THICKNESS = 1.1f;
+
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+        ImGui::Text("Memory Map");
+
+        const ImVec2 origin       = ImGui::GetCursorScreenPos();
+        const ImVec2 paddedOrigin = origin + ImVec2{X_PADDING, Y_PADDING};
+
+        std::vector<Vk::UIGeometryInfo> combinedUIBlocks = {};
+
+        usize totalUsed = 0;
+        usize totalFree = 0;
+
+        // Combine and Sort
+        {
+            combinedUIBlocks.reserve(m_usedBlocks.size() + m_freeBlocks.size());
+
+            for (const auto& block : m_usedBlocks)
+            {
+                combinedUIBlocks.emplace_back(Vk::UIGeometryInfo
+                {
+                    .info   = block,
+                    .isFree = false
+                });
+
+                totalUsed += block.count;
+            }
+
+            for (const auto& block : m_freeBlocks)
+            {
+                combinedUIBlocks.emplace_back(Vk::UIGeometryInfo
+                {
+                    .info   = block,
+                    .isFree = true
+                });
+
+                totalFree += block.count;
+            }
+
+            std::ranges::sort(combinedUIBlocks, [] (const auto& A, const auto& B)
+            {
+                return A.info.offset < B.info.offset;
+            });
+        }
+
+        f32 elementsPerPixel = 1.0f;
+
+        // Compute Canvas Size
+        {
+            const auto& lastCombinedBlock = combinedUIBlocks.back();
+
+            const u32 totalAllocated = lastCombinedBlock.info.offset + lastCombinedBlock.info.count;
+
+            const f32 targetWidth = MAX_WIDTH_FRACTION * viewport->WorkSize.x;
+            const f32 usableWidth = std::max(targetWidth - 2.0f * X_PADDING, 1.0f);
+
+            elementsPerPixel = static_cast<f32>(totalAllocated) / usableWidth;
+
+            ImGui::Dummy(ImVec2{targetWidth, MAX_Y_EXTENT});
+        }
+
+        for (const auto& block : combinedUIBlocks)
+        {
+            const ImVec2 pMin =
+            {
+                paddedOrigin.x + static_cast<f32>(block.info.offset) / elementsPerPixel,
+                paddedOrigin.y
+            };
+
+            const ImVec2 pMax =
+            {
+                paddedOrigin.x + std::max(static_cast<f32>(block.info.offset + block.info.count) / elementsPerPixel, MIN_X_EXTENT),
+                paddedOrigin.y + BLOCK_HEIGHT
+            };
+
+            drawList->AddRectFilled
+            (
+                pMin,
+                pMax,
+                block.isFree ? FREE_COLOR : USED_COLOR
+            );
+
+            drawList->AddRect
+            (
+                pMin,
+                pMax,
+                OUTLINE_COLOR,
+                0.0f,
+                OUTLINE_THICKNESS
+            );
+
+            if (ImGui::IsMouseHoveringRect(pMin, pMax))
+            {
+                ImGui::SetTooltip("%s | Offset=%u | Count=%u", block.isFree ? "Free" : "Used", block.info.offset, block.info.count);
+            }
+        }
+
+        if (ImGui::BeginTable("##VertexBufferSubAllocatorStatisticsTable", 7, ImGuiTableFlags_Borders))
+        {
+            ImGui::TableSetupColumn("Type");
+            ImGui::TableSetupColumn("Block Count");
+            ImGui::TableSetupColumn("Element Count");
+            ImGui::TableSetupColumn("Position Bytes");
+            ImGui::TableSetupColumn("UV Bytes");
+            ImGui::TableSetupColumn("Normal and Tangent Bytes");
+            ImGui::TableSetupColumn("Percentage");
+            ImGui::TableHeadersRow();
+
+            const usize totalElements = totalUsed + totalFree;
+
+            const usize usedPositionBytes         = totalUsed * sizeof(GPU::Position);
+            const usize usedUVBytes               = totalUsed * sizeof(GPU::UV);
+            const usize usedNormalAndTangentBytes = totalUsed * sizeof(GPU::Vertex);
+
+            const usize freePositionBytes         = totalFree * sizeof(GPU::Position);
+            const usize freeUVBytes               = totalFree * sizeof(GPU::UV);
+            const usize freeNormalAndTangentBytes = totalFree * sizeof(GPU::Vertex);
+
+            const usize allocatedPositionBytes         = totalElements * sizeof(GPU::Position);
+            const usize allocatedUVBytes               = totalElements * sizeof(GPU::UV);
+            const usize allocatedNormalAndTangentBytes = totalElements * sizeof(GPU::Vertex);
+
+            const f64 usedFraction = static_cast<f64>(totalUsed) / static_cast<f64>(totalElements);
+            const f64 freeFraction = static_cast<f64>(totalFree) / static_cast<f64>(totalElements);
+
+            constexpr usize TOTAL_SIZE_PER_ELEMENT = sizeof(GPU::Position) + sizeof(GPU::UV) + sizeof(GPU::Vertex);
+
+            const f64 allocatedFraction = static_cast<f64>(TOTAL_SIZE_PER_ELEMENT * totalElements) /
+                                          static_cast<f64>(positionBuffer.size + uvBuffer.size + normalAndTangentBuffer.size);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Used");
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", m_usedBlocks.size());
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", totalUsed);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", usedPositionBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", usedUVBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", usedNormalAndTangentBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%.3f%%", 100.0 * usedFraction);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Free");
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", m_freeBlocks.size());
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", totalFree);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", freePositionBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", freeUVBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", freeNormalAndTangentBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%.3f%%", 100.0 * freeFraction);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Allocated");
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", m_usedBlocks.size() + m_freeBlocks.size());
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", totalElements);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", allocatedPositionBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", allocatedUVBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%llu", allocatedNormalAndTangentBytes);
+            ImGui::TableNextColumn();
+            ImGui::Text("%.3f%%", 100.0 * allocatedFraction);
+
+            ImGui::EndTable();
+        }
     }
 }

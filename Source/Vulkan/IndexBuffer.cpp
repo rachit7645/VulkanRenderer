@@ -19,9 +19,10 @@
 #include <ranges>
 #include <volk/volk.h>
 
+#include "DebugUtils.h"
+#include "DebugUIShared.h"
 #include "Util/Log.h"
 #include "Util/Scope.h"
-#include "Vulkan/DebugUtils.h"
 
 namespace Vk
 {
@@ -615,7 +616,7 @@ namespace Vk
         const ImVec2 origin       = ImGui::GetCursorScreenPos();
         const ImVec2 paddedOrigin = origin + ImVec2{X_PADDING, Y_PADDING};
 
-        std::vector<Detail::UIGeometryInfo> combinedUIBlocks = {};
+        std::vector<Vk::UIGeometryInfo> combinedUIBlocks = {};
 
         usize totalUsed = 0;
         usize totalFree = 0;
@@ -626,7 +627,7 @@ namespace Vk
 
             for (const auto& block : m_usedBlocks)
             {
-                combinedUIBlocks.emplace_back(Detail::UIGeometryInfo
+                combinedUIBlocks.emplace_back(Vk::UIGeometryInfo
                 {
                     .info   = block,
                     .isFree = false
@@ -637,7 +638,7 @@ namespace Vk
 
             for (const auto& block : m_freeBlocks)
             {
-                combinedUIBlocks.emplace_back(Detail::UIGeometryInfo
+                combinedUIBlocks.emplace_back(Vk::UIGeometryInfo
                 {
                     .info   = block,
                     .isFree = true
