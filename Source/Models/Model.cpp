@@ -470,17 +470,30 @@ namespace Models
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    const auto normal = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor, i);
+                    const auto normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
+                    const auto tangentWithSign = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
 
-                    const glm::vec3 unitNormal = glm::normalize(normal);
-
+                    const glm::vec3 unitNormal            = glm::normalize(normal);
                     const glm::vec2 packedNormal          = Maths::PackOctahedron(unitNormal);
                     const u32       packedNormalQuantized = glm::packSnorm2x16(packedNormal);
+
+                    const glm::vec3 unitTangent       = glm::normalize(glm::vec3(tangentWithSign));
+                    const glm::vec2 octEncodedTangent = Maths::PackOctahedron(unitTangent);
+
+                    const s32 packedTangentX = Maths::QuantizeSNorm(octEncodedTangent.x, 15);
+                    const s32 packedTangentY = Maths::QuantizeSNorm(octEncodedTangent.y, 15);
+                    const s32 bitangentSign  = tangentWithSign.w >= 1.0f ? 1 : 0;
+
+                    u32 packedTangentQuantized = 0;
+
+                    packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentX), 0,  15);
+                    packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentY), 15, 15);
+                    packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(bitangentSign),  30, 1);
 
                     const auto vertex = GPU::Vertex
                     {
                         .normal  = packedNormalQuantized,
-                        .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i)
+                        .tangent = packedTangentQuantized
                     };
 
                     std::memcpy(&vertexAllocation.normalAndTangent[i], &vertex, sizeof(GPU::Vertex));

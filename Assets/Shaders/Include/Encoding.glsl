@@ -75,4 +75,30 @@ float UnpackIoR(float ior)
     return 2.0f * ior + 1.0f;
 }
 
+vec3 UnpackNormalFromVertex(uint packedNormal)
+{
+    vec2 unquantizedNormal = unpackSnorm2x16(packedNormal);
+    vec3 unpackedNormal    = UnpackOctahedron(unquantizedNormal);
+
+    return unpackedNormal;
+}
+
+vec4 UnpackTangentFromVertex(uint packedTangent)
+{
+    const float INVERSE_SCALE = 1.0f / 16383.0f;
+
+    int octTangentX = bitfieldExtract(int(packedTangent), 0,  15);
+    int octTangentY = bitfieldExtract(int(packedTangent), 15, 15);
+
+    vec2 octTangent = INVERSE_SCALE * vec2(octTangentX, octTangentY);
+         octTangent = clamp(octTangent, -1.0f, 1.0f);
+
+    vec3 unpackedTangent = UnpackOctahedron(octTangent);
+
+    uint  flagBits = bitfieldExtract(packedTangent, 30, 1);
+    float sign     = 2.0f * float(flagBits) - 1.0f;
+
+    return vec4(unpackedTangent, sign);
+}
+
 #endif

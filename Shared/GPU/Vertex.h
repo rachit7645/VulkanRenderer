@@ -28,8 +28,8 @@ struct UV
 
 struct Vertex
 {
-    u32       normal;
-    GLSL_VEC4 tangent;
+    u32 normal;
+    u32 tangent;
 };
 
 #ifndef __cplusplus

@@ -72,11 +72,11 @@ void main()
 
     Output.drawID = currentInstance.meshIndex;
 
-    vec2 unquantizedNormal = unpackSnorm2x16(vertex.normal);
-    vec3 unpackedNormal    = UnpackOctahedron(unquantizedNormal);
+    vec3 normal  = UnpackNormalFromVertex(vertex.normal);
+    vec4 tangent = UnpackTangentFromVertex(vertex.tangent);
 
-    Output.N = normalize(currentInstance.normalMatrix * unpackedNormal);
-    Output.T = normalize(currentInstance.transform * vec4(vertex.tangent.xyz, 0.0f)).xyz;
+    Output.N = normalize(currentInstance.normalMatrix * normal);
+    Output.T = normalize(currentInstance.transform * vec4(tangent.xyz, 0.0f)).xyz;
 
-    Output.TangentSign = vertex.tangent.w;
+    Output.TangentSign = tangent.w;
 }

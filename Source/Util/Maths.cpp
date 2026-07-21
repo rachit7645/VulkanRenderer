@@ -93,12 +93,25 @@ namespace Maths
 
     glm::vec2 PackOctahedron(const glm::vec3& vector)
     {
-        glm::vec2 result = glm::vec2(vector.x, vector.y);
+        auto result = glm::vec2(vector.x, vector.y);
 
         result /= abs(vector.x) + abs(vector.y) + abs(vector.z);
 
         result = vector.z >= 0.0f ? result : Detail::OctahedronWrap(result);
 
         return result;
+    }
+
+    // meshopt_quantizeSnorm
+    s32 QuantizeSNorm(f32 value, s32 bits)
+    {
+        const f32 scale = static_cast<f32>((1 << (bits - 1)) - 1);
+
+        const f32 round = (value >= 0.0f ? 0.5f : -0.5f);
+
+        value = (value >= -1) ? value : -1;
+        value = (value <= +1) ? value : +1;
+
+        return static_cast<s32>(value * scale + round);
     }
 }
