@@ -22,16 +22,13 @@
 
 namespace Util
 {
-    /// @brief Random number between a range
-    /// @tparam T Number type
-    /// @param min Range minimum
-    /// @param max Range maximum
-    /// @returns Random number ∈ [min, max)
     template<typename T>
     [[nodiscard]] T RandRange(T min, T max)
     {
         static thread_local std::mt19937_64 generator(std::time(nullptr));
+
         std::uniform_real_distribution<T> distributor(min, max);
+
         return distributor(generator);
     }
 }

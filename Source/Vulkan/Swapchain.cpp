@@ -50,6 +50,10 @@ namespace Vk
 
     VkResult Swapchain::Present(VkDevice device, VkQueue queue)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         Vk::CheckResult(vkWaitForFences(
             device,
             1,

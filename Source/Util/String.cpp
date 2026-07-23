@@ -20,7 +20,7 @@ namespace Util
 {
     std::string ToLower(const std::string_view string)
     {
-        std::string result = string.data();
+        auto result = std::string(string);
 
         std::ranges::transform(result, result.begin(), [] (unsigned char character)
         {

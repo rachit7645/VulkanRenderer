@@ -190,6 +190,12 @@ namespace Vk
 
         count += elementCount;
 
+        #ifdef ENGINE_PROFILE
+        TracyAllocN(reinterpret_cast<void*>(allocation.info.offset * sizeof(GPU::Position)), allocation.info.count * sizeof(GPU::Position), "Vertex Buffer Sub-Allocator | Position");
+        TracyAllocN(reinterpret_cast<void*>(allocation.info.offset * sizeof(GPU::UV)),       allocation.info.count * sizeof(GPU::UV),       "Vertex Buffer Sub-Allocator | UV");
+        TracyAllocN(reinterpret_cast<void*>(allocation.info.offset * sizeof(GPU::Vertex)),   allocation.info.count * sizeof(GPU::Vertex),   "Vertex Buffer Sub-Allocator | Normal And Tangent");
+        #endif
+
         return allocation;
     }
 
@@ -227,6 +233,12 @@ namespace Vk
         {
             count -= info.count;
         }
+
+        #ifdef ENGINE_PROFILE
+        TracyFreeN(reinterpret_cast<void*>(info.offset * sizeof(GPU::Position)), "Vertex Buffer Sub-Allocator | Position");
+        TracyFreeN(reinterpret_cast<void*>(info.offset * sizeof(GPU::UV)),       "Vertex Buffer Sub-Allocator | UV");
+        TracyFreeN(reinterpret_cast<void*>(info.offset * sizeof(GPU::Vertex)),   "Vertex Buffer Sub-Allocator | Normal And Tangent");
+        #endif
     }
 
     void VertexBuffer::Update

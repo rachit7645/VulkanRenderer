@@ -109,6 +109,10 @@ namespace Vk
 
         iter->second.emplace_back(info, stagingMemoryBlock.memoryBlock.offset);
 
+        #ifdef ENGINE_PROFILE
+        TracyAllocN(reinterpret_cast<void*>(info.offset * sizeof(GPU::Index)), info.count * sizeof(GPU::Index), "Index Buffer Sub-Allocator");
+        #endif
+
         return IndexBuffer::Allocation
         {
             .index = static_cast<GPU::Index*>(stagingMemoryBlock.hostAddress),
@@ -150,6 +154,10 @@ namespace Vk
         {
             count -= info.count;
         }
+
+        #ifdef ENGINE_PROFILE
+        TracyFreeN(reinterpret_cast<void*>(info.offset * sizeof(GPU::Index)), "Index Buffer Sub-Allocator");
+        #endif
     }
 
     void IndexBuffer::Update

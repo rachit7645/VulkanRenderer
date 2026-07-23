@@ -71,6 +71,7 @@ add_executable(VulkanRenderer
     Source/Util/WireframeSphere.cpp
     Source/Util/Debug.cpp
     Source/Util/WireframeCone.cpp
+    Source/Util/Log.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
@@ -262,8 +263,12 @@ target_precompile_headers(VulkanRenderer PRIVATE
 
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Externals/taskflow/ Shared/)
-# No Vulkan prototypes
+# Vulkan Options
 target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull IMGUI_DEFINE_MATH_OPERATORS=1)
+# ImGui Options
+target_compile_definitions(VulkanRenderer PRIVATE ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull IMGUI_DEFINE_MATH_OPERATORS=1)
+# GLM Options
+target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_SILENT_WARNINGS GLM_FORCE_SIZE_T_LENGTH)
 
 # Compiler options
 target_compile_options(VulkanRenderer PRIVATE -O3)
@@ -312,7 +317,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # target_compile_definitions(VulkanRenderer PRIVATE TRACY_CALLSTACK=32)
 
     # Enable debug symbols
-    target_compile_options(VulkanRenderer PRIVATE -g)
+    target_compile_options(VulkanRenderer PRIVATE -g -fno-omit-frame-pointer)
 
     # Add Tracy
     target_link_libraries(VulkanRenderer TracyClient)

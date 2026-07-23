@@ -17,12 +17,6 @@
 #ifndef EXTERNALS_GLM_H
 #define EXTERNALS_GLM_H
 
-#define GLM_FORCE_AVX2
-#define GLM_FORCE_INTRINSICS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_SILENT_WARNINGS
-#define GLM_FORCE_SIZE_T_LENGTH
-
 // Standard vector types
 #include "glm/glm/vec2.hpp"
 #include "glm/glm/vec3.hpp"

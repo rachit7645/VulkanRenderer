@@ -25,6 +25,7 @@
 #include "Util/Log.h"
 #include "Util/Types.h"
 #include "Util/Visitor.h"
+#include "Util/Files.h"
 #include "Externals/ImGui.h"
 
 namespace Vk

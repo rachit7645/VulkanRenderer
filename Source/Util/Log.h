@@ -20,85 +20,34 @@
 #include <string_view>
 #include <source_location>
 #include <stacktrace>
-#include <cstdlib>
 
-#include "Time.h"
 #include "Types.h"
-#include "Files.h"
 #include "Unused.h"
-#include "Debug.h"
 #include "Externals/FMT.h"
 
 namespace Logger
 {
     namespace Detail
     {
-        template <typename... Args>
         void Log
         (
             const fmt::color& fgColor,
             const std::string_view type,
             const std::source_location& location,
             const std::string_view format,
-            Args&&... args
-        )
-        {
-            fmt::print
-            (
-                stdout,
-                fmt::fg(fgColor),
-                fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
-                type,
-                Util::GetTime(),
-                Files::GetName(location.file_name()),
-                location.line(),
-                std::forward<Args>(args)...
-            );
-        }
+            const fmt::format_args args
+        );
 
-        template <s32 ErrorCode = EXIT_FAILURE, typename... Args>
         [[noreturn]] void LogAndExit
         (
+            const s32 errorCode,
             const fmt::color& fgColor,
             const std::string_view type,
             const std::source_location& location,
             const std::stacktrace& stacktrace,
             const std::string_view format,
-            Args&&... args
-        )
-        {
-            const auto foreground = fmt::fg(fgColor);
-            const auto time       = Util::GetTime();
-            const auto name       = Files::GetName(location.file_name());
-
-            fmt::print
-            (
-                stderr,
-                foreground,
-                fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
-                type,
-                time,
-                name,
-                location.line(),
-                std::forward<Args>(args)...
-            );
-
-            fmt::print
-            (
-                stderr,
-                foreground,
-                fmt::runtime("{}\n"),
-                std::to_string(stacktrace)
-            );
-
-            Util::TriggerBreakpoint();
-
-            #ifdef ENGINE_DEBUG
-            while (true) {}
-            #else
-            std::exit(ErrorCode);
-            #endif
-        }
+            const fmt::format_args args
+        );
     }
 
     template <typename... Args>
@@ -117,7 +66,7 @@ namespace Logger
                 "INFO",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -138,7 +87,7 @@ namespace Logger
                 "WARNING",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -160,7 +109,7 @@ namespace Logger
                 "DEBUG",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
             #endif
         }
@@ -183,7 +132,7 @@ namespace Logger
                 "VULKAN",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
             #endif
         }
@@ -200,14 +149,17 @@ namespace Logger
 			const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
-            Detail::LogAndExit<-1>
+            constexpr s32 ERROR_CODE = -1;
+
+            Detail::LogAndExit
             (
+                ERROR_CODE,
                 fmt::color::red,
                 "ERROR",
                 location,
                 stacktrace,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -223,14 +175,17 @@ namespace Logger
             const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
-            Detail::LogAndExit<-1>
+            constexpr s32 ERROR_CODE = -2;
+
+            Detail::LogAndExit
             (
+                ERROR_CODE,
                 fmt::color::orange_red,
                 "VKERROR",
                 location,
                 stacktrace,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -246,14 +201,17 @@ namespace Logger
             const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
-            Detail::LogAndExit<-1>
+            constexpr s32 ERROR_CODE = -3;
+
+            Detail::LogAndExit
             (
+                ERROR_CODE,
                 fmt::color::dark_red,
                 "ASSERT",
                 location,
                 stacktrace,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };

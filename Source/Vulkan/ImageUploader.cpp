@@ -26,9 +26,13 @@
 #include "Util/SIMD.h"
 #include "Util/Visitor.h"
 #include "Util/Enum.h"
+#include "Util/Files.h"
 #include "Externals/STB.h"
 #include "Externals/OpenEXR.h"
+
+#ifdef ENGINE_PROFILE
 #include "Externals/Tracy.h"
+#endif
 
 namespace Vk
 {
@@ -1198,8 +1202,9 @@ namespace Vk
             }
             else
             {
-                SIMD::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), static_cast<f32*>(stagingMemoryBlock.hostAddress), elemCount);
-                SIMD::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), reinterpret_cast<f32*>(imageData.data()),          elemCount);
+                SIMD::ConvertF16ToF32(reinterpret_cast<const f16*>(&pixels[0][0]), reinterpret_cast<f32*>(imageData.data()), elemCount);
+
+                std::memcpy(stagingMemoryBlock.hostAddress, imageData.data(), dataSize);
             }
 
             const std::vector copyRegions = {VkBufferImageCopy2{

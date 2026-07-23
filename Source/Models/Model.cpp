@@ -470,7 +470,7 @@ namespace Models
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    const auto normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
+                    const auto normal          = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
                     const auto tangentWithSign = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
 
                     const glm::vec3 unitNormal            = glm::normalize(normal);

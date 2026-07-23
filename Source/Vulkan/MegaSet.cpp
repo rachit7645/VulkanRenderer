@@ -156,7 +156,7 @@ namespace Vk
             context.device,
             &allocInfo,
             &handle),
-            "Failed to allocate mega set"
+            "Failed to allocate mega set!"
         );
 
         m_samplerAllocator      = Vk::DescriptorAllocator(maxSamplers);

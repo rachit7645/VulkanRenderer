@@ -80,7 +80,7 @@ namespace Renderer::DearImGui
     {
         ImGui::Render();
 
-        const auto drawData = ImGui::GetDrawData();
+        const auto* drawData = ImGui::GetDrawData();
 
         Vk::BeginLabel(cmdBuffer, "Dear ImGui", glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
 
@@ -261,7 +261,7 @@ namespace Renderer::DearImGui
         s32 globalVertexOffset = 0;
         s32 globalIndexOffset  = 0;
 
-        for (const auto drawList : drawData->CmdLists)
+        for (const auto* drawList : drawData->CmdLists)
         {
             for (const auto& cmd : drawList->CmdBuffer)
             {
@@ -376,10 +376,10 @@ namespace Renderer::DearImGui
             Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
         }
 
-        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.hostAddress);
-        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.hostAddress);
+        auto* vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.hostAddress);
+        auto* indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.hostAddress);
 
-        for (const auto drawList : drawData->CmdLists)
+        for (const auto* drawList : drawData->CmdLists)
         {
             memcpy(vertexDestination, drawList->VtxBuffer.Data, drawList->VtxBuffer.Size * sizeof(ImDrawVert));
             memcpy(indexDestination,  drawList->IdxBuffer.Data, drawList->IdxBuffer.Size * sizeof(ImDrawIdx));
@@ -475,7 +475,7 @@ namespace Renderer::DearImGui
                     Logger::Error("Unsupported texture format! [ID={}]", texture->UniqueID);
                 }
 
-                const auto pixels = static_cast<u8*>(texture->GetPixels());
+                const auto* pixels = static_cast<u8*>(texture->GetPixels());
 
                 const auto id = modelManager.textureManager.AddTexture
                 (

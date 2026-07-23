@@ -18,6 +18,7 @@
 
 #include "Util/JSON.h"
 #include "Util/Log.h"
+#include "Util/Files.h"
 #include "Externals/SIMDJSON.h"
 
 namespace Engine

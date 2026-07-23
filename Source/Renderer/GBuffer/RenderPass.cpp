@@ -172,7 +172,7 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebuffer
         (
-            "GEmmisive",
+            "GEmissive",
             VK_FORMAT_B10G11R11_UFLOAT_PACK32,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -270,7 +270,7 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
-            "GEmmisive",
+            "GEmissive",
             "GEmissiveView",
             VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{

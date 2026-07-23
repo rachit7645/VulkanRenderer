@@ -22,6 +22,7 @@
 #include "DebugUtils.h"
 #include "Util.h"
 #include "Util/Log.h"
+#include "Util/Files.h"
 #include "Externals/ImGui.h"
 
 namespace Vk
@@ -178,10 +179,10 @@ namespace Vk
 
             for (const auto& [id, pipeline] : m_pipelines)
             {
-                if (ImGui::TreeNode(std::bit_cast<void*>(pipeline.handle), "%s", id.c_str()))
+                if (ImGui::TreeNode(pipeline.handle, "%s", id.c_str()))
                 {
-                    ImGui::Text("Handle     | %p", std::bit_cast<void*>(pipeline.handle));
-                    ImGui::Text("Layout     | %p", std::bit_cast<void*>(pipeline.layout));
+                    ImGui::Text("Handle     | %p", reinterpret_cast<void*>(pipeline.handle));
+                    ImGui::Text("Layout     | %p", reinterpret_cast<void*>(pipeline.layout));
                     ImGui::Text("Bind Point | %s", string_VkPipelineBindPoint(pipeline.bindPoint));
 
                     if (ImGui::Button("Reload Pipeline"))

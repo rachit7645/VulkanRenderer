@@ -16,8 +16,6 @@
 
 #include "BarrierWriter.h"
 
-#include <volk/volk.h>
-
 namespace Vk
 {
     BarrierWriter& BarrierWriter::WriteBufferBarrier(const Vk::Buffer& buffer, const Vk::BufferBarrier& barrier)

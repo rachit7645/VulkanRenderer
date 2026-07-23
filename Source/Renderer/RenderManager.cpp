@@ -19,12 +19,16 @@
 #include "AO/VBAO/VBAO.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
-#include "Externals/Tracy.h"
 #include "Util/Log.h"
 #include "Util/Threads.h"
+#include "Util/Files.h"
 #include "Vulkan/DebugUtils.h"
 #include "Vulkan/ImmediateSubmit.h"
 #include "Vulkan/Util.h"
+
+#ifdef ENGINE_PROFILE
+#include "Externals/Tracy.h"
+#endif
 
 namespace Renderer
 {
@@ -1275,6 +1279,10 @@ namespace Renderer
 
     void RenderManager::GBufferGeneration(const Vk::CommandBuffer& cmdBuffer)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (auto& layout = m_swapchain.imageLayouts[m_swapchain.imageIndex]; layout == VK_IMAGE_LAYOUT_UNDEFINED)
         {
             const auto& swapchainImage = m_swapchain.images[m_swapchain.imageIndex];
@@ -1417,6 +1425,10 @@ namespace Renderer
         const std::string_view gNormalID
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         m_vbao.Execute
         (
             m_FIF,
@@ -1436,6 +1448,10 @@ namespace Renderer
 
     void RenderManager::TraceRays(const Vk::CommandBuffer& cmdBuffer)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         bool canPerformRayDispatch = false;
 
         if (m_accelerationStructure.has_value())
@@ -1476,6 +1492,10 @@ namespace Renderer
 
     void RenderManager::Lighting(const Vk::CommandBuffer& cmdBuffer)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         m_tiledLighting.Execute
         (
             m_FIF,
@@ -1593,6 +1613,10 @@ namespace Renderer
 
     void RenderManager::AntiAliasing(const Vk::CommandBuffer& cmdBuffer)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         switch (m_renderConfig.antiAliasingMode)
         {
         case RenderConfig::AntiAliasingMode::None:
@@ -1766,6 +1790,10 @@ namespace Renderer
 
     void RenderManager::BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const auto& finalColor     = m_framebufferManager.GetFramebuffer("FinalColor");
         const auto& swapchainImage = m_swapchain.images[m_swapchain.imageIndex];
 
@@ -1893,6 +1921,10 @@ namespace Renderer
 
     void RenderManager::Update(const Vk::CommandBuffer& cmdBuffer)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         m_frameCounter.Update();
 
         m_renderConfig.Update();
@@ -2019,6 +2051,10 @@ namespace Renderer
 
     void RenderManager::ImGuiDisplay()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         m_inputs.ImGuiDisplay();
 
         if (ImGui::BeginMainMenuBar())
@@ -2210,6 +2246,10 @@ namespace Renderer
 
     bool RenderManager::HandleEvents()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         m_inputs.Reset();
 
         SDL_Event event = {};
@@ -2332,6 +2372,10 @@ namespace Renderer
 
     void RenderManager::Resize()
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (!m_swapchain.IsSurfaceValid(m_window.size, m_context))
         {
             m_isSwapchainOk = false;
@@ -2393,8 +2437,8 @@ namespace Renderer
                 constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<AO::VBAO::Occlusion::VBAO_HILBERT_LEVEL>();
 
                 // A bit hacky but what can you do :(
-                const auto HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
-                const auto HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
+                const auto* HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
+                const auto* HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
 
                 m_vbao.hilbertLUT = m_modelManager.textureManager.AddTexture
                 (

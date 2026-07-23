@@ -36,7 +36,7 @@ namespace JSON
     {
         glm::vec<L, f32> output;
 
-        for (ssize i = 0; i < L; ++i)
+        for (usize i = 0; i < L; ++i)
         {
             array.reset();
 
@@ -80,7 +80,7 @@ namespace simdjson
 
         constexpr glm::length_t VECTOR_LENGTH = vector.length();
 
-        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
+        const auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {
@@ -124,7 +124,7 @@ namespace simdjson
 
         constexpr glm::length_t VECTOR_LENGTH = vector.length();
 
-        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
+        const auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {
