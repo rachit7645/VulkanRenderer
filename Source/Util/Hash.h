@@ -30,6 +30,27 @@ namespace Util
 
         return seed;
     }
+
+    consteval u64 FNV1A(const std::string_view string)
+    {
+        constexpr u64 FNV_OFFSET_BASIS = 0xCBF29CE484222325ull;
+        constexpr u64 FNV_PRIME        = 0x100000001B3ull;
+
+        u64 hash = FNV_OFFSET_BASIS;
+
+        for (const u8 character : string)
+        {
+            hash ^= static_cast<u64>(character);
+            hash *= FNV_PRIME;
+        }
+
+        return hash;
+    }
+
+    consteval u64 StringToHash(const std::string_view string)
+    {
+        return FNV1A(string);
+    }
 }
 
 #endif

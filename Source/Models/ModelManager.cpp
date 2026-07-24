@@ -30,7 +30,7 @@ namespace Models
 
     Models::ModelID ModelManager::Load(const std::string_view path)
     {
-        const Models::ModelID id = std::hash<std::string_view>()(path);
+        const Models::ModelID id = {.value = std::hash<std::string_view>()(path)};
 
         auto iter = m_modelMap.find(id);
 
@@ -62,12 +62,12 @@ namespace Models
 
         if (iter == m_modelMap.end())
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", id);
+            Logger::Error("Invalid model ID! [ID={}]\n", id.value);
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Model already freed! [ID={}]\n", id);
+            Logger::Error("Model already freed! [ID={}]\n", id.value);
         }
 
         --iter->second.referenceCount;
@@ -84,12 +84,12 @@ namespace Models
 
         if (iter == m_modelMap.end())
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", id);
+            Logger::Error("Invalid model ID! [ID={}]\n", id.value);
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Model already freed! [ID={}]\n", id);
+            Logger::Error("Model already freed! [ID={}]\n", id.value);
         }
 
         return iter->second.model.isLoaded;
@@ -101,17 +101,17 @@ namespace Models
 
         if (iter == m_modelMap.end())
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", id);
+            Logger::Error("Invalid model ID! [ID={}]\n", id.value);
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Model already freed! [ID={}]\n", id);
+            Logger::Error("Model already freed! [ID={}]\n", id.value);
         }
 
         if (!iter->second.model.isLoaded)
         {
-            Logger::Error("Model is not loaded! [ID={}]\n", id);
+            Logger::Error("Model is not loaded! [ID={}]\n", id.value);
         }
 
         return iter->second.model;
@@ -147,7 +147,7 @@ namespace Models
 
             if (iter == m_modelMap.end())
             {
-                Logger::Warning("Attempted deletion of invalid model! [ID={}]\n", id);
+                Logger::Warning("Attempted deletion of invalid model! [ID={}]\n", id.value);
 
                 continue;
             }
@@ -183,21 +183,21 @@ namespace Models
 
             if (iter == m_modelMap.end())
             {
-                Logger::Warning("Attempted loading of invalid model! [ID={}]\n", id);
+                Logger::Warning("Attempted loading of invalid model! [ID={}]\n", id.value);
 
                 continue;
             }
 
             if (iter->second.referenceCount == 0)
             {
-                Logger::Warning("Model already freed! [ID={}]\n", id);
+                Logger::Warning("Model already freed! [ID={}]\n", id.value);
 
                 continue;
             }
 
             if (iter->second.model.isLoaded)
             {
-                Logger::Warning("Model already loaded! [ID={}]\n", id);
+                Logger::Warning("Model already loaded! [ID={}]\n", id.value);
 
                 continue;
             }

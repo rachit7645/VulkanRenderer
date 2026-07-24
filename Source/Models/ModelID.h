@@ -14,33 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef MESH_INDENTIFIER_H
-#define MESH_INDENTIFIER_H
+#ifndef MODEL_ID_H
+#define MODEL_ID_H
 
-#include "Models/ModelManager.h"
+#include "Util/Types.h"
 
 namespace Models
 {
-    struct MeshIdentifier
+    struct ModelID
     {
-        bool operator==(const MeshIdentifier& other) const noexcept;
+        bool operator==(const Models::ModelID& other) const noexcept;
 
-        Models::ModelID modelID        = {};
-        usize           localMeshIndex = 0;
+        u64 value = 0;
     };
 }
 
 template <>
-struct std::hash<Models::MeshIdentifier>
+struct std::hash<Models::ModelID>
 {
-    std::size_t operator()(const Models::MeshIdentifier& identifier) const noexcept
+    std::size_t operator()(const Models::ModelID id) const noexcept
     {
-        std::size_t hash = 0;
-
-        hash = Util::HashCombine(hash, identifier.modelID);
-        hash = Util::HashCombine(hash, identifier.localMeshIndex);
-
-        return hash;
+        return std::hash<u64>{}(id.value);
     }
 };
 

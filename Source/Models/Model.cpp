@@ -47,7 +47,7 @@ namespace Models
 
         if (isLoaded)
         {
-            Logger::Error("Model already loaded! [Path={}]", path);
+            Logger::Error("Model already loaded! [Path={}]", filePath);
         }
 
         path = std::string(filePath);

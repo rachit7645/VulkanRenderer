@@ -18,6 +18,7 @@
 #define MODEL_MANAGER_H
 
 #include "Model.h"
+#include "ModelID.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/CommandBufferAllocator.h"
@@ -26,8 +27,6 @@
 
 namespace Models
 {
-    using ModelID = u64;
-
     class ModelManager
     {
     public:
