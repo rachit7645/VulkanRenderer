@@ -28,17 +28,7 @@ namespace Models
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
-    void Model::LoadFromFile
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view filePath
-    )
+    void Model::LoadFromFile(Models::LoadFromFileInfo& loadInfo, const std::string_view filePath)
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
@@ -108,13 +98,7 @@ namespace Models
 
         ProcessScenes
         (
-            device,
-            allocator,
-            geometryBuffer,
-            textureManager,
-            stagingPool,
-            executor,
-            deletionQueue,
+            loadInfo,
             assetDirectory,
             asset.get()
         );
@@ -124,13 +108,7 @@ namespace Models
 
     void Model::ProcessScenes
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
+        Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset
     )
@@ -145,13 +123,7 @@ namespace Models
             {
                 ProcessNode
                 (
-                    device,
-                    allocator,
-                    geometryBuffer,
-                    textureManager,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
+                    loadInfo,
                     directory,
                     asset,
                     nodeIndex,
@@ -163,13 +135,7 @@ namespace Models
 
     void Model::ProcessNode
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
+        Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         usize nodeIndex,
@@ -188,13 +154,7 @@ namespace Models
         {
             LoadMesh
             (
-                device,
-                allocator,
-                geometryBuffer,
-                textureManager,
-                stagingPool,
-                executor,
-                deletionQueue,
+                loadInfo,
                 directory,
                 asset,
                 asset.meshes[node.meshIndex.value()],
@@ -211,13 +171,7 @@ namespace Models
         {
             ProcessNode
             (
-                device,
-                allocator,
-                geometryBuffer,
-                textureManager,
-                stagingPool,
-                executor,
-                deletionQueue,
+                loadInfo,
                 directory,
                 asset,
                 child,
@@ -228,13 +182,7 @@ namespace Models
 
     void Model::LoadMesh
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
+        Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         const fastgltf::Mesh& mesh,
@@ -284,13 +232,13 @@ namespace Models
                     );
                 }
 
-                const auto [data, info] = geometryBuffer.indexBuffer.Allocate
+                const auto [data, info] = loadInfo.geometryBuffer.indexBuffer.Allocate
                 (
-                    device,
-                    allocator,
+                    loadInfo.device,
+                    loadInfo.allocator,
                     indicesAccessor.count,
-                    stagingPool,
-                    deletionQueue
+                    loadInfo.stagingPool,
+                    loadInfo.deletionQueue
                 );
 
                 surfaceInfo.indexInfo = info;
@@ -379,13 +327,13 @@ namespace Models
                     fastgltf::AccessorType::Vec3
                 );
 
-                vertexAllocation = geometryBuffer.vertexBuffer.Allocate
+                vertexAllocation = loadInfo.geometryBuffer.vertexBuffer.Allocate
                 (
                     positionAccessor.count,
-                    device,
-                    allocator,
-                    stagingPool,
-                    deletionQueue
+                    loadInfo.device,
+                    loadInfo.allocator,
+                    loadInfo.stagingPool,
+                    loadInfo.deletionQueue
                 );
 
                 surfaceInfo.vertexInfo = vertexAllocation.info;
@@ -548,12 +496,7 @@ namespace Models
 
                 const auto textureInfo = LoadTexture
                 (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
+                    loadInfo,
                     directory,
                     asset,
                     baseColorTexture,
@@ -578,12 +521,7 @@ namespace Models
 
                 const auto textureInfo = LoadTexture
                 (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
+                    loadInfo,
                     directory,
                     asset,
                     normalTexture,
@@ -608,12 +546,7 @@ namespace Models
 
                 const auto textureInfo = LoadTexture
                 (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
+                    loadInfo,
                     directory,
                     asset,
                     metallicRoughnessTexture,
@@ -638,12 +571,7 @@ namespace Models
 
                 const auto textureInfo = LoadTexture
                 (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
+                    loadInfo,
                     directory,
                     asset,
                     emissiveTexture,
@@ -716,12 +644,7 @@ namespace Models
     requires fastgltf::IsTextureInfo<T>
     Model::TextureInfo Model::LoadTexture
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue,
+        Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         const std::optional<T>& textureInfo,
@@ -735,13 +658,13 @@ namespace Models
 
         if (!textureInfo.has_value())
         {
-            const auto id = textureManager.AddTexture
+            const auto id = loadInfo.textureManager.AddTexture
             (
-                device,
-                allocator,
-                stagingPool,
-                executor,
-                deletionQueue,
+                loadInfo.device,
+                loadInfo.allocator,
+                loadInfo.stagingPool,
+                loadInfo.executor,
+                loadInfo.deletionQueue,
                 Vk::ImageUpload{
                     .type   = Vk::ImageUploadType::RAW,
                     .flags  = Vk::ImageUploadFlags::None,
@@ -831,13 +754,13 @@ namespace Models
                     );
                 }
 
-                return textureManager.AddTexture
+                return loadInfo.textureManager.AddTexture
                 (
-                    device,
-                    allocator,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
+                    loadInfo.device,
+                    loadInfo.allocator,
+                    loadInfo.stagingPool,
+                    loadInfo.executor,
+                    loadInfo.deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
                         .flags  = flags,
@@ -852,13 +775,13 @@ namespace Models
                 const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data());
                 const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + array.bytes.size());
 
-                return textureManager.AddTexture
+                return loadInfo.textureManager.AddTexture
                 (
-                    device,
-                    allocator,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
+                    loadInfo.device,
+                    loadInfo.allocator,
+                    loadInfo.stagingPool,
+                    loadInfo.executor,
+                    loadInfo.deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
                         .flags  = flags,
@@ -892,13 +815,13 @@ namespace Models
                         const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset);
                         const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + bufferView.byteLength);
 
-                        return textureManager.AddTexture
+                        return loadInfo.textureManager.AddTexture
                         (
-                            device,
-                            allocator,
-                            stagingPool,
-                            executor,
-                            deletionQueue,
+                            loadInfo.device,
+                            loadInfo.allocator,
+                            loadInfo.stagingPool,
+                            loadInfo.executor,
+                            loadInfo.deletionQueue,
                             Vk::ImageUpload{
                                 .type   = type,
                                 .flags  = flags,

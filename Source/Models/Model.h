@@ -29,20 +29,24 @@
 
 namespace Models
 {
+    struct LoadFromFileInfo
+    {
+        VkDevice     device    = VK_NULL_HANDLE;
+        VmaAllocator allocator = VK_NULL_HANDLE;
+
+        Vk::GeometryBuffer&  geometryBuffer;
+        Vk::TextureManager&  textureManager;
+        Vk::StagingPool&     stagingPool;
+
+        tf::Executor& executor;
+
+        Util::DeletionQueue& deletionQueue;
+    };
+
     class Model
     {
     public:
-        void LoadFromFile
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view filePath
-        );
+        void LoadFromFile(Models::LoadFromFileInfo& loadInfo, const std::string_view filePath);
 
         void Destroy
         (
@@ -69,26 +73,14 @@ namespace Models
 
         void ProcessScenes
         (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset
         );
 
         void ProcessNode
         (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             usize nodeIndex,
@@ -97,13 +89,7 @@ namespace Models
 
         void LoadMesh
         (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             const fastgltf::Mesh& mesh,
@@ -116,12 +102,7 @@ namespace Models
         requires fastgltf::IsTextureInfo<T>
         [[nodiscard]] Model::TextureInfo LoadTexture
         (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             const std::optional<T>& textureInfo,

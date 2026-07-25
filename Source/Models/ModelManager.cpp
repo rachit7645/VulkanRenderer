@@ -177,6 +177,17 @@ namespace Models
 
         std::vector<std::future<void>> modelLoadFutures = {};
 
+        Models::LoadFromFileInfo loadFromFileInfo =
+        {
+            .device         = device,
+            .allocator      = allocator,
+            .geometryBuffer = geometryBuffer,
+            .textureManager = textureManager,
+            .stagingPool    = stagingPool,
+            .executor       = executor,
+            .deletionQueue  = deletionQueue
+        };
+
         for (const auto& [id, path] : m_requestedModelLoads)
         {
             const auto iter = m_modelMap.find(id);
@@ -202,19 +213,9 @@ namespace Models
                 continue;
             }
 
-            modelLoadFutures.emplace_back(executor.async([this, path, device, allocator, &stagingPool, &executor, &deletionQueue, &model = iter->second.model] () mutable
+            modelLoadFutures.emplace_back(executor.async([path, loadFromFileInfo, &model = iter->second.model] () mutable
             {
-                model.LoadFromFile
-                (
-                    device,
-                    allocator,
-                    geometryBuffer,
-                    textureManager,
-                    stagingPool,
-                    executor,
-                    deletionQueue,
-                    path
-                );
+                model.LoadFromFile(loadFromFileInfo, path);
             }));
         }
 
