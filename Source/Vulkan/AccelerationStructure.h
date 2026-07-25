@@ -42,6 +42,7 @@ namespace Vk
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
+            const Vk::GeometryBuffer& geometryBuffer,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
             Util::DeletionQueue& deletionQueue

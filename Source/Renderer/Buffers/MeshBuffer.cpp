@@ -98,6 +98,7 @@ namespace Renderer::Buffers
         usize frameIndex,
         VmaAllocator allocator,
         const Models::ModelManager& modelManager,
+        const Vk::TextureManager& textureManager,
         const std::vector<Renderer::RenderObject>& renderObjects
     )
     {
@@ -131,7 +132,7 @@ namespace Renderer::Buffers
                 meshes.emplace_back
                 (
                     mesh.surfaceInfo,
-                    mesh.material.Convert(modelManager.textureManager),
+                    mesh.material.Convert(textureManager),
                     mesh.aabb
                 );
             }

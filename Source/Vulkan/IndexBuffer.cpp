@@ -182,6 +182,8 @@ namespace Vk
 
         if (m_pendingUploads.empty())
         {
+            Vk::EndLabel(cmdBuffer);
+
             return;
         }
 
@@ -261,16 +263,16 @@ namespace Vk
 
         barrierWriter.Execute(cmdBuffer);
 
-        Vk::EndLabel(cmdBuffer);
-
         m_pendingUploads.clear();
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     bool IndexBuffer::HasPendingUploads()
     {
         const std::scoped_lock lock{m_mutex};
 
-        return !m_pendingUploads.empty();
+        return !m_pendingUploads.empty() || m_resizeInfo.has_value();
     }
 
     void IndexBuffer::ImGuiDisplay()

@@ -142,6 +142,8 @@ namespace Renderer
         Vk::MegaSet            m_megaSet;
         Vk::StagingPool        m_stagingPool;
         Vk::FramebufferManager m_framebufferManager;
+        Vk::GeometryBuffer     m_geometryBuffer;
+        Vk::TextureManager     m_textureManager;
         Models::ModelManager   m_modelManager;
         Vk::PipelineManager    m_pipelineManager;
         Vk::ImageDownloader    m_imageDownloader;

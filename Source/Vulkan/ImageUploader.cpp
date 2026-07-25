@@ -29,6 +29,7 @@
 #include "Util/Files.h"
 #include "Externals/STB.h"
 #include "Externals/OpenEXR.h"
+#include "Vulkan/DebugUtils.h"
 
 #ifdef ENGINE_PROFILE
 #include "Externals/Tracy.h"
@@ -215,6 +216,8 @@ namespace Vk
             return;
         }
 
+        Vk::BeginLabel(cmdBuffer, "ImageUploader::FlushUploads", {0.6117f, 0.8196f, 0.0313f, 1.0f});
+
         Vk::BarrierWriter barrierWriter = {};
 
         // ? -> Transfer Destination
@@ -343,6 +346,8 @@ namespace Vk
         barrierWriter.Clear();
 
         m_pendingUploads.clear();
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     bool ImageUploader::HasPendingUploads()

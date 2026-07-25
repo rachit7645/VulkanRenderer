@@ -30,10 +30,6 @@ namespace Models
     class ModelManager
     {
     public:
-        explicit ModelManager(const Vk::Context& context, Vk::StagingPool& stagingPool);
-
-        void Destroy(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool);
-
         [[nodiscard]] Models::ModelID Load(const std::string_view path);
 
         void Free(Models::ModelID id);
@@ -49,14 +45,13 @@ namespace Models
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );
 
         void ImGuiDisplay();
-
-        Vk::GeometryBuffer geometryBuffer;
-        Vk::TextureManager textureManager;
     private:
         struct ModelInfo
         {

@@ -143,7 +143,8 @@ namespace Renderer::Depth
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
@@ -241,7 +242,7 @@ namespace Renderer::Depth
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        modelManager.geometryBuffer.Bind(cmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
         // Opaque
         {
@@ -261,7 +262,7 @@ namespace Renderer::Depth
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                    .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
                 opaquePipeline.PushConstants
@@ -297,7 +298,7 @@ namespace Renderer::Depth
                     .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                    .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
                 opaquePipeline.PushConstants
@@ -343,9 +344,9 @@ namespace Renderer::Depth
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 alphaMaskedPipeline.PushConstants
@@ -381,9 +382,9 @@ namespace Renderer::Depth
                     .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 alphaMaskedPipeline.PushConstants

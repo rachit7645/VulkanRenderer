@@ -43,7 +43,8 @@ namespace Renderer::Skybox
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Models::ModelManager& modelManager,
+            const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Objects::Samplers& samplers,
             const IBL::IBLMaps& iblMaps

@@ -165,7 +165,8 @@ namespace Renderer::IBL
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::Samplers& samplers,
-        Models::ModelManager& modelManager,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
         Vk::ImageDownloader& imageDownloader,
@@ -188,7 +189,7 @@ namespace Renderer::IBL
                 (
                     context.device,
                     context.allocator,
-                    modelManager.textureManager,
+                    textureManager,
                     megaSet,
                     deletionQueue
                 );
@@ -208,7 +209,8 @@ namespace Renderer::IBL
                     context,
                     formatHelper,
                     samplers,
-                    modelManager,
+                    geometryBuffer,
+                    textureManager,
                     megaSet,
                     stagingPool,
                     imageDownloader,
@@ -281,7 +283,8 @@ namespace Renderer::IBL
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::Samplers& samplers,
-        Models::ModelManager& modelManager,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
         Vk::ImageDownloader& imageDownloader,
@@ -295,7 +298,8 @@ namespace Renderer::IBL
         (
             cmdBuffer,
             context,
-            modelManager,
+            geometryBuffer,
+            textureManager,
             megaSet,
             stagingPool,
             executor,
@@ -309,13 +313,14 @@ namespace Renderer::IBL
             context,
             formatHelper,
             samplers,
-            modelManager,
+            geometryBuffer,
+            textureManager,
             megaSet,
             hdrMapID,
             deletionQueue
         );
 
-        modelManager.textureManager.DestroyTexture
+        textureManager.DestroyTexture
         (
             hdrMapID,
             context.device,
@@ -331,7 +336,8 @@ namespace Renderer::IBL
             context,
             formatHelper,
             samplers,
-            modelManager,
+            geometryBuffer,
+            textureManager,
             megaSet,
             skyboxID
         );
@@ -343,7 +349,8 @@ namespace Renderer::IBL
             context,
             formatHelper,
             samplers,
-            modelManager,
+            geometryBuffer,
+            textureManager,
             megaSet,
             skyboxID,
             deletionQueue
@@ -354,7 +361,7 @@ namespace Renderer::IBL
             cmdBuffer,
             context,
             formatHelper,
-            modelManager,
+            textureManager,
             megaSet,
             skyboxID,
             deletionQueue
@@ -365,7 +372,7 @@ namespace Renderer::IBL
             cmdBuffer,
             pipelineManager,
             context,
-            modelManager.textureManager,
+            textureManager,
             stagingPool,
             megaSet,
             imageDownloader,
@@ -388,7 +395,8 @@ namespace Renderer::IBL
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
-        Models::ModelManager& modelManager,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
         tf::Executor& executor,
@@ -397,7 +405,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
 
-        const auto hdrMapID = modelManager.textureManager.AddTexture
+        const auto hdrMapID = textureManager.AddTexture
         (
             context.device,
             context.allocator,
@@ -413,16 +421,18 @@ namespace Renderer::IBL
             }
         );
 
-        modelManager.Update
+        // TODO: Add a way to only finish loading what is needed for a specific pass
+
+        geometryBuffer.Update
         (
             cmdBuffer,
             context.device,
             context.allocator,
-            megaSet,
             stagingPool,
-            executor,
             deletionQueue
         );
+
+        textureManager.Update(cmdBuffer, context.device, megaSet);
 
         Vk::EndLabel(cmdBuffer);
 
@@ -436,7 +446,8 @@ namespace Renderer::IBL
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::Samplers& samplers,
-        Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID hdrMapID,
         Util::DeletionQueue& deletionQueue
@@ -559,10 +570,10 @@ namespace Renderer::IBL
 
         const auto constants = EquirectangularToCubemap::Constants
         {
-            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
-            .SamplerIndex = modelManager.textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
-            .TextureIndex = modelManager.textureManager.GetTexture(hdrMapID).descriptorID
+            .SamplerIndex = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+            .TextureIndex = textureManager.GetTexture(hdrMapID).descriptorID
         };
 
         pipeline.PushConstants
@@ -626,7 +637,7 @@ namespace Renderer::IBL
             }
         );
 
-        const auto skyboxID = modelManager.textureManager.AddTexture
+        const auto skyboxID = textureManager.AddTexture
         (
             megaSet,
             context.device,
@@ -650,7 +661,8 @@ namespace Renderer::IBL
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::Samplers& samplers,
-        Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID
     )
@@ -772,10 +784,10 @@ namespace Renderer::IBL
 
         const auto constants = Irradiance::Constants
         {
-            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
             .Matrices     = m_matrixBuffer.deviceAddress,
-            .SamplerIndex = modelManager.textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
-            .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID
+            .SamplerIndex = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+            .EnvMapIndex  = textureManager.GetTexture(skyboxID).descriptorID
         };
 
         pipeline.PushConstants
@@ -819,7 +831,7 @@ namespace Renderer::IBL
 
         Vk::EndLabel(cmdBuffer);
 
-        return modelManager.textureManager.AddTexture
+        return textureManager.AddTexture
         (
             megaSet,
             context.device,
@@ -836,7 +848,8 @@ namespace Renderer::IBL
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
         const Objects::Samplers& samplers,
-        Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID,
         Util::DeletionQueue& deletionQueue
@@ -971,10 +984,10 @@ namespace Renderer::IBL
 
             const auto constants = PreFilter::Constants
             {
-                .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+                .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
                 .Matrices     = m_matrixBuffer.deviceAddress,
-                .SamplerIndex = modelManager.textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
-                .EnvMapIndex  = modelManager.textureManager.GetTexture(skyboxID).descriptorID ,
+                .SamplerIndex = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+                .EnvMapIndex  = textureManager.GetTexture(skyboxID).descriptorID ,
                 .Roughness    = roughness,
                 .SampleCount  = sampleCount
             };
@@ -1037,7 +1050,7 @@ namespace Renderer::IBL
             }
         );
 
-        const auto preFilterID = modelManager.textureManager.AddTexture
+        const auto preFilterID = textureManager.AddTexture
         (
             megaSet,
             context.device,
@@ -1062,7 +1075,7 @@ namespace Renderer::IBL
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::Context& context,
         const Vk::FormatHelper& formatHelper,
-        Models::ModelManager& modelManager,
+        Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID,
         Util::DeletionQueue& deletionQueue
@@ -1070,7 +1083,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Shrink Skybox", {0.2928f, 0.2794f, 0.6607f, 1.0f});
 
-        const auto& skyboxWithMipmaps = modelManager.textureManager.GetTexture(skyboxID);
+        const auto& skyboxWithMipmaps = textureManager.GetTexture(skyboxID);
 
         const auto skybox = Vk::Image
         (
@@ -1186,7 +1199,7 @@ namespace Renderer::IBL
             }
         );
 
-        modelManager.textureManager.DestroyTexture
+        textureManager.DestroyTexture
         (
             skyboxID,
             context.device,
@@ -1209,7 +1222,7 @@ namespace Renderer::IBL
             }
         );
 
-        skyboxID = modelManager.textureManager.AddTexture
+        skyboxID = textureManager.AddTexture
         (
             megaSet,
             context.device,

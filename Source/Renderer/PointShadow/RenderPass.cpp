@@ -159,7 +159,8 @@ namespace Renderer::PointShadow
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
@@ -243,7 +244,7 @@ namespace Renderer::PointShadow
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        modelManager.geometryBuffer.Bind(cmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
         for (usize i = 0; i < sceneBuffer.shadowedPointLights.size(); ++i)
         {
@@ -330,7 +331,7 @@ namespace Renderer::PointShadow
                             .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress,
                             .LightIndex      = static_cast<u32>(i),
                             .FaceIndex       = static_cast<u32>(face)
                         };
@@ -368,7 +369,7 @@ namespace Renderer::PointShadow
                             .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress,
                             .LightIndex      = static_cast<u32>(i),
                             .FaceIndex       = static_cast<u32>(face)
                         };
@@ -416,9 +417,9 @@ namespace Renderer::PointShadow
                             .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                            .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                            .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+                            .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                            .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
                             .LightIndex          = static_cast<u32>(i),
                             .FaceIndex           = static_cast<u32>(face)
                         };
@@ -456,9 +457,9 @@ namespace Renderer::PointShadow
                             .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                             .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                            .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                            .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+                            .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                            .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
                             .LightIndex          = static_cast<u32>(i),
                             .FaceIndex           = static_cast<u32>(face)
                         };

@@ -41,8 +41,8 @@ namespace Renderer
           m_graphicsTimeline{m_context.device},
           m_formatHelper{m_context.physicalDevice},
           m_megaSet{m_context},
-          m_modelManager{m_context, m_stagingPool},
-          m_samplers{m_context, m_megaSet, m_modelManager.textureManager},
+          m_geometryBuffer{m_context, m_stagingPool},
+          m_samplers{m_context, m_megaSet, m_textureManager},
           m_toneMap{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_depth{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_imGui{m_swapchain, m_megaSet, m_pipelineManager},
@@ -91,7 +91,8 @@ namespace Renderer
 
             m_megaSet.Destroy(m_context.device);
             m_framebufferManager.Destroy(m_context.device, m_context.allocator);
-            m_modelManager.Destroy(m_context.device, m_context.allocator, m_stagingPool);
+            m_geometryBuffer.Destroy(m_context.allocator, m_stagingPool);
+            m_textureManager.Destroy(m_context.device, m_context.allocator);
             m_pipelineManager.Destroy(m_context.device);
             m_imageDownloader.Destroy(m_context.allocator);
             m_stagingPool.Destroy(m_context.allocator);
@@ -305,7 +306,7 @@ namespace Renderer
             const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
             const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBAO/NoisyAO");
             const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBAO/Occlusion");
-            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbao.hilbertLUT);
+            const auto& hilbertLUT                = m_textureManager.GetTexture(m_vbao.hilbertLUT);
 
             barrierWriter
             .WriteImageBarrier(
@@ -706,7 +707,7 @@ namespace Renderer
             const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
             const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBAO/NoisyAO");
             const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBAO/Occlusion");
-            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbao.hilbertLUT);
+            const auto& hilbertLUT                = m_textureManager.GetTexture(m_vbao.hilbertLUT);
 
             barrierWriter
             .WriteImageBarrier(
@@ -1084,7 +1085,7 @@ namespace Renderer
             const auto& depthDifferences       = m_framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
             const auto& noisyAO                = m_framebufferManager.GetFramebuffer("VBAO/NoisyAO");
             const auto& occlusion              = m_framebufferManager.GetFramebuffer("VBAO/Occlusion");
-            const auto& hilbertLUT                = m_modelManager.textureManager.GetTexture(m_vbao.hilbertLUT);
+            const auto& hilbertLUT                = m_textureManager.GetTexture(m_vbao.hilbertLUT);
 
             barrierWriter
             .WriteImageBarrier(
@@ -1328,6 +1329,7 @@ namespace Renderer
                 m_frameIndex,
                 cmdBuffer,
                 m_context,
+                m_geometryBuffer,
                 m_modelManager,
                 m_sceneEditor.scene->renderObjects,
                 m_deletionQueues[m_FIF]
@@ -1361,7 +1363,8 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager,
+            m_geometryBuffer,
+            m_textureManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
@@ -1377,7 +1380,8 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager,
+            m_geometryBuffer,
+            m_textureManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
@@ -1393,7 +1397,8 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager,
+            m_geometryBuffer,
+            m_textureManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
@@ -1409,7 +1414,8 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager,
+            m_geometryBuffer,
+            m_textureManager,
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
@@ -1438,7 +1444,7 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager,
+            m_textureManager,
             sceneBuffers,
             m_samplers,
             sceneDepthID,
@@ -1469,7 +1475,8 @@ namespace Renderer
                 m_renderConfig,
                 m_context,
                 m_megaSet,
-                m_modelManager,
+                m_geometryBuffer,
+                m_textureManager,
                 m_pipelineManager,
                 m_framebufferManager,
                 m_sceneBuffer,
@@ -1505,7 +1512,7 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager,
+            m_textureManager,
             m_sceneBuffer,
             m_samplers,
             m_tiledLightIndexBuffer,
@@ -1519,7 +1526,7 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager,
+            m_textureManager,
             m_sceneBuffer,
             m_tiledLightIndexBuffer,
             m_samplers,
@@ -1533,7 +1540,8 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager,
+            m_geometryBuffer,
+            m_textureManager,
             m_sceneBuffer,
             m_samplers,
             m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID)
@@ -1548,7 +1556,7 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager,
+            m_textureManager,
             m_exposureBuffer,
             m_samplers,
             m_frameCounter
@@ -1560,7 +1568,7 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager,
+            m_textureManager,
             m_samplers
         );
 
@@ -1570,7 +1578,7 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_modelManager.textureManager,
+            m_textureManager,
             m_samplers
         );
 
@@ -1605,7 +1613,7 @@ namespace Renderer
             m_samplers,
             m_megaSet,
             m_stagingPool,
-            m_modelManager,
+            m_textureManager,
             m_executor,
             m_deletionQueues[m_FIF]
         );
@@ -1760,7 +1768,7 @@ namespace Renderer
                 m_pipelineManager,
                 m_framebufferManager,
                 m_megaSet,
-                m_modelManager.textureManager,
+                m_textureManager,
                 m_samplers
             );
 
@@ -1965,6 +1973,7 @@ namespace Renderer
             m_modelManager,
             m_iblGenerator,
             m_megaSet,
+            m_textureManager,
             m_deletionQueues[m_FIF]
         );
 
@@ -1985,7 +1994,8 @@ namespace Renderer
             m_context,
             m_formatHelper,
             m_samplers,
-            m_modelManager,
+            m_geometryBuffer,
+            m_textureManager,
             m_megaSet,
             m_stagingPool,
             m_imageDownloader,
@@ -2000,8 +2010,26 @@ namespace Renderer
             m_context.allocator,
             m_megaSet,
             m_stagingPool,
+            m_geometryBuffer,
+            m_textureManager,
             m_executor,
             m_deletionQueues[m_FIF]
+        );
+
+        m_geometryBuffer.Update
+        (
+            cmdBuffer,
+            m_context.device,
+            m_context.allocator,
+            m_stagingPool,
+            m_deletionQueues[m_FIF]
+        );
+
+        m_textureManager.Update
+        (
+            cmdBuffer,
+            m_context.device,
+            m_megaSet
         );
 
         m_imageDownloader.Update
@@ -2031,6 +2059,7 @@ namespace Renderer
             m_frameIndex,
             m_context.allocator,
             m_modelManager,
+            m_textureManager,
             m_sceneEditor.scene->renderObjects
         );
 
@@ -2042,7 +2071,7 @@ namespace Renderer
             m_framebufferManager.renderExtent,
             m_framebufferManager.displayExtent,
             m_megaSet,
-            m_modelManager.textureManager,
+            m_textureManager,
             m_deletionQueues[m_FIF]
         );
 
@@ -2062,6 +2091,8 @@ namespace Renderer
             if (ImGui::BeginMenu("Renderer"))
             {
                 m_modelManager.ImGuiDisplay();
+                m_geometryBuffer.ImGuiDisplay();
+                m_textureManager.ImGuiDisplay();
                 m_framebufferManager.ImGuiDisplay();
                 m_megaSet.ImGuiDisplay();
                 m_pipelineManager.ImGuiDisplay();
@@ -2440,7 +2471,7 @@ namespace Renderer
                 const auto* HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
                 const auto* HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
 
-                m_vbao.hilbertLUT = m_modelManager.textureManager.AddTexture
+                m_vbao.hilbertLUT = m_textureManager.AddTexture
                 (
                     m_context.device,
                     m_context.allocator,
@@ -2460,16 +2491,7 @@ namespace Renderer
                     }
                 );
 
-                m_modelManager.Update
-                (
-                    cmdBuffer,
-                    m_context.device,
-                    m_context.allocator,
-                    m_megaSet,
-                    m_stagingPool,
-                    m_executor,
-                    m_deletionQueues[m_FIF]
-                );
+                m_textureManager.Update(cmdBuffer, m_context.device, m_megaSet);
             }
         );
 

@@ -16,7 +16,6 @@
 
 #include "RenderPass.h"
 
-#include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 #include "Deferred/GBuffer.h"
 
@@ -303,7 +302,8 @@ namespace Renderer::GBuffer
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
@@ -461,7 +461,7 @@ namespace Renderer::GBuffer
             .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
         };
 
-        const VkRenderingAttachmentInfo gEmmisiveInfo =
+        const VkRenderingAttachmentInfo gEmissiveInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
@@ -508,7 +508,7 @@ namespace Renderer::GBuffer
             gAlbedoInfo,
             gNormalInfo,
             gRghMtlHrzInfo,
-            gEmmisiveInfo,
+            gEmissiveInfo,
             gMotionVectorsInfo
         };
 
@@ -551,7 +551,7 @@ namespace Renderer::GBuffer
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        modelManager.geometryBuffer.Bind(cmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
         // Single Sided
         {
@@ -572,10 +572,10 @@ namespace Renderer::GBuffer
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .Vertices            = geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 singleSidedPipeline.PushConstants
@@ -611,10 +611,10 @@ namespace Renderer::GBuffer
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .Vertices            = geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 singleSidedPipeline.PushConstants
@@ -660,10 +660,10 @@ namespace Renderer::GBuffer
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .Vertices            = geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 doubleSidedPipeline.PushConstants
@@ -699,10 +699,10 @@ namespace Renderer::GBuffer
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .Vertices            = modelManager.geometryBuffer.GetVertexBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .Vertices            = geometryBuffer.GetVertexBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 doubleSidedPipeline.PushConstants

@@ -251,7 +251,7 @@ namespace Vk
     {
         const std::scoped_lock lock{m_mutex};
 
-        Vk::BeginLabel(cmdBuffer, "Vertex Buffer v2 Update", {0.5882f, 0.9294f, 0.2118f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "VertexBuffer::Update", {0.5882f, 0.9294f, 0.2118f, 1.0f});
 
         Resize
         (
@@ -263,6 +263,8 @@ namespace Vk
 
         if (m_pendingUploads.empty())
         {
+            Vk::EndLabel(cmdBuffer);
+
             return;
         }
 
@@ -464,7 +466,7 @@ namespace Vk
     {
         const std::scoped_lock lock{m_mutex};
 
-        return !m_pendingUploads.empty();
+        return !m_pendingUploads.empty() || m_resizeInfo.has_value();
     }
 
     void VertexBuffer::ImGuiDisplay()

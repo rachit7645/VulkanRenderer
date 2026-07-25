@@ -62,7 +62,7 @@ namespace Vk
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "GeometryBuffer::Update", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
         indexBuffer.Update
         (
@@ -79,8 +79,6 @@ namespace Vk
             allocator,
             deletionQueue
         );
-
-        Vk::EndLabel(cmdBuffer);
 
         if (m_pendingCubeUpload.has_value())
         {
@@ -122,6 +120,13 @@ namespace Vk
                 }
             );
 
+            deletionQueue.Push([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
+            {
+                stagingPool.Free(stagingMemoryBlock);
+            });
+
+            m_pendingCubeUpload = std::nullopt;
+
             Vk::EndLabel(cmdBuffer);
         }
 
@@ -131,16 +136,6 @@ namespace Vk
         Vk::SetDebugName(device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
         Vk::SetDebugName(device, GetUVBuffer().handle,       "GeometryBuffer/UVBuffer");
         Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
-
-        if (m_pendingCubeUpload.has_value())
-        {
-            deletionQueue.Push([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
-            {
-                stagingPool.Free(stagingMemoryBlock);
-            });
-
-            m_pendingCubeUpload = std::nullopt;
-        }
     }
 
     void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue)

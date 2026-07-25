@@ -17,7 +17,6 @@
 #include "RayDispatch.h"
 
 #include "Vulkan/DebugUtils.h"
-#include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Renderer/Util/Jitter.h"
 #include "Shadows/ShadowRT.h"
@@ -92,7 +91,8 @@ namespace Renderer::ShadowRT
         const Renderer::RenderConfig& renderConfig,
         const Vk::Context& context,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
@@ -150,10 +150,10 @@ namespace Renderer::ShadowRT
             .TLAS                = accelerationStructure.topLevelASes[FIF].deviceAddress,
             .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
             .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
-            .Indices             = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress,
-            .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-            .GBufferSamplerIndex = modelManager.textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+            .Indices             = geometryBuffer.indexBuffer.buffer.deviceAddress,
+            .UVs                 = geometryBuffer.vertexBuffer.uvBuffer.deviceAddress,
+            .GBufferSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
             .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
             .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .OutputImage         = shadowMapView.storageImageID,

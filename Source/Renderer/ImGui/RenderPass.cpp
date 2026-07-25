@@ -73,7 +73,7 @@ namespace Renderer::DearImGui
         const Objects::Samplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Models::ModelManager& modelManager,
+        Vk::TextureManager& textureManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
@@ -97,7 +97,7 @@ namespace Renderer::DearImGui
                 samplers,
                 megaSet,
                 stagingPool,
-                modelManager,
+                textureManager,
                 executor,
                 deletionQueue,
                 drawData
@@ -139,7 +139,7 @@ namespace Renderer::DearImGui
         const Objects::Samplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Models::ModelManager& modelManager,
+        Vk::TextureManager& textureManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
@@ -175,7 +175,7 @@ namespace Renderer::DearImGui
             cmdBuffer,
             megaSet,
             stagingPool,
-            modelManager,
+            textureManager,
             executor,
             deletionQueue,
             drawData
@@ -245,7 +245,7 @@ namespace Renderer::DearImGui
         constants.Vertices     = currentVertexBuffer.deviceAddress;
         constants.Scale        = glm::vec2(2.0f) / displaySize;
         constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
-        constants.SamplerIndex = modelManager.textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
+        constants.SamplerIndex = textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
 
         pipeline.PushConstants
         (
@@ -445,7 +445,7 @@ namespace Renderer::DearImGui
         const Vk::CommandBuffer& cmdBuffer,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Models::ModelManager& modelManager,
+        Vk::TextureManager& textureManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
@@ -477,7 +477,7 @@ namespace Renderer::DearImGui
 
                 const auto* pixels = static_cast<u8*>(texture->GetPixels());
 
-                const auto id = modelManager.textureManager.AddTexture
+                const auto id = textureManager.AddTexture
                 (
                     device,
                     allocator,
@@ -516,7 +516,7 @@ namespace Renderer::DearImGui
                     std::memcpy(dstRow, srcRow, rowPitch);
                 }
 
-                modelManager.textureManager.UpdateTexture
+                textureManager.UpdateTexture
                 (
                     id,
                     device,
@@ -539,7 +539,7 @@ namespace Renderer::DearImGui
             {
                 const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
 
-                modelManager.textureManager.DestroyTexture
+                textureManager.DestroyTexture
                 (
                     id,
                     device,
@@ -554,16 +554,7 @@ namespace Renderer::DearImGui
             }
         }
 
-        modelManager.Update
-        (
-            cmdBuffer,
-            device,
-            allocator,
-            megaSet,
-            stagingPool,
-            executor,
-            deletionQueue
-        );
+        textureManager.Update(cmdBuffer, device, megaSet);
 
         for (auto* texture : *drawData->Textures)
         {
@@ -574,7 +565,7 @@ namespace Renderer::DearImGui
 
             const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
 
-            texture->SetTexID(modelManager.textureManager.GetTexture(id).descriptorID);
+            texture->SetTexID(textureManager.GetTexture(id).descriptorID);
             texture->SetStatus(ImTextureStatus_OK);
         }
     }

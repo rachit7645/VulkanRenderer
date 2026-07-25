@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Vulkan/DebugUtils.h"
-#include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Skybox/Skybox.h"
 
@@ -57,7 +56,8 @@ namespace Renderer::Skybox
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Objects::Samplers& samplers,
         const IBL::IBLMaps& iblMaps
@@ -201,10 +201,10 @@ namespace Renderer::Skybox
 
         const auto constants = Skybox::Constants
         {
-            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
+            .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
             .Scene        = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-            .SamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
-            .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
+            .SamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+            .CubemapIndex = textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };
 
         pipeline.PushConstants

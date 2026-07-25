@@ -40,6 +40,7 @@ namespace Renderer::Buffers
             usize frameIndex,
             VmaAllocator allocator,
             const Models::ModelManager& modelManager,
+            const Vk::TextureManager& textureManager,
             const std::vector<Renderer::RenderObject>& renderObjects
         );
 

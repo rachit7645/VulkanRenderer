@@ -23,11 +23,6 @@
 
 namespace Models
 {
-    ModelManager::ModelManager(const Vk::Context& context, Vk::StagingPool& stagingPool)
-        : geometryBuffer(context, stagingPool)
-    {
-    }
-
     Models::ModelID ModelManager::Load(const std::string_view path)
     {
         const Models::ModelID id = {.value = std::hash<std::string_view>()(path)};
@@ -148,17 +143,13 @@ namespace Models
         VmaAllocator allocator,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
+        Vk::GeometryBuffer& geometryBuffer,
+        Vk::TextureManager& textureManager,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
     {
-        if
-        (
-            !geometryBuffer.HasPendingUploads() &&
-            !textureManager.HasPendingUploads() &&
-            m_pendingModels.empty() &&
-            m_requestedModelDeletions.empty()
-        )
+        if (m_pendingModels.empty() && m_requestedModelDeletions.empty())
         {
             return;
         }
@@ -251,17 +242,6 @@ namespace Models
 
         m_requestedModelDeletions.clear();
 
-        geometryBuffer.Update
-        (
-            cmdBuffer,
-            device,
-            allocator,
-            stagingPool,
-            deletionQueue
-        );
-
-        textureManager.Update(cmdBuffer, device, megaSet);
-
         Vk::EndLabel(cmdBuffer);
     }
 
@@ -346,19 +326,5 @@ namespace Models
                 ImGui::Separator();
             }
         }
-
-        geometryBuffer.ImGuiDisplay();
-        textureManager.ImGuiDisplay();
-    }
-
-    void ModelManager::Destroy(VkDevice device, VmaAllocator allocator, Vk::StagingPool& stagingPool)
-    {
-        geometryBuffer.Destroy(allocator, stagingPool);
-        textureManager.Destroy(device, allocator);
-
-        m_loadedModels.clear();
-        m_pendingModels.clear();
-
-        m_requestedModelDeletions.clear();
     }
 }

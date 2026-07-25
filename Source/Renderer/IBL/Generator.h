@@ -19,12 +19,12 @@
 
 #include "IBLMaps.h"
 #include "Engine/Cache.h"
-#include "Models/ModelManager.h"
 #include "Renderer/Objects/Samplers.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/FormatHelper.h"
-#include "Vulkan/GraphicsTimeline.h"
+#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/ImageDownloader.h"
+#include "Vulkan/TextureManager.h"
 
 namespace Renderer::IBL
 {
@@ -49,7 +49,8 @@ namespace Renderer::IBL
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Objects::Samplers& samplers,
-            Models::ModelManager& modelManager,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             Vk::ImageDownloader& imageDownloader,
@@ -85,7 +86,8 @@ namespace Renderer::IBL
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Objects::Samplers& samplers,
-            Models::ModelManager& modelManager,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             Vk::ImageDownloader& imageDownloader,
@@ -97,7 +99,8 @@ namespace Renderer::IBL
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
-            Models::ModelManager& modelManager,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
@@ -111,7 +114,8 @@ namespace Renderer::IBL
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Objects::Samplers& samplers,
-            Models::ModelManager& modelManager,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID hdrMapID,
             Util::DeletionQueue& deletionQueue
@@ -124,7 +128,8 @@ namespace Renderer::IBL
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Objects::Samplers& samplers,
-            Models::ModelManager& modelManager,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID
         );
@@ -136,7 +141,8 @@ namespace Renderer::IBL
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
             const Objects::Samplers& samplers,
-            Models::ModelManager& modelManager,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID,
             Util::DeletionQueue& deletionQueue
@@ -147,7 +153,7 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
             const Vk::FormatHelper& formatHelper,
-            Models::ModelManager& modelManager,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID,
             Util::DeletionQueue& deletionQueue

@@ -217,13 +217,13 @@ namespace Vk
 
         m_futuresMap.clear();
 
-        Vk::BeginLabel(cmdBuffer, "Texture Transfer", {0.6117f, 0.8196f, 0.0313f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "TextureManager::Update", {0.6117f, 0.1196f, 0.0313f, 1.0f});
 
         m_imageUploader.FlushUploads(cmdBuffer);
 
-        Vk::EndLabel(cmdBuffer);
-
         megaSet.Update(device);
+
+        Vk::EndLabel(cmdBuffer);
     }
 
     void TextureManager::UpdateTexture

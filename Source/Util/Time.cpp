@@ -25,7 +25,6 @@ namespace Util
 
     std::string GetTime()
     {
-        // TODO: why does this also print ms and us now
         return fmt::format("{:%T}", TimeClock::now());
     }
 }

@@ -35,6 +35,7 @@ namespace Engine
             Models::ModelManager& modelManager,
             Renderer::IBL::Generator& iblGenerator,
             Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -54,6 +55,7 @@ namespace Engine
             Models::ModelManager& modelManager,
             Renderer::IBL::Generator& iblGenerator,
             Vk::MegaSet& megaSet,
+            Vk::TextureManager& textureManager,
             Util::DeletionQueue& deletionQueue
         );
 
