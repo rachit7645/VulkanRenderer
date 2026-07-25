@@ -63,7 +63,6 @@ namespace Models
         std::vector<Models::Mesh>            meshes      = {};
         std::vector<Models::LocalPointLight> pointLights = {};
         std::vector<Models::LocalSpotLight>  spotLights  = {};
-        bool                                 isLoaded    = false;
     private:
         struct TextureInfo
         {

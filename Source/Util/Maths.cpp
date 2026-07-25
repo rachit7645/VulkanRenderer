@@ -18,14 +18,6 @@
 
 namespace Maths
 {
-    namespace Detail
-    {
-        glm::vec2 OctahedronWrap(const glm::vec2& vector)
-        {
-            return (1.0f - glm::abs(glm::vec2(vector.y, vector.x))) * glm::vec2(vector.x >= 0.0f ? 1.0f : -1.0f, vector.y >= 0.0f ? 1.0f : -1.0f);
-        }
-    }
-
     glm::mat4 TransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
     {
         auto matrix = glm::identity<glm::mat4>();
@@ -91,13 +83,18 @@ namespace Maths
         return result;
     }
 
+    inline glm::vec2 OctahedronWrap(const glm::vec2& vector)
+    {
+        return (1.0f - glm::abs(glm::vec2(vector.y, vector.x))) * glm::vec2(vector.x >= 0.0f ? 1.0f : -1.0f, vector.y >= 0.0f ? 1.0f : -1.0f);
+    }
+
     glm::vec2 PackOctahedron(const glm::vec3& vector)
     {
         auto result = glm::vec2(vector.x, vector.y);
 
         result /= abs(vector.x) + abs(vector.y) + abs(vector.z);
 
-        result = vector.z >= 0.0f ? result : Detail::OctahedronWrap(result);
+        result = vector.z >= 0.0f ? result : Maths::OctahedronWrap(result);
 
         return result;
     }
@@ -109,8 +106,8 @@ namespace Maths
 
         const f32 round = (value >= 0.0f ? 0.5f : -0.5f);
 
-        value = (value >= -1) ? value : -1;
-        value = (value <= +1) ? value : +1;
+        value = (value >= -1.0f) ? value : -1.0f;
+        value = (value <= +1.0f) ? value : +1.0f;
 
         return static_cast<s32>(value * scale + round);
     }

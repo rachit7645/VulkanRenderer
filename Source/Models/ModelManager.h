@@ -39,6 +39,7 @@ namespace Models
         void Free(Models::ModelID id);
 
         [[nodiscard]] bool         IsModelLoaded(Models::ModelID id) const;
+        [[nodiscard]] const Model* TryGetModel  (Models::ModelID id) const;
         [[nodiscard]] const Model& GetModel     (Models::ModelID id) const;
 
         void Update
@@ -63,10 +64,22 @@ namespace Models
             u64           referenceCount = 0;
         };
 
-        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelInfo> m_modelMap;
+        struct ModelLoadInfo
+        {
+            std::string path           = "Null/Path";
+            u64         referenceCount = 0;
+        };
 
-        ankerl::unordered_dense::map<Models::ModelID, std::string> m_requestedModelLoads;
-        ankerl::unordered_dense::set<Models::ModelID>              m_requestedModelDeletions;
+        struct LoadedModel
+        {
+            Models::ModelID         id        = {};
+            ModelManager::ModelInfo modelInfo = {};
+        };
+
+        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelInfo>     m_loadedModels;
+        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelLoadInfo> m_pendingModels;
+
+        std::vector<Models::ModelID> m_requestedModelDeletions;
     };
 }
 

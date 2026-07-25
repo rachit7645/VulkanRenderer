@@ -32,14 +32,10 @@ namespace Models
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
-        zone.NameFmt("%s", path.data());
+        zone.NameFmt("%s", filePath.data());
         #endif
 
-        if (isLoaded)
-        {
-            Logger::Error("Model already loaded! [Path={}]", filePath);
-        }
-
+        name = Files::GetNameWithoutExtension(filePath);
         path = std::string(filePath);
 
         const std::string assetPath      = Files::GetAssetPath(MODEL_ASSETS_DIR, path);
@@ -102,8 +98,6 @@ namespace Models
             assetDirectory,
             asset.get()
         );
-
-        isLoaded = true;
     }
 
     void Model::ProcessScenes

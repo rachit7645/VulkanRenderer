@@ -163,9 +163,9 @@ namespace Engine
                         {
                             std::string name = "Unknown";
 
-                            if (modelManager.IsModelLoaded(iter->modelID))
+                            if (const auto* model = modelManager.TryGetModel(iter->modelID); model != nullptr)
                             {
-                                name = modelManager.GetModel(iter->modelID).name;
+                                name = model->name;
                             }
 
                             ImGui::Text("Model | %s", name.c_str());

@@ -32,59 +32,76 @@ namespace Models
     {
         const Models::ModelID id = {.value = std::hash<std::string_view>()(path)};
 
-        auto iter = m_modelMap.find(id);
+        auto loadedIter = m_loadedModels.find(id);
 
-        if (iter != m_modelMap.end())
+        if (loadedIter != m_loadedModels.end())
         {
-            ++iter->second.referenceCount;
-        }
-        else
-        {
-            m_requestedModelLoads.emplace(id, path);
+            ++loadedIter->second.referenceCount;
 
-            m_modelMap.emplace(id, ModelInfo{
-                .model          = {
-                    .name     = Files::GetNameWithoutExtension(path),
-                    .path     = std::string(path),
-                    .meshes   = {},
-                    .isLoaded = false
-                },
-                .referenceCount = 1
-            });
+            return id;
         }
+
+        auto pendingIter = m_pendingModels.find(id);
+
+        if (pendingIter != m_pendingModels.end())
+        {
+            ++pendingIter->second.referenceCount;
+
+            return id;
+        }
+
+        m_pendingModels.emplace(id, ModelLoadInfo{
+            .path           = std::string(path),
+            .referenceCount = 1
+        });
 
         return id;
     }
 
     void ModelManager::Free(Models::ModelID id)
     {
-        const auto iter = m_modelMap.find(id);
+        const auto loadedIter = m_loadedModels.find(id);
 
-        if (iter == m_modelMap.end())
+        if (loadedIter != m_loadedModels.end())
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", id.value);
+            if (loadedIter->second.referenceCount == 0)
+            {
+                Logger::Error("Model already freed! [ID={}]\n", id.value);
+            }
+
+            --loadedIter->second.referenceCount;
+
+            if (loadedIter->second.referenceCount == 0)
+            {
+                m_requestedModelDeletions.emplace_back(id);
+            }
         }
 
-        if (iter->second.referenceCount == 0)
-        {
-            Logger::Error("Model already freed! [ID={}]\n", id.value);
-        }
+        const auto pendingIter = m_pendingModels.find(id);
 
-        --iter->second.referenceCount;
-
-        if (iter->second.referenceCount == 0)
+        if (pendingIter != m_pendingModels.end())
         {
-            m_requestedModelDeletions.emplace(id);
+            if (pendingIter->second.referenceCount == 0)
+            {
+                Logger::Error("Model already freed! [ID={}]\n", id.value);
+            }
+
+            --pendingIter->second.referenceCount;
+
+            if (pendingIter->second.referenceCount == 0)
+            {
+                m_pendingModels.erase(id);
+            }
         }
     }
 
     bool ModelManager::IsModelLoaded(Models::ModelID id) const
     {
-        const auto iter = m_modelMap.find(id);
+        const auto iter = m_loadedModels.find(id);
 
-        if (iter == m_modelMap.end())
+        if (iter == m_loadedModels.end())
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", id.value);
+            return false;
         }
 
         if (iter->second.referenceCount == 0)
@@ -92,29 +109,36 @@ namespace Models
             Logger::Error("Model already freed! [ID={}]\n", id.value);
         }
 
-        return iter->second.model.isLoaded;
+        return true;
+    }
+
+    const Model* ModelManager::TryGetModel(Models::ModelID id) const
+    {
+        const auto iter = m_loadedModels.find(id);
+
+        if (iter == m_loadedModels.end())
+        {
+            return nullptr;
+        }
+
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Model already freed! [ID={}]\n", id.value);
+        }
+
+        return &iter->second.model;
     }
 
     const Model& ModelManager::GetModel(Models::ModelID id) const
     {
-        const auto iter = m_modelMap.find(id);
+        const auto* model = TryGetModel(id);
 
-        if (iter == m_modelMap.end())
+        if (model == nullptr)
         {
-            Logger::Error("Invalid model ID! [ID={}]\n", id.value);
+            Logger::Error("Invalid Model ID! [ID={}]", id.value);
         }
 
-        if (iter->second.referenceCount == 0)
-        {
-            Logger::Error("Model already freed! [ID={}]\n", id.value);
-        }
-
-        if (!iter->second.model.isLoaded)
-        {
-            Logger::Error("Model is not loaded! [ID={}]\n", id.value);
-        }
-
-        return iter->second.model;
+        return *model;
     }
 
     void ModelManager::Update
@@ -132,7 +156,7 @@ namespace Models
         (
             !geometryBuffer.HasPendingUploads() &&
             !textureManager.HasPendingUploads() &&
-            m_requestedModelLoads.empty() &&
+            m_pendingModels.empty() &&
             m_requestedModelDeletions.empty()
         )
         {
@@ -141,41 +165,7 @@ namespace Models
 
         Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
-        for (const auto& id : m_requestedModelDeletions)
-        {
-            const auto iter = m_modelMap.find(id);
-
-            if (iter == m_modelMap.end())
-            {
-                Logger::Warning("Attempted deletion of invalid model! [ID={}]\n", id.value);
-
-                continue;
-            }
-
-            // Verify that new references to a model that was requested
-            // to be deleted have not been made in the meantime
-            if (iter->second.referenceCount != 0)
-            {
-                continue;
-            }
-
-            if (iter->second.model.isLoaded)
-            {
-                iter->second.model.Destroy
-                (
-                    device,
-                    allocator,
-                    megaSet,
-                    textureManager,
-                    geometryBuffer,
-                    deletionQueue
-                );
-            }
-
-            m_modelMap.erase(iter);
-        }
-
-        std::vector<std::future<void>> modelLoadFutures = {};
+        std::vector<std::future<ModelManager::LoadedModel>> modelLoadFutures = {};
 
         Models::LoadFromFileInfo loadFromFileInfo =
         {
@@ -188,39 +178,31 @@ namespace Models
             .deletionQueue  = deletionQueue
         };
 
-        for (const auto& [id, path] : m_requestedModelLoads)
+        for (const auto& [id, loadInfo] : m_pendingModels)
         {
-            const auto iter = m_modelMap.find(id);
-
-            if (iter == m_modelMap.end())
+            if (loadInfo.referenceCount == 0)
             {
-                Logger::Warning("Attempted loading of invalid model! [ID={}]\n", id.value);
-
                 continue;
             }
 
-            if (iter->second.referenceCount == 0)
+            modelLoadFutures.emplace_back(executor.async([id, loadInfo, loadFromFileInfo] () mutable
             {
-                Logger::Warning("Model already freed! [ID={}]\n", id.value);
+                Models::Model model = {};
 
-                continue;
-            }
+                model.LoadFromFile(loadFromFileInfo, loadInfo.path);
 
-            if (iter->second.model.isLoaded)
-            {
-                Logger::Warning("Model already loaded! [ID={}]\n", id.value);
-
-                continue;
-            }
-
-            modelLoadFutures.emplace_back(executor.async([path, loadFromFileInfo, &model = iter->second.model] () mutable
-            {
-                model.LoadFromFile(loadFromFileInfo, path);
+                return ModelManager::LoadedModel
+                {
+                    .id        = id,
+                    .modelInfo = ModelManager::ModelInfo{
+                        .model          = model,
+                        .referenceCount = loadInfo.referenceCount
+                    }
+                };
             }));
         }
 
-        m_requestedModelDeletions.clear();
-        m_requestedModelLoads.clear();
+        m_pendingModels.clear();
 
         for (auto& future : modelLoadFutures)
         {
@@ -230,9 +212,44 @@ namespace Models
             }
 
             future.wait();
+
+            const auto loadedModel = future.get();
+
+            m_loadedModels.emplace(loadedModel.id, loadedModel.modelInfo);
         }
 
         modelLoadFutures.clear();
+
+        for (const auto& id : m_requestedModelDeletions)
+        {
+            const auto loadedIter = m_loadedModels.find(id);
+
+            if (loadedIter == m_loadedModels.end())
+            {
+                continue;
+            }
+
+            // Verify that new references to a model that was requested
+            // to be deleted have not been made in the meantime
+            if (loadedIter->second.referenceCount != 0)
+            {
+                continue;
+            }
+
+            loadedIter->second.model.Destroy
+            (
+                device,
+                allocator,
+                megaSet,
+                textureManager,
+                geometryBuffer,
+                deletionQueue
+            );
+
+            m_loadedModels.erase(loadedIter);
+        }
+
+        m_requestedModelDeletions.clear();
 
         geometryBuffer.Update
         (
@@ -252,7 +269,7 @@ namespace Models
     {
         if (ImGui::CollapsingHeader("Models"))
         {
-            for (const auto& [id, info] : m_modelMap)
+            for (const auto& [id, info] : m_loadedModels)
             {
                 const auto& [model, refCount] = info;
 
@@ -339,8 +356,9 @@ namespace Models
         geometryBuffer.Destroy(allocator, stagingPool);
         textureManager.Destroy(device, allocator);
 
-        m_modelMap.clear();
+        m_loadedModels.clear();
+        m_pendingModels.clear();
+
         m_requestedModelDeletions.clear();
-        m_requestedModelLoads.clear();
     }
 }
