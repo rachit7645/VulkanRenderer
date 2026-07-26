@@ -58,8 +58,8 @@ namespace Models
             Util::DeletionQueue& deletionQueue
         );
 
-        std::string                          name        = "Null/Model";
-        std::string                          path        = "Null/Model/Path";
+        std::string                          name;
+        std::string                          path;
         std::vector<Models::Mesh>            meshes      = {};
         std::vector<Models::LocalPointLight> pointLights = {};
         std::vector<Models::LocalSpotLight>  spotLights  = {};

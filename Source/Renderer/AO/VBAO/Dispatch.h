@@ -45,7 +45,7 @@ namespace Renderer::AO::VBAO
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager,
+            Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const Objects::Samplers& samplers,
             const std::string_view sceneDepthID,
@@ -74,7 +74,7 @@ namespace Renderer::AO::VBAO
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager,
+            Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const Objects::Samplers& samplers,
             const std::string_view gNormalID

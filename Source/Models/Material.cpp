@@ -18,7 +18,7 @@
 
 namespace Models
 {
-    GPU::Material Material::Convert(const Vk::TextureManager& textureManager) const
+    GPU::Material Material::Convert(Vk::TextureManager& textureManager) const
     {
         return GPU::Material
         {

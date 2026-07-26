@@ -57,6 +57,10 @@ namespace Vk
         Util::DeletionQueue& deletionQueue
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (!HasPendingUploads())
         {
             return;

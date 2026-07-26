@@ -477,7 +477,7 @@ namespace Renderer::DearImGui
 
                 const auto* pixels = static_cast<u8*>(texture->GetPixels());
 
-                const auto id = textureManager.AddTexture
+                const auto id = textureManager.LoadTexture
                 (
                     device,
                     allocator,
@@ -554,7 +554,12 @@ namespace Renderer::DearImGui
             }
         }
 
-        textureManager.Update(cmdBuffer, device, megaSet);
+        textureManager.Update
+        (
+            device,
+            cmdBuffer,
+            megaSet
+        );
 
         for (auto* texture : *drawData->Textures)
         {

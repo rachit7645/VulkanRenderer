@@ -92,7 +92,7 @@ namespace Renderer::Lighting
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
+        Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
         const Objects::Samplers& samplers,

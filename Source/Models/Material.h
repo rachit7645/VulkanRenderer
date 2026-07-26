@@ -24,7 +24,7 @@ namespace Models
 {
     struct Material
     {
-        [[nodiscard]] GPU::Material Convert(const Vk::TextureManager& textureManager) const;
+        [[nodiscard]] GPU::Material Convert(Vk::TextureManager& textureManager) const;
 
         [[nodiscard]] bool IsAlphaMasked() const;
         [[nodiscard]] bool IsDoubleSided() const;

@@ -405,7 +405,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
 
-        const auto hdrMapID = textureManager.AddTexture
+        const auto hdrMapID = textureManager.LoadTexture
         (
             context.device,
             context.allocator,
@@ -432,7 +432,13 @@ namespace Renderer::IBL
             deletionQueue
         );
 
-        textureManager.Update(cmdBuffer, context.device, megaSet);
+        textureManager.ForceUpdate
+        (
+            hdrMapID,
+            context.device,
+            cmdBuffer,
+            megaSet
+        );
 
         Vk::EndLabel(cmdBuffer);
 
@@ -637,7 +643,7 @@ namespace Renderer::IBL
             }
         );
 
-        const auto skyboxID = textureManager.AddTexture
+        const auto skyboxID = textureManager.RegisterTexture
         (
             megaSet,
             context.device,
@@ -831,7 +837,7 @@ namespace Renderer::IBL
 
         Vk::EndLabel(cmdBuffer);
 
-        return textureManager.AddTexture
+        return textureManager.RegisterTexture
         (
             megaSet,
             context.device,
@@ -1050,7 +1056,7 @@ namespace Renderer::IBL
             }
         );
 
-        const auto preFilterID = textureManager.AddTexture
+        const auto preFilterID = textureManager.RegisterTexture
         (
             megaSet,
             context.device,
@@ -1222,7 +1228,7 @@ namespace Renderer::IBL
             }
         );
 
-        skyboxID = textureManager.AddTexture
+        skyboxID = textureManager.RegisterTexture
         (
             megaSet,
             context.device,
@@ -1263,7 +1269,7 @@ namespace Renderer::IBL
 
         if (Cache::IsInCache(query))
         {
-            m_brdfLutID = textureManager.AddTexture
+            m_brdfLutID = textureManager.LoadTexture
             (
                 context.device,
                 context.allocator,
@@ -1438,7 +1444,7 @@ namespace Renderer::IBL
                 }
             });
 
-            m_brdfLutID = textureManager.AddTexture
+            m_brdfLutID = textureManager.RegisterTexture
             (
                 megaSet,
                 context.device,

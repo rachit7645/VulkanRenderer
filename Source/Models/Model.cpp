@@ -652,7 +652,7 @@ namespace Models
 
         if (!textureInfo.has_value())
         {
-            const auto id = loadInfo.textureManager.AddTexture
+            const auto id = loadInfo.textureManager.LoadTexture
             (
                 loadInfo.device,
                 loadInfo.allocator,
@@ -748,7 +748,7 @@ namespace Models
                     );
                 }
 
-                return loadInfo.textureManager.AddTexture
+                return loadInfo.textureManager.LoadTexture
                 (
                     loadInfo.device,
                     loadInfo.allocator,
@@ -769,7 +769,7 @@ namespace Models
                 const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data());
                 const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + array.bytes.size());
 
-                return loadInfo.textureManager.AddTexture
+                return loadInfo.textureManager.LoadTexture
                 (
                     loadInfo.device,
                     loadInfo.allocator,
@@ -809,7 +809,7 @@ namespace Models
                         const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset);
                         const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + bufferView.byteLength);
 
-                        return loadInfo.textureManager.AddTexture
+                        return loadInfo.textureManager.LoadTexture
                         (
                             loadInfo.device,
                             loadInfo.allocator,

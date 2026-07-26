@@ -149,6 +149,10 @@ namespace Models
         Util::DeletionQueue& deletionQueue
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (m_pendingModels.empty() && m_requestedModelDeletions.empty())
         {
             return;

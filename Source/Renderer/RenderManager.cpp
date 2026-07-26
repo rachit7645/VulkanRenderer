@@ -1987,6 +1987,16 @@ namespace Renderer
             #endif
         }
 
+        m_samplers.Update
+        (
+            m_context,
+            m_framebufferManager.renderExtent,
+            m_framebufferManager.displayExtent,
+            m_megaSet,
+            m_textureManager,
+            m_deletionQueues[m_FIF]
+        );
+
         m_iblGenerator.Update
         (
             cmdBuffer,
@@ -2025,10 +2035,24 @@ namespace Renderer
             m_deletionQueues[m_FIF]
         );
 
+        m_sceneBuffer.Write
+        (
+            m_FIF,
+            m_frameIndex,
+            m_context.allocator,
+            m_framebufferManager.renderExtent,
+            m_framebufferManager.displayExtent,
+            *m_sceneEditor.scene,
+            m_renderConfig,
+            m_modelManager
+        );
+
+        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_sceneEditor.scene->renderObjects);
+
         m_textureManager.Update
         (
-            cmdBuffer,
             m_context.device,
+            cmdBuffer,
             m_megaSet
         );
 
@@ -2042,18 +2066,6 @@ namespace Renderer
             m_executor
         );
 
-        m_sceneBuffer.Write
-        (
-            m_FIF,
-            m_frameIndex,
-            m_context.allocator,
-            m_framebufferManager.renderExtent,
-            m_framebufferManager.displayExtent,
-            *m_sceneEditor.scene,
-            m_renderConfig,
-            m_modelManager
-        );
-
         m_meshBuffer.LoadMeshes
         (
             m_frameIndex,
@@ -2061,18 +2073,6 @@ namespace Renderer
             m_modelManager,
             m_textureManager,
             m_sceneEditor.scene->renderObjects
-        );
-
-        m_indirectBuffer.ComputeDrawCount(m_modelManager, m_sceneEditor.scene->renderObjects);
-
-        m_samplers.Update
-        (
-            m_context,
-            m_framebufferManager.renderExtent,
-            m_framebufferManager.displayExtent,
-            m_megaSet,
-            m_textureManager,
-            m_deletionQueues[m_FIF]
         );
 
         ImGuiDisplay();
@@ -2471,7 +2471,7 @@ namespace Renderer
                 const auto* HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
                 const auto* HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
 
-                m_vbao.hilbertLUT = m_textureManager.AddTexture
+                m_vbao.hilbertLUT = m_textureManager.LoadTexture
                 (
                     m_context.device,
                     m_context.allocator,
@@ -2491,7 +2491,13 @@ namespace Renderer
                     }
                 );
 
-                m_textureManager.Update(cmdBuffer, m_context.device, m_megaSet);
+                m_textureManager.ForceUpdate
+                (
+                    m_vbao.hilbertLUT,
+                    m_context.device,
+                    cmdBuffer,
+                    m_megaSet
+                );
             }
         );
 

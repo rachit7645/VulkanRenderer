@@ -55,13 +55,13 @@ namespace Models
     private:
         struct ModelInfo
         {
-            Models::Model model;
+            Models::Model model          = {};
             u64           referenceCount = 0;
         };
 
         struct ModelLoadInfo
         {
-            std::string path           = "Null/Path";
+            std::string path;
             u64         referenceCount = 0;
         };
 

@@ -32,7 +32,7 @@ namespace Vk
     class TextureManager
     {
     public:
-        [[nodiscard]] Vk::TextureID AddTexture
+        [[nodiscard]] Vk::TextureID LoadTexture
         (
             VkDevice device,
             VmaAllocator allocator,
@@ -42,7 +42,7 @@ namespace Vk
             const Vk::ImageUpload& upload
         );
 
-        [[nodiscard]] Vk::TextureID AddTexture
+        [[nodiscard]] Vk::TextureID RegisterTexture
         (
             Vk::MegaSet& megaSet,
             VkDevice device,
@@ -59,11 +59,27 @@ namespace Vk
         );
 
         // WARNING! Blocks this thread!
-        void Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet);
+        void Update
+        (
+            VkDevice device,
+            const Vk::CommandBuffer& cmdBuffer,
+            Vk::MegaSet& megaSet
+        );
+
+        // WARNING! Blocks this thread!
+        // This should be faster than calling Update
+        // But only if you only need this specific texture to be ready
+        void ForceUpdate
+        (
+            Vk::TextureID id,
+            VkDevice device,
+            const Vk::CommandBuffer& cmdBuffer,
+            Vk::MegaSet& megaSet
+        );
 
         void UpdateTexture
         (
-            const Vk::TextureID id,
+            Vk::TextureID id,
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
@@ -71,15 +87,14 @@ namespace Vk
             const Vk::ImageUpdateRawMemory& updateRawMemory
         );
 
-        [[nodiscard]] Vk::Texture& GetTexture(const Vk::TextureID id);
-        [[nodiscard]] Vk::Sampler& GetSampler(const Vk::SamplerID id);
+        [[nodiscard]] bool IsLoaded(Vk::TextureID id);
 
-        [[nodiscard]] const Vk::Texture& GetTexture(const Vk::TextureID id) const;
-        [[nodiscard]] const Vk::Sampler& GetSampler(const Vk::SamplerID id) const;
+        [[nodiscard]] const Vk::Texture& GetTexture(Vk::TextureID id);
+        [[nodiscard]] const Vk::Sampler& GetSampler(Vk::SamplerID id) const;
 
         void DestroyTexture
         (
-            const Vk::TextureID id,
+            Vk::TextureID id,
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
@@ -88,7 +103,7 @@ namespace Vk
 
         void DestroySampler
         (
-            const Vk::SamplerID id,
+            Vk::SamplerID id,
             VkDevice device,
             Vk::MegaSet& megaSet,
             Util::DeletionQueue& deletionQueue
@@ -106,6 +121,13 @@ namespace Vk
             u64         referenceCount = 0;
         };
 
+        struct TextureLoadInfo
+        {
+            std::string                    name;
+            std::future<Vk::UploadedImage> future;
+            u64                            referenceCount = 0;
+        };
+
         struct SamplerInfo
         {
             Vk::Sampler sampler        = {};
@@ -118,14 +140,18 @@ namespace Vk
             std::string id;
         };
 
+        [[nodiscard]] bool IsLoadedInternal(Vk::TextureID id);
+
+        [[nodiscard]] Vk::Texture& GetTextureInternal(Vk::TextureID id);
+
         TextureNameInfo GetTextureNameInfo(const ImageUploadSource& source);
 
-        ankerl::unordered_dense::map<Vk::TextureID, TextureInfo> m_textureMap;
-        ankerl::unordered_dense::map<Vk::SamplerID, SamplerInfo> m_samplerMap;
+        ankerl::unordered_dense::map<Vk::TextureID, TextureInfo> m_textures;
+        ankerl::unordered_dense::map<Vk::SamplerID, SamplerInfo> m_samplers;
+
+        ankerl::unordered_dense::map<Vk::TextureID, TextureLoadInfo> m_pendingTextures;
 
         Vk::ImageUploader m_imageUploader;
-
-        ankerl::unordered_dense::map<Vk::TextureID, std::future<Vk::UploadedImage>> m_futuresMap;
 
         std::mutex m_mutex;
     };
