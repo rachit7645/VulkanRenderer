@@ -30,6 +30,11 @@ namespace Util
     {
         return x != 0 && (x & (x - 1)) == 0;
     }
+
+    constexpr usize MiB(usize count)
+    {
+        return 1024ull * 1024ull * count;
+    }
 }
 
 #endif

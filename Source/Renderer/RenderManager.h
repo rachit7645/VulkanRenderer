@@ -17,12 +17,16 @@
 #ifndef RENDER_MANAGER_H
 #define RENDER_MANAGER_H
 
+#include "RenderConfig.h"
+
 #include "Buffers/IndirectBuffer.h"
 #include "Buffers/MeshBuffer.h"
 #include "Buffers/SceneBuffer.h"
 #include "Buffers/TileLightIndexBuffer.h"
 #include "Buffers/ExposureBuffers.h"
+
 #include "Objects/Samplers.h"
+
 #include "Tonemap/RenderPass.h"
 #include "Depth/RenderPass.h"
 #include "ImGui/RenderPass.h"
@@ -31,14 +35,19 @@
 #include "PointShadow/RenderPass.h"
 #include "GBuffer/RenderPass.h"
 #include "Lighting/RenderPass.h"
-#include "AO/VBAO/Dispatch.h"
-#include "ShadowRT/RayDispatch.h"
 #include "TAA/RenderPass.h"
-#include "Culling/Dispatch.h"
-#include "IBL/Generator.h"
 #include "SpotShadow/RenderPass.h"
+#include "Debug/RenderPass.h"
+
+#include "Culling/Dispatch.h"
 #include "TiledLighting/Dispatch.h"
 #include "Exposure/Dispatch.h"
+#include "AO/VBAO/Dispatch.h"
+
+#include "ShadowRT/RayDispatch.h"
+
+#include "IBL/Generator.h"
+
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FormatHelper.h"
@@ -49,14 +58,14 @@
 #include "Vulkan/ComputeTimeline.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/StagingPool.h"
+
 #include "Util/Types.h"
 #include "Util/FrameCounter.h"
+
 #include "Engine/Window.h"
 #include "Engine/SceneEditor.h"
+
 #include "Models/ModelManager.h"
-#include "Renderer/RenderConfig.h"
-#include "Renderer/Debug/RenderPass.h"
-#include "Util/Log.h"
 
 #ifdef ENGINE_DLSS
 #include "Renderer/DLSS/Evaluation.h"

@@ -18,7 +18,10 @@
 
 #include "Util/Unused.h"
 #include "Engine/Application.h"
+
+#ifdef ENGINE_PROFILE
 #include "Externals/Tracy.h"
+#endif
 
 int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
 {

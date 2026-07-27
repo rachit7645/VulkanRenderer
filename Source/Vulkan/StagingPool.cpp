@@ -17,7 +17,7 @@
 #include "StagingPool.h"
 
 #include "Util.h"
-#include "Util/Align.h"
+#include "Util/Memory.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 

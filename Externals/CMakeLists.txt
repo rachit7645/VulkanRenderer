@@ -209,7 +209,7 @@ else()
 endif()
 
 # You can use this to forcefully disable DLSS
-set(DLSSAvailable OFF)
+# set(DLSSAvailable OFF)
 
 set(DLSSAvailable ${DLSSAvailable} PARENT_SCOPE)
 

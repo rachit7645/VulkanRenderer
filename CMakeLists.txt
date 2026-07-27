@@ -72,6 +72,7 @@ add_executable(VulkanRenderer
     Source/Util/Debug.cpp
     Source/Util/WireframeCone.cpp
     Source/Util/Log.cpp
+    Source/Util/Stack.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
@@ -265,7 +266,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
 # Library includes
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Externals/taskflow/ Shared/)
 # Vulkan Options
-target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull IMGUI_DEFINE_MATH_OPERATORS=1)
+target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
 # ImGui Options
 target_compile_definitions(VulkanRenderer PRIVATE ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull IMGUI_DEFINE_MATH_OPERATORS=1)
 # GLM Options

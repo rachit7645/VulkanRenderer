@@ -18,7 +18,7 @@
 
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
-#include "Util/Align.h"
+#include "Util/Memory.h"
 
 namespace Vk
 {
