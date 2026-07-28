@@ -84,6 +84,12 @@ namespace STL
         void deallocate(ENGINE_UNUSED T* pointer, ENGINE_UNUSED usize count) noexcept
         {
         }
+
+        template <typename U, typename... Args>
+        void construct(U* pointer, Args&&... args)
+        {
+            std::uninitialized_construct_using_allocator(pointer, *this, std::forward<Args>(args)...);
+        }
     private:
         Stack::Allocator* m_allocator = nullptr;
     };

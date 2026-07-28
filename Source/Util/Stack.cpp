@@ -36,8 +36,6 @@ namespace Stack
 
     void* Allocator::Allocate(usize bytes, usize alignment)
     {
-        Logger::Debug("Allocating! [Bytes={}]\n", bytes);
-
         if (!Util::IsPowerOfTwo(alignment))
         {
             return nullptr;

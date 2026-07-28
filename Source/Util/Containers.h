@@ -24,6 +24,8 @@
 
 namespace Stack
 {
+    using String = std::basic_string<char, std::char_traits<char>, STL::StackAllocator<char>>;
+
     template <typename T>
     using Vector = std::vector<T, STL::StackAllocator<T>>;
 
@@ -36,6 +38,8 @@ namespace Stack
         std::equal_to<Key>,
         STL::StackAllocator<std::pair<Key, T>>
     >;
+
+    Stack::String CreateString(Stack::Allocator& allocator);
 
     template <typename T>
     Stack::Vector<T> CreateVector(Stack::Allocator& allocator)
