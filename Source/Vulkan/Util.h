@@ -20,6 +20,7 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
+#include "Util/Stack.h"
 #include "Util/Types.h"
 
 namespace Vk
@@ -30,7 +31,8 @@ namespace Vk
         VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface,
         const VkPhysicalDeviceProperties2& properties,
-        const VkPhysicalDeviceFeatures2& features
+        const VkPhysicalDeviceFeatures2& features,
+        Stack::Allocator& scratchAllocator
     );
 
     [[nodiscard]] VkFormat FindSupportedFormat

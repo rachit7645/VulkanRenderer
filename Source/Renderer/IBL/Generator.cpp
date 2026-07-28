@@ -61,7 +61,7 @@ namespace Renderer::IBL
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("IBL/EquirectangularToCubemap", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::IBLEquirectangularToCubemap, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("IBL/EquirectangularToCubemap.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -74,7 +74,7 @@ namespace Renderer::IBL
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("IBL/Irradiance", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::IBLIrradiance, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("IBL/Irradiance.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -87,7 +87,7 @@ namespace Renderer::IBL
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("IBL/PreFilter", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::IBLPreFilter, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0b00111111, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("IBL/PreFilter.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -102,7 +102,7 @@ namespace Renderer::IBL
 
         constexpr std::array BRDF_COLOR_FORMATS = {VK_FORMAT_R16G16_SFLOAT};
 
-        pipelineManager.AddPipeline("IBL/BRDF", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::IBLBRDF, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, BRDF_COLOR_FORMATS, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -461,7 +461,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Equirectangular To Cubemap Conversion", {0.2588f, 0.5294f, 0.9607f, 1.0f});
 
-        const auto& pipeline = pipelineManager.GetPipeline("IBL/EquirectangularToCubemap");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::IBLEquirectangularToCubemap);
 
         const auto skybox = Vk::Image
         (
@@ -675,7 +675,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "Irradiance Map Generation", {0.2988f, 0.2294f, 0.6607f, 1.0f});
 
-        const auto& pipeline = pipelineManager.GetPipeline("IBL/Irradiance");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::IBLIrradiance);
 
         const auto irradianceMap = Vk::Image
         (
@@ -863,7 +863,7 @@ namespace Renderer::IBL
     {
         Vk::BeginLabel(cmdBuffer, "PreFilter Map Generation", {0.2928f, 0.4794f, 0.6607f, 1.0f});
 
-        const auto& preFilterPipeline = pipelineManager.GetPipeline("IBL/PreFilter");
+        const auto& preFilterPipeline = pipelineManager.GetPipeline(Vk::PipelineID::IBLPreFilter);
 
         const auto preFilterMap = Vk::Image
         (
@@ -1290,7 +1290,7 @@ namespace Renderer::IBL
         {
             Vk::BeginLabel(cmdBuffer, "BRDF LUT Generation", {0.9215f, 0.0274f, 0.8588f, 1.0f});
 
-            const auto& brdfLutPipeline = pipelineManager.GetPipeline("IBL/BRDF");
+            const auto& brdfLutPipeline = pipelineManager.GetPipeline(Vk::PipelineID::IBLBRDF);
 
             const auto brdfLut = Vk::Image
             (

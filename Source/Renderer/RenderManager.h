@@ -66,6 +66,7 @@
 #include "Engine/SceneEditor.h"
 
 #include "Models/ModelManager.h"
+#include "Util/Stack.h"
 
 #ifdef ENGINE_DLSS
 #include "Renderer/DLSS/Evaluation.h"
@@ -76,7 +77,8 @@ namespace Renderer
     class RenderManager
     {
     public:
-        RenderManager();
+        explicit RenderManager(Stack::Allocator& scratchAllocator);
+
         ~RenderManager();
 
         RenderManager(const RenderManager&) noexcept = delete;
@@ -86,7 +88,8 @@ namespace Renderer
         RenderManager& operator=(RenderManager&& other) noexcept = delete;
 
         void Render();
-        [[nodiscard]] bool HandleEvents();
+
+        [[nodiscard]] bool HandleEvents(Stack::Allocator& scratchAllocator);
     private:
         void WaitForTimeline();
         void AcquireSwapchainImage();
@@ -115,7 +118,7 @@ namespace Renderer
 
         void EndFrame();
 
-        void Resize();
+        void Resize(Stack::Allocator& scratchAllocator);
 
         void InitImGui();
 

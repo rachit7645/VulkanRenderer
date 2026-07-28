@@ -40,7 +40,7 @@ namespace Renderer::GBuffer
             VK_FORMAT_R16G16_SFLOAT
         };
 
-        pipelineManager.AddPipeline("GBuffer/SingleSided", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::GBufferSingleSided, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
             .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
@@ -58,7 +58,7 @@ namespace Renderer::GBuffer
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("GBuffer/DoubleSided", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::GBufferDoubleSided, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
             .AttachShader("Deferred/GBuffer/GBuffer.vert",     VK_SHADER_STAGE_VERTEX_BIT)
@@ -312,8 +312,8 @@ namespace Renderer::GBuffer
     {
         Vk::BeginLabel(cmdBuffer, "GBuffer Generation", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
 
-        const auto& singleSidedPipeline = pipelineManager.GetPipeline("GBuffer/SingleSided");
-        const auto& doubleSidedPipeline = pipelineManager.GetPipeline("GBuffer/DoubleSided");
+        const auto& singleSidedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::GBufferSingleSided);
+        const auto& doubleSidedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::GBufferDoubleSided);
         
         const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoIoRView");
         const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");

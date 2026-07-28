@@ -16,15 +16,25 @@
 
 #include "Application.h"
 
+#include "Util/Memory.h"
+
 namespace Engine
 {
+    Application::Application()
+        : m_frameAllocator{Util::MiB(64ull)},
+          m_renderer{m_frameAllocator}
+    {
+    }
+
     void Application::Run()
     {
         while (true)
         {
+            m_frameAllocator.Reset();
+
             m_renderer.Render();
 
-            if (m_renderer.HandleEvents())
+            if (m_renderer.HandleEvents(m_frameAllocator))
             {
                 break;
             }

@@ -39,7 +39,7 @@ namespace Renderer::Bloom
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("Bloom/DownSample/FirstSample", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomDownSampleFirstSample, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",                VK_SHADER_STAGE_VERTEX_BIT)
@@ -52,7 +52,7 @@ namespace Renderer::Bloom
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Bloom/DownSample/Regular", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomDownSample, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",             VK_SHADER_STAGE_VERTEX_BIT)
@@ -65,7 +65,7 @@ namespace Renderer::Bloom
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Bloom/UpSample", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomUpSample, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",   VK_SHADER_STAGE_VERTEX_BIT)
@@ -90,7 +90,7 @@ namespace Renderer::Bloom
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Bloom/Combine", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomCombine, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",  VK_SHADER_STAGE_VERTEX_BIT)
@@ -262,8 +262,8 @@ namespace Renderer::Bloom
     {
         Vk::BeginLabel(cmdBuffer, "DownSample", {0.7796f, 0.3588f, 0.5518f, 1.0f});
 
-        const auto& downSampleFirstSamplePipeline = pipelineManager.GetPipeline("Bloom/DownSample/FirstSample");
-        const auto& downSampleRegularPipeline     = pipelineManager.GetPipeline("Bloom/DownSample/Regular");
+        const auto& downSampleFirstSamplePipeline = pipelineManager.GetPipeline(Vk::PipelineID::BloomDownSampleFirstSample);
+        const auto& downSampleRegularPipeline     = pipelineManager.GetPipeline(Vk::PipelineID::BloomDownSample);
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
@@ -438,7 +438,7 @@ namespace Renderer::Bloom
     {
         Vk::BeginLabel(cmdBuffer, "UpSample", {0.8736f, 0.2598f, 0.7548f, 1.0f});
 
-        const auto& upsamplePipeline = pipelineManager.GetPipeline("Bloom/UpSample");
+        const auto& upsamplePipeline = pipelineManager.GetPipeline(Vk::PipelineID::BloomUpSample);
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
@@ -589,7 +589,7 @@ namespace Renderer::Bloom
     {
         Vk::BeginLabel(cmdBuffer, "Combine", {0.8736f, 0.4598f, 0.7548f, 1.0f});
 
-        const auto& combinePipeline = pipelineManager.GetPipeline("Bloom/Combine");
+        const auto& combinePipeline = pipelineManager.GetPipeline(Vk::PipelineID::BloomCombine);
 
         const auto& finalSceneColorView = framebufferManager.GetFramebufferView("FinalSceneColorView");
         const auto& finalSceneColor     = framebufferManager.GetFramebuffer(finalSceneColorView.framebuffer);

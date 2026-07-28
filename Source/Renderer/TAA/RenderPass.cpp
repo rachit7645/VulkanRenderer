@@ -38,7 +38,7 @@ namespace Renderer::TAA
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("TAA", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::TAA, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -261,7 +261,7 @@ namespace Renderer::TAA
             m_hasToResetHistory = false;
         }
 
-        const auto& pipeline = pipelineManager.GetPipeline("TAA");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::TAA);
 
         const usize currentIndex  = frameIndex                          % TAA_HISTORY_SIZE;
         const usize previousIndex = (frameIndex + TAA_HISTORY_SIZE - 1) % TAA_HISTORY_SIZE;

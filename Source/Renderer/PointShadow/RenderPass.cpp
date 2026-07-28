@@ -40,7 +40,7 @@ namespace Renderer::PointShadow
 
         constexpr std::array COLOR_FORMATS = {VK_FORMAT_R32_SFLOAT};
         
-        pipelineManager.AddPipeline("PointShadow/Opaque", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::PointShadowOpaque, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
             .AttachShader("Shadows/PointShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -53,7 +53,7 @@ namespace Renderer::PointShadow
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Opaque::Constants))
         );
 
-        pipelineManager.AddPipeline("PointShadow/AlphaMasked", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::PointShadowAlphaMasked, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
             .AttachShader("Shadows/PointShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -175,8 +175,8 @@ namespace Renderer::PointShadow
 
         Vk::BeginLabel(cmdBuffer, "Point Light Shadows", glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
 
-        const auto& opaquePipeline      = pipelineManager.GetPipeline("PointShadow/Opaque");
-        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline("PointShadow/AlphaMasked");
+        const auto& opaquePipeline      = pipelineManager.GetPipeline(Vk::PipelineID::PointShadowOpaque);
+        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::PointShadowAlphaMasked);
 
         const auto& depthView = framebufferManager.GetFramebufferView("PointShadowDepthView");
 

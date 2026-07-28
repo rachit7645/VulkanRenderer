@@ -37,7 +37,7 @@ namespace Vk
         {
             .sType               = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
             .pNext               = nullptr,
-            .surfaceCapabilities = {}
+            .surfaceCapabilities = {} // NOLINT(bugprone-invalid-enum-default-initialization)
         };
 
         Vk::CheckResult(vkGetPhysicalDeviceSurfaceCapabilities2KHR(
@@ -63,8 +63,8 @@ namespace Vk
             Logger::Error
             (
                 "Failed to find any presentation modes! [Device={}] [Surface={}]\n",
-                std::bit_cast<void*>(device),
-                std::bit_cast<void*>(surface)
+                reinterpret_cast<void*>(device),
+                reinterpret_cast<void*>(surface)
             );
         }
 
@@ -95,12 +95,10 @@ namespace Vk
             Logger::Error
             (
                 "Failed to find any surface formats! [Device={}] [Surface={}]\n",
-                std::bit_cast<void*>(device),
-                std::bit_cast<void*>(surface)
+                reinterpret_cast<void*>(device),
+                reinterpret_cast<void*>(surface)
             );
         }
-
-        formats.resize(formatCount);
 
         constexpr VkSurfaceFormat2KHR emptyFormat =
         {
@@ -109,7 +107,7 @@ namespace Vk
             .surfaceFormat = {}
         };
 
-        std::ranges::fill(formats, emptyFormat);
+        formats.resize(formatCount, emptyFormat);
 
         Vk::CheckResult(vkGetPhysicalDeviceSurfaceFormats2KHR
         (

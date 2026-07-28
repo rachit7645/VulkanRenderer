@@ -37,7 +37,7 @@ namespace Vk
     constexpr auto COMPILATION_FLAGS = "--release";
     #endif
 
-    void PipelineManager::AddPipeline(const std::string_view id, const Vk::PipelineConfig& config)
+    void PipelineManager::AddPipeline(Vk::PipelineID id, const Vk::PipelineConfig& config)
     {
         if (!m_dirtyPipelineConfigs.contains(id))
         {
@@ -134,25 +134,13 @@ namespace Vk
         m_dirtyPipelineConfigs.clear();
     }
 
-    Vk::Pipeline& PipelineManager::GetPipeline(const std::string_view id)
-    {
-        auto iter = m_pipelines.find(id);
-
-        if (iter == m_pipelines.end())
-        {
-            Logger::Error("Failed to find pipeline! [ID={}]\n", id);
-        }
-
-        return iter->second;
-    }
-
-    const Vk::Pipeline& PipelineManager::GetPipeline(const std::string_view id) const
+    const Vk::Pipeline& PipelineManager::GetPipeline(Vk::PipelineID id) const
     {
         const auto iter = m_pipelines.find(id);
 
         if (iter == m_pipelines.cend())
         {
-            Logger::Error("Failed to find pipeline! [ID={}]\n", id);
+            Logger::Error("Failed to find pipeline! [ID={}]\n", GetPipelineName(id));
         }
 
         return iter->second;
@@ -179,7 +167,7 @@ namespace Vk
 
             for (const auto& [id, pipeline] : m_pipelines)
             {
-                if (ImGui::TreeNode(pipeline.handle, "%s", id.c_str()))
+                if (ImGui::TreeNode(std::bit_cast<void*>(static_cast<std::uintptr_t>(id)), "%s", GetPipelineName(id).data()))
                 {
                     ImGui::Text("Handle     | %p", reinterpret_cast<void*>(pipeline.handle));
                     ImGui::Text("Layout     | %p", reinterpret_cast<void*>(pipeline.layout));
@@ -201,7 +189,7 @@ namespace Vk
     PipelineManager::BuiltPipeline PipelineManager::BuildPipeline
     (
         VkDevice device,
-        const std::string& id,
+        Vk::PipelineID id,
         Vk::PipelineConfig& config
     )
     {
@@ -217,7 +205,9 @@ namespace Vk
         pipeline.bindPoint = config.GetPipelineType();
         pipeline.layout    = config.BuildLayout(device);
 
-        Vk::SetDebugName(device, pipeline.layout, id + "/Pipeline/Layout");
+        const std::string name = std::string(GetPipelineName(id));
+
+        Vk::SetDebugName(device, pipeline.layout, name + "/Pipeline/Layout");
 
         // Create Pipeline
         {
@@ -280,11 +270,11 @@ namespace Vk
             }
 
             default:
-                Logger::Error("Unsupported pipeline type! [ID={}] [Bind Point={}]\n", id, string_VkPipelineBindPoint(pipeline.bindPoint));
+                Logger::Error("Unsupported pipeline type! [ID={}] [Bind Point={}]\n", name, string_VkPipelineBindPoint(pipeline.bindPoint));
             }
         }
 
-        Vk::SetDebugName(device, pipeline.handle, id + "/Pipeline");
+        Vk::SetDebugName(device, pipeline.handle, name + "/Pipeline");
 
         return PipelineManager::BuiltPipeline
         {
@@ -293,7 +283,7 @@ namespace Vk
         };
     }
 
-    void PipelineManager::RecompilePipelineShaders(const std::string_view id)
+    void PipelineManager::RecompilePipelineShaders(Vk::PipelineID id)
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
@@ -316,7 +306,7 @@ namespace Vk
 
             if (iter == m_pipelineConfigs.cend())
             {
-                Logger::Error("Can't reload an invalid pipeline! [ID={}]\n", id);
+                Logger::Error("Can't reload an invalid pipeline! [ID={}]\n", GetPipelineName(id));
             }
 
             pipelineConfig = iter->second;
@@ -359,6 +349,123 @@ namespace Vk
             const std::scoped_lock lock{m_dirtyPipelineConfigsMutex};
 
             m_dirtyPipelineConfigs.emplace(id, pipelineConfig);
+        }
+    }
+
+    std::string_view PipelineManager::GetPipelineName(Vk::PipelineID id) const
+    {
+        switch (id)
+        {
+        case PipelineID::Tonemap:
+            return "Tonemap";
+
+        case PipelineID::BloomDownSample:
+            return "Bloom/DownSample";
+
+        case PipelineID::BloomDownSampleFirstSample:
+            return "Bloom/DownSample/FirstSample";
+
+        case PipelineID::BloomUpSample:
+            return "Bloom/UpSample";
+
+        case PipelineID::BloomCombine:
+            return "Bloom/Combine";
+
+        case PipelineID::DepthOpaque:
+            return "Depth/Opaque";
+
+        case PipelineID::DepthAlphaMasked:
+            return "Depth/AlphaMasked";
+
+        case PipelineID::DearImGui:
+            return "DearImGui";
+
+        case PipelineID::Lighting:
+            return "Lighting";
+
+        case PipelineID::Skybox:
+            return "Skybox";
+
+        case PipelineID::PointShadowOpaque:
+            return "PointShadow/Opaque";
+
+        case PipelineID::PointShadowAlphaMasked:
+            return "PointShadow/AlphaMasked";
+
+        case PipelineID::GBufferSingleSided:
+            return "GBuffer/SingleSided";
+
+        case PipelineID::GBufferDoubleSided:
+            return "GBuffer/DoubleSided";
+
+        case PipelineID::FrustumCulling:
+            return "Culling/Frustum";
+
+        case PipelineID::SpotShadowOpaque:
+            return "SpotShadow/Opaque";
+
+        case PipelineID::SpotShadowAlphaMasked:
+            return "SpotShadow/AlphaMasked";
+
+        case PipelineID::AutoExposureHistogram:
+            return "Exposure/Histogram";
+
+        case PipelineID::AutoExposureAverage:
+            return "Exposure/Average";
+
+        case PipelineID::AutoExposureCombine:
+            return "Exposure/Combine";
+
+        case PipelineID::TAA:
+            return "TAA";
+
+        case PipelineID::VBAODepthPreFilter:
+            return "VBAO/DepthPreFilter";
+
+        case PipelineID::VBAO:
+            return "VBAO/Occlusion";
+
+        case PipelineID::VBAOSpatialDenoise:
+            return "VBAO/SpatialDenoise";
+
+        case PipelineID::TiledLightCullingBounds:
+            return "TiledLightCulling/Bounds";
+
+        case PipelineID::TiledLightCulling:
+            return "TiledLightCulling/Culling";
+
+        case PipelineID::DebugAABBGenerateDrawCalls:
+            return "Debug/AABB/GenerateDrawCalls";
+
+        case PipelineID::DebugAABB:
+            return "Debug/AABB";
+
+        case PipelineID::DebugLightSphere:
+            return "Debug/Light/Sphere";
+
+        case PipelineID::DebugFrustumCullingStatistics:
+            return "Debug/Frustum/CullingStatistics";
+
+        case PipelineID::DebugTiledLightCullingStatistics:
+            return "Debug/TiledLightCulling/CullingStatistics";
+
+        case PipelineID::ShadowRayTraced:
+            return "Shadow/RayTraced";
+
+        case PipelineID::IBLEquirectangularToCubemap:
+            return "IBL/EquirectangularToCubemap";
+
+        case PipelineID::IBLIrradiance:
+            return "IBL/Irradiance";
+
+        case PipelineID::IBLPreFilter:
+            return "IBL/PreFilter";
+
+        case PipelineID::IBLBRDF:
+            return "IBL/BRDF";
+
+        default:
+            return "Null/Pipeline";
         }
     }
 

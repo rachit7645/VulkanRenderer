@@ -23,9 +23,8 @@
 
 namespace Vk
 {
-    class Properties
+    struct Properties
     {
-    public:
         Properties() = default;
 
         Properties

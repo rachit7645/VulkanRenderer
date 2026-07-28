@@ -24,6 +24,7 @@
 #include "Extensions.h"
 #include "Properties.h"
 #include "Util/DeletionQueue.h"
+#include "Util/Stack.h"
 #include "Externals/VMA.h"
 #include "Externals/SDL.h"
 
@@ -32,7 +33,7 @@ namespace Vk
     class Context
     {
     public:
-        explicit Context(SDL_Window* window);
+        Context(SDL_Window* window, Stack::Allocator& scratchAllocator);
 
         void Destroy();
 
@@ -43,9 +44,9 @@ namespace Vk
 
         VkDevice device = VK_NULL_HANDLE;
 
-        Vk::Properties    properties;
-        Vk::QueueFamilies queueFamilies;
-        Vk::Extensions    extensions;
+        Vk::Properties    properties    = {};
+        Vk::QueueFamilies queueFamilies = {};
+        Vk::Extensions    extensions    = {};
 
         VkQueue graphicsQueue = VK_NULL_HANDLE;
         VkQueue computeQueue  = VK_NULL_HANDLE;
@@ -54,11 +55,11 @@ namespace Vk
 
         std::string physicalDeviceName = "Device/Null";
     private:
-        void CreateInstance();
+        void CreateInstance(Stack::Allocator& scratchAllocator);
         void CreateSurface(SDL_Window* window);
 
-        void PickPhysicalDevice();
-        void CreateLogicalDevice();
+        void PickPhysicalDevice(Stack::Allocator& allocator);
+        void CreateLogicalDevice(Stack::Allocator& scratchAllocator);
 
         void CreateAllocator();
 

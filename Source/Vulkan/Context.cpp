@@ -23,27 +23,28 @@
 #include "DebugUtils.h"
 #include "Extensions.h"
 #include "Util.h"
+#include "Util/Containers.h"
 #include "Util/Log.h"
 
 namespace Vk
 {
-    Context::Context(SDL_Window* window)
+    Context::Context(SDL_Window* window, Stack::Allocator& scratchAllocator)
     {
         Vk::CheckResult(volkInitialize(), "Failed to initialize volk!");
 
-        CreateInstance();
+        CreateInstance(scratchAllocator);
 
         CreateSurface(window);
 
-        PickPhysicalDevice();
-        CreateLogicalDevice();
+        PickPhysicalDevice(scratchAllocator);
+        CreateLogicalDevice(scratchAllocator);
 
         CreateAllocator();
 
         AddDebugNames();
     }
 
-    void Context::CreateInstance()
+    void Context::CreateInstance(Stack::Allocator& scratchAllocator)
     {
         constexpr VkApplicationInfo appInfo =
         {
@@ -56,7 +57,7 @@ namespace Vk
             .apiVersion         = Vk::VULKAN_API_VERSION
         };
 
-        const auto instanceExtensions = Vk::Extensions::GetInstanceExtensions();
+        const auto instanceExtensions = Extensions::GetInstanceExtensions(scratchAllocator);
 
         const VkInstanceCreateInfo createInfo =
         {
@@ -95,8 +96,8 @@ namespace Vk
             Logger::Error
             (
                 "Failed to create surface! [window={}] [instance={}]\n",
-                std::bit_cast<void*>(window),
-                std::bit_cast<void*>(instance)
+                reinterpret_cast<void*>(window),
+                reinterpret_cast<void*>(instance)
             );
         }
 
@@ -106,9 +107,10 @@ namespace Vk
         });
     }
 
-    void Context::PickPhysicalDevice()
+    void Context::PickPhysicalDevice(Stack::Allocator& scratchAllocator)
     {
         u32 deviceCount = 0;
+
         Vk::CheckResult(vkEnumeratePhysicalDevices(
             instance,
             &deviceCount,
@@ -118,10 +120,12 @@ namespace Vk
 
         if (deviceCount == 0)
         {
-            Logger::Error("No physical devices found! [instance={}]\n", std::bit_cast<void*>(instance));
+            Logger::Error("No physical devices found! [instance={}]\n", reinterpret_cast<void*>(instance));
         }
 
-        auto devices = std::vector<VkPhysicalDevice>(deviceCount);
+        auto devices = Stack::CreateVector<VkPhysicalDevice>(scratchAllocator);
+
+        devices.resize(deviceCount);
 
         Vk::CheckResult(vkEnumeratePhysicalDevices(
             instance,
@@ -130,14 +134,23 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto vkProperties         = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceProperties2>(deviceCount);
-        auto vk11Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(deviceCount);
-        auto vk12Properties       = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(deviceCount);
-        auto asProperties         = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceAccelerationStructurePropertiesKHR>(deviceCount);
-        auto rtPipelineProperties = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(deviceCount);
+        auto vkProperties         = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceProperties2>(scratchAllocator);
+        auto vk11Properties       = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(scratchAllocator);
+        auto vk12Properties       = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(scratchAllocator);
+        auto asProperties         = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceAccelerationStructurePropertiesKHR>(scratchAllocator);
+        auto rtPipelineProperties = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(scratchAllocator);
 
-        auto features = ankerl::unordered_dense::map<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(deviceCount);
-        auto scores   = ankerl::unordered_dense::map<VkPhysicalDevice, usize>{};
+        auto features = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(scratchAllocator);
+        auto scores   = Stack::CreateMap<VkPhysicalDevice, usize>(scratchAllocator);
+
+        vkProperties.reserve(deviceCount);
+        vk11Properties.reserve(deviceCount);
+        vk12Properties.reserve(deviceCount);
+        asProperties.reserve(deviceCount);
+        rtPipelineProperties.reserve(deviceCount);
+
+        features.reserve(deviceCount);
+        scores.reserve(deviceCount);
 
         for (const auto& currentDevice : devices)
         {
@@ -149,7 +162,7 @@ namespace Vk
             asPropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
             asPropertySet.pNext = &rtPipelinePropertySet;
 
-            VkPhysicalDeviceVulkan12Properties vk12PropertySet = {};
+            VkPhysicalDeviceVulkan12Properties vk12PropertySet = {}; // NOLINT(bugprone-invalid-enum-default-initialization)
             vk12PropertySet.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
             vk12PropertySet.pNext = &asPropertySet;
 
@@ -224,7 +237,8 @@ namespace Vk
                 currentDevice,
                 surface,
                 propertySet,
-                featureSet
+                featureSet,
+                scratchAllocator
             );
 
             scores.emplace(currentDevice, score);
@@ -262,14 +276,15 @@ namespace Vk
         Logger::Info("Selected GPU! [GPU={}]\n", physicalDeviceName);
     }
 
-    void Context::CreateLogicalDevice()
+    void Context::CreateLogicalDevice(Stack::Allocator& scratchAllocator)
     {
-        queueFamilies = QueueFamilies(physicalDevice, surface);
-        extensions    = Extensions(physicalDevice);
+        queueFamilies = Vk::QueueFamilies(physicalDevice, surface, scratchAllocator);
+        extensions    = Vk::Extensions(physicalDevice);
 
-        const auto uniqueQueueFamilies = queueFamilies.GetUniqueFamilies();
+        const auto uniqueQueueFamilies = queueFamilies.GetUniqueFamilies(scratchAllocator);
 
-        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        auto queueCreateInfos = Stack::CreateVector<VkDeviceQueueCreateInfo>(scratchAllocator);
+
         queueCreateInfos.reserve(uniqueQueueFamilies.size());
 
         constexpr f32 QUEUE_PRIORITY = 1.0f;
@@ -286,7 +301,12 @@ namespace Vk
             });
         }
 
-        const auto deviceExtensions = extensions.GetDeviceExtensions(instance, physicalDevice);
+        const auto deviceExtensions = extensions.GetDeviceExtensions
+        (
+            instance,
+            physicalDevice,
+            scratchAllocator
+        );
 
         VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenance1Features = {};
         rayTracingMaintenance1Features.sType                  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;

@@ -31,7 +31,7 @@ namespace Renderer::Culling
     )
         : m_frustumBuffer(device, allocator)
     {
-        pipelineManager.AddPipeline("Culling/Frustum", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::FrustumCulling, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Culling/Frustum.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Frustum::Constants))
@@ -320,7 +320,7 @@ namespace Renderer::Culling
         )
         .Execute(cmdBuffer);
 
-        const auto& frustumPipeline = pipelineManager.GetPipeline("Culling/Frustum");
+        const auto& frustumPipeline = pipelineManager.GetPipeline(Vk::PipelineID::FrustumCulling);
 
         frustumPipeline.Bind(cmdBuffer);
 

@@ -32,12 +32,12 @@
 
 namespace Renderer
 {
-    RenderManager::RenderManager()
+    RenderManager::RenderManager(Stack::Allocator& scratchAllocator)
         : m_executor{Util::GetWorkerThreadCount(), nullptr},
-          m_context{m_window.handle},
+          m_context{m_window.handle, scratchAllocator},
           m_renderConfig{m_context},
           m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
-          m_swapchain{m_window.size, m_context, m_executor},
+          m_swapchain{m_window.size, m_context, scratchAllocator, m_executor},
           m_graphicsTimeline{m_context.device},
           m_formatHelper{m_context.physicalDevice},
           m_megaSet{m_context},
@@ -2275,7 +2275,7 @@ namespace Renderer
         #endif
     }
 
-    bool RenderManager::HandleEvents()
+    bool RenderManager::HandleEvents(Stack::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -2304,7 +2304,7 @@ namespace Renderer
                     {
                         m_window.size = newWindowSize;
 
-                        Resize();
+                        Resize(scratchAllocator);
                     }
                 }
 
@@ -2312,7 +2312,7 @@ namespace Renderer
             }
 
             case SDL_EVENT_WINDOW_MINIMIZED:
-                Resize();
+                Resize(scratchAllocator);
                 break;
 
             case SDL_EVENT_KEY_DOWN:
@@ -2401,7 +2401,7 @@ namespace Renderer
         return false;
     }
 
-    void RenderManager::Resize()
+    void RenderManager::Resize(Stack::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -2413,7 +2413,7 @@ namespace Renderer
             return;
         }
 
-        m_swapchain.RecreateSwapChain(m_context, m_executor);
+        m_swapchain.RecreateSwapChain(m_context, scratchAllocator, m_executor);
 
         m_taa.ResetHistory();
         m_exposure.ResetLuminance();

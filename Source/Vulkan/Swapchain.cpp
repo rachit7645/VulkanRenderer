@@ -24,14 +24,20 @@
 
 namespace Vk
 {
-    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context, tf::Executor& executor)
+    Swapchain::Swapchain
+    (
+        const glm::ivec2& size,
+        const Vk::Context& context,
+        Stack::Allocator& allocator,
+        tf::Executor& executor
+    )
     {
         if (!IsSurfaceValid(size, context))
         {
             Logger::Error("{}\n", "Invalid surface!");
         }
 
-        CreateSwapChain(context, executor);
+        CreateSwapChain(context, allocator, executor);
         CreateStaticSyncObjects(context.device);
     }
 
@@ -43,9 +49,9 @@ namespace Vk
         return extent.width != 0 && extent.height != 0;
     }
 
-    void Swapchain::RecreateSwapChain(const Vk::Context& context, tf::Executor& executor)
+    void Swapchain::RecreateSwapChain(const Vk::Context& context, Stack::Allocator& allocator, tf::Executor& executor)
     {
-        CreateSwapChain(context, executor);
+        CreateSwapChain(context, allocator, executor);
     }
 
     VkResult Swapchain::Present(VkDevice device, VkQueue queue)
@@ -114,7 +120,7 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Vk::Context& context, tf::Executor& executor)
+    void Swapchain::CreateSwapChain(const Vk::Context& context, Stack::Allocator& allocator, tf::Executor& executor)
     {
         surfaceFormat = ChooseSurfaceFormat();
         presentMode   = ChoosePresentationMode();
@@ -195,12 +201,12 @@ namespace Vk
                     imageView.Destroy(device);
                 }
 
-                for (const auto fence : presentFences)
+                for (const VkFence fence : presentFences)
                 {
                     vkDestroyFence(device, fence, nullptr);
                 }
 
-                for (const auto semaphore : renderFinishedSemaphores)
+                for (const VkSemaphore semaphore : renderFinishedSemaphores)
                 {
                     vkDestroySemaphore(device, semaphore, nullptr);
                 }
@@ -227,7 +233,9 @@ namespace Vk
             );
         }
 
-        auto imageHandles = std::vector<VkImage>(imageCount);
+        auto imageHandles = Stack::CreateVector<VkImage>(allocator);
+
+        imageHandles.resize(imageCount);
 
         Vk::CheckResult(vkGetSwapchainImagesKHR(
             context.device,
@@ -498,12 +506,12 @@ namespace Vk
             imageView.Destroy(device);
         }
 
-        for (const auto fence : presentFences)
+        for (const VkFence fence : presentFences)
         {
             vkDestroyFence(device, fence, nullptr);
         }
 
-        for (const auto semaphore : renderFinishedSemaphores)
+        for (const VkSemaphore semaphore : renderFinishedSemaphores)
         {
             vkDestroySemaphore(device, semaphore, nullptr);
         }
@@ -526,7 +534,7 @@ namespace Vk
 
         vkDestroySwapchainKHR(device, handle, nullptr);
 
-        for (const auto semaphore : imageAvailableSemaphores)
+        for (const VkSemaphore semaphore : imageAvailableSemaphores)
         {
             vkDestroySemaphore(device, semaphore, nullptr);
         }

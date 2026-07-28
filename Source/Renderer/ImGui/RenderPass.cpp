@@ -36,7 +36,7 @@ namespace Renderer::DearImGui
 
         const std::array colorFormats = {swapchain.surfaceFormat.format};
         
-        pipelineManager.AddPipeline("DearImGui", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::DearImGui, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("ImGui/ImGui.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -145,7 +145,7 @@ namespace Renderer::DearImGui
         const ImDrawData* drawData
     )
     {
-        const auto& pipeline = pipelineManager.GetPipeline("DearImGui");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DearImGui);
         
         const auto displaySize      = glm::vec2(drawData->DisplaySize.x,      drawData->DisplaySize.y);
         const auto displayPos       = glm::vec2(drawData->DisplayPos.x,       drawData->DisplayPos.y);

@@ -48,13 +48,13 @@ namespace Renderer::Debug
 
             const std::array colorFormats = {swapchain.surfaceFormat.format};
 
-            pipelineManager.AddPipeline("Debug/AABB/GenerateDrawCalls", Vk::PipelineConfig{}
+            pipelineManager.AddPipeline(Vk::PipelineID::DebugAABBGenerateDrawCalls, Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
                 .AttachShader("Debug/AABB/GenerateDrawCalls.comp", VK_SHADER_STAGE_COMPUTE_BIT)
                 .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(AABB::Generate::Constants))
             );
 
-            pipelineManager.AddPipeline("Debug/AABB", Vk::PipelineConfig{}
+            pipelineManager.AddPipeline(Vk::PipelineID::DebugAABB, Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
                 .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
                 .AttachShader("Debug/AABB/AABB.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -67,7 +67,7 @@ namespace Renderer::Debug
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AABB::Render::Constants))
             );
 
-            pipelineManager.AddPipeline("Debug/Light/Sphere", Vk::PipelineConfig{}
+            pipelineManager.AddPipeline(Vk::PipelineID::DebugLightSphere, Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
                 .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
                 .AttachShader("Debug/Sphere.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -80,13 +80,13 @@ namespace Renderer::Debug
                 .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Sphere::Constants))
             );
 
-            pipelineManager.AddPipeline("Debug/Culling/GenerateStatistics", Vk::PipelineConfig{}
+            pipelineManager.AddPipeline(Vk::PipelineID::DebugFrustumCullingStatistics, Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
                 .AttachShader("Debug/GenerateCullingStatistics.comp", VK_SHADER_STAGE_COMPUTE_BIT)
                 .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::Constants))
             );
 
-            pipelineManager.AddPipeline("Debug/TiledLighting/GenerateStatistics", Vk::PipelineConfig{}
+            pipelineManager.AddPipeline(Vk::PipelineID::DebugTiledLightCullingStatistics, Vk::PipelineConfig{}
                 .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
                 .AttachShader("Debug/GenerateTiledLightingStatistics.comp", VK_SHADER_STAGE_COMPUTE_BIT)
                 .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(TiledLighting::Constants))
@@ -922,7 +922,7 @@ namespace Renderer::Debug
         )
         .Execute(cmdBuffer);
 
-        const auto& pipeline = pipelineManager.GetPipeline("Debug/AABB/GenerateDrawCalls");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DebugAABBGenerateDrawCalls);
 
         pipeline.Bind(cmdBuffer);
 
@@ -1034,7 +1034,7 @@ namespace Renderer::Debug
     {
         Vk::BeginLabel(cmdBuffer, "AABB/Render", {0.1657f, 0.9149f, 0.4901f, 1.0f});
 
-        const auto& pipeline = pipelineManager.GetPipeline("Debug/AABB");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DebugAABB);
 
         pipeline.Bind(cmdBuffer);
 
@@ -1201,7 +1201,7 @@ namespace Renderer::Debug
     {
         Vk::BeginLabel(cmdBuffer, "Render/PointLights", {0.6657f, 0.9149f, 0.4901f, 1.0f});
 
-        const auto& pipeline = pipelineManager.GetPipeline("Debug/Light/Sphere");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DebugLightSphere);
 
         pipeline.Bind(cmdBuffer);
 
@@ -1297,7 +1297,7 @@ namespace Renderer::Debug
         // Mildy scuffed transform logic, but it works for now
         auto ComputeTransform = [] (const glm::vec3& position, const glm::vec3& direction, f32 range) -> glm::mat4
         {
-            constexpr glm::mat4 identity = glm::identity<glm::mat4>();
+            constexpr auto identity = glm::identity<glm::mat4>();
 
             const glm::vec3 normalizedDirection = glm::normalize(-direction);
 
@@ -1400,7 +1400,7 @@ namespace Renderer::Debug
             Vk::SetDebugName(device, m_coneVertexBuffer.handle, "Debug/Lights/Cone/VertexBuffer");
         }
 
-        const auto& pipeline = pipelineManager.GetPipeline("Debug/Light/Sphere");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DebugLightSphere);
 
         pipeline.Bind(cmdBuffer);
 
@@ -1600,7 +1600,7 @@ namespace Renderer::Debug
         )
         .Execute(cmdBuffer);
 
-        const auto& pipeline = pipelineManager.GetPipeline("Debug/Culling/GenerateStatistics");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DebugFrustumCullingStatistics);
 
         pipeline.Bind(cmdBuffer);
 
@@ -1749,7 +1749,7 @@ namespace Renderer::Debug
             .size           = m_tiledLightingStatisticsBuffer.size
         });
 
-        const auto& pipeline = pipelineManager.GetPipeline("Debug/TiledLighting/GenerateStatistics");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DebugTiledLightCullingStatistics);
 
         pipeline.Bind(cmdBuffer);
 

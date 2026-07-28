@@ -30,14 +30,14 @@ namespace Renderer::TiledLighting
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("TiledLighting/Bounds", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::TiledLightCullingBounds, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("TiledLighting/Bounds.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Bounds::Constants))
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("TiledLighting/Culling", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::TiledLightCulling, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("TiledLighting/Culling.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::Constants))
@@ -140,7 +140,7 @@ namespace Renderer::TiledLighting
     {
         Vk::BeginLabel(cmdBuffer, "Bounds", glm::vec4(0.6098f, 0.8423f, 0.3599f, 1.0f));
 
-        const auto& pipeline = pipelineManager.GetPipeline("TiledLighting/Bounds");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::TiledLightCullingBounds);
 
         const auto& tileDepths = framebufferManager.GetFramebuffer("TiledLighting/TileDepths");
 
@@ -256,7 +256,7 @@ namespace Renderer::TiledLighting
             }
         );
 
-        const auto& pipeline = pipelineManager.GetPipeline("TiledLighting/Culling");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::TiledLightCulling);
 
         pipeline.Bind(cmdBuffer);
 

@@ -237,72 +237,7 @@ namespace Models
 
                 surfaceInfo.indexInfo = info;
 
-                switch (indicesAccessor.componentType)
-                {
-                case fastgltf::ComponentType::Byte:
-                {
-                    fastgltf::iterateAccessorWithIndex<s8>(asset, indicesAccessor, [&] (s8 index, usize i)
-                    {
-                        const auto copy = static_cast<GPU::Index>(static_cast<u8>(index));
-
-                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
-                    });
-
-                    break;
-                }
-
-                case fastgltf::ComponentType::UnsignedByte:
-                {
-                    fastgltf::iterateAccessorWithIndex<u8>(asset, indicesAccessor, [&] (u8 index, usize i)
-                    {
-                        const auto copy = static_cast<GPU::Index>(index);
-
-                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
-                    });
-
-                    break;
-                }
-
-                case fastgltf::ComponentType::Short:
-                {
-                    fastgltf::iterateAccessorWithIndex<s16>(asset, indicesAccessor, [&] (s16 index, usize i)
-                    {
-                        const auto copy = static_cast<GPU::Index>(index);
-
-                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
-                    });
-
-                    break;
-                }
-
-                case fastgltf::ComponentType::UnsignedShort:
-                {
-                    fastgltf::iterateAccessorWithIndex<u16>(asset, indicesAccessor, [&] (u16 index, usize i)
-                    {
-                        const auto copy = static_cast<GPU::Index>(index);
-
-                        std::memcpy(&data[i], &copy, sizeof(GPU::Index));
-                    });
-
-                    break;
-                }
-
-                case fastgltf::ComponentType::UnsignedInt:
-                {
-                    static_assert(std::is_same_v<GPU::Index, u32>, "Assume indices are u32s for faster copying.");
-
-                    fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data);
-
-                    break;
-                }
-
-                default:
-                    Logger::Error
-                    (
-                        "Invalid index component type! [ComponentType={}]\n",
-                        static_cast<std::underlying_type_t<fastgltf::ComponentType>>(indicesAccessor.componentType)
-                    );
-                }
+                fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data);
             }
 
             Vk::VertexBuffer::Allocation vertexAllocation = {};
@@ -372,27 +307,50 @@ namespace Models
                     "TEXCOORD_1"
                 );
 
-                for (usize i = 0; i < normalAccessor.count; ++i)
+                if (uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
                 {
-                    GPU::UV uvs = {};
+                    const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
+                    const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
 
-                    std::optional<glm::vec2> uv0 = std::nullopt;
-                    std::optional<glm::vec2> uv1 = std::nullopt;
-
-                    if (uv0AccessorIndex.has_value())
+                    for (usize i = 0; i < normalAccessor.count; ++i)
                     {
-                        uv0 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv0AccessorIndex], i));
-                    }
+                        const glm::f16vec2 uv0 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv0Accessor, i));
+                        const glm::f16vec2 uv1 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv1Accessor, i));
 
-                    if (uv1AccessorIndex.has_value())
+                        const GPU::UV uvs = {.uv = {uv0, uv1}};
+
+                        std::memcpy(&vertexAllocation.uv[i], &uvs, sizeof(GPU::UV));
+                    }
+                }
+                else if (uv0AccessorIndex.has_value() && !uv1AccessorIndex.has_value())
+                {
+                    const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
+
+                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv0Accessor, [&] (const glm::vec2& uv, usize index)
                     {
-                        uv1 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i));
-                    }
+                        const glm::f16vec2 uv0 = glm::glm_cast(uv);
 
-                    uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::f16vec2(0, 0));
-                    uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::f16vec2(0, 0));
+                        const GPU::UV uvs = {.uv = {uv0, uv0}};
 
-                    std::memcpy(&vertexAllocation.uv[i], &uvs, sizeof(GPU::UV));
+                        std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
+                    });
+                }
+                else if (!uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
+                {
+                    const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
+
+                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv1Accessor, [&] (const glm::vec2& uv, usize index)
+                    {
+                        const glm::f16vec2 uv1 = glm::glm_cast(uv);
+
+                        const GPU::UV uvs = {.uv = {uv1, uv1}};
+
+                        std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
+                    });
+                }
+                else
+                {
+                    std::memset(&vertexAllocation.uv[0], 0, sizeof(GPU::UV) * normalAccessor.count);
                 }
             }
 

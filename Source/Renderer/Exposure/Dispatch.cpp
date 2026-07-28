@@ -37,21 +37,21 @@ namespace Renderer::Exposure
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("Exposure/Histogram", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::AutoExposureHistogram, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Exposure/Histogram.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Histogram::Constants))
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Exposure/Average", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::AutoExposureAverage, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Exposure/Average.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Average::Constants))
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Exposure/Combine", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::AutoExposureCombine, Vk::PipelineConfig{}
            .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
            .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
            .AttachShader("Misc/Triangle.vert",    VK_SHADER_STAGE_VERTEX_BIT)
@@ -222,7 +222,7 @@ namespace Renderer::Exposure
 
         Vk::BeginLabel(cmdBuffer, "Histogram", glm::vec4(0.7098f, 0.4843f, 0.549f, 1.0f));
 
-        const auto& histogramPipeline = pipelineManager.GetPipeline("Exposure/Histogram");
+        const auto& histogramPipeline = pipelineManager.GetPipeline(Vk::PipelineID::AutoExposureHistogram);
 
         const auto& sceneColor = framebufferManager.GetFramebuffer("FinalSceneColor");
 
@@ -322,7 +322,7 @@ namespace Renderer::Exposure
     {
         Vk::BeginLabel(cmdBuffer, "Average", glm::vec4(0.3098f, 0.4843f, 0.549f, 1.0f));
 
-        const auto& averagePipeline = pipelineManager.GetPipeline("Exposure/Average");
+        const auto& averagePipeline = pipelineManager.GetPipeline(Vk::PipelineID::AutoExposureAverage);
 
         const auto& exposureValueView = framebufferManager.GetFramebufferView("Exposure/ValueView");
 
@@ -548,7 +548,7 @@ namespace Renderer::Exposure
     {
         Vk::BeginLabel(cmdBuffer, "Combine", {0.8736f, 0.4598f, 0.7548f, 1.0f});
 
-        const auto& pipeline = pipelineManager.GetPipeline("Exposure/Combine");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::AutoExposureCombine);
 
         const auto& exposedSceneColorView = framebufferManager.GetFramebufferView("ExposedSceneColorView");
         const auto& exposedSceneColor     = framebufferManager.GetFramebuffer(exposedSceneColorView.framebuffer);

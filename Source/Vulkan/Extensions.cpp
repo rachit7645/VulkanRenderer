@@ -16,17 +16,12 @@
 
 #include "Extensions.h"
 
-#include <volk/volk.h>
-
+#include "Util.h"
 #include "Externals/SDL.h"
 #include "Externals/UnorderedDense.h"
-#include "Util.h"
+#include "Externals/DLSSNoSDK.h"
 #include "Util/Log.h"
 #include "Util/Types.h"
-
-#ifdef ENGINE_DLSS
-#include "Externals/DLSS.h"
-#endif
 
 namespace Vk
 {
@@ -58,97 +53,47 @@ namespace Vk
         QueryDeviceExtensions(device);
     }
 
-    std::vector<const char*> Extensions::GetInstanceExtensions()
+    Stack::Vector<const char*> Extensions::GetInstanceExtensions(Stack::Allocator& allocator)
     {
-        u32 SDLExtensionCount = 0;
+        const auto SDLInstanceExtensions  = SDL::GetInstanceExtensions();
+        const auto DLSSInstanceExtensions = DLSS::GetInstanceExtensions(allocator);
 
-        const auto SDLInstanceExtensions = SDL_Vulkan_GetInstanceExtensions(&SDLExtensionCount);
+        usize totalExtensionCount = 0;
 
-        if (SDLInstanceExtensions == nullptr)
-        {
-            Logger::Error("Failed to load SDL3 extensions!: {}\n", SDL_GetError());
-        }
+        totalExtensionCount += REQUIRED_INSTANCE_EXTENSIONS.size();
+        totalExtensionCount += SDLInstanceExtensions.size();
+        totalExtensionCount += DLSSInstanceExtensions.size();
 
-        auto extensions = std::vector(REQUIRED_INSTANCE_EXTENSIONS.begin(), REQUIRED_INSTANCE_EXTENSIONS.end());
+        auto extensions = Stack::CreateVector<const char*>(allocator);
 
-        extensions.insert(extensions.end(), SDLInstanceExtensions, SDLInstanceExtensions + SDLExtensionCount);
+        extensions.reserve(totalExtensionCount);
 
-        #ifdef ENGINE_DLSS
-
-        u32                    DLSSExtensionCount      = 0;
-        VkExtensionProperties* DLSSExtensionProperties = nullptr;
-
-        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements
-        (
-            &DLSS::FEATURE_DISCOVERY_INFO,
-            &DLSSExtensionCount,
-            &DLSSExtensionProperties
-        );
-
-        if (result != NVSDK_NGX_Result_Success)
-        {
-            Logger::Warning("Failed to load DLSS instance extensions! [Error={}]\n", static_cast<u64>(result));
-        }
-        else
-        {
-            for (u32 i = 0; i < DLSSExtensionCount; ++i)
-            {
-                extensions.emplace_back(DLSSExtensionProperties[i].extensionName);
-            }
-        }
-
-        #endif
+        extensions.append_range(REQUIRED_INSTANCE_EXTENSIONS);
+        extensions.append_range(SDLInstanceExtensions);
+        extensions.append_range(DLSSInstanceExtensions);
 
         return extensions;
     }
 
-    std::vector<const char*> Extensions::GetDeviceExtensions(ENGINE_UNUSED VkInstance instance, ENGINE_UNUSED VkPhysicalDevice physicalDevice) const
+    Stack::Vector<const char*> Extensions::GetDeviceExtensions(ENGINE_UNUSED VkInstance instance, ENGINE_UNUSED VkPhysicalDevice physicalDevice, Stack::Allocator& allocator) const
     {
-        auto extensions = std::vector(REQUIRED_DEVICE_EXTENSIONS.begin(), REQUIRED_DEVICE_EXTENSIONS.end());
+        auto extensions = Stack::CreateVector<const char*>(allocator);
+
+        extensions.append_range(REQUIRED_DEVICE_EXTENSIONS);
 
         if (HasMemoryBudget())
         {
             extensions.emplace_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
         }
 
-        #ifdef ENGINE_DLSS
-        extensions.append_range(GetDLSSDeviceExtensions(instance, physicalDevice));
-        #endif
-
-        return extensions;
-    }
-
-    #ifdef ENGINE_DLSS
-    std::vector<const char*> Extensions::GetDLSSDeviceExtensions(VkInstance instance, VkPhysicalDevice physicalDevice) const
-    {
-        u32                    DLSSExtensionCount      = 0;
-        VkExtensionProperties* DLSSExtensionProperties = nullptr;
-
-        const NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements
-        (
+        extensions.append_range(DLSS::GetDeviceExtensions(
             instance,
             physicalDevice,
-            &DLSS::FEATURE_DISCOVERY_INFO,
-            &DLSSExtensionCount,
-            &DLSSExtensionProperties
-        );
-
-        if (result != NVSDK_NGX_Result_Success)
-        {
-            return {};
-        }
-
-        std::vector<const char*> extensions;
-        extensions.reserve(DLSSExtensionCount);
-
-        for (u32 i = 0; i < DLSSExtensionCount; ++i)
-        {
-            extensions.emplace_back(DLSSExtensionProperties[i].extensionName);
-        }
+            allocator
+        ));
 
         return extensions;
     }
-    #endif
 
     bool Extensions::HasRequiredExtensions() const
     {

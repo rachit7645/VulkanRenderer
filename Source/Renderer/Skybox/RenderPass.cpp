@@ -33,7 +33,7 @@ namespace Renderer::Skybox
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, VK_FORMAT_R16G16_SFLOAT};
 
-        pipelineManager.AddPipeline("Skybox", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::Skybox, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
             .AttachShader("Skybox/Skybox.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -65,7 +65,7 @@ namespace Renderer::Skybox
     {
         Vk::BeginLabel(cmdBuffer, "Skybox", {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
-        const auto& pipeline = pipelineManager.GetPipeline("Skybox");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::Skybox);
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& gMotionVectorsView  = framebufferManager.GetFramebufferView("GMotionVectorsView");

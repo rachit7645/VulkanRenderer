@@ -38,7 +38,7 @@ namespace Renderer::Depth
             VK_DYNAMIC_STATE_CULL_MODE
         };
 
-        pipelineManager.AddPipeline("Depth/Opaque", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::DepthOpaque, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Deferred/Depth/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -49,7 +49,7 @@ namespace Renderer::Depth
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
         );
 
-        pipelineManager.AddPipeline("Depth/AlphaMasked", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::DepthAlphaMasked, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Deferred/Depth/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -164,8 +164,8 @@ namespace Renderer::Depth
             indirectBuffer
         );
 
-        const auto& opaquePipeline      = pipelineManager.GetPipeline("Depth/Opaque");
-        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline("Depth/AlphaMasked");
+        const auto& opaquePipeline      = pipelineManager.GetPipeline(Vk::PipelineID::DepthOpaque);
+        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::DepthAlphaMasked);
 
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
         const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);

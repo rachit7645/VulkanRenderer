@@ -38,7 +38,7 @@ namespace Renderer::SpotShadow
             VK_DYNAMIC_STATE_CULL_MODE
         };
 
-        pipelineManager.AddPipeline("SpotShadow/Opaque", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::SpotShadowOpaque, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Shadows/SpotShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -49,7 +49,7 @@ namespace Renderer::SpotShadow
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
         );
 
-        pipelineManager.AddPipeline("SpotShadow/AlphaMasked", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::SpotShadowAlphaMasked, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Shadows/SpotShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
@@ -135,8 +135,8 @@ namespace Renderer::SpotShadow
 
         Vk::BeginLabel(cmdBuffer, "Spot Light Shadows", glm::vec4(0.2196f, 0.6588f, 0.2588f, 1.0f));
 
-        const auto& opaquePipeline      = pipelineManager.GetPipeline("SpotShadow/Opaque");
-        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline("SpotShadow/AlphaMasked");
+        const auto& opaquePipeline      = pipelineManager.GetPipeline(Vk::PipelineID::SpotShadowOpaque);
+        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::SpotShadowAlphaMasked);
 
         const auto& spotShadowMap = framebufferManager.GetFramebuffer("SpotShadowMap");
 

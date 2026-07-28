@@ -34,6 +34,8 @@ namespace STL
         template <typename U>
         friend class StackAllocator;
 
+        StackAllocator() noexcept = default;
+
         explicit StackAllocator(Stack::Allocator* allocator)
             : m_allocator{allocator}
         {
@@ -60,6 +62,11 @@ namespace STL
 
         [[nodiscard]] T* allocate(usize count)
         {
+            if (m_allocator == nullptr)
+            {
+                throw std::bad_alloc{};
+            }
+
             if (count > std::numeric_limits<usize>::max() / sizeof(T))
             {
                 throw std::bad_array_new_length{};

@@ -35,7 +35,7 @@ namespace Renderer::Lighting
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("Lighting", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::Lighting, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",     VK_SHADER_STAGE_VERTEX_BIT)
@@ -101,7 +101,7 @@ namespace Renderer::Lighting
     {
         Vk::BeginLabel(cmdBuffer, "Lighting", glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
 
-        const auto& pipeline = pipelineManager.GetPipeline("Lighting");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::Lighting);
         
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);

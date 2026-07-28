@@ -33,21 +33,21 @@ namespace Renderer::AO::VBAO
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("VBAO/DepthPreFilter", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::VBAODepthPreFilter, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::Constants))
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("VBAO/Occlusion", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::VBAO, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/VBAO.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Occlusion::Constants))
             .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("VBAO/Denoise", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::VBAOSpatialDenoise, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
@@ -301,7 +301,7 @@ namespace Renderer::AO::VBAO
     {
         Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
 
-        const auto& depthPreFilterPipeline = pipelineManager.GetPipeline("VBAO/DepthPreFilter");
+        const auto& depthPreFilterPipeline = pipelineManager.GetPipeline(Vk::PipelineID::VBAODepthPreFilter);
 
         const auto& depthMipChain = framebufferManager.GetFramebuffer("VBAO/DepthMipChain");
 
@@ -393,7 +393,7 @@ namespace Renderer::AO::VBAO
     {
         Vk::BeginLabel(cmdBuffer, "Occlusion", glm::vec4(0.6098f, 0.7143f, 0.4529f, 1.0f));
 
-        const auto& occlusionPipeline = pipelineManager.GetPipeline("VBAO/Occlusion");
+        const auto& occlusionPipeline = pipelineManager.GetPipeline(Vk::PipelineID::VBAO);
 
         const auto& noisyAO          = framebufferManager.GetFramebuffer("VBAO/NoisyAO");
         const auto& depthDifferences = framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
@@ -529,7 +529,7 @@ namespace Renderer::AO::VBAO
     {
         Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));
 
-        const auto& denoisePipeline = pipelineManager.GetPipeline("VBAO/Denoise");
+        const auto& denoisePipeline = pipelineManager.GetPipeline(Vk::PipelineID::VBAOSpatialDenoise);
 
         const auto& occlusion = framebufferManager.GetFramebuffer("VBAO/Occlusion");
 

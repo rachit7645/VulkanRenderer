@@ -39,6 +39,15 @@ namespace Stack
         STL::StackAllocator<std::pair<Key, T>>
     >;
 
+    template<typename Key>
+    using Set = ankerl::unordered_dense::set
+    <
+        Key,
+        ankerl::unordered_dense::hash<Key>,
+        std::equal_to<Key>,
+        STL::StackAllocator<Key>
+    >;
+
     Stack::String CreateString(Stack::Allocator& allocator);
 
     template <typename T>
@@ -51,6 +60,12 @@ namespace Stack
     Stack::Map<Key, T> CreateMap(Stack::Allocator& allocator)
     {
         return Stack::Map<Key, T>(STL::StackAllocator<std::pair<Key, T>>(&allocator));
+    }
+
+    template <typename T>
+    Stack::Set<T> CreateSet(Stack::Allocator& allocator)
+    {
+        return Stack::Set<T>(STL::StackAllocator<T>(&allocator));
     }
 }
 

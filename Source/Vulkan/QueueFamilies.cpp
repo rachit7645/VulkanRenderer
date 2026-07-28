@@ -23,9 +23,10 @@
 
 namespace Vk
 {
-    QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+    QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, Stack::Allocator& allocator)
     {
         u32 queueFamilyCount = 0;
+
         vkGetPhysicalDeviceQueueFamilyProperties2
         (
             device,
@@ -35,14 +36,17 @@ namespace Vk
 
         if (queueFamilyCount == 0)
         {
-            Logger::Error("Failed to find any queue families! [device={}]\n", std::bit_cast<void*>(device));
+            Logger::Error("Failed to find any queue families! [Device={}]\n", reinterpret_cast<void*>(device));
         }
 
         VkQueueFamilyProperties2 emptyQueue = {};
         emptyQueue.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
         emptyQueue.pNext = nullptr;
 
-        auto queueFamilies = std::vector(queueFamilyCount, emptyQueue);
+        auto queueFamilies = Stack::CreateVector<VkQueueFamilyProperties2>(allocator);
+
+        queueFamilies.resize(queueFamilyCount, emptyQueue);
+
         vkGetPhysicalDeviceQueueFamilyProperties2
         (
             device,
@@ -53,6 +57,7 @@ namespace Vk
         for (u32 i = 0; i < queueFamilies.size(); ++i)
         {
             VkBool32 presentSupport = VK_FALSE;
+
             Vk::CheckResult(vkGetPhysicalDeviceSurfaceSupportKHR(
                 device,
                 i,
@@ -86,9 +91,11 @@ namespace Vk
         }
     }
 
-    ankerl::unordered_dense::set<u32> QueueFamilies::GetUniqueFamilies() const
+    Stack::Set<u32> QueueFamilies::GetUniqueFamilies(Stack::Allocator& allocator) const
     {
-        ankerl::unordered_dense::set<u32> uniqueFamilies = {*graphicsFamily};
+        auto uniqueFamilies = Stack::CreateSet<u32>(allocator);
+
+        uniqueFamilies.emplace(*graphicsFamily);
 
         if (computeFamily.has_value())
         {

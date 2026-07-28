@@ -305,7 +305,7 @@ namespace Renderer::Buffers
         const VkDeviceSize size  = std::min(requiredSize, maxAllowedSize);
         const u32          count = size / sizeof(T);
 
-        const auto pointer = static_cast<u8*>(buffer.hostAddress) + offset;
+        auto* pointer = static_cast<u8*>(buffer.hostAddress) + offset;
 
         std::memcpy
         (
@@ -368,7 +368,7 @@ namespace Renderer::Buffers
 
             constexpr u32 ZERO = 0;
 
-            const auto pMappedData = static_cast<u8*>(lightBuffer.hostAddress);
+            auto* pMappedData = static_cast<u8*>(lightBuffer.hostAddress);
 
             std::memcpy(pMappedData + GPU::LightsBuffer::GetPointLightOffset(),         &ZERO, sizeof(u32));
             std::memcpy(pMappedData + GPU::LightsBuffer::GetShadowedPointLightOffset(), &ZERO, sizeof(u32));

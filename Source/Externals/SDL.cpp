@@ -22,15 +22,31 @@ namespace SDL
 {
     void SetHint(const char* name, const char* value)
     {
-        if (!SDL_SetHint(name, value))
+        if (SDL_SetHint(name, value))
         {
-            Logger::Warning
-            (
-                "SDL_SetHint failed! [Hint={}] [Value={}] [Error={}]\n",
-                name != nullptr  ? name  : "nullptr",
-                value != nullptr ? value : "nullptr",
-                SDL_GetError()
-            );
+            return;
         }
+
+        Logger::Warning
+        (
+            "SDL_SetHint failed! [Hint={}] [Value={}] [Error={}]\n",
+            name != nullptr  ? name  : "nullptr",
+            value != nullptr ? value : "nullptr",
+            SDL_GetError()
+        );
+    }
+
+    std::span<const char* const> GetInstanceExtensions()
+    {
+        u32 SDLExtensionCount = 0;
+
+        const auto* SDLInstanceExtensions = SDL_Vulkan_GetInstanceExtensions(&SDLExtensionCount);
+
+        if (SDLInstanceExtensions == nullptr)
+        {
+            Logger::Error("Failed to load SDL3 extensions!: {}\n", SDL_GetError());
+        }
+
+        return std::span(SDLInstanceExtensions, SDLInstanceExtensions + SDLExtensionCount);
     }
 }

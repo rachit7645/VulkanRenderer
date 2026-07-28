@@ -23,6 +23,7 @@
 
 #include "Externals/UnorderedDense.h"
 #include "Util/String.h"
+#include "Util/Containers.h"
 
 namespace Vk
 {
@@ -33,13 +34,14 @@ namespace Vk
 
         explicit Extensions(VkPhysicalDevice device);
 
-        [[nodiscard]] static std::vector<const char*> GetInstanceExtensions();
+        [[nodiscard]] static Stack::Vector<const char*> GetInstanceExtensions(Stack::Allocator& allocator);
 
-        [[nodiscard]] std::vector<const char*> GetDeviceExtensions(VkInstance instance, VkPhysicalDevice physicalDevice) const;
-
-        #ifdef ENGINE_DLSS
-        [[nodiscard]] std::vector<const char*> GetDLSSDeviceExtensions(VkInstance instance, VkPhysicalDevice physicalDevice) const;
-        #endif
+        [[nodiscard]] Stack::Vector<const char*> GetDeviceExtensions
+        (
+            VkInstance instance,
+            VkPhysicalDevice physicalDevice,
+            Stack::Allocator& allocator
+        ) const;
 
         [[nodiscard]] bool HasRequiredExtensions() const;
         [[nodiscard]] bool HasMemoryBudget()       const;

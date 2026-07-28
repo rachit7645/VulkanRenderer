@@ -33,7 +33,7 @@ namespace Renderer::ShadowRT
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("ShadowRT", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::ShadowRayTraced, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
             .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
             .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
@@ -105,7 +105,7 @@ namespace Renderer::ShadowRT
     {
         Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
 
-        const auto& pipeline = pipelineManager.GetPipeline("ShadowRT");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::ShadowRayTraced);
 
         if (!m_shaderBindingTable.has_value())
         {

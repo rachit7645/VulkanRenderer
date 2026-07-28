@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#ifndef DLSS_NO_SDK_H
+#define DLSS_NO_SDK_H
 
-#include "Util/Stack.h"
-#include "Renderer/RenderManager.h"
+#include "Util/Containers.h"
 
-namespace Engine
+namespace DLSS
 {
-    class Application
-    {
-    public:
-        Application();
+    [[nodiscard]] Stack::Vector<const char*> GetInstanceExtensions(Stack::Allocator& allocator);
 
-        void Run();
-    private:
-        Stack::Allocator m_frameAllocator;
-
-        Renderer::RenderManager m_renderer;
-    };
+    [[nodiscard]] Stack::Vector<const char*> GetDeviceExtensions
+    (
+        VkInstance instance,
+        VkPhysicalDevice physicalDevice,
+        Stack::Allocator& allocator
+    );
 }
 
 #endif

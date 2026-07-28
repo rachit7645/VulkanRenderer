@@ -22,6 +22,7 @@
 
 #include "Util/Types.h"
 #include "Externals/UnorderedDense.h"
+#include "Util/Containers.h"
 
 namespace Vk
 {
@@ -29,12 +30,12 @@ namespace Vk
     {
     public:
         QueueFamilies() = default;
-        QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
+        QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, Stack::Allocator& allocator);
 
         std::optional<u32> graphicsFamily = std::nullopt;
         std::optional<u32> computeFamily  = std::nullopt;
 
-        [[nodiscard]] ankerl::unordered_dense::set<u32> GetUniqueFamilies() const;
+        [[nodiscard]] Stack::Set<u32> GetUniqueFamilies(Stack::Allocator& allocator) const;
 
         [[nodiscard]] bool HasRequiredFamilies() const;
         [[nodiscard]] bool HasAllFamilies() const;

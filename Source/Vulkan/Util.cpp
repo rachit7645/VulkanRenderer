@@ -23,6 +23,7 @@
 #include "Extensions.h"
 #include "QueueFamilies.h"
 #include "SwapchainInfo.h"
+#include "Externals/DLSSNoSDK.h"
 #include "Util/Log.h"
 
 namespace Vk
@@ -33,27 +34,28 @@ namespace Vk
         VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface,
         const VkPhysicalDeviceProperties2& properties,
-        const VkPhysicalDeviceFeatures2& features
+        const VkPhysicalDeviceFeatures2& features,
+        Stack::Allocator& scratchAllocator
     )
     {
-        const auto queues            = Vk::QueueFamilies(physicalDevice, surface);
+        const auto queues            = Vk::QueueFamilies(physicalDevice, surface, scratchAllocator);
         const auto currentExtensions = Vk::Extensions(physicalDevice);
 
-        const auto vk11Properties = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Properties>(properties.pNext);
+        const auto* vk11Properties = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Properties>(properties.pNext);
 
-        const auto vk11Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(features.pNext);
-        const auto vk12Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(features.pNext);
-        const auto vk13Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(features.pNext);
-        const auto vk14Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan14Features>(features.pNext);
+        const auto* vk11Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan11Features>(features.pNext);
+        const auto* vk12Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan12Features>(features.pNext);
+        const auto* vk13Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan13Features>(features.pNext);
+        const auto* vk14Features = Vk::FindStructureInChain<VkPhysicalDeviceVulkan14Features>(features.pNext);
 
-        const auto swapchainMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(features.pNext);
+        const auto* swapchainMaintenanceFeatures = Vk::FindStructureInChain<VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT>(features.pNext);
 
-        const auto accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(features.pNext);
-        const auto rayTracingFeatures            = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(features.pNext);
-        const auto rayTracingMaintenance1        = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(features.pNext);
+        const auto* accelerationStructureFeatures = Vk::FindStructureInChain<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(features.pNext);
+        const auto* rayTracingFeatures            = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(features.pNext);
+        const auto* rayTracingMaintenance1        = Vk::FindStructureInChain<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(features.pNext);
 
         #ifdef ENGINE_DEBUG
-        const auto shaderRelaxedExtendedInstructionFeatures = Vk::FindStructureInChain<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(features.pNext);
+        const auto* shaderRelaxedExtendedInstructionFeatures = Vk::FindStructureInChain<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(features.pNext);
         #endif
 
         // Score parts
@@ -65,7 +67,12 @@ namespace Vk
         const bool hasRequiredExtensions    = currentExtensions.HasRequiredExtensions();
 
         #ifdef ENGINE_DLSS
-        const bool arePushDescriptorsRequired = std::ranges::contains(currentExtensions.GetDLSSDeviceExtensions(instance, physicalDevice), Util::ToLower(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME), Util::ToLower);
+        const bool arePushDescriptorsRequired = std::ranges::contains
+        (
+            DLSS::GetDeviceExtensions(instance, physicalDevice, scratchAllocator),
+            Util::ToLower(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME),
+            Util::ToLower
+        );
         #else
         constexpr bool arePushDescriptorsRequired = false;
         #endif

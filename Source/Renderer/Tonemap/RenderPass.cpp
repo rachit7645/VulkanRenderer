@@ -16,7 +16,6 @@
 
 #include "RenderPass.h"
 
-#include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 #include "Tonemap/Tonemap.h"
 
@@ -34,7 +33,7 @@ namespace Renderer::ToneMap
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatLDR};
 
-        pipelineManager.AddPipeline("Tonemap", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::Tonemap, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",   VK_SHADER_STAGE_VERTEX_BIT)
@@ -94,7 +93,7 @@ namespace Renderer::ToneMap
         const Objects::Samplers& samplers
     )
     {
-        const auto& pipeline = pipelineManager.GetPipeline("Tonemap");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::Tonemap);
 
         const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
         const auto& finalColor     = framebufferManager.GetFramebuffer(finalColorView.framebuffer);
@@ -140,8 +139,8 @@ namespace Renderer::ToneMap
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {finalColor.image.width, finalColor.image.height}
+                .offset = {.x     = 0,                      .y      = 0},
+                .extent = {.width = finalColor.image.width, .height = finalColor.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -169,8 +168,8 @@ namespace Renderer::ToneMap
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {finalColor.image.width, finalColor.image.height}
+            .offset = {.x     = 0,                      .y      = 0},
+            .extent = {.width = finalColor.image.width, .height = finalColor.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);

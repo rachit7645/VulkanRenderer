@@ -31,11 +31,18 @@ namespace Stack
 
     void Allocator::Reset()
     {
-        m_offset = 0;
+        if (const usize offset = m_offset.load(std::memory_order_relaxed); offset != 0)
+        {
+            Logger::Debug("[ScratchAllocator] Allocated {} bytes this frame!\n", offset);
+        }
+
+        m_offset.store(0ull, std::memory_order_relaxed);
     }
 
     void* Allocator::Allocate(usize bytes, usize alignment)
     {
+        // Logger::Debug("[ScratchAllocator] Allocating! [Bytes={}] [Alignment={}]\n", bytes, alignment);
+
         if (!Util::IsPowerOfTwo(alignment))
         {
             return nullptr;
@@ -43,9 +50,11 @@ namespace Stack
 
         const usize alignedSize = Util::Align(bytes, alignment);
 
-        const usize offset = alignedSize + m_offset.fetch_add(alignedSize);
+        const usize offset = m_offset.fetch_add(alignedSize, std::memory_order_relaxed);
 
-        if (offset > m_size)
+        const usize newOffset = offset + alignedSize;
+
+        if (newOffset > m_size)
         {
             Logger::Warning("Failed to allocate! [Bytes={}]\n", bytes);
 

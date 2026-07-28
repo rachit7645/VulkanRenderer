@@ -23,6 +23,8 @@
 namespace SDL
 {
     void SetHint(const char* name, const char* value);
+
+    std::span<const char* const> GetInstanceExtensions();
 }
 
 #endif

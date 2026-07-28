@@ -79,7 +79,7 @@ namespace Vk
     template<typename T>
     std::optional<T*> FindStructureInChainOptional(void* pNext)
     {
-        for (auto current = static_cast<VkBaseOutStructure*>(pNext); current != nullptr; current = current->pNext)
+        for (auto* current = static_cast<VkBaseOutStructure*>(pNext); current != nullptr; current = current->pNext)
         {
             if (current->sType == Vk::StructureType<T>::sType)
             {
@@ -93,7 +93,7 @@ namespace Vk
     template<typename T>
     std::optional<const T*> FindStructureInChainOptional(const void* pNext)
     {
-        for (auto current = static_cast<const VkBaseInStructure*>(pNext); current != nullptr; current = current->pNext)
+        for (const auto* current = static_cast<const VkBaseInStructure*>(pNext); current != nullptr; current = current->pNext)
         {
             if (current->sType == Vk::StructureType<T>::sType)
             {
