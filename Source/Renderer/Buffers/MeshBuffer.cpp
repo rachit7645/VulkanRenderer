@@ -99,18 +99,19 @@ namespace Renderer::Buffers
         VmaAllocator allocator,
         const Models::ModelManager& modelManager,
         Vk::TextureManager& textureManager,
-        const std::vector<Renderer::RenderObject>& renderObjects
+        Scratch::Allocator& scratchAllocator,
+        const std::span<const Renderer::RenderObject> renderObjects
     )
     {
-        ankerl::unordered_dense::set<Models::ModelID> uniqueModelIDs = {};
+        auto uniqueModelIDs = Scratch::CreateSet<Models::ModelID>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {
             uniqueModelIDs.insert(renderObject.modelID);
         }
 
-        std::vector<GPU::Mesh>                                      meshes       = {};
-        ankerl::unordered_dense::map<Models::MeshIdentifier, usize> meshIndexMap = {};
+        auto meshes       = Scratch::CreateVector<GPU::Mesh>(scratchAllocator);
+        auto meshIndexMap = Scratch::CreateMap<Models::MeshIdentifier, usize>(scratchAllocator);
 
         for (const auto modelID : uniqueModelIDs)
         {
@@ -138,7 +139,7 @@ namespace Renderer::Buffers
             }
         }
 
-        std::vector<GPU::Instance> instances = {};
+        auto instances  = Scratch::CreateVector<GPU::Instance>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {

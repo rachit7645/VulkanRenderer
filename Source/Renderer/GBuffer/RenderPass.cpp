@@ -307,7 +307,8 @@ namespace Renderer::GBuffer
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Objects::Samplers& samplers
+        const Objects::Samplers& samplers,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "GBuffer Generation", glm::vec4(0.5098f, 0.1243f, 0.4549f, 1.0f));
@@ -329,7 +330,7 @@ namespace Renderer::GBuffer
         const auto& gMotionVectors = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
         const auto& sceneDepth     = framebufferManager.GetFramebuffer(sceneDepthView.framebuffer);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier(

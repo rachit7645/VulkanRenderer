@@ -28,7 +28,7 @@
 
 namespace Vk
 {
-    Context::Context(SDL_Window* window, Stack::Allocator& scratchAllocator)
+    Context::Context(SDL_Window* window, Scratch::Allocator& scratchAllocator)
     {
         Vk::CheckResult(volkInitialize(), "Failed to initialize volk!");
 
@@ -44,7 +44,7 @@ namespace Vk
         AddDebugNames();
     }
 
-    void Context::CreateInstance(Stack::Allocator& scratchAllocator)
+    void Context::CreateInstance(Scratch::Allocator& scratchAllocator)
     {
         constexpr VkApplicationInfo appInfo =
         {
@@ -107,7 +107,7 @@ namespace Vk
         });
     }
 
-    void Context::PickPhysicalDevice(Stack::Allocator& scratchAllocator)
+    void Context::PickPhysicalDevice(Scratch::Allocator& scratchAllocator)
     {
         u32 deviceCount = 0;
 
@@ -123,7 +123,7 @@ namespace Vk
             Logger::Error("No physical devices found! [instance={}]\n", reinterpret_cast<void*>(instance));
         }
 
-        auto devices = Stack::CreateVector<VkPhysicalDevice>(scratchAllocator);
+        auto devices = Scratch::CreateVector<VkPhysicalDevice>(scratchAllocator);
 
         devices.resize(deviceCount);
 
@@ -134,14 +134,14 @@ namespace Vk
             "Failed to get physical devices!"
         );
 
-        auto vkProperties         = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceProperties2>(scratchAllocator);
-        auto vk11Properties       = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(scratchAllocator);
-        auto vk12Properties       = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(scratchAllocator);
-        auto asProperties         = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceAccelerationStructurePropertiesKHR>(scratchAllocator);
-        auto rtPipelineProperties = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(scratchAllocator);
+        auto vkProperties         = Scratch::CreateMap<VkPhysicalDevice, VkPhysicalDeviceProperties2>(scratchAllocator);
+        auto vk11Properties       = Scratch::CreateMap<VkPhysicalDevice, VkPhysicalDeviceVulkan11Properties>(scratchAllocator);
+        auto vk12Properties       = Scratch::CreateMap<VkPhysicalDevice, VkPhysicalDeviceVulkan12Properties>(scratchAllocator);
+        auto asProperties         = Scratch::CreateMap<VkPhysicalDevice, VkPhysicalDeviceAccelerationStructurePropertiesKHR>(scratchAllocator);
+        auto rtPipelineProperties = Scratch::CreateMap<VkPhysicalDevice, VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(scratchAllocator);
 
-        auto features = Stack::CreateMap<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(scratchAllocator);
-        auto scores   = Stack::CreateMap<VkPhysicalDevice, usize>(scratchAllocator);
+        auto features = Scratch::CreateMap<VkPhysicalDevice, VkPhysicalDeviceFeatures2>(scratchAllocator);
+        auto scores   = Scratch::CreateMap<VkPhysicalDevice, usize>(scratchAllocator);
 
         vkProperties.reserve(deviceCount);
         vk11Properties.reserve(deviceCount);
@@ -276,14 +276,14 @@ namespace Vk
         Logger::Info("Selected GPU! [GPU={}]\n", physicalDeviceName);
     }
 
-    void Context::CreateLogicalDevice(Stack::Allocator& scratchAllocator)
+    void Context::CreateLogicalDevice(Scratch::Allocator& scratchAllocator)
     {
         queueFamilies = Vk::QueueFamilies(physicalDevice, surface, scratchAllocator);
         extensions    = Vk::Extensions(physicalDevice);
 
         const auto uniqueQueueFamilies = queueFamilies.GetUniqueFamilies(scratchAllocator);
 
-        auto queueCreateInfos = Stack::CreateVector<VkDeviceQueueCreateInfo>(scratchAllocator);
+        auto queueCreateInfos = Scratch::CreateVector<VkDeviceQueueCreateInfo>(scratchAllocator);
 
         queueCreateInfos.reserve(uniqueQueueFamilies.size());
 

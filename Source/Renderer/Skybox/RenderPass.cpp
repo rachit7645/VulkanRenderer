@@ -57,10 +57,11 @@ namespace Renderer::Skybox
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Objects::Samplers& samplers,
-        const IBL::IBLMaps& iblMaps
+        const IBL::IBLMaps& iblMaps,
+        Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Skybox", {0.2796f, 0.8588f, 0.3548f, 1.0f});
@@ -75,7 +76,7 @@ namespace Renderer::Skybox
         const auto& gMotionVectors  = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
         const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier(

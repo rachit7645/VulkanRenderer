@@ -145,6 +145,7 @@ namespace Models
         Vk::StagingPool& stagingPool,
         Vk::GeometryBuffer& geometryBuffer,
         Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
@@ -160,9 +161,9 @@ namespace Models
 
         Vk::BeginLabel(cmdBuffer, "ModelManager::Update", {0.9607f, 0.4392f, 0.2980f, 1.0f});
 
-        std::vector<std::future<ModelManager::LoadedModel>> modelLoadFutures = {};
+        auto modelLoadFutures = Scratch::CreateVector<std::future<LoadedModel>>(scratchAllocator);
 
-        Models::LoadFromFileInfo loadFromFileInfo =
+        const Models::LoadFromFileInfo loadFromFileInfo =
         {
             .device         = device,
             .allocator      = allocator,

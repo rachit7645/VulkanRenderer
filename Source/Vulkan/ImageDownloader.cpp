@@ -35,6 +35,7 @@ namespace Vk
         VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::GraphicsTimeline& timeline,
+        Scratch::Allocator& scratchAllocator,
         tf::Executor& executor
     )
     {
@@ -109,7 +110,7 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "Setup Requested Image Downloads", {0.2098f, 0.9143f, 0.7859f, 1.0f});
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         for (const auto& requestedDownload : requestedDownloads)
         {

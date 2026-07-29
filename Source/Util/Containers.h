@@ -17,17 +17,21 @@
 #ifndef CONTAINERS_H
 #define CONTAINERS_H
 
-#include "Stack.h"
+#include "Scratch.h"
 #include "STLAdaptor.h"
 
 #include "Externals/UnorderedDense.h"
+#include "Util/String.h"
 
-namespace Stack
+namespace Scratch
 {
-    using String = std::basic_string<char, std::char_traits<char>, STL::StackAllocator<char>>;
+    using String = std::basic_string<char, std::char_traits<char>, STL::ScratchAllocator<char>>;
 
     template <typename T>
-    using Vector = std::vector<T, STL::StackAllocator<T>>;
+    using Vector = std::vector<T, STL::ScratchAllocator<T>>;
+
+    template <typename T>
+    using List = std::list<T, STL::ScratchAllocator<T>>;
 
     template <typename Key, typename T>
     using Map = ankerl::unordered_dense::map
@@ -36,36 +40,60 @@ namespace Stack
         T,
         ankerl::unordered_dense::hash<Key>,
         std::equal_to<Key>,
-        STL::StackAllocator<std::pair<Key, T>>
+        STL::ScratchAllocator<std::pair<Key, T>>
     >;
 
     template<typename Key>
-    using Set = ankerl::unordered_dense::set
-    <
-        Key,
-        ankerl::unordered_dense::hash<Key>,
-        std::equal_to<Key>,
-        STL::StackAllocator<Key>
-    >;
+    struct SetTraits
+    {
+        using Type = ankerl::unordered_dense::set
+        <
+            Key,
+            ankerl::unordered_dense::hash<Key>,
+            std::equal_to<Key>,
+            STL::ScratchAllocator<Key>
+        >;
+    };
 
-    Stack::String CreateString(Stack::Allocator& allocator);
+    template<>
+    struct SetTraits<Scratch::String>
+    {
+        using Type = ankerl::unordered_dense::set
+        <
+            Scratch::String,
+            Util::StringHash,
+            Util::StringEqual,
+            STL::ScratchAllocator<Scratch::String>
+        >;
+    };
+
+    template<typename Key>
+    using Set = SetTraits<Key>::Type;
+
+    Scratch::String CreateString(Scratch::Allocator& allocator);
 
     template <typename T>
-    Stack::Vector<T> CreateVector(Stack::Allocator& allocator)
+    Scratch::Vector<T> CreateVector(Scratch::Allocator& allocator)
     {
-        return Stack::Vector<T>(STL::StackAllocator<T>(&allocator));
+        return Scratch::Vector<T>(STL::ScratchAllocator<T>(&allocator));
+    }
+
+    template <typename T>
+    Scratch::List<T> CreateList(Scratch::Allocator& allocator)
+    {
+        return Scratch::List<T>(STL::ScratchAllocator<T>(&allocator));
     }
 
     template <typename Key, typename T>
-    Stack::Map<Key, T> CreateMap(Stack::Allocator& allocator)
+    Scratch::Map<Key, T> CreateMap(Scratch::Allocator& allocator)
     {
-        return Stack::Map<Key, T>(STL::StackAllocator<std::pair<Key, T>>(&allocator));
+        return Scratch::Map<Key, T>(STL::ScratchAllocator<std::pair<Key, T>>(&allocator));
     }
 
     template <typename T>
-    Stack::Set<T> CreateSet(Stack::Allocator& allocator)
+    Scratch::Set<T> CreateSet(Scratch::Allocator& allocator)
     {
-        return Stack::Set<T>(STL::StackAllocator<T>(&allocator));
+        return Scratch::Set<T>(STL::ScratchAllocator<T>(&allocator));
     }
 }
 

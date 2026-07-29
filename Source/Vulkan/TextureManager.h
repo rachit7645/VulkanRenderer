@@ -63,7 +63,8 @@ namespace Vk
         (
             VkDevice device,
             const Vk::CommandBuffer& cmdBuffer,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Scratch::Allocator& scratchAllocator
         );
 
         // WARNING! Blocks this thread!
@@ -74,7 +75,8 @@ namespace Vk
             Vk::TextureID id,
             VkDevice device,
             const Vk::CommandBuffer& cmdBuffer,
-            Vk::MegaSet& megaSet
+            Vk::MegaSet& megaSet,
+            Scratch::Allocator& scratchAllocator
         );
 
         void UpdateTexture

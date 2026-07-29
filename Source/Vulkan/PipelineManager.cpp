@@ -53,6 +53,7 @@ namespace Vk
     void PipelineManager::Update
     (
         VkDevice device,
+        Scratch::Allocator& scratchAllocator,
         tf::Executor& executor,
         Util::DeletionQueue& deletionQueue
     )
@@ -62,7 +63,8 @@ namespace Vk
             return;
         }
 
-        std::vector<std::future<void>> reloadFutures;
+        auto reloadFutures = Scratch::CreateVector<std::future<void>>(scratchAllocator);
+
         reloadFutures.reserve(m_reloadRequests.size());
 
         for (auto& id : m_reloadRequests)
@@ -83,7 +85,8 @@ namespace Vk
             future.wait();
         }
 
-        std::vector<std::future<PipelineManager::BuiltPipeline>> builtPipelineFutures;
+        auto builtPipelineFutures = Scratch::CreateVector<std::future<BuiltPipeline>>(scratchAllocator);
+
         builtPipelineFutures.reserve(m_dirtyPipelineConfigs.size());
 
         for (auto& pipelineConfig : m_dirtyPipelineConfigs)

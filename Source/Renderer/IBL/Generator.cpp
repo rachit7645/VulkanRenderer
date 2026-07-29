@@ -171,6 +171,7 @@ namespace Renderer::IBL
         Vk::StagingPool& stagingPool,
         Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -215,6 +216,7 @@ namespace Renderer::IBL
                     stagingPool,
                     imageDownloader,
                     executor,
+                    scratchAllocator,
                     deletionQueue
                 )
             };
@@ -289,6 +291,7 @@ namespace Renderer::IBL
         Vk::StagingPool& stagingPool,
         Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -303,6 +306,7 @@ namespace Renderer::IBL
             megaSet,
             stagingPool,
             executor,
+            scratchAllocator,
             deletionQueue
         );
 
@@ -317,6 +321,7 @@ namespace Renderer::IBL
             textureManager,
             megaSet,
             hdrMapID,
+            scratchAllocator,
             deletionQueue
         );
 
@@ -364,6 +369,7 @@ namespace Renderer::IBL
             textureManager,
             megaSet,
             skyboxID,
+            scratchAllocator,
             deletionQueue
         );
 
@@ -400,6 +406,7 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
         tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -421,14 +428,14 @@ namespace Renderer::IBL
             }
         );
 
-        // TODO: Add a way to only finish loading what is needed for a specific pass
-
+        // TODO: Add a way to only load ze cube
         geometryBuffer.Update
         (
             cmdBuffer,
             context.device,
             context.allocator,
             stagingPool,
+            scratchAllocator,
             deletionQueue
         );
 
@@ -437,7 +444,8 @@ namespace Renderer::IBL
             hdrMapID,
             context.device,
             cmdBuffer,
-            megaSet
+            megaSet,
+            scratchAllocator
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -456,6 +464,7 @@ namespace Renderer::IBL
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID hdrMapID,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -623,7 +632,7 @@ namespace Renderer::IBL
             }
         );
 
-        skybox.GenerateMipmaps(cmdBuffer);
+        skybox.GenerateMipmaps(cmdBuffer, scratchAllocator);
 
         Vk::EndLabel(cmdBuffer);
 
@@ -1084,6 +1093,7 @@ namespace Renderer::IBL
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -1114,7 +1124,7 @@ namespace Renderer::IBL
             VK_IMAGE_ASPECT_COLOR_BIT
         );
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier(skyboxWithMipmaps.image,

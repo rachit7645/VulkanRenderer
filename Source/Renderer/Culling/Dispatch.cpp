@@ -45,7 +45,8 @@ namespace Renderer::Culling
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Buffers::MeshBuffer& meshBuffer,
-        const Buffers::IndirectBuffer& indirectBuffer
+        const Buffers::IndirectBuffer& indirectBuffer,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Frustum Culling", glm::vec4(0.6196f, 0.5588f, 0.8588f, 1.0f));
@@ -54,7 +55,7 @@ namespace Renderer::Culling
         const VkDeviceSize drawCallsSize       = sizeof(u32) + drawCallCount * sizeof(VkDrawIndexedIndirectCommand);
         const VkDeviceSize instanceIndicesSize = drawCallCount * sizeof(u32);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         if (drawCallCount == 0)
         {

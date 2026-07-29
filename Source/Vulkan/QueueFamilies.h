@@ -30,12 +30,12 @@ namespace Vk
     {
     public:
         QueueFamilies() = default;
-        QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, Stack::Allocator& allocator);
+        QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, Scratch::Allocator& allocator);
 
         std::optional<u32> graphicsFamily = std::nullopt;
         std::optional<u32> computeFamily  = std::nullopt;
 
-        [[nodiscard]] Stack::Set<u32> GetUniqueFamilies(Stack::Allocator& allocator) const;
+        [[nodiscard]] Scratch::Set<u32> GetUniqueFamilies(Scratch::Allocator& allocator) const;
 
         [[nodiscard]] bool HasRequiredFamilies() const;
         [[nodiscard]] bool HasAllFamilies() const;

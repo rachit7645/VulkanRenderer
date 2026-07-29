@@ -22,7 +22,7 @@
 
 namespace DLSS
 {
-    Stack::Vector<const char*> GetInstanceExtensions(ENGINE_UNUSED Stack::Allocator& allocator)
+    Scratch::Vector<const char*> GetInstanceExtensions(ENGINE_UNUSED Scratch::Allocator& allocator)
     {
     #ifdef ENGINE_DLSS
         u32                    DLSSExtensionCount      = 0;
@@ -40,7 +40,7 @@ namespace DLSS
             return {};
         }
 
-        auto extensions = Stack::CreateVector<const char*>(allocator);
+        auto extensions = Scratch::CreateVector<const char*>(allocator);
 
         extensions.resize(DLSSExtensionCount);
 
@@ -55,11 +55,11 @@ namespace DLSS
     #endif
     }
 
-    Stack::Vector<const char*> GetDeviceExtensions
+    Scratch::Vector<const char*> GetDeviceExtensions
     (
         ENGINE_UNUSED VkInstance instance,
         ENGINE_UNUSED VkPhysicalDevice physicalDevice,
-        ENGINE_UNUSED Stack::Allocator& allocator
+        ENGINE_UNUSED Scratch::Allocator& allocator
     )
     {
         #ifdef ENGINE_DLSS
@@ -80,7 +80,7 @@ namespace DLSS
             return {};
         }
 
-        auto extensions = Stack::CreateVector<const char*>(allocator);
+        auto extensions = Scratch::CreateVector<const char*>(allocator);
 
         extensions.resize(DLSSExtensionCount);
 

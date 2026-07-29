@@ -43,7 +43,8 @@ namespace Renderer::Culling
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
+            const Buffers::IndirectBuffer& indirectBuffer,
+            Scratch::Allocator& scratchAllocator
         );
     private:
         Culling::FrustumBuffer m_frustumBuffer;

@@ -32,7 +32,7 @@
 
 namespace Renderer
 {
-    RenderManager::RenderManager(Stack::Allocator& scratchAllocator)
+    RenderManager::RenderManager(Scratch::Allocator& scratchAllocator)
         : m_executor{Util::GetWorkerThreadCount(), nullptr},
           m_context{m_window.handle, scratchAllocator},
           m_renderConfig{m_context},
@@ -71,7 +71,7 @@ namespace Renderer
             m_computeTimeline           = Vk::ComputeTimeline(m_context.device);
         }
 
-        InitImGui();
+        InitImGui(scratchAllocator);
 
         m_frameCounter.Reset();
 
@@ -123,7 +123,7 @@ namespace Renderer
         });
     }
 
-    void RenderManager::Render()
+    void RenderManager::Render(Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -142,11 +142,11 @@ namespace Renderer
 
         if (m_renderConfig.multiQueue.isEnabled)
         {
-            RenderMultiQueue();
+            RenderMultiQueue(scratchAllocator);
         }
         else
         {
-            RenderGraphicsQueueOnly();
+            RenderGraphicsQueueOnly(scratchAllocator);
         }
 
         EndFrame();
@@ -215,7 +215,7 @@ namespace Renderer
         }
     }
 
-    void RenderManager::RenderGraphicsQueueOnly()
+    void RenderManager::RenderGraphicsQueueOnly(Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -224,10 +224,10 @@ namespace Renderer
         const auto cmdBuffer = m_graphicsCmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         cmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            GBufferGeneration(cmdBuffer);
-            Occlusion(cmdBuffer, m_sceneBuffer.graphicsBuffers, "SceneDepthView", "GNormalView");
+            GBufferGeneration(cmdBuffer, scratchAllocator);
+            Occlusion(cmdBuffer, m_sceneBuffer.graphicsBuffers, "SceneDepthView", "GNormalView", scratchAllocator);
             TraceRays(cmdBuffer);
-            Lighting(cmdBuffer);
+            Lighting(cmdBuffer, scratchAllocator);
         cmdBuffer.EndRecording();
 
         const VkSemaphoreSubmitInfo waitSemaphoreInfo =
@@ -280,13 +280,13 @@ namespace Renderer
         );
     }
 
-    void RenderManager::RenderMultiQueue()
+    void RenderManager::RenderMultiQueue(Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
         #endif
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         // GBuffer Generation
         {
@@ -294,7 +294,7 @@ namespace Renderer
 
             gBufferGenerationCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-            GBufferGeneration(gBufferGenerationCmdBuffer);
+            GBufferGeneration(gBufferGenerationCmdBuffer, scratchAllocator);
 
             Vk::BeginLabel(gBufferGenerationCmdBuffer, "Graphics -> Async Compute | Release", {0.6726f, 0.6538f, 0.4518f, 1.0f});
 
@@ -833,7 +833,7 @@ namespace Renderer
 
             Vk::EndLabel(asyncComputeCmdBuffer);
 
-            Occlusion(asyncComputeCmdBuffer, *m_sceneBuffer.computeBuffers, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView");
+            Occlusion(asyncComputeCmdBuffer, *m_sceneBuffer.computeBuffers, "SceneDepthAsyncComputeView", "GNormalAsyncComputeView", scratchAllocator);
 
             Vk::BeginLabel(asyncComputeCmdBuffer, "Async Compute -> Graphics | Release", {0.6726f, 0.6538f, 0.4518f, 1.0f});
 
@@ -1211,7 +1211,7 @@ namespace Renderer
 
             Vk::EndLabel(lightingCmdBuffer);
 
-            Lighting(lightingCmdBuffer);
+            Lighting(lightingCmdBuffer, scratchAllocator);
 
             lightingCmdBuffer.EndRecording();
 
@@ -1278,7 +1278,7 @@ namespace Renderer
         }
     }
 
-    void RenderManager::GBufferGeneration(const Vk::CommandBuffer& cmdBuffer)
+    void RenderManager::GBufferGeneration(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -1310,18 +1310,20 @@ namespace Renderer
             layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         }
 
-        Update(cmdBuffer);
+        Update(cmdBuffer, scratchAllocator);
 
-        if (m_sceneEditor.scene->haveRenderObjectsChanged)
+        if (m_sceneEditor.scene->haveRenderObjectsChanged && m_accelerationStructure.has_value())
         {
-            if (m_accelerationStructure.has_value())
+            m_deletionQueues[m_FIF].Push([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
             {
-                m_deletionQueues[m_FIF].Push([device = m_context.device, allocator = m_context.allocator, as = *m_accelerationStructure] () mutable
-                {
-                    as.Destroy(device, allocator);
-                });
-            }
+                as.Destroy(device, allocator);
+            });
 
+            m_accelerationStructure = std::nullopt;
+        }
+
+        if (!m_accelerationStructure.has_value())
+        {
             m_accelerationStructure = Vk::AccelerationStructure{};
 
             m_accelerationStructure->BuildBottomLevelAS
@@ -1332,6 +1334,7 @@ namespace Renderer
                 m_geometryBuffer,
                 m_modelManager,
                 m_sceneEditor.scene->renderObjects,
+                scratchAllocator,
                 m_deletionQueues[m_FIF]
             );
         }
@@ -1342,6 +1345,7 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_graphicsTimeline,
+            scratchAllocator,
             m_deletionQueues[m_FIF]
         );
 
@@ -1352,6 +1356,7 @@ namespace Renderer
             m_context,
             m_modelManager,
             m_sceneEditor.scene->renderObjects,
+            scratchAllocator,
             m_deletionQueues[m_FIF]
         );
 
@@ -1369,7 +1374,8 @@ namespace Renderer
             m_meshBuffer,
             m_indirectBuffer,
             m_samplers,
-            m_culling
+            m_culling,
+            scratchAllocator
         );
 
         m_spotShadow.Render
@@ -1386,7 +1392,8 @@ namespace Renderer
             m_meshBuffer,
             m_indirectBuffer,
             m_samplers,
-            m_culling
+            m_culling,
+            scratchAllocator
         );
 
         m_depth.Render
@@ -1403,7 +1410,8 @@ namespace Renderer
             m_meshBuffer,
             m_indirectBuffer,
             m_samplers,
-            m_culling
+            m_culling,
+            scratchAllocator
         );
 
         m_gBuffer.Render
@@ -1419,7 +1427,8 @@ namespace Renderer
             m_sceneBuffer,
             m_meshBuffer,
             m_indirectBuffer,
-            m_samplers
+            m_samplers,
+            scratchAllocator
         );
     }
 
@@ -1428,7 +1437,8 @@ namespace Renderer
         const Vk::CommandBuffer& cmdBuffer,
         const Buffers::SceneBuffer::Buffers& sceneBuffers,
         const std::string_view sceneDepthID,
-        const std::string_view gNormalID
+        const std::string_view gNormalID,
+        Scratch::Allocator& scratchAllocator
     )
     {
         #ifdef ENGINE_PROFILE
@@ -1439,16 +1449,17 @@ namespace Renderer
         (
             m_FIF,
             m_frameIndex,
+            sceneDepthID,
+            gNormalID,
             cmdBuffer,
             m_renderConfig,
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_textureManager,
             sceneBuffers,
             m_samplers,
-            sceneDepthID,
-            gNormalID
+            m_textureManager,
+            scratchAllocator
         );
     }
 
@@ -1497,7 +1508,7 @@ namespace Renderer
         }
     }
 
-    void RenderManager::Lighting(const Vk::CommandBuffer& cmdBuffer)
+    void RenderManager::Lighting(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -1533,6 +1544,8 @@ namespace Renderer
             m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID)
         );
 
+        const auto iblMaps = m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID);
+
         m_skybox.Render
         (
             m_FIF,
@@ -1541,13 +1554,14 @@ namespace Renderer
             m_framebufferManager,
             m_megaSet,
             m_geometryBuffer,
-            m_textureManager,
             m_sceneBuffer,
             m_samplers,
-            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID)
+            iblMaps,
+            m_textureManager,
+            scratchAllocator
         );
 
-        AntiAliasing(cmdBuffer);
+        AntiAliasing(cmdBuffer, scratchAllocator);
 
         m_exposure.Execute
         (
@@ -1559,7 +1573,8 @@ namespace Renderer
             m_textureManager,
             m_exposureBuffer,
             m_samplers,
-            m_frameCounter
+            m_frameCounter,
+            scratchAllocator
         );
 
         m_bloom.Render
@@ -1582,7 +1597,7 @@ namespace Renderer
             m_samplers
         );
 
-        BlitToSwapchain(cmdBuffer);
+        BlitToSwapchain(cmdBuffer, scratchAllocator);
 
         m_debug.Render
         (
@@ -1599,6 +1614,7 @@ namespace Renderer
             m_indirectBuffer,
             m_tiledLightIndexBuffer,
             m_stagingPool,
+            scratchAllocator,
             m_deletionQueues[m_FIF]
         );
 
@@ -1615,11 +1631,12 @@ namespace Renderer
             m_stagingPool,
             m_textureManager,
             m_executor,
+            scratchAllocator,
             m_deletionQueues[m_FIF]
         );
     }
 
-    void RenderManager::AntiAliasing(const Vk::CommandBuffer& cmdBuffer)
+    void RenderManager::AntiAliasing(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -1637,7 +1654,7 @@ namespace Renderer
             const auto& sceneColor = m_framebufferManager.GetFramebuffer(sceneColorView.framebuffer);
             const auto& resolved   = m_framebufferManager.GetFramebuffer(resolvedView.framebuffer);
 
-            Vk::BarrierWriter barrierWriter = {};
+            auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
             barrierWriter
             .WriteImageBarrier(
@@ -1769,7 +1786,8 @@ namespace Renderer
                 m_framebufferManager,
                 m_megaSet,
                 m_textureManager,
-                m_samplers
+                m_samplers,
+                scratchAllocator
             );
 
             break;
@@ -1796,7 +1814,7 @@ namespace Renderer
         }
     }
 
-    void RenderManager::BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer)
+    void RenderManager::BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -1807,7 +1825,7 @@ namespace Renderer
 
         Vk::BeginLabel(cmdBuffer, "Blit To Swapchain", glm::vec4(0.4098f, 0.2843f, 0.7529f, 1.0f));
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier(
@@ -1927,7 +1945,7 @@ namespace Renderer
         Vk::EndLabel(cmdBuffer);
     }
 
-    void RenderManager::Update(const Vk::CommandBuffer& cmdBuffer)
+    void RenderManager::Update(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -1937,7 +1955,13 @@ namespace Renderer
 
         m_renderConfig.Update();
 
-        m_pipelineManager.Update(m_context.device, m_executor, m_deletionQueues[m_FIF]);
+        m_pipelineManager.Update
+        (
+            m_context.device,
+            scratchAllocator,
+            m_executor,
+            m_deletionQueues[m_FIF]
+        );
 
         m_stagingPool.Update(m_context.allocator);
 
@@ -1950,6 +1974,7 @@ namespace Renderer
             m_swapchain,
             m_renderConfig,
             m_megaSet,
+            scratchAllocator,
             m_deletionQueues[m_FIF]
         );
 
@@ -2010,6 +2035,7 @@ namespace Renderer
             m_stagingPool,
             m_imageDownloader,
             m_executor,
+            scratchAllocator,
             m_deletionQueues[m_FIF]
         );
 
@@ -2022,6 +2048,7 @@ namespace Renderer
             m_stagingPool,
             m_geometryBuffer,
             m_textureManager,
+            scratchAllocator,
             m_executor,
             m_deletionQueues[m_FIF]
         );
@@ -2032,6 +2059,7 @@ namespace Renderer
             m_context.device,
             m_context.allocator,
             m_stagingPool,
+            scratchAllocator,
             m_deletionQueues[m_FIF]
         );
 
@@ -2053,7 +2081,8 @@ namespace Renderer
         (
             m_context.device,
             cmdBuffer,
-            m_megaSet
+            m_megaSet,
+            scratchAllocator
         );
 
         m_imageDownloader.Update
@@ -2063,6 +2092,7 @@ namespace Renderer
             m_context.allocator,
             cmdBuffer,
             m_graphicsTimeline,
+            scratchAllocator,
             m_executor
         );
 
@@ -2072,13 +2102,14 @@ namespace Renderer
             m_context.allocator,
             m_modelManager,
             m_textureManager,
+            scratchAllocator,
             m_sceneEditor.scene->renderObjects
         );
 
-        ImGuiDisplay();
+        ImGuiDisplay(scratchAllocator);
     }
 
-    void RenderManager::ImGuiDisplay()
+    void RenderManager::ImGuiDisplay(Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -2091,7 +2122,7 @@ namespace Renderer
             if (ImGui::BeginMenu("Renderer"))
             {
                 m_modelManager.ImGuiDisplay();
-                m_geometryBuffer.ImGuiDisplay();
+                m_geometryBuffer.ImGuiDisplay(scratchAllocator);
                 m_textureManager.ImGuiDisplay();
                 m_framebufferManager.ImGuiDisplay();
                 m_megaSet.ImGuiDisplay();
@@ -2230,6 +2261,12 @@ namespace Renderer
 
             if (ImGui::BeginMenu("Engine"))
             {
+                if (ImGui::CollapsingHeader("Scratch Allocator"))
+                {
+                    ImGui::Text("Allocated Last Frame | %llu bytes", scratchAllocator.bytesUsedBeforeReset);
+                    ImGui::Text("Peak Memory Usage    | %llu bytes", scratchAllocator.peakMemoryUsage);
+                }
+
                 if (ImGui::CollapsingHeader("Debug/Fonts"))
                 {
                     ImGui::Text("EN: The Legend of Zelda: Breath of The Wild");
@@ -2275,7 +2312,7 @@ namespace Renderer
         #endif
     }
 
-    bool RenderManager::HandleEvents(Stack::Allocator& scratchAllocator)
+    bool RenderManager::HandleEvents(Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -2401,7 +2438,7 @@ namespace Renderer
         return false;
     }
 
-    void RenderManager::Resize(Stack::Allocator& scratchAllocator)
+    void RenderManager::Resize(Scratch::Allocator& scratchAllocator)
     {
         #ifdef ENGINE_PROFILE
         ZoneScoped;
@@ -2420,10 +2457,10 @@ namespace Renderer
 
         m_isSwapchainOk = true;
 
-        Render();
+        Render(scratchAllocator);
     }
 
-    void RenderManager::InitImGui()
+    void RenderManager::InitImGui(Scratch::Allocator& scratchAllocator)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -2496,7 +2533,8 @@ namespace Renderer
                     m_vbao.hilbertLUT,
                     m_context.device,
                     cmdBuffer,
-                    m_megaSet
+                    m_megaSet,
+                    scratchAllocator
                 );
             }
         );

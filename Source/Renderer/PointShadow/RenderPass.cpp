@@ -165,7 +165,8 @@ namespace Renderer::PointShadow
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
         const Objects::Samplers& samplers,
-        Culling::Dispatch& culling
+        Culling::Dispatch& culling,
+        Scratch::Allocator& scratchAllocator
     ) const
     {
         if (sceneBuffer.shadowedPointLights.empty())
@@ -183,7 +184,7 @@ namespace Renderer::PointShadow
         const auto& shadowMap = framebufferManager.GetFramebuffer("PointShadowMap");
         const auto& depth     = framebufferManager.GetFramebuffer(depthView.framebuffer);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier
@@ -261,7 +262,8 @@ namespace Renderer::PointShadow
                     cmdBuffer,
                     pipelineManager,
                     meshBuffer,
-                    indirectBuffer
+                    indirectBuffer,
+                    scratchAllocator
                 );
 
                 const auto shadowMapView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/Light{}/{}", i, face));

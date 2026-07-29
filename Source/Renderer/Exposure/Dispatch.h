@@ -48,7 +48,8 @@ namespace Renderer::Exposure
             const Vk::TextureManager& textureManager,
             const Buffers::ExposureBuffers& exposureBuffer,
             const Objects::Samplers& samplers,
-            const Util::FrameCounter& frameCounter
+            const Util::FrameCounter& frameCounter,
+            Scratch::Allocator& scratchAllocator
         );
 
         void ResetLuminance();
@@ -72,7 +73,8 @@ namespace Renderer::Exposure
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Buffers::ExposureBuffers& exposureBuffer,
-            const Util::FrameCounter& frameCounter
+            const Util::FrameCounter& frameCounter,
+            Scratch::Allocator& scratchAllocator
         );
 
         void Combine

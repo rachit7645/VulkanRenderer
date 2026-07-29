@@ -171,7 +171,8 @@ namespace Vk
     (
         VkDevice device,
         const Vk::CommandBuffer& cmdBuffer,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Scratch::Allocator& scratchAllocator
     )
     {
         #ifdef ENGINE_PROFILE
@@ -225,7 +226,7 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "TextureManager::Update", {0.6117f, 0.1196f, 0.0313f, 1.0f});
 
-        m_imageUploader.FlushUploads(cmdBuffer);
+        m_imageUploader.FlushUploads(cmdBuffer, scratchAllocator);
 
         megaSet.Update(device);
 
@@ -237,7 +238,8 @@ namespace Vk
         Vk::TextureID id,
         VkDevice device,
         const Vk::CommandBuffer& cmdBuffer,
-        Vk::MegaSet& megaSet
+        Vk::MegaSet& megaSet,
+        Scratch::Allocator& scratchAllocator
     )
     {
         #ifdef ENGINE_PROFILE
@@ -292,7 +294,7 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "TextureManager::ForceUpdate", {0.6117f, 0.1196f, 0.0313f, 1.0f});
 
-        m_imageUploader.FlushUploads(cmdBuffer);
+        m_imageUploader.FlushUploads(cmdBuffer, scratchAllocator);
 
         megaSet.Update(device);
 

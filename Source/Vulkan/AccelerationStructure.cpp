@@ -33,6 +33,7 @@ namespace Vk
         const Vk::GeometryBuffer& geometryBuffer,
         const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -43,14 +44,14 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "BLAS Build", {0.7117f, 0.8136f, 0.7313f, 1.0f});
 
-        ankerl::unordered_dense::set<Models::ModelID> uniqueModelIDs = {};
+        auto uniqueModelIDs = Scratch::CreateSet<Models::ModelID>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {
             uniqueModelIDs.insert(renderObject.modelID);
         }
 
-        std::vector<VkTransformMatrixKHR> transforms = {};
+        auto transforms = Scratch::CreateVector<VkTransformMatrixKHR>(scratchAllocator);
 
         for (const auto modelID : uniqueModelIDs)
         {
@@ -114,13 +115,13 @@ namespace Vk
             buffer.Destroy(allocator);
         });
 
-        std::vector<VkAccelerationStructureKHR>                      blases         = {};
-        std::vector<Vk::Buffer>                                      buffers        = {};
-        std::vector<Vk::Buffer>                                      scratchBuffers = {};
-        std::vector<VkAccelerationStructureBuildGeometryInfoKHR>     blasBuildInfos = {};
-        std::list<VkAccelerationStructureGeometryKHR>                geometryList   = {};
-        std::list<VkAccelerationStructureBuildRangeInfoKHR>          ranges         = {};
-        std::vector<const VkAccelerationStructureBuildRangeInfoKHR*> pRangeInfos    = {};
+        auto blases         = Scratch::CreateVector<VkAccelerationStructureKHR>(scratchAllocator);
+        auto buffers        = Scratch::CreateVector<Vk::Buffer>(scratchAllocator);
+        auto scratchBuffers = Scratch::CreateVector<Vk::Buffer>(scratchAllocator);
+        auto blasBuildInfos = Scratch::CreateVector<VkAccelerationStructureBuildGeometryInfoKHR>(scratchAllocator);
+        auto geometryList   = Scratch::CreateList<VkAccelerationStructureGeometryKHR>(scratchAllocator);
+        auto ranges         = Scratch::CreateList<VkAccelerationStructureBuildRangeInfoKHR>(scratchAllocator);
+        auto pRangeInfos    = Scratch::CreateVector<const VkAccelerationStructureBuildRangeInfoKHR*>(scratchAllocator);
 
         for (usize meshIndex = 0; const auto modelID : uniqueModelIDs)
         {
@@ -215,6 +216,7 @@ namespace Vk
                 };
 
                 VkAccelerationStructureKHR blas = VK_NULL_HANDLE;
+
                 Vk::CheckResult(vkCreateAccelerationStructureKHR(
                     context.device,
                     &blasCreateInfo,
@@ -333,6 +335,7 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         const Vk::GraphicsTimeline& timeline,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -361,7 +364,8 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "BLAS Compaction", {0.2117f, 0.4136f, 0.7313f, 1.0f});
 
-        std::vector<VkDeviceSize> compactedSizes = {};
+        auto compactedSizes = Scratch::CreateVector<VkDeviceSize>(scratchAllocator);
+
         compactedSizes.resize(m_bottomLevelASes.size());
 
         const auto result = vkGetQueryPoolResults
@@ -383,7 +387,7 @@ namespace Vk
 
         Vk::CheckResult(result, "Failed to retrieve BLAS compacted sizes!");
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         for (usize i = 0; i < m_bottomLevelASes.size(); ++i)
         {
@@ -489,6 +493,7 @@ namespace Vk
         const Vk::Context& context,
         const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -509,14 +514,14 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "TLAS Build", {0.2117f, 0.8136f, 0.7313f, 1.0f});
 
-        ankerl::unordered_dense::set<Models::ModelID> uniqueModelIDs = {};
+        auto uniqueModelIDs = Scratch::CreateSet<Models::ModelID>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {
-            uniqueModelIDs.emplace(renderObject.modelID);
+            uniqueModelIDs.insert(renderObject.modelID);
         }
 
-        ankerl::unordered_dense::map<Models::MeshIdentifier, usize> meshIndexMap = {};
+        auto meshIndexMap = Scratch::CreateMap<Models::MeshIdentifier, usize>(scratchAllocator);
 
         for (usize meshIndex = 0; const auto modelID : uniqueModelIDs)
         {
@@ -535,7 +540,7 @@ namespace Vk
             }
         }
 
-        std::vector<VkAccelerationStructureInstanceKHR> instances = {};
+        auto instances = Scratch::CreateVector<VkAccelerationStructureInstanceKHR>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {

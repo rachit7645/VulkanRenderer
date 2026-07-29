@@ -41,7 +41,8 @@ namespace Renderer::Buffers
             VmaAllocator allocator,
             const Models::ModelManager& modelManager,
             Vk::TextureManager& textureManager,
-            const std::vector<Renderer::RenderObject>& renderObjects
+            Scratch::Allocator& scratchAllocator,
+            const std::span<const Renderer::RenderObject> renderObjects
         );
 
         [[nodiscard]] const Vk::Buffer& GetCurrentMeshBuffer(usize frameIndex)  const;

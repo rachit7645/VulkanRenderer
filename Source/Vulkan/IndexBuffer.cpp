@@ -165,6 +165,7 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -177,6 +178,7 @@ namespace Vk
             cmdBuffer,
             device,
             allocator,
+            scratchAllocator,
             deletionQueue
         );
 
@@ -187,7 +189,7 @@ namespace Vk
             return;
         }
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         for (const auto& uploads : m_pendingUploads | std::views::values)
         {
@@ -212,10 +214,10 @@ namespace Vk
 
         barrierWriter.Execute(cmdBuffer);
 
+        auto copyRegions = Scratch::CreateVector<VkBufferCopy2>(scratchAllocator);
+
         for (const auto& [stagingBuffer, uploads] : m_pendingUploads)
         {
-            std::vector<VkBufferCopy2> copyRegions = {};
-
             for (const auto& upload : uploads)
             {
                 copyRegions.emplace_back(VkBufferCopy2{
@@ -238,6 +240,8 @@ namespace Vk
             };
 
             vkCmdCopyBuffer2(cmdBuffer.handle, &copyInfo);
+
+            copyRegions.clear();
         }
 
         for (const auto& uploads : m_pendingUploads | std::views::values)
@@ -275,7 +279,7 @@ namespace Vk
         return !m_pendingUploads.empty() || m_resizeInfo.has_value();
     }
 
-    void IndexBuffer::ImGuiDisplay()
+    void IndexBuffer::ImGuiDisplay(Scratch::Allocator& scratchAllocator)
     {
         const std::scoped_lock lock{m_mutex};
 
@@ -289,7 +293,7 @@ namespace Vk
             }
             else
             {
-                DisplayMemoryMapAndStatistics();
+                DisplayMemoryMapAndStatistics(scratchAllocator);
             }
         }
     }
@@ -478,6 +482,7 @@ namespace Vk
         const Vk::CommandBuffer& cmdBuffer,
         VkDevice device,
         VmaAllocator allocator,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -520,10 +525,10 @@ namespace Vk
             return;
         }
 
-        std::vector<VkBufferCopy2> copyRegions = {};
+        auto copyRegions = Scratch::CreateVector<VkBufferCopy2>(scratchAllocator);
 
-        Vk::BarrierWriter barrierWriterOld = {};
-        Vk::BarrierWriter barrierWriterNew = {};
+        auto barrierWriterOld = Vk::ScratchBarrierWriter(scratchAllocator);
+        auto barrierWriterNew = Vk::ScratchBarrierWriter(scratchAllocator);
 
         for (const auto& block : m_resizeInfo->blocksToCopy)
         {
@@ -600,7 +605,7 @@ namespace Vk
         Vk::EndLabel(cmdBuffer);
     }
 
-    void IndexBuffer::DisplayMemoryMapAndStatistics()
+    void IndexBuffer::DisplayMemoryMapAndStatistics(Scratch::Allocator& scratchAllocator)
     {
         constexpr f32 BLOCK_HEIGHT = 20.0f;
 
@@ -626,7 +631,7 @@ namespace Vk
         const ImVec2 origin       = ImGui::GetCursorScreenPos();
         const ImVec2 paddedOrigin = origin + ImVec2{X_PADDING, Y_PADDING};
 
-        std::vector<Vk::UIGeometryInfo> combinedUIBlocks = {};
+        auto combinedUIBlocks = Scratch::CreateVector<Vk::UIGeometryInfo>(scratchAllocator);
 
         usize totalUsed = 0;
         usize totalFree = 0;

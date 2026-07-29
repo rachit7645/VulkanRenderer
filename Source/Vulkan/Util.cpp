@@ -35,7 +35,7 @@ namespace Vk
         VkSurfaceKHR surface,
         const VkPhysicalDeviceProperties2& properties,
         const VkPhysicalDeviceFeatures2& features,
-        Stack::Allocator& scratchAllocator
+        Scratch::Allocator& scratchAllocator
     )
     {
         const auto queues            = Vk::QueueFamilies(physicalDevice, surface, scratchAllocator);

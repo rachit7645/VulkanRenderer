@@ -149,7 +149,8 @@ namespace Renderer::Depth
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
         const Objects::Samplers& samplers,
-        Culling::Dispatch& culling
+        Culling::Dispatch& culling,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
@@ -161,7 +162,8 @@ namespace Renderer::Depth
             cmdBuffer,
             pipelineManager,
             meshBuffer,
-            indirectBuffer
+            indirectBuffer,
+            scratchAllocator
         );
 
         const auto& opaquePipeline      = pipelineManager.GetPipeline(Vk::PipelineID::DepthOpaque);

@@ -16,7 +16,6 @@
 
 #include "GeometryBuffer.h"
 
-#include "Util/Log.h"
 #include "DebugUtils.h"
 #include "Models/Model.h"
 #include "GPU/Vertex.h"
@@ -54,6 +53,7 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -73,6 +73,7 @@ namespace Vk
             cmdBuffer,
             device,
             allocator,
+            scratchAllocator,
             deletionQueue
         );
 
@@ -81,6 +82,7 @@ namespace Vk
             cmdBuffer,
             device,
             allocator,
+            scratchAllocator,
             deletionQueue
         );
 
@@ -211,10 +213,10 @@ namespace Vk
         std::memcpy(m_pendingCubeUpload->hostAddress, CUBE_VERTICES.data(), VERTICES_SIZE);
     }
 
-    void GeometryBuffer::ImGuiDisplay()
+    void GeometryBuffer::ImGuiDisplay(Scratch::Allocator& scratchAllocator)
     {
-        indexBuffer.ImGuiDisplay();
-        vertexBuffer.ImGuiDisplay();
+        indexBuffer.ImGuiDisplay(scratchAllocator);
+        vertexBuffer.ImGuiDisplay(scratchAllocator);
     }
 
     bool GeometryBuffer::HasPendingUploads()

@@ -61,7 +61,7 @@ namespace Vk
     )
     {
         m_framebufferViews.emplace(name, FramebufferView{
-            .framebuffer     = framebufferName.data(),
+            .framebuffer     = std::string(framebufferName),
             .sampledImageID  = std::numeric_limits<u32>::max(),
             .type            = imageViewType,
             .size            = size,
@@ -78,6 +78,7 @@ namespace Vk
         const Vk::Swapchain& swapchain,
         ENGINE_UNUSED Renderer::RenderConfig& renderConfig,
         Vk::MegaSet& megaSet,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -123,9 +124,9 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "FramebufferManager::Update", {0.6421f, 0.1234f, 0.0316f, 1.0f});
 
-        ankerl::unordered_dense::set<std::string> updatedFramebuffers = {};
+        auto updatedFramebuffers = Scratch::CreateSet<Scratch::String>(scratchAllocator);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         for (auto& [name, framebuffer] : m_framebuffers)
         {
@@ -153,7 +154,7 @@ namespace Vk
                 image.Destroy(allocator);
             });
 
-            VkImageCreateInfo createInfo = {};
+            VkImageCreateInfo createInfo = {}; // NOLINT(bugprone-invalid-enum-default-initialization)
             {
                 createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
                 createInfo.pNext                 = nullptr;

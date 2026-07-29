@@ -46,7 +46,7 @@ namespace Models
     class Model
     {
     public:
-        void LoadFromFile(Models::LoadFromFileInfo& loadInfo, const std::string_view filePath);
+        void LoadFromFile(const Models::LoadFromFileInfo& loadInfo, const std::string_view filePath);
 
         void Destroy
         (
@@ -72,14 +72,14 @@ namespace Models
 
         void ProcessScenes
         (
-            Models::LoadFromFileInfo& loadInfo,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset
         );
 
         void ProcessNode
         (
-            Models::LoadFromFileInfo& loadInfo,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             usize nodeIndex,
@@ -88,7 +88,7 @@ namespace Models
 
         void LoadMesh
         (
-            Models::LoadFromFileInfo& loadInfo,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             const fastgltf::Mesh& mesh,
@@ -101,7 +101,7 @@ namespace Models
         requires fastgltf::IsTextureInfo<T>
         [[nodiscard]] Model::TextureInfo LoadTexture
         (
-            Models::LoadFromFileInfo& loadInfo,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             const std::optional<T>& textureInfo,

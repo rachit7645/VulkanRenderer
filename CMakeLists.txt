@@ -72,7 +72,7 @@ add_executable(VulkanRenderer
     Source/Util/Debug.cpp
     Source/Util/WireframeCone.cpp
     Source/Util/Log.cpp
-    Source/Util/Stack.cpp
+    Source/Util/Scratch.cpp
     Source/Util/Containers.cpp
 	# Vulkan sources
 	Source/Vulkan/Extensions.cpp

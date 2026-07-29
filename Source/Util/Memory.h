@@ -31,6 +31,11 @@ namespace Util
         return x != 0 && (x & (x - 1)) == 0;
     }
 
+    constexpr usize KiB(usize count)
+    {
+        return 1024ull * count;
+    }
+
     constexpr usize MiB(usize count)
     {
         return 1024ull * 1024ull * count;

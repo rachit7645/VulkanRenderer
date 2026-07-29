@@ -28,7 +28,7 @@ namespace Vk
     (
         const glm::ivec2& size,
         const Vk::Context& context,
-        Stack::Allocator& allocator,
+        Scratch::Allocator& allocator,
         tf::Executor& executor
     )
     {
@@ -49,7 +49,7 @@ namespace Vk
         return extent.width != 0 && extent.height != 0;
     }
 
-    void Swapchain::RecreateSwapChain(const Vk::Context& context, Stack::Allocator& allocator, tf::Executor& executor)
+    void Swapchain::RecreateSwapChain(const Vk::Context& context, Scratch::Allocator& allocator, tf::Executor& executor)
     {
         CreateSwapChain(context, allocator, executor);
     }
@@ -120,7 +120,7 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Vk::Context& context, Stack::Allocator& allocator, tf::Executor& executor)
+    void Swapchain::CreateSwapChain(const Vk::Context& context, Scratch::Allocator& allocator, tf::Executor& executor)
     {
         surfaceFormat = ChooseSurfaceFormat();
         presentMode   = ChoosePresentationMode();
@@ -233,7 +233,7 @@ namespace Vk
             );
         }
 
-        auto imageHandles = Stack::CreateVector<VkImage>(allocator);
+        auto imageHandles = Scratch::CreateVector<VkImage>(allocator);
 
         imageHandles.resize(imageCount);
 

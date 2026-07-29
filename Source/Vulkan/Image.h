@@ -21,6 +21,7 @@
 #include "CommandBuffer.h"
 #include "Util/Types.h"
 #include "Externals/VMA.h"
+#include "Util/Scratch.h"
 
 namespace Vk
 {
@@ -47,7 +48,7 @@ namespace Vk
 
         void Barrier(const Vk::CommandBuffer& cmdBuffer, const Vk::ImageBarrier& barrier) const;
 
-        void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer) const;
+        void GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator) const;
 
         void Destroy(VmaAllocator allocator) const;
 

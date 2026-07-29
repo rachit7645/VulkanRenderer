@@ -23,7 +23,7 @@
 
 namespace Vk
 {
-    QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, Stack::Allocator& allocator)
+    QueueFamilies::QueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, Scratch::Allocator& allocator)
     {
         u32 queueFamilyCount = 0;
 
@@ -43,7 +43,7 @@ namespace Vk
         emptyQueue.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
         emptyQueue.pNext = nullptr;
 
-        auto queueFamilies = Stack::CreateVector<VkQueueFamilyProperties2>(allocator);
+        auto queueFamilies = Scratch::CreateVector<VkQueueFamilyProperties2>(allocator);
 
         queueFamilies.resize(queueFamilyCount, emptyQueue);
 
@@ -91,9 +91,9 @@ namespace Vk
         }
     }
 
-    Stack::Set<u32> QueueFamilies::GetUniqueFamilies(Stack::Allocator& allocator) const
+    Scratch::Set<u32> QueueFamilies::GetUniqueFamilies(Scratch::Allocator& allocator) const
     {
-        auto uniqueFamilies = Stack::CreateSet<u32>(allocator);
+        auto uniqueFamilies = Scratch::CreateSet<u32>(allocator);
 
         uniqueFamilies.emplace(*graphicsFamily);
 

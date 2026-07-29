@@ -44,10 +44,11 @@ namespace Renderer::Skybox
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Objects::Samplers& samplers,
-            const IBL::IBLMaps& iblMaps
+            const IBL::IBLMaps& iblMaps,
+            Vk::TextureManager& textureManager,
+            Scratch::Allocator& scratchAllocator
         );
     };
 }

@@ -128,6 +128,7 @@ namespace Vk
             const Vk::Swapchain& swapchain,
             Renderer::RenderConfig& renderConfig,
             Vk::MegaSet& megaSet,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 

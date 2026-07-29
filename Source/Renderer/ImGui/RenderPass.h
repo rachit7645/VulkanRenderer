@@ -49,6 +49,7 @@ namespace Renderer::DearImGui
             Vk::StagingPool& stagingPool,
             Vk::TextureManager& textureManager,
             tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -67,6 +68,7 @@ namespace Renderer::DearImGui
             Vk::StagingPool& stagingPool,
             Vk::TextureManager& textureManager,
             tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
@@ -79,6 +81,7 @@ namespace Renderer::DearImGui
             const Vk::CommandBuffer& cmdBuffer,
             Vk::Buffer& vertexBuffer,
             Vk::Buffer& indexBuffer,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
@@ -92,6 +95,7 @@ namespace Renderer::DearImGui
             Vk::StagingPool& stagingPool,
             Vk::TextureManager& textureManager,
             tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );

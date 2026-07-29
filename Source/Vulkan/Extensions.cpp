@@ -53,7 +53,7 @@ namespace Vk
         QueryDeviceExtensions(device);
     }
 
-    Stack::Vector<const char*> Extensions::GetInstanceExtensions(Stack::Allocator& allocator)
+    Scratch::Vector<const char*> Extensions::GetInstanceExtensions(Scratch::Allocator& allocator)
     {
         const auto SDLInstanceExtensions  = SDL::GetInstanceExtensions();
         const auto DLSSInstanceExtensions = DLSS::GetInstanceExtensions(allocator);
@@ -64,7 +64,7 @@ namespace Vk
         totalExtensionCount += SDLInstanceExtensions.size();
         totalExtensionCount += DLSSInstanceExtensions.size();
 
-        auto extensions = Stack::CreateVector<const char*>(allocator);
+        auto extensions = Scratch::CreateVector<const char*>(allocator);
 
         extensions.reserve(totalExtensionCount);
 
@@ -75,9 +75,9 @@ namespace Vk
         return extensions;
     }
 
-    Stack::Vector<const char*> Extensions::GetDeviceExtensions(ENGINE_UNUSED VkInstance instance, ENGINE_UNUSED VkPhysicalDevice physicalDevice, Stack::Allocator& allocator) const
+    Scratch::Vector<const char*> Extensions::GetDeviceExtensions(ENGINE_UNUSED VkInstance instance, ENGINE_UNUSED VkPhysicalDevice physicalDevice, Scratch::Allocator& allocator) const
     {
-        auto extensions = Stack::CreateVector<const char*>(allocator);
+        auto extensions = Scratch::CreateVector<const char*>(allocator);
 
         extensions.append_range(REQUIRED_DEVICE_EXTENSIONS);
 

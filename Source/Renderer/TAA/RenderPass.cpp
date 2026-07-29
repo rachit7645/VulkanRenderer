@@ -172,7 +172,8 @@ namespace Renderer::TAA
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::Samplers& samplers
+        const Objects::Samplers& samplers,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "TAA", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
@@ -273,7 +274,7 @@ namespace Renderer::TAA
         const auto& intermediateResolved = framebufferManager.GetFramebuffer(intermediateResolvedView.framebuffer);
         const auto& history              = framebufferManager.GetFramebuffer(historyView.framebuffer);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         Vk::BeginLabel(cmdBuffer, "Intermediate Resolve", glm::vec4(0.6098f, 0.5843f, 0.7549f, 1.0f));
         {

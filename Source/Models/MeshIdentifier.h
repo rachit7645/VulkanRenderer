@@ -17,7 +17,8 @@
 #ifndef MESH_INDENTIFIER_H
 #define MESH_INDENTIFIER_H
 
-#include "Models/ModelManager.h"
+#include "Models/ModelID.h"
+#include "Util/Hash.h"
 
 namespace Models
 {

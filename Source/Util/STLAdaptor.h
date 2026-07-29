@@ -19,45 +19,46 @@
 
 #include <limits>
 #include <new>
+#include <memory>
 
-#include "Util/Stack.h"
+#include "Util/Scratch.h"
 #include "Util/Unused.h"
 
 namespace STL
 {
     template <typename T>
-    class StackAllocator
+    class ScratchAllocator
     {
     public:
         using value_type = T;
 
+        using propagate_on_container_copy_assignment = std::true_type;
+        using propagate_on_container_move_assignment = std::true_type;
+        using propagate_on_container_swap            = std::true_type;
+
+        using is_always_equal = std::false_type;
+
         template <typename U>
-        friend class StackAllocator;
+        friend class ScratchAllocator;
 
-        StackAllocator() noexcept = default;
+        ScratchAllocator() noexcept = default;
 
-        explicit StackAllocator(Stack::Allocator* allocator)
+        explicit ScratchAllocator(Scratch::Allocator* allocator)
             : m_allocator{allocator}
         {
         }
 
         // DO NOT MAKE THIS EXPLICIT!
         template <typename U>
-        StackAllocator(const StackAllocator<U>& other) noexcept
+        ScratchAllocator(const ScratchAllocator<U>& other) noexcept
             : m_allocator{other.m_allocator}
         {
         }
 
         template <typename U>
-        bool operator==(const StackAllocator<U>& other) const noexcept
+        bool operator==(const ScratchAllocator<U>& other) const noexcept
         {
             return m_allocator == other.m_allocator;
-        }
-
-        template <typename U>
-        bool operator!=(const StackAllocator<U>& other) const noexcept
-        {
-            return !(*this == other);
         }
 
         [[nodiscard]] T* allocate(usize count)
@@ -98,7 +99,7 @@ namespace STL
             std::uninitialized_construct_using_allocator(pointer, *this, std::forward<Args>(args)...);
         }
     private:
-        Stack::Allocator* m_allocator = nullptr;
+        Scratch::Allocator* m_allocator = nullptr;
     };
 }
 

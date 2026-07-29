@@ -32,7 +32,7 @@ namespace Engine
         {
             m_frameAllocator.Reset();
 
-            m_renderer.Render();
+            m_renderer.Render(m_frameAllocator);
 
             if (m_renderer.HandleEvents(m_frameAllocator))
             {

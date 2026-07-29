@@ -140,7 +140,7 @@ namespace Vk
         vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
     }
 
-    void Image::GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer) const
+    void Image::GenerateMipmaps(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator) const
     {
         if (mipLevels <= 1)
         {
@@ -246,7 +246,7 @@ namespace Vk
         }
 
         // Level 0 to Level (mipLevels - 1)
-        Vk::BarrierWriter{}
+        Vk::ScratchBarrierWriter(scratchAllocator)
         .WriteImageBarrier(
             *this,
             Vk::ImageBarrier{

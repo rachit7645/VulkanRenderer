@@ -125,7 +125,8 @@ namespace Renderer::SpotShadow
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
         const Objects::Samplers& samplers,
-        Culling::Dispatch& culling
+        Culling::Dispatch& culling,
+        Scratch::Allocator& scratchAllocator
     )
     {
         if (sceneBuffer.shadowedSpotLights.empty())
@@ -192,7 +193,8 @@ namespace Renderer::SpotShadow
                 cmdBuffer,
                 pipelineManager,
                 meshBuffer,
-                indirectBuffer
+                indirectBuffer,
+                scratchAllocator
             );
 
             const auto& depthAttachmentView = framebufferManager.GetFramebufferView(fmt::format("SpotShadowMapView/Light{}", i));

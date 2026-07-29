@@ -14,35 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef ALLOCATOR_H
-#define ALLOCATOR_H
+#ifndef FRAME_CONTEXT_H
+#define FRAME_CONTEXT_H
 
-#include <atomic>
-
+#include "Externals/Taskflow.h"
+#include "Util/DeletionQueue.h"
+#include "Util/Scratch.h"
 #include "Util/Types.h"
 
-namespace Stack
+namespace Renderer
 {
-    class Allocator
+    struct FrameContext
     {
-    public:
-        explicit Allocator(usize size);
+        usize FIF        = 0;
+        usize frameIndex = 0;
 
-        ~Allocator() = default;
-
-        Allocator(const Allocator&) = delete;
-        Allocator& operator=(const Allocator&) = delete;
-
-        Allocator(Allocator&&) = delete;
-        Allocator& operator=(Allocator&&) = delete;
-
-        void Reset();
-
-        [[nodiscard]] void* Allocate(usize bytes, usize alignment);
-    private:
-        std::unique_ptr<u8[]> m_memory = nullptr;
-        usize                 m_size   = 0;
-        std::atomic<usize>    m_offset = 0;
+        tf::Executor&        executor;
+        Scratch::Allocator&    scratchAllocator;
+        Util::DeletionQueue& deletionQueue;
     };
 }
 

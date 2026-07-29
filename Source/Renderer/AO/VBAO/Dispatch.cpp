@@ -219,16 +219,17 @@ namespace Renderer::AO::VBAO
     (
         usize FIF,
         usize frameIndex,
+        const std::string_view sceneDepthID,
+        const std::string_view gNormalID,
         const Vk::CommandBuffer& cmdBuffer,
         const Renderer::RenderConfig& renderConfig,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer::Buffers& sceneBuffers,
         const Objects::Samplers& samplers,
-        const std::string_view sceneDepthID,
-        const std::string_view gNormalID
+        Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -251,28 +252,29 @@ namespace Renderer::AO::VBAO
 
         PreFilterDepth
         (
+            sceneDepthID,
             cmdBuffer,
             pipelineManager,
             framebufferManager,
             megaSet,
             textureManager,
-            samplers,
-            sceneDepthID
+            samplers
         );
 
         Occlusion
         (
             FIF,
             frameIndex,
+            gNormalID,
             cmdBuffer,
             renderConfig,
             pipelineManager,
             framebufferManager,
             megaSet,
-            textureManager,
             sceneBuffers,
             samplers,
-            gNormalID
+            textureManager,
+            scratchAllocator
         );
 
         Denoise
@@ -290,13 +292,13 @@ namespace Renderer::AO::VBAO
 
     void Dispatch::PreFilterDepth
     (
+        const std::string_view sceneDepthID,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::Samplers& samplers,
-        const std::string_view sceneDepthID
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
@@ -380,15 +382,16 @@ namespace Renderer::AO::VBAO
     (
         usize FIF,
         usize frameIndex,
+        const std::string_view gNormalID,
         const Vk::CommandBuffer& cmdBuffer,
         const Renderer::RenderConfig& renderConfig,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer::Buffers& sceneBuffers,
         const Objects::Samplers& samplers,
-        const std::string_view gNormalID
+        Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Occlusion", glm::vec4(0.6098f, 0.7143f, 0.4529f, 1.0f));
@@ -398,7 +401,7 @@ namespace Renderer::AO::VBAO
         const auto& noisyAO          = framebufferManager.GetFramebuffer("VBAO/NoisyAO");
         const auto& depthDifferences = framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier(

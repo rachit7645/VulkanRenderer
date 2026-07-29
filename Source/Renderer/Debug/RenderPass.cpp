@@ -337,6 +337,7 @@ namespace Renderer::Debug
         const Buffers::IndirectBuffer& indirectBuffer,
         const Buffers::TileLightIndexBuffer& tiledLightIndexBuffer,
         Vk::StagingPool& stagingPool,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -482,7 +483,8 @@ namespace Renderer::Debug
             (
                 cmdBuffer,
                 pipelineManager,
-                indirectBuffer
+                indirectBuffer,
+                scratchAllocator
             );
         }
 
@@ -543,7 +545,8 @@ namespace Renderer::Debug
                 cmdBuffer,
                 pipelineManager,
                 meshBuffer,
-                indirectBuffer
+                indirectBuffer,
+                scratchAllocator
             );
         }
 
@@ -847,12 +850,13 @@ namespace Renderer::Debug
     (
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
-        const Buffers::IndirectBuffer& indirectBuffer
+        const Buffers::IndirectBuffer& indirectBuffer,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "AABB/GenerateDrawCalls", {0.1657f, 0.5149f, 0.4901f, 1.0f});
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteBufferBarrier(
@@ -1525,12 +1529,13 @@ namespace Renderer::Debug
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Buffers::MeshBuffer& meshBuffer,
-        const Buffers::IndirectBuffer& indirectBuffer
+        const Buffers::IndirectBuffer& indirectBuffer,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Culling/GenerateStatistics", {0.1657f, 0.1149f, 0.3901f, 1.0f});
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteBufferBarrier(

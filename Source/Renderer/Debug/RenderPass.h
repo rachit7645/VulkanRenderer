@@ -56,6 +56,7 @@ namespace Renderer::Debug
             const Buffers::IndirectBuffer& indirectBuffer,
             const Buffers::TileLightIndexBuffer& tiledLightIndexBuffer,
             Vk::StagingPool& stagingPool,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -93,7 +94,8 @@ namespace Renderer::Debug
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
-            const Buffers::IndirectBuffer& indirectBuffer
+            const Buffers::IndirectBuffer& indirectBuffer,
+            Scratch::Allocator& scratchAllocator
         );
 
         void RenderDebugAABB
@@ -133,7 +135,8 @@ namespace Renderer::Debug
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
+            const Buffers::IndirectBuffer& indirectBuffer,
+            Scratch::Allocator& scratchAllocator
         );
 
         void GenerateTiledLightingStatistics

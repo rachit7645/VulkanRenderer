@@ -34,13 +34,13 @@ namespace Vk
 
         explicit Extensions(VkPhysicalDevice device);
 
-        [[nodiscard]] static Stack::Vector<const char*> GetInstanceExtensions(Stack::Allocator& allocator);
+        [[nodiscard]] static Scratch::Vector<const char*> GetInstanceExtensions(Scratch::Allocator& allocator);
 
-        [[nodiscard]] Stack::Vector<const char*> GetDeviceExtensions
+        [[nodiscard]] Scratch::Vector<const char*> GetDeviceExtensions
         (
             VkInstance instance,
             VkPhysicalDevice physicalDevice,
-            Stack::Allocator& allocator
+            Scratch::Allocator& allocator
         ) const;
 
         [[nodiscard]] bool HasRequiredExtensions() const;

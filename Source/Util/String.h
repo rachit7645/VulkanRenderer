@@ -32,6 +32,16 @@ namespace Util
         }
     };
 
+    struct StringEqual
+    {
+        using is_transparent = void;
+
+        [[nodiscard]] bool operator()(const std::string_view lhs, const std::string_view rhs) const
+        {
+            return lhs == rhs;
+        }
+    };
+
     [[nodiscard]] std::string ToLower(const std::string_view string);
 }
 

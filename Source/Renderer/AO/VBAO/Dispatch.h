@@ -40,44 +40,46 @@ namespace Renderer::AO::VBAO
         (
             usize FIF,
             usize frameIndex,
+            const std::string_view sceneDepthID,
+            const std::string_view gNormalID,
             const Vk::CommandBuffer& cmdBuffer,
             const Renderer::RenderConfig& renderConfig,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const Objects::Samplers& samplers,
-            const std::string_view sceneDepthID,
-            const std::string_view gNormalID
+            Vk::TextureManager& textureManager,
+            Scratch::Allocator& scratchAllocator
         );
 
         Vk::TextureID hilbertLUT = {};
     private:
         void PreFilterDepth
         (
+            const std::string_view sceneDepthID,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::Samplers& samplers,
-            const std::string_view sceneDepthID
+            const Objects::Samplers& samplers
         );
 
         void Occlusion
         (
             usize FIF,
             usize frameIndex,
+            const std::string_view gNormalID,
             const Vk::CommandBuffer& cmdBuffer,
             const Renderer::RenderConfig& renderConfig,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const Objects::Samplers& samplers,
-            const std::string_view gNormalID
+            Vk::TextureManager& textureManager,
+            Scratch::Allocator& scratchAllocator
         );
 
         void Denoise

@@ -45,6 +45,7 @@ namespace Vk
             const Vk::GeometryBuffer& geometryBuffer,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -54,6 +55,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             const Vk::GraphicsTimeline& timeline,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -64,6 +66,7 @@ namespace Vk
             const Vk::Context& context,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 

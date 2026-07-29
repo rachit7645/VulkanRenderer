@@ -66,7 +66,7 @@
 #include "Engine/SceneEditor.h"
 
 #include "Models/ModelManager.h"
-#include "Util/Stack.h"
+#include "Util/Scratch.h"
 
 #ifdef ENGINE_DLSS
 #include "Renderer/DLSS/Evaluation.h"
@@ -77,7 +77,7 @@ namespace Renderer
     class RenderManager
     {
     public:
-        explicit RenderManager(Stack::Allocator& scratchAllocator);
+        explicit RenderManager(Scratch::Allocator& scratchAllocator);
 
         ~RenderManager();
 
@@ -87,40 +87,41 @@ namespace Renderer
         RenderManager(RenderManager&& other) noexcept = delete;
         RenderManager& operator=(RenderManager&& other) noexcept = delete;
 
-        void Render();
+        void Render(Scratch::Allocator& scratchAllocator);
 
-        [[nodiscard]] bool HandleEvents(Stack::Allocator& scratchAllocator);
+        [[nodiscard]] bool HandleEvents(Scratch::Allocator& scratchAllocator);
     private:
         void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
 
-        void RenderGraphicsQueueOnly();
-        void RenderMultiQueue();
+        void RenderGraphicsQueueOnly(Scratch::Allocator& scratchAllocator);
+        void RenderMultiQueue(Scratch::Allocator& scratchAllocator);
 
-        void GBufferGeneration(const Vk::CommandBuffer& cmdBuffer);
+        void GBufferGeneration(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator);
 
         void Occlusion
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Buffers::SceneBuffer::Buffers& sceneBuffers,
             const std::string_view sceneDepthID,
-            const std::string_view gNormalID
+            const std::string_view gNormalID,
+            Scratch::Allocator& scratchAllocator
         );
 
         void TraceRays(const Vk::CommandBuffer& cmdBuffer);
-        void Lighting(const Vk::CommandBuffer& cmdBuffer);
-        void AntiAliasing(const Vk::CommandBuffer& cmdBuffer);
-        void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer);
+        void Lighting(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator);
+        void AntiAliasing(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator);
+        void BlitToSwapchain(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator);
 
-        void Update(const Vk::CommandBuffer& cmdBuffer);
-        void ImGuiDisplay();
+        void Update(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator);
+        void ImGuiDisplay(Scratch::Allocator& scratchAllocator);
 
         void EndFrame();
 
-        void Resize(Stack::Allocator& scratchAllocator);
+        void Resize(Scratch::Allocator& scratchAllocator);
 
-        void InitImGui();
+        void InitImGui(Scratch::Allocator& scratchAllocator);
 
         tf::Executor m_executor;
 

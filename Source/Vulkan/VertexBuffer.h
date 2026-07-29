@@ -52,12 +52,13 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] bool HasPendingUploads();
 
-        void ImGuiDisplay();
+        void ImGuiDisplay(Scratch::Allocator& scratchAllocator);
 
         void Destroy(VmaAllocator allocator);
 
@@ -98,10 +99,11 @@ namespace Vk
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
-        void DisplayMemoryMapAndStatistics();
+        void DisplayMemoryMapAndStatistics(Scratch::Allocator& scratchAllocator);
 
         std::optional<VertexBuffer::ResizeInfo> m_resizeInfo;
 

@@ -17,6 +17,7 @@
 #ifndef IMAGE_DOWNLOADER_H
 #define IMAGE_DOWNLOADER_H
 
+#include "Util/Scratch.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/GraphicsTimeline.h"
 #include "Vulkan/Image.h"
@@ -55,6 +56,7 @@ namespace Vk
             VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::GraphicsTimeline& timeline,
+            Scratch::Allocator& scratchAllocator,
             tf::Executor& executor
         );
 

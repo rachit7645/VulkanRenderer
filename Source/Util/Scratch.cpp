@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "Stack.h"
+#include "Scratch.h"
 
 #include "Util/Memory.h"
 #include "Util/Log.h"
 
-namespace Stack
+namespace Scratch
 {
     static_assert(std::atomic<usize>::is_always_lock_free, "Really?");
 
@@ -31,18 +31,15 @@ namespace Stack
 
     void Allocator::Reset()
     {
-        if (const usize offset = m_offset.load(std::memory_order_relaxed); offset != 0)
-        {
-            Logger::Debug("[ScratchAllocator] Allocated {} bytes this frame!\n", offset);
-        }
+        bytesUsedBeforeReset = m_offset.load(std::memory_order_relaxed);
+
+        peakMemoryUsage = std::max(peakMemoryUsage, bytesUsedBeforeReset);
 
         m_offset.store(0ull, std::memory_order_relaxed);
     }
 
     void* Allocator::Allocate(usize bytes, usize alignment)
     {
-        // Logger::Debug("[ScratchAllocator] Allocating! [Bytes={}] [Alignment={}]\n", bytes, alignment);
-
         if (!Util::IsPowerOfTwo(alignment))
         {
             return nullptr;

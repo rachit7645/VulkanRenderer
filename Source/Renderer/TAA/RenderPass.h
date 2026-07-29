@@ -44,7 +44,8 @@ namespace Renderer::TAA
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::Samplers& samplers
+            const Objects::Samplers& samplers,
+            Scratch::Allocator& scratchAllocator
         );
 
         void ResetHistory();

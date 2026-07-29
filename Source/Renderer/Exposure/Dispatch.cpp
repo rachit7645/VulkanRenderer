@@ -143,7 +143,8 @@ namespace Renderer::Exposure
         const Vk::TextureManager& textureManager,
         const Buffers::ExposureBuffers& exposureBuffer,
         const Objects::Samplers& samplers,
-        const Util::FrameCounter& frameCounter
+        const Util::FrameCounter& frameCounter,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Auto-Exposure", glm::vec4(0.5098f, 0.6843f, 0.7549f, 1.0f));
@@ -167,7 +168,8 @@ namespace Renderer::Exposure
             framebufferManager,
             megaSet,
             exposureBuffer,
-            frameCounter
+            frameCounter,
+            scratchAllocator
         );
 
         Combine
@@ -317,7 +319,8 @@ namespace Renderer::Exposure
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Buffers::ExposureBuffers& exposureBuffer,
-        const Util::FrameCounter& frameCounter
+        const Util::FrameCounter& frameCounter,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Average", glm::vec4(0.3098f, 0.4843f, 0.549f, 1.0f));
@@ -331,7 +334,7 @@ namespace Renderer::Exposure
 
         if (!m_hasLuminanceBeenReset)
         {
-            Vk::BarrierWriter barrierWriter = {};
+            auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
             barrierWriter
             .WriteBufferBarrier(
@@ -434,7 +437,7 @@ namespace Renderer::Exposure
             m_hasLuminanceBeenReset = true;
         }
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteBufferBarrier(

@@ -19,6 +19,7 @@
 
 #include "Model.h"
 #include "ModelID.h"
+#include "MeshIdentifier.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/CommandBufferAllocator.h"
@@ -47,6 +48,7 @@ namespace Models
             Vk::StagingPool& stagingPool,
             Vk::GeometryBuffer& geometryBuffer,
             Vk::TextureManager& textureManager,
+            Scratch::Allocator& scratchAllocator,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );

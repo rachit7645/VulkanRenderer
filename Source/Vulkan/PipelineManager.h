@@ -34,6 +34,7 @@ namespace Vk
         void Update
         (
             VkDevice device,
+            Scratch::Allocator& scratchAllocator,
             tf::Executor& executor,
             Util::DeletionQueue& deletionQueue
         );

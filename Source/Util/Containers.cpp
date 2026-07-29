@@ -16,10 +16,10 @@
 
 #include "Containers.h"
 
-namespace Stack
+namespace Scratch
 {
-    Stack::String CreateString(Stack::Allocator& allocator)
+    Scratch::String CreateString(Scratch::Allocator& allocator)
     {
-        return Stack::String(STL::StackAllocator<char>(&allocator));
+        return Scratch::String(STL::ScratchAllocator<char>(&allocator));
     }
 }

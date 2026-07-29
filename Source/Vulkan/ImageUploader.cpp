@@ -207,7 +207,7 @@ namespace Vk
         });
     }
 
-    void ImageUploader::FlushUploads(const Vk::CommandBuffer& cmdBuffer)
+    void ImageUploader::FlushUploads(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator)
     {
         const std::scoped_lock lock{m_mutex};
 
@@ -218,7 +218,7 @@ namespace Vk
 
         Vk::BeginLabel(cmdBuffer, "ImageUploader::FlushUploads", {0.6117f, 0.8196f, 0.0313f, 1.0f});
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         // ? -> Transfer Destination
         {
@@ -307,7 +307,7 @@ namespace Vk
                     continue;
                 }
 
-                upload.image.GenerateMipmaps(cmdBuffer);
+                upload.image.GenerateMipmaps(cmdBuffer, scratchAllocator);
             }
         }
 
@@ -342,8 +342,6 @@ namespace Vk
 
             barrierWriter.Execute(cmdBuffer);
         }
-
-        barrierWriter.Clear();
 
         m_pendingUploads.clear();
 
@@ -1141,7 +1139,7 @@ namespace Vk
                 );
             }
 
-            Imf::RgbaInputFile file(path.data());
+            Imf::RgbaInputFile file(path.data(), 1);
 
             const Imath::Box2i dataWindow = file.dataWindow();
             const s32          width      = dataWindow.max.x - dataWindow.min.x + 1;

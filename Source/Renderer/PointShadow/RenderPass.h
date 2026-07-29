@@ -52,7 +52,8 @@ namespace Renderer::PointShadow
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
             const Objects::Samplers& samplers,
-            Culling::Dispatch& culling
+            Culling::Dispatch& culling,
+            Scratch::Allocator& scratchAllocator
         ) const;
     };
 }

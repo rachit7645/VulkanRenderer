@@ -42,12 +42,13 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
         void Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue);
 
-        void ImGuiDisplay();
+        void ImGuiDisplay(Scratch::Allocator& scratchAllocator);
 
         [[nodiscard]] bool HasPendingUploads();
 

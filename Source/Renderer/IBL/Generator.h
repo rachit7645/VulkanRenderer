@@ -55,6 +55,7 @@ namespace Renderer::IBL
             Vk::StagingPool& stagingPool,
             Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -92,6 +93,7 @@ namespace Renderer::IBL
             Vk::StagingPool& stagingPool,
             Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -104,6 +106,7 @@ namespace Renderer::IBL
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -118,6 +121,7 @@ namespace Renderer::IBL
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID hdrMapID,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 
@@ -156,6 +160,7 @@ namespace Renderer::IBL
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID,
+            Scratch::Allocator& scratchAllocator,
             Util::DeletionQueue& deletionQueue
         );
 

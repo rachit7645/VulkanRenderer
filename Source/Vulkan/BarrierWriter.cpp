@@ -100,4 +100,93 @@ namespace Vk
     {
         return m_bufferBarriers.empty() && m_imageBarriers.empty();
     }
+
+    ScratchBarrierWriter::ScratchBarrierWriter(Scratch::Allocator& scratchAllocator)
+    {
+        m_bufferBarriers = Scratch::CreateVector<VkBufferMemoryBarrier2>(scratchAllocator);
+        m_imageBarriers  = Scratch::CreateVector<VkImageMemoryBarrier2>(scratchAllocator);
+    }
+
+    ScratchBarrierWriter& ScratchBarrierWriter::WriteBufferBarrier(const Vk::Buffer& buffer, const Vk::BufferBarrier& barrier)
+    {
+        m_bufferBarriers.emplace_back(VkBufferMemoryBarrier2{
+            .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = barrier.srcStageMask,
+            .srcAccessMask       = barrier.srcAccessMask,
+            .dstStageMask        = barrier.dstStageMask,
+            .dstAccessMask       = barrier.dstAccessMask,
+            .srcQueueFamilyIndex = barrier.srcQueueFamily,
+            .dstQueueFamilyIndex = barrier.dstQueueFamily,
+            .buffer              = buffer.handle,
+            .offset              = barrier.offset,
+            .size                = barrier.size
+        });
+
+        return *this;
+    }
+
+    ScratchBarrierWriter& ScratchBarrierWriter::WriteImageBarrier(const Vk::Image& image, const ImageBarrier& barrier)
+    {
+        m_imageBarriers.emplace_back(VkImageMemoryBarrier2{
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = barrier.srcStageMask,
+            .srcAccessMask       = barrier.srcAccessMask,
+            .dstStageMask        = barrier.dstStageMask,
+            .dstAccessMask       = barrier.dstAccessMask,
+            .oldLayout           = barrier.oldLayout,
+            .newLayout           = barrier.newLayout,
+            .srcQueueFamilyIndex = barrier.srcQueueFamily,
+            .dstQueueFamilyIndex = barrier.dstQueueFamily,
+            .image               = image.handle,
+            .subresourceRange    = VkImageSubresourceRange{
+                .aspectMask     = image.aspect,
+                .baseMipLevel   = barrier.baseMipLevel,
+                .levelCount     = barrier.levelCount,
+                .baseArrayLayer = barrier.baseArrayLayer,
+                .layerCount     = barrier.layerCount,
+            }
+        });
+
+        return *this;
+    }
+
+    void ScratchBarrierWriter::Execute(const Vk::CommandBuffer& cmdBuffer)
+    {
+        if (IsEmpty())
+        {
+            return;
+        }
+
+        const VkDependencyInfo dependencyInfo =
+        {
+            .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pNext                    = nullptr,
+            .dependencyFlags          = 0,
+            .memoryBarrierCount       = 0,
+            .pMemoryBarriers          = nullptr,
+            .bufferMemoryBarrierCount = static_cast<u32>(m_bufferBarriers.size()),
+            .pBufferMemoryBarriers    = m_bufferBarriers.data(),
+            .imageMemoryBarrierCount  = static_cast<u32>(m_imageBarriers.size()),
+            .pImageMemoryBarriers     = m_imageBarriers.data()
+        };
+
+        vkCmdPipelineBarrier2(cmdBuffer.handle, &dependencyInfo);
+
+        Clear();
+    }
+
+    ScratchBarrierWriter& ScratchBarrierWriter::Clear()
+    {
+        m_bufferBarriers.clear();
+        m_imageBarriers.clear();
+
+        return *this;
+    }
+
+    bool ScratchBarrierWriter::IsEmpty() const
+    {
+        return m_bufferBarriers.empty() && m_imageBarriers.empty();
+    }
 }

@@ -120,7 +120,7 @@ namespace Vk
             const Vk::ImageUpdateRawMemory& updateRawMemory
         );
 
-        void FlushUploads(const Vk::CommandBuffer& cmdBuffer);
+        void FlushUploads(const Vk::CommandBuffer& cmdBuffer, Scratch::Allocator& scratchAllocator);
 
         [[nodiscard]] bool HasPendingUploads();
 

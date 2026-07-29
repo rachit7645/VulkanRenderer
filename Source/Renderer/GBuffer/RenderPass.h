@@ -51,7 +51,8 @@ namespace Renderer::GBuffer
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const Objects::Samplers& samplers
+            const Objects::Samplers& samplers,
+            Scratch::Allocator& scratchAllocator
         );
     };
 }

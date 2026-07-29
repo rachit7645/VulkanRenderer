@@ -22,7 +22,6 @@
 #include "Renderer/IBL/IBLMaps.h"
 #include "Renderer/IBL/Generator.h"
 #include "Models/ModelManager.h"
-#include "Util/FrameCounter.h"
 #include "GPU/Lights.h"
 
 namespace Engine

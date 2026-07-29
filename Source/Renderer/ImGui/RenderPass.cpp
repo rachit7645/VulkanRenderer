@@ -75,6 +75,7 @@ namespace Renderer::DearImGui
         Vk::StagingPool& stagingPool,
         Vk::TextureManager& textureManager,
         tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue
     )
     {
@@ -99,6 +100,7 @@ namespace Renderer::DearImGui
                 stagingPool,
                 textureManager,
                 executor,
+                scratchAllocator,
                 deletionQueue,
                 drawData
             );
@@ -141,6 +143,7 @@ namespace Renderer::DearImGui
         Vk::StagingPool& stagingPool,
         Vk::TextureManager& textureManager,
         tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
@@ -164,6 +167,7 @@ namespace Renderer::DearImGui
             cmdBuffer,
             currentVertexBuffer,
             currentIndexBuffer,
+            scratchAllocator,
             deletionQueue,
             drawData
         );
@@ -177,6 +181,7 @@ namespace Renderer::DearImGui
             stagingPool,
             textureManager,
             executor,
+            scratchAllocator,
             deletionQueue,
             drawData
         );
@@ -320,6 +325,7 @@ namespace Renderer::DearImGui
         const Vk::CommandBuffer& cmdBuffer,
         Vk::Buffer& vertexBuffer,
         Vk::Buffer& indexBuffer,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
@@ -388,7 +394,7 @@ namespace Renderer::DearImGui
             indexDestination  += drawList->IdxBuffer.Size;
         }
 
-        Vk::BarrierWriter{}
+        Vk::ScratchBarrierWriter(scratchAllocator)
         .WriteBufferBarrier(
             vertexBuffer,
             Vk::BufferBarrier{
@@ -447,6 +453,7 @@ namespace Renderer::DearImGui
         Vk::StagingPool& stagingPool,
         Vk::TextureManager& textureManager,
         tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
         Util::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
@@ -528,7 +535,7 @@ namespace Renderer::DearImGui
                             .offset = {.x     = texture->UpdateRect.x, .y      = texture->UpdateRect.y},
                             .extent = {.width = texture->UpdateRect.w, .height = texture->UpdateRect.h}
                         },
-                        .data = data
+                        .data   = data
                     }
                 );
 
@@ -558,7 +565,8 @@ namespace Renderer::DearImGui
         (
             device,
             cmdBuffer,
-            megaSet
+            megaSet,
+            scratchAllocator
         );
 
         for (auto* texture : *drawData->Textures)

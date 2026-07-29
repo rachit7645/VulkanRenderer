@@ -28,7 +28,7 @@ namespace Models
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
-    void Model::LoadFromFile(Models::LoadFromFileInfo& loadInfo, const std::string_view filePath)
+    void Model::LoadFromFile(const Models::LoadFromFileInfo& loadInfo, const std::string_view filePath)
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
@@ -102,7 +102,7 @@ namespace Models
 
     void Model::ProcessScenes
     (
-        Models::LoadFromFileInfo& loadInfo,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset
     )
@@ -129,7 +129,7 @@ namespace Models
 
     void Model::ProcessNode
     (
-        Models::LoadFromFileInfo& loadInfo,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         usize nodeIndex,
@@ -176,7 +176,7 @@ namespace Models
 
     void Model::LoadMesh
     (
-        Models::LoadFromFileInfo& loadInfo,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         const fastgltf::Mesh& mesh,
@@ -596,7 +596,7 @@ namespace Models
     requires fastgltf::IsTextureInfo<T>
     Model::TextureInfo Model::LoadTexture
     (
-        Models::LoadFromFileInfo& loadInfo,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         const std::optional<T>& textureInfo,
