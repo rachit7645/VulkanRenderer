@@ -17,9 +17,9 @@
 #ifndef SKYBOX_PASS_H
 #define SKYBOX_PASS_H
 
-#include "Vulkan/Constants.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/FramebufferManager.h"
+#include "Vulkan/PipelineManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
 #include "Renderer/Objects/Samplers.h"

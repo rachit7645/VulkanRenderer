@@ -92,11 +92,11 @@ namespace Renderer::Lighting
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
         const Objects::Samplers& samplers,
-        const IBL::IBLMaps& iblMaps
+        const IBL::IBLMaps& iblMaps,
+        Vk::TextureManager& textureManager
     )
     {
         Vk::BeginLabel(cmdBuffer, "Lighting", glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));

@@ -1530,6 +1530,8 @@ namespace Renderer
             m_deletionQueues[m_FIF]
         );
 
+        const auto iblMaps = m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID);
+
         m_lighting.Render
         (
             m_FIF,
@@ -1537,14 +1539,12 @@ namespace Renderer
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
-            m_textureManager,
             m_sceneBuffer,
             m_tiledLightIndexBuffer,
             m_samplers,
-            m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID)
+            iblMaps,
+            m_textureManager
         );
-
-        const auto iblMaps = m_iblGenerator.GetIBLMaps(m_sceneEditor.scene->iblMapsID);
 
         m_skybox.Render
         (
@@ -1992,14 +1992,10 @@ namespace Renderer
 
         const bool sceneChanged = m_sceneEditor.Update
         (
-            m_context,
             m_frameCounter,
             m_inputs,
             m_modelManager,
-            m_iblGenerator,
-            m_megaSet,
-            m_textureManager,
-            m_deletionQueues[m_FIF]
+            m_iblGenerator
         );
 
         if (sceneChanged)

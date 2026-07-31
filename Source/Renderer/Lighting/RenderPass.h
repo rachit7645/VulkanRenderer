@@ -20,6 +20,7 @@
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
+#include "Vulkan/PipelineManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/TileLightIndexBuffer.h"
 #include "Renderer/IBL/IBLMaps.h"
@@ -45,11 +46,11 @@ namespace Renderer::Lighting
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
             const Objects::Samplers& samplers,
-            const IBL::IBLMaps& iblMaps
+            const IBL::IBLMaps& iblMaps,
+            Vk::TextureManager& textureManager
         );
     };
 }

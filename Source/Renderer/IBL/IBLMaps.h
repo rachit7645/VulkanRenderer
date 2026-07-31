@@ -27,6 +27,8 @@ namespace Renderer::IBL
     constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
     constexpr VkFormat   BRDF_LUT_FORMAT = VK_FORMAT_R16G16_SFLOAT;
 
+    using IBLID = u64;
+
     struct IBLMaps
     {
         void Destroy

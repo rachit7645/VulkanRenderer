@@ -28,8 +28,6 @@
 
 namespace Renderer::IBL
 {
-    using IBLID = u64;
-
     class Generator
     {
     public:
@@ -59,16 +57,9 @@ namespace Renderer::IBL
             Util::DeletionQueue& deletionQueue
         );
 
-        IBL::IBLID GenerateIBL(const std::string_view hdrMapAssetPath);
+        [[nodiscard]] IBL::IBLID GenerateIBL(const std::string_view hdrMapAssetPath);
 
-        void DestroyIBL
-        (
-            IBLID id,
-            const Vk::Context& context,
-            Vk::TextureManager& textureManager,
-            Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
-        );
+        void DestroyIBL(IBL::IBLID id);
 
         IBL::IBLMaps GetIBLMaps(IBL::IBLID id);
 
@@ -184,6 +175,8 @@ namespace Renderer::IBL
         std::optional<Generator::LoadedIBLMaps> m_loadedIBLMaps = std::nullopt;
 
         std::optional<Vk::TextureID> m_brdfLutID = std::nullopt;
+
+        std::optional<IBL::IBLMaps> m_mapsToDestroy = std::nullopt;
     };
 }
 

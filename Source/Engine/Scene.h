@@ -20,8 +20,6 @@
 #include "FreeCamera.h"
 #include "Renderer/RenderObject.h"
 #include "Renderer/IBL/IBLMaps.h"
-#include "Renderer/IBL/Generator.h"
-#include "Models/ModelManager.h"
 #include "GPU/Lights.h"
 
 namespace Engine

@@ -22,6 +22,7 @@
 #include "Engine/Scene.h"
 #include "GPU/Scene.h"
 #include "Renderer/RenderConfig.h"
+#include "Models/ModelManager.h"
 
 namespace Renderer::Buffers
 {

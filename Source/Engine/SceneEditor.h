@@ -19,6 +19,8 @@
 
 #include "Scene.h"
 #include "Config.h"
+#include "Models/ModelManager.h"
+#include "Renderer/IBL/Generator.h"
 
 namespace Engine
 {
@@ -29,35 +31,19 @@ namespace Engine
 
         bool Update
         (
-            const Vk::Context& context,
             const Util::FrameCounter& frameCounter,
             const Engine::Inputs& inputs,
             Models::ModelManager& modelManager,
-            Renderer::IBL::Generator& iblGenerator,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
-            Util::DeletionQueue& deletionQueue
+            Renderer::IBL::Generator& iblGenerator
         );
 
         Engine::Config config = {};
 
         std::optional<Engine::Scene> scene = std::nullopt;
     private:
-        void Load
-        (
-            Models::ModelManager& modelManager,
-            Renderer::IBL::Generator& iblGenerator
-        );
+        void Load(Models::ModelManager& modelManager, Renderer::IBL::Generator& iblGenerator);
 
-        void Destroy
-        (
-            const Vk::Context& context,
-            Models::ModelManager& modelManager,
-            Renderer::IBL::Generator& iblGenerator,
-            Vk::MegaSet& megaSet,
-            Vk::TextureManager& textureManager,
-            Util::DeletionQueue& deletionQueue
-        );
+        void Destroy(Models::ModelManager& modelManager, Renderer::IBL::Generator& iblGenerator);
 
         void Save(const Models::ModelManager& modelManager);
 

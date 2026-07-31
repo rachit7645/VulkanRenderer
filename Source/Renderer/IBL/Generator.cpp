@@ -175,6 +175,18 @@ namespace Renderer::IBL
         Util::DeletionQueue& deletionQueue
     )
     {
+        if (m_mapsToDestroy.has_value())
+        {
+            m_mapsToDestroy->Destroy
+            (
+                context.device,
+                context.allocator,
+                textureManager,
+                megaSet,
+                deletionQueue
+            );
+        }
+
         if (!m_pathToLoad.has_value())
         {
             return;
@@ -232,14 +244,7 @@ namespace Renderer::IBL
         return std::hash<std::string>{}(*m_pathToLoad);
     }
 
-    void Generator::DestroyIBL
-    (
-        IBLID id,
-        const Vk::Context& context,
-        Vk::TextureManager& textureManager,
-        Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
-    )
+    void Generator::DestroyIBL(IBL::IBLID id)
     {
         if (!m_loadedIBLMaps.has_value())
         {
@@ -251,14 +256,7 @@ namespace Renderer::IBL
             Logger::Error("{}\n", "Invalid IBL Map ID!");
         }
 
-        m_loadedIBLMaps->iblMaps.Destroy
-        (
-            context.device,
-            context.allocator,
-            textureManager,
-            megaSet,
-            deletionQueue
-        );
+        m_mapsToDestroy = m_loadedIBLMaps->iblMaps;
 
         m_loadedIBLMaps = std::nullopt;
     }

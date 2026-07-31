@@ -22,6 +22,7 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/ShaderBindingTable.h"
+#include "Vulkan/PipelineManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Objects/Samplers.h"
 

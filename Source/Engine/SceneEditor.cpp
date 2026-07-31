@@ -33,14 +33,10 @@ namespace Engine
 
     bool SceneEditor::Update
     (
-        const Vk::Context& context,
         const Util::FrameCounter& frameCounter,
         const Engine::Inputs& inputs,
         Models::ModelManager& modelManager,
-        Renderer::IBL::Generator& iblGenerator,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        Util::DeletionQueue& deletionQueue
+        Renderer::IBL::Generator& iblGenerator
     )
     {
         if (scene.has_value())
@@ -92,15 +88,7 @@ namespace Engine
         {
             if (scene.has_value())
             {
-                Destroy
-                (
-                    context,
-                    modelManager,
-                    iblGenerator,
-                    megaSet,
-                    textureManager,
-                    deletionQueue
-                );
+                Destroy(modelManager, iblGenerator);
             }
 
             Load(modelManager, iblGenerator);
@@ -533,12 +521,8 @@ namespace Engine
 
     void SceneEditor::Destroy
     (
-        const Vk::Context& context,
         Models::ModelManager& modelManager,
-        Renderer::IBL::Generator& iblGenerator,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        Util::DeletionQueue& deletionQueue
+        Renderer::IBL::Generator& iblGenerator
     )
     {
         if (!scene.has_value())
@@ -546,16 +530,9 @@ namespace Engine
             return;
         }
 
-        iblGenerator.DestroyIBL
-        (
-            scene->iblMapsID,
-            context,
-            textureManager,
-            megaSet,
-            deletionQueue
-        );
+        iblGenerator.DestroyIBL(scene->iblMapsID);
 
-        for (auto& renderObject : scene->renderObjects)
+        for (const auto& renderObject : scene->renderObjects)
         {
             modelManager.Free(renderObject.modelID);
         }

@@ -18,7 +18,7 @@
 #define RENDER_OBJECT_H
 
 #include "Externals/GLM.h"
-#include "Models/ModelManager.h"
+#include "Models/ModelID.h"
 
 namespace Renderer
 {
