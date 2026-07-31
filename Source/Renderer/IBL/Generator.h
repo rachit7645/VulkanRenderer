@@ -54,7 +54,7 @@ namespace Renderer::IBL
             Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] IBL::IBLID GenerateIBL(const std::string_view hdrMapAssetPath);
@@ -85,7 +85,7 @@ namespace Renderer::IBL
             Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID LoadHDRMap
@@ -98,7 +98,7 @@ namespace Renderer::IBL
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateSkybox
@@ -113,7 +113,7 @@ namespace Renderer::IBL
             Vk::MegaSet& megaSet,
             Vk::TextureID hdrMapID,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateIrradianceMap
@@ -140,7 +140,7 @@ namespace Renderer::IBL
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID ShrinkSkybox
@@ -152,7 +152,7 @@ namespace Renderer::IBL
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateBRDFLookupTable
@@ -165,7 +165,7 @@ namespace Renderer::IBL
             Vk::MegaSet& megaSet,
             Vk::ImageDownloader& imageDownloader,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         Vk::Buffer m_matrixBuffer = {};

@@ -94,7 +94,7 @@ namespace Renderer::TiledLighting
         const Buffers::SceneBuffer& sceneBuffer,
         const Objects::Samplers& samplers,
         Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Tiled Lighting", glm::vec4(0.4098f, 0.2843f, 0.7599f, 1.0f));
@@ -224,7 +224,7 @@ namespace Renderer::TiledLighting
         const Buffers::SceneBuffer& sceneBuffer,
         const Objects::Samplers& samplers,
         Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Culling", glm::vec4(0.6984f, 0.3423f, 0.3599f, 1.0f));

@@ -36,7 +36,7 @@ namespace Vk
             VkDevice device,
             Scratch::Allocator& scratchAllocator,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] const Vk::Pipeline& GetPipeline(Vk::PipelineID id) const;

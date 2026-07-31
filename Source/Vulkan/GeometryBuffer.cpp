@@ -54,7 +54,7 @@ namespace Vk
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         #ifdef ENGINE_PROFILE
@@ -144,7 +144,7 @@ namespace Vk
         Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
     }
 
-    void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue)
+    void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Engine::DeletionQueue& deletionQueue)
     {
         deletionQueue.Push([this, info] ()
         {

@@ -100,7 +100,7 @@ namespace Renderer::ShadowRT
         const Objects::Samplers& samplers,
         const Vk::AccelerationStructure& accelerationStructure,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));

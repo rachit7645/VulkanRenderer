@@ -39,7 +39,7 @@ namespace Engine
             f32 zoom
         );
 
-        void Update(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs) override;
+        void Update(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs) override;
         void ImGuiDisplay() override;
 
         f32 speed       = 15.0f;
@@ -47,9 +47,9 @@ namespace Engine
         f32 sensitivity = 100.0f;
         f32 zoom        = 45.0f;
     private:
-        void Rotate(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
-        void Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
-        void Zoom(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs);
+        void Rotate(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs);
+        void Move(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs);
+        void Zoom(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs);
 
         glm::vec3 m_targetPosition    = {};
         glm::quat m_targetOrientation = glm::identity<glm::quat>();

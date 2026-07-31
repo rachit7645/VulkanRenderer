@@ -46,7 +46,7 @@ namespace Vk
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void TryCompactBottomLevelAS
@@ -56,7 +56,7 @@ namespace Vk
             VmaAllocator allocator,
             const Vk::GraphicsTimeline& timeline,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void BuildTopLevelAS
@@ -67,7 +67,7 @@ namespace Vk
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Destroy(VkDevice device, VmaAllocator allocator);

@@ -55,7 +55,7 @@ namespace Vk
         VkDevice device,
         Scratch::Allocator& scratchAllocator,
         tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (m_dirtyPipelineConfigs.empty() && m_reloadRequests.empty())
@@ -198,7 +198,7 @@ namespace Vk
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
-        zone.NameFmt("%s", id.c_str());
+        zone.NameFmt("%s", GetPipelineName(id).data());
         #endif
 
         config.Build(device);
@@ -290,7 +290,7 @@ namespace Vk
     {
         #ifdef ENGINE_PROFILE
         ZoneNamed(zone, true);
-        zone.NameFmt("%s", id.data());
+        zone.NameFmt("%s", GetPipelineName(id).data());
         #endif
 
         bool reloadSucceeded = true;
@@ -318,8 +318,8 @@ namespace Vk
         for (const auto& [path, _] : pipelineConfig.GetShaders())
         {
             #ifdef ENGINE_PROFILE
-            ZoneNamed(zone, true);
-            zone.NameFmt("%s", path.c_str());
+            ZoneNamed(zone2, true);
+            zone2.NameFmt("%s", path.c_str());
             #endif
 
             const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();

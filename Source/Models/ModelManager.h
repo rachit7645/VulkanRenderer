@@ -50,7 +50,7 @@ namespace Models
             Vk::TextureManager& textureManager,
             Scratch::Allocator& scratchAllocator,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void ImGuiDisplay();

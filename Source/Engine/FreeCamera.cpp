@@ -62,7 +62,7 @@ namespace Engine
     {
     }
 
-    void FreeCamera::Update(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
+    void FreeCamera::Update(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         if (!isEnabled)
         {
@@ -80,7 +80,7 @@ namespace Engine
         orientation = glm::normalize(orientation);
     }
 
-    void FreeCamera::Move(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
+    void FreeCamera::Move(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         const glm::vec3 front = glm::normalize(m_targetOrientation * glm::vec3(0.0f, 0.0f, -1.0f));
         const glm::vec3 right = glm::normalize(m_targetOrientation * glm::vec3(1.0f, 0.0f,  0.0f));
@@ -133,7 +133,7 @@ namespace Engine
         m_targetPosition -= Renderer::WORLD_UP * leftTrigger * velocity;
     }
 
-    void FreeCamera::Rotate(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
+    void FreeCamera::Rotate(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         const f32 speed = sensitivity * frameCounter.frameDelta;
 
@@ -166,7 +166,7 @@ namespace Engine
         m_targetOrientation = glm::normalize(m_yaw * m_pitch);
     }
 
-    void FreeCamera::Zoom(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs)
+    void FreeCamera::Zoom(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs)
     {
         if (!inputs.WasMouseScrolled())
         {

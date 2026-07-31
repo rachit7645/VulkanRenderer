@@ -30,7 +30,7 @@ namespace Vk
         u32 missCount,
         u32 hitCount,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Shader Binding Table Build", glm::vec4(0.4126f, 0.7488f, 0.5581f, 1.0f));

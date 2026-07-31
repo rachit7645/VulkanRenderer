@@ -48,7 +48,7 @@ namespace Files
         const auto lastSlashPosition = fileName.find_last_of("/\\");
 
         return (lastSlashPosition == std::string_view::npos)
-            ? fileName.data()
+            ? fileName
             : fileName.substr(lastSlashPosition + 1);
     }
 }

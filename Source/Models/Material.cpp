@@ -57,7 +57,7 @@ namespace Models
         VmaAllocator allocator,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         textureManager.DestroyTexture

@@ -24,7 +24,7 @@ namespace Renderer::IBL
         VmaAllocator allocator,
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         textureManager.DestroyTexture

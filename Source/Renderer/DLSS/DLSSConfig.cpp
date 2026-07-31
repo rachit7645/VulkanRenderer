@@ -202,7 +202,7 @@ namespace Renderer::DLSS
     (
         const Vk::CommandBuffer& cmdBuffer,
         const glm::uvec2& swapchainSize,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (!isSupported)

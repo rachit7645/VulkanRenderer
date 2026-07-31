@@ -60,13 +60,13 @@
 #include "Vulkan/StagingPool.h"
 
 #include "Util/Types.h"
-#include "Util/FrameCounter.h"
+#include "Engine/FrameCounter.h"
 
 #include "Engine/Window.h"
 #include "Engine/SceneEditor.h"
 
 #include "Models/ModelManager.h"
-#include "Util/Scratch.h"
+#include "Engine/Scratch.h"
 
 #ifdef ENGINE_DLSS
 #include "Renderer/DLSS/Evaluation.h"
@@ -130,10 +130,10 @@ namespace Renderer
         usize m_FIF        = 0;
         usize m_frameIndex = 0;
 
-        Util::FrameCounter m_frameCounter = {};
+        Engine::FrameCounter m_frameCounter = {};
 
-        Util::DeletionQueue                                   m_globalDeletionQueue = {};
-        std::array<Util::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues      = {};
+        Engine::DeletionQueue                                   m_globalDeletionQueue = {};
+        std::array<Engine::DeletionQueue, Vk::FRAMES_IN_FLIGHT> m_deletionQueues      = {};
 
         Engine::Window m_window;
         Engine::Inputs m_inputs;

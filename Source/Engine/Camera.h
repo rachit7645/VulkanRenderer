@@ -20,7 +20,7 @@
 #include "Inputs.h"
 #include "Constants.h"
 #include "Externals/GLM.h"
-#include "Util/FrameCounter.h"
+#include "FrameCounter.h"
 
 namespace Engine
 {
@@ -37,7 +37,7 @@ namespace Engine
         Camera(Camera&& other) noexcept = default;
         Camera& operator=(Camera&& other) noexcept = default;
 
-        virtual void Update(const Util::FrameCounter& frameCounter, const Engine::Inputs& inputs) = 0;
+        virtual void Update(const Engine::FrameCounter& frameCounter, const Engine::Inputs& inputs) = 0;
         virtual void ImGuiDisplay();
 
         [[nodiscard]] glm::mat4 GetViewMatrix() const;

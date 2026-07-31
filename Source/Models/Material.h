@@ -35,7 +35,7 @@ namespace Models
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         Vk::TextureID albedoID   = {};

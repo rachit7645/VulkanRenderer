@@ -33,7 +33,7 @@ namespace Engine
 
     bool SceneEditor::Update
     (
-        const Util::FrameCounter& frameCounter,
+        const Engine::FrameCounter& frameCounter,
         const Engine::Inputs& inputs,
         Models::ModelManager& modelManager,
         Renderer::IBL::Generator& iblGenerator

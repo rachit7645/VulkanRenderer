@@ -338,7 +338,7 @@ namespace Renderer::Debug
         const Buffers::TileLightIndexBuffer& tiledLightIndexBuffer,
         Vk::StagingPool& stagingPool,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (ImGui::BeginMainMenuBar())
@@ -570,7 +570,7 @@ namespace Renderer::Debug
     (
         const Vk::CommandBuffer& cmdBuffer,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Data Transfer", {0.6117f, 0.0749f, 0.3901f, 1.0f});
@@ -1292,7 +1292,7 @@ namespace Renderer::Debug
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         constexpr usize LIGHT_CONE_STACKS = 32;

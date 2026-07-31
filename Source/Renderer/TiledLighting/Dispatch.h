@@ -50,7 +50,7 @@ namespace Renderer::TiledLighting
             const Buffers::SceneBuffer& sceneBuffer,
             const Objects::Samplers& samplers,
             Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
     private:
         void Bounds
@@ -76,7 +76,7 @@ namespace Renderer::TiledLighting
             const Buffers::SceneBuffer& sceneBuffer,
             const Objects::Samplers& samplers,
             Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
     };
 }

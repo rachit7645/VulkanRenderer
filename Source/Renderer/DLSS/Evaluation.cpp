@@ -28,7 +28,7 @@ namespace Renderer::DLSS
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Util::FrameCounter& frameCounter,
+        const Engine::FrameCounter& frameCounter,
         DLSS::DLSSConfig& config
     )
     {

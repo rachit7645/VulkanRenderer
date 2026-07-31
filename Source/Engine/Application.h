@@ -17,7 +17,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "Util/Scratch.h"
+#include "Scratch.h"
 #include "Renderer/RenderManager.h"
 
 namespace Engine

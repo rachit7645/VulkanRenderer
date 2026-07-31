@@ -26,7 +26,7 @@
 #include "BarrierWriter.h"
 #include "ImageView.h"
 #include "StagingPool.h"
-#include "Util/DeletionQueue.h"
+#include "Engine/DeletionQueue.h"
 
 namespace Vk
 {
@@ -106,7 +106,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
         );
 
@@ -115,7 +115,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::Image& image,
             const Vk::ImageUpdateRawMemory& updateRawMemory
         );
@@ -143,7 +143,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadType type,
             ImageUploadFlags flags
@@ -154,7 +154,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory,
             ImageUploadType type,
             ImageUploadFlags flags
@@ -166,7 +166,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
         );
@@ -176,7 +176,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory,
             ImageUploadFlags flags
         );
@@ -186,7 +186,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const u8* data,
             u32 width,
             u32 height,
@@ -199,7 +199,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
         );
@@ -209,7 +209,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory,
             ImageUploadFlags flags
         );
@@ -219,7 +219,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const f32* data,
             u32 width,
             u32 height,
@@ -232,7 +232,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const std::string_view path,
             ImageUploadFlags flags
         );
@@ -243,7 +243,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const std::string_view path
         );
 
@@ -252,7 +252,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::ImageUploadMemory& memory
         );
 
@@ -261,7 +261,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             ktxTexture2* pTexture
         );
 
@@ -270,7 +270,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const ImageUploadRawMemory& rawMemory,
             ImageUploadFlags flags
         );
@@ -280,7 +280,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const ImageUploadCache& cache
         );
 

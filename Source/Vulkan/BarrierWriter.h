@@ -22,8 +22,8 @@
 #include "Image.h"
 #include "Buffer.h"
 #include "Barrier.h"
-#include "Util/Containers.h"
-#include "Util/Scratch.h"
+#include "Engine/Containers.h"
+#include "Engine/Scratch.h"
 
 namespace Vk
 {

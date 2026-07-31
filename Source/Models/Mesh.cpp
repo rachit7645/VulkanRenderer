@@ -25,7 +25,7 @@ namespace Models
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         Vk::GeometryBuffer& geometryBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         geometryBuffer.Free(surfaceInfo, deletionQueue);

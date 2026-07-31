@@ -17,7 +17,7 @@
 #ifndef IMAGE_DOWNLOADER_H
 #define IMAGE_DOWNLOADER_H
 
-#include "Util/Scratch.h"
+#include "Engine/Scratch.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/GraphicsTimeline.h"
 #include "Vulkan/Image.h"

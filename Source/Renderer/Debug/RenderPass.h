@@ -57,7 +57,7 @@ namespace Renderer::Debug
             const Buffers::TileLightIndexBuffer& tiledLightIndexBuffer,
             Vk::StagingPool& stagingPool,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool);
@@ -78,7 +78,7 @@ namespace Renderer::Debug
         (
             const Vk::CommandBuffer& cmdBuffer,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void BeginDebugRender
@@ -125,7 +125,7 @@ namespace Renderer::Debug
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Buffers::SceneBuffer& sceneBuffer,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void GenerateCullingStatistics

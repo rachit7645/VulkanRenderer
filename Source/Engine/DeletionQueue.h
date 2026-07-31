@@ -14,28 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef TILE_LIGHT_INDEX_BUFFER_H
-#define TILE_LIGHT_INDEX_BUFFER_H
+#ifndef DELETION_QUEUE_H
+#define DELETION_QUEUE_H
 
-#include "Vulkan/Buffer.h"
-#include "Engine/DeletionQueue.h"
+#include <stack>
+#include <functional>
+#include <mutex>
 
-namespace Renderer::Buffers
+namespace Engine
 {
-    class TileLightIndexBuffer
+    class DeletionQueue
     {
     public:
-        void Update
-        (
-            usize tileCount,
-            VkDevice device,
-            VmaAllocator allocator,
-            Engine::DeletionQueue& deletionQueue
-        );
+        using Deleter = std::move_only_function<void()>;
 
-        void Destroy(VmaAllocator allocator);
+        void Push(Deleter&& deleter);
+        void Flush();
+    private:
+        using Stack = std::stack<Deleter, std::vector<Deleter>>;
 
-        Vk::Buffer buffer = {};
+        Stack      m_deleters = {};
+        std::mutex m_mutex    = {};
     };
 }
 

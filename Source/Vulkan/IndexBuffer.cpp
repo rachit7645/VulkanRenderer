@@ -60,7 +60,7 @@ namespace Vk
         VmaAllocator allocator,
         usize writeCount,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (writeCount == 0)
@@ -166,7 +166,7 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         const std::scoped_lock lock{m_mutex};
@@ -483,7 +483,7 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         auto Reset = Util::MakeScopeGuard([this] ()

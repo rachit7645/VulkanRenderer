@@ -21,7 +21,7 @@
 #include "CommandBuffer.h"
 #include "Util/Types.h"
 #include "Externals/VMA.h"
-#include "Util/Scratch.h"
+#include "Engine/Scratch.h"
 
 namespace Vk
 {

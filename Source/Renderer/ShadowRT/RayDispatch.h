@@ -55,7 +55,7 @@ namespace Renderer::ShadowRT
             const Objects::Samplers& samplers,
             const Vk::AccelerationStructure& accelerationStructure,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Clear(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager);

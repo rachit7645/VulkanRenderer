@@ -244,7 +244,7 @@ namespace Renderer::Objects
         const VkExtent2D& swapchainExtent,
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         textureManager.DestroySampler

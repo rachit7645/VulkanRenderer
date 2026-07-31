@@ -23,8 +23,8 @@
 #include "QueueFamilies.h"
 #include "Extensions.h"
 #include "Properties.h"
-#include "Util/DeletionQueue.h"
-#include "Util/Scratch.h"
+#include "Engine/DeletionQueue.h"
+#include "Engine/Scratch.h"
 #include "Externals/VMA.h"
 #include "Externals/SDL.h"
 
@@ -69,7 +69,7 @@ namespace Vk
         Vk::DebugCallback m_debugCallback;
         #endif
 
-        Util::DeletionQueue m_deletionQueue = {};
+        Engine::DeletionQueue m_deletionQueue = {};
     };
 }
 

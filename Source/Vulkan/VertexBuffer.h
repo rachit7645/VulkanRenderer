@@ -19,7 +19,7 @@
 
 #include "GPU/Surface.h"
 #include "GPU/Vertex.h"
-#include "Util/DeletionQueue.h"
+#include "Engine/DeletionQueue.h"
 #include "Vulkan/Buffer.h"
 #include "Vulkan/StagingPool.h"
 
@@ -42,7 +42,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Free(const GPU::GeometryInfo& info);
@@ -53,7 +53,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] bool HasPendingUploads();
@@ -100,7 +100,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void DisplayMemoryMapAndStatistics(Scratch::Allocator& scratchAllocator);

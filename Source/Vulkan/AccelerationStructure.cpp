@@ -34,7 +34,7 @@ namespace Vk
         const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (renderObjects.empty() || !m_bottomLevelASes.empty())
@@ -336,7 +336,7 @@ namespace Vk
         VmaAllocator allocator,
         const Vk::GraphicsTimeline& timeline,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if
@@ -494,7 +494,7 @@ namespace Vk
         const Models::ModelManager& modelManager,
         const std::span<const Renderer::RenderObject> renderObjects,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (renderObjects.empty() || m_bottomLevelASes.empty())

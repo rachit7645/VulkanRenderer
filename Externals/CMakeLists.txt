@@ -20,7 +20,7 @@ include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
 # This is hacky but whatever
-add_compile_options(-mavx2 -mf16c -mpclmul -mbmi -mbmi2 -mlzcnt)
+add_compile_options(-w -mavx2 -mf16c -mpclmul -mbmi -mbmi2 -mlzcnt)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
@@ -179,12 +179,12 @@ target_precompile_headers(DearImGui PRIVATE
     implot/implot_internal.h
 )
 
-# SDL2 Includes
+# SDL3 Includes
 target_include_directories(DearImGui PRIVATE sdl/include/)
 # ImGUI Includes
 target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc implot/)
 # ImGui Defines
-target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
+target_compile_definitions(DearImGui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
 
 # Compiler options
 target_compile_options(DearImGui PRIVATE -w -O3)

@@ -58,11 +58,13 @@ add_executable(VulkanRenderer
     Source/Engine/Camera.cpp
     Source/Engine/FreeCamera.cpp
     Source/Engine/SceneEditor.cpp
+    Source/Engine/DeletionQueue.cpp
+    Source/Engine/FrameCounter.cpp
+    Source/Engine/Scratch.cpp
+    Source/Engine/Containers.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
-	Source/Util/DeletionQueue.cpp
-	Source/Util/FrameCounter.cpp
 	Source/Util/Maths.cpp
     Source/Util/SIMD.cpp
     Source/Util/JSON.cpp
@@ -72,9 +74,7 @@ add_executable(VulkanRenderer
     Source/Util/Debug.cpp
     Source/Util/WireframeCone.cpp
     Source/Util/Log.cpp
-    Source/Util/Scratch.cpp
-    Source/Util/Containers.cpp
-        # Vulkan sources
+    # Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
 	Source/Vulkan/Context.cpp
@@ -269,10 +269,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
 target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Externals/taskflow/ Shared/)
 # Vulkan Options
 target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
-# ImGui Options
-target_compile_definitions(VulkanRenderer PRIVATE ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull IMGUI_DEFINE_MATH_OPERATORS=1)
 # GLM Options
-target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_SILENT_WARNINGS GLM_FORCE_SIZE_T_LENGTH)
+target_compile_definitions(VulkanRenderer PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_SILENT_WARNINGS GLM_FORCE_SIZE_T_LENGTH)
 
 # Compiler options
 target_compile_options(VulkanRenderer PRIVATE -O3)

@@ -38,7 +38,7 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             tf::Executor& executor,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::ImageUpload& upload
         );
 
@@ -85,7 +85,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const Vk::ImageUpdateRawMemory& updateRawMemory
         );
 
@@ -100,7 +100,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void DestroySampler
@@ -108,7 +108,7 @@ namespace Vk
             Vk::SamplerID id,
             VkDevice device,
             Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void ImGuiDisplay();

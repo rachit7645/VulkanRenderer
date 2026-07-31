@@ -20,7 +20,7 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
-#include "Util/Scratch.h"
+#include "Engine/Scratch.h"
 #include "Util/Types.h"
 
 namespace Vk

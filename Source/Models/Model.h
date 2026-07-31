@@ -40,7 +40,7 @@ namespace Models
 
         tf::Executor& executor;
 
-        Util::DeletionQueue& deletionQueue;
+        Engine::DeletionQueue& deletionQueue;
     };
 
     class Model
@@ -55,7 +55,7 @@ namespace Models
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             Vk::GeometryBuffer& geometryBuffer,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         std::string                          name;

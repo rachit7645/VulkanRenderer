@@ -23,7 +23,7 @@
 #include "CommandBuffer.h"
 #include "IndexBuffer.h"
 #include "Context.h"
-#include "Util/DeletionQueue.h"
+#include "Engine/DeletionQueue.h"
 #include "Vulkan/VertexBuffer.h"
 
 namespace Vk
@@ -43,10 +43,10 @@ namespace Vk
             VmaAllocator allocator,
             Vk::StagingPool& stagingPool,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
-        void Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue);
+        void Free(const GPU::SurfaceInfo& info, Engine::DeletionQueue& deletionQueue);
 
         void ImGuiDisplay(Scratch::Allocator& scratchAllocator);
 

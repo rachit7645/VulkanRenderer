@@ -50,7 +50,7 @@ namespace Renderer::DearImGui
             Vk::TextureManager& textureManager,
             tf::Executor& executor,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Destroy(VmaAllocator allocator);
@@ -69,7 +69,7 @@ namespace Renderer::DearImGui
             Vk::TextureManager& textureManager,
             tf::Executor& executor,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 
@@ -82,7 +82,7 @@ namespace Renderer::DearImGui
             Vk::Buffer& vertexBuffer,
             Vk::Buffer& indexBuffer,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 
@@ -96,7 +96,7 @@ namespace Renderer::DearImGui
             Vk::TextureManager& textureManager,
             tf::Executor& executor,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue,
+            Engine::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 

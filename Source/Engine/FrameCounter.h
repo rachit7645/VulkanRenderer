@@ -14,28 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef TILE_LIGHT_INDEX_BUFFER_H
-#define TILE_LIGHT_INDEX_BUFFER_H
+#ifndef FRAME_COUNTER_H
+#define FRAME_COUNTER_H
 
-#include "Vulkan/Buffer.h"
-#include "Engine/DeletionQueue.h"
+#include <chrono>
 
-namespace Renderer::Buffers
+#include "Util/Types.h"
+
+namespace Engine
 {
-    class TileLightIndexBuffer
+    class FrameCounter
     {
     public:
-        void Update
-        (
-            usize tileCount,
-            VkDevice device,
-            VmaAllocator allocator,
-            Engine::DeletionQueue& deletionQueue
-        );
+        using Clock     = std::chrono::steady_clock;
+        using TimePoint = std::chrono::time_point<Clock>;
 
-        void Destroy(VmaAllocator allocator);
+        void Reset();
+        void Update();
 
-        Vk::Buffer buffer = {};
+        f32 frameDelta = 0.0f;
+    private:
+        f32 m_FPS = 0.0f;
+
+        TimePoint m_startTime      = {};
+        TimePoint m_frameStartTime = {};
+
+        usize m_frameCount = 0;
     };
 }
 

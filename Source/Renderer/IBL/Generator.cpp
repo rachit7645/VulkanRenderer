@@ -172,7 +172,7 @@ namespace Renderer::IBL
         Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (m_mapsToDestroy.has_value())
@@ -290,7 +290,7 @@ namespace Renderer::IBL
         Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "IBL Map Generation", {0.9215f, 0.8470f, 0.0274f, 1.0f});
@@ -405,7 +405,7 @@ namespace Renderer::IBL
         Vk::StagingPool& stagingPool,
         tf::Executor& executor,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Load HDR Map", {0.7215f, 0.8410f, 0.6274f, 1.0f});
@@ -463,7 +463,7 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet,
         Vk::TextureID hdrMapID,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Equirectangular To Cubemap Conversion", {0.2588f, 0.5294f, 0.9607f, 1.0f});
@@ -865,7 +865,7 @@ namespace Renderer::IBL
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "PreFilter Map Generation", {0.2928f, 0.4794f, 0.6607f, 1.0f});
@@ -1092,7 +1092,7 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet,
         Vk::TextureID skyboxID,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Shrink Skybox", {0.2928f, 0.2794f, 0.6607f, 1.0f});
@@ -1260,7 +1260,7 @@ namespace Renderer::IBL
         Vk::MegaSet& megaSet,
         Vk::ImageDownloader& imageDownloader,
         tf::Executor& executor,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (m_brdfLutID.has_value())

@@ -79,7 +79,7 @@ namespace Vk
         ENGINE_UNUSED Renderer::RenderConfig& renderConfig,
         Vk::MegaSet& megaSet,
         Scratch::Allocator& scratchAllocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (m_framebuffers.empty())
@@ -356,7 +356,7 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         const auto iter = m_framebuffers.find(framebufferName);
@@ -403,7 +403,7 @@ namespace Vk
         const std::string_view framebufferName,
         VkDevice device,
         Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         const auto& framebuffer = GetFramebuffer(framebufferName);
@@ -434,7 +434,7 @@ namespace Vk
         });
     }
 
-    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const
+    FramebufferSize FramebufferManager::GetFramebufferSize(const FramebufferSizeData& sizeData, Engine::DeletionQueue& deletionQueue) const
     {
         return std::visit(Util::Visitor{
             [] (const FramebufferSize& size) -> Vk::FramebufferSize
@@ -475,7 +475,7 @@ namespace Vk
         const Vk::FramebufferView& framebufferView,
         VkImageUsageFlags imageUsage,
         Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         if (framebufferView.view.handle == VK_NULL_HANDLE)

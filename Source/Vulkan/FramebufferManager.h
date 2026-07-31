@@ -79,7 +79,7 @@ namespace Vk
     };
 
     using FramebufferResizeCallbackWithExtent                 = std::function<FramebufferSize(const VkExtent2D&, const VkExtent2D&)>;
-    using FramebufferResizeCallbackWithExtentAndDeletionQueue = std::function<FramebufferSize(const VkExtent2D&, const VkExtent2D&, Util::DeletionQueue& deletionQueue)>;
+    using FramebufferResizeCallbackWithExtentAndDeletionQueue = std::function<FramebufferSize(const VkExtent2D&, const VkExtent2D&, Engine::DeletionQueue& deletionQueue)>;
 
     using FramebufferSizeData = std::variant
     <
@@ -129,7 +129,7 @@ namespace Vk
             Renderer::RenderConfig& renderConfig,
             Vk::MegaSet& megaSet,
             Scratch::Allocator& scratchAllocator,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] bool DoesFramebufferExist(const std::string_view name) const;
@@ -147,7 +147,7 @@ namespace Vk
             VkDevice device,
             VmaAllocator allocator,
             Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void DeleteFramebufferViews
@@ -155,7 +155,7 @@ namespace Vk
             const std::string_view framebufferName,
             VkDevice device,
             Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void ImGuiDisplay();
@@ -164,7 +164,7 @@ namespace Vk
         VkExtent2D renderExtent  = {};
         VkExtent2D displayExtent = {};
     private:
-        FramebufferSize GetFramebufferSize(const FramebufferSizeData& sizeData, Util::DeletionQueue& deletionQueue) const;
+        FramebufferSize GetFramebufferSize(const FramebufferSizeData& sizeData, Engine::DeletionQueue& deletionQueue) const;
 
         void AllocateDescriptors
         (
@@ -178,7 +178,7 @@ namespace Vk
             const Vk::FramebufferView& framebufferView,
             VkImageUsageFlags imageUsage,
             Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         ankerl::unordered_dense::map<std::string, Framebuffer,     Util::StringHash, std::equal_to<>> m_framebuffers;

@@ -26,7 +26,7 @@ namespace Renderer::Buffers
         usize tileCount,
         VkDevice device,
         VmaAllocator allocator,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         const VkDeviceSize requiredSize = tileCount * sizeof(TiledLighting::TileLightIndices);

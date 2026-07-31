@@ -31,7 +31,7 @@ namespace Renderer
 
         tf::Executor&        executor;
         Scratch::Allocator&    scratchAllocator;
-        Util::DeletionQueue& deletionQueue;
+        Engine::DeletionQueue& deletionQueue;
     };
 }
 

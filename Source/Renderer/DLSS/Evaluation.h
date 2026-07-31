@@ -18,7 +18,7 @@
 #define DLSS_EVALUATION_H
 
 #include "DLSSConfig.h"
-#include "Util/FrameCounter.h"
+#include "Engine/FrameCounter.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
 
@@ -32,7 +32,7 @@ namespace Renderer::DLSS
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::FramebufferManager& framebufferManager,
-            const Util::FrameCounter& frameCounter,
+            const Engine::FrameCounter& frameCounter,
             DLSS::DLSSConfig& config
         );
     };

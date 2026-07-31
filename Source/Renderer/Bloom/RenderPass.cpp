@@ -109,7 +109,7 @@ namespace Renderer::Bloom
             Vk::FramebufferCustomFormat::ColorHDR,
             VK_IMAGE_VIEW_TYPE_2D_ARRAY,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            [device, &framebufferManager, &megaSet] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent, Util::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
+            [device, &framebufferManager, &megaSet] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent, Engine::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews
                 (
