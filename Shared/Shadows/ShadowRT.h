@@ -22,27 +22,45 @@
 #include "GPU/Scene.h"
 #include "GPU/Vertex.h"
 
+#ifndef __cplusplus
+#include "RayCone.glsl"
+#endif
+
 GLSL_NAMESPACE_BEGIN(Renderer::ShadowRT)
 
 GLSL_PUSH_CONSTANT_BEGIN
 {
     u64 TLAS;
 
-    GLSL_BUFFER_POINTER(SceneBuffer) Scene;
-    GLSL_BUFFER_POINTER(MeshBuffer)  Meshes;
-    GLSL_BUFFER_POINTER(IndexBuffer) Indices;
-    GLSL_BUFFER_POINTER(UVBuffer)    UVs;
+    GLSL_BUFFER_POINTER(SceneBuffer)    Scene;
+    GLSL_BUFFER_POINTER(MeshBuffer)     Meshes;
+    GLSL_BUFFER_POINTER(IndexBuffer)    Indices;
+    GLSL_BUFFER_POINTER(PositionBuffer) Positions;
+    GLSL_BUFFER_POINTER(UVBuffer)       UVs;
 
     u32 GBufferSamplerIndex;
     u32 TextureSamplerIndex;
 
     u32 GNormalIndex;
+    u32 GSurfaceSpreadAngleIndex;
     u32 SceneDepthIndex;
     u32 OutputImage;
 
     u32 TemporalPhaseCount;
+
+    f32 PixelSpreadAngle;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END
+
+#ifndef __cplusplus
+
+struct ShadowRayPayload
+{
+    float   shadowAmount;
+    RayCone cone;
+};
+
+#endif
 
 #endif

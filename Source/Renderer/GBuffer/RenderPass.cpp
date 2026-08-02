@@ -37,6 +37,7 @@ namespace Renderer::GBuffer
             VK_FORMAT_R16G16_UNORM,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+            VK_FORMAT_R16_SFLOAT,
             VK_FORMAT_R16G16_SFLOAT
         };
 
@@ -49,6 +50,7 @@ namespace Renderer::GBuffer
             .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetDepthState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
@@ -67,6 +69,7 @@ namespace Renderer::GBuffer
             .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .SetDepthState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
@@ -194,6 +197,29 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebuffer
         (
+            "GSurfaceSpreadAngle",
+            VK_FORMAT_R16_SFLOAT,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
             "GMotionVectors",
             VK_FORMAT_R16G16_SFLOAT,
             VK_IMAGE_VIEW_TYPE_2D,
@@ -282,6 +308,19 @@ namespace Renderer::GBuffer
 
         framebufferManager.AddFramebufferView
         (
+            "GSurfaceSpreadAngle",
+            "GSurfaceSpreadAngleView",
+            VK_IMAGE_VIEW_TYPE_2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
             "GMotionVectors",
             "GMotionVectorsView",
             VK_IMAGE_VIEW_TYPE_2D,
@@ -316,19 +355,21 @@ namespace Renderer::GBuffer
         const auto& singleSidedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::GBufferSingleSided);
         const auto& doubleSidedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::GBufferDoubleSided);
         
-        const auto& gAlbedoView        = framebufferManager.GetFramebufferView("GAlbedoIoRView");
-        const auto& gNormalView        = framebufferManager.GetFramebufferView("GNormalView");
-        const auto& gRghMtlHrzView     = framebufferManager.GetFramebufferView("GRoughnessMetallicHorizonView");
-        const auto& gEmissiveView      = framebufferManager.GetFramebufferView("GEmissiveView");
-        const auto& gMotionVectorsView = framebufferManager.GetFramebufferView("GMotionVectorsView");
-        const auto& sceneDepthView     = framebufferManager.GetFramebufferView("SceneDepthView");
+        const auto& gAlbedoView             = framebufferManager.GetFramebufferView("GAlbedoIoRView");
+        const auto& gNormalView             = framebufferManager.GetFramebufferView("GNormalView");
+        const auto& gRghMtlHrzView          = framebufferManager.GetFramebufferView("GRoughnessMetallicHorizonView");
+        const auto& gEmissiveView           = framebufferManager.GetFramebufferView("GEmissiveView");
+        const auto& gSurfaceSpreadAngleView = framebufferManager.GetFramebufferView("GSurfaceSpreadAngleView");
+        const auto& gMotionVectorsView      = framebufferManager.GetFramebufferView("GMotionVectorsView");
+        const auto& sceneDepthView          = framebufferManager.GetFramebufferView("SceneDepthView");
 
-        const auto& gAlbedo        = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
-        const auto& gNormal        = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
-        const auto& gRghMtlHrz     = framebufferManager.GetFramebuffer(gRghMtlHrzView.framebuffer);
-        const auto& gEmissive      = framebufferManager.GetFramebuffer(gEmissiveView.framebuffer);
-        const auto& gMotionVectors = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
-        const auto& sceneDepth     = framebufferManager.GetFramebuffer(sceneDepthView.framebuffer);
+        const auto& gAlbedo             = framebufferManager.GetFramebuffer(gAlbedoView.framebuffer);
+        const auto& gNormal             = framebufferManager.GetFramebuffer(gNormalView.framebuffer);
+        const auto& gRghMtlHrz          = framebufferManager.GetFramebuffer(gRghMtlHrzView.framebuffer);
+        const auto& gEmissive           = framebufferManager.GetFramebuffer(gEmissiveView.framebuffer);
+        const auto& gSurfaceSpreadAngle = framebufferManager.GetFramebuffer(gSurfaceSpreadAngleView.framebuffer);
+        const auto& gMotionVectors      = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
+        const auto& sceneDepth          = framebufferManager.GetFramebuffer(sceneDepthView.framebuffer);
 
         auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
@@ -399,6 +440,23 @@ namespace Renderer::GBuffer
                 .levelCount     = gEmissive.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = gEmissive.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            gSurfaceSpreadAngle.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = gSurfaceSpreadAngle.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = gSurfaceSpreadAngle.image.arrayLayers
             }
         )
         .WriteImageBarrier(
@@ -476,6 +534,20 @@ namespace Renderer::GBuffer
             .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
         };
 
+        const VkRenderingAttachmentInfo gSurfaceSpreadAngleInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = gSurfaceSpreadAngleView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {{{0.0f, 0.0f, 0.0f, 0.0f}}}
+        };
+
         const VkRenderingAttachmentInfo gMotionVectorsInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -510,6 +582,7 @@ namespace Renderer::GBuffer
             gNormalInfo,
             gRghMtlHrzInfo,
             gEmissiveInfo,
+            gSurfaceSpreadAngleInfo,
             gMotionVectorsInfo
         };
 
@@ -799,6 +872,23 @@ namespace Renderer::GBuffer
                 .levelCount     = gEmissive.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = gEmissive.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            gSurfaceSpreadAngle.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = gSurfaceSpreadAngle.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = gSurfaceSpreadAngle.image.arrayLayers
             }
         )
         .WriteImageBarrier(

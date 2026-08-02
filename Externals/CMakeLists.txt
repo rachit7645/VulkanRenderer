@@ -144,10 +144,10 @@ target_compile_definitions(libzstd_shared PRIVATE ZSTD_DLL_EXPORT=1)
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Tracy Config
-    set(TRACY_ENABLE         ON CACHE BOOL "Enable Tracy"         FORCE)
-    set(TRACY_ON_DEMAND      ON CACHE BOOL "On-Demand Mode"       FORCE)
-    set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "Localhost Only Mode"  FORCE)
-    set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
+    set(TRACY_ENABLE         ON  CACHE BOOL "Enable Tracy"         FORCE)
+    set(TRACY_ON_DEMAND      ON  CACHE BOOL "On-Demand Mode"       FORCE)
+    set(TRACY_ONLY_LOCALHOST ON  CACHE BOOL "Localhost Only Mode"  FORCE)
+    set(TRACY_CALLSTACK      OFF CACHE BOOL "Enable Callstack"     FORCE)
 
     # Add Tracy
     engine_add_external(tracy EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)

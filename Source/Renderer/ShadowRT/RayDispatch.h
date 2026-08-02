@@ -53,6 +53,7 @@ namespace Renderer::ShadowRT
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Objects::Samplers& samplers,
+            const Engine::Camera& camera,
             const Vk::AccelerationStructure& accelerationStructure,
             Vk::StagingPool& stagingPool,
             Engine::DeletionQueue& deletionQueue

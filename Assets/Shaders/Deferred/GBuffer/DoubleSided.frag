@@ -23,6 +23,7 @@
 #include "Encoding.glsl"
 #include "MegaSet.glsl"
 #include "PBR.glsl"
+#include "RayConeGBuffer.glsl"
 #include "Deferred/GBuffer.h"
 
 layout(location = 0) in VertexData
@@ -43,11 +44,12 @@ layout(location = 0) in VertexData
     flat uint drawID;
 } Input;
 
-layout(location = 0) out vec4 gAlbedoIoR;
-layout(location = 1) out vec2 gNormal;
-layout(location = 2) out vec3 gRoughnessMetallicHorizon;
-layout(location = 3) out vec3 gEmissive;
-layout(location = 4) out vec2 gMotionVectors;
+layout(location = 0) out vec4  gAlbedoIoR;
+layout(location = 1) out vec2  gNormal;
+layout(location = 2) out vec3  gRoughnessMetallicHorizon;
+layout(location = 3) out vec3  gEmissive;
+layout(location = 4) out float gSurfaceSpreadAngle;
+layout(location = 5) out vec2  gMotionVectors;
 
 void main()
 {
@@ -92,6 +94,8 @@ void main()
          emissive *= mesh.material.emissiveStrength;
 
     gEmissive = emissive;
+
+    gSurfaceSpreadAngle = ComputeSurfaceSpreadAngle(Input.position, Input.N);
 
     vec2 currentUV  = (Input.currentPosition.xy  / Input.currentPosition.z ) * 0.5f + 0.5f;
     vec2 previousUV = (Input.previousPosition.xy / Input.previousPosition.z) * 0.5f + 0.5f;

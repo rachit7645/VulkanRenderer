@@ -98,6 +98,7 @@ namespace Renderer::ShadowRT
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Objects::Samplers& samplers,
+        const Engine::Camera& camera,
         const Vk::AccelerationStructure& accelerationStructure,
         Vk::StagingPool& stagingPool,
         Engine::DeletionQueue& deletionQueue
@@ -147,17 +148,20 @@ namespace Renderer::ShadowRT
 
         const auto constants = ShadowRT::Constants
         {
-            .TLAS                = accelerationStructure.topLevelASes[FIF].deviceAddress,
-            .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-            .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
-            .Indices             = geometryBuffer.indexBuffer.buffer.deviceAddress,
-            .UVs                 = geometryBuffer.vertexBuffer.uvBuffer.deviceAddress,
-            .GBufferSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
-            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
-            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
-            .OutputImage         = shadowMapView.storageImageID,
-            .TemporalPhaseCount  = static_cast<u32>(Renderer::GetPhaseCount(renderConfig.antiAliasingMode, framebufferManager.renderExtent, framebufferManager.displayExtent))
+            .TLAS                     = accelerationStructure.topLevelASes[FIF].deviceAddress,
+            .Scene                    = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+            .Meshes                   = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+            .Indices                  = geometryBuffer.indexBuffer.buffer.deviceAddress,
+            .Positions                = geometryBuffer.vertexBuffer.positionBuffer.deviceAddress,
+            .UVs                      = geometryBuffer.vertexBuffer.uvBuffer.deviceAddress,
+            .GBufferSamplerIndex      = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .TextureSamplerIndex      = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
+            .GSurfaceSpreadAngleIndex = framebufferManager.GetFramebufferView("GSurfaceSpreadAngleView").sampledImageID,
+            .SceneDepthIndex          = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
+            .OutputImage              = shadowMapView.storageImageID,
+            .TemporalPhaseCount       = static_cast<u32>(Renderer::GetPhaseCount(renderConfig.antiAliasingMode, framebufferManager.renderExtent, framebufferManager.displayExtent)),
+            .PixelSpreadAngle         = std::atan(2.0f * std::tanf(camera.FOV) / static_cast<f32>(shadowMap.image.height))
         };
 
         pipeline.PushConstants

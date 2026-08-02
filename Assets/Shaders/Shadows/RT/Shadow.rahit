@@ -16,18 +16,26 @@
 
 #version 460 core
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_ray_tracing          : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
+#extension GL_EXT_ray_tracing                   : enable
 
 #include "MegaSet.glsl"
 #include "Shadows/ShadowRT.h"
 
+// References Used:
+// Texture Level of Detail Strategies for Real-Time Ray Tracing : Ray Tracing Gems, Chapter 20
+
 hitAttributeEXT vec2 attribs;
+
+layout(location = 0) rayPayloadInEXT ShadowRayPayload payload;
 
 void main()
 {
+    RayCone cone = PropagateRayCone(payload.cone, 0.0f, gl_HitTEXT);
+
     vec3 barycentricCoords = vec3(1.0f - (attribs.x + attribs.y), attribs.x, attribs.y);
 
     uint meshID = gl_InstanceCustomIndexEXT;
@@ -39,17 +47,39 @@ void main()
     uint i1 = Constants.Indices.indices[indexOffset + 1];
     uint i2 = Constants.Indices.indices[indexOffset + 2];
 
-    uint uvOffset      = mesh.surfaceInfo.vertexInfo.offset;
+    uint vertexOffset  = mesh.surfaceInfo.vertexInfo.offset;
     uint albedoUVMapID = mesh.material.albedoUVMapID;
 
-    vec2 uv0 = Constants.UVs.uvs[uvOffset + i0].uv[albedoUVMapID];
-    vec2 uv1 = Constants.UVs.uvs[uvOffset + i1].uv[albedoUVMapID];
-    vec2 uv2 = Constants.UVs.uvs[uvOffset + i2].uv[albedoUVMapID];
+    uint v0 = vertexOffset + i0;
+    uint v1 = vertexOffset + i1;
+    uint v2 = vertexOffset + i2;
+
+    vec2 uv0 = Constants.UVs.uvs[v0].uv[albedoUVMapID];
+    vec2 uv1 = Constants.UVs.uvs[v1].uv[albedoUVMapID];
+    vec2 uv2 = Constants.UVs.uvs[v2].uv[albedoUVMapID];
 
     vec2 uv = uv0 * barycentricCoords.x + uv1 * barycentricCoords.y + uv2 * barycentricCoords.z;
 
-    // TODO: Compute a mip level to sample from
-    float alpha  = textureLod(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), uv, 0).a;
+    vec3 p0 = gl_ObjectToWorldEXT * vec4(Constants.Positions.positions[v0], 1.0f);
+    vec3 p1 = gl_ObjectToWorldEXT * vec4(Constants.Positions.positions[v1], 1.0f);
+    vec3 p2 = gl_ObjectToWorldEXT * vec4(Constants.Positions.positions[v2], 1.0f);
+
+    // Lamda = Delta + log2|W| − log2|dot(N, D)|
+
+    vec3 crossProduct = cross(p1 - p0, p2 - p0);
+
+    float triangleWorldArea2 = max(length(crossProduct), 1e-9f);
+    float triangleUVArea2    = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
+    uvec2 albedoSize         = uvec2(textureSize(nonuniformEXT(Textures[mesh.material.albedoID]), 0));
+    float albedoTexelCount   = float(albedoSize.x * albedoSize.y);
+    float delta              = 0.5f * log2((albedoTexelCount * triangleUVArea2) / triangleWorldArea2);
+
+    vec3  normal = crossProduct / triangleWorldArea2;
+    float NdotD  = max(abs(dot(normal, gl_WorldRayDirectionEXT)), 1e-5f);
+
+    float lod = max(delta + log2(cone.width) - log2(NdotD), 0.0f);
+
+    float alpha  = textureLod(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), uv, lod).a;
           alpha *= mesh.material.albedoFactor.a;
 
     if (alpha < mesh.material.alphaCutOff)

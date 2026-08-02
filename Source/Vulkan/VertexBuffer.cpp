@@ -64,7 +64,7 @@ namespace Vk
         {
             if constexpr (std::is_same_v<T, GPU::Position>)
             {
-                return VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+                return VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
             }
             else if constexpr (std::is_same_v<T, GPU::UV>)
             {

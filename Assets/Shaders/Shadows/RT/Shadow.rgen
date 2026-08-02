@@ -32,9 +32,10 @@
 #include "Math.glsl"
 #include "Random.glsl"
 #include "Sampling.glsl"
+#include "RayCone.glsl"
 #include "Shadows/ShadowRT.h"
 
-layout(location = 0) rayPayloadEXT float shadowAmount;
+layout(location = 0) rayPayloadEXT ShadowRayPayload payload;
 
 void main()
 {
@@ -62,8 +63,12 @@ void main()
 
     vec3 worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, uv, depth);
 
+    float gBufferDistance = length(worldPosition - Constants.Scene.cameraPosition);
+
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), uv);
     vec3 normal  = UnpackNormalFromGBuffer(gNormal.rg);
+
+    float gSurfaceSpreadAngle = texture(sampler2D(Textures[Constants.GSurfaceSpreadAngleIndex], Samplers[Constants.GBufferSamplerIndex]), uv).r;
 
     vec3 direction = normalize(-Constants.Scene.Sun.light.direction);
     vec3 tangent   = vec3(0.0f);
@@ -77,6 +82,8 @@ void main()
 
     // TODO: Consider a better self-intersection prevention method
     vec3 origin = worldPosition + normal * bias;
+
+    RayCone cone = ComputeRayConeFromGBuffer(Constants.PixelSpreadAngle, gSurfaceSpreadAngle, gBufferDistance);
 
     const uint  rayFlags        = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT;
     const uint  cullMask        = 0xFFu;
@@ -100,7 +107,9 @@ void main()
         vec3 rayDirection    = normalize(randomDirection.x * tangent + randomDirection.y * bitangent + randomDirection.z * direction);
 
         // Assume that the ray hits something, i.e, the point is in shadow
-        shadowAmount = 1.0f;
+        payload.shadowAmount = 1.0f;
+
+        payload.cone = cone;
 
         traceRayEXT
         (
@@ -117,7 +126,7 @@ void main()
             payloadLocation
         );
 
-        totalShadow += shadowAmount;
+        totalShadow += payload.shadowAmount;
     }
 
     totalShadow /= float(RT_SHADOW_RAY_COUNT);

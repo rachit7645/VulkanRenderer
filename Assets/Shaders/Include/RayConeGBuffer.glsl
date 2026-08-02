@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-#version 460 core
+#ifndef RAY_CONE_GBUFFER_GLSL
+#define RAY_CONE_GBUFFER_GLSL
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_ray_tracing          : enable
-
-#include "Shadows/ShadowRT.h"
-
-layout(location = 0) rayPayloadInEXT ShadowRayPayload payload;
-
-void main()
+// Texture Level of Detail Strategies for Real-Time Ray Tracing : Ray Tracing Gems, Chapter 20
+float ComputeSurfaceSpreadAngle(vec3 position, vec3 normal)
 {
-    payload.shadowAmount = 0.0f;
+    vec3 dPdx = dFdx(position);
+    vec3 dPdy = dFdy(position);
+    vec3 dNdx = dFdx(normal);
+    vec3 dNdy = dFdy(normal);
+
+    float phi = length(dNdx + dNdy);
+
+    float s = sign(dot(dPdx, dNdx) + dot(dPdy, dNdy));
+
+    // K1 = 1.0f, K2 = 0.0f
+    float beta = 2.0f * s * phi;
+
+    return beta;
 }
+
+#endif

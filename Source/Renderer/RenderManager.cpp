@@ -1493,6 +1493,7 @@ namespace Renderer
                 m_sceneBuffer,
                 m_meshBuffer,
                 m_samplers,
+                m_sceneEditor.scene->camera,
                 *m_accelerationStructure,
                 m_stagingPool,
                 m_deletionQueues[m_FIF]
