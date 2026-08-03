@@ -48,7 +48,7 @@ void main()
     uint i2 = Constants.Indices.indices[indexOffset + 2];
 
     uint vertexOffset  = mesh.surfaceInfo.vertexInfo.offset;
-    uint albedoUVMapID = mesh.material.albedoUVMapID;
+    uint albedoUVMapID = GetAlbedoUVID(mesh.material.packedUVIDs);
 
     uint v0 = vertexOffset + i0;
     uint v1 = vertexOffset + i1;

@@ -20,16 +20,17 @@ namespace Models
 {
     GPU::Material Material::Convert(Vk::TextureManager& textureManager) const
     {
+        const u16 packedUVIDs = (albedoUVMapID   & 0xFu)       |
+                                (normalUVMapID   & 0xFu) << 4  |
+                                (aoRghMtlUVMapID & 0xFu) << 8  |
+                                (emissiveUVMapID & 0xFu) << 12;
+
         return GPU::Material
         {
             .albedoID         = textureManager.GetTexture(albedoID).descriptorID,
             .normalID         = textureManager.GetTexture(normalID).descriptorID,
             .aoRghMtlID       = textureManager.GetTexture(aoRghMtlID).descriptorID,
             .emissiveID       = textureManager.GetTexture(emissiveID).descriptorID,
-            .albedoUVMapID    = albedoUVMapID,
-            .normalUVMapID    = normalUVMapID,
-            .aoRghMtlUVMapID  = aoRghMtlUVMapID,
-            .emissiveUVMapID  = emissiveUVMapID,
             .albedoFactor     = albedoFactor,
             .roughnessFactor  = roughnessFactor,
             .metallicFactor   = metallicFactor,
@@ -37,6 +38,7 @@ namespace Models
             .emissiveStrength = emissiveStrength,
             .alphaCutOff      = alphaCutOff,
             .ior              = ior,
+            .packedUVIDs      = packedUVIDs,
             .flags            = flags
         };
     }

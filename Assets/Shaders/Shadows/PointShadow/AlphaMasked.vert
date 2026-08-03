@@ -41,6 +41,6 @@ void main()
     gl_Position  = matrix * fragPos;
     fragPosition = fragPos.xyz;
 
-    fragUV     = uvs.uv[mesh.material.albedoUVMapID];
+    fragUV     = uvs.uv[GetAlbedoUVID(mesh.material.packedUVIDs)];
     fragDrawID = instance.meshIndex;
 }

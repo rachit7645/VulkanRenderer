@@ -55,7 +55,7 @@ void main()
 {
     Mesh mesh = Constants.CurrentMeshes.meshes[Input.drawID];
 
-    vec3 albedo  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.albedoUVMapID]).rgb;
+    vec3 albedo  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), Input.uv[GetAlbedoUVID(mesh.material.packedUVIDs)]).rgb;
          albedo *= mesh.material.albedoFactor.rgb;
 
     gAlbedoIoR.rgb = albedo.rgb;
@@ -73,12 +73,12 @@ void main()
 
     mat3 TBN = mat3(Input.T, B, N);
 
-    vec3 normal = texture(nonuniformEXT(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.normalUVMapID]).rgb;
+    vec3 normal = texture(nonuniformEXT(sampler2D(Textures[mesh.material.normalID], Samplers[Constants.TextureSamplerIndex])), Input.uv[GetNormalUVID(mesh.material.packedUVIDs)]).rgb;
          normal = GetNormalFromMap(normal, TBN);
 
     gNormal = PackNormalFromMapToGBuffer(normal);
 
-    vec3 aoRghMtl    = texture(nonuniformEXT(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.aoRghMtlUVMapID]).rgb;
+    vec3 aoRghMtl    = texture(nonuniformEXT(sampler2D(Textures[mesh.material.aoRghMtlID], Samplers[Constants.TextureSamplerIndex])), Input.uv[GetAORghMtlUVID(mesh.material.packedUVIDs)]).rgb;
          aoRghMtl.g *= mesh.material.roughnessFactor;
          aoRghMtl.b *= mesh.material.metallicFactor;
 
@@ -89,7 +89,7 @@ void main()
     gRoughnessMetallicHorizon.g = aoRghMtl.b;
     gRoughnessMetallicHorizon.b = CalculateHorizonOcclusion(reflected, normalize(N));
 
-    vec3 emissive  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.emissiveID], Samplers[Constants.TextureSamplerIndex])), Input.uv[mesh.material.emissiveUVMapID]).rgb;
+    vec3 emissive  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.emissiveID], Samplers[Constants.TextureSamplerIndex])), Input.uv[GetEmissiveUVID(mesh.material.packedUVIDs)]).rgb;
          emissive *= mesh.material.emissiveFactor;
          emissive *= mesh.material.emissiveStrength;
 
