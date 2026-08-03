@@ -45,4 +45,21 @@ RayCone ComputeRayConeFromGBuffer(float pixelSpreadAngle, float surfaceSpreadAng
     return PropagateRayCone(cone, surfaceSpreadAngle, gBufferDistance);
 }
 
+uint PackRayCone(RayCone cone)
+{
+    return packHalf2x16(vec2(cone.width, cone.spreadAngle));
+}
+
+RayCone UnpackRayCone(uint packed)
+{
+    vec2 unpacked = unpackHalf2x16(packed);
+
+    RayCone cone;
+
+    cone.width       = unpacked.x;
+    cone.spreadAngle = unpacked.y;
+
+    return cone;
+}
+
 #endif

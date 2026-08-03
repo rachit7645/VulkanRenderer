@@ -83,7 +83,10 @@ void main()
     // TODO: Consider a better self-intersection prevention method
     vec3 origin = worldPosition + normal * bias;
 
-    RayCone cone = ComputeRayConeFromGBuffer(Constants.PixelSpreadAngle, gSurfaceSpreadAngle, gBufferDistance);
+    RayCone cone       = ComputeRayConeFromGBuffer(Constants.PixelSpreadAngle, gSurfaceSpreadAngle, gBufferDistance);
+    uint    packedCone = PackRayCone(cone);
+
+    payload.packedRayCone = packedCone;
 
     const uint  rayFlags        = gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT;
     const uint  cullMask        = 0xFFu;
@@ -107,9 +110,7 @@ void main()
         vec3 rayDirection    = normalize(randomDirection.x * tangent + randomDirection.y * bitangent + randomDirection.z * direction);
 
         // Assume that the ray hits something, i.e, the point is in shadow
-        payload.shadowAmount = 1.0f;
-
-        payload.cone = cone;
+        payload.didRayHit = 1.0f;
 
         traceRayEXT
         (
@@ -126,7 +127,7 @@ void main()
             payloadLocation
         );
 
-        totalShadow += payload.shadowAmount;
+        totalShadow += payload.didRayHit;
     }
 
     totalShadow /= float(RT_SHADOW_RAY_COUNT);

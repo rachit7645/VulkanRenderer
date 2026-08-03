@@ -34,7 +34,7 @@ layout(location = 0) rayPayloadInEXT ShadowRayPayload payload;
 
 void main()
 {
-    RayCone cone = PropagateRayCone(payload.cone, 0.0f, gl_HitTEXT);
+    RayCone cone = PropagateRayCone(UnpackRayCone(payload.packedRayCone), 0.0f, gl_HitTEXT);
 
     vec3 barycentricCoords = vec3(1.0f - (attribs.x + attribs.y), attribs.x, attribs.y);
 

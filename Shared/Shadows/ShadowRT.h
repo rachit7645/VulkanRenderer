@@ -57,8 +57,8 @@ GLSL_NAMESPACE_END
 
 struct ShadowRayPayload
 {
-    float   shadowAmount;
-    RayCone cone;
+    float didRayHit;
+    uint  packedRayCone;
 };
 
 #endif

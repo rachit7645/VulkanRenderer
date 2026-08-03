@@ -27,5 +27,5 @@ layout(location = 0) rayPayloadInEXT ShadowRayPayload payload;
 
 void main()
 {
-    payload.shadowAmount = 0.0f;
+    payload.didRayHit = 0.0f;
 }
