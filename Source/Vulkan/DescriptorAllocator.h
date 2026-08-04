@@ -41,8 +41,9 @@ namespace Vk
     private:
         u32 m_maxDescriptorCount = 0;
 
-        Vk::DescriptorID             m_currentID = 0;
-        std::queue<Vk::DescriptorID> m_freeIDs   = {};
+        Vk::DescriptorID m_currentID = 0;
+
+        std::queue<Vk::DescriptorID, std::vector<Vk::DescriptorID>> m_freeIDs = {};
     };
 }
 

@@ -19,6 +19,10 @@ project(VulkanRenderer)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 
+# C23 is required
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 # C++23 is required
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -74,6 +78,7 @@ add_executable(VulkanRenderer
     Source/Util/Debug.cpp
     Source/Util/WireframeCone.cpp
     Source/Util/Log.cpp
+    Source/Util/Memory.cpp
     # Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp

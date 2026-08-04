@@ -49,7 +49,7 @@ namespace Renderer::AO::VBAO
 
         pipelineManager.AddPipeline(Vk::PipelineID::VBAOSpatialDenoise, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("AO/VBAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("AO/VBAO/SpatialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
             .AddDescriptorLayout(megaSet.layout)
         );

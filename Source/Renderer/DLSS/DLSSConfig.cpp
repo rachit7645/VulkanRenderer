@@ -129,9 +129,11 @@ namespace Renderer::DLSS
                         NVSDK_NGX_PerfQuality_Value_DLAA
                     };
 
+                    constexpr s32 DLSS_MODE_COUNT = DLSS_MODE_VALUES.size();
+
                     s32 currentModeIndex = 0;
 
-                    for (s32 i = 0; i < static_cast<s32>(DLSS_MODE_VALUES.size()); ++i)
+                    for (s32 i = 0; i < DLSS_MODE_COUNT; ++i)
                     {
                         if (DLSS_MODE_VALUES[i] == DLSSMode)
                         {

@@ -36,30 +36,29 @@ namespace Renderer
         : m_executor{Util::GetWorkerThreadCount(), nullptr},
           m_context{m_window.handle, scratchAllocator},
           m_renderConfig{m_context},
-          m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
           m_swapchain{m_window.size, m_context, scratchAllocator, m_executor},
+          m_graphicsCmdBufferAllocator{m_context.device, *m_context.queueFamilies.graphicsFamily},
           m_graphicsTimeline{m_context.device},
-          m_formatHelper{m_context.physicalDevice},
           m_megaSet{m_context},
           m_geometryBuffer{m_context, m_stagingPool},
           m_samplers{m_context, m_megaSet, m_textureManager},
-          m_toneMap{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_depth{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_toneMap{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_depth{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_imGui{m_swapchain, m_megaSet, m_pipelineManager},
-          m_skybox{m_formatHelper, m_megaSet, m_pipelineManager},
-          m_bloom{m_context.device, m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_pointShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_gBuffer{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_lighting{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_skybox{m_context.formatHelper, m_megaSet, m_pipelineManager},
+          m_bloom{m_context.device, m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_pointShadow{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_gBuffer{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_lighting{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
           m_shadowRT{m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_taa{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_spotShadow{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_debug{m_context.device, m_context.allocator, m_formatHelper, m_swapchain, m_pipelineManager, m_framebufferManager, m_stagingPool},
+          m_taa{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_spotShadow{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_debug{m_context.device, m_context.allocator, m_context.formatHelper, m_swapchain, m_pipelineManager, m_framebufferManager, m_stagingPool},
           m_culling{m_context.device, m_context.allocator, m_pipelineManager},
           m_vbao{m_megaSet, m_pipelineManager, m_framebufferManager},
           m_tiledLighting{m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_exposure{m_formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
-          m_iblGenerator{m_context.device, m_context.allocator, m_formatHelper, m_megaSet, m_pipelineManager},
+          m_exposure{m_context.formatHelper, m_megaSet, m_pipelineManager, m_framebufferManager},
+          m_iblGenerator{m_context.device, m_context.allocator, m_context.formatHelper, m_megaSet, m_pipelineManager},
           m_meshBuffer{m_context.device, m_context.allocator},
           m_indirectBuffer{m_context.device, m_context.allocator},
           m_exposureBuffer{m_context.device, m_context.allocator},
@@ -67,8 +66,11 @@ namespace Renderer
     {
         if (m_renderConfig.multiQueue.isSupported)
         {
-            m_computeCmdBufferAllocator = Vk::CommandBufferAllocator(m_context.device, *m_context.queueFamilies.computeFamily);
-            m_computeTimeline           = Vk::ComputeTimeline(m_context.device);
+            m_asyncCompute = RenderManager::AsyncComputeData
+            {
+                .cmdBufferAllocator = Vk::CommandBufferAllocator(m_context.device, *m_context.queueFamilies.computeFamily),
+                .timeline           = Vk::ComputeTimeline(m_context.device)
+            };
         }
 
         InitImGui(scratchAllocator);
@@ -106,14 +108,10 @@ namespace Renderer
                 m_accelerationStructure->Destroy(m_context.device, m_context.allocator);
             }
 
-            if (m_computeCmdBufferAllocator.has_value())
+            if (m_asyncCompute.has_value())
             {
-                m_computeCmdBufferAllocator->Destroy(m_context.device);
-            }
-
-            if (m_computeTimeline.has_value())
-            {
-                m_computeTimeline->Destroy(m_context.device);
+                m_asyncCompute->cmdBufferAllocator.Destroy(m_context.device);
+                m_asyncCompute->timeline.Destroy(m_context.device);
             }
 
             m_renderConfig.Destroy(m_context.device);
@@ -211,7 +209,7 @@ namespace Renderer
 
         if (m_renderConfig.multiQueue.isEnabled)
         {
-            m_computeCmdBufferAllocator->ResetPool(m_FIF, m_context.device);
+            m_asyncCompute->cmdBufferAllocator.ResetPool(m_FIF, m_context.device);
         }
     }
 
@@ -695,7 +693,7 @@ namespace Renderer
 
         // Async Compute
         {
-            const auto asyncComputeCmdBuffer = m_computeCmdBufferAllocator->AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+            const auto asyncComputeCmdBuffer = m_asyncCompute->cmdBufferAllocator.AllocateCommandBuffer(m_FIF, m_context.device, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
             asyncComputeCmdBuffer.BeginRecording(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
@@ -985,8 +983,8 @@ namespace Renderer
             {
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
-                .semaphore   = m_computeTimeline->semaphore,
-                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
+                .semaphore   = m_asyncCompute->timeline.semaphore,
+                .value       = m_asyncCompute->timeline.GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
                 .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
@@ -1219,8 +1217,8 @@ namespace Renderer
             {
                 .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
                 .pNext       = nullptr,
-                .semaphore   = m_computeTimeline->semaphore,
-                .value       = m_computeTimeline->GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
+                .semaphore   = m_asyncCompute->timeline.semaphore,
+                .value       = m_asyncCompute->timeline.GetTimelineValue(m_frameIndex, Vk::ComputeTimeline::Stage::AsyncComputeFinished),
                 .stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                 .deviceIndex = 0
             };
@@ -1971,7 +1969,7 @@ namespace Renderer
             cmdBuffer,
             m_context.device,
             m_context.allocator,
-            m_formatHelper,
+            m_context.formatHelper,
             m_swapchain,
             m_renderConfig,
             m_megaSet,
@@ -2024,7 +2022,6 @@ namespace Renderer
             cmdBuffer,
             m_pipelineManager,
             m_context,
-            m_formatHelper,
             m_samplers,
             m_geometryBuffer,
             m_textureManager,

@@ -14,36 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef ALIGN_H
-#define ALIGN_H
-
-#include "Util/Types.h"
+#include "Memory.h"
 
 namespace Util
 {
-    constexpr usize Align(usize value, usize alignment)
+    void* AlignedAlloc(usize size, usize alignment)
     {
-        return (value + (alignment - 1)) & ~(alignment - 1);
+        #ifdef _WIN32
+        return _aligned_malloc(size, alignment);
+        #else
+        return std::aligned_malloc(alignment, size);
+        #endif
     }
 
-    constexpr bool IsPowerOfTwo(usize x)
+    void AlignedFree(void* pointer)
     {
-        return x != 0 && (x & (x - 1)) == 0;
+        #ifdef _WIN32
+        _aligned_free(pointer);
+        #else
+        std::free(pointer);
+        #endif
     }
-
-    constexpr usize KiB(usize count)
-    {
-        return 1024ull * count;
-    }
-
-    constexpr usize MiB(usize count)
-    {
-        return 1024ull * 1024ull * count;
-    }
-
-    [[nodiscard]] void* AlignedAlloc(usize size, usize alignment);
-
-    void AlignedFree(void* pointer);
 }
-
-#endif

@@ -1391,7 +1391,20 @@ namespace Vk
             ZoneScopedN("TranscodeBasis");
             #endif
 
-            result = ktxTexture2_TranscodeBasis(pTexture, KTX_TTF_BC7_RGBA, 0);
+            const u32 components = ktxTexture2_GetNumComponents(pTexture);
+
+            ktx_transcode_fmt_e transcodeFormat = KTX_TTF_BC7_RGBA;
+
+            if (components == 1)
+            {
+                transcodeFormat = KTX_TTF_BC4_R;
+            }
+            else if (components == 2)
+            {
+                transcodeFormat = KTX_TTF_BC5_RG;
+            }
+
+            result = ktxTexture2_TranscodeBasis(pTexture, transcodeFormat, 0);
 
             if (result != KTX_SUCCESS)
             {
@@ -1520,7 +1533,20 @@ namespace Vk
             ZoneScopedN("TranscodeBasis");
             #endif
 
-            result = ktxTexture2_TranscodeBasis(pTexture, KTX_TTF_BC7_RGBA, 0);
+            const u32 components = ktxTexture2_GetNumComponents(pTexture);
+
+            ktx_transcode_fmt_e transcodeFormat = KTX_TTF_BC7_RGBA;
+
+            if (components == 1)
+            {
+                transcodeFormat = KTX_TTF_BC4_R;
+            }
+            else if (components == 2)
+            {
+                transcodeFormat = KTX_TTF_BC5_RG;
+            }
+
+            result = ktxTexture2_TranscodeBasis(pTexture, transcodeFormat, 0);
 
             if (result != KTX_SUCCESS)
             {

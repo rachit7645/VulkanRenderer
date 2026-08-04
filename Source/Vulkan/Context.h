@@ -23,6 +23,7 @@
 #include "QueueFamilies.h"
 #include "Extensions.h"
 #include "Properties.h"
+#include "FormatHelper.h"
 #include "Engine/DeletionQueue.h"
 #include "Engine/Scratch.h"
 #include "Externals/VMA.h"
@@ -47,6 +48,7 @@ namespace Vk
         Vk::Properties    properties    = {};
         Vk::QueueFamilies queueFamilies = {};
         Vk::Extensions    extensions    = {};
+        Vk::FormatHelper  formatHelper  = {};
 
         VkQueue graphicsQueue = VK_NULL_HANDLE;
         VkQueue computeQueue  = VK_NULL_HANDLE;

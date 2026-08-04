@@ -39,14 +39,13 @@ namespace Renderer::DLSS
             Engine::DeletionQueue& deletionQueue
         );
 
-        bool isSupported = false;
-
         NVSDK_NGX_Parameter* parameters = nullptr;
         NVSDK_NGX_Handle*    handle     = nullptr;
 
         glm::uvec2                  optimalResolution = {};
         NVSDK_NGX_PerfQuality_Value DLSSMode          = NVSDK_NGX_PerfQuality_Value_DLAA;
-    
+
+        bool isSupported = false;
         bool resetNeeded = true;
     private:
         bool m_haveParametersChanged = true;

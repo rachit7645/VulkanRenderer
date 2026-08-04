@@ -17,7 +17,6 @@
 #ifndef FORMAT_HELPER_H
 #define FORMAT_HELPER_H
 
-#include <span>
 #include <vulkan/vulkan.h>
 
 namespace Vk
@@ -25,6 +24,7 @@ namespace Vk
     class FormatHelper
     {
     public:
+        FormatHelper() = default;
         explicit FormatHelper(VkPhysicalDevice physicalDevice);
 
         VkFormat colorAttachmentFormatLDR = VK_FORMAT_UNDEFINED;

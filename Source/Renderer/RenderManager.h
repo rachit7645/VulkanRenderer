@@ -60,16 +60,16 @@
 #include "Vulkan/StagingPool.h"
 
 #include "Util/Types.h"
-#include "Engine/FrameCounter.h"
 
+#include "Engine/FrameCounter.h"
 #include "Engine/Window.h"
 #include "Engine/SceneEditor.h"
-
-#include "Models/ModelManager.h"
 #include "Engine/Scratch.h"
 
+#include "Models/ModelManager.h"
+
 #ifdef ENGINE_DLSS
-#include "Renderer/DLSS/Evaluation.h"
+#include "DLSS/Evaluation.h"
 #endif
 
 namespace Renderer
@@ -91,6 +91,12 @@ namespace Renderer
 
         [[nodiscard]] bool HandleEvents(Scratch::Allocator& scratchAllocator);
     private:
+        struct AsyncComputeData
+        {
+            Vk::CommandBufferAllocator cmdBufferAllocator;
+            Vk::ComputeTimeline        timeline;
+        };
+
         void WaitForTimeline();
         void AcquireSwapchainImage();
         void BeginFrame();
@@ -142,15 +148,12 @@ namespace Renderer
 
         Renderer::RenderConfig m_renderConfig;
 
-        Vk::CommandBufferAllocator                m_graphicsCmdBufferAllocator;
-        std::optional<Vk::CommandBufferAllocator> m_computeCmdBufferAllocator = std::nullopt;
-
         Vk::Swapchain m_swapchain;
 
-        Vk::GraphicsTimeline               m_graphicsTimeline;
-        std::optional<Vk::ComputeTimeline> m_computeTimeline = std::nullopt;
+        Vk::CommandBufferAllocator m_graphicsCmdBufferAllocator;
+        Vk::GraphicsTimeline       m_graphicsTimeline;
 
-        Vk::FormatHelper m_formatHelper;
+        std::optional<AsyncComputeData> m_asyncCompute = std::nullopt;
 
         Vk::MegaSet            m_megaSet;
         Vk::StagingPool        m_stagingPool;

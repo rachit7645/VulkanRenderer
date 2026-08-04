@@ -74,7 +74,8 @@ namespace Vk
 
         if (!m_freedGlobalCommandBuffers.empty())
         {
-            cmdBuffer = m_freedGlobalCommandBuffers.front();
+            cmdBuffer = m_freedGlobalCommandBuffers.top();
+
             m_freedGlobalCommandBuffers.pop();
         }
         else

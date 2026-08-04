@@ -280,6 +280,7 @@ namespace Vk
     {
         queueFamilies = Vk::QueueFamilies(physicalDevice, surface, scratchAllocator);
         extensions    = Vk::Extensions(physicalDevice);
+        formatHelper  = Vk::FormatHelper(physicalDevice);
 
         const auto uniqueQueueFamilies = queueFamilies.GetUniqueFamilies(scratchAllocator);
 
