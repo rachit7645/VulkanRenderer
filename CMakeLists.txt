@@ -79,6 +79,7 @@ add_executable(VulkanRenderer
     Source/Util/WireframeCone.cpp
     Source/Util/Log.cpp
     Source/Util/Memory.cpp
+    Source/Util/Process.cpp
     # Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
@@ -262,6 +263,7 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <list>
     <queue>
     <stacktrace>
+    <expected>
     # C STL Headers
     <cstdint>
     <cstddef>

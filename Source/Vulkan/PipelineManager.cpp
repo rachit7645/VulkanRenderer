@@ -24,17 +24,18 @@
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Externals/ImGui.h"
+#include "Util/Process.h"
 
 namespace Vk
 {
     constexpr auto ASSETS_SHADERS_DIR = "Shaders/";
-    constexpr auto PYTHON_EXECUTABLE  = "C:/msys64/ucrt64/bin/python.exe";
-    constexpr auto SCRIPT_LOCATION    = "../Scripts";
 
-    #ifdef ENGINE_DEBUG
-    constexpr auto COMPILATION_FLAGS = "";
-    #else
-    constexpr auto COMPILATION_FLAGS = "--release";
+    // TODO: Figure out how to locate a python executable in a cross-platform way
+    constexpr auto PYTHON_EXECUTABLE  = "C:/msys64/ucrt64/bin/python.exe";
+    constexpr auto SCRIPT_LOCATION    = "../Scripts/CompileShader.py";
+
+    #ifndef ENGINE_DEBUG
+    constexpr auto RELEASE_COMPILATION_FLAGS = "--release";
     #endif
 
     void PipelineManager::AddPipeline(Vk::PipelineID id, const Vk::PipelineConfig& config)
@@ -315,6 +316,8 @@ namespace Vk
             pipelineConfig = iter->second;
         }
 
+        std::vector<Util::Process> runningProcesses = {};
+
         for (const auto& [path, _] : pipelineConfig.GetShaders())
         {
             #ifdef ENGINE_PROFILE
@@ -324,17 +327,46 @@ namespace Vk
 
             const auto shaderAssetPath = std::filesystem::absolute(std::filesystem::path("../" + Files::GetAssetPath(ASSETS_SHADERS_DIR, path))).string();
 
-            const auto result = std::system(fmt::format(
-                "{} {}/CompileShader.py {} {}",
-                PYTHON_EXECUTABLE,
-                SCRIPT_LOCATION,
-                COMPILATION_FLAGS,
-                shaderAssetPath
-            ).c_str());
+            auto processBuilder = Util::ProcessBuilder{}
+                                  .AddArgument(PYTHON_EXECUTABLE)
+                                  .AddArgument(SCRIPT_LOCATION);
 
-            if (result != 0)
+            #ifndef ENGINE_DEBUG
+            processBuilder.AddArgument(RELEASE_COMPILATION_FLAGS);
+            #endif
+
+            processBuilder.AddArgument(shaderAssetPath);
+
+            auto process = processBuilder.Create();
+
+            if (!process.has_value())
             {
-                Logger::Warning("Pipeline Reload Failed! [Result={}]\n", result);
+                Logger::Warning("Pipeline Reload Failed! [Error={}]\n", process.error());
+
+                reloadSucceeded = false;
+
+                break;
+            }
+
+            runningProcesses.emplace_back(std::move(process.value()));
+        }
+
+        for (auto& process : runningProcesses)
+        {
+            auto errorCode = process.WaitForProcess();
+
+            if (!errorCode.has_value())
+            {
+                Logger::Warning("Pipeline Reload Failed! [Error={}]\n", errorCode.error());
+
+                reloadSucceeded = false;
+
+                break;
+            }
+
+            if (errorCode.value() != 0)
+            {
+                Logger::Warning("Pipeline Reload Failed! [Error Code={}]\n", errorCode.value());
 
                 reloadSucceeded = false;
 

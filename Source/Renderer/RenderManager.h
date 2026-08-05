@@ -50,7 +50,6 @@
 
 #include "Vulkan/Context.h"
 #include "Vulkan/MegaSet.h"
-#include "Vulkan/FormatHelper.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/CommandBufferAllocator.h"
