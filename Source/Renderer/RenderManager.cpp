@@ -33,7 +33,7 @@
 namespace Renderer
 {
     RenderManager::RenderManager(Scratch::Allocator& scratchAllocator)
-        : m_executor{Util::GetWorkerThreadCount(), nullptr},
+        : m_executor{Util::GetWorkerThreadCount(), std::make_shared<TaskFlow::WorkerInterface>()},
           m_context{m_window.handle, scratchAllocator},
           m_renderConfig{m_context},
           m_swapchain{m_window.size, m_context, scratchAllocator, m_executor},

@@ -43,6 +43,8 @@ namespace Util
     };
 
     [[nodiscard]] std::string ToLower(const std::string_view string);
+
+    [[nodiscard]] std::wstring MultiByteToWideChar(const std::string_view string);
 }
 
 #endif

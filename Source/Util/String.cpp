@@ -16,6 +16,12 @@
 
 #include "String.h"
 
+#include "Util/Types.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 namespace Util
 {
     std::string ToLower(const std::string_view string)
@@ -28,5 +34,53 @@ namespace Util
         });
 
         return result;
+    }
+
+    std::wstring MultiByteToWideChar(const std::string_view string)
+    {
+        #ifdef _WIN32
+        if (string.empty())
+        {
+            return {};
+        }
+
+        const s32 required = ::MultiByteToWideChar
+        (
+            CP_UTF8,
+            0,
+            string.data(),
+            static_cast<s32>(string.size()),
+            nullptr,
+            0
+        );
+
+        if (required == 0)
+        {
+            return {};
+        }
+
+        std::wstring result(required, L'\0');
+
+        const s32 converted = ::MultiByteToWideChar
+        (
+            CP_UTF8,
+            0,
+            string.data(),
+            static_cast<s32>(string.size()),
+            result.data(),
+            required
+        );
+
+        if (converted == 0)
+        {
+            return {};
+        }
+
+        return result;
+        #else
+        ENGINE_TODO();
+
+        return L"";
+        #endif
     }
 }

@@ -23,10 +23,17 @@ namespace Scratch
 {
     static_assert(std::atomic<usize>::is_always_lock_free, "Really?");
 
+    constexpr usize CACHE_LINE_SIZE = std::hardware_destructive_interference_size;
+
     Allocator::Allocator(usize size)
-        : m_memory{std::make_unique<u8[]>(size)},
+        : m_memory{static_cast<u8*>(Util::AlignedAlloc(size, CACHE_LINE_SIZE))},
           m_size{size}
     {
+    }
+
+    Allocator::~Allocator()
+    {
+        Util::AlignedFree(m_memory);
     }
 
     void Allocator::Reset()
@@ -45,19 +52,30 @@ namespace Scratch
             return nullptr;
         }
 
-        const usize alignedSize = Util::Align(bytes, alignment);
+        usize offset = m_offset.load(std::memory_order_relaxed);
 
-        const usize offset = m_offset.fetch_add(alignedSize, std::memory_order_relaxed);
-
-        const usize newOffset = offset + alignedSize;
-
-        if (newOffset > m_size)
+        while (true)
         {
-            Logger::Warning("Failed to allocate! [Bytes={}]\n", bytes);
+            const usize alignedOffset = Util::Align(offset, alignment);
+            const usize newOffset     = alignedOffset + bytes;
 
-            return nullptr;
+            if (newOffset > m_size)
+            {
+                return nullptr;
+            }
+
+            const bool success = m_offset.compare_exchange_weak
+            (
+                offset,
+                newOffset,
+                std::memory_order_relaxed,
+                std::memory_order_relaxed
+            );
+
+            if (success)
+            {
+                return m_memory + alignedOffset;
+            }
         }
-
-        return m_memory.get() + offset;
     }
 }

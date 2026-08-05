@@ -22,6 +22,8 @@
 namespace Util
 {
     u64 GetWorkerThreadCount();
+
+    void SetThreadName(std::thread& thread, const std::string_view name);
 }
 
 #endif

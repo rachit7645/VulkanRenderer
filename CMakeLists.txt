@@ -172,6 +172,7 @@ add_executable(VulkanRenderer
     Source/Externals/FastGLTF.cpp
     Source/Externals/SDL.cpp
     Source/Externals/DLSSNoSDK.cpp
+    Source/Externals/Taskflow.cpp
 )
 
 # Precompiled Headers

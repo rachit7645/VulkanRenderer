@@ -16,6 +16,15 @@
 
 #include "Threads.h"
 
+#include "Util/String.h"
+#include "Util/Unused.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#elif __linux__
+#include <pthread.h>
+#endif
+
 namespace Util
 {
     u64 GetWorkerThreadCount()
@@ -29,5 +38,20 @@ namespace Util
 
         // Reserve the Main thread
         return concurrentThreadCount - 1;
+    }
+
+    void SetThreadName(std::thread& thread, const std::string_view name)
+    {
+        #ifdef _WIN32
+        const auto wideName = Util::MultiByteToWideChar(name);
+
+        ENGINE_UNUSED const HRESULT result = SetThreadDescription(thread.native_handle(), wideName.c_str());
+        #elif __linux__
+        constexpr usize PTHREAD_MAX_THREAD_NAME_LENGTH = 15;
+
+        const auto convertedName = std::string(name.substr(0, PTHREAD_MAX_THREAD_NAME_LENGTH));
+
+        ENGINE_UNUSED s32 result = pthread_setname_np(thread.native_handle(), convertedName.c_str());
+        #endif
     }
 }

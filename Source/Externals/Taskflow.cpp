@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-#include <SDL3/SDL_main.h>
+#include "Taskflow.h"
 
+#include "Util/Threads.h"
+#include "Externals/FMT.h"
 #include "Util/Unused.h"
-#include "Engine/Application.h"
 
-#ifdef ENGINE_PROFILE
-#include "Externals/Tracy.h"
-#endif
-
-int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
+namespace TaskFlow
 {
-    #ifdef ENGINE_PROFILE
-    while (!tracy::GetProfiler().IsConnected())
+    void WorkerInterface::scheduler_prologue(tf::Worker& worker)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        Util::SetThreadName(worker.thread(), fmt::format("Worker #{}", worker.id()));
     }
-    #endif
 
-    Engine::Application().Run();
-
-    return EXIT_SUCCESS;
+    void WorkerInterface::scheduler_epilogue(ENGINE_UNUSED tf::Worker& worker, ENGINE_UNUSED std::exception_ptr ptr)
+    {
+    }
 }
