@@ -31,7 +31,8 @@ namespace Vk
 
         if (!m_freeIDs.empty())
         {
-            id = m_freeIDs.front();
+            id = m_freeIDs.top();
+
             m_freeIDs.pop();
         }
         else

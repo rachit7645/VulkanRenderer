@@ -17,7 +17,7 @@
 #ifndef DESCRIPTOR_ALLOCATOR_H
 #define DESCRIPTOR_ALLOCATOR_H
 
-#include <queue>
+#include <stack>
 
 #include "Util/Types.h"
 
@@ -43,7 +43,7 @@ namespace Vk
 
         Vk::DescriptorID m_currentID = 0;
 
-        std::queue<Vk::DescriptorID, std::vector<Vk::DescriptorID>> m_freeIDs = {};
+        std::stack<Vk::DescriptorID, std::vector<Vk::DescriptorID>> m_freeIDs = {};
     };
 }
 
