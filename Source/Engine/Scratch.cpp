@@ -23,26 +23,25 @@ namespace Scratch
 {
     static_assert(std::atomic<usize>::is_always_lock_free, "Really?");
 
-    constexpr usize CACHE_LINE_SIZE = std::hardware_destructive_interference_size;
-
     Allocator::Allocator(usize size)
-        : m_memory{static_cast<u8*>(Util::AlignedAlloc(size, CACHE_LINE_SIZE))},
-          m_size{size}
+        : m_begin{static_cast<u8*>(std::malloc(size))},
+          m_end{m_begin + size},
+          m_offset{m_begin}
     {
     }
 
     Allocator::~Allocator()
     {
-        Util::AlignedFree(m_memory);
+        std::free(m_begin);
     }
 
     void Allocator::Reset()
     {
-        bytesUsedBeforeReset = m_offset.load(std::memory_order_relaxed);
+        bytesUsedBeforeReset = m_offset.load(std::memory_order_relaxed) - m_begin;
 
         peakMemoryUsage = std::max(peakMemoryUsage, bytesUsedBeforeReset);
 
-        m_offset.store(0ull, std::memory_order_relaxed);
+        m_offset.store(m_begin, std::memory_order_relaxed);
     }
 
     void* Allocator::Allocate(usize bytes, usize alignment)
@@ -52,14 +51,17 @@ namespace Scratch
             return nullptr;
         }
 
-        usize offset = m_offset.load(std::memory_order_relaxed);
+        u8* offset = m_offset.load(std::memory_order_relaxed);
 
         while (true)
         {
-            const usize alignedOffset = Util::Align(offset, alignment);
-            const usize newOffset     = alignedOffset + bytes;
+            const usize offsetAddress  = reinterpret_cast<usize>(offset);
+            const usize alignedAddress = Util::Align(offsetAddress, alignment);
 
-            if (newOffset > m_size)
+            u8* const alignedPointer = reinterpret_cast<u8*>(alignedAddress);
+            u8* const newOffset      = alignedPointer + bytes;
+
+            if (newOffset > m_end)
             {
                 return nullptr;
             }
@@ -74,7 +76,7 @@ namespace Scratch
 
             if (success)
             {
-                return m_memory + alignedOffset;
+                return alignedPointer;
             }
         }
     }

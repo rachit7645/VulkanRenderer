@@ -43,9 +43,9 @@ namespace Scratch
         usize bytesUsedBeforeReset = 0;
         usize peakMemoryUsage      = 0;
     private:
-        u8*                m_memory = nullptr;
-        usize              m_size   = 0;
-        std::atomic<usize> m_offset = 0;
+        u8*              m_begin  = nullptr;
+        u8*              m_end    = nullptr;
+        std::atomic<u8*> m_offset = nullptr;
     };
 }
 
