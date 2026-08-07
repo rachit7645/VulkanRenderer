@@ -65,7 +65,7 @@ namespace Renderer::Depth
         framebufferManager.AddFramebuffer
         (
             "SceneDepth",
-            Vk::FramebufferCustomFormat::Depth,
+            formatHelper.depthFormat,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
@@ -88,7 +88,7 @@ namespace Renderer::Depth
         framebufferManager.AddFramebuffer
         (
             "SceneDepthAsyncCompute",
-            Vk::FramebufferCustomFormat::Depth,
+            formatHelper.depthFormat,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize

@@ -42,8 +42,7 @@ namespace Models
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             Vk::GeometryBuffer& geometryBuffer,

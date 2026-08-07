@@ -39,9 +39,8 @@ namespace Renderer::DearImGui
         void Render
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Swapchain& swapchain,
             const Objects::Samplers& samplers,
@@ -58,9 +57,8 @@ namespace Renderer::DearImGui
         void RenderGui
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Swapchain& swapchain,
             const Objects::Samplers& samplers,
@@ -76,9 +74,8 @@ namespace Renderer::DearImGui
         void UploadToBuffers
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             Vk::Buffer& vertexBuffer,
             Vk::Buffer& indexBuffer,
             Scratch::Allocator& scratchAllocator,
@@ -88,9 +85,8 @@ namespace Renderer::DearImGui
 
         void UpdateTextures
         (
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
             Vk::TextureManager& textureManager,

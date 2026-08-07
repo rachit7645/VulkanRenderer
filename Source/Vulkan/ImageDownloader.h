@@ -19,6 +19,7 @@
 
 #include "Engine/Scratch.h"
 #include "Vulkan/Buffer.h"
+#include "Vulkan/Context.h"
 #include "Vulkan/GraphicsTimeline.h"
 #include "Vulkan/Image.h"
 
@@ -52,9 +53,8 @@ namespace Vk
         void Update
         (
             usize frameIndex,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::GraphicsTimeline& timeline,
             Scratch::Allocator& scratchAllocator,
             tf::Executor& executor

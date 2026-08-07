@@ -65,7 +65,7 @@ namespace Renderer::SpotShadow
         framebufferManager.AddFramebuffer
         (
             "SpotShadowMap",
-            Vk::FramebufferCustomFormat::Depth,
+            formatHelper.depthFormat,
             VK_IMAGE_VIEW_TYPE_2D_ARRAY,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             Vk::FramebufferSize{

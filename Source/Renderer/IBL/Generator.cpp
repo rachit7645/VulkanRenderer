@@ -423,8 +423,7 @@ namespace Renderer::IBL
         geometryBuffer.Update
         (
             cmdBuffer,
-            context.device,
-            context.allocator,
+            context,
             stagingPool,
             scratchAllocator,
             deletionQueue

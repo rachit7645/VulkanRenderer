@@ -45,9 +45,8 @@ namespace Renderer::Debug
         (
             usize FIF,
             usize frameIndex,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::Swapchain& swapchain,
@@ -120,9 +119,8 @@ namespace Renderer::Debug
         void RenderDebugSpotLight
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Buffers::SceneBuffer& sceneBuffer,
             Engine::DeletionQueue& deletionQueue

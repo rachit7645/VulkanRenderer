@@ -110,6 +110,7 @@ namespace Renderer::ShadowRT
 
         if (!m_shaderBindingTable.has_value())
         {
+            // FIXME!: SBT not rebuilt after a pipeline reload
             m_shaderBindingTable = Vk::ShaderBindingTable
             (
                 cmdBuffer,

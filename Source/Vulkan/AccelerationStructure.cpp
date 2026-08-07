@@ -332,8 +332,7 @@ namespace Vk
     void AccelerationStructure::TryCompactBottomLevelAS
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
+        const Vk::Context& context,
         const Vk::GraphicsTimeline& timeline,
         Scratch::Allocator& scratchAllocator,
         Engine::DeletionQueue& deletionQueue
@@ -354,7 +353,7 @@ namespace Vk
         (
             m_initialBLASBuildFrameIndex + Vk::FRAMES_IN_FLIGHT,
             Vk::GraphicsTimeline::Stage::SwapchainImageAcquired,
-            device
+            context.device
         );
 
         if (!isQueryReady)
@@ -370,7 +369,7 @@ namespace Vk
 
         const auto result = vkGetQueryPoolResults
         (
-            device,
+            context.device,
             m_compactionQueryPool,
             0,
             compactedSizes.size(),
@@ -397,7 +396,7 @@ namespace Vk
 
             auto oldBuffer = blas.buffer;
 
-            deletionQueue.Push([device, allocator, oldBLAS, oldBuffer] () mutable
+            deletionQueue.Push([device = context.device, allocator = context.allocator, oldBLAS, oldBuffer] () mutable
             {
                 vkDestroyAccelerationStructureKHR(device, oldBLAS, nullptr);
 
@@ -406,8 +405,8 @@ namespace Vk
 
             blas.buffer = Vk::Buffer
             (
-                device,
-                allocator,
+                context.device,
+                context.allocator,
                 compactedSizes[i],
                 0,
                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -429,7 +428,7 @@ namespace Vk
             };
 
             Vk::CheckResult(vkCreateAccelerationStructureKHR(
-                device,
+                context.device,
                 &compactedBlasCreateInfo,
                 nullptr,
                 &blas.handle),
@@ -469,15 +468,15 @@ namespace Vk
                 .accelerationStructure  = blas.handle
             };
 
-            blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device, &blasDAInfo);
+            blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(context.device, &blasDAInfo);
 
-            Vk::SetDebugName(device, blas.handle,        fmt::format("BLAS/Compacted/{}",       i));
-            Vk::SetDebugName(device, blas.buffer.handle, fmt::format("BLASBuffer/Compacted/{}", i));
+            Vk::SetDebugName(context.device, blas.handle,        fmt::format("BLAS/Compacted/{}",       i));
+            Vk::SetDebugName(context.device, blas.buffer.handle, fmt::format("BLASBuffer/Compacted/{}", i));
         }
 
         barrierWriter.Execute(cmdBuffer);
 
-        vkDestroyQueryPool(device, m_compactionQueryPool, nullptr);
+        vkDestroyQueryPool(context.device, m_compactionQueryPool, nullptr);
 
         m_compactionQueryPool = VK_NULL_HANDLE;
 

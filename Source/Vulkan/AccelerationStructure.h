@@ -52,8 +52,7 @@ namespace Vk
         void TryCompactBottomLevelAS
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             const Vk::GraphicsTimeline& timeline,
             Scratch::Allocator& scratchAllocator,
             Engine::DeletionQueue& deletionQueue

@@ -1340,8 +1340,7 @@ namespace Renderer
         m_accelerationStructure->TryCompactBottomLevelAS
         (
             cmdBuffer,
-            m_context.device,
-            m_context.allocator,
+            m_context,
             m_graphicsTimeline,
             scratchAllocator,
             m_deletionQueues[m_FIF]
@@ -1516,9 +1515,8 @@ namespace Renderer
         m_tiledLighting.Execute
         (
             m_FIF,
-            m_context.device,
-            m_context.allocator,
             cmdBuffer,
+            m_context,
             m_pipelineManager,
             m_framebufferManager,
             m_megaSet,
@@ -1602,9 +1600,8 @@ namespace Renderer
         (
             m_FIF,
             m_frameIndex,
-            m_context.device,
-            m_context.allocator,
             cmdBuffer,
+            m_context,
             m_pipelineManager,
             m_framebufferManager,
             m_swapchain,
@@ -1620,9 +1617,8 @@ namespace Renderer
         m_imGui.Render
         (
             m_FIF,
-            m_context.device,
-            m_context.allocator,
             cmdBuffer,
+            m_context,
             m_pipelineManager,
             m_swapchain,
             m_samplers,
@@ -1967,9 +1963,7 @@ namespace Renderer
         m_framebufferManager.Update
         (
             cmdBuffer,
-            m_context.device,
-            m_context.allocator,
-            m_context.formatHelper,
+            m_context,
             m_swapchain,
             m_renderConfig,
             m_megaSet,
@@ -2036,8 +2030,7 @@ namespace Renderer
         m_modelManager.Update
         (
             cmdBuffer,
-            m_context.device,
-            m_context.allocator,
+            m_context,
             m_megaSet,
             m_stagingPool,
             m_geometryBuffer,
@@ -2050,8 +2043,7 @@ namespace Renderer
         m_geometryBuffer.Update
         (
             cmdBuffer,
-            m_context.device,
-            m_context.allocator,
+            m_context,
             m_stagingPool,
             scratchAllocator,
             m_deletionQueues[m_FIF]
@@ -2082,9 +2074,8 @@ namespace Renderer
         m_imageDownloader.Update
         (
             m_frameIndex,
-            m_context.device,
-            m_context.allocator,
             cmdBuffer,
+            m_context,
             m_graphicsTimeline,
             scratchAllocator,
             m_executor

@@ -31,9 +31,8 @@ namespace Vk
     void ImageDownloader::Update
     (
         usize frameIndex,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::GraphicsTimeline& timeline,
         Scratch::Allocator& scratchAllocator,
         tf::Executor& executor
@@ -45,7 +44,7 @@ namespace Vk
             (
                 iter->readbackFrameIndex + Vk::FRAMES_IN_FLIGHT,
                 Vk::GraphicsTimeline::Stage::SwapchainImageAcquired,
-                device
+                context.device
             );
 
             if (!isReadbackReady)
@@ -55,7 +54,7 @@ namespace Vk
                 continue;
             }
 
-            executor.silent_async([allocator, pendingDownload = *iter] mutable
+            executor.silent_async([allocator = context.allocator, pendingDownload = *iter] mutable
             {
                 const u8* pMappedData = static_cast<u8*>(pendingDownload.readbackBuffer.hostAddress);
 
@@ -123,8 +122,8 @@ namespace Vk
 
             const auto readbackBuffer = Vk::Buffer
             (
-               device,
-               allocator,
+               context.device,
+               context.allocator,
                readbackSize,
                0,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT,

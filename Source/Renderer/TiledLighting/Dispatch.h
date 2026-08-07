@@ -40,9 +40,8 @@ namespace Renderer::TiledLighting
         void Execute
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
@@ -66,9 +65,8 @@ namespace Renderer::TiledLighting
         void Culling
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,

@@ -39,8 +39,7 @@ namespace Vk
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             Vk::StagingPool& stagingPool,
             Scratch::Allocator& scratchAllocator,
             Engine::DeletionQueue& deletionQueue

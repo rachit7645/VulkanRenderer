@@ -98,7 +98,7 @@ namespace Renderer::Debug
             framebufferManager.AddFramebuffer
             (
                 "Debug/Depth",
-                Vk::FramebufferCustomFormat::Depth,
+                formatHelper.depthFormat,
                 VK_IMAGE_VIEW_TYPE_2D,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
@@ -326,9 +326,8 @@ namespace Renderer::Debug
     (
         usize FIF,
         usize frameIndex,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::Swapchain& swapchain,
@@ -525,9 +524,8 @@ namespace Renderer::Debug
             RenderDebugSpotLight
             (
                 FIF,
-                device,
-                allocator,
                 cmdBuffer,
+                context,
                 pipelineManager,
                 sceneBuffer,
                 deletionQueue
@@ -1287,9 +1285,8 @@ namespace Renderer::Debug
     void RenderPass::RenderDebugSpotLight
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Buffers::SceneBuffer& sceneBuffer,
         Engine::DeletionQueue& deletionQueue
@@ -1362,15 +1359,15 @@ namespace Renderer::Debug
 
         if (m_coneIndexBuffer.size < requiredIndexSize)
         {
-            deletionQueue.Push([allocator, buffer = m_coneIndexBuffer] () mutable
+            deletionQueue.Push([allocator = context.allocator, buffer = m_coneIndexBuffer] () mutable
             {
                 buffer.Destroy(allocator);
             });
 
             m_coneIndexBuffer = Vk::Buffer
             (
-                device,
-                allocator,
+                context.device,
+                context.allocator,
                 requiredIndexSize,
                 0,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -1379,20 +1376,20 @@ namespace Renderer::Debug
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Vk::SetDebugName(device, m_coneIndexBuffer.handle, "Debug/Lights/Cone/IndexBuffer");
+            Vk::SetDebugName(context.device, m_coneIndexBuffer.handle, "Debug/Lights/Cone/IndexBuffer");
         }
 
         if (m_coneVertexBuffer.size < requiredVertexSize)
         {
-            deletionQueue.Push([allocator, buffer = m_coneVertexBuffer] () mutable
+            deletionQueue.Push([allocator = context.allocator, buffer = m_coneVertexBuffer] () mutable
             {
                 buffer.Destroy(allocator);
             });
 
             m_coneVertexBuffer = Vk::Buffer
             (
-                device,
-                allocator,
+                context.device,
+                context.allocator,
                 requiredVertexSize,
                 0,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -1401,7 +1398,7 @@ namespace Renderer::Debug
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Vk::SetDebugName(device, m_coneVertexBuffer.handle, "Debug/Lights/Cone/VertexBuffer");
+            Vk::SetDebugName(context.device, m_coneVertexBuffer.handle, "Debug/Lights/Cone/VertexBuffer");
         }
 
         const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DebugLightSphere);

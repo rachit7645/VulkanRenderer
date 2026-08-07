@@ -32,17 +32,6 @@
 
 namespace Vk
 {
-    enum class FramebufferCustomFormat : u8
-    {
-        // Regular Color Formats
-        ColorLDR,
-        ColorHDR,
-        // Regular Depth Formats
-        Depth
-    };
-
-    using FramebufferFormat = std::variant<VkFormat, FramebufferCustomFormat>;
-
     struct FramebufferSize
     {
         u32 width       = 0;
@@ -90,7 +79,7 @@ namespace Vk
 
     struct Framebuffer
     {
-        FramebufferFormat       format        = FramebufferCustomFormat::ColorLDR;
+        VkFormat                format        = VK_FORMAT_R8G8B8A8_UNORM;
         VkImageViewType         imageViewType = VK_IMAGE_VIEW_TYPE_2D;
         VkImageUsageFlags       imageUsage    = 0;
         FramebufferSizeData     sizeData      = {};
@@ -104,7 +93,7 @@ namespace Vk
         void AddFramebuffer
         (
             const std::string_view name,
-            const FramebufferFormat& format,
+            VkFormat format,
             VkImageViewType imageViewType,
             VkImageUsageFlags imageUsage,
             const FramebufferSizeData& sizeData,
@@ -122,9 +111,7 @@ namespace Vk
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
-            const Vk::FormatHelper& formatHelper,
+            const Vk::Context& context,
             const Vk::Swapchain& swapchain,
             Renderer::RenderConfig& renderConfig,
             Vk::MegaSet& megaSet,

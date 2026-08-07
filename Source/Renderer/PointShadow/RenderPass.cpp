@@ -89,7 +89,7 @@ namespace Renderer::PointShadow
         framebufferManager.AddFramebuffer
         (
             "PointShadowDepth",
-            Vk::FramebufferCustomFormat::Depth,
+            formatHelper.depthFormat,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             Vk::FramebufferSize{

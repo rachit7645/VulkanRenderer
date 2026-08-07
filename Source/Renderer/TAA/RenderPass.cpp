@@ -55,7 +55,7 @@ namespace Renderer::TAA
         framebufferManager.AddFramebuffer
         (
             "ResolvedSceneColor",
-            Vk::FramebufferCustomFormat::ColorHDR,
+            formatHelper.colorAttachmentFormatHDR,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
@@ -78,7 +78,7 @@ namespace Renderer::TAA
         framebufferManager.AddFramebuffer
         (
             "IntermediateResolvedSceneColor",
-            Vk::FramebufferCustomFormat::ColorHDR,
+            formatHelper.colorAttachmentFormatHDR,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
@@ -101,7 +101,7 @@ namespace Renderer::TAA
         framebufferManager.AddFramebuffer
         (
             "TAABuffer",
-            Vk::FramebufferCustomFormat::ColorHDR,
+            formatHelper.colorAttachmentFormatHDR,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize

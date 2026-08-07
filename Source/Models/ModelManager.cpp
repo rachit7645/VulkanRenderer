@@ -139,8 +139,7 @@ namespace Models
     void ModelManager::Update
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
+        const Vk::Context& context,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
         Vk::GeometryBuffer& geometryBuffer,
@@ -165,8 +164,8 @@ namespace Models
 
         const Models::LoadFromFileInfo loadFromFileInfo =
         {
-            .device         = device,
-            .allocator      = allocator,
+            .device         = context.device,
+            .allocator      = context.allocator,
             .geometryBuffer = geometryBuffer,
             .textureManager = textureManager,
             .stagingPool    = stagingPool,
@@ -234,8 +233,8 @@ namespace Models
 
             loadedIter->second.model.Destroy
             (
-                device,
-                allocator,
+                context.device,
+                context.allocator,
                 megaSet,
                 textureManager,
                 geometryBuffer,

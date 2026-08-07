@@ -84,9 +84,8 @@ namespace Renderer::TiledLighting
     void Dispatch::Execute
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
@@ -112,9 +111,8 @@ namespace Renderer::TiledLighting
         Culling
         (
             FIF,
-            device,
-            allocator,
             cmdBuffer,
+            context,
             pipelineManager,
             framebufferManager,
             megaSet,
@@ -214,9 +212,8 @@ namespace Renderer::TiledLighting
     void Dispatch::Culling
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
@@ -236,8 +233,8 @@ namespace Renderer::TiledLighting
         tileLightIndexBuffer.Update
         (
             tileCount,
-            device,
-            allocator,
+            context.device,
+            context.allocator,
             deletionQueue
         );
 

@@ -36,9 +36,9 @@ namespace Maths
                 
                 vertices.emplace_back
                 (
-                    radius * glm::cos(angle),
+                    radius * std::cosf(angle),
                     y,
-                    radius * glm::sin(angle)
+                    radius * std::sinf(angle)
                 );
             }
         }

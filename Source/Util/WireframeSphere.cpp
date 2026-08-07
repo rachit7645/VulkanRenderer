@@ -30,8 +30,8 @@ namespace Maths
         {
             const f32 theta = static_cast<f32>(std::numbers::pi) * static_cast<f32>(stack + 1) / static_cast<f32>(stacks + 1);
 
-            const f32 sinTheta = std::sin(theta);
-            const f32 cosTheta = std::cos(theta);
+            const f32 sinTheta = std::sinf(theta);
+            const f32 cosTheta = std::cosf(theta);
 
             for (usize slice = 0; slice < slices; ++slice)
             {
@@ -43,9 +43,9 @@ namespace Maths
 
                 vertices[vertexIndex] = glm::vec3
                 (
-                    RADIUS * sinTheta * std::cos(phi),
+                    RADIUS * sinTheta * std::cosf(phi),
                     RADIUS * cosTheta,
-                    RADIUS * sinTheta * std::sin(phi)
+                    RADIUS * sinTheta * std::sinf(phi)
                 );
             }
         }

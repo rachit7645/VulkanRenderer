@@ -30,7 +30,7 @@ namespace Vk
     void FramebufferManager::AddFramebuffer
     (
         const std::string_view name,
-        const FramebufferFormat& format,
+        VkFormat format,
         VkImageViewType imageViewType,
         VkImageUsageFlags imageUsage,
         const FramebufferSizeData& sizeData,
@@ -72,9 +72,7 @@ namespace Vk
     void FramebufferManager::Update
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
-        const Vk::FormatHelper& formatHelper,
+        const Vk::Context& context,
         const Vk::Swapchain& swapchain,
         ENGINE_UNUSED Renderer::RenderConfig& renderConfig,
         Vk::MegaSet& megaSet,
@@ -149,7 +147,7 @@ namespace Vk
                 continue;
             }
 
-            deletionQueue.Push([allocator, image = framebuffer.image] () mutable
+            deletionQueue.Push([allocator = context.allocator, image = framebuffer.image] () mutable
             {
                 image.Destroy(allocator);
             });
@@ -159,6 +157,7 @@ namespace Vk
                 createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
                 createInfo.pNext                 = nullptr;
                 createInfo.imageType             = VK_IMAGE_TYPE_2D;
+                createInfo.format                = framebuffer.format;
                 createInfo.extent                = {.width = size.width, .height = size.height, .depth = 1};
                 createInfo.arrayLayers           = size.arrayLayers;
                 createInfo.mipLevels             = size.mipLevels;
@@ -170,30 +169,6 @@ namespace Vk
                 createInfo.pQueueFamilyIndices   = nullptr;
                 createInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
             }
-
-            createInfo.format = std::visit(Util::Visitor{
-                [] (VkFormat format) -> VkFormat
-                {
-                    return format;
-                },
-                [&formatHelper] (Vk::FramebufferCustomFormat format) -> VkFormat
-                {
-                    switch (format)
-                    {
-                    case FramebufferCustomFormat::ColorLDR:
-                        return formatHelper.colorAttachmentFormatLDR;
-
-                    case FramebufferCustomFormat::ColorHDR:
-                        return formatHelper.colorAttachmentFormatHDR;
-
-                    case FramebufferCustomFormat::Depth:
-                        return formatHelper.depthFormat;
-
-                    default:
-                        return VK_FORMAT_UNDEFINED;
-                    }
-                }
-            }, framebuffer.format);
 
             const VkImageAspectFlags aspect = vkuFormatHasDepth(createInfo.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
@@ -213,9 +188,9 @@ namespace Vk
                 createInfo.flags = 0;
             }
 
-            framebuffer.image = Vk::Image(allocator, createInfo, aspect);
+            framebuffer.image = Vk::Image(context.allocator, createInfo, aspect);
 
-            Vk::SetDebugName(device, framebuffer.image.handle, name);
+            Vk::SetDebugName(context.device, framebuffer.image.handle, name);
 
             if (isFixedSize)
             {
@@ -261,14 +236,14 @@ namespace Vk
                 deletionQueue
             );
 
-            deletionQueue.Push([device, view = framebufferView.view] ()
+            deletionQueue.Push([device = context.device, view = framebufferView.view] ()
             {
                 view.Destroy(device);
             });
 
             framebufferView.view = Vk::ImageView
             (
-                device,
+                context.device,
                 framebuffer.image,
                 framebufferView.type,
                 {
@@ -282,12 +257,12 @@ namespace Vk
 
             AllocateDescriptors(megaSet, framebufferView, framebuffer.imageUsage);
 
-            Vk::SetDebugName(device, framebufferView.view.handle, name);
+            Vk::SetDebugName(context.device, framebufferView.view.handle, name);
         }
 
         barrierWriter.Execute(cmdBuffer);
 
-        megaSet.Update(device);
+        megaSet.Update(context.device);
 
         Vk::EndLabel(cmdBuffer);
     }

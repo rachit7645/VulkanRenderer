@@ -50,8 +50,7 @@ namespace Vk
     void GeometryBuffer::Update
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
+        const Vk::Context& context,
         Vk::StagingPool& stagingPool,
         Scratch::Allocator& scratchAllocator,
         Engine::DeletionQueue& deletionQueue
@@ -71,8 +70,8 @@ namespace Vk
         indexBuffer.Update
         (
             cmdBuffer,
-            device,
-            allocator,
+            context.device,
+            context.allocator,
             scratchAllocator,
             deletionQueue
         );
@@ -80,8 +79,8 @@ namespace Vk
         vertexBuffer.Update
         (
             cmdBuffer,
-            device,
-            allocator,
+            context.device,
+            context.allocator,
             scratchAllocator,
             deletionQueue
         );
@@ -138,10 +137,10 @@ namespace Vk
 
         Vk::EndLabel(cmdBuffer);
 
-        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer");
-        Vk::SetDebugName(device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, GetUVBuffer().handle,       "GeometryBuffer/UVBuffer");
-        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
+        Vk::SetDebugName(context.device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer");
+        Vk::SetDebugName(context.device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
+        Vk::SetDebugName(context.device, GetUVBuffer().handle,       "GeometryBuffer/UVBuffer");
+        Vk::SetDebugName(context.device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
     }
 
     void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Engine::DeletionQueue& deletionQueue)

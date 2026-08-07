@@ -106,7 +106,7 @@ namespace Renderer::Bloom
         framebufferManager.AddFramebuffer
         (
             "Bloom",
-            Vk::FramebufferCustomFormat::ColorHDR,
+            formatHelper.colorAttachmentFormatHDR,
             VK_IMAGE_VIEW_TYPE_2D_ARRAY,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             [device, &framebufferManager, &megaSet] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent, Engine::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
@@ -155,7 +155,7 @@ namespace Renderer::Bloom
         framebufferManager.AddFramebuffer
         (
             "FinalSceneColor",
-            Vk::FramebufferCustomFormat::ColorHDR,
+            formatHelper.colorAttachmentFormatHDR,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
