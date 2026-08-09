@@ -19,7 +19,6 @@
 
 #include "Model.h"
 #include "ModelID.h"
-#include "MeshIdentifier.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/CommandBufferAllocator.h"

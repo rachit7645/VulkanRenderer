@@ -20,6 +20,7 @@
 
 #include "Util/Log.h"
 #include "Util.h"
+#include "Util/Debug.h"
 
 namespace Vk
 {
@@ -68,8 +69,10 @@ namespace Vk
         switch (severity)
         {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            Logger::VulkanError("{}\n", pCallbackData->pMessage);
+            Logger::Vulkan("{}\n", pCallbackData->pMessage);
+            Util::TriggerBreakpoint();
             break;
+
         default:
             Logger::Vulkan("{}\n", pCallbackData->pMessage);
             break;

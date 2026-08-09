@@ -16,7 +16,6 @@
 
 #include "MeshBuffer.h"
 
-#include "Models/MeshIdentifier.h"
 #include "Vulkan/DebugUtils.h"
 #include "Util/Maths.h"
 #include "Util/Log.h"
@@ -110,26 +109,17 @@ namespace Renderer::Buffers
             uniqueModelIDs.insert(renderObject.modelID);
         }
 
-        auto meshes       = Scratch::CreateVector<GPU::Mesh>(scratchAllocator);
-        auto meshIndexMap = Scratch::CreateMap<Models::MeshIdentifier, usize>(scratchAllocator);
+        auto meshes             = Scratch::CreateVector<GPU::Mesh>(scratchAllocator);
+        auto modelBaseOffsetMap = Scratch::CreateMap<Models::ModelID, usize>(scratchAllocator);
 
         for (const auto modelID : uniqueModelIDs)
         {
             const auto& model = modelManager.GetModel(modelID);
 
-            for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
+            modelBaseOffsetMap.emplace(modelID, meshes.size());
+
+            for (const auto& mesh : model.meshes)
             {
-                const auto& mesh = model.meshes[localMeshIndex];
-
-                const Models::MeshIdentifier meshIdentifier =
-                {
-                    .modelID        = modelID,
-                    .localMeshIndex = localMeshIndex
-                };
-
-                // (modelID, localMeshIndex) -> globalMeshIndex
-                meshIndexMap.emplace(meshIdentifier, meshes.size());
-
                 meshes.emplace_back
                 (
                     mesh.surfaceInfo,
@@ -139,7 +129,7 @@ namespace Renderer::Buffers
             }
         }
 
-        auto instances  = Scratch::CreateVector<GPU::Instance>(scratchAllocator);
+        auto instances = Scratch::CreateVector<GPU::Instance>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {
@@ -152,6 +142,8 @@ namespace Renderer::Buffers
 
             const auto& model = modelManager.GetModel(renderObject.modelID);
 
+            const usize baseIndex = modelBaseOffsetMap.at(renderObject.modelID);
+
             for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
             {
                 const auto& mesh = model.meshes[localMeshIndex];
@@ -159,13 +151,7 @@ namespace Renderer::Buffers
                 const auto transform    = globalTransform * mesh.transform;
                 const auto normalMatrix = Maths::NormalMatrix(transform);
 
-                const Models::MeshIdentifier meshIdentifier =
-                {
-                    .modelID        = renderObject.modelID,
-                    .localMeshIndex = localMeshIndex
-                };
-
-                const auto globalMeshIndex = meshIndexMap.at(meshIdentifier);
+                const auto globalMeshIndex = baseIndex + localMeshIndex;
 
                 instances.emplace_back
                 (

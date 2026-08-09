@@ -21,7 +21,6 @@
 #include "Util.h"
 #include "Util/Maths.h"
 #include "Externals/FMT.h"
-#include "Models/MeshIdentifier.h"
 
 namespace Vk
 {
@@ -520,23 +519,15 @@ namespace Vk
             uniqueModelIDs.insert(renderObject.modelID);
         }
 
-        auto meshIndexMap = Scratch::CreateMap<Models::MeshIdentifier, usize>(scratchAllocator);
+        auto modelBaseOffsetMap = Scratch::CreateMap<Models::ModelID, usize>(scratchAllocator);
 
-        for (usize meshIndex = 0; const auto modelID : uniqueModelIDs)
+        for (usize baseIndex = 0; const auto modelID : uniqueModelIDs)
         {
             const auto& model = modelManager.GetModel(modelID);
 
-            for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
-            {
-                const Models::MeshIdentifier meshIdentifier =
-                {
-                    .modelID        = modelID,
-                    .localMeshIndex = localMeshIndex
-                };
+            modelBaseOffsetMap.emplace(modelID, baseIndex);
 
-                // (modelID, localMeshIndex) -> globalMeshIndex
-                meshIndexMap.emplace(meshIdentifier, meshIndex++);
-            }
+            baseIndex += model.meshes.size();
         }
 
         auto instances = Scratch::CreateVector<VkAccelerationStructureInstanceKHR>(scratchAllocator);
@@ -544,6 +535,8 @@ namespace Vk
         for (const auto& renderObject : renderObjects)
         {
             const auto& model = modelManager.GetModel(renderObject.modelID);
+
+            const usize baseIndex = modelBaseOffsetMap.at(renderObject.modelID);
 
             for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
             {
@@ -565,13 +558,7 @@ namespace Vk
                     instanceFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
                 }
 
-                const Models::MeshIdentifier meshIdentifier =
-                {
-                    .modelID        = renderObject.modelID,
-                    .localMeshIndex = localMeshIndex
-                };
-
-                const auto globalMeshIndex = meshIndexMap.at(meshIdentifier);
+                const usize globalMeshIndex = baseIndex + localMeshIndex;
 
                 instances.emplace_back(VkAccelerationStructureInstanceKHR{
                     .transform                              = glm::vk_cast(Maths::TransformMatrix(

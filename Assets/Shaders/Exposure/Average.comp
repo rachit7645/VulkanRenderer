@@ -64,7 +64,7 @@ void main()
 
         float keyValue = 1.03f - (2.0f / (log10(adaptedLuminance + 1.0f) + 2.0f));
 
-        float exposure = keyValue / max(clamp(adaptedLuminance, exp2(HISTOGRAM_MIN_LOG_LUMINANCE), exp2(HISTOGRAM_MAX_LOG_LUMINANCE)) - Constants.ExposureBias, 1e-5f);
+        float exposure = keyValue / max(exp2(clamp(log2(adaptedLuminance), HISTOGRAM_MIN_LOG_LUMINANCE, HISTOGRAM_MAX_LOG_LUMINANCE)) - Constants.ExposureBias, 1e-5f);
 
         imageStore(Images[Constants.ExposureImageIndex], ivec2(0, 0), vec4(exposure, 0.0f, 0.0f, 0.0f));
     }

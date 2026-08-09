@@ -163,7 +163,6 @@ add_executable(VulkanRenderer
 	Source/Models/ModelManager.cpp
     Source/Models/Mesh.cpp
     Source/Models/Material.cpp
-    Source/Models/MeshIdentifier.cpp
     Source/Models/LocalLights.cpp
     Source/Models/ModelID.cpp
 	# External sources

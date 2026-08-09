@@ -88,6 +88,5 @@ namespace Logger::Detail
         #else
         std::exit(errorCode);
         #endif
-
     }
 }
