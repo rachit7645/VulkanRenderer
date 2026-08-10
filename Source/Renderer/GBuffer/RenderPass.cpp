@@ -33,7 +33,7 @@ namespace Renderer::GBuffer
 
         constexpr std::array COLOR_FORMATS =
         {
-            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_R8G8B8A8_SRGB,
             VK_FORMAT_R16G16_UNORM,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_FORMAT_B10G11R11_UFLOAT_PACK32,
@@ -82,7 +82,7 @@ namespace Renderer::GBuffer
         framebufferManager.AddFramebuffer
         (
             "GAlbedoIoR",
-            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_R8G8B8A8_SRGB,
             VK_IMAGE_VIEW_TYPE_2D,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize

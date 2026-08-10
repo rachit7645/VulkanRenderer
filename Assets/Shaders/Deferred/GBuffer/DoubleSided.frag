@@ -95,7 +95,7 @@ void main()
 
     gEmissive = emissive;
 
-    gSurfaceSpreadAngle = ComputeSurfaceSpreadAngle(Input.position, Input.N);
+    gSurfaceSpreadAngle = ComputeSurfaceSpreadAngle(Input.position, N);
 
     vec2 currentUV  = (Input.currentPosition.xy  / Input.currentPosition.z ) * 0.5f + 0.5f;
     vec2 previousUV = (Input.previousPosition.xy / Input.previousPosition.z) * 0.5f + 0.5f;
