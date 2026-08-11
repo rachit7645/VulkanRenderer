@@ -599,12 +599,11 @@ namespace Vk
                     .arrayLayers     = 1,
                     .faceCount       = 1,
                     .format          = SDR_FORMAT,
-                    .generateMipmaps = generateMipmaps,
-                    .offsetTableSize = textureOffsetTable.size(),
+                    .generateMipmaps = generateMipmaps
                 },
-                .hash               = hash,
-                .textureOffsetTable = textureOffsetTable,
-                .data               = imageData,
+                .hash                 = hash,
+                .additionalHeaderData = textureOffsetTable,
+                .data                 = imageData,
             });
         });
 
@@ -902,12 +901,11 @@ namespace Vk
                     .arrayLayers     = 1,
                     .faceCount       = 1,
                     .format          = format,
-                    .generateMipmaps = generateMipmaps,
-                    .offsetTableSize = textureOffsetTable.size(),
+                    .generateMipmaps = generateMipmaps
                 },
-                .hash               = hash,
-                .textureOffsetTable = textureOffsetTable,
-                .data               = imageData,
+                .hash                 = hash,
+                .additionalHeaderData = textureOffsetTable,
+                .data                 = imageData,
             });
         });
 
@@ -1302,12 +1300,11 @@ namespace Vk
                         .arrayLayers     = 1,
                         .faceCount       = 1,
                         .format          = format,
-                        .generateMipmaps = generateMipmaps,
-                        .offsetTableSize = textureOffsetTable.size(),
+                        .generateMipmaps = generateMipmaps
                     },
-                    .hash               = hash,
-                    .textureOffsetTable = textureOffsetTable,
-                    .data               = imageData,
+                    .hash                 = hash,
+                    .additionalHeaderData = textureOffsetTable,
+                    .data                 = imageData,
                 });
             });
 
@@ -1478,12 +1475,11 @@ namespace Vk
                     .arrayLayers     = pTexture->numLayers,
                     .faceCount       = pTexture->numFaces,
                     .format          = static_cast<VkFormat>(pTexture->vkFormat),
-                    .generateMipmaps = pTexture->generateMipmaps,
-                    .offsetTableSize = textureOffsetTableAsBytes.size(),
+                    .generateMipmaps = pTexture->generateMipmaps
                 },
-                .hash               = hash,
-                .textureOffsetTable = textureOffsetTableAsBytes,
-                .data               = imageData,
+                .hash                 = hash,
+                .additionalHeaderData = textureOffsetTableAsBytes,
+                .data                 = imageData,
             };
 
             ktxTexture2_Destroy(pTexture);
@@ -1717,7 +1713,7 @@ namespace Vk
             .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
             .srcAccessMask   = VK_ACCESS_2_NONE,
             .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
-            .generateMipmaps = false
+            .generateMipmaps = pTexture->generateMipmaps
         });
 
         deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
@@ -1862,7 +1858,7 @@ namespace Vk
 
         const auto cacheEntry  = Cache::GetFromCache(cache.cachedPath);
         const auto header      = std::get<Cache::TextureHeader>(cacheEntry.assetHeader);
-        const auto offsetTable = Cache::ExtractTextureOffsetTable(cacheEntry.textureOffsetTable.value());
+        const auto offsetTable = Cache::ExtractTextureOffsetTable(cacheEntry.additionalHeaderData.value());
 
         const auto stagingMemoryBlock = stagingPool.Allocate
         (

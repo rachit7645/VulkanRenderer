@@ -21,7 +21,7 @@
 
 namespace Cache
 {
-    using TextureOffsetTable = std::optional<std::vector<u8>>;
+    using AdditionalHeaderData = std::optional<std::vector<u8>>;
 
     enum class AssetType : u8
     {
@@ -39,14 +39,15 @@ namespace Cache
     {
         [[nodiscard]] bool Validate() const;
 
-        u32                    magic                = 0;
-        u8                     version              = 0;
-        Cache::AssetType       assetType            = AssetType::Texture;
-        Cache::CompressionType compressionType      = CompressionType::LZ4;
-        u8                     headerSize           = 0;
-        u64                    compressedDataSize   = 0;
-        u64                    uncompressedDataSize = 0;
-        u64                    hash                 = 0;
+        u32                    magic                    = 0;
+        u8                     version                  = 0;
+        Cache::AssetType       assetType                = AssetType::Texture;
+        Cache::CompressionType compressionType          = CompressionType::LZ4;
+        u8                     headerSize               = 0;
+        u64                    additionalHeaderDataSize = 0;
+        u64                    compressedDataSize       = 0;
+        u64                    uncompressedDataSize     = 0;
+        u64                    hash                     = 0;
     };
 
     struct TextureHeader
@@ -60,21 +61,20 @@ namespace Cache
         u32             faceCount       = 0;
         VkFormat        format          = VK_FORMAT_UNDEFINED;
         bool            generateMipmaps = false;
-        u8              padding[7]      = {};
-        u64             offsetTableSize = 0;
+        u8              padding[3]      = {};
     };
 
     using AssetHeader = std::variant<TextureHeader>;
 
     struct Entry
     {
-        std::string               cacheFile          = "Null/Cache";
-        Cache::AssetType          assetType          = AssetType::Texture;
-        Cache::CompressionType    compressionType    = CompressionType::LZ4;
-        Cache::AssetHeader        assetHeader        = {};
-        u64                       hash               = 0;
-        Cache::TextureOffsetTable textureOffsetTable = std::nullopt;
-        std::vector<u8>           data               = {};
+        std::string                 cacheFile             = "Null/Cache";
+        Cache::AssetType            assetType             = AssetType::Texture;
+        Cache::CompressionType      compressionType       = CompressionType::LZ4;
+        Cache::AssetHeader          assetHeader           = {};
+        u64                         hash                  = 0;
+        Cache::AdditionalHeaderData additionalHeaderData  = std::nullopt;
+        std::vector<u8>             data                  = {};
     };
 
     struct Query
@@ -86,9 +86,9 @@ namespace Cache
 
     struct Hit
     {
-        Cache::AssetHeader        assetHeader        = {};
-        Cache::TextureOffsetTable textureOffsetTable = std::nullopt;
-        std::vector<u8>           data               = {};
+        Cache::AssetHeader          assetHeader          = {};
+        Cache::AdditionalHeaderData additionalHeaderData = std::nullopt;
+        std::vector<u8>             data                 = {};
     };
 
     [[nodiscard]] std::vector<u8>               GenerateTextureOffsetTable(const std::span<const VkDeviceSize> offsets);
@@ -110,12 +110,12 @@ namespace Cache
 
         void StoreHeader(std::ofstream& bin, const Cache::Header& header);
         void StoreAssetHeader(std::ofstream& bin, const Cache::AssetHeader& assetHeader);
-        void StoreTextureOffsetTable(std::ofstream& bin, const Cache::TextureOffsetTable& textureOffsetTable);
+        void StoreAdditionalHeaderData(std::ofstream& bin, const Cache::AdditionalHeaderData& additionalHeaderData);
         void StoreData(std::ofstream& bin, Cache::CompressionType compressionType, const std::vector<u8>& uncompressedData, const std::vector<u8>& compressedData);
 
         [[nodiscard]] Cache::Header LoadHeader(std::ifstream& bin);
         [[nodiscard]] Cache::AssetHeader LoadAssetHeader(std::ifstream& bin, Cache::AssetType assetType);
-        [[nodiscard]] std::pair<Cache::AssetHeader, Cache::TextureOffsetTable> LoadAssetHeaderAndTextureOffsetTable(std::ifstream& bin, Cache::AssetType assetType);
+        [[nodiscard]] Cache::AdditionalHeaderData LoadAdditionalHeaderData(std::ifstream& bin, u64 additionalHeaderDataSize);
         [[nodiscard]] std::vector<u8> LoadAndDecompressData(std::ifstream& bin, const Cache::Header& header);
 
         void Invalidate(std::ifstream& bin, const std::string_view file);

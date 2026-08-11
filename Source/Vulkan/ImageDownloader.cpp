@@ -93,12 +93,11 @@ namespace Vk
                         .mipLevels       = 1,
                         .arrayLayers     = 1,
                         .faceCount       = 1,
-                        .format          = pendingDownload.image.format,
-                        .offsetTableSize = textureOffsetTableAsBytes.size(),
+                        .format          = pendingDownload.image.format
                     },
-                    .hash               = postDownloadCache.hash,
-                    .textureOffsetTable = textureOffsetTableAsBytes,
-                    .data               = readbackData,
+                    .hash                 = postDownloadCache.hash,
+                    .additionalHeaderData = textureOffsetTableAsBytes,
+                    .data                 = readbackData,
                 });
             });
 

@@ -16,13 +16,11 @@
 
 #include "Cache.h"
 
-#include "IBL/BRDF.h"
-#include "Renderer/IBL/IBLMaps.h"
 #include "Util/Files.h"
-#include "Util/Hash.h"
 #include "Util/Log.h"
 #include "Util/Span.h"
 #include "Util/Visitor.h"
+#include "Util/Assert.h"
 #include "Externals/LZ4.h"
 #include "Externals/ZSTD.h"
 
@@ -30,7 +28,7 @@ namespace Cache
 {
     constexpr auto CACHE_DIRECTORY      = "Cache/";
     constexpr u32  CACHE_HEADER_MAGIC   = 0x4B4F4F43;
-    constexpr u8   CACHE_HEADER_VERSION = 8;
+    constexpr u8   CACHE_HEADER_VERSION = 9;
 
     void InsertIntoCache(const Cache::Entry& entry)
     {
@@ -39,7 +37,7 @@ namespace Cache
         zone.NameFmt("%s", entry.cacheFile.c_str());
         #endif
 
-        const std::string path = CACHE_DIRECTORY + std::string(entry.cacheFile);
+        const std::string path = CACHE_DIRECTORY + entry.cacheFile;
 
         if (Files::CreateDirectory(CACHE_DIRECTORY))
         {
@@ -57,19 +55,20 @@ namespace Cache
 
         Detail::StoreHeader(bin, Cache::Header
         {
-            .magic                = CACHE_HEADER_MAGIC,
-            .version              = CACHE_HEADER_VERSION,
-            .assetType            = entry.assetType,
-            .compressionType      = entry.compressionType,
-            .headerSize           = Detail::GetAssetHeaderSize(entry.assetType),
-            .compressedDataSize   = compressedData.size(),
-            .uncompressedDataSize = entry.data.size(),
-            .hash                 = entry.hash
+            .magic                    = CACHE_HEADER_MAGIC,
+            .version                  = CACHE_HEADER_VERSION,
+            .assetType                = entry.assetType,
+            .compressionType          = entry.compressionType,
+            .headerSize               = Detail::GetAssetHeaderSize(entry.assetType),
+            .additionalHeaderDataSize = entry.additionalHeaderData.has_value() ? entry.additionalHeaderData->size() : 0,
+            .compressedDataSize       = compressedData.size(),
+            .uncompressedDataSize     = entry.data.size(),
+            .hash                     = entry.hash
         });
 
         Detail::StoreAssetHeader(bin, entry.assetHeader);
 
-        Detail::StoreTextureOffsetTable(bin, entry.textureOffsetTable);
+        Detail::StoreAdditionalHeaderData(bin, entry.additionalHeaderData);
 
         Detail::StoreData
         (
@@ -133,10 +132,10 @@ namespace Cache
 
         const auto assetHeader = Detail::LoadAssetHeader(bin, header.assetType);
 
-        const auto [validationResult, textureOffsetTableSize] = std::visit(Util::Visitor{
+        const bool validationResult = std::visit(Util::Visitor{
            [] (const Cache::TextureHeader& textureHeader)
            {
-               return std::make_pair(textureHeader.Validate(), textureHeader.offsetTableSize);
+               return textureHeader.Validate();
            }
         }, assetHeader);
 
@@ -153,7 +152,7 @@ namespace Cache
 
         const usize expectedFileSize = sizeof(Cache::Header) +
                                        header.headerSize +
-                                       textureOffsetTableSize +
+                                       header.additionalHeaderDataSize +
                                        expectedDataSize;
 
         if (Files::GetSize(path) != expectedFileSize)
@@ -184,15 +183,17 @@ namespace Cache
 
         const auto header = Detail::LoadHeader(bin);
 
-        const auto [assetHeader, textureOffsetTable] = Detail::LoadAssetHeaderAndTextureOffsetTable(bin, header.assetType);
+        const auto assetHeader = Detail::LoadAssetHeader(bin, header.assetType);
+
+        const auto additionalHeaderData = Detail::LoadAdditionalHeaderData(bin, header.additionalHeaderDataSize);
 
         const auto data = Detail::LoadAndDecompressData(bin, header);
 
         return Cache::Hit
         {
-            .assetHeader        = assetHeader,
-            .textureOffsetTable = textureOffsetTable,
-            .data               = data
+            .assetHeader          = assetHeader,
+            .additionalHeaderData = additionalHeaderData,
+            .data                 = data
         };
     }
     
@@ -211,8 +212,7 @@ namespace Cache
                mipLevels != 0 &&
                arrayLayers != 0 &&
                faceCount != 0 &&
-               format != VK_FORMAT_UNDEFINED &&
-               (offsetTableSize != 0 && offsetTableSize % sizeof(VkDeviceSize) == 0);
+               format != VK_FORMAT_UNDEFINED;
     }
 
     std::vector<u8> GenerateTextureOffsetTable(const std::span<const VkDeviceSize> offsets)
@@ -360,18 +360,18 @@ namespace Cache
             }, assetHeader);
         }
 
-        void StoreTextureOffsetTable(std::ofstream& bin, const Cache::TextureOffsetTable& textureOffsetTable)
+        void StoreAdditionalHeaderData(std::ofstream& bin, const Cache::AdditionalHeaderData& additionalHeaderData)
         {
             #ifdef ENGINE_PROFILE
             ZoneScoped;
             #endif
 
-            if (!textureOffsetTable.has_value())
+            if (!additionalHeaderData.has_value())
             {
                 return;
             }
 
-            bin.write(reinterpret_cast<const char*>(textureOffsetTable->data()), static_cast<std::streamsize>(textureOffsetTable->size()));
+            bin.write(reinterpret_cast<const char*>(additionalHeaderData->data()), static_cast<std::streamsize>(additionalHeaderData->size()));
         }
 
         void StoreData
@@ -438,27 +438,22 @@ namespace Cache
             return assetHeader;
         }
 
-        std::pair<Cache::AssetHeader, Cache::TextureOffsetTable>
-        LoadAssetHeaderAndTextureOffsetTable(std::ifstream& bin, Cache::AssetType assetType)
+        Cache::AdditionalHeaderData LoadAdditionalHeaderData(std::ifstream& bin, u64 additionalHeaderDataSize)
         {
             #ifdef ENGINE_PROFILE
             ZoneScoped;
             #endif
 
-            const auto assetHeader = LoadAssetHeader(bin, assetType);
-
-            Cache::TextureOffsetTable textureOffsetTable = std::nullopt;
-
-            if (assetType == AssetType::Texture)
+            if (additionalHeaderDataSize == 0)
             {
-                const auto textureHeader = std::get<Cache::TextureHeader>(assetHeader);
-
-                textureOffsetTable = std::vector<u8>(textureHeader.offsetTableSize);
-
-                bin.read(reinterpret_cast<char*>(textureOffsetTable->data()), static_cast<std::streamsize>(textureOffsetTable->size()));
+                return std::nullopt;
             }
 
-            return std::make_pair(assetHeader, textureOffsetTable);
+            Cache::AdditionalHeaderData additionalHeaderData = std::vector<u8>(additionalHeaderDataSize);
+
+            bin.read(reinterpret_cast<char*>(additionalHeaderData->data()), static_cast<std::streamsize>(additionalHeaderData->size()));
+
+            return additionalHeaderData;
         }
 
         std::vector<u8> LoadAndDecompressData(std::ifstream& bin, const Cache::Header& header)

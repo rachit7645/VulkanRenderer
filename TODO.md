@@ -13,7 +13,6 @@
 * Fog
 * Volumetric Lighting
 * IBL Generation Caching
-* Generic CPU -> GPU Uploader
 * Clustered Light Culling
 * Shadow Caching
 * Mesh Shaders
