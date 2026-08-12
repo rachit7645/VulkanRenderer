@@ -373,12 +373,10 @@ namespace Models
                     const auto normal          = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
                     const auto tangentWithSign = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
 
-                    const glm::vec3 unitNormal            = glm::normalize(normal);
-                    const glm::vec2 packedNormal          = Maths::PackOctahedron(unitNormal);
+                    const glm::vec2 packedNormal          = Maths::PackOctahedron(normal);
                     const u32       packedNormalQuantized = glm::packSnorm2x16(packedNormal);
 
-                    const glm::vec3 unitTangent       = glm::normalize(glm::vec3(tangentWithSign));
-                    const glm::vec2 octEncodedTangent = Maths::PackOctahedron(unitTangent);
+                    const glm::vec2 octEncodedTangent = Maths::PackOctahedron(glm::vec3(tangentWithSign));
 
                     const s32 packedTangentX = Maths::QuantizeSNorm(octEncodedTangent.x, 15);
                     const s32 packedTangentY = Maths::QuantizeSNorm(octEncodedTangent.y, 15);
