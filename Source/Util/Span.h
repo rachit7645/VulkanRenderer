@@ -23,10 +23,36 @@
 
 namespace Util
 {
-    template<typename T>
-    std::span<const u8> ToBytes(const std::span<const T> source)
+    template <typename>
+    struct IsSpanTrait : std::false_type{};
+
+    template <typename T, std::size_t N>
+    struct IsSpanTrait<std::span<T, N>> : std::true_type{};
+
+    template <typename T>
+    concept IsSpan = IsSpanTrait<std::remove_cvref_t<T>>::value;
+
+    template <typename T>
+    concept IsConstructibleToSpan = requires(T& t) { std::span(t); };
+
+    template<typename T, usize N>
+    std::span<const u8> ToBytes(const std::span<const T, N> source)
     {
         return std::span(reinterpret_cast<const u8*>(source.data()), source.size_bytes());
+    }
+
+    template <typename T>
+    requires (!IsSpan<T> && IsConstructibleToSpan<T>)
+    std::span<const u8> ToBytes(const T& source)
+    {
+        return Util::ToBytes(std::span(source));
+    }
+
+    template <typename T>
+    requires (!IsSpan<T> && !IsConstructibleToSpan<T>)
+    std::span<const u8> ToBytes(const T& source)
+    {
+        return Util::ToBytes(std::span<const T>(std::addressof(source), 1));
     }
 }
 

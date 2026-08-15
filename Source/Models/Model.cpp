@@ -20,6 +20,7 @@
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Util/Enum.h"
+#include "Util/Span.h"
 #include "Util/Types.h"
 #include "Util/Visitor.h"
 
@@ -27,6 +28,15 @@ namespace Models
 {
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
+
+    constexpr auto        DEFAULT_ALBEDO_NAME  = "Default/Albedo";
+    constexpr glm::u8vec4 DEFAULT_ALBEDO_VALUE = {255, 255, 255, 255};
+
+    constexpr auto        DEFAULT_NORMAL_NAME  = "Default/NormalMap";
+    constexpr glm::u8vec4 DEFAULT_NORMAL_VALUE = {128, 128, 255, 255};
+
+    constexpr auto        DEFAULT_AO_RGH_MTL_NAME  = "Default/RoughnessMetallic";
+    constexpr glm::u8vec4 DEFAULT_AO_RGH_MTL_VALUE = {255, 255, 0, 255};
 
     void Model::LoadFromFile(const Models::LoadFromFileInfo& loadInfo, const std::string_view filePath)
     {
@@ -439,9 +449,6 @@ namespace Models
                 ZoneScopedN("Load Albedo");
                 #endif
 
-                constexpr auto        DEFAULT_ALBEDO_NAME  = "Default/Albedo";
-                constexpr glm::u8vec4 DEFAULT_ALBEDO_VALUE = {255, 255, 255, 255};
-
                 const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
                 const auto textureInfo = LoadTexture
@@ -464,9 +471,6 @@ namespace Models
                 ZoneScopedN("Load Normal Map");
                 #endif
 
-                constexpr auto        DEFAULT_NORMAL_NAME  = "Default/NormalMap";
-                constexpr glm::u8vec4 DEFAULT_NORMAL_VALUE = {128, 128, 255, 255};
-
                 const auto& normalTexture = mat.normalTexture;
 
                 const auto textureInfo = LoadTexture
@@ -488,9 +492,6 @@ namespace Models
                 #ifdef ENGINE_PROFILE
                 ZoneScopedN("Load Roughness and Metallic");
                 #endif
-
-                constexpr auto        DEFAULT_AO_RGH_MTL_NAME  = "Default/RoughnessMetallic";
-                constexpr glm::u8vec4 DEFAULT_AO_RGH_MTL_VALUE = {255, 255, 0, 255};
 
                 const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
@@ -623,7 +624,7 @@ namespace Models
                         .width  = 1,
                         .height = 1,
                         .format = VK_FORMAT_R8G8B8A8_UNORM,
-                        .data   = std::vector(&defaultData[0], &defaultData[3])
+                        .data   = Util::ToBytes(defaultData)
                     }
                 }
             );

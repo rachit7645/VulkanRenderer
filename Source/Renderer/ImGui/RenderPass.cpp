@@ -535,7 +535,7 @@ namespace Renderer::DearImGui
                             .offset = {.x     = texture->UpdateRect.x, .y      = texture->UpdateRect.y},
                             .extent = {.width = texture->UpdateRect.w, .height = texture->UpdateRect.h}
                         },
-                        .data   = data
+                        .data   = std::move(data)
                     }
                 );
 

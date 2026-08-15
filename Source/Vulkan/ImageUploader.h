@@ -27,6 +27,7 @@
 #include "ImageView.h"
 #include "StagingPool.h"
 #include "Engine/DeletionQueue.h"
+#include "Util/MaybeOwnedData.h"
 
 namespace Vk
 {
@@ -57,17 +58,17 @@ namespace Vk
 
     struct ImageUploadMemory
     {
-        std::string     name = "Null/Memory";
-        std::vector<u8> data = {};
+        std::string          name = "Null/Memory";
+        Util::MaybeOwnedData data = {};
     };
 
     struct ImageUploadRawMemory
     {
-        std::string     name   = "Null/RawMemory";
-        u32             width  = 0;
-        u32             height = 0;
-        VkFormat        format = VK_FORMAT_UNDEFINED;
-        std::vector<u8> data   = {};
+        std::string          name   = "Null/RawMemory";
+        u32                  width  = 0;
+        u32                  height = 0;
+        VkFormat             format = VK_FORMAT_UNDEFINED;
+        Util::MaybeOwnedData data   = {};
     };
 
     struct ImageUploadCache
@@ -78,8 +79,8 @@ namespace Vk
 
     struct ImageUpdateRawMemory
     {
-        VkRect2D        update = {};
-        std::vector<u8> data   = {};
+        VkRect2D             update = {};
+        Util::MaybeOwnedData data   = {};
     };
 
     using ImageUploadSource = std::variant<ImageUploadFile, ImageUploadMemory, ImageUploadRawMemory, ImageUploadCache>;

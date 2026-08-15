@@ -17,7 +17,6 @@
 #ifndef VBAO_DISPATCH_H
 #define VBAO_DISPATCH_H
 
-#include "Vulkan/Context.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Objects/Samplers.h"
 #include "Vulkan/FramebufferManager.h"

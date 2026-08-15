@@ -16,12 +16,13 @@
 
 #include "RenderManager.h"
 
-#include "AO/VBAO/VBAO.h"
+#include "AO/VBAO/HilbertLookupTable.h"
 #include "Engine/Inputs.h"
 #include "Externals/ImGui.h"
 #include "Util/Log.h"
 #include "Util/Threads.h"
 #include "Util/Files.h"
+#include "Util/Span.h"
 #include "Vulkan/DebugUtils.h"
 #include "Vulkan/ImmediateSubmit.h"
 #include "Vulkan/Util.h"
@@ -2487,12 +2488,6 @@ namespace Renderer
             m_graphicsCmdBufferAllocator,
             [&] (const Vk::CommandBuffer& cmdBuffer)
             {
-                constexpr auto HILBERT_SEQUENCE = Maths::GenerateHilbertSequence<AO::VBAO::Occlusion::VBAO_HILBERT_LEVEL>();
-
-                // A bit hacky but what can you do :(
-                const auto* HILBERT_BEGIN = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + 0);
-                const auto* HILBERT_END   = reinterpret_cast<const u8*>(HILBERT_SEQUENCE.data() + HILBERT_SEQUENCE.size());
-
                 m_vbao.hilbertLUT = m_textureManager.LoadTexture
                 (
                     m_context.device,
@@ -2508,7 +2503,7 @@ namespace Renderer
                             .width  = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
                             .height = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
                             .format = VK_FORMAT_R16_UINT,
-                            .data   = std::vector(HILBERT_BEGIN, HILBERT_END)
+                            .data   = Util::ToBytes(AO::VBAO::HILBERT_SEQUENCE)
                         }
                     }
                 );
