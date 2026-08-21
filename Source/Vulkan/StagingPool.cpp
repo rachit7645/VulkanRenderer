@@ -35,10 +35,10 @@ namespace Vk
         for (auto iter = m_stagingBuffers.begin(); iter != m_stagingBuffers.end(); )
         {
             const bool isVirtualBlockEmpty            = vmaIsVirtualBlockEmpty(iter->virtualBlock);
-            const bool isAllocationsEmpty             = iter->allocations.empty();
+            const bool areAllocationsEmpty            = iter->allocations.empty();
             const bool hasAtLeastOneStagingBufferLeft = m_stagingBuffers.size() > 1;
 
-            if (isVirtualBlockEmpty && isAllocationsEmpty && hasAtLeastOneStagingBufferLeft)
+            if (isVirtualBlockEmpty && areAllocationsEmpty && hasAtLeastOneStagingBufferLeft)
             {
                 iter->buffer.Destroy(allocator);
                 
@@ -46,7 +46,7 @@ namespace Vk
 
                 iter = m_stagingBuffers.erase(iter);
             }
-            else if (isAllocationsEmpty ^ isVirtualBlockEmpty)
+            else if (areAllocationsEmpty ^ isVirtualBlockEmpty)
             {
                 Logger::Error
                 (
@@ -70,7 +70,7 @@ namespace Vk
         VkDeviceSize alignment
     )
     {
-        constexpr VkDeviceSize STAGING_BUFFER_SIZE = 128ull * 1024 * 1024;
+        constexpr VkDeviceSize STAGING_BUFFER_SIZE = Util::MiB(128ull);
 
         const std::scoped_lock lock{m_mutex};
 
@@ -124,9 +124,15 @@ namespace Vk
         }
 
         // Allocation attempt #2
-        if (const auto stagingMemoryBlock = TryToAllocate(size, alignment); stagingMemoryBlock.has_value())
         {
-            return stagingMemoryBlock.value();
+            auto& stagingBuffer = m_stagingBuffers.back();
+
+            const auto stagingMemoryBlock = stagingBuffer.Allocate(size, alignment);
+
+            if (stagingMemoryBlock.has_value())
+            {
+                return stagingMemoryBlock.value();
+            }
         }
 
         Logger::Error("Failed to allocate staging block! [Size={}] [Alignment={}]\n", size, alignment);
@@ -178,37 +184,11 @@ namespace Vk
     {
         for (auto& stagingBuffer : m_stagingBuffers)
         {
-            StagingPool::VirtualAllocation allocation = {};
+            const auto allocation = stagingBuffer.Allocate(size, alignment);
 
-            const VmaVirtualAllocationCreateInfo createInfo =
+            if (allocation.has_value())
             {
-                .size      = size,
-                .alignment = alignment,
-                .flags     = VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
-                .pUserData = nullptr
-            };
-
-            const VkResult result = vmaVirtualAllocate
-            (
-                stagingBuffer.virtualBlock,
-                &createInfo,
-                &allocation.handle,
-                &allocation.offset
-            );
-
-            if (result == VK_SUCCESS)
-            {
-                stagingBuffer.allocations.emplace_back(allocation);
-
-                return Vk::StagingMemoryBlock
-                {
-                    .buffer      = stagingBuffer.buffer.handle,
-                    .hostAddress = static_cast<u8*>(stagingBuffer.buffer.hostAddress) + allocation.offset,
-                    .memoryBlock = Vk::MemoryBlock{
-                        .offset = allocation.offset,
-                        .size   = size
-                    }
-                };
+                return allocation;
             }
         }
 
@@ -233,5 +213,43 @@ namespace Vk
             stagingBuffer.buffer.Destroy(allocator);
             vmaDestroyVirtualBlock(stagingBuffer.virtualBlock);
         }
+    }
+
+    std::optional<StagingMemoryBlock> StagingPool::StagingBuffer::Allocate(VkDeviceSize size, VkDeviceSize alignment)
+    {
+        StagingPool::VirtualAllocation allocation = {};
+
+        const VmaVirtualAllocationCreateInfo createInfo =
+        {
+            .size      = size,
+            .alignment = alignment,
+            .flags     = VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
+            .pUserData = nullptr
+        };
+
+        const VkResult result = vmaVirtualAllocate
+        (
+            virtualBlock,
+            &createInfo,
+            &allocation.handle,
+            &allocation.offset
+        );
+
+        if (result == VK_SUCCESS)
+        {
+            allocations.emplace_back(allocation);
+
+            return Vk::StagingMemoryBlock
+            {
+                .buffer      = buffer.handle,
+                .hostAddress = static_cast<u8*>(buffer.hostAddress) + allocation.offset,
+                .memoryBlock = Vk::MemoryBlock{
+                    .offset = allocation.offset,
+                    .size   = size
+                }
+            };
+        }
+
+        return std::nullopt;
     }
 }

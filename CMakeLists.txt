@@ -121,6 +121,7 @@ add_executable(VulkanRenderer
     Source/Vulkan/SamplerID.cpp
     Source/Vulkan/TextureID.cpp
     Source/Vulkan/VertexBuffer.cpp
+    Source/Vulkan/ScratchPool.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
     Source/Renderer/RenderConfig.cpp

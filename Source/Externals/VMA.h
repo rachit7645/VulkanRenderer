@@ -37,6 +37,8 @@
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
 
+#define VMA_ASSERT(expression) ENGINE_ASSERT(expression)
+
 #define VMA_ASSERT_LEAK(expression) ENGINE_ASSERT(expression)
 
 #include "vma/include/vk_mem_alloc.h"

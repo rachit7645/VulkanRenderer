@@ -163,7 +163,7 @@ namespace Renderer
         Vk::PipelineManager    m_pipelineManager;
         Vk::ImageDownloader    m_imageDownloader;
 
-        std::optional<Vk::AccelerationStructure> m_accelerationStructure;
+        std::optional<Vk::AccelerationStructure> m_accelerationStructure = std::nullopt;
 
         Objects::Samplers m_samplers;
 

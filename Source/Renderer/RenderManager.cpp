@@ -2242,6 +2242,27 @@ namespace Renderer
                     ImGui::Text("Image Count  | %llu",     m_swapchain.images.size());
                 }
 
+                if (ImGui::CollapsingHeader("Properties"))
+                {
+                    ImGui::Text("Max Sampler Anisotropy | %.2f", m_context.properties.maxSamplerAnisotropy);
+
+                    ImGui::Separator();
+
+                    ImGui::Text("Max Per Stage Descriptor Update After Bind Samplers       | %u", m_context.properties.maxPerStageDescriptorUpdateAfterBindSamplers);
+                    ImGui::Text("Max Per Stage Descriptor Update After Bind Sampled Images | %u", m_context.properties.maxPerStageDescriptorUpdateAfterBindSampledImages);
+                    ImGui::Text("Max Per Stage Descriptor Update After Bind Storage Images | %u", m_context.properties.maxPerStageDescriptorUpdateAfterBindStorageImages);
+
+                    ImGui::Separator();
+
+                    ImGui::Text("Min Acceleration Structure Scratch Offset Alignment | %u", m_context.properties.minAccelerationStructureScratchOffsetAlignment);
+
+                    ImGui::Separator();
+
+                    ImGui::Text("Shader Group Handle Size      | %u", m_context.properties.shaderGroupHandleSize);
+                    ImGui::Text("Shader Group Base Alignment   | %u", m_context.properties.shaderGroupBaseAlignment);
+                    ImGui::Text("Shader Group Handle Alignment | %u", m_context.properties.shaderGroupHandleAlignment);
+                }
+
                 ImGui::EndMenu();
             }
 
