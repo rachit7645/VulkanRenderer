@@ -118,6 +118,8 @@ namespace Vk
             buffer.Destroy(allocator);
         });
 
+        Vk::ScratchPool scratchPool = {};
+
         auto blases         = Scratch::CreateVector<VkAccelerationStructureKHR>(scratchAllocator);
         auto buffers        = Scratch::CreateVector<Vk::Buffer>(scratchAllocator);
         auto blasBuildInfos = Scratch::CreateVector<VkAccelerationStructureBuildGeometryInfoKHR>(scratchAllocator);
@@ -236,7 +238,7 @@ namespace Vk
                     "Failed to create BLAS!"
                 );
 
-                const VkDeviceAddress scratchAddress = m_scratchPool.Allocate
+                const VkDeviceAddress scratchAddress = scratchPool.Allocate
                 (
                     context.device,
                     context.allocator,
@@ -327,14 +329,12 @@ namespace Vk
             Vk::SetDebugName(context.device, blas.buffer.handle, fmt::format("BLASBuffer/{}", i));
         }
 
-        m_initialBLASBuildFrameIndex = frameIndex;
-
-        deletionQueue.Push([allocator = context.allocator, scratchPool = m_scratchPool] mutable
+        deletionQueue.Push([allocator = context.allocator, scratchPool] mutable
         {
             scratchPool.Destroy(allocator);
         });
 
-        m_scratchPool = {};
+        m_initialBLASBuildFrameIndex = frameIndex;
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -834,7 +834,5 @@ namespace Vk
         {
             vkDestroyQueryPool(device, m_compactionQueryPool, nullptr);
         }
-
-        m_scratchPool.Destroy(allocator);
     }
 }

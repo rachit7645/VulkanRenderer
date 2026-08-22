@@ -79,8 +79,6 @@ namespace Vk
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_instanceBuffers = {};
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_scratchBuffers  = {};
 
-        Vk::ScratchPool m_scratchPool = {};
-
         VkQueryPool m_compactionQueryPool        = VK_NULL_HANDLE;
         usize       m_initialBLASBuildFrameIndex = std::numeric_limits<usize>::max();
     };

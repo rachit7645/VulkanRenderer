@@ -102,19 +102,37 @@ namespace Models
         }
         #endif
 
+        Model::Futures meshFutures = {};
+
         ProcessScenes
         (
             loadInfo,
             assetDirectory,
-            asset.get()
+            asset.get(),
+            meshFutures
         );
+
+        meshes.reserve(meshFutures.size());
+
+        for (auto& future : meshFutures)
+        {
+            if (!future.valid())
+            {
+                Logger::Error("{}\n", "Future is not valid!");
+            }
+
+            future.wait();
+
+            meshes.emplace_back(future.get());
+        }
     }
 
     void Model::ProcessScenes
     (
         const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
-        const fastgltf::Asset& asset
+        const fastgltf::Asset& asset,
+        Model::Futures& meshFutures
     )
     {
         #ifdef ENGINE_PROFILE
@@ -131,7 +149,8 @@ namespace Models
                     directory,
                     asset,
                     nodeIndex,
-                    glm::identity<glm::mat4>()
+                    glm::identity<glm::mat4>(),
+                    meshFutures
                 );
             }
         }
@@ -143,7 +162,8 @@ namespace Models
         const std::string_view directory,
         const fastgltf::Asset& asset,
         usize nodeIndex,
-        glm::mat4 nodeMatrix
+        glm::mat4 nodeMatrix,
+        Model::Futures& meshFutures
     )
     {
         #ifdef ENGINE_PROFILE
@@ -162,7 +182,8 @@ namespace Models
                 directory,
                 asset,
                 asset.meshes[node.meshIndex.value()],
-                nodeMatrix
+                nodeMatrix,
+                meshFutures
             );
         }
 
@@ -179,367 +200,8 @@ namespace Models
                 directory,
                 asset,
                 child,
-                nodeMatrix
-            );
-        }
-    }
-
-    void Model::LoadMesh
-    (
-        const Models::LoadFromFileInfo& loadInfo,
-        const std::string_view directory,
-        const fastgltf::Asset& asset,
-        const fastgltf::Mesh& mesh,
-        const glm::mat4& nodeMatrix
-    )
-    {
-        #ifdef ENGINE_PROFILE
-        ZoneScoped;
-        #endif
-
-        for (const auto& primitive : mesh.primitives)
-        {
-            if (primitive.type != fastgltf::PrimitiveType::Triangles)
-            {
-                Logger::Warning
-                (
-                    "Unsupported primitive type! [Type={}]\n",
-                    static_cast<std::underlying_type_t<fastgltf::PrimitiveType>>(primitive.type)
-                );
-
-                continue;
-            }
-
-            // Geometry data
-            GPU::SurfaceInfo surfaceInfo = {};
-            GPU::AABB        aabb        = {};
-
-            // Indices
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Indices");
-                #endif
-
-                if (!primitive.indicesAccessor.has_value())
-                {
-                    Logger::Error("{}\n", "Primitive does not contain indices accessor!");
-                }
-
-                const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
-
-                if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
-                {
-                    Logger::Error
-                    (
-                        "Invalid indices accessor type! [AccessorType={}]\n",
-                        static_cast<std::underlying_type_t<fastgltf::AccessorType>>(indicesAccessor.type)
-                    );
-                }
-
-                const auto [data, info] = loadInfo.geometryBuffer.indexBuffer.Allocate
-                (
-                    loadInfo.device,
-                    loadInfo.allocator,
-                    indicesAccessor.count,
-                    loadInfo.stagingPool,
-                    loadInfo.deletionQueue
-                );
-
-                surfaceInfo.indexInfo = info;
-
-                fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data);
-            }
-
-            Vk::VertexBuffer::Allocation vertexAllocation = {};
-
-            // Positions
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Positions");
-                #endif
-
-                const auto& positionAccessor = fastgltf::GetAccessor
-                (
-                    asset,
-                    primitive,
-                    "POSITION",
-                    fastgltf::AccessorType::Vec3
-                );
-
-                vertexAllocation = loadInfo.geometryBuffer.vertexBuffer.Allocate
-                (
-                    positionAccessor.count,
-                    loadInfo.device,
-                    loadInfo.allocator,
-                    loadInfo.stagingPool,
-                    loadInfo.deletionQueue
-                );
-
-                surfaceInfo.vertexInfo = vertexAllocation.info;
-
-                aabb.min = glm::vec3(std::numeric_limits<f32>::max());
-                aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
-
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&] (const GPU::Position& position, usize index)
-                {
-                    aabb.min = glm::min(aabb.min, position);
-                    aabb.max = glm::max(aabb.max, position);
-
-                    std::memcpy(&vertexAllocation.position[index], &position, sizeof(GPU::Position));
-                });
-            }
-
-            const auto& normalAccessor = fastgltf::GetAccessor
-            (
-                asset,
-                primitive,
-                "NORMAL",
-                fastgltf::AccessorType::Vec3
-            );
-
-            // UV Maps
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load UVs");
-                #endif
-
-                const auto uv0AccessorIndex = fastgltf::GetUVAccessorIndex
-                (
-                    asset,
-                    primitive,
-                    "TEXCOORD_0"
-                );
-
-                const auto uv1AccessorIndex = fastgltf::GetUVAccessorIndex
-                (
-                    asset,
-                    primitive,
-                    "TEXCOORD_1"
-                );
-
-                if (uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
-                {
-                    const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
-                    const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
-
-                    for (usize i = 0; i < normalAccessor.count; ++i)
-                    {
-                        const glm::f16vec2 uv0 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv0Accessor, i));
-                        const glm::f16vec2 uv1 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv1Accessor, i));
-
-                        const GPU::UV uvs = {.uv = {uv0, uv1}};
-
-                        std::memcpy(&vertexAllocation.uv[i], &uvs, sizeof(GPU::UV));
-                    }
-                }
-                else if (uv0AccessorIndex.has_value() && !uv1AccessorIndex.has_value())
-                {
-                    const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
-
-                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv0Accessor, [&] (const glm::vec2& uv, usize index)
-                    {
-                        const glm::f16vec2 uv0 = glm::glm_cast(uv);
-
-                        const GPU::UV uvs = {.uv = {uv0, uv0}};
-
-                        std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
-                    });
-                }
-                else if (!uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
-                {
-                    const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
-
-                    fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv1Accessor, [&] (const glm::vec2& uv, usize index)
-                    {
-                        const glm::f16vec2 uv1 = glm::glm_cast(uv);
-
-                        const GPU::UV uvs = {.uv = {uv1, uv1}};
-
-                        std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
-                    });
-                }
-                else
-                {
-                    std::memset(&vertexAllocation.uv[0], 0, sizeof(GPU::UV) * normalAccessor.count);
-                }
-            }
-
-            // Vertices
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Tangents and Normals");
-                #endif
-
-                const auto& tangentAccessor = fastgltf::GetAccessor
-                (
-                    asset,
-                    primitive,
-                    "TANGENT",
-                    fastgltf::AccessorType::Vec4
-                );
-
-                for (usize i = 0; i < normalAccessor.count; ++i)
-                {
-                    const auto normal          = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
-                    const auto tangentWithSign = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
-
-                    const glm::vec2 packedNormal          = Maths::PackOctahedron(normal);
-                    const u32       packedNormalQuantized = glm::packSnorm2x16(packedNormal);
-
-                    const glm::vec2 octEncodedTangent = Maths::PackOctahedron(glm::vec3(tangentWithSign));
-
-                    const s32 packedTangentX = Maths::QuantizeSNorm(octEncodedTangent.x, 15);
-                    const s32 packedTangentY = Maths::QuantizeSNorm(octEncodedTangent.y, 15);
-                    const s32 bitangentSign  = tangentWithSign.w >= 1.0f ? 1 : 0;
-
-                    u32 packedTangentQuantized = 0;
-
-                    packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentX), 0,  15);
-                    packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentY), 15, 15);
-                    packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(bitangentSign),  30, 1);
-
-                    const auto vertex = GPU::Vertex
-                    {
-                        .normal  = packedNormalQuantized,
-                        .tangent = packedTangentQuantized
-                    };
-
-                    std::memcpy(&vertexAllocation.normalAndTangent[i], &vertex, sizeof(GPU::Vertex));
-                }
-            }
-
-            if (!primitive.materialIndex.has_value())
-            {
-                Logger::Error("{}\n", "No material in primitive!");
-            }
-
-            Models::Material material = {};
-
-            const auto& mat = asset.materials[primitive.materialIndex.value()];
-
-            // Material Factors
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Material Factors");
-                #endif
-
-                material.albedoFactor     = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
-                material.roughnessFactor  = mat.pbrData.roughnessFactor;
-                material.metallicFactor   = mat.pbrData.metallicFactor;
-                material.emissiveFactor   = glm::fastgltf_cast(mat.emissiveFactor);
-                material.emissiveStrength = mat.emissiveStrength;
-                material.ior              = mat.ior;
-
-                if (mat.doubleSided)
-                {
-                    material.flags |= GPU::MaterialFlags::DoubleSided;
-                }
-
-                // TODO: Add proper support for AlphaMode::Blend
-                if (mat.alphaMode == fastgltf::AlphaMode::Mask || mat.alphaMode == fastgltf::AlphaMode::Blend)
-                {
-                    material.flags       |= GPU::MaterialFlags::AlphaMasked;
-                    material.alphaCutOff  = mat.alphaCutoff;
-                }
-            }
-
-            // Albedo
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Albedo");
-                #endif
-
-                const auto& baseColorTexture = mat.pbrData.baseColorTexture;
-
-                const auto textureInfo = LoadTexture
-                (
-                    loadInfo,
-                    directory,
-                    asset,
-                    baseColorTexture,
-                    DEFAULT_ALBEDO_NAME,
-                    DEFAULT_ALBEDO_VALUE
-                );
-
-                material.albedoID      = textureInfo.id;
-                material.albedoUVMapID = textureInfo.uvMapIndex;
-            }
-
-            // Normal
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Normal Map");
-                #endif
-
-                const auto& normalTexture = mat.normalTexture;
-
-                const auto textureInfo = LoadTexture
-                (
-                    loadInfo,
-                    directory,
-                    asset,
-                    normalTexture,
-                    DEFAULT_NORMAL_NAME,
-                    DEFAULT_NORMAL_VALUE
-                );
-
-                material.normalID      = textureInfo.id;
-                material.normalUVMapID = textureInfo.uvMapIndex;
-            }
-
-            // AO + Roughness + Metallic
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Roughness and Metallic");
-                #endif
-
-                const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
-
-                const auto textureInfo = LoadTexture
-                (
-                    loadInfo,
-                    directory,
-                    asset,
-                    metallicRoughnessTexture,
-                    DEFAULT_AO_RGH_MTL_NAME,
-                    DEFAULT_AO_RGH_MTL_VALUE
-                );
-
-                material.aoRghMtlID      = textureInfo.id;
-                material.aoRghMtlUVMapID = textureInfo.uvMapIndex;
-            }
-
-            // Emissive
-            {
-                #ifdef ENGINE_PROFILE
-                ZoneScopedN("Load Emissive");
-                #endif
-
-                constexpr auto        DEFAULT_EMISSIVE_NAME  = "Default/Emissive";
-                constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {255, 255, 255, 255};
-
-                const auto& emissiveTexture = mat.emissiveTexture;
-
-                const auto textureInfo = LoadTexture
-                (
-                    loadInfo,
-                    directory,
-                    asset,
-                    emissiveTexture,
-                    DEFAULT_EMISSIVE_NAME,
-                    DEFAULT_EMISSIVE_VALUE
-                );
-
-                material.emissiveID      = textureInfo.id;
-                material.emissiveUVMapID = textureInfo.uvMapIndex;
-            }
-
-            meshes.emplace_back
-            (
-                surfaceInfo,
-                material,
                 nodeMatrix,
-                aabb
+                meshFutures
             );
         }
     }
@@ -548,9 +210,9 @@ namespace Models
     {
         switch (light.type)
         {
-        // Only one directional light is supported
-        // That light is reserved by Engine::Scene
-        // So we can't add any others
+            // Only one directional light is supported
+            // That light is reserved by Engine::Scene
+            // So we can't add any others
         case fastgltf::LightType::Directional:
             break;
 
@@ -589,6 +251,393 @@ namespace Models
         default:
             Logger::Error("{}\n", "Invalid light type!");
         }
+    }
+
+    void Model::LoadMesh
+    (
+        const Models::LoadFromFileInfo& loadInfo,
+        const std::string_view directory,
+        const fastgltf::Asset& asset,
+        const fastgltf::Mesh& mesh,
+        const glm::mat4& nodeMatrix,
+        Model::Futures& meshFutures
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        for (const auto& primitive : mesh.primitives)
+        {
+            if (primitive.type != fastgltf::PrimitiveType::Triangles)
+            {
+                Logger::Warning
+                (
+                    "Unsupported primitive type! [Type={}]\n",
+                    static_cast<std::underlying_type_t<fastgltf::PrimitiveType>>(primitive.type)
+                );
+
+                continue;
+            }
+
+            meshFutures.emplace_back(loadInfo.executor.async([loadInfo, directory, &asset, &primitive, nodeMatrix] ()
+            {
+                return Model::LoadPrimitive
+                (
+                    loadInfo,
+                    directory,
+                    asset,
+                    primitive,
+                    nodeMatrix
+                );
+            }));
+        }
+    }
+
+    Models::Mesh Model::LoadPrimitive
+    (
+        const Models::LoadFromFileInfo& loadInfo,
+        const std::string_view directory,
+        const fastgltf::Asset& asset,
+        const fastgltf::Primitive& primitive,
+        const glm::mat4& nodeMatrix
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        // Geometry data
+        GPU::SurfaceInfo surfaceInfo = {};
+        GPU::AABB        aabb        = {};
+
+        // Indices
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Indices");
+            #endif
+
+            if (!primitive.indicesAccessor.has_value())
+            {
+                Logger::Error("{}\n", "Primitive does not contain indices accessor!");
+            }
+
+            const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
+
+            if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
+            {
+                Logger::Error
+                (
+                    "Invalid indices accessor type! [AccessorType={}]\n",
+                    static_cast<std::underlying_type_t<fastgltf::AccessorType>>(indicesAccessor.type)
+                );
+            }
+
+            const auto [data, info] = loadInfo.geometryBuffer.indexBuffer.Allocate
+            (
+                loadInfo.device,
+                loadInfo.allocator,
+                indicesAccessor.count,
+                loadInfo.stagingPool,
+                loadInfo.deletionQueue
+            );
+
+            surfaceInfo.indexInfo = info;
+
+            fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data);
+        }
+
+        Vk::VertexBuffer::Allocation vertexAllocation = {};
+
+        // Positions
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Positions");
+            #endif
+
+            const auto& positionAccessor = fastgltf::GetAccessor
+            (
+                asset,
+                primitive,
+                "POSITION",
+                fastgltf::AccessorType::Vec3
+            );
+
+            vertexAllocation = loadInfo.geometryBuffer.vertexBuffer.Allocate
+            (
+                positionAccessor.count,
+                loadInfo.device,
+                loadInfo.allocator,
+                loadInfo.stagingPool,
+                loadInfo.deletionQueue
+            );
+
+            surfaceInfo.vertexInfo = vertexAllocation.info;
+
+            aabb.min = glm::vec3(std::numeric_limits<f32>::max());
+            aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
+
+            fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&] (const GPU::Position& position, usize index)
+            {
+                aabb.min = glm::min(aabb.min, position);
+                aabb.max = glm::max(aabb.max, position);
+
+                std::memcpy(&vertexAllocation.position[index], &position, sizeof(GPU::Position));
+            });
+        }
+
+        const auto& normalAccessor = fastgltf::GetAccessor
+        (
+            asset,
+            primitive,
+            "NORMAL",
+            fastgltf::AccessorType::Vec3
+        );
+
+        // UV Maps
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load UVs");
+            #endif
+
+            const auto uv0AccessorIndex = fastgltf::GetUVAccessorIndex
+            (
+                asset,
+                primitive,
+                "TEXCOORD_0"
+            );
+
+            const auto uv1AccessorIndex = fastgltf::GetUVAccessorIndex
+            (
+                asset,
+                primitive,
+                "TEXCOORD_1"
+            );
+
+            if (uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
+            {
+                const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
+                const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
+
+                for (usize i = 0; i < normalAccessor.count; ++i)
+                {
+                    const glm::f16vec2 uv0 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv0Accessor, i));
+                    const glm::f16vec2 uv1 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv1Accessor, i));
+
+                    const GPU::UV uvs = {.uv = {uv0, uv1}};
+
+                    std::memcpy(&vertexAllocation.uv[i], &uvs, sizeof(GPU::UV));
+                }
+            }
+            else if (uv0AccessorIndex.has_value() && !uv1AccessorIndex.has_value())
+            {
+                const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
+
+                fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv0Accessor, [&] (const glm::vec2& uv, usize index)
+                {
+                    const glm::f16vec2 uv0 = glm::glm_cast(uv);
+
+                    const GPU::UV uvs = {.uv = {uv0, uv0}};
+
+                    std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
+                });
+            }
+            else if (!uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
+            {
+                const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
+
+                fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv1Accessor, [&] (const glm::vec2& uv, usize index)
+                {
+                    const glm::f16vec2 uv1 = glm::glm_cast(uv);
+
+                    const GPU::UV uvs = {.uv = {uv1, uv1}};
+
+                    std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
+                });
+            }
+            else
+            {
+                std::memset(&vertexAllocation.uv[0], 0, sizeof(GPU::UV) * normalAccessor.count);
+            }
+        }
+
+        // Vertices
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Tangents and Normals");
+            #endif
+
+            const auto& tangentAccessor = fastgltf::GetAccessor
+            (
+                asset,
+                primitive,
+                "TANGENT",
+                fastgltf::AccessorType::Vec4
+            );
+
+            for (usize i = 0; i < normalAccessor.count; ++i)
+            {
+                const auto normal          = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
+                const auto tangentWithSign = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
+
+                const glm::vec2 packedNormal          = Maths::PackOctahedron(normal);
+                const u32       packedNormalQuantized = glm::packSnorm2x16(packedNormal);
+
+                const glm::vec2 octEncodedTangent = Maths::PackOctahedron(glm::vec3(tangentWithSign));
+
+                const s32 packedTangentX = Maths::QuantizeSNorm(octEncodedTangent.x, 15);
+                const s32 packedTangentY = Maths::QuantizeSNorm(octEncodedTangent.y, 15);
+                const s32 bitangentSign  = tangentWithSign.w >= 1.0f ? 1 : 0;
+
+                u32 packedTangentQuantized = 0;
+
+                packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentX), 0,  15);
+                packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentY), 15, 15);
+                packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(bitangentSign),  30, 1);
+
+                const auto vertex = GPU::Vertex
+                {
+                    .normal  = packedNormalQuantized,
+                    .tangent = packedTangentQuantized
+                };
+
+                std::memcpy(&vertexAllocation.normalAndTangent[i], &vertex, sizeof(GPU::Vertex));
+            }
+        }
+
+        if (!primitive.materialIndex.has_value())
+        {
+            Logger::Error("{}\n", "No material in primitive!");
+        }
+
+        Models::Material material = {};
+
+        const auto& mat = asset.materials[primitive.materialIndex.value()];
+
+        // Material Factors
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Material Factors");
+            #endif
+
+            material.albedoFactor     = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
+            material.roughnessFactor  = mat.pbrData.roughnessFactor;
+            material.metallicFactor   = mat.pbrData.metallicFactor;
+            material.emissiveFactor   = glm::fastgltf_cast(mat.emissiveFactor);
+            material.emissiveStrength = mat.emissiveStrength;
+            material.ior              = mat.ior;
+
+            if (mat.doubleSided)
+            {
+                material.flags |= GPU::MaterialFlags::DoubleSided;
+            }
+
+            // TODO: Add proper support for AlphaMode::Blend
+            if (mat.alphaMode == fastgltf::AlphaMode::Mask || mat.alphaMode == fastgltf::AlphaMode::Blend)
+            {
+                material.flags       |= GPU::MaterialFlags::AlphaMasked;
+                material.alphaCutOff  = mat.alphaCutoff;
+            }
+        }
+
+        // Albedo
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Albedo");
+            #endif
+
+            const auto& baseColorTexture = mat.pbrData.baseColorTexture;
+
+            const auto textureInfo = LoadTexture
+            (
+                loadInfo,
+                directory,
+                asset,
+                baseColorTexture,
+                DEFAULT_ALBEDO_NAME,
+                DEFAULT_ALBEDO_VALUE
+            );
+
+            material.albedoID      = textureInfo.id;
+            material.albedoUVMapID = textureInfo.uvMapIndex;
+        }
+
+        // Normal
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Normal Map");
+            #endif
+
+            const auto& normalTexture = mat.normalTexture;
+
+            const auto textureInfo = LoadTexture
+            (
+                loadInfo,
+                directory,
+                asset,
+                normalTexture,
+                DEFAULT_NORMAL_NAME,
+                DEFAULT_NORMAL_VALUE
+            );
+
+            material.normalID      = textureInfo.id;
+            material.normalUVMapID = textureInfo.uvMapIndex;
+        }
+
+        // AO + Roughness + Metallic
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Roughness and Metallic");
+            #endif
+
+            const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
+
+            const auto textureInfo = LoadTexture
+            (
+                loadInfo,
+                directory,
+                asset,
+                metallicRoughnessTexture,
+                DEFAULT_AO_RGH_MTL_NAME,
+                DEFAULT_AO_RGH_MTL_VALUE
+            );
+
+            material.aoRghMtlID      = textureInfo.id;
+            material.aoRghMtlUVMapID = textureInfo.uvMapIndex;
+        }
+
+        // Emissive
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Emissive");
+            #endif
+
+            constexpr auto        DEFAULT_EMISSIVE_NAME  = "Default/Emissive";
+            constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {255, 255, 255, 255};
+
+            const auto& emissiveTexture = mat.emissiveTexture;
+
+            const auto textureInfo = LoadTexture
+            (
+                loadInfo,
+                directory,
+                asset,
+                emissiveTexture,
+                DEFAULT_EMISSIVE_NAME,
+                DEFAULT_EMISSIVE_VALUE
+            );
+
+            material.emissiveID      = textureInfo.id;
+            material.emissiveUVMapID = textureInfo.uvMapIndex;
+        }
+
+        return Models::Mesh
+        {
+            .surfaceInfo = surfaceInfo,
+            .material    = material,
+            .transform   = nodeMatrix,
+            .aabb        = aabb
+        };
     }
 
     template<typename T>
