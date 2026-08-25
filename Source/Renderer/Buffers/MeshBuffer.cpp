@@ -25,9 +25,9 @@ namespace Renderer::Buffers
 {
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < m_meshBuffers.size(); ++i)
+        for (usize i = 0; i < meshBuffers.size(); ++i)
         {
-            m_meshBuffers[i] = Vk::Buffer
+            meshBuffers[i] = Vk::Buffer
             (
                 device,
                 allocator,
@@ -39,7 +39,7 @@ namespace Renderer::Buffers
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Vk::SetDebugName(device, m_meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
+            Vk::SetDebugName(device, meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
 
         for (usize i = 0; i < m_instanceBuffers.size(); ++i)
@@ -94,6 +94,7 @@ namespace Renderer::Buffers
 
     void MeshBuffer::LoadMeshes
     (
+        usize FIF,
         usize frameIndex,
         VmaAllocator allocator,
         const Models::ModelManager& modelManager,
@@ -162,7 +163,7 @@ namespace Renderer::Buffers
             }
         }
 
-        const auto& meshBuffer     = GetCurrentMeshBuffer(frameIndex);
+        const auto& meshBuffer     = meshBuffers[FIF];
         const auto& instanceBuffer = GetCurrentInstanceBuffer(frameIndex);
 
         const VkDeviceSize meshCopySize     = meshes.size()    * sizeof(GPU::Mesh);
@@ -214,16 +215,6 @@ namespace Renderer::Buffers
         }
     }
 
-    const Vk::Buffer& MeshBuffer::GetCurrentMeshBuffer(usize frameIndex) const
-    {
-        return m_meshBuffers[frameIndex % m_meshBuffers.size()];
-    }
-
-    const Vk::Buffer& MeshBuffer::GetPreviousMeshBuffer(usize frameIndex) const
-    {
-        return m_meshBuffers[(frameIndex + m_meshBuffers.size() - 1) % m_meshBuffers.size()];
-    }
-
     const Vk::Buffer& MeshBuffer::GetCurrentInstanceBuffer(usize frameIndex) const
     {
         return m_instanceBuffers[frameIndex % m_instanceBuffers.size()];
@@ -236,7 +227,7 @@ namespace Renderer::Buffers
 
     void MeshBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : m_meshBuffers)
+        for (auto& buffer : meshBuffers)
         {
             buffer.Destroy(allocator);
         }

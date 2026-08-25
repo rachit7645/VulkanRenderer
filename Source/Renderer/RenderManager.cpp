@@ -2084,6 +2084,7 @@ namespace Renderer
 
         m_meshBuffer.LoadMeshes
         (
+            m_FIF,
             m_frameIndex,
             m_context.allocator,
             m_modelManager,

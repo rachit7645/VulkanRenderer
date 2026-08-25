@@ -40,6 +40,7 @@ namespace Renderer::Culling
 
     void Dispatch::Execute
     (
+        usize FIF,
         usize frameIndex,
         const glm::mat4& projectionView,
         const Vk::CommandBuffer& cmdBuffer,
@@ -327,7 +328,7 @@ namespace Renderer::Culling
 
         const auto constants = Frustum::Constants
         {
-            .Meshes                                      = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+            .Meshes                                      = meshBuffer.meshBuffers[FIF].deviceAddress,
             .Instances                                   = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
             .CulledOpaqueDrawCalls                       = indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.deviceAddress,
             .CulledOpaqueInstanceIndices                 = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,

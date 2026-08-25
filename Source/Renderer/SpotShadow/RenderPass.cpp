@@ -188,6 +188,7 @@ namespace Renderer::SpotShadow
 
             culling.Execute
             (
+                FIF,
                 frameIndex,
                 sceneBuffer.shadowedSpotLights[i].matrix,
                 cmdBuffer,
@@ -247,7 +248,6 @@ namespace Renderer::SpotShadow
                     const auto constants = Opaque::Constants
                     {
                         .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                        .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                         .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
                         .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress,
@@ -284,7 +284,6 @@ namespace Renderer::SpotShadow
                     const auto constants = Opaque::Constants
                     {
                         .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                        .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
                         .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                         .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress,
@@ -331,7 +330,7 @@ namespace Renderer::SpotShadow
                     const auto constants = AlphaMasked::Constants
                     {
                         .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                        .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                        .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                         .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
                         .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
@@ -370,7 +369,7 @@ namespace Renderer::SpotShadow
                     const auto constants = AlphaMasked::Constants
                     {
                         .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                        .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                        .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                         .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                         .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                         .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,

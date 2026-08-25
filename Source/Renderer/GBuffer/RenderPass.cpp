@@ -641,8 +641,7 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
@@ -680,8 +679,7 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
@@ -729,8 +727,7 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
@@ -768,8 +765,7 @@ namespace Renderer::GBuffer
                 const auto constants = GBuffer::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .CurrentMeshes       = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
-                    .PreviousMeshes      = meshBuffer.GetPreviousMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .CurrentInstances    = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .PreviousInstances   = meshBuffer.GetPreviousInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,

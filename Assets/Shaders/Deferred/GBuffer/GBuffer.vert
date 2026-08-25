@@ -44,11 +44,10 @@ layout(location = 0) out VertexData
 
 void main()
 {
+    // TODO: This code assumes that instanceIndex will not change from one frame to another, which doesn't sound plausible
     uint     instanceIndex    = Constants.InstanceIndices.indices[gl_DrawID];
     Instance currentInstance  = Constants.CurrentInstances.instances[instanceIndex];
     Instance previousInstance = Constants.PreviousInstances.instances[instanceIndex];
-    Mesh     currentMesh      = Constants.CurrentMeshes.meshes[currentInstance.meshIndex];
-    Mesh     previousMesh     = Constants.PreviousMeshes.meshes[previousInstance.meshIndex];
 
     vec3   position = Constants.Positions.positions[gl_VertexIndex];
     UV     uvs      = Constants.UVs.uvs[gl_VertexIndex];

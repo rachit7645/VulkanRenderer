@@ -1059,7 +1059,7 @@ namespace Renderer::Debug
                 const auto constants = AABB::Render::Constants
                 {
                     .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes          = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
                     .Color           = m_aabbDebugOptions.opaque.singleSided.color
@@ -1091,7 +1091,7 @@ namespace Renderer::Debug
                 const auto constants = AABB::Render::Constants
                 {
                     .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes          = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                     .Color           = m_aabbDebugOptions.opaque.doubleSided.color
@@ -1130,7 +1130,7 @@ namespace Renderer::Debug
                 const auto constants = AABB::Render::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
                     .Color               = m_aabbDebugOptions.alphaMasked.singleSided.color
@@ -1162,7 +1162,7 @@ namespace Renderer::Debug
                 const auto constants = AABB::Render::Constants
                 {
                     .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-                    .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
                     .Color               = m_aabbDebugOptions.alphaMasked.doubleSided.color
@@ -1608,7 +1608,7 @@ namespace Renderer::Debug
 
         const auto constants = Culling::Constants
         {
-            .Meshes                                      = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+            .Meshes                                      = meshBuffer.meshBuffers[FIF].deviceAddress,
             .Instances                                   = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
             .CulledOpaqueDrawCalls                       = indirectBuffer.frustumCulledBuffers.opaqueBuffer.drawCallBuffer.deviceAddress,
             .CulledOpaqueInstanceIndices                 = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,

@@ -53,7 +53,7 @@ layout(location = 5) out vec2  gMotionVectors;
 
 void main()
 {
-    Mesh mesh = Constants.CurrentMeshes.meshes[Input.drawID];
+    Mesh mesh = Constants.Meshes.meshes[Input.drawID];
 
     vec3 albedo  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), Input.uv[GetAlbedoUVID(mesh.material.packedUVIDs)]).rgb;
          albedo *= mesh.material.albedoFactor.rgb;

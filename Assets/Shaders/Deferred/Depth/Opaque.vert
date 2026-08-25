@@ -26,7 +26,6 @@ void main()
 {
     uint     instanceIndex = Constants.InstanceIndices.indices[gl_DrawID];
     Instance instance      = Constants.Instances.instances[instanceIndex];
-    Mesh     mesh          = Constants.Meshes.meshes[instance.meshIndex];
 
     vec3 position = Constants.Positions.positions[gl_VertexIndex];
 

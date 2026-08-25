@@ -151,7 +151,7 @@ namespace Renderer::ShadowRT
         {
             .TLAS                     = accelerationStructure.topLevelASes[FIF].deviceAddress,
             .Scene                    = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
-            .Meshes                   = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+            .Meshes                   = meshBuffer.meshBuffers[FIF].deviceAddress,
             .Indices                  = geometryBuffer.indexBuffer.buffer.deviceAddress,
             .Positions                = geometryBuffer.vertexBuffer.positionBuffer.deviceAddress,
             .UVs                      = geometryBuffer.vertexBuffer.uvBuffer.deviceAddress,

@@ -31,7 +31,6 @@ GLSL_NAMESPACE_BEGIN(Renderer::Depth::Opaque)
 GLSL_PUSH_CONSTANT_BEGIN
 {
     GLSL_BUFFER_POINTER(SceneBuffer)         Scene;
-    GLSL_BUFFER_POINTER(MeshBuffer)          Meshes;
     GLSL_BUFFER_POINTER(InstanceBuffer)      Instances;
     GLSL_BUFFER_POINTER(InstanceIndexBuffer) InstanceIndices;
     GLSL_BUFFER_POINTER(PositionBuffer)      Positions;
