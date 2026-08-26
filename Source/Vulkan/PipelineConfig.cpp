@@ -148,10 +148,10 @@ namespace Vk
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = static_cast<u32>(m_descriptorLayouts.size()),
-            .pSetLayouts            = m_descriptorLayouts.data(),
-            .pushConstantRangeCount = static_cast<u32>(m_pushConstantRanges.size()),
-            .pPushConstantRanges    = m_pushConstantRanges.data()
+            .setLayoutCount         = 1,
+            .pSetLayouts            = &m_descriptorLayout,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges    = &m_pushConstantRange
         };
 
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
@@ -436,18 +436,19 @@ namespace Vk
 
     PipelineConfig& PipelineConfig::AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size)
     {
-        m_pushConstantRanges.emplace_back(VkPushConstantRange{
+        m_pushConstantRange = VkPushConstantRange
+        {
             .stageFlags = stages,
             .offset     = offset,
             .size       = size
-        });
+        };
 
         return *this;
     }
 
     PipelineConfig& PipelineConfig::AddDescriptorLayout(VkDescriptorSetLayout layout)
     {
-        m_descriptorLayouts.emplace_back(layout);
+        m_descriptorLayout = layout;
 
         return *this;
     }

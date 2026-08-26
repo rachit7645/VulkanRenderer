@@ -21,7 +21,7 @@
 
 #ifdef _WIN32
 #include <Windows.h>
-#elif __linux__
+#elifdef __linux__
 #include <pthread.h>
 #endif
 
@@ -46,7 +46,7 @@ namespace Util
         const auto wideName = Util::MultiByteToWideChar(name);
 
         ENGINE_UNUSED const HRESULT result = SetThreadDescription(thread.native_handle(), wideName.c_str());
-        #elif __linux__
+        #elifdef __linux__
         constexpr usize PTHREAD_MAX_THREAD_NAME_LENGTH = 15;
 
         const auto convertedName = std::string(name.substr(0, PTHREAD_MAX_THREAD_NAME_LENGTH));

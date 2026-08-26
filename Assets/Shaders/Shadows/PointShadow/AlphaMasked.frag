@@ -41,5 +41,7 @@ void main()
         discard;
     }
 
-    lightDistance = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
+    float D = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
+
+    lightDistance = D + fwidth(D);
 }

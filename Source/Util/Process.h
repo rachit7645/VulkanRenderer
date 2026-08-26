@@ -24,6 +24,12 @@
 
 namespace Util
 {
+    struct ProcessReadResult
+    {
+        std::string data;
+        s32         errorCode;
+    };
+
     class Process
     {
     public:
@@ -37,6 +43,8 @@ namespace Util
         Process(Process&& other) noexcept;
         Process& operator=(Process&& other) noexcept;
 
+        std::expected<Util::ProcessReadResult, std::string> ReadFromProcess();
+
         std::expected<s32, std::string> WaitForProcess();
     private:
         SDL_Process* m_handle = nullptr;
@@ -48,8 +56,11 @@ namespace Util
         [[nodiscard]] std::expected<Util::Process, std::string> Create();
 
         ProcessBuilder& AddArgument(const std::string_view argument);
+        ProcessBuilder& EnableIO();
     private:
         std::vector<std::string> m_arguments = {};
+
+        bool m_enableIO = false;
     };
 }
 

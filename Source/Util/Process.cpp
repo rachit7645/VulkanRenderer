@@ -18,6 +18,7 @@
 
 #include "Engine/Containers.h"
 #include "Util/Log.h"
+#include "Util/Scope.h"
 
 namespace Util
 {
@@ -41,6 +42,35 @@ namespace Util
         std::swap(m_handle, other.m_handle);
 
         return *this;
+    }
+
+    std::expected<Util::ProcessReadResult, std::string> Process::ReadFromProcess()
+    {
+        if (m_handle == nullptr)
+        {
+            return std::unexpected("Invalid process handle!");
+        }
+
+        usize dataSize  = 0;
+        s32   errorCode = 0;
+
+        void* data = SDL_ReadProcess(m_handle, &dataSize, &errorCode);
+
+        auto guard = Util::MakeScopeGuard([data] ()
+        {
+            SDL_free(data);
+        });
+
+        if (data == nullptr)
+        {
+            return std::unexpected(fmt::format("Failed to read from process! [Error={}]", SDL_GetError()));
+        }
+
+        return Util::ProcessReadResult
+        {
+            .data      = std::string(static_cast<char*>(data), dataSize),
+            .errorCode = errorCode
+        };
     }
 
     std::expected<s32, std::string> Process::WaitForProcess()
@@ -78,7 +108,7 @@ namespace Util
 
         arguments.emplace_back(nullptr);
 
-        SDL_Process* handle = SDL_CreateProcess(arguments.data(), false);
+        SDL_Process* handle = SDL_CreateProcess(arguments.data(), m_enableIO);
 
         if (handle == nullptr)
         {
@@ -91,6 +121,13 @@ namespace Util
     ProcessBuilder& ProcessBuilder::AddArgument(const std::string_view argument)
     {
         m_arguments.emplace_back(argument);
+
+        return *this;
+    }
+
+    ProcessBuilder& ProcessBuilder::EnableIO()
+    {
+        m_enableIO = true;
 
         return *this;
     }

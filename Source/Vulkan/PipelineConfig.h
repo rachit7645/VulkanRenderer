@@ -136,8 +136,8 @@ namespace Vk
         std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendStates = {};
         VkPipelineColorBlendStateCreateInfo              m_colorBlendInfo   = {};
 
-        std::vector<VkPushConstantRange>   m_pushConstantRanges = {};
-        std::vector<VkDescriptorSetLayout> m_descriptorLayouts  = {};
+        VkPushConstantRange   m_pushConstantRange = {};
+        VkDescriptorSetLayout m_descriptorLayout  = {};
     };
 }
 
