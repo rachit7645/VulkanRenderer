@@ -167,6 +167,15 @@ vec3 FresnelSchlickIBL(vec3 F0, float cosTheta, float roughness)
     return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(saturate(1.0f - cosTheta));
 }
 
+// Moving Frostbite To PBR, Page 69
+vec3 CalculateSpecularDominantDirection(vec3 N, vec3 R, float roughness)
+{
+    float smoothness = saturate(1.0f - roughness);
+    float lerpFactor = smoothness * (roughness + sqrt(smoothness));
+
+    return mix(N, R, lerpFactor);
+}
+
 vec3 CalculateAmbient
 (
     vec3 N,

@@ -173,9 +173,10 @@ void main()
 
     vec3 reflected = normalize(reflect(-toCamera, normal));
 
-    uint  maxReflectionLod = textureQueryLevels(Cubemaps[Constants.PreFilterIndex]);
-    float prefilterLod     = roughness * float(maxReflectionLod);
-    vec3  preFilter        = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), reflected, prefilterLod).rgb;
+    uint  maxReflectionLod          = textureQueryLevels(Cubemaps[Constants.PreFilterIndex]);
+    float prefilterLod              = roughness * float(maxReflectionLod);
+    vec3  dominantSpecularDirection = CalculateSpecularDominantDirection(normal, reflected, roughness);
+    vec3  preFilter                 = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), dominantSpecularDirection, prefilterLod).rgb;
 
     vec3 irradiance = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
 
