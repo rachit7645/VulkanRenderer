@@ -282,7 +282,7 @@ target_compile_definitions(VulkanRenderer PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE GL
 
 # Compiler options
 target_compile_options(VulkanRenderer PRIVATE -O3)
-target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c -mpclmul -mbmi -mbmi2 -mlzcnt)
 
 # Windows options

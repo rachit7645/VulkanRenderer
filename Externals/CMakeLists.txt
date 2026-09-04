@@ -229,7 +229,7 @@ if (DLSSAvailable)
         set(DLSS_DLL "${DLSS_ROOT}/lib/Windows_x86_64/rel/nvngx_dlss.dll")
         set(DLSS_LIB "${DLSS_ROOT}/lib/Windows_x86_64/x64/nvsdk_ngx_d.lib")
     else()
-        set(DLSS_DLL "${DLSS_ROOT}/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.5.3")
+        set(DLSS_DLL "${DLSS_ROOT}/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.9.1")
         set(DLSS_LIB "${DLSS_ROOT}/lib/Linux_x86_64/libnvsdk_ngx.a")
     endif()
 

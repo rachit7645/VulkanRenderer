@@ -86,7 +86,6 @@ namespace Renderer::ShadowRT
     void RayDispatch::TraceRays
     (
         usize FIF,
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Renderer::RenderConfig& renderConfig,
         const Vk::Context& context,

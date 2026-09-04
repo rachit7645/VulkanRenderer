@@ -38,6 +38,9 @@ namespace Models
     constexpr auto        DEFAULT_AO_RGH_MTL_NAME  = "Default/RoughnessMetallic";
     constexpr glm::u8vec4 DEFAULT_AO_RGH_MTL_VALUE = {255, 255, 0, 255};
 
+    constexpr auto        DEFAULT_EMISSIVE_NAME  = "Default/Emissive";
+    constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {255, 255, 255, 255};
+
     void Model::LoadFromFile(const Models::LoadFromFileInfo& loadInfo, const std::string_view filePath)
     {
         #ifdef ENGINE_PROFILE
@@ -611,9 +614,6 @@ namespace Models
             #ifdef ENGINE_PROFILE
             ZoneScopedN("Load Emissive");
             #endif
-
-            constexpr auto        DEFAULT_EMISSIVE_NAME  = "Default/Emissive";
-            constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {255, 255, 255, 255};
 
             const auto& emissiveTexture = mat.emissiveTexture;
 

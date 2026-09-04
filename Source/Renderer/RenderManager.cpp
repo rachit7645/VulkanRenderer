@@ -1479,7 +1479,6 @@ namespace Renderer
             m_shadowRT.TraceRays
             (
                 m_FIF,
-                m_frameIndex,
                 cmdBuffer,
                 m_renderConfig,
                 m_context,

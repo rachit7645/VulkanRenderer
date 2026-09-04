@@ -208,7 +208,6 @@ namespace Renderer::Exposure
                 if (ImGui::CollapsingHeader("Exposure"))
                 {
                     ImGui::DragFloat("Adaptation Speed", &m_adaptationSpeed, 0.25f, 0.0f, 0.0f, "%.3f");
-                    ImGui::DragFloat("Exposure Bias",    &m_exposureBias,    0.01f, 0.0f, 0.0f, "%.3f");
 
                     if (ImGui::Button("Reset Luminance"))
                     {
@@ -481,7 +480,6 @@ namespace Renderer::Exposure
             .ExposureImageIndex = exposureValueView.storageImageID,
             .PixelCount         = sceneColor.image.width * sceneColor.image.height,
             .TimeCoefficient    = 1.0f - std::exp(-frameCounter.frameDelta * m_adaptationSpeed),
-            .ExposureBias       = m_exposureBias,
             .CurrentFrame       = static_cast<u32>(FIF),
             .PreviousFrame      = static_cast<u32>((FIF + Vk::FRAMES_IN_FLIGHT - 1) % Vk::FRAMES_IN_FLIGHT)
         };
