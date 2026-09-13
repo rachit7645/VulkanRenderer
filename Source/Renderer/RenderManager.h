@@ -126,7 +126,7 @@ namespace Renderer
 
         void Resize(Scratch::Allocator& scratchAllocator);
 
-        void InitImGui(Scratch::Allocator& scratchAllocator);
+        void InitImGui();
 
         tf::Executor m_executor;
 

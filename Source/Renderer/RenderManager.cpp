@@ -24,7 +24,6 @@
 #include "Util/Files.h"
 #include "Util/Span.h"
 #include "Vulkan/DebugUtils.h"
-#include "Vulkan/ImmediateSubmit.h"
 #include "Vulkan/Util.h"
 
 #ifdef ENGINE_PROFILE
@@ -74,7 +73,7 @@ namespace Renderer
             };
         }
 
-        InitImGui(scratchAllocator);
+        InitImGui();
 
         m_frameCounter.Reset();
 
@@ -1983,6 +1982,29 @@ namespace Renderer
         }
         #endif
 
+        if (m_frameIndex == 0)
+        {
+            m_vbao.hilbertLUT = m_textureManager.LoadTexture
+            (
+                m_context.device,
+                m_context.allocator,
+                m_stagingPool,
+                m_executor,
+                m_deletionQueues[m_FIF],
+                Vk::ImageUpload{
+                    .type   = Vk::ImageUploadType::RAW,
+                    .flags  = Vk::ImageUploadFlags::None,
+                    .source = Vk::ImageUploadRawMemory{
+                        .name   = "VBAO/HilbertLUT",
+                        .width  = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
+                        .height = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
+                        .format = VK_FORMAT_R16_UINT,
+                        .data   = Util::ToBytes(AO::VBAO::HILBERT_SEQUENCE)
+                    }
+                }
+            );
+        }
+
         const bool sceneChanged = m_sceneEditor.Update
         (
             m_frameCounter,
@@ -2467,7 +2489,7 @@ namespace Renderer
         Render(scratchAllocator);
     }
 
-    void RenderManager::InitImGui(Scratch::Allocator& scratchAllocator)
+    void RenderManager::InitImGui()
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -2500,45 +2522,6 @@ namespace Renderer
         );
 
         ImPlot::CreateContext();
-
-        // TODO: Move this to frame 0
-        Vk::ImmediateSubmit
-        (
-            m_context.device,
-            m_context.graphicsQueue,
-            m_graphicsCmdBufferAllocator,
-            [&] (const Vk::CommandBuffer& cmdBuffer)
-            {
-                m_vbao.hilbertLUT = m_textureManager.LoadTexture
-                (
-                    m_context.device,
-                    m_context.allocator,
-                    m_stagingPool,
-                    m_executor,
-                    m_deletionQueues[m_FIF],
-                    Vk::ImageUpload{
-                        .type   = Vk::ImageUploadType::RAW,
-                        .flags  = Vk::ImageUploadFlags::None,
-                        .source = Vk::ImageUploadRawMemory{
-                            .name   = "VBAO/HilbertLUT",
-                            .width  = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
-                            .height = AO::VBAO::Occlusion::VBAO_HILBERT_WIDTH,
-                            .format = VK_FORMAT_R16_UINT,
-                            .data   = Util::ToBytes(AO::VBAO::HILBERT_SEQUENCE)
-                        }
-                    }
-                );
-
-                m_textureManager.ForceUpdate
-                (
-                    m_vbao.hilbertLUT,
-                    m_context.device,
-                    cmdBuffer,
-                    m_megaSet,
-                    scratchAllocator
-                );
-            }
-        );
 
         m_globalDeletionQueue.Push([&] ()
         {

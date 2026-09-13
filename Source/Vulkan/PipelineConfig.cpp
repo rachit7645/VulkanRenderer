@@ -148,9 +148,9 @@ namespace Vk
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = 1,
+            .setLayoutCount         = m_descriptorLayout != VK_NULL_HANDLE ? 1u : 0u,
             .pSetLayouts            = &m_descriptorLayout,
-            .pushConstantRangeCount = 1,
+            .pushConstantRangeCount = m_pushConstantRange.size != 0u ? 1u : 0u,
             .pPushConstantRanges    = &m_pushConstantRange
         };
 
