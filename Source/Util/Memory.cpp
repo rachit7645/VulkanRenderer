@@ -23,7 +23,7 @@ namespace Util
         #ifdef _WIN32
         return _aligned_malloc(size, alignment);
         #else
-        return std::aligned_malloc(alignment, size);
+        return std::aligned_alloc(alignment, size);
         #endif
     }
 

@@ -105,37 +105,19 @@ namespace Models
         }
         #endif
 
-        Model::Futures meshFutures = {};
-
         ProcessScenes
         (
             loadInfo,
             assetDirectory,
-            asset.get(),
-            meshFutures
+            asset.get()
         );
-
-        meshes.reserve(meshFutures.size());
-
-        for (auto& future : meshFutures)
-        {
-            if (!future.valid())
-            {
-                Logger::Error("{}\n", "Future is not valid!");
-            }
-
-            future.wait();
-
-            meshes.emplace_back(future.get());
-        }
     }
 
     void Model::ProcessScenes
     (
         const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
-        const fastgltf::Asset& asset,
-        Model::Futures& meshFutures
+        const fastgltf::Asset& asset
     )
     {
         #ifdef ENGINE_PROFILE
@@ -152,8 +134,7 @@ namespace Models
                     directory,
                     asset,
                     nodeIndex,
-                    glm::identity<glm::mat4>(),
-                    meshFutures
+                    glm::identity<glm::mat4>()
                 );
             }
         }
@@ -165,8 +146,7 @@ namespace Models
         const std::string_view directory,
         const fastgltf::Asset& asset,
         usize nodeIndex,
-        glm::mat4 nodeMatrix,
-        Model::Futures& meshFutures
+        glm::mat4 nodeMatrix
     )
     {
         #ifdef ENGINE_PROFILE
@@ -185,8 +165,7 @@ namespace Models
                 directory,
                 asset,
                 asset.meshes[node.meshIndex.value()],
-                nodeMatrix,
-                meshFutures
+                nodeMatrix
             );
         }
 
@@ -203,8 +182,7 @@ namespace Models
                 directory,
                 asset,
                 child,
-                nodeMatrix,
-                meshFutures
+                nodeMatrix
             );
         }
     }
@@ -262,8 +240,7 @@ namespace Models
         const std::string_view directory,
         const fastgltf::Asset& asset,
         const fastgltf::Mesh& mesh,
-        const glm::mat4& nodeMatrix,
-        Model::Futures& meshFutures
+        const glm::mat4& nodeMatrix
     )
     {
         #ifdef ENGINE_PROFILE
@@ -283,17 +260,13 @@ namespace Models
                 continue;
             }
 
-            meshFutures.emplace_back(loadInfo.executor.async([loadInfo, directory, &asset, &primitive, nodeMatrix] ()
-            {
-                return Model::LoadPrimitive
-                (
-                    loadInfo,
-                    directory,
-                    asset,
-                    primitive,
-                    nodeMatrix
-                );
-            }));
+            meshes.emplace_back(Model::LoadPrimitive(
+                loadInfo,
+                directory,
+                asset,
+                primitive,
+                nodeMatrix
+            ));
         }
     }
 

@@ -30,7 +30,7 @@ namespace Renderer
 
         #ifdef ENGINE_DLSS
         // Validation issues workaround
-        constexpr bool FORCE_DISABLE_DLSS = true;
+        constexpr bool FORCE_DISABLE_DLSS = false;
 
         DLSS.isSupported = DLSSConfig.isSupported;
         antiAliasingMode = (DLSS.isSupported && !FORCE_DISABLE_DLSS) ? AntiAliasingMode::DLSS : AntiAliasingMode::TAA;

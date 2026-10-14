@@ -175,6 +175,7 @@ namespace Vk
                     .transformOffset = 0
                 });
 
+                // Pray that ranges does not get resized
                 pRangeInfos.emplace_back(&ranges.back());
 
                 VkAccelerationStructureBuildGeometryInfoKHR blasBuildInfo =
@@ -325,8 +326,8 @@ namespace Vk
 
             blas.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(context.device, &blasDAInfo);
 
-            Vk::SetDebugName(context.device, blas.handle,        fmt::format("BLAS/{}",       i));
-            Vk::SetDebugName(context.device, blas.buffer.handle, fmt::format("BLASBuffer/{}", i));
+            Vk::SetDebugName(context.device, blas.handle,        fmt::format("BLAS/{}",        i));
+            Vk::SetDebugName(context.device, blas.buffer.handle, fmt::format("BLAS/Buffer/{}", i));
         }
 
         deletionQueue.Push([allocator = context.allocator, scratchPool] mutable

@@ -47,11 +47,30 @@ namespace Util
 
         ENGINE_UNUSED const HRESULT result = SetThreadDescription(thread.native_handle(), wideName.c_str());
         #elifdef __linux__
-        constexpr usize PTHREAD_MAX_THREAD_NAME_LENGTH = 15;
+        constexpr usize PTHREAD_MAX_THREAD_NAME_LENGTH = 16;
 
-        const auto convertedName = std::string(name.substr(0, PTHREAD_MAX_THREAD_NAME_LENGTH));
+        const auto convertedName = std::string(name.substr(0, PTHREAD_MAX_THREAD_NAME_LENGTH - 1));
 
         ENGINE_UNUSED s32 result = pthread_setname_np(thread.native_handle(), convertedName.c_str());
+        #endif
+    }
+
+    void SetMainThreadName(const std::string_view name)
+    {
+        #ifdef _WIN32
+        const auto wideName = Util::MultiByteToWideChar(name);
+
+        const auto handle = GetCurrentThread();
+
+        ENGINE_UNUSED const HRESULT result = SetThreadDescription(handle, wideName.c_str());
+        #elifdef __linux__
+        constexpr usize PTHREAD_MAX_THREAD_NAME_LENGTH = 16;
+
+        const auto convertedName = std::string(name.substr(0, PTHREAD_MAX_THREAD_NAME_LENGTH - 1));
+
+        const auto handle = pthread_self();
+
+        ENGINE_UNUSED s32 result = pthread_setname_np(handle, convertedName.c_str());
         #endif
     }
 }

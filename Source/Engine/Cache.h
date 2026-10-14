@@ -106,6 +106,8 @@ namespace Cache
     {
         [[nodiscard]] u8 GetAssetHeaderSize(const Cache::AssetType assetType);
 
+        [[nodiscard]] usize GetFileSize(const Cache::Header& header);
+
         [[nodiscard]] std::vector<u8> CompressData(Cache::CompressionType compressionType, const std::vector<u8>& uncompressedData);
 
         void StoreHeader(std::ofstream& bin, const Cache::Header& header);

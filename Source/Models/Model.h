@@ -64,8 +64,6 @@ namespace Models
         std::vector<Models::LocalPointLight> pointLights = {};
         std::vector<Models::LocalSpotLight>  spotLights  = {};
     private:
-        using Futures = std::vector<std::future<Models::Mesh>>;
-
         struct TextureInfo
         {
             Vk::TextureID id         = std::numeric_limits<Vk::TextureID>::max();
@@ -76,8 +74,7 @@ namespace Models
         (
             const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
-            const fastgltf::Asset& asset,
-            Model::Futures& meshFutures
+            const fastgltf::Asset& asset
         );
 
         void ProcessNode
@@ -86,20 +83,18 @@ namespace Models
             const std::string_view directory,
             const fastgltf::Asset& asset,
             usize nodeIndex,
-            glm::mat4 nodeMatrix,
-            Model::Futures& meshFutures
+            glm::mat4 nodeMatrix
         );
 
         void LoadLight(const fastgltf::Light& light, const glm::mat4& nodeMatrix);
 
-        static void LoadMesh
+        void LoadMesh
         (
             const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             const fastgltf::Mesh& mesh,
-            const glm::mat4& nodeMatrix,
-            Model::Futures& meshFutures
+            const glm::mat4& nodeMatrix
         );
 
         [[nodiscard]] static Models::Mesh LoadPrimitive

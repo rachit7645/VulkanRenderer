@@ -86,7 +86,7 @@ namespace Cache
         zone.NameFmt("%s", query.cachedFile.c_str());
         #endif
 
-        const std::string path = CACHE_DIRECTORY + std::string(query.cachedFile);
+        const std::string path = CACHE_DIRECTORY + query.cachedFile;
         
         if (!Files::Exists(path))
         {
@@ -146,16 +146,10 @@ namespace Cache
             return false;
         }
 
-        const usize expectedDataSize = header.compressionType == CompressionType::None ?
-                                       header.uncompressedDataSize :
-                                       header.compressedDataSize;
+        const usize expectedFileSize = Detail::GetFileSize(header);
+        const usize actualFileSize   = Files::GetSize(path);
 
-        const usize expectedFileSize = sizeof(Cache::Header) +
-                                       header.headerSize +
-                                       header.additionalHeaderDataSize +
-                                       expectedDataSize;
-
-        if (Files::GetSize(path) != expectedFileSize)
+        if (actualFileSize != expectedFileSize)
         {
             Detail::Invalidate(bin, path);
 
@@ -256,6 +250,20 @@ namespace Cache
             }
 
             return static_cast<u8>(headerSize);
+        }
+
+        usize GetFileSize(const Cache::Header& header)
+        {
+            const usize expectedDataSize = header.compressionType == CompressionType::None ?
+                                           header.uncompressedDataSize :
+                                           header.compressedDataSize;
+
+            const usize expectedFileSize = sizeof(Cache::Header) +
+                                           header.headerSize +
+                                           header.additionalHeaderDataSize +
+                                           expectedDataSize;
+
+            return expectedFileSize;
         }
 
         std::vector<u8> CompressData(Cache::CompressionType compressionType, const std::vector<u8>& uncompressedData)
