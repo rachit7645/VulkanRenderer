@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include "Constants.glsl"
 #include "PBR.glsl"
 #include "Sampling.glsl"
+#include "IBL/BRDF.h"
 
 layout(location = 0) in vec2 fragUV;
 
@@ -53,7 +54,7 @@ void main()
         float NdotH = max(H.z, 0.0f);
         float VdotH = max(dot(V, H), 0.0f);
 
-        float G     = GeometrySmith_IBL(N, V, L, roughness);
+        float G     = GeometrySmithIBL(N, V, L, roughness);
         float G_Vis = (G * VdotH) / max(NdotH * NdotV, 1e-7f);
         float Fc    = pow5(1.0f - VdotH);
 

@@ -28,9 +28,7 @@ namespace Renderer::DLSS
     public:
         explicit DLSSConfig(const Vk::Context& context);
 
-        void Destroy(VkDevice device);
-
-        bool isSupported = false;
+        void Destroy(VkDevice device) const;
 
         [[nodiscard]] glm::uvec2 GetInternalResolution(const glm::uvec2& swapchainSize);
 
@@ -38,7 +36,7 @@ namespace Renderer::DLSS
         (
             const Vk::CommandBuffer& cmdBuffer,
             const glm::uvec2& swapchainSize,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         NVSDK_NGX_Parameter* parameters = nullptr;
@@ -46,7 +44,8 @@ namespace Renderer::DLSS
 
         glm::uvec2                  optimalResolution = {};
         NVSDK_NGX_PerfQuality_Value DLSSMode          = NVSDK_NGX_PerfQuality_Value_DLAA;
-    
+
+        bool isSupported = false;
         bool resetNeeded = true;
     private:
         bool m_haveParametersChanged = true;

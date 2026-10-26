@@ -14,80 +14,105 @@
  * limitations under the License.
  */
 
-#ifndef VERTEX_BUFFER_H
-#define VERTEX_BUFFER_H
+#ifndef VERTEX_BUFFER2_H
+#define VERTEX_BUFFER2_H
 
-#include <vulkan/vulkan.h>
-
-#include "Buffer.h"
-#include "BarrierWriter.h"
-#include "ResizableAllocator.h"
-#include "Extensions.h"
-#include "StagingPool.h"
-#include "Externals/VMA.h"
-#include "Util/Types.h"
-#include "Util/DeletionQueue.h"
-#include "GPU/Vertex.h"
 #include "GPU/Surface.h"
+#include "GPU/Vertex.h"
+#include "Engine/DeletionQueue.h"
+#include "Vulkan/Buffer.h"
+#include "Vulkan/StagingPool.h"
 
 namespace Vk
 {
-    template<typename T> requires GPU::IsVertexType<T>
     class VertexBuffer
     {
     public:
-        struct WriteHandle
+        struct Allocation
         {
-            T*                pointer;
+            GPU::Position*    position;
+            GPU::UV*          uv;
+            GPU::Vertex*      normalAndTangent;
             GPU::GeometryInfo info;
         };
 
-        explicit VertexBuffer(const Vk::Extensions& extensions);
-
-        void Bind(const Vk::CommandBuffer& cmdBuffer) const requires std::is_same_v<T, GPU::Index>;
-
-        void Destroy(VmaAllocator allocator);
-
-        WriteHandle Allocate
+        VertexBuffer::Allocation Allocate
         (
+            u32 elementCount,
             VkDevice device,
             VmaAllocator allocator,
-            usize writeCount,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Free(const GPU::GeometryInfo& info);
 
-        void FlushUploads
+        void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
             VkDevice device,
             VmaAllocator allocator,
-            Util::DeletionQueue& deletionQueue
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
 
-        [[nodiscard]] const Vk::Buffer& GetBuffer() const;
+        void ImGuiDisplay(Scratch::Allocator& scratchAllocator);
 
-        u32 count = 0;
+        void Destroy(VmaAllocator allocator);
+
+        Vk::Buffer positionBuffer         = {};
+        Vk::Buffer uvBuffer               = {};
+        Vk::Buffer normalAndTangentBuffer = {};
+
+        u32 count;
     private:
         struct GeometryUpload
         {
-            GPU::GeometryInfo info         = {};
-            VkDeviceSize      sourceOffset = 0;
+            GPU::GeometryInfo info = {};
+
+            VkBuffer     positionStagingBuffer = VK_NULL_HANDLE;
+            VkDeviceSize positionSourceOffset  = 0;
+
+            VkBuffer     uvStagingBuffer = VK_NULL_HANDLE;
+            VkDeviceSize uvSourceOffset  = 0;
+
+            VkBuffer     normalAndTangentStagingBuffer = VK_NULL_HANDLE;
+            VkDeviceSize normalAndTangentSourceOffset  = 0;
         };
 
-        VkBufferUsageFlags    m_usage      = 0;
-        VkPipelineStageFlags2 m_stageMask  = VK_PIPELINE_STAGE_2_NONE;
-        VkAccessFlags2        m_accessMask = VK_ACCESS_2_NONE;
+        struct ResizeInfo
+        {
+            u32                            requiredCapacity = 0;
+            std::vector<GPU::GeometryInfo> blocksToCopy = {};
+        };
 
-        Vk::ResizableAllocator m_allocator   = {};
+        void MergeFreeBlocks();
 
-        ankerl::unordered_dense::map<VkBuffer, std::vector<GeometryUpload>> m_pendingUploads;
+        std::optional<GPU::GeometryInfo> TryToFindFreeBlock(u32 elementCount);
 
-        Vk::BarrierWriter m_barrierWriter = {};
+        GPU::GeometryInfo AppendAtEnd(u32 elementCount);
+
+        void Resize
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            VkDevice device,
+            VmaAllocator allocator,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
+        );
+
+        void DisplayMemoryMapAndStatistics(Scratch::Allocator& scratchAllocator);
+
+        std::optional<VertexBuffer::ResizeInfo> m_resizeInfo;
+
+        std::vector<GPU::GeometryInfo> m_usedBlocks = {};
+        std::vector<GPU::GeometryInfo> m_freeBlocks = {};
+
+        std::vector<VertexBuffer::GeometryUpload> m_pendingUploads = {};
+
+        std::mutex m_mutex;
     };
 }
 

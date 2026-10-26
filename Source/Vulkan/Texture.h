@@ -36,7 +36,6 @@ namespace Vk
         Vk::Image        image;
         Vk::ImageView    imageView;
         Vk::DescriptorID descriptorID;
-        bool             isLoaded;
     };
 }
 

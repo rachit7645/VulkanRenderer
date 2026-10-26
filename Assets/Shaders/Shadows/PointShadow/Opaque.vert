@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ void main()
 {
     uint     instanceIndex = Constants.InstanceIndices.indices[gl_DrawID];
     Instance instance      = Constants.Instances.instances[instanceIndex];
-    Mesh     mesh          = Constants.Meshes.meshes[instance.meshIndex];
 
     vec3 position = Constants.Positions.positions[gl_VertexIndex];
     mat4 matrix   = Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].matrices[Constants.FaceIndex];

@@ -20,10 +20,11 @@
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/FramebufferManager.h"
+#include "Vulkan/PipelineManager.h"
 #include "Renderer/Buffers/IndirectBuffer.h"
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 
 namespace Renderer::GBuffer
 {
@@ -46,11 +47,13 @@ namespace Renderer::GBuffer
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Models::ModelManager& modelManager,
+            const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers,
+            Scratch::Allocator& scratchAllocator
         );
     };
 }

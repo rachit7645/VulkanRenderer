@@ -54,9 +54,9 @@ namespace Vk
 
         DescriptorWriter& Clear();
     private:
-        std::list<VkDescriptorImageInfo>  imageInfos;
-        std::list<VkDescriptorBufferInfo> bufferInfos;
-        std::vector<VkWriteDescriptorSet> writes;
+        std::list<VkDescriptorImageInfo>  m_imageInfos;
+        std::list<VkDescriptorBufferInfo> m_bufferInfos;
+        std::vector<VkWriteDescriptorSet> m_writes;
     };
 }
 

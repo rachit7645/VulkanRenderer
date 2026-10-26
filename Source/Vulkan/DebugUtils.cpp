@@ -39,26 +39,4 @@ namespace Vk
         vkCmdEndDebugUtilsLabelEXT(cmdBuffer.handle);
         #endif
     }
-
-    void BeginLabel(ENGINE_UNUSED VkQueue queue, ENGINE_UNUSED const std::string_view name, ENGINE_UNUSED const glm::vec4& color)
-    {
-        #ifdef ENGINE_DEBUG
-        const VkDebugUtilsLabelEXT label =
-        {
-            .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext      = nullptr,
-            .pLabelName = name.data(),
-            .color      = {color.r, color.g, color.b, color.a}
-        };
-
-        vkQueueBeginDebugUtilsLabelEXT(queue, &label);
-        #endif
-    }
-
-    void EndLabel(ENGINE_UNUSED VkQueue queue)
-    {
-        #ifdef ENGINE_DEBUG
-        vkQueueEndDebugUtilsLabelEXT(queue);
-        #endif
-    }
 }

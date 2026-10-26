@@ -32,8 +32,7 @@ namespace Vk
 
         void Reset(VkCommandBufferResetFlags resetFlags) const;
 
-        VkCommandBuffer      handle = VK_NULL_HANDLE;
-        VkCommandBufferLevel level  = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        VkCommandBuffer handle = VK_NULL_HANDLE;
     };
 }
 

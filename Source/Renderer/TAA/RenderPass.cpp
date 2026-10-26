@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Util/Log.h"
-#include "Util/Ranges.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "TAA/TAA.h"
 #include "Vulkan/DebugUtils.h"
@@ -39,26 +38,26 @@ namespace Renderer::TAA
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("TAA", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::TAA, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("TAA/TAA.frag",       VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TAA::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer
         (
             "ResolvedSceneColor",
-            Vk::FramebufferType::ColorHDR,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::TransferDestination,
+            formatHelper.colorAttachmentFormatHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -70,32 +69,55 @@ namespace Renderer::TAA
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "IntermediateResolvedSceneColor",
+            formatHelper.colorAttachmentFormatHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
         framebufferManager.AddFramebuffer
         (
             "TAABuffer",
-            Vk::FramebufferType::ColorHDR,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
-            [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
+            formatHelper.colorAttachmentFormatHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+            [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
                 {
-                    .width       = displayExtent.width,
-                    .height      = displayExtent.height,
+                    .width       = renderExtent.width,
+                    .height      = renderExtent.height,
                     .mipLevels   = 1,
                     .arrayLayers = TAA_HISTORY_SIZE
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -103,7 +125,20 @@ namespace Renderer::TAA
         (
             "ResolvedSceneColor",
             "ResolvedSceneColorView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "IntermediateResolvedSceneColor",
+            "IntermediateResolvedSceneColorView",
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -118,7 +153,7 @@ namespace Renderer::TAA
             (
                 "TAABuffer",
                 fmt::format("TAABufferView/{}", i),
-                Vk::FramebufferImageType::Single2D,
+                VK_IMAGE_VIEW_TYPE_2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = 0,
                     .levelCount     = 1,
@@ -137,18 +172,22 @@ namespace Renderer::TAA
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "TAA", glm::vec4(0.6098f, 0.7843f, 0.7549f, 1.0f));
 
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("TAA"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                if (ImGui::Button("Reset History"))
+                if (ImGui::CollapsingHeader("TAA"))
                 {
-                    m_hasToResetHistory = true;
+                    if (ImGui::Button("Reset History"))
+                    {
+                        m_hasToResetHistory = true;
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -223,193 +262,297 @@ namespace Renderer::TAA
             m_hasToResetHistory = false;
         }
 
-        const auto& pipeline = pipelineManager.GetPipeline("TAA");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::TAA);
 
         const usize currentIndex  = frameIndex                          % TAA_HISTORY_SIZE;
         const usize previousIndex = (frameIndex + TAA_HISTORY_SIZE - 1) % TAA_HISTORY_SIZE;
 
-        const auto& resolvedView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
-        const auto& historyView  = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", currentIndex));
+        const auto& intermediateResolvedView = framebufferManager.GetFramebufferView("IntermediateResolvedSceneColorView");
+        const auto& historyView              = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", currentIndex));
 
-        const auto& resolved = framebufferManager.GetFramebuffer(resolvedView.framebuffer);
-        const auto& history  = framebufferManager.GetFramebuffer(historyView.framebuffer);
+        const auto& resolved             = framebufferManager.GetFramebuffer("ResolvedSceneColor");
+        const auto& intermediateResolved = framebufferManager.GetFramebuffer(intermediateResolvedView.framebuffer);
+        const auto& history              = framebufferManager.GetFramebuffer(historyView.framebuffer);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
-        barrierWriter
-        .WriteImageBarrier(
-            resolved.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = resolved.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = resolved.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            history.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = history.image.mipLevels,
-                .baseArrayLayer = static_cast<u32>(currentIndex),
-                .layerCount     = 1
-            }
-        )
-        .Execute(cmdBuffer);
-
-        const VkRenderingAttachmentInfo resolvedInfo =
+        Vk::BeginLabel(cmdBuffer, "Intermediate Resolve", glm::vec4(0.6098f, 0.5843f, 0.7549f, 1.0f));
         {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = resolvedView.view.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {}
-        };
+            barrierWriter
+            .WriteImageBarrier(
+                intermediateResolved.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = intermediateResolved.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = intermediateResolved.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                history.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = history.image.mipLevels,
+                    .baseArrayLayer = static_cast<u32>(currentIndex),
+                    .layerCount     = 1
+                }
+            )
+            .Execute(cmdBuffer);
 
-        const VkRenderingAttachmentInfo historyInfo =
+            const VkRenderingAttachmentInfo resolvedInfo =
+            {
+                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .pNext              = nullptr,
+                .imageView          = intermediateResolvedView.view.handle,
+                .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .resolveMode        = VK_RESOLVE_MODE_NONE,
+                .resolveImageView   = VK_NULL_HANDLE,
+                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                .clearValue         = {}
+            };
+
+            const VkRenderingAttachmentInfo historyInfo =
+            {
+                .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .pNext              = nullptr,
+                .imageView          = historyView.view.handle,
+                .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .resolveMode        = VK_RESOLVE_MODE_NONE,
+                .resolveImageView   = VK_NULL_HANDLE,
+                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+                .clearValue         = {}
+            };
+
+            const std::array colorAttachments = {resolvedInfo, historyInfo};
+
+            const VkRenderingInfo renderInfo =
+            {
+                .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                .pNext                = nullptr,
+                .flags                = 0,
+                .renderArea           = {
+                    .offset = {.x     = 0,                    .y      = 0                    },
+                    .extent = {.width = intermediateResolved.image.width, .height = intermediateResolved.image.height}
+                },
+                .layerCount           = 1,
+                .viewMask             = 0,
+                .colorAttachmentCount = static_cast<u32>(colorAttachments.size()),
+                .pColorAttachments    = colorAttachments.data(),
+                .pDepthAttachment     = nullptr,
+                .pStencilAttachment   = nullptr
+            };
+
+            vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+            pipeline.Bind(cmdBuffer);
+
+            const VkViewport viewport =
+            {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<f32>(intermediateResolved.image.width),
+                .height   = static_cast<f32>(intermediateResolved.image.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f
+            };
+
+            vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+            const VkRect2D scissor =
+            {
+                .offset = {.x     = 0,                    .y      = 0                    },
+                .extent = {.width = intermediateResolved.image.width, .height = intermediateResolved.image.height}
+            };
+
+            vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+            const auto constants = TAA::Constants
+            {
+                .PointSamplerIndex  = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+                .LinearSamplerIndex = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+                .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageID,
+                .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageID,
+                .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageID,
+                .SceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID
+            };
+
+            pipeline.PushConstants
+            (
+                cmdBuffer,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                constants
+            );
+
+            pipeline.BindDescriptors(cmdBuffer, megaSet);
+
+            vkCmdDraw
+            (
+                cmdBuffer.handle,
+                3,
+                1,
+                0,
+                0
+            );
+
+            vkCmdEndRendering(cmdBuffer.handle);
+        }
+        Vk::EndLabel(cmdBuffer);
+
+        Vk::BeginLabel(cmdBuffer, "Blit", glm::vec4(0.6098f, 0.5843f, 0.7549f, 1.0f));
         {
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .pNext              = nullptr,
-            .imageView          = historyView.view.handle,
-            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_NONE,
-            .resolveImageView   = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {}
-        };
+            barrierWriter
+            .WriteImageBarrier(
+                history.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = history.image.mipLevels,
+                    .baseArrayLayer = static_cast<u32>(currentIndex),
+                    .layerCount     = 1
+                }
+            )
+            .WriteImageBarrier(
+                intermediateResolved.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = intermediateResolved.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = intermediateResolved.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                resolved.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = resolved.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = resolved.image.arrayLayers
+                }
+            )
+            .Execute(cmdBuffer);
 
-        const std::array colorAttachments = {resolvedInfo, historyInfo};
+            const VkImageBlit2 blitRegion =
+            {
+                .sType          = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+                .pNext          = nullptr,
+                .srcSubresource = {
+                    .aspectMask     = intermediateResolved.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = intermediateResolved.image.arrayLayers
+                },
+                .srcOffsets     = {
+                    {.x = 0, .y = 0, .z = 0},
+                    {.x = static_cast<s32>(intermediateResolved.image.width), .y = static_cast<s32>(intermediateResolved.image.height), .z = 1}
+                },
+                .dstSubresource = {
+                    .aspectMask     = resolved.image.aspect,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = resolved.image.arrayLayers
+                },
+                .dstOffsets     = {
+                    {.x = 0, .y = 0, .z = 0},
+                    {.x = static_cast<s32>(resolved.image.width), .y = static_cast<s32>(resolved.image.height), .z = 1}
+                }
+            };
 
-        const VkRenderingInfo renderInfo =
-        {
-            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .pNext                = nullptr,
-            .flags                = 0,
-            .renderArea           = {
-                .offset = {0, 0},
-                .extent = {resolved.image.width, resolved.image.height}
-            },
-            .layerCount           = 1,
-            .viewMask             = 0,
-            .colorAttachmentCount = static_cast<u32>(colorAttachments.size()),
-            .pColorAttachments    = colorAttachments.data(),
-            .pDepthAttachment     = nullptr,
-            .pStencilAttachment   = nullptr
-        };
+            const VkBlitImageInfo2 blitImageInfo =
+            {
+                .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                .pNext          = nullptr,
+                .srcImage       = intermediateResolved.image.handle,
+                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .dstImage       = resolved.image.handle,
+                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .regionCount    = 1,
+                .pRegions       = &blitRegion,
+                .filter         = VK_FILTER_LINEAR
+            };
 
-        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+            vkCmdBlitImage2(cmdBuffer.handle, &blitImageInfo);
 
-        pipeline.Bind(cmdBuffer);
-
-        const VkViewport viewport =
-        {
-            .x        = 0.0f,
-            .y        = 0.0f,
-            .width    = static_cast<f32>(resolved.image.width),
-            .height   = static_cast<f32>(resolved.image.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-        };
-
-        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
-
-        const VkRect2D scissor =
-        {
-            .offset = {0, 0},
-            .extent = {resolved.image.width, resolved.image.height}
-        };
-
-        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
-
-        const auto constants = TAA::Constants
-        {
-            .PointSamplerIndex  = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .LinearSamplerIndex = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
-            .CurrentColorIndex  = framebufferManager.GetFramebufferView("SceneColorView").sampledImageID,
-            .HistoryBufferIndex = framebufferManager.GetFramebufferView(fmt::format("TAABufferView/{}", previousIndex)).sampledImageID,
-            .VelocityIndex      = framebufferManager.GetFramebufferView("GMotionVectorsView").sampledImageID,
-            .SceneDepthIndex    = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID
-        };
-
-        pipeline.PushConstants
-        (
-            cmdBuffer,
-            VK_SHADER_STAGE_FRAGMENT_BIT,
-            constants
-        );
-
-        pipeline.BindDescriptors(cmdBuffer, megaSet);
-
-        vkCmdDraw
-        (
-            cmdBuffer.handle,
-            3,
-            1,
-            0,
-            0
-        );
-
-        vkCmdEndRendering(cmdBuffer.handle);
-
-        barrierWriter
-        .WriteImageBarrier(
-            resolved.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = resolved.image.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = resolved.image.arrayLayers
-            }
-        )
-        .WriteImageBarrier(
-            history.image,
-            Vk::ImageBarrier{
-                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
-                .baseMipLevel   = 0,
-                .levelCount     = history.image.mipLevels,
-                .baseArrayLayer = static_cast<u32>(currentIndex),
-                .layerCount     = 1
-            }
-        )
-        .Execute(cmdBuffer);
+            barrierWriter
+            .WriteImageBarrier(
+                intermediateResolved.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = intermediateResolved.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = intermediateResolved.image.arrayLayers
+                }
+            )
+            .WriteImageBarrier(
+                resolved.image,
+                Vk::ImageBarrier{
+                    .srcStageMask   = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                    .srcAccessMask  = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                    .oldLayout      = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                    .baseMipLevel   = 0,
+                    .levelCount     = resolved.image.mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = resolved.image.arrayLayers
+                }
+            )
+            .Execute(cmdBuffer);
+        }
+        Vk::EndLabel(cmdBuffer);
 
         Vk::EndLabel(cmdBuffer);
     }

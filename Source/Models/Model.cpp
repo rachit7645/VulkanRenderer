@@ -20,8 +20,8 @@
 #include "Util/Log.h"
 #include "Util/Files.h"
 #include "Util/Enum.h"
+#include "Util/Span.h"
 #include "Util/Types.h"
-#include "Util/Maths.h"
 #include "Util/Visitor.h"
 
 namespace Models
@@ -29,37 +29,42 @@ namespace Models
     // Model folder path
     constexpr auto MODEL_ASSETS_DIR = "GFX/";
 
-    // Default texture paths
-    constexpr auto DEFAULT_ALBEDO     = "Albedo.ktx2";
-    constexpr auto DEFAULT_NORMAL     = "Normal.ktx2";
-    constexpr auto DEFAULT_AO_RGH_MTL = "Albedo.ktx2";
-    constexpr auto DEFAULT_EMMISIVE   = "Albedo.ktx2";
+    constexpr auto        DEFAULT_ALBEDO_NAME  = "Default/Albedo";
+    constexpr glm::u8vec4 DEFAULT_ALBEDO_VALUE = {255, 255, 255, 255};
 
-    Model::Model
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view path
-    )
-        : name(Util::Files::GetNameWithoutExtension(path))
+    constexpr auto        DEFAULT_NORMAL_NAME  = "Default/NormalMap";
+    constexpr glm::u8vec4 DEFAULT_NORMAL_VALUE = {128, 128, 255, 255};
+
+    constexpr auto        DEFAULT_AO_RGH_MTL_NAME  = "Default/RoughnessMetallic";
+    constexpr glm::u8vec4 DEFAULT_AO_RGH_MTL_VALUE = {255, 255, 0, 255};
+
+    constexpr auto        DEFAULT_EMISSIVE_NAME  = "Default/Emissive";
+    constexpr glm::u8vec4 DEFAULT_EMISSIVE_VALUE = {255, 255, 255, 255};
+
+    void Model::LoadFromFile(const Models::LoadFromFileInfo& loadInfo, const std::string_view filePath)
     {
-        Logger::Info("Loading model! [Name={}]\n", name);
+        #ifdef ENGINE_PROFILE
+        ZoneNamed(zone, true);
+        zone.NameFmt("%s", filePath.data());
+        #endif
 
-        const std::string assetPath      = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, path);
-        const std::string assetDirectory = Util::Files::GetDirectory(assetPath);
+        name = Files::GetNameWithoutExtension(filePath);
+        path = std::string(filePath);
+
+        const std::string assetPath      = Files::GetAssetPath(MODEL_ASSETS_DIR, path);
+        const std::string assetDirectory = Files::GetDirectory(assetPath);
 
         fastgltf::Parser parser
         (
             fastgltf::Extensions::KHR_texture_basisu |
             fastgltf::Extensions::KHR_materials_ior |
-            fastgltf::Extensions::KHR_materials_emissive_strength
+            fastgltf::Extensions::KHR_materials_emissive_strength |
+            fastgltf::Extensions::KHR_lights_punctual |
+            fastgltf::Extensions::KHR_mesh_quantization
         );
 
         auto data = fastgltf::GltfDataBuffer::FromPath(assetPath);
+
         if (auto error = data.error(); error != fastgltf::Error::None)
         {
             Logger::Error
@@ -102,12 +107,7 @@ namespace Models
 
         ProcessScenes
         (
-            device,
-            allocator,
-            geometryBuffer,
-            textureManager,
-            stagingPool,
-            deletionQueue,
+            loadInfo,
             assetDirectory,
             asset.get()
         );
@@ -115,28 +115,22 @@ namespace Models
 
     void Model::ProcessScenes
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         for (const auto& scene : asset.scenes)
         {
             for (const auto nodeIndex : scene.nodeIndices)
             {
                 ProcessNode
                 (
-                    device,
-                    allocator,
-                    geometryBuffer,
-                    textureManager,
-                    stagingPool,
-                    deletionQueue,
+                    loadInfo,
                     directory,
                     asset,
                     nodeIndex,
@@ -148,32 +142,26 @@ namespace Models
 
     void Model::ProcessNode
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         usize nodeIndex,
         glm::mat4 nodeMatrix
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const auto& node = asset.nodes[nodeIndex];
 
-        nodeMatrix = GetTransformMatrix(node, nodeMatrix);
+        nodeMatrix = fastgltf::GetTransformMatrix(node, nodeMatrix);
 
         if (node.meshIndex.has_value())
         {
             LoadMesh
             (
-                device,
-                allocator,
-                geometryBuffer,
-                textureManager,
-                stagingPool,
-                deletionQueue,
+                loadInfo,
                 directory,
                 asset,
                 asset.meshes[node.meshIndex.value()],
@@ -181,16 +169,16 @@ namespace Models
             );
         }
 
+        if (node.lightIndex.has_value())
+        {
+            LoadLight(asset.lights[node.lightIndex.value()], nodeMatrix);
+        }
+
         for (const auto child : node.children)
         {
             ProcessNode
             (
-                device,
-                allocator,
-                geometryBuffer,
-                textureManager,
-                stagingPool,
-                deletionQueue,
+                loadInfo,
                 directory,
                 asset,
                 child,
@@ -199,20 +187,66 @@ namespace Models
         }
     }
 
+    void Model::LoadLight(const fastgltf::Light& light, const glm::mat4& nodeMatrix)
+    {
+        switch (light.type)
+        {
+            // Only one directional light is supported
+            // That light is reserved by Engine::Scene
+            // So we can't add any others
+        case fastgltf::LightType::Directional:
+            break;
+
+        case fastgltf::LightType::Spot:
+        {
+            spotLights.emplace_back(Models::LocalSpotLight{
+                .transform = nodeMatrix,
+                .light     = GPU::SpotLight{
+                    .position  = glm::vec3(0.0f),
+                    .color     = glm::fastgltf_cast(light.color),
+                    .intensity = light.intensity,
+                    .direction = glm::vec3(0.0f, 0.0f, -1.0f),
+                    .cutOff    = glm::vec2(light.innerConeAngle.value_or(0.0f), light.outerConeAngle.value_or(0.0f)),
+                    .range     = light.range.value_or(0.0f)
+                }
+            });
+
+            break;
+        }
+
+        case fastgltf::LightType::Point:
+        {
+            pointLights.emplace_back(Models::LocalPointLight{
+                .transform = nodeMatrix,
+                .light     = GPU::PointLight{
+                    .position  = glm::vec3(0.0f),
+                    .color     = glm::fastgltf_cast(light.color),
+                    .intensity = light.intensity,
+                    .range     = light.range.value_or(0.0f)
+                }
+            });
+
+            break;
+        }
+
+        default:
+            Logger::Error("{}\n", "Invalid light type!");
+        }
+    }
+
     void Model::LoadMesh
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::GeometryBuffer& geometryBuffer,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
         const fastgltf::Mesh& mesh,
         const glm::mat4& nodeMatrix
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         for (const auto& primitive : mesh.primitives)
         {
             if (primitive.type != fastgltf::PrimitiveType::Triangles)
@@ -222,449 +256,397 @@ namespace Models
                     "Unsupported primitive type! [Type={}]\n",
                     static_cast<std::underlying_type_t<fastgltf::PrimitiveType>>(primitive.type)
                 );
+
+                continue;
             }
 
-            // Geometry data
-            GPU::SurfaceInfo surfaceInfo = {};
-            GPU::AABB        aabb        = {};
+            meshes.emplace_back(Model::LoadPrimitive(
+                loadInfo,
+                directory,
+                asset,
+                primitive,
+                nodeMatrix
+            ));
+        }
+    }
 
-            // Indices
+    Models::Mesh Model::LoadPrimitive
+    (
+        const Models::LoadFromFileInfo& loadInfo,
+        const std::string_view directory,
+        const fastgltf::Asset& asset,
+        const fastgltf::Primitive& primitive,
+        const glm::mat4& nodeMatrix
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        // Geometry data
+        GPU::SurfaceInfo surfaceInfo = {};
+        GPU::AABB        aabb        = {};
+
+        // Indices
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Indices");
+            #endif
+
+            if (!primitive.indicesAccessor.has_value())
             {
-                if (!primitive.indicesAccessor.has_value())
-                {
-                    Logger::Error("{}\n", "Primitive does not contain indices accessor!");
-                }
-
-                const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
-
-                if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
-                {
-                    Logger::Error
-                    (
-                        "Invalid indices accessor type! [AccessorType={}]\n",
-                        static_cast<std::underlying_type_t<fastgltf::AccessorType>>(indicesAccessor.type)
-                    );
-                }
-
-                const auto [writePointer, info] = geometryBuffer.indexBuffer.Allocate
-                (
-                    device,
-                    allocator,
-                    indicesAccessor.count,
-                    stagingPool,
-                    deletionQueue
-                );
-
-                surfaceInfo.indexInfo = info;
-
-                // Assume indices are u32s
-                switch (indicesAccessor.componentType)
-                {
-                case fastgltf::ComponentType::Byte:
-                {
-                    fastgltf::iterateAccessorWithIndex<s8>(asset, indicesAccessor, [&] (s8 index, usize i)
-                    {
-                        writePointer[i] = static_cast<GPU::Index>(static_cast<u8>(index));
-                    });
-                    break;
-                }
-
-                case fastgltf::ComponentType::UnsignedByte:
-                {
-                    fastgltf::iterateAccessorWithIndex<u8>(asset, indicesAccessor, [&] (u8 index, usize i)
-                    {
-                        writePointer[i] = static_cast<GPU::Index>(index);
-                    });
-                    break;
-                }
-
-                case fastgltf::ComponentType::Short:
-                {
-                    fastgltf::iterateAccessorWithIndex<s16>(asset, indicesAccessor, [&] (s16 index, usize i)
-                    {
-                        writePointer[i] = static_cast<GPU::Index>(index);
-                    });
-                    break;
-                }
-
-                case fastgltf::ComponentType::UnsignedShort:
-                {
-                    fastgltf::iterateAccessorWithIndex<u16>(asset, indicesAccessor, [&] (u16 index, usize i)
-                    {
-                        writePointer[i] = static_cast<GPU::Index>(index);
-                    });
-                    break;
-                }
-
-                case fastgltf::ComponentType::UnsignedInt:
-                {
-                    fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, writePointer);
-                    break;
-                }
-
-                default:
-                    Logger::Error
-                    (
-                        "Invalid index component type! [ComponentType={}]\n",
-                        static_cast<std::underlying_type_t<fastgltf::ComponentType>>(indicesAccessor.componentType)
-                    );
-                }
+                Logger::Error("{}\n", "Primitive does not contain indices accessor!");
             }
 
-            // Positions
+            const auto& indicesAccessor = asset.accessors[primitive.indicesAccessor.value()];
+
+            if (indicesAccessor.type != fastgltf::AccessorType::Scalar)
             {
-                const auto& positionAccessor = GetAccessor
+                Logger::Error
                 (
-                    asset,
-                    primitive,
-                    "POSITION",
-                    fastgltf::AccessorType::Vec3
+                    "Invalid indices accessor type! [AccessorType={}]\n",
+                    static_cast<std::underlying_type_t<fastgltf::AccessorType>>(indicesAccessor.type)
                 );
-
-                const auto [writePointer, info] = geometryBuffer.positionBuffer.Allocate
-                (
-                    device,
-                    allocator,
-                    positionAccessor.count,
-                    stagingPool,
-                    deletionQueue
-                );
-
-                surfaceInfo.positionInfo = info;
-
-                aabb.min = glm::vec3(std::numeric_limits<f32>::max());
-                aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
-
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&] (const GPU::Position& position, usize index)
-                {
-                    aabb.min = glm::min(aabb.min, position);
-                    aabb.max = glm::max(aabb.max, position);
-
-                    writePointer[index] = position;
-                });
             }
 
-            const auto& normalAccessor = GetAccessor
+            const auto [data, info] = loadInfo.geometryBuffer.indexBuffer.Allocate
+            (
+                loadInfo.device,
+                loadInfo.allocator,
+                indicesAccessor.count,
+                loadInfo.stagingPool,
+                loadInfo.deletionQueue
+            );
+
+            surfaceInfo.indexInfo = info;
+
+            fastgltf::copyFromAccessor<GPU::Index>(asset, indicesAccessor, data);
+        }
+
+        Vk::VertexBuffer::Allocation vertexAllocation = {};
+
+        // Positions
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Positions");
+            #endif
+
+            const auto& positionAccessor = fastgltf::GetAccessor
             (
                 asset,
                 primitive,
-                "NORMAL",
+                "POSITION",
                 fastgltf::AccessorType::Vec3
             );
 
-            // UV Maps
+            vertexAllocation = loadInfo.geometryBuffer.vertexBuffer.Allocate
+            (
+                positionAccessor.count,
+                loadInfo.device,
+                loadInfo.allocator,
+                loadInfo.stagingPool,
+                loadInfo.deletionQueue
+            );
+
+            surfaceInfo.vertexInfo = vertexAllocation.info;
+
+            aabb.min = glm::vec3(std::numeric_limits<f32>::max());
+            aabb.max = glm::vec3(std::numeric_limits<f32>::lowest());
+
+            fastgltf::iterateAccessorWithIndex<glm::vec3>(asset, positionAccessor, [&] (const GPU::Position& position, usize index)
             {
-                const auto uv0AccessorIndex = GetAccessorIndex
-                (
-                    asset,
-                    primitive,
-                    "TEXCOORD_0",
-                    fastgltf::AccessorType::Vec2
-                );
+                aabb.min = glm::min(aabb.min, position);
+                aabb.max = glm::max(aabb.max, position);
 
-                const auto uv1AccessorIndex = GetAccessorIndex
-                (
-                    asset,
-                    primitive,
-                    "TEXCOORD_1",
-                    fastgltf::AccessorType::Vec2
-                );
+                std::memcpy(&vertexAllocation.position[index], &position, sizeof(GPU::Position));
+            });
+        }
 
-                const auto [writePointer, info] = geometryBuffer.uvBuffer.Allocate
-                (
-                    device,
-                    allocator,
-                    normalAccessor.count,
-                    stagingPool,
-                    deletionQueue
-                );
+        const auto& normalAccessor = fastgltf::GetAccessor
+        (
+            asset,
+            primitive,
+            "NORMAL",
+            fastgltf::AccessorType::Vec3
+        );
 
-                surfaceInfo.uvInfo = info;
+        // UV Maps
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load UVs");
+            #endif
+
+            const auto uv0AccessorIndex = fastgltf::GetUVAccessorIndex
+            (
+                asset,
+                primitive,
+                "TEXCOORD_0"
+            );
+
+            const auto uv1AccessorIndex = fastgltf::GetUVAccessorIndex
+            (
+                asset,
+                primitive,
+                "TEXCOORD_1"
+            );
+
+            if (uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
+            {
+                const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
+                const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
 
                 for (usize i = 0; i < normalAccessor.count; ++i)
                 {
-                    GPU::UV uvs = {};
+                    const glm::f16vec2 uv0 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv0Accessor, i));
+                    const glm::f16vec2 uv1 = glm::glm_cast(fastgltf::getAccessorElement<glm::vec2>(asset, uv1Accessor, i));
 
-                    std::optional<glm::vec2> uv0 = std::nullopt;
-                    std::optional<glm::vec2> uv1 = std::nullopt;
+                    const GPU::UV uvs = {.uv = {uv0, uv1}};
 
-                    if (uv0AccessorIndex.has_value())
-                    {
-                        uv0 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv0AccessorIndex], i);
-                    }
-
-                    if (uv1AccessorIndex.has_value())
-                    {
-                        uv1 = fastgltf::getAccessorElement<glm::vec2>(asset, asset.accessors[*uv1AccessorIndex], i);
-                    }
-
-                    uvs.uv[0] = uv0.has_value() ? uv0.value() : uv1.value_or(glm::vec2(0.0f, 0.0f));
-                    uvs.uv[1] = uv1.has_value() ? uv1.value() : uv0.value_or(glm::vec2(0.0f, 0.0f));
-
-                    writePointer[i] = uvs;
+                    std::memcpy(&vertexAllocation.uv[i], &uvs, sizeof(GPU::UV));
                 }
             }
-
-            // Vertices
+            else if (uv0AccessorIndex.has_value() && !uv1AccessorIndex.has_value())
             {
-                const auto& tangentAccessor = GetAccessor
-                (
-                    asset,
-                    primitive,
-                    "TANGENT",
-                    fastgltf::AccessorType::Vec4
-                );
+                const auto& uv0Accessor = asset.accessors[*uv0AccessorIndex];
 
-                const auto [writePointer, info] = geometryBuffer.vertexBuffer.Allocate
-                (
-                    device,
-                    allocator,
-                    normalAccessor.count,
-                    stagingPool,
-                    deletionQueue
-                );
-
-                surfaceInfo.vertexInfo = info;
-
-                for (usize i = 0; i < normalAccessor.count; ++i)
+                fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv0Accessor, [&] (const glm::vec2& uv, usize index)
                 {
-                    writePointer[i] = GPU::Vertex
-                    {
-                        .normal  = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i),
-                        .tangent = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i)
-                    };
-                }
+                    const glm::f16vec2 uv0 = glm::glm_cast(uv);
+
+                    const GPU::UV uvs = {.uv = {uv0, uv0}};
+
+                    std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
+                });
             }
-
-            if (!primitive.materialIndex.has_value())
+            else if (!uv0AccessorIndex.has_value() && uv1AccessorIndex.has_value())
             {
-                Logger::Error("{}\n", "No material in primitive!");
-            }
+                const auto& uv1Accessor = asset.accessors[*uv1AccessorIndex];
 
-            Models::Material material = {};
-
-            const auto& mat = asset.materials[primitive.materialIndex.value()];
-
-            // Material Factors
-            {
-                material.albedoFactor     = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
-                material.roughnessFactor  = mat.pbrData.roughnessFactor;
-                material.metallicFactor   = mat.pbrData.metallicFactor;
-                material.emmisiveFactor   = glm::fastgltf_cast(mat.emissiveFactor);
-                material.emmisiveStrength = mat.emissiveStrength;
-                material.ior              = mat.ior;
-
-                if (mat.doubleSided)
+                fastgltf::iterateAccessorWithIndex<glm::vec2>(asset, uv1Accessor, [&] (const glm::vec2& uv, usize index)
                 {
-                    material.flags |= GPU::MaterialFlags::DoubleSided;
-                }
+                    const glm::f16vec2 uv1 = glm::glm_cast(uv);
 
-                // TODO: Add proper support for AlphaMode::Blend
-                if (mat.alphaMode == fastgltf::AlphaMode::Mask || mat.alphaMode == fastgltf::AlphaMode::Blend)
+                    const GPU::UV uvs = {.uv = {uv1, uv1}};
+
+                    std::memcpy(&vertexAllocation.uv[index], &uvs, sizeof(GPU::UV));
+                });
+            }
+            else
+            {
+                std::memset(&vertexAllocation.uv[0], 0, sizeof(GPU::UV) * normalAccessor.count);
+            }
+        }
+
+        // Vertices
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Tangents and Normals");
+            #endif
+
+            const auto& tangentAccessor = fastgltf::GetAccessor
+            (
+                asset,
+                primitive,
+                "TANGENT",
+                fastgltf::AccessorType::Vec4
+            );
+
+            for (usize i = 0; i < normalAccessor.count; ++i)
+            {
+                const auto normal          = fastgltf::getAccessorElement<glm::vec3>(asset, normalAccessor,  i);
+                const auto tangentWithSign = fastgltf::getAccessorElement<glm::vec4>(asset, tangentAccessor, i);
+
+                const glm::vec2 packedNormal          = Maths::PackOctahedron(normal);
+                const u32       packedNormalQuantized = glm::packSnorm2x16(packedNormal);
+
+                const glm::vec2 octEncodedTangent = Maths::PackOctahedron(glm::vec3(tangentWithSign));
+
+                const s32 packedTangentX = Maths::QuantizeSNorm(octEncodedTangent.x, 15);
+                const s32 packedTangentY = Maths::QuantizeSNorm(octEncodedTangent.y, 15);
+                const s32 bitangentSign  = tangentWithSign.w >= 1.0f ? 1 : 0;
+
+                u32 packedTangentQuantized = 0;
+
+                packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentX), 0,  15);
+                packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(packedTangentY), 15, 15);
+                packedTangentQuantized = glm::bitfieldInsert(packedTangentQuantized, static_cast<u32>(bitangentSign),  30, 1);
+
+                const auto vertex = GPU::Vertex
                 {
-                    material.flags       |= GPU::MaterialFlags::AlphaMasked;
-                    material.alphaCutOff  = mat.alphaCutoff;
-                }
-            }
+                    .normal  = packedNormalQuantized,
+                    .tangent = packedTangentQuantized
+                };
 
-            // Albedo
+                std::memcpy(&vertexAllocation.normalAndTangent[i], &vertex, sizeof(GPU::Vertex));
+            }
+        }
+
+        if (!primitive.materialIndex.has_value())
+        {
+            Logger::Error("{}\n", "No material in primitive!");
+        }
+
+        Models::Material material = {};
+
+        const auto& mat = asset.materials[primitive.materialIndex.value()];
+
+        // Material Factors
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Material Factors");
+            #endif
+
+            material.albedoFactor     = glm::fastgltf_cast(mat.pbrData.baseColorFactor);
+            material.roughnessFactor  = mat.pbrData.roughnessFactor;
+            material.metallicFactor   = mat.pbrData.metallicFactor;
+            material.emissiveFactor   = glm::fastgltf_cast(mat.emissiveFactor);
+            material.emissiveStrength = mat.emissiveStrength;
+            material.ior              = mat.ior;
+
+            if (mat.doubleSided)
             {
-                const auto& baseColorTexture = mat.pbrData.baseColorTexture;
-
-                const auto textureInfo = LoadTexture
-                (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    deletionQueue,
-                    directory,
-                    asset,
-                    baseColorTexture,
-                    DEFAULT_ALBEDO
-                );
-
-                material.albedoID      = textureInfo.id;
-                material.albedoUVMapID = textureInfo.uvMapIndex;
+                material.flags |= GPU::MaterialFlags::DoubleSided;
             }
 
-            // Normal
+            // TODO: Add proper support for AlphaMode::Blend
+            if (mat.alphaMode == fastgltf::AlphaMode::Mask || mat.alphaMode == fastgltf::AlphaMode::Blend)
             {
-                const auto& normalTexture = mat.normalTexture;
-
-                const auto textureInfo = LoadTexture
-                (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    deletionQueue,
-                    directory,
-                    asset,
-                    normalTexture
-                );
-
-                material.normalID      = textureInfo.id;
-                material.normalUVMapID = textureInfo.uvMapIndex;
+                material.flags       |= GPU::MaterialFlags::AlphaMasked;
+                material.alphaCutOff  = mat.alphaCutoff;
             }
+        }
 
-            // AO + Roughness + Metallic
-            {
-                const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
+        // Albedo
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Albedo");
+            #endif
 
-                const auto textureInfo = LoadTexture
-                (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    deletionQueue,
-                    directory,
-                    asset,
-                    metallicRoughnessTexture,
-                    DEFAULT_AO_RGH_MTL
-                );
+            const auto& baseColorTexture = mat.pbrData.baseColorTexture;
 
-                material.aoRghMtlID      = textureInfo.id;
-                material.aoRghMtlUVMapID = textureInfo.uvMapIndex;
-            }
-
-            // Emmisive
-            {
-                const auto& emmisiveTexture = mat.emissiveTexture;
-
-                const auto textureInfo = LoadTexture
-                (
-                    device,
-                    allocator,
-                    textureManager,
-                    stagingPool,
-                    deletionQueue,
-                    directory,
-                    asset,
-                    emmisiveTexture,
-                    DEFAULT_EMMISIVE
-                );
-
-                material.emmisiveID      = textureInfo.id;
-                material.emmisiveUVMapID = textureInfo.uvMapIndex;
-            }
-
-            meshes.emplace_back
+            const auto textureInfo = LoadTexture
             (
-                surfaceInfo,
-                material,
-                nodeMatrix,
-                aabb
+                loadInfo,
+                directory,
+                asset,
+                baseColorTexture,
+                DEFAULT_ALBEDO_NAME,
+                DEFAULT_ALBEDO_VALUE
             );
-        }
-    }
 
-    glm::mat4 Model::GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base)
-    {
-        return std::visit(Util::Visitor {
-            [&] (const fastgltf::math::fmat4x4& matrix)
-            {
-                return base * glm::fastgltf_cast(matrix);
-            },
-            [&] (const fastgltf::TRS& trs)
-            {
-                return base * Maths::TransformMatrix
-                (
-                    glm::fastgltf_cast(trs.translation),
-                    glm::eulerAngles(glm::fastgltf_cast(trs.rotation)),
-                    glm::fastgltf_cast(trs.scale)
-                );
-            }
-        }, node.transform);
-    }
-
-    const fastgltf::Accessor& Model::GetAccessor
-    (
-        const fastgltf::Asset& asset,
-        const fastgltf::Primitive& primitive,
-        const std::string_view attribute,
-        fastgltf::AccessorType type
-    )
-    {
-        const auto attributeIt = primitive.findAttribute(attribute);
-
-        if (attributeIt == primitive.attributes.cend())
-        {
-            Logger::Error("Failed to find attribute! [Attribute={}]\n", attribute);
+            material.albedoID      = textureInfo.id;
+            material.albedoUVMapID = textureInfo.uvMapIndex;
         }
 
-        const auto& accessor = asset.accessors[attributeIt->accessorIndex];
-
-        if (accessor.type != type)
+        // Normal
         {
-            Logger::Error
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Normal Map");
+            #endif
+
+            const auto& normalTexture = mat.normalTexture;
+
+            const auto textureInfo = LoadTexture
             (
-                "Invalid accessor type! [AccessorType={}] [Required={}]\n",
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(accessor.type),
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(type)
+                loadInfo,
+                directory,
+                asset,
+                normalTexture,
+                DEFAULT_NORMAL_NAME,
+                DEFAULT_NORMAL_VALUE
             );
+
+            material.normalID      = textureInfo.id;
+            material.normalUVMapID = textureInfo.uvMapIndex;
         }
 
-        return accessor;
-    }
-
-    std::optional<usize> Model::GetAccessorIndex
-    (
-        const fastgltf::Asset& asset,
-        const fastgltf::Primitive& primitive,
-        const std::string_view attribute,
-        fastgltf::AccessorType type
-    )
-    {
-        const auto attributeIt = primitive.findAttribute(attribute);
-
-        if (attributeIt == primitive.attributes.cend())
+        // AO + Roughness + Metallic
         {
-            return std::nullopt;
-        }
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Roughness and Metallic");
+            #endif
 
-        const auto& accessor = asset.accessors[attributeIt->accessorIndex];
+            const auto& metallicRoughnessTexture = mat.pbrData.metallicRoughnessTexture;
 
-        if (accessor.type != type)
-        {
-            Logger::Error
+            const auto textureInfo = LoadTexture
             (
-                "Invalid accessor type! [AccessorType={}] [Required={}]\n",
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(accessor.type),
-                static_cast<std::underlying_type_t<fastgltf::AccessorType>>(type)
+                loadInfo,
+                directory,
+                asset,
+                metallicRoughnessTexture,
+                DEFAULT_AO_RGH_MTL_NAME,
+                DEFAULT_AO_RGH_MTL_VALUE
             );
+
+            material.aoRghMtlID      = textureInfo.id;
+            material.aoRghMtlUVMapID = textureInfo.uvMapIndex;
         }
 
-        return attributeIt->accessorIndex;
+        // Emissive
+        {
+            #ifdef ENGINE_PROFILE
+            ZoneScopedN("Load Emissive");
+            #endif
+
+            const auto& emissiveTexture = mat.emissiveTexture;
+
+            const auto textureInfo = LoadTexture
+            (
+                loadInfo,
+                directory,
+                asset,
+                emissiveTexture,
+                DEFAULT_EMISSIVE_NAME,
+                DEFAULT_EMISSIVE_VALUE
+            );
+
+            material.emissiveID      = textureInfo.id;
+            material.emissiveUVMapID = textureInfo.uvMapIndex;
+        }
+
+        return Models::Mesh
+        {
+            .surfaceInfo = surfaceInfo,
+            .material    = material,
+            .transform   = nodeMatrix,
+            .aabb        = aabb
+        };
     }
 
+    template<typename T>
+    requires fastgltf::IsTextureInfo<T>
     Model::TextureInfo Model::LoadTexture
     (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
+        const Models::LoadFromFileInfo& loadInfo,
         const std::string_view directory,
         const fastgltf::Asset& asset,
-        const std::optional<fastgltf::TextureInfo>& textureInfo,
-        const std::string_view defaultTexture
+        const std::optional<T>& textureInfo,
+        const std::string_view defaultName,
+        const glm::u8vec4& defaultData
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (!textureInfo.has_value())
         {
-            const auto id = textureManager.AddTexture
+            const auto id = loadInfo.textureManager.LoadTexture
             (
-                device,
-                allocator,
-                stagingPool,
-                deletionQueue,
+                loadInfo.device,
+                loadInfo.allocator,
+                loadInfo.stagingPool,
+                loadInfo.executor,
+                loadInfo.deletionQueue,
                 Vk::ImageUpload{
-                    .type   = Vk::ImageUploadType::KTX2,
+                    .type   = Vk::ImageUploadType::RAW,
                     .flags  = Vk::ImageUploadFlags::None,
-                    .source = Vk::ImageUploadFile{
-                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, defaultTexture)
+                    .source = Vk::ImageUploadRawMemory{
+                        .name   = std::string(defaultName),
+                        .width  = 1,
+                        .height = 1,
+                        .format = VK_FORMAT_R8G8B8A8_UNORM,
+                        .data   = Util::ToBytes(defaultData)
                     }
                 }
             );
@@ -686,111 +668,11 @@ namespace Models
             );
         }
 
-        const auto id = LoadTextureInternal
-        (
-            device,
-            allocator,
-            textureManager,
-            stagingPool,
-            deletionQueue,
-            directory,
-            asset,
-            textureInfo->textureIndex
-        );
+        const auto& texture = asset.textures[textureInfo->textureIndex];
 
-        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
-
-        return Model::TextureInfo
-        {
-            .id         = id,
-            .uvMapIndex = index
-        };
-    }
-
-    Model::TextureInfo Model::LoadTexture
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view directory,
-        const fastgltf::Asset& asset,
-        const std::optional<fastgltf::NormalTextureInfo>& textureInfo
-    )
-    {
-        if (!textureInfo.has_value())
-        {
-            const auto id = textureManager.AddTexture
-            (
-                device,
-                allocator,
-                stagingPool,
-                deletionQueue,
-                Vk::ImageUpload{
-                    .type   = Vk::ImageUploadType::KTX2,
-                    .flags  = Vk::ImageUploadFlags::None,
-                    .source = Vk::ImageUploadFile{
-                        .path = Util::Files::GetAssetPath(MODEL_ASSETS_DIR, DEFAULT_NORMAL)
-                    }
-                }
-            );
-
-            return Model::TextureInfo
-            {
-                .id         = id,
-                .uvMapIndex = 0
-            };
-        }
-
-        if (textureInfo->texCoordIndex > 1)
-        {
-            Logger::Warning
-            (
-                "Normal texture uses more than two UV channels! [TextureIndex={}] [TexCoordIndex={}]\n",
-                textureInfo->textureIndex,
-                textureInfo->texCoordIndex
-            );
-        }
-
-        const auto id = LoadTextureInternal
-        (
-            device,
-            allocator,
-            textureManager,
-            stagingPool,
-            deletionQueue,
-            directory,
-            asset,
-            textureInfo->textureIndex
-        );
-
-        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
-
-        return Model::TextureInfo
-        {
-            .id         = id,
-            .uvMapIndex = index
-        };
-    }
-
-    Vk::TextureID Model::LoadTextureInternal
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::TextureManager& textureManager,
-        Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
-        const std::string_view directory,
-        const fastgltf::Asset& asset,
-        usize textureIndex
-    )
-    {
-        const auto& texture = asset.textures[textureIndex];
-
-        usize                imageIndex = 0;
-        Vk::ImageUploadType  type       = Vk::ImageUploadType::KTX2;
-        Vk::ImageUploadFlags flags      = Vk::ImageUploadFlags::None;
+        usize imageIndex = 0;
+        auto  type       = Vk::ImageUploadType::KTX2;
+        auto  flags      = Vk::ImageUploadFlags::None;
 
         if (texture.basisuImageIndex.has_value())
         {
@@ -806,22 +688,22 @@ namespace Models
         }
         else
         {
-            Logger::Error("Image index not found! [TextureIndex={}]\n", textureIndex);
+            Logger::Error("Image index not found! [TextureIndex={}]\n", textureInfo->textureIndex);
         }
 
         const auto& image = asset.images[imageIndex];
 
-        return std::visit(Util::Visitor{
+        const auto id = std::visit(Util::Visitor{
             [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
             {
                 Logger::Error
                 (
                     "Unsupported source! [TextureIndex={}] [ImageIndex={}]\n",
-                    textureIndex,
+                    textureInfo->textureIndex,
                     imageIndex
                 );
 
-                return 0;
+                return {};
             },
             [&] (const fastgltf::sources::URI& filePath) -> Vk::TextureID
             {
@@ -830,7 +712,7 @@ namespace Models
                     Logger::Error
                     (
                         "Unsupported file byte offset! [TextureIndex={}] [FileByteOffset={}]\n",
-                        textureIndex,
+                        textureInfo->textureIndex,
                         filePath.fileByteOffset
                     );
                 }
@@ -840,17 +722,18 @@ namespace Models
                     Logger::Error
                     (
                         "Only local paths are supported! [TextureIndex={}] [UriPath={}]\n",
-                        textureIndex,
+                        textureInfo->textureIndex,
                         filePath.uri.c_str()
                     );
                 }
 
-                return textureManager.AddTexture
+                return loadInfo.textureManager.LoadTexture
                 (
-                    device,
-                    allocator,
-                    stagingPool,
-                    deletionQueue,
+                    loadInfo.device,
+                    loadInfo.allocator,
+                    loadInfo.stagingPool,
+                    loadInfo.executor,
+                    loadInfo.deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
                         .flags  = flags,
@@ -862,15 +745,16 @@ namespace Models
             },
             [&] (const fastgltf::sources::Array& array) -> Vk::TextureID
             {
-                const auto arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + 0);
-                const auto arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + array.bytes.size());
+                const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data());
+                const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + array.bytes.size());
 
-                return textureManager.AddTexture
+                return loadInfo.textureManager.LoadTexture
                 (
-                    device,
-                    allocator,
-                    stagingPool,
-                    deletionQueue,
+                    loadInfo.device,
+                    loadInfo.allocator,
+                    loadInfo.stagingPool,
+                    loadInfo.executor,
+                    loadInfo.deletionQueue,
                     Vk::ImageUpload{
                         .type   = type,
                         .flags  = flags,
@@ -886,30 +770,31 @@ namespace Models
                 const auto& bufferView = asset.bufferViews[view.bufferViewIndex];
                 const auto& buffer     = asset.buffers[bufferView.bufferIndex];
 
-                return std::visit(Util::Visitor {
+                return std::visit(Util::Visitor{
                     // Because we specify LoadExternalBuffers, all buffers are already loaded into a vector.
                     [&] (ENGINE_UNUSED const auto& argument) -> Vk::TextureID
                     {
                         Logger::Error
                         (
                             "Unsupported buffer source! [TextureIndex={}] [ImageIndex={}]\n",
-                            textureIndex,
+                            textureInfo->textureIndex,
                             imageIndex
                         );
 
-                        return 0;
+                        return {};
                     },
                     [&] (const fastgltf::sources::Array& array) -> Vk::TextureID
                     {
-                        const auto arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + 0);
-                        const auto arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + bufferView.byteLength);
+                        const auto* arrayBegin = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset);
+                        const auto* arrayEnd   = reinterpret_cast<const u8*>(array.bytes.data() + bufferView.byteOffset + bufferView.byteLength);
 
-                        return textureManager.AddTexture
+                        return loadInfo.textureManager.LoadTexture
                         (
-                            device,
-                            allocator,
-                            stagingPool,
-                            deletionQueue,
+                            loadInfo.device,
+                            loadInfo.allocator,
+                            loadInfo.stagingPool,
+                            loadInfo.executor,
+                            loadInfo.deletionQueue,
                             Vk::ImageUpload{
                                 .type   = type,
                                 .flags  = flags,
@@ -923,6 +808,14 @@ namespace Models
                 }, buffer.data);
             },
         }, image.data);
+
+        const auto index = glm::clamp<u32>(textureInfo->texCoordIndex, 0, 1);
+
+        return Model::TextureInfo
+        {
+            .id         = id,
+            .uvMapIndex = index
+        };
     }
 
     void Model::Destroy
@@ -932,7 +825,7 @@ namespace Models
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         Vk::GeometryBuffer& geometryBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         for (auto& mesh : meshes)

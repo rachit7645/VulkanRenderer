@@ -17,6 +17,10 @@
 #ifndef EXTERNALS_STB_H
 #define EXTERNALS_STB_H
 
+#include "Util/Assert.h"
+
+#define STBI_ASSERT(expression) ENGINE_ASSERT(expression)
+
 #include "stb/stb_image.h"
 
 #endif

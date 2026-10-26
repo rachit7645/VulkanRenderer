@@ -18,21 +18,22 @@
 
 #include "Util/Unused.h"
 #include "Engine/Application.h"
+#include "Util/Threads.h"
+
+#ifdef ENGINE_PROFILE
 #include "Externals/Tracy.h"
+#endif
 
 int main(ENGINE_UNUSED int argc, ENGINE_UNUSED char** argv)
 {
-    #ifdef ENGINE_DEBUG
-    // Set stderr to line buffering mode (does this even work on windows lol)
-    // setvbuf(stderr, nullptr, _IOLBF, 0);
-    #endif
-
     #ifdef ENGINE_PROFILE
-    while(!tracy::GetProfiler().IsConnected())
+    while (!tracy::GetProfiler().IsConnected())
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
     #endif
+
+    Util::SetMainThreadName("Main Thread");
 
     Engine::Application().Run();
 

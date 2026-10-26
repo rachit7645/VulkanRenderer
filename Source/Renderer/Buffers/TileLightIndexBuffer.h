@@ -17,27 +17,25 @@
 #ifndef TILE_LIGHT_INDEX_BUFFER_H
 #define TILE_LIGHT_INDEX_BUFFER_H
 
-#include "Vulkan/ResizableBuffer.h"
+#include "Vulkan/Buffer.h"
+#include "Engine/DeletionQueue.h"
 
 namespace Renderer::Buffers
 {
     class TileLightIndexBuffer
     {
     public:
-        TileLightIndexBuffer();
-
         void Update
         (
+            usize tileCount,
             VkDevice device,
             VmaAllocator allocator,
-            const Vk::CommandBuffer& cmdBuffer,
-            usize tileCount,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Destroy(VmaAllocator allocator);
 
-        Vk::ResizableBuffer resizableBuffer;
+        Vk::Buffer buffer = {};
     };
 }
 

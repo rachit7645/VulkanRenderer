@@ -25,10 +25,11 @@ namespace Renderer::Buffers
 {
     MeshBuffer::MeshBuffer(VkDevice device, VmaAllocator allocator)
     {
-        for (usize i = 0; i < m_meshBuffers.size(); ++i)
+        for (usize i = 0; i < meshBuffers.size(); ++i)
         {
-            m_meshBuffers[i] = Vk::Buffer
+            meshBuffers[i] = Vk::Buffer
             (
+                device,
                 allocator,
                 MAX_MESH_COUNT * sizeof(GPU::Mesh),
                 0,
@@ -38,15 +39,14 @@ namespace Renderer::Buffers
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            m_meshBuffers[i].GetDeviceAddress(device);
-
-            Vk::SetDebugName(device, m_meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
+            Vk::SetDebugName(device, meshBuffers[i].handle, fmt::format("MeshBuffer/{}", i));
         }
 
         for (usize i = 0; i < m_instanceBuffers.size(); ++i)
         {
             m_instanceBuffers[i] = Vk::Buffer
             (
+                device,
                 allocator,
                 sizeof(u32) + MAX_MESH_COUNT * sizeof(GPU::Instance),
                 0,
@@ -60,18 +60,33 @@ namespace Renderer::Buffers
 
             std::memcpy(m_instanceBuffers[i].hostAddress, &ZERO, sizeof(u32));
 
+            for (usize instanceIndex = 0; instanceIndex < MAX_MESH_COUNT; ++instanceIndex)
+            {
+                constexpr GPU::Instance ZERO_INSTANCE =
+                {
+                    .meshIndex    = 0,
+                    .transform    = glm::identity<glm::mat4>(),
+                    .normalMatrix = glm::identity<glm::mat3>()
+                };
+
+                std::memcpy
+                (
+                    static_cast<u8*>(m_instanceBuffers[i].hostAddress) + sizeof(u32) + instanceIndex * sizeof(GPU::Instance),
+                    &ZERO_INSTANCE,
+                    sizeof(GPU::Instance)
+                );
+            }
+
             if (!(m_instanceBuffers[i].memoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
             {
                 Vk::CheckResult(vmaFlushAllocation(
                     allocator,
                     m_instanceBuffers[i].allocation,
                     0,
-                    sizeof(u32)),
+                    m_instanceBuffers[i].size),
                     "Failed to flush allocation!"
                 );
             }
-
-            m_instanceBuffers[i].GetDeviceAddress(device);
 
             Vk::SetDebugName(device, m_instanceBuffers[i].handle, fmt::format("InstanceBuffer/{}", i));
         }
@@ -79,43 +94,43 @@ namespace Renderer::Buffers
 
     void MeshBuffer::LoadMeshes
     (
+        usize FIF,
         usize frameIndex,
         VmaAllocator allocator,
         const Models::ModelManager& modelManager,
-        const std::vector<Renderer::RenderObject>& renderObjects
+        Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator,
+        const std::span<const Renderer::RenderObject> renderObjects
     )
     {
-        ankerl::unordered_dense::set<Models::ModelID> uniqueModelIDs = {};
+        auto uniqueModelIDs = Scratch::CreateSet<Models::ModelID>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {
             uniqueModelIDs.insert(renderObject.modelID);
         }
 
-        std::vector<GPU::Mesh>                                                 meshes       = {};
-        ankerl::unordered_dense::map<std::pair<Models::ModelID, usize>, usize> meshIndexMap = {};
+        auto meshes             = Scratch::CreateVector<GPU::Mesh>(scratchAllocator);
+        auto modelBaseOffsetMap = Scratch::CreateMap<Models::ModelID, usize>(scratchAllocator);
 
         for (const auto modelID : uniqueModelIDs)
         {
             const auto& model = modelManager.GetModel(modelID);
 
-            for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
+            modelBaseOffsetMap.emplace(modelID, meshes.size());
+
+            for (const auto& mesh : model.meshes)
             {
-                const auto& mesh = model.meshes[localMeshIndex];
-
-                // (modelID, localMeshIndex) -> globalMeshIndex
-                meshIndexMap[{modelID, localMeshIndex}] = meshes.size();
-
                 meshes.emplace_back
                 (
                     mesh.surfaceInfo,
-                    mesh.material.Convert(modelManager.textureManager),
+                    mesh.material.Convert(textureManager),
                     mesh.aabb
                 );
             }
         }
 
-        std::vector<GPU::Instance> instances = {};
+        auto instances = Scratch::CreateVector<GPU::Instance>(scratchAllocator);
 
         for (const auto& renderObject : renderObjects)
         {
@@ -128,6 +143,8 @@ namespace Renderer::Buffers
 
             const auto& model = modelManager.GetModel(renderObject.modelID);
 
+            const usize baseIndex = modelBaseOffsetMap.at(renderObject.modelID);
+
             for (usize localMeshIndex = 0; localMeshIndex < model.meshes.size(); ++localMeshIndex)
             {
                 const auto& mesh = model.meshes[localMeshIndex];
@@ -135,7 +152,7 @@ namespace Renderer::Buffers
                 const auto transform    = globalTransform * mesh.transform;
                 const auto normalMatrix = Maths::NormalMatrix(transform);
 
-                const auto globalMeshIndex = meshIndexMap.at({renderObject.modelID, localMeshIndex});
+                const auto globalMeshIndex = baseIndex + localMeshIndex;
 
                 instances.emplace_back
                 (
@@ -146,7 +163,7 @@ namespace Renderer::Buffers
             }
         }
 
-        const auto& meshBuffer     = GetCurrentMeshBuffer(frameIndex);
+        const auto& meshBuffer     = meshBuffers[FIF];
         const auto& instanceBuffer = GetCurrentInstanceBuffer(frameIndex);
 
         const VkDeviceSize meshCopySize     = meshes.size()    * sizeof(GPU::Mesh);
@@ -198,16 +215,6 @@ namespace Renderer::Buffers
         }
     }
 
-    const Vk::Buffer& MeshBuffer::GetCurrentMeshBuffer(usize frameIndex) const
-    {
-        return m_meshBuffers[frameIndex % m_meshBuffers.size()];
-    }
-
-    const Vk::Buffer& MeshBuffer::GetPreviousMeshBuffer(usize frameIndex) const
-    {
-        return m_meshBuffers[(frameIndex + m_meshBuffers.size() - 1) % m_meshBuffers.size()];
-    }
-
     const Vk::Buffer& MeshBuffer::GetCurrentInstanceBuffer(usize frameIndex) const
     {
         return m_instanceBuffers[frameIndex % m_instanceBuffers.size()];
@@ -220,7 +227,7 @@ namespace Renderer::Buffers
 
     void MeshBuffer::Destroy(VmaAllocator allocator)
     {
-        for (auto& buffer : m_meshBuffers)
+        for (auto& buffer : meshBuffers)
         {
             buffer.Destroy(allocator);
         }

@@ -16,11 +16,16 @@
 
 #version 460 core
 
-#extension GL_EXT_ray_tracing : enable
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_EXT_ray_tracing          : enable
 
-layout(location = 0) rayPayloadInEXT float shadowAmount;
+#include "Shadows/ShadowRT.h"
+
+layout(location = 0) rayPayloadInEXT ShadowRayPayload payload;
 
 void main()
 {
-    shadowAmount = 0.0f;
+    payload.didRayHit = 0.0f;
 }

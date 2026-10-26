@@ -19,7 +19,7 @@
 
 #include "GPU/Lights.h"
 #include "Externals/SIMDJSON.h"
-#include "Renderer/Objects/FreeCamera.h"
+#include "Engine/FreeCamera.h"
 
 namespace JSON
 {
@@ -34,9 +34,9 @@ namespace JSON
     template<glm::length_t L>
     simdjson::simdjson_result<glm::vec<L, f32>> ParseVector(simdjson::ondemand::array& array)
     {
-        glm::vec<L, f32, glm::defaultp> output;
+        glm::vec<L, f32> output;
 
-        for (ssize i = 0; i < L; ++i)
+        for (usize i = 0; i < L; ++i)
         {
             array.reset();
 
@@ -59,7 +59,7 @@ namespace JSON
                 return valueAsDouble.error();
             }
 
-            output[i] = static_cast<f32>(valueAsDouble.value());
+            output[i] = static_cast<f32>(valueAsDouble.value_unsafe());
         }
 
         return output;
@@ -78,18 +78,38 @@ namespace simdjson
             return error;
         }
 
-        constexpr glm::length_t VECTOR_LENGTH = 2;
+        constexpr glm::length_t VECTOR_LENGTH = vector.length();
 
-        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
+        const auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {
             return parsed.error();
         }
 
-        vector = parsed.value();
+        vector = parsed.value_unsafe();
 
         return error_code::SUCCESS;
+    }
+
+    template <typename builder_type>
+    void tag_invoke(serialize_tag, builder_type& builder, const glm::vec2& vector)
+    {
+        builder.start_array();
+
+        constexpr glm::length_t VECTOR_LENGTH = vector.length();
+
+        for (usize i = 0; i < VECTOR_LENGTH; ++i)
+        {
+            builder.append(vector[i]);
+
+            if (i < VECTOR_LENGTH - 1)
+            {
+                builder.append_comma();
+            }
+        }
+
+        builder.end_array();
     }
 
     template <typename simdjson_value>
@@ -102,18 +122,38 @@ namespace simdjson
             return error;
         }
 
-        constexpr glm::length_t VECTOR_LENGTH = 3;
+        constexpr glm::length_t VECTOR_LENGTH = vector.length();
 
-        auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
+        const auto parsed = JSON::ParseVector<VECTOR_LENGTH>(array);
 
         if (parsed.error() != error_code::SUCCESS)
         {
             return parsed.error();
         }
 
-        vector = parsed.value();
+        vector = parsed.value_unsafe();
 
         return error_code::SUCCESS;
+    }
+
+    template <typename builder_type>
+    void tag_invoke(serialize_tag, builder_type& builder, const glm::vec3& vector)
+    {
+        builder.start_array();
+
+        constexpr glm::length_t VECTOR_LENGTH = vector.length();
+
+        for (usize i = 0; i < VECTOR_LENGTH; ++i)
+        {
+            builder.append(vector[i]);
+
+            if (i < VECTOR_LENGTH - 1)
+            {
+                builder.append_comma();
+            }
+        }
+
+        builder.end_array();
     }
 
     template <typename simdjson_value>
@@ -136,12 +176,28 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Intensity"].get<glm::vec3>(light.intensity); error != error_code::SUCCESS)
+        if (const auto error = object["Intensity"].get<f32>(light.intensity); error != error_code::SUCCESS)
         {
             return error;
         }
 
         return error_code::SUCCESS;
+    }
+
+    template <typename builder_type>
+    void tag_invoke(serialize_tag, builder_type& builder, const GPU::DirLight& light)
+    {
+        builder.start_object();
+
+        builder.template append_key_value<"Direction">(light.direction);
+        builder.append_comma();
+
+        builder.template append_key_value<"Color">(light.color);
+        builder.append_comma();
+
+        builder.template append_key_value<"Intensity">(light.intensity);
+
+        builder.end_object();
     }
 
     template <typename simdjson_value>
@@ -164,7 +220,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Intensity"].get<glm::vec3>(light.intensity); error != error_code::SUCCESS)
+        if (const auto error = object["Intensity"].get<f32>(light.intensity); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -175,6 +231,25 @@ namespace simdjson
         }
 
         return error_code::SUCCESS;
+    }
+
+    template <typename builder_type>
+    void tag_invoke(serialize_tag, builder_type& builder, const GPU::PointLight& light)
+    {
+        builder.start_object();
+
+        builder.template append_key_value<"Position">(light.position);
+        builder.append_comma();
+
+        builder.template append_key_value<"Color">(light.color);
+        builder.append_comma();
+
+        builder.template append_key_value<"Intensity">(light.intensity);
+        builder.append_comma();
+
+        builder.template append_key_value<"Range">(light.range);
+
+        builder.end_object();
     }
 
     template <typename simdjson_value>
@@ -197,7 +272,7 @@ namespace simdjson
             return error;
         }
 
-        if (const auto error = object["Intensity"].get<glm::vec3>(light.intensity); error != error_code::SUCCESS)
+        if (const auto error = object["Intensity"].get<f32>(light.intensity); error != error_code::SUCCESS)
         {
             return error;
         }
@@ -223,8 +298,33 @@ namespace simdjson
         return error_code::SUCCESS;
     }
 
+    template <typename builder_type>
+    void tag_invoke(serialize_tag, builder_type& builder, const GPU::SpotLight& light)
+    {
+        builder.start_object();
+
+        builder.template append_key_value<"Position">(light.position);
+        builder.append_comma();
+
+        builder.template append_key_value<"Color">(light.color);
+        builder.append_comma();
+
+        builder.template append_key_value<"Intensity">(light.intensity);
+        builder.append_comma();
+
+        builder.template append_key_value<"Direction">(light.direction);
+        builder.append_comma();
+
+        builder.template append_key_value<"CutOff">(glm::degrees(light.cutOff));
+        builder.append_comma();
+
+        builder.template append_key_value<"Range">(light.range);
+
+        builder.end_object();
+    }
+
     template <typename simdjson_value>
-    auto tag_invoke(deserialize_tag, simdjson_value& val, Renderer::Objects::FreeCamera& camera)
+    auto tag_invoke(deserialize_tag, simdjson_value& val, Engine::FreeCamera& camera)
     {
         ondemand::object object;
 
@@ -280,7 +380,7 @@ namespace simdjson
         rotation = glm::radians(rotation);
         FOV      = glm::radians(FOV);
 
-        camera = Renderer::Objects::FreeCamera
+        camera = Engine::FreeCamera
         (
             position,
             rotation,
@@ -292,6 +392,34 @@ namespace simdjson
         );
 
         return error_code::SUCCESS;
+    }
+
+    template <typename builder_type>
+    void tag_invoke(serialize_tag, builder_type& builder, const Engine::FreeCamera& camera)
+    {
+        builder.start_object();
+
+        builder.template append_key_value<"Position">(camera.position);
+        builder.append_comma();
+
+        builder.template append_key_value<"Rotation">(glm::degrees(glm::eulerAngles(camera.orientation)));
+        builder.append_comma();
+
+        builder.template append_key_value<"FOV">(glm::degrees(camera.FOV));
+        builder.append_comma();
+
+        builder.template append_key_value<"Speed">(camera.speed);
+        builder.append_comma();
+
+        builder.template append_key_value<"Sprint">(camera.sprint);
+        builder.append_comma();
+
+        builder.template append_key_value<"Sensitivity">(camera.sensitivity);
+        builder.append_comma();
+
+        builder.template append_key_value<"Zoom">(camera.zoom);
+
+        builder.end_object();
     }
 }
 

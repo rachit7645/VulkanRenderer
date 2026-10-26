@@ -16,8 +16,6 @@
 
 #include "RenderPass.h"
 
-#include "Util/Log.h"
-#include "Util/Ranges.h"
 #include "Vulkan/DebugUtils.h"
 #include "Tonemap/Tonemap.h"
 
@@ -35,25 +33,25 @@ namespace Renderer::ToneMap
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatLDR};
 
-        pipelineManager.AddPipeline("Tonemap", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::Tonemap, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",   VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Tonemap/Tonemap.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ToneMap::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer
         (
             "FinalColor",
-            Vk::FramebufferType::ColorLDR,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
+            formatHelper.colorAttachmentFormatLDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -65,9 +63,9 @@ namespace Renderer::ToneMap
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -75,7 +73,7 @@ namespace Renderer::ToneMap
         (
             "FinalColor",
             "FinalColorView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -92,10 +90,10 @@ namespace Renderer::ToneMap
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
-        const auto& pipeline = pipelineManager.GetPipeline("Tonemap");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::Tonemap);
 
         const auto& finalColorView = framebufferManager.GetFramebufferView("FinalColorView");
         const auto& finalColor     = framebufferManager.GetFramebuffer(finalColorView.framebuffer);
@@ -141,8 +139,8 @@ namespace Renderer::ToneMap
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {finalColor.image.width, finalColor.image.height}
+                .offset = {.x     = 0,                      .y      = 0},
+                .extent = {.width = finalColor.image.width, .height = finalColor.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -170,8 +168,8 @@ namespace Renderer::ToneMap
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {finalColor.image.width, finalColor.image.height}
+            .offset = {.x     = 0,                      .y      = 0},
+            .extent = {.width = finalColor.image.width, .height = finalColor.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -179,8 +177,7 @@ namespace Renderer::ToneMap
         const auto constants = ToneMap::Constants
         {
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID,
-            .ExposureIndex     = framebufferManager.GetFramebufferView("Exposure/ValueView").sampledImageID
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("FinalSceneColorView").sampledImageID
         };
 
         pipeline.PushConstants

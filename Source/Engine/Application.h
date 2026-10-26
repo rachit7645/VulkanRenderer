@@ -17,6 +17,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
+#include "Scratch.h"
 #include "Renderer/RenderManager.h"
 
 namespace Engine
@@ -24,8 +25,11 @@ namespace Engine
     class Application
     {
     public:
+        Application();
+
         void Run();
     private:
+        Scratch::Allocator        m_frameAllocator;
         Renderer::RenderManager m_renderer;
     };
 }

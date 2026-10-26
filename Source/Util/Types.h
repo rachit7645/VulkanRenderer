@@ -41,4 +41,7 @@ using f64 = double;
 using ssize = std::ptrdiff_t;
 using usize = std::size_t;
 
+// Pointer Types
+using upointer = std::uintptr_t;
+
 #endif

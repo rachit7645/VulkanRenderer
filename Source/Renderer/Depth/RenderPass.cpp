@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Vulkan/DebugUtils.h"
-#include "Util/Log.h"
 #include "Deferred/Depth/Opaque.h"
 #include "Deferred/Depth/AlphaMasked.h"
 
@@ -38,37 +37,36 @@ namespace Renderer::Depth
             VK_DYNAMIC_STATE_CULL_MODE
         };
 
-        pipelineManager.AddPipeline("Depth/Opaque", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::DepthOpaque, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Deferred/Depth/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
-            .AttachShader("Misc/Empty.frag",             VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Opaque::Constants))
         );
 
-        pipelineManager.AddPipeline("Depth/AlphaMasked", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::DepthAlphaMasked, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, {}, formatHelper.depthFormat)
             .AttachShader("Deferred/Depth/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Deferred/Depth/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer
         (
             "SceneDepth",
-            Vk::FramebufferType::Depth,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferSource,
+            formatHelper.depthFormat,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -79,19 +77,19 @@ namespace Renderer::Depth
                     .arrayLayers = 1
                 };
             },
-            {
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
         framebufferManager.AddFramebuffer
         (
             "SceneDepthAsyncCompute",
-            Vk::FramebufferType::Depth,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
+            formatHelper.depthFormat,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -102,10 +100,10 @@ namespace Renderer::Depth
                     .arrayLayers = 1
                 };
             },
-            {
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -113,7 +111,7 @@ namespace Renderer::Depth
         (
             "SceneDepth",
             "SceneDepthView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -126,7 +124,7 @@ namespace Renderer::Depth
         (
             "SceneDepthAsyncCompute",
             "SceneDepthAsyncComputeView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -144,28 +142,32 @@ namespace Renderer::Depth
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Objects::GlobalSamplers& samplers,
-        Culling::Dispatch& culling
+        const Objects::Samplers& samplers,
+        Culling::Dispatch& culling,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Depth Pre-Pass", glm::vec4(0.2196f, 0.2588f, 0.2588f, 1.0f));
 
-        culling.Frustum
+        culling.Execute
         (
+            FIF,
             frameIndex,
-            sceneBuffer.matrices.jitteredProjectionView,
+            sceneBuffer.cullingJitteredProjectionView,
             cmdBuffer,
             pipelineManager,
             meshBuffer,
-            indirectBuffer
+            indirectBuffer,
+            scratchAllocator
         );
 
-        const auto& opaquePipeline      = pipelineManager.GetPipeline("Depth/Opaque");
-        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline("Depth/AlphaMasked");
+        const auto& opaquePipeline      = pipelineManager.GetPipeline(Vk::PipelineID::DepthOpaque);
+        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::DepthAlphaMasked);
 
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
         const auto& depthAttachment     = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
@@ -200,7 +202,7 @@ namespace Renderer::Depth
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {.depthStencil = {0.0f, 0x0}}
+            .clearValue         = {.depthStencil = {.depth = 0.0f, .stencil = 0x0}}
         };
 
         const VkRenderingInfo renderInfo =
@@ -209,8 +211,8 @@ namespace Renderer::Depth
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {depthAttachment.image.width, depthAttachment.image.height}
+                .offset = {.x     = 0,                           .y      = 0                           },
+                .extent = {.width = depthAttachment.image.width, .height = depthAttachment.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -236,13 +238,13 @@ namespace Renderer::Depth
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {depthAttachment.image.width, depthAttachment.image.height}
+            .offset = {.x     = 0,                           .y      = 0                           },
+            .extent = {.width = depthAttachment.image.width, .height = depthAttachment.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        modelManager.geometryBuffer.Bind(cmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
         // Opaque
         {
@@ -258,11 +260,10 @@ namespace Renderer::Depth
 
                 const auto constants = Opaque::Constants
                 {
-                    .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                    .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
                 opaquePipeline.PushConstants
@@ -294,11 +295,10 @@ namespace Renderer::Depth
 
                 const auto constants = Opaque::Constants
                 {
-                    .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                     .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress
+                    .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress
                 };
 
                 opaquePipeline.PushConstants
@@ -340,13 +340,13 @@ namespace Renderer::Depth
 
                 const auto constants = AlphaMasked::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 alphaMaskedPipeline.PushConstants
@@ -378,13 +378,13 @@ namespace Renderer::Depth
 
                 const auto constants = AlphaMasked::Constants
                 {
-                    .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                    .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                    .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+                    .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                     .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                     .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                    .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                    .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                    .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID
+                    .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                    .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                    .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID
                 };
 
                 alphaMaskedPipeline.PushConstants

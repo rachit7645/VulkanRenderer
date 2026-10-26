@@ -17,9 +17,8 @@
 #ifndef VBAO_DISPATCH_H
 #define VBAO_DISPATCH_H
 
-#include "Vulkan/Context.h"
 #include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/TextureManager.h"
@@ -40,42 +39,46 @@ namespace Renderer::AO::VBAO
         (
             usize FIF,
             usize frameIndex,
+            const std::string_view sceneDepthID,
+            const std::string_view gNormalID,
             const Vk::CommandBuffer& cmdBuffer,
+            const Renderer::RenderConfig& renderConfig,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager,
-            const Buffers::SceneBuffer& sceneBuffer,
-            const Objects::GlobalSamplers& samplers,
-            const std::string_view sceneDepthID,
-            const std::string_view gNormalID
+            const Buffers::SceneBuffer::Buffers& sceneBuffers,
+            const Objects::Samplers& samplers,
+            Vk::TextureManager& textureManager,
+            Scratch::Allocator& scratchAllocator
         );
 
-        Vk::TextureID hilbertLUT = 0;
+        Vk::TextureID hilbertLUT = {};
     private:
         void PreFilterDepth
         (
+            const std::string_view sceneDepthID,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers,
-            const std::string_view sceneDepthID
+            const Objects::Samplers& samplers
         );
 
         void Occlusion
         (
             usize FIF,
             usize frameIndex,
+            const std::string_view gNormalID,
             const Vk::CommandBuffer& cmdBuffer,
+            const Renderer::RenderConfig& renderConfig,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Vk::TextureManager& textureManager,
-            const Buffers::SceneBuffer& sceneBuffer,
-            const Objects::GlobalSamplers& samplers,
-            const std::string_view gNormalID
+            const Buffers::SceneBuffer::Buffers& sceneBuffers,
+            const Objects::Samplers& samplers,
+            Vk::TextureManager& textureManager,
+            Scratch::Allocator& scratchAllocator
         );
 
         void Denoise
@@ -85,10 +88,10 @@ namespace Renderer::AO::VBAO
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
-        f32 m_finalValuePower = 1.0f;
+        f32 m_finalValuePower = 1.5f;
         f32 m_thickness       = 0.25f;
     };
 }

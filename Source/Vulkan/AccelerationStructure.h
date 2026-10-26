@@ -24,6 +24,7 @@
 #include "GraphicsTimeline.h"
 #include "Models/ModelManager.h"
 #include "Renderer/RenderObject.h"
+#include "Vulkan/ScratchPool.h"
 
 namespace Vk
 {
@@ -42,18 +43,20 @@ namespace Vk
             usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
+            const Vk::GeometryBuffer& geometryBuffer,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
-            Util::DeletionQueue& deletionQueue
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
         void TryCompactBottomLevelAS
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             const Vk::GraphicsTimeline& timeline,
-            Util::DeletionQueue& deletionQueue
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
         void BuildTopLevelAS
@@ -63,14 +66,15 @@ namespace Vk
             const Vk::Context& context,
             const Models::ModelManager& modelManager,
             const std::span<const Renderer::RenderObject> renderObjects,
-            Util::DeletionQueue& deletionQueue
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Destroy(VkDevice device, VmaAllocator allocator);
 
         std::array<AS, Vk::FRAMES_IN_FLIGHT> topLevelASes = {};
     private:
-        std::vector<AS> m_bottomLevelASes;
+        std::vector<AS> m_bottomLevelASes = {};
 
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_instanceBuffers = {};
         std::array<Vk::Buffer, Vk::FRAMES_IN_FLIGHT> m_scratchBuffers  = {};

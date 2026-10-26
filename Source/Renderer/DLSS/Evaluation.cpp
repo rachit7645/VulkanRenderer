@@ -16,9 +16,10 @@
 
 #include "Evaluation.h"
 
-#include "Renderer/Jitter.h"
+#include "Renderer/Util/Jitter.h"
 #include "Renderer/RenderConstants.h"
 #include "Util/Log.h"
+#include "Vulkan/DebugUtils.h"
 
 namespace Renderer::DLSS
 {
@@ -27,10 +28,12 @@ namespace Renderer::DLSS
         usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::FramebufferManager& framebufferManager,
-        const Util::FrameCounter& frameCounter,
+        const Engine::FrameCounter& frameCounter,
         DLSS::DLSSConfig& config
     )
     {
+        Vk::BeginLabel(cmdBuffer, "DLSS", glm::vec4(0.4098f, 0.5843f, 0.7629f, 1.0f));
+
         const auto& sceneColorView         = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& resolvedSceneColorView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
         const auto& sceneDepthView         = framebufferManager.GetFramebufferView("SceneDepthView");
@@ -46,10 +49,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK sceneColorNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = sceneColorView.view.handle,
                     .Image            = sceneColor.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = sceneColor.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -68,10 +71,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK resolvedSceneColorNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = resolvedSceneColorView.view.handle,
                     .Image            = resolvedSceneColor.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = resolvedSceneColor.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -90,10 +93,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK sceneDepthNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = sceneDepthView.view.handle,
                     .Image            = sceneDepth.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = sceneDepth.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -112,10 +115,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK gMotionVectorsNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = gMotionVectorsView.view.handle,
                     .Image            = gMotionVectors.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = gMotionVectors.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -134,10 +137,10 @@ namespace Renderer::DLSS
         NVSDK_NGX_Resource_VK exposureValueNV =
         {
             .Resource = {
-                .ImageViewInfo = {
+                .ImageViewInfo = NVSDK_NGX_ImageViewInfo_VK{
                     .ImageView        = exposureValueView.view.handle,
                     .Image            = exposureValue.image.handle,
-                    .SubresourceRange = {
+                    .SubresourceRange = VkImageSubresourceRange{
                         .aspectMask     = exposureValue.image.aspect,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -153,7 +156,13 @@ namespace Renderer::DLSS
             .ReadWrite = false
         };
 
-        const auto jitter = Renderer::GetJitterInPixels(frameIndex, framebufferManager.renderExtent, framebufferManager.displayExtent);
+        const auto jitter = Renderer::GetJitterInPixels
+        (
+            frameIndex,
+            RenderConfig::AntiAliasingMode::DLSS,
+            framebufferManager.renderExtent,
+            framebufferManager.displayExtent
+        );
 
         NVSDK_NGX_VK_DLSS_Eval_Params DLSSEvaluationParameters =
         {
@@ -168,8 +177,8 @@ namespace Renderer::DLSS
             .InJitterOffsetY               = jitter.y,
             .InRenderSubrectDimensions     = {.Width = config.optimalResolution.x, .Height = config.optimalResolution.y},
             .InReset                       = config.resetNeeded ? 1 : 0,
-            .InMVScaleX                    = -static_cast<f32>(config.optimalResolution.x),
-            .InMVScaleY                    = -static_cast<f32>(config.optimalResolution.y),
+            .InMVScaleX                    = -static_cast<f32>(gMotionVectors.image.width),
+            .InMVScaleY                    = -static_cast<f32>(gMotionVectors.image.height),
             .pInTransparencyMask           = nullptr,
             .pInExposureTexture            = &exposureValueNV,
             .pInBiasCurrentColorMask       = nullptr,
@@ -194,11 +203,6 @@ namespace Renderer::DLSS
             .pInRayTracingHitDistance      = nullptr,
             .pInMotionVectorsReflections   = nullptr
         };
-
-        if (config.resetNeeded)
-        {
-            config.resetNeeded = false;
-        }
 
         resolvedSceneColor.image.Barrier
         (
@@ -250,5 +254,12 @@ namespace Renderer::DLSS
                 .layerCount     = resolvedSceneColor.image.arrayLayers
             }
         );
+
+        if (config.resetNeeded)
+        {
+            config.resetNeeded = false;
+        }
+
+        Vk::EndLabel(cmdBuffer);
     }
 }

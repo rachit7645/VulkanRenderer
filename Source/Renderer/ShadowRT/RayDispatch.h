@@ -22,8 +22,9 @@
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/AccelerationStructure.h"
 #include "Vulkan/ShaderBindingTable.h"
+#include "Vulkan/PipelineManager.h"
 #include "Renderer/Buffers/SceneBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 
 namespace Renderer::ShadowRT
 {
@@ -33,7 +34,6 @@ namespace Renderer::ShadowRT
         RayDispatch
         (
             const Vk::MegaSet& megaSet,
-            const Vk::Extensions& extensions,
             Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
         );
@@ -41,19 +41,21 @@ namespace Renderer::ShadowRT
         void TraceRays
         (
             usize FIF,
-            usize frameIndex,
             const Vk::CommandBuffer& cmdBuffer,
+            const Renderer::RenderConfig& renderConfig,
             const Vk::Context& context,
             const Vk::MegaSet& megaSet,
-            const Models::ModelManager& modelManager,
+            const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::TextureManager& textureManager,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
+            const Engine::Camera& camera,
             const Vk::AccelerationStructure& accelerationStructure,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Clear(const Vk::CommandBuffer& cmdBuffer, const Vk::FramebufferManager& framebufferManager);

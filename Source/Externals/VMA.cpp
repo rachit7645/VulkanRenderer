@@ -14,6 +14,5 @@
  * limitations under the License.
  */
 
-// Define implementation here
 #define VMA_IMPLEMENTATION
 #include "VMA.h"

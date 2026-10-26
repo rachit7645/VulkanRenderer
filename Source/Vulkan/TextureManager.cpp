@@ -25,59 +25,69 @@
 #include "Util/Log.h"
 #include "Util/Types.h"
 #include "Util/Visitor.h"
+#include "Util/Files.h"
 #include "Externals/ImGui.h"
 
 namespace Vk
 {
-    Vk::TextureID TextureManager::AddTexture
+    Vk::TextureID TextureManager::LoadTexture
     (
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
+        tf::Executor& executor,
+        Engine::DeletionQueue& deletionQueue,
         const Vk::ImageUpload& upload
     )
     {
+        const std::scoped_lock lock{m_mutex};
+
         const auto nameInfo = GetTextureNameInfo(upload.source);
 
-        const Vk::TextureID id = std::hash<std::string_view>()(nameInfo.id);
+        const Vk::TextureID id = {.value = std::hash<std::string_view>()(nameInfo.id)};
 
-        auto iter = m_textureMap.find(id);
+        auto loadedIter = m_textures.find(id);
 
-        if (iter != m_textureMap.end())
+        if (loadedIter != m_textures.end())
         {
-            ++iter->second.referenceCount;
+            ++loadedIter->second.referenceCount;
 
             return id;
         }
 
-        m_futuresMap.emplace(id, m_executor.async([this, device, allocator, &stagingPool, &deletionQueue, upload] ()
+        auto pendingIter = m_pendingTextures.find(id);
+
+        if (pendingIter != m_pendingTextures.end())
+        {
+            ++pendingIter->second.referenceCount;
+
+            return id;
+        }
+
+        auto future = executor.async([this, device, allocator, &stagingPool, &executor, &deletionQueue, upload] ()
         {
             return m_imageUploader.LoadImage
             (
                 device,
                 allocator,
                 stagingPool,
+                executor,
                 deletionQueue,
                 upload
             );
-        }));
+        });
 
-        m_textureMap.emplace(id, TextureInfo{
-            .texture = Vk::Texture{
-                .name           = nameInfo.name,
-                .image          = {},
-                .imageView      = {},
-                .descriptorID   = 0,
-                .isLoaded       = false
-            },
+        m_pendingTextures.emplace(id, TextureManager::TextureLoadInfo
+        {
+            .name           = nameInfo.name,
+            .future   = std::move(future),
             .referenceCount = 1
         });
 
         return id;
     }
 
-    Vk::TextureID TextureManager::AddTexture
+    Vk::TextureID TextureManager::RegisterTexture
     (
         Vk::MegaSet& megaSet,
         VkDevice device,
@@ -86,22 +96,23 @@ namespace Vk
         const Vk::ImageView& imageView
     )
     {
-        const Vk::TextureID id = std::hash<std::string_view>()(name);
+        const std::scoped_lock lock{m_mutex};
 
-        if (m_textureMap.contains(id))
+        const Vk::TextureID id = {.value = std::hash<std::string_view>()(name)};
+
+        if (m_textures.contains(id))
         {
             return id;
         }
 
         const auto descriptorID = megaSet.WriteSampledImage(imageView);
 
-        m_textureMap.emplace(id, TextureInfo{
+        m_textures.emplace(id, TextureInfo{
             .texture = Vk::Texture{
-                .name           = name.data(),
+                .name           = std::string(name),
                 .image          = image,
                 .imageView      = imageView,
-                .descriptorID   = descriptorID,
-                .isLoaded       = true
+                .descriptorID   = descriptorID
             },
             .referenceCount = 1
         });
@@ -109,7 +120,7 @@ namespace Vk
         Vk::SetDebugName(device, image.handle,     name);
         Vk::SetDebugName(device, imageView.handle, name.data() + std::string("_View"));
 
-        Logger::Debug("Added texture! [Name={}]\n", name);
+        megaSet.Update(device);
 
         return id;
     }
@@ -121,10 +132,14 @@ namespace Vk
         const VkSamplerCreateInfo& createInfo
     )
     {
-        const auto id = std::hash<VkSamplerCreateInfo>()(createInfo);
+        const Vk::SamplerID id = {.value = std::hash<VkSamplerCreateInfo>()(createInfo)};
 
-        if (m_samplerMap.contains(id))
+        auto iter = m_samplers.find(id);
+
+        if (iter != m_samplers.end())
         {
+            ++iter->second.referenceCount;
+
             return id;
         }
 
@@ -140,83 +155,148 @@ namespace Vk
 
         sampler.descriptorID = megaSet.WriteSampler(sampler);
 
-        Vk::SetDebugName(device, sampler.handle, fmt::format("Sampler/{}", id));
+        Vk::SetDebugName(device, sampler.handle, fmt::format("Sampler/{}", id.value));
 
-        m_samplerMap.emplace(id, sampler);
+        m_samplers.emplace(id, TextureManager::SamplerInfo{
+            .sampler        = sampler,
+            .referenceCount = 1
+        });
+
+        megaSet.Update(device);
 
         return id;
     }
 
-    void TextureManager::Update(const Vk::CommandBuffer& cmdBuffer, VkDevice device, Vk::MegaSet& megaSet)
+    void TextureManager::Update
+    (
+        VkDevice device,
+        const Vk::CommandBuffer& cmdBuffer,
+        Vk::MegaSet& megaSet,
+        Scratch::Allocator& scratchAllocator
+    )
     {
-        if (!HasPendingUploads())
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        const std::scoped_lock lock{m_mutex};
+
+        if (!m_imageUploader.HasPendingUploads() && m_pendingTextures.empty())
         {
             return;
         }
 
-        m_executor.wait_for_all();
-
-        for (auto& [id, info] : m_textureMap)
+        for (auto& [id, info] : m_pendingTextures)
         {
-            auto& [texture, referenceCount] = info;
+            #ifdef ENGINE_PROFILE
+            ZoneNamed(zone, true);
+            zone.NameFmt("%s", info.name.c_str());
+            #endif
 
-            if (texture.isLoaded)
+            if (info.referenceCount == 0)
             {
-                continue;
+                Logger::Error("Texture reference count is zero! [ID={}]\n", id.value);
             }
 
-            if (referenceCount == 0)
+            if (!info.future.valid())
             {
-                continue;
+                Logger::Error("Future is not valid! [ID={}]\n", id.value);
             }
 
-            auto iter = m_futuresMap.find(id);
+            info.future.wait();
 
-            if (iter == m_futuresMap.end())
+            const auto [image, imageView] = info.future.get();
+
+            Vk::SetDebugName(device, image.handle,     info.name);
+            Vk::SetDebugName(device, imageView.handle, info.name + "_View");
+
+            m_textures.emplace(id, TextureManager::TextureInfo
             {
-                continue;
-            }
-
-            auto& future = iter->second;
-
-            if (!future.valid())
-            {
-                Logger::Error("Future is not valid! [ID={}]", id);
-            }
-
-            future.wait();
-
-            texture.image = future.get();
-
-            texture.imageView = Vk::ImageView
-            (
-                device,
-                texture.image,
-                VK_IMAGE_VIEW_TYPE_2D,
-                VkImageSubresourceRange{
-                    .aspectMask     = texture.image.aspect,
-                    .baseMipLevel   = 0,
-                    .levelCount     = texture.image.mipLevels,
-                    .baseArrayLayer = 0,
-                    .layerCount     = texture.image.arrayLayers
-                }
-            );
-
-            texture.descriptorID = megaSet.WriteSampledImage(texture.imageView);
-
-            texture.isLoaded = true;
-
-            Vk::SetDebugName(device, texture.image.handle,     texture.name);
-            Vk::SetDebugName(device, texture.imageView.handle, texture.name + "_View");
-
-            Logger::Debug("Loaded texture! [Name={}]\n", texture.name);
+                .texture        = Vk::Texture{
+                    .name         = info.name,
+                    .image        = image,
+                    .imageView    = imageView,
+                    .descriptorID = megaSet.WriteSampledImage(imageView)
+                },
+                .referenceCount = info.referenceCount
+            });
         }
 
-        m_futuresMap.clear();
+        m_pendingTextures.clear();
 
-        Vk::BeginLabel(cmdBuffer, "Texture Transfer", {0.6117f, 0.8196f, 0.0313f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "TextureManager::Update", {0.6117f, 0.1196f, 0.0313f, 1.0f});
 
-        m_imageUploader.FlushUploads(cmdBuffer);
+        m_imageUploader.FlushUploads(cmdBuffer, scratchAllocator);
+
+        megaSet.Update(device);
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void TextureManager::ForceUpdate
+    (
+        Vk::TextureID id,
+        VkDevice device,
+        const Vk::CommandBuffer& cmdBuffer,
+        Vk::MegaSet& megaSet,
+        Scratch::Allocator& scratchAllocator
+    )
+    {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
+        const std::scoped_lock lock{m_mutex};
+
+        if (IsLoadedInternal(id))
+        {
+            return;
+        }
+
+        auto pendingIter = m_pendingTextures.find(id);
+
+        if (pendingIter == m_pendingTextures.end())
+        {
+            Logger::Error("Invalid texture ID! [ID={}]\n", id.value);
+        }
+
+        auto& textureLoadInfo = pendingIter->second;
+
+        if (textureLoadInfo.referenceCount == 0)
+        {
+            Logger::Error("Texture reference count is zero! [ID={}]\n", id.value);
+        }
+
+        if (!textureLoadInfo.future.valid())
+        {
+            Logger::Error("Future is not valid! [ID={}]\n", id.value);
+        }
+
+        textureLoadInfo.future.wait();
+
+        const auto [image, imageView] = textureLoadInfo.future.get();
+
+        Vk::SetDebugName(device, image.handle,     textureLoadInfo.name);
+        Vk::SetDebugName(device, imageView.handle, textureLoadInfo.name + "_View");
+
+        m_textures.emplace(id, TextureManager::TextureInfo
+        {
+            .texture        = Vk::Texture{
+                .name         = textureLoadInfo.name,
+                .image        = image,
+                .imageView    = imageView,
+                .descriptorID = megaSet.WriteSampledImage(imageView)
+            },
+            .referenceCount = textureLoadInfo.referenceCount
+        });
+
+        m_pendingTextures.erase(pendingIter);
+
+        Vk::BeginLabel(cmdBuffer, "TextureManager::ForceUpdate", {0.6117f, 0.1196f, 0.0313f, 1.0f});
+
+        m_imageUploader.FlushUploads(cmdBuffer, scratchAllocator);
+
+        megaSet.Update(device);
 
         Vk::EndLabel(cmdBuffer);
     }
@@ -227,11 +307,13 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue,
+        Engine::DeletionQueue& deletionQueue,
         const Vk::ImageUpdateRawMemory& updateRawMemory
     )
     {
-        const auto& texture = GetTexture(id);
+        const std::scoped_lock lock{m_mutex};
+
+        const auto& texture = GetTextureInternal(id);
 
         m_imageUploader.UpdateImage
         (
@@ -244,72 +326,69 @@ namespace Vk
         );
     }
 
-    Vk::Texture& TextureManager::GetTexture(Vk::TextureID id)
+    bool TextureManager::IsLoadedInternal(Vk::TextureID id)
     {
-        auto iter = m_textureMap.find(id);
+        auto iter = m_textures.find(id);
 
-        if (iter == m_textureMap.end())
+        if (iter == m_textures.end())
         {
-            Logger::Error("Invalid texture id! [ID={}]\n", id);
-        }
-
-        if (!iter->second.texture.isLoaded)
-        {
-            Logger::Error("Texture not yet loaded! [ID={}]\n", id);
+            return false;
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Texture reference count is zero! [ID={}]\n", id);
+            Logger::Error("Texture reference count is zero! [ID={}]\n", id.value);
+        }
+
+        return true;
+    }
+
+    bool TextureManager::IsLoaded(Vk::TextureID id)
+    {
+        const std::scoped_lock lock{m_mutex};
+
+        return IsLoadedInternal(id);
+    }
+
+    Vk::Texture& TextureManager::GetTextureInternal(Vk::TextureID id)
+    {
+        auto iter = m_textures.find(id);
+
+        if (iter == m_textures.end())
+        {
+            Logger::Error("Invalid texture id! [ID={}]\n", id.value);
+        }
+
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Texture reference count is zero! [ID={}]\n", id.value);
         }
 
         return iter->second.texture;
     }
 
-    Vk::Sampler& TextureManager::GetSampler(Vk::SamplerID id)
+    const Vk::Texture& TextureManager::GetTexture(Vk::TextureID id)
     {
-        auto iter = m_samplerMap.find(id);
+        const std::scoped_lock lock{m_mutex};
 
-        if (iter == m_samplerMap.end())
-        {
-            Logger::Error("Invalid sampler ID! [ID={}]\n", id);
-        }
-
-        return iter->second;
-    }
-
-    const Vk::Texture& TextureManager::GetTexture(Vk::TextureID id) const
-    {
-        const auto iter = m_textureMap.find(id);
-
-        if (iter == m_textureMap.cend())
-        {
-            Logger::Error("Invalid texture id! [ID={}]\n", id);
-        }
-
-        if (!iter->second.texture.isLoaded)
-        {
-            Logger::Error("Texture not yet loaded! [ID={}]\n", id);
-        }
-
-        if (iter->second.referenceCount == 0)
-        {
-            Logger::Error("Texture reference count is zero! [ID={}]\n", id);
-        }
-
-        return iter->second.texture;
+        return GetTextureInternal(id);
     }
 
     const Vk::Sampler& TextureManager::GetSampler(Vk::SamplerID id) const
     {
-        const auto iter = m_samplerMap.find(id);
+        const auto iter = m_samplers.find(id);
 
-        if (iter == m_samplerMap.cend())
+        if (iter == m_samplers.cend())
         {
-            Logger::Error("Invalid sampler ID! [ID={}]\n", id);
+            Logger::Error("Invalid sampler ID! [ID={}]\n", id.value);
         }
 
-        return iter->second;
+        if (iter->second.referenceCount == 0)
+        {
+            Logger::Error("Sampler reference count is zero! [ID={}]\n", id.value);
+        }
+
+        return iter->second.sampler;
     }
 
     void TextureManager::DestroyTexture
@@ -318,19 +397,89 @@ namespace Vk
         VkDevice device,
         VmaAllocator allocator,
         Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
-        const auto iter = m_textureMap.find(id);
+        const std::scoped_lock lock{m_mutex};
 
-        if (iter == m_textureMap.end())
+        const auto loadedIter = m_textures.find(id);
+
+        if (loadedIter != m_textures.end())
+        {
+            if (loadedIter->second.referenceCount == 0)
+            {
+                Logger::Error("Texture already freed! [ID={}]\n", id.value);
+            }
+
+            --loadedIter->second.referenceCount;
+
+            if (loadedIter->second.referenceCount > 0)
+            {
+                return;
+            }
+
+            deletionQueue.Push([&megaSet, device, allocator, texture = loadedIter->second.texture] () mutable
+            {
+                megaSet.FreeSampledImage(texture.descriptorID);
+                texture.Destroy(device, allocator);
+            });
+
+            m_textures.erase(loadedIter);
+        }
+
+        const auto pendingIter = m_pendingTextures.find(id);
+
+        if (pendingIter != m_pendingTextures.end())
+        {
+            if (pendingIter->second.referenceCount == 0)
+            {
+                Logger::Error("Texture already freed! [ID={}]\n", id.value);
+            }
+
+            --pendingIter->second.referenceCount;
+
+            if (pendingIter->second.referenceCount > 0)
+            {
+                return;
+            }
+
+            deletionQueue.Push([device, allocator, future = std::move(pendingIter->second.future)] () mutable
+            {
+                if (!future.valid())
+                {
+                    return;
+                }
+
+                future.wait();
+
+                const auto [image, imageView] = future.get();
+
+                imageView.Destroy(device);
+                image.Destroy(allocator);
+            });
+
+            m_pendingTextures.erase(pendingIter);
+        }
+    }
+
+    void TextureManager::DestroySampler
+    (
+        Vk::SamplerID id,
+        VkDevice device,
+        Vk::MegaSet& megaSet,
+        Engine::DeletionQueue& deletionQueue
+    )
+    {
+        const auto iter = m_samplers.find(id);
+
+        if (iter == m_samplers.end())
         {
             return;
         }
 
         if (iter->second.referenceCount == 0)
         {
-            Logger::Error("Texture already freed! [ID={}]\n", id);
+            Logger::Error("Sampler already freed! [ID={}]\n", id.value);
         }
 
         --iter->second.referenceCount;
@@ -340,100 +489,101 @@ namespace Vk
             return;
         }
 
-        deletionQueue.PushDeletor([&megaSet, device, allocator, texture = iter->second.texture] () mutable
-        {
-            megaSet.FreeSampledImage(texture.descriptorID);
-            texture.Destroy(device, allocator);
-        });
-
-        m_textureMap.erase(iter);
-    }
-
-    void TextureManager::DestroySampler
-    (
-        Vk::SamplerID id,
-        VkDevice device,
-        Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
-    )
-    {
-        const auto iter = m_samplerMap.find(id);
-
-        if (iter == m_samplerMap.end())
-        {
-            return;
-        }
-
-        deletionQueue.PushDeletor([&megaSet, device, sampler = iter->second] () mutable
+        deletionQueue.Push([&megaSet, device, sampler = iter->second.sampler] () mutable
         {
             megaSet.FreeSampler(sampler.descriptorID);
             sampler.Destroy(device);
         });
 
-        m_samplerMap.erase(id);
+        m_samplers.erase(id);
     }
 
     void TextureManager::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("Textures"))
         {
-            if (ImGui::BeginMenu("Texture Manager"))
+            const std::scoped_lock lock{m_mutex};
+
+            VkDeviceSize totalMemoryUsed = 0;
+
+            for (const auto& [id, info] : m_textures)
             {
-                for (const auto& [id, info] : m_textureMap)
+                const auto& [texture, referenceCount] = info;
+
+                if (referenceCount == 0)
                 {
-                    const auto& [texture, referenceCount] = info;
-
-                    if (!texture.isLoaded)
-                    {
-                        continue;
-                    }
-
-                    if (referenceCount == 0)
-                    {
-                        continue;
-                    }
-
-                    if (ImGui::TreeNode(std::bit_cast<void*>(id), "%s", texture.name.c_str()))
-                    {
-                        ImGui::Text("ID               | %llu", id);
-                        ImGui::Text("Reference Count  | %llu", referenceCount);
-                        ImGui::Text("Descriptor Index | %u",   texture.descriptorID);
-                        ImGui::Text("Width            | %u",   texture.image.width);
-                        ImGui::Text("Height           | %u",   texture.image.height);
-                        ImGui::Text("Depth            | %u",   texture.image.depth);
-                        ImGui::Text("Mipmap Levels    | %u",   texture.image.mipLevels);
-                        ImGui::Text("Array Layers     | %u",   texture.image.arrayLayers);
-                        ImGui::Text("Format           | %s",   string_VkFormat(texture.image.format));
-
-                        ImGui::Separator();
-
-                        const f32 originalWidth  = static_cast<f32>(texture.image.width);
-                        const f32 originalHeight = static_cast<f32>(texture.image.height);
-
-                        constexpr f32 MAX_SIZE = 512.0f;
-
-                        // Maintain aspect ratio
-                        const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
-                        const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
-
-                        ImGui::Image(texture.descriptorID, imageSize);
-
-                        ImGui::TreePop();
-                    }
-
-                    ImGui::Separator();
+                    continue;
                 }
 
-                ImGui::EndMenu();
+                totalMemoryUsed += texture.image.size;
+
+                if (ImGui::TreeNode(std::bit_cast<void*>(id.value), "%s", texture.name.c_str()))
+                {
+                    ImGui::Text("ID                | %llu",       id.value);
+                    ImGui::Text("Reference Count   | %llu",       referenceCount);
+                    ImGui::Text("Descriptor Index  | %u",         texture.descriptorID);
+                    ImGui::Text("Image Handle      | %p",         static_cast<void*>(texture.image.handle));
+                    ImGui::Text("Image View Handle | %p",         static_cast<void*>(texture.imageView.handle));
+                    ImGui::Text("Width             | %u",         texture.image.width);
+                    ImGui::Text("Height            | %u",         texture.image.height);
+                    ImGui::Text("Depth             | %u",         texture.image.depth);
+                    ImGui::Text("Mipmap Levels     | %u",         texture.image.mipLevels);
+                    ImGui::Text("Array Layers      | %u",         texture.image.arrayLayers);
+                    ImGui::Text("Format            | %s",         string_VkFormat(texture.image.format));
+                    ImGui::Text("Memory Used       | %llu Bytes", texture.image.size);
+
+                    ImGui::Separator();
+
+                    const f32 originalWidth  = static_cast<f32>(texture.image.width);
+                    const f32 originalHeight = static_cast<f32>(texture.image.height);
+
+                    constexpr f32 MAX_SIZE = 512.0f;
+
+                    // Maintain aspect ratio
+                    const f32  scale     = std::min(MAX_SIZE / originalWidth, MAX_SIZE / originalHeight);
+                    const auto imageSize = ImVec2(originalWidth * scale, originalHeight * scale);
+
+                    ImGui::Image(texture.descriptorID, imageSize);
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::Separator();
             }
 
-            ImGui::EndMainMenuBar();
+            ImGui::Text("Total Texture Memory Usage | %llu Bytes", totalMemoryUsed);
+        }
+
+        if (ImGui::CollapsingHeader("Samplers"))
+        {
+            for (const auto& [id, info] : m_samplers)
+            {
+                const auto& [sampler, referenceCount] = info;
+
+                if (referenceCount == 0)
+                {
+                    continue;
+                }
+
+                if (ImGui::TreeNode(std::bit_cast<void*>(id.value), "%llu", id.value))
+                {
+                    ImGui::Text("Reference Count  | %llu", referenceCount);
+                    ImGui::Text("Descriptor Index | %u",   sampler.descriptorID);
+                    ImGui::Text("Sampler Handle   | %p",   static_cast<void*>(sampler.handle));
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::Separator();
+            }
         }
     }
 
     bool TextureManager::HasPendingUploads()
     {
-        return m_imageUploader.HasPendingUploads() || !m_futuresMap.empty();
+        const std::scoped_lock lock{m_mutex};
+
+        return m_imageUploader.HasPendingUploads() || !m_pendingTextures.empty();
     }
 
     TextureManager::TextureNameInfo TextureManager::GetTextureNameInfo(const ImageUploadSource& source)
@@ -443,7 +593,7 @@ namespace Vk
             {
                 return TextureManager::TextureNameInfo
                 {
-                    .name = Util::Files::GetNameWithoutExtension(file.path),
+                    .name = Files::GetNameWithoutExtension(file.path),
                     .id   = file.path
                 };
             },
@@ -458,22 +608,30 @@ namespace Vk
             [] (const Vk::ImageUploadRawMemory& rawMemory)
             {
                 return TextureManager::TextureNameInfo
-                 {
-                     .name = rawMemory.name,
-                     .id   = rawMemory.name
-                 };
+                {
+                    .name = rawMemory.name,
+                    .id   = rawMemory.name
+                };
+            },
+            [] (const Vk::ImageUploadCache& cache)
+            {
+                return TextureManager::TextureNameInfo
+                {
+                    .name = cache.name,
+                    .id   = cache.cachedPath
+                };
             }
         }, source);
     }
 
     void TextureManager::Destroy(VkDevice device, VmaAllocator allocator)
     {
-        for (auto& [texture, _] : m_textureMap | std::views::values)
+        for (auto& [texture, _] : m_textures | std::views::values)
         {
             texture.Destroy(device, allocator);
         }
 
-        for (const auto& sampler : m_samplerMap | std::views::values)
+        for (const auto& [sampler, _] : m_samplers | std::views::values)
         {
             sampler.Destroy(device);
         }

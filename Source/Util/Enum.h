@@ -22,7 +22,8 @@
 template<typename T>
 constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
 {
-    return static_cast<T>(
+    return static_cast<T>
+    (
         static_cast<std::underlying_type_t<T>>(lhs) |
         static_cast<std::underlying_type_t<T>>(rhs)
     );
@@ -31,7 +32,8 @@ constexpr T operator|(T lhs, T rhs) requires (std::is_enum_v<T>)
 template<typename T>
 constexpr T operator&(T lhs, T rhs) requires (std::is_enum_v<T>)
 {
-    return static_cast<T>(
+    return static_cast<T>
+    (
         static_cast<std::underlying_type_t<T>>(lhs) &
         static_cast<std::underlying_type_t<T>>(rhs)
     );
@@ -41,6 +43,7 @@ template<typename T>
 constexpr T& operator|=(T& lhs, T rhs) requires (std::is_enum_v<T>)
 {
     lhs = lhs | rhs;
+
     return lhs;
 }
 
@@ -48,6 +51,7 @@ template<typename T>
 constexpr T& operator&=(T& lhs, T rhs) requires (std::is_enum_v<T>)
 {
     lhs = lhs & rhs;
+
     return lhs;
 }
 

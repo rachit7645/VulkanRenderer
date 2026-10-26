@@ -17,7 +17,6 @@
 #include "RenderPass.h"
 
 #include "Vulkan/DebugUtils.h"
-#include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Skybox/Skybox.h"
 
@@ -32,20 +31,21 @@ namespace Renderer::Skybox
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR, VK_FORMAT_R16G16_SFLOAT};
 
-        pipelineManager.AddPipeline("Skybox", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::Skybox, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, formatHelper.depthFormat)
             .AttachShader("Skybox/Skybox.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Skybox/Skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .SetDepthState(VK_TRUE, VK_FALSE, VK_COMPARE_OP_EQUAL)
+            .AddDefaultBlendAttachment()
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Skybox::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
     }
 
@@ -56,25 +56,31 @@ namespace Renderer::Skybox
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
         const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
-        const IBL::IBLMaps& iblMaps
+        const Objects::Samplers& samplers,
+        const IBL::IBLMaps& iblMaps,
+        Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Skybox", {0.2796f, 0.8588f, 0.3548f, 1.0f});
 
-        const auto& pipeline = pipelineManager.GetPipeline("Skybox");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::Skybox);
 
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
+        const auto& gMotionVectorsView  = framebufferManager.GetFramebufferView("GMotionVectorsView");
         const auto& depthAttachmentView = framebufferManager.GetFramebufferView("SceneDepthView");
 
         const auto& colorAttachment = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
+        const auto& gMotionVectors  = framebufferManager.GetFramebuffer(gMotionVectorsView.framebuffer);
         const auto& depthAttachment = framebufferManager.GetFramebuffer(depthAttachmentView.framebuffer);
 
-        depthAttachment.image.Barrier
-        (
-            cmdBuffer,
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
+
+        barrierWriter
+        .WriteImageBarrier(
+            depthAttachment.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -89,13 +95,45 @@ namespace Renderer::Skybox
                 .baseArrayLayer = 0,
                 .layerCount     = depthAttachment.image.arrayLayers
             }
-        );
+        )
+        .WriteImageBarrier(
+            gMotionVectors.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = gMotionVectors.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = gMotionVectors.image.arrayLayers
+            }
+        )
+        .Execute(cmdBuffer);
 
         const VkRenderingAttachmentInfo colorAttachmentInfo =
         {
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext              = nullptr,
             .imageView          = colorAttachmentView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {}
+        };
+
+        const VkRenderingAttachmentInfo gMotionVectorsInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = gMotionVectorsView.view.handle,
             .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode        = VK_RESOLVE_MODE_NONE,
             .resolveImageView   = VK_NULL_HANDLE,
@@ -119,19 +157,21 @@ namespace Renderer::Skybox
             .clearValue         = {}
         };
 
+        const std::array colorAttachments = {colorAttachmentInfo, gMotionVectorsInfo};
+
         const VkRenderingInfo renderInfo =
         {
             .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {colorAttachment.image.width, colorAttachment.image.height}
+                .offset = {.x = 0, .y = 0},
+                .extent = {.width = colorAttachment.image.width, .height = colorAttachment.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &colorAttachmentInfo,
+            .colorAttachmentCount = colorAttachments.size(),
+            .pColorAttachments    = colorAttachments.data(),
             .pDepthAttachment     = &depthAttachmentInfo,
             .pStencilAttachment   = nullptr
         };
@@ -154,18 +194,18 @@ namespace Renderer::Skybox
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {colorAttachment.image.width, colorAttachment.image.height}
+            .offset = {.x = 0, .y = 0},
+            .extent = {.width = colorAttachment.image.width, .height = colorAttachment.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
         const auto constants = Skybox::Constants
         {
-            .Vertices     = modelManager.geometryBuffer.cubeBuffer.deviceAddress,
-            .Scene        = sceneBuffer.buffers[FIF].deviceAddress,
-            .SamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
-            .CubemapIndex = modelManager.textureManager.GetTexture(iblMaps.skyboxID).descriptorID
+            .Vertices     = geometryBuffer.cubeBuffer.deviceAddress,
+            .Scene        = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+            .SamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+            .CubemapIndex = textureManager.GetTexture(iblMaps.skyboxID).descriptorID
         };
 
         pipeline.PushConstants
@@ -188,12 +228,12 @@ namespace Renderer::Skybox
 
         vkCmdEndRendering(cmdBuffer.handle);
 
-        Vk::BarrierWriter{}
+        barrierWriter
         .WriteImageBarrier(
             colorAttachment.image,
             Vk::ImageBarrier{
                 .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                 .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
                 .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -221,6 +261,23 @@ namespace Renderer::Skybox
                 .levelCount     = depthAttachment.image.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = depthAttachment.image.arrayLayers
+            }
+        )
+        .WriteImageBarrier(
+            gMotionVectors.image,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = gMotionVectors.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = gMotionVectors.image.arrayLayers
             }
         )
         .Execute(cmdBuffer);

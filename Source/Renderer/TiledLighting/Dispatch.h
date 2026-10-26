@@ -19,7 +19,7 @@
 
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Buffers/TileLightIndexBuffer.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/PipelineManager.h"
@@ -40,17 +40,16 @@ namespace Renderer::TiledLighting
         void Execute
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
     private:
         void Bounds
@@ -60,23 +59,22 @@ namespace Renderer::TiledLighting
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         void Culling
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
     };
 }

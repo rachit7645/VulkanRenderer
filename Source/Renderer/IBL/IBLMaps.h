@@ -17,7 +17,6 @@
 #ifndef IBL_MAPS_H
 #define IBL_MAPS_H
 
-#include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/MegaSet.h"
 
@@ -25,20 +24,26 @@ namespace Renderer::IBL
 {
     constexpr u32 PREFILTER_MIPMAP_LEVELS = 5;
 
+    constexpr glm::uvec2 BRDF_LUT_SIZE   = {1024, 1024};
+    constexpr VkFormat   BRDF_LUT_FORMAT = VK_FORMAT_R16G16_SFLOAT;
+
+    using IBLID = u64;
+
     struct IBLMaps
     {
         void Destroy
         (
-            const Vk::Context& context,
+            VkDevice device,
+            VmaAllocator allocator,
             Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
-        Vk::TextureID skyboxID        = 0;
-        Vk::TextureID irradianceMapID = 0;
-        Vk::TextureID preFilterMapID  = 0;
-        Vk::TextureID brdfLutID       = 0;
+        Vk::TextureID skyboxID        = {};
+        Vk::TextureID irradianceMapID = {};
+        Vk::TextureID preFilterMapID  = {};
+        Vk::TextureID brdfLutID       = {};
     };
 }
 

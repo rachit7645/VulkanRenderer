@@ -23,7 +23,7 @@
 #include "Renderer/Buffers/MeshBuffer.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Culling/Dispatch.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 
 namespace Renderer::Depth
 {
@@ -46,12 +46,14 @@ namespace Renderer::Depth
             const Vk::PipelineManager& pipelineManager,
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
-            const Models::ModelManager& modelManager,
+            const Vk::GeometryBuffer& geometryBuffer,
+            const Vk::TextureManager& textureManager,
             const Buffers::SceneBuffer& sceneBuffer,
             const Buffers::MeshBuffer& meshBuffer,
             const Buffers::IndirectBuffer& indirectBuffer,
-            const Objects::GlobalSamplers& samplers,
-            Culling::Dispatch& culling
+            const Objects::Samplers& samplers,
+            Culling::Dispatch& culling,
+            Scratch::Allocator& scratchAllocator
         );
     };
 }

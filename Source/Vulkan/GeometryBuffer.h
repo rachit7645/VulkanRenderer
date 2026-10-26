@@ -21,9 +21,10 @@
 
 #include "Buffer.h"
 #include "CommandBuffer.h"
-#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 #include "Context.h"
-#include "Util/DeletionQueue.h"
+#include "Engine/DeletionQueue.h"
+#include "Vulkan/VertexBuffer.h"
 
 namespace Vk
 {
@@ -33,32 +34,30 @@ namespace Vk
         GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool);
 
         void Bind(const Vk::CommandBuffer& cmdBuffer) const;
-        void Destroy(VmaAllocator allocator);
+        void Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool);
 
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
-        void Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue);
+        void Free(const GPU::SurfaceInfo& info, Engine::DeletionQueue& deletionQueue);
 
-        void ImGuiDisplay() const;
+        void ImGuiDisplay(Scratch::Allocator& scratchAllocator);
 
-        [[nodiscard]] bool HasPendingUploads() const;
+        [[nodiscard]] bool HasPendingUploads();
 
         [[nodiscard]] const Vk::Buffer& GetIndexBuffer()    const;
         [[nodiscard]] const Vk::Buffer& GetPositionBuffer() const;
         [[nodiscard]] const Vk::Buffer& GetUVBuffer()       const;
         [[nodiscard]] const Vk::Buffer& GetVertexBuffer()   const;
 
-        Vk::VertexBuffer<GPU::Index>    indexBuffer;
-        Vk::VertexBuffer<GPU::Position> positionBuffer;
-        Vk::VertexBuffer<GPU::UV>       uvBuffer;
-        Vk::VertexBuffer<GPU::Vertex>   vertexBuffer;
+        Vk::IndexBuffer  indexBuffer  = {};
+        Vk::VertexBuffer vertexBuffer = {};
 
         Vk::Buffer cubeBuffer;
     private:

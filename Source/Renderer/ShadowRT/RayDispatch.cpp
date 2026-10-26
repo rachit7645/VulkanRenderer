@@ -17,8 +17,8 @@
 #include "RayDispatch.h"
 
 #include "Vulkan/DebugUtils.h"
-#include "Util/Log.h"
 #include "Renderer/Depth/RenderPass.h"
+#include "Renderer/Util/Jitter.h"
 #include "Shadows/ShadowRT.h"
 
 namespace Renderer::ShadowRT
@@ -29,33 +29,29 @@ namespace Renderer::ShadowRT
     RayDispatch::RayDispatch
     (
         const Vk::MegaSet& megaSet,
-        const Vk::Extensions& extensions,
         Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
     {
-        if (extensions.HasRayTracing())
-        {
-            pipelineManager.AddPipeline("ShadowRT", Vk::PipelineConfig{}
-                .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
-                .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-                .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
-                .AttachShader("Shadows/RT/Shadow.rahit", VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
-                .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-                .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
-                .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
-                .SetMaxRayRecursionDepth(1)
-                .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
-                .AddDescriptorLayout(megaSet.descriptorLayout)
-            );
-        }
+        pipelineManager.AddPipeline(Vk::PipelineID::ShadowRayTraced, Vk::PipelineConfig{}
+            .SetPipelineType(VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
+            .AttachShader("Shadows/RT/Shadow.rgen",  VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR)
+            .AttachShader("Shadows/RT/Shadow.rahit", VK_SHADER_STAGE_ANY_HIT_BIT_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             0,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,             1,                    VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR)
+            .AttachShaderGroup(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, 2                   )
+            .SetMaxRayRecursionDepth(1)
+            .AddPushConstant(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR, 0, sizeof(ShadowRT::Constants))
+            .AddDescriptorLayout(megaSet.layout)
+        );
         
         framebufferManager.AddFramebuffer
         (
             "ShadowRT",
-            Vk::FramebufferType::ColorR_Unorm8,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::TransferDestination,
+            VK_FORMAT_R8_UNORM,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -66,10 +62,10 @@ namespace Renderer::ShadowRT
                     .arrayLayers = 1
                 };
             },
-            {
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -77,7 +73,7 @@ namespace Renderer::ShadowRT
         (
             "ShadowRT",
             "ShadowRTView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -90,27 +86,30 @@ namespace Renderer::ShadowRT
     void RayDispatch::TraceRays
     (
         usize FIF,
-        usize frameIndex,
         const Vk::CommandBuffer& cmdBuffer,
+        const Renderer::RenderConfig& renderConfig,
         const Vk::Context& context,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
+        const Engine::Camera& camera,
         const Vk::AccelerationStructure& accelerationStructure,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Raytraced Shadows", glm::vec4(0.4196f, 0.2488f, 0.6588f, 1.0f));
 
-        const auto& pipeline = pipelineManager.GetPipeline("ShadowRT");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::ShadowRayTraced);
 
         if (!m_shaderBindingTable.has_value())
         {
+            // FIXME!: SBT not rebuilt after a pipeline reload
             m_shaderBindingTable = Vk::ShaderBindingTable
             (
                 cmdBuffer,
@@ -149,16 +148,20 @@ namespace Renderer::ShadowRT
 
         const auto constants = ShadowRT::Constants
         {
-            .TLAS                = accelerationStructure.topLevelASes[FIF].deviceAddress,
-            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-            .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
-            .Indices             = modelManager.geometryBuffer.GetIndexBuffer().deviceAddress,
-            .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-            .GBufferSamplerIndex = modelManager.textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
-            .GNormalIndex        = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
-            .SceneDepthIndex     = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
-            .OutputImage         = shadowMapView.storageImageID
+            .TLAS                     = accelerationStructure.topLevelASes[FIF].deviceAddress,
+            .Scene                    = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+            .Meshes                   = meshBuffer.meshBuffers[FIF].deviceAddress,
+            .Indices                  = geometryBuffer.indexBuffer.buffer.deviceAddress,
+            .Positions                = geometryBuffer.vertexBuffer.positionBuffer.deviceAddress,
+            .UVs                      = geometryBuffer.vertexBuffer.uvBuffer.deviceAddress,
+            .GBufferSamplerIndex      = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .TextureSamplerIndex      = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+            .GNormalIndex             = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
+            .GSurfaceSpreadAngleIndex = framebufferManager.GetFramebufferView("GSurfaceSpreadAngleView").sampledImageID,
+            .SceneDepthIndex          = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
+            .OutputImage              = shadowMapView.storageImageID,
+            .TemporalPhaseCount       = static_cast<u32>(Renderer::GetPhaseCount(renderConfig.antiAliasingMode, framebufferManager.renderExtent, framebufferManager.displayExtent)),
+            .PixelSpreadAngle         = std::atan(2.0f * std::tanf(camera.FOV) / static_cast<f32>(shadowMap.image.height))
         };
 
         pipeline.PushConstants

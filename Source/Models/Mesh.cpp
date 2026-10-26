@@ -18,85 +18,6 @@
 
 namespace Models
 {
-    GPU::Material Material::Convert(const Vk::TextureManager& textureManager) const
-    {
-        return GPU::Material
-        {
-            .albedoID         = textureManager.GetTexture(albedoID).descriptorID,
-            .normalID         = textureManager.GetTexture(normalID).descriptorID,
-            .aoRghMtlID       = textureManager.GetTexture(aoRghMtlID).descriptorID,
-            .emmisiveID       = textureManager.GetTexture(emmisiveID).descriptorID,
-            .albedoUVMapID    = albedoUVMapID,
-            .normalUVMapID    = normalUVMapID,
-            .aoRghMtlUVMapID  = aoRghMtlUVMapID,
-            .emmisiveUVMapID  = emmisiveUVMapID,
-            .albedoFactor     = albedoFactor,
-            .roughnessFactor  = roughnessFactor,
-            .metallicFactor   = metallicFactor,
-            .emmisiveFactor   = emmisiveFactor,
-            .emmisiveStrength = emmisiveStrength,
-            .alphaCutOff      = alphaCutOff,
-            .ior              = ior,
-            .flags            = flags
-        };
-    }
-
-    bool Material::IsAlphaMasked() const
-    {
-        return (flags & GPU::MaterialFlags::AlphaMasked) == GPU::MaterialFlags::AlphaMasked;
-    }
-
-    bool Material::IsDoubleSided() const
-    {
-        return (flags & GPU::MaterialFlags::DoubleSided) == GPU::MaterialFlags::DoubleSided;
-    }
-
-    void Material::Destroy
-    (
-        VkDevice device,
-        VmaAllocator allocator,
-        Vk::MegaSet& megaSet,
-        Vk::TextureManager& textureManager,
-        Util::DeletionQueue& deletionQueue
-    )
-    {
-        textureManager.DestroyTexture
-        (
-            albedoID,
-            device,
-            allocator,
-            megaSet,
-            deletionQueue
-        );
-
-        textureManager.DestroyTexture
-        (
-            normalID,
-            device,
-            allocator,
-            megaSet,
-            deletionQueue
-        );
-
-        textureManager.DestroyTexture
-        (
-            aoRghMtlID,
-            device,
-            allocator,
-            megaSet,
-            deletionQueue
-        );
-
-        textureManager.DestroyTexture
-        (
-            emmisiveID,
-            device,
-            allocator,
-            megaSet,
-            deletionQueue
-        );
-    }
-
     void Mesh::Destroy
     (
         VkDevice device,
@@ -104,7 +25,7 @@ namespace Models
         Vk::MegaSet& megaSet,
         Vk::TextureManager& textureManager,
         Vk::GeometryBuffer& geometryBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         geometryBuffer.Free(surfaceInfo, deletionQueue);

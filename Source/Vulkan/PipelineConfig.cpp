@@ -25,6 +25,10 @@ namespace Vk
 {
     void PipelineConfig::Build(VkDevice device)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         for (const auto& shader : m_shaders)
         {
             const auto& module = m_shaderModules.emplace_back(device, shader.path);
@@ -135,15 +139,19 @@ namespace Vk
 
     VkPipelineLayout PipelineConfig::BuildLayout(VkDevice device)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
         {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = static_cast<u32>(m_descriptorLayouts.size()),
-            .pSetLayouts            = m_descriptorLayouts.data(),
-            .pushConstantRangeCount = static_cast<u32>(m_pushConstantRanges.size()),
-            .pPushConstantRanges    = m_pushConstantRanges.data()
+            .setLayoutCount         = m_descriptorLayout != VK_NULL_HANDLE ? 1u : 0u,
+            .pSetLayouts            = &m_descriptorLayout,
+            .pushConstantRangeCount = m_pushConstantRange.size != 0u ? 1u : 0u,
+            .pPushConstantRanges    = &m_pushConstantRange
         };
 
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
@@ -326,7 +334,7 @@ namespace Vk
         return *this;
     }
 
-    PipelineConfig& PipelineConfig::SetIAState(VkPrimitiveTopology topology)
+    PipelineConfig& PipelineConfig::SetInputAssemblyState(VkPrimitiveTopology topology)
     {
         m_inputAssemblyInfo =
         {
@@ -340,7 +348,7 @@ namespace Vk
         return *this;
     }
 
-    PipelineConfig& PipelineConfig::SetDepthStencilState
+    PipelineConfig& PipelineConfig::SetDepthState
     (
         VkBool32 depthTestEnable,
         VkBool32 depthWriteEnable,
@@ -384,7 +392,8 @@ namespace Vk
 
     PipelineConfig& PipelineConfig::AddDefaultBlendAttachment()
     {
-        return AddBlendAttachment(
+        return AddBlendAttachment
+        (
             VK_FALSE,
             VK_BLEND_FACTOR_ONE,
             VK_BLEND_FACTOR_ZERO,
@@ -427,18 +436,19 @@ namespace Vk
 
     PipelineConfig& PipelineConfig::AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size)
     {
-        m_pushConstantRanges.emplace_back(VkPushConstantRange{
+        m_pushConstantRange = VkPushConstantRange
+        {
             .stageFlags = stages,
             .offset     = offset,
             .size       = size
-        });
+        };
 
         return *this;
     }
 
     PipelineConfig& PipelineConfig::AddDescriptorLayout(VkDescriptorSetLayout layout)
     {
-        m_descriptorLayouts.emplace_back(layout);
+        m_descriptorLayout = layout;
 
         return *this;
     }

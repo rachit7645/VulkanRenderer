@@ -8,6 +8,8 @@
     <mapping directory="$PROJECT_DIR$/Externals/fmt" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/implot" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/lz4" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/openexr" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/sdl" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/simdjson" vcs="Git" />
@@ -17,5 +19,6 @@
     <mapping directory="$PROJECT_DIR$/Externals/unordered_dense" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/vma" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Externals/volk" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Externals/zstd" vcs="Git" />
   </component>
 </project>

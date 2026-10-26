@@ -33,10 +33,13 @@ using GLSL_VEC4 = glm::vec4;
 
 using GLSL_UVEC2 = glm::uvec2;
 
+using GLSL_F16VEC2 = glm::f16vec2;
+using GLSL_U16VEC2 = glm::u16vec2;
+
 using GLSL_MAT3 = glm::mat3;
 using GLSL_MAT4 = glm::mat4;
 
-#define GLSL_SHADER_STORAGE_BUFFER(BufferName, ReadOnlyOrWriteOnly) struct BufferName
+#define GLSL_BUFFER(BufferName, ReadOnlyOrWriteOnly) struct BufferName
 
 #define GLSL_BUFFER_POINTER(BufferType) VkDeviceAddress
 
@@ -61,15 +64,20 @@ using GLSL_MAT4 = glm::mat4;
 
 #define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) EnumClassName
 
-#define GLSL_CONSTANT(ConstantType, ConstantName, ConstantValue) \
-    constexpr ConstantType ConstantName = ConstantValue;
+#define GLSL_CONSTEXPR constexpr
+
+#define GLSL_ARRAY(UnderlyingType, Name, Count) std::array<UnderlyingType, Count> Name
 
 #else
 
+#extension GL_EXT_shader_explicit_arithmetic_types_int16   : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int32   : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int64   : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_float32 : enable
 
+#define s32 int32_t
+#define u16 uint16_t
 #define u32 uint32_t
 #define u64 uint64_t
 #define f32 float32_t
@@ -78,14 +86,14 @@ using GLSL_MAT4 = glm::mat4;
 #define GLSL_VEC3 vec3
 #define GLSL_VEC4 vec4
 
-#define GLSL_IVEC2 ivec2
-
 #define GLSL_UVEC2 uvec2
+
+#define GLSL_F16VEC2 f16vec2
 
 #define GLSL_MAT3 mat3
 #define GLSL_MAT4 mat4
 
-#define GLSL_SHADER_STORAGE_BUFFER(BufferName, ReadOnlyOrWriteOnly) \
+#define GLSL_BUFFER(BufferName, ReadOnlyOrWriteOnly) \
     layout(buffer_reference, scalar) ReadOnlyOrWriteOnly buffer BufferName
 
 #define GLSL_BUFFER_POINTER(BufferType) BufferType
@@ -105,8 +113,9 @@ using GLSL_MAT4 = glm::mat4;
 
 #define GLSL_ENUM_CLASS_NAME(EnumClassName, UnderlyingType) UnderlyingType
 
-#define GLSL_CONSTANT(ConstantType, ConstantName, ConstantValue) \
-    const ConstantType ConstantName = ConstantValue;
+#define GLSL_CONSTEXPR const
+
+#define GLSL_ARRAY(UnderlyingType, Name, Count) UnderlyingType Name[Count]
 
 #endif
 

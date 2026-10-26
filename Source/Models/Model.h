@@ -21,6 +21,7 @@
 #include <string_view>
 
 #include "Mesh.h"
+#include "LocalLights.h"
 #include "Vulkan/Context.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
@@ -28,19 +29,24 @@
 
 namespace Models
 {
+    struct LoadFromFileInfo
+    {
+        VkDevice     device    = VK_NULL_HANDLE;
+        VmaAllocator allocator = VK_NULL_HANDLE;
+
+        Vk::GeometryBuffer& geometryBuffer;
+        Vk::TextureManager& textureManager;
+        Vk::StagingPool&    stagingPool;
+
+        tf::Executor& executor;
+
+        Engine::DeletionQueue& deletionQueue;
+    };
+
     class Model
     {
     public:
-        Model
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view path
-        );
+        void LoadFromFile(const Models::LoadFromFileInfo& loadInfo, const std::string_view filePath);
 
         void Destroy
         (
@@ -49,11 +55,14 @@ namespace Models
             Vk::MegaSet& megaSet,
             Vk::TextureManager& textureManager,
             Vk::GeometryBuffer& geometryBuffer,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
-        std::string               name;
-        std::vector<Models::Mesh> meshes;
+        std::string                          name;
+        std::string                          path;
+        std::vector<Models::Mesh>            meshes      = {};
+        std::vector<Models::LocalPointLight> pointLights = {};
+        std::vector<Models::LocalSpotLight>  spotLights  = {};
     private:
         struct TextureInfo
         {
@@ -63,97 +72,50 @@ namespace Models
 
         void ProcessScenes
         (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset
         );
 
         void ProcessNode
         (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             usize nodeIndex,
             glm::mat4 nodeMatrix
         );
 
+        void LoadLight(const fastgltf::Light& light, const glm::mat4& nodeMatrix);
+
         void LoadMesh
         (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::GeometryBuffer& geometryBuffer,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
             const fastgltf::Mesh& mesh,
             const glm::mat4& nodeMatrix
         );
 
-        [[nodiscard]] static glm::mat4 GetTransformMatrix(const fastgltf::Node& node, const glm::mat4& base = glm::identity<glm::mat4>());
-
-        [[nodiscard]] static const fastgltf::Accessor& GetAccessor
+        [[nodiscard]] static Models::Mesh LoadPrimitive
         (
+            const Models::LoadFromFileInfo& loadInfo,
+            const std::string_view directory,
             const fastgltf::Asset& asset,
             const fastgltf::Primitive& primitive,
-            const std::string_view attribute,
-            fastgltf::AccessorType type
+            const glm::mat4& nodeMatrix
         );
 
-        [[nodiscard]] static std::optional<usize> GetAccessorIndex
+        template<typename T>
+        requires fastgltf::IsTextureInfo<T>
+        [[nodiscard]] static Model::TextureInfo LoadTexture
         (
-            const fastgltf::Asset& asset,
-            const fastgltf::Primitive& primitive,
-            const std::string_view attribute,
-            fastgltf::AccessorType type
-        );
-
-        [[nodiscard]] static TextureInfo LoadTexture
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
+            const Models::LoadFromFileInfo& loadInfo,
             const std::string_view directory,
             const fastgltf::Asset& asset,
-            const std::optional<fastgltf::TextureInfo>& textureInfo,
-            const std::string_view defaultTexture
-        );
-
-        [[nodiscard]] static TextureInfo LoadTexture
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view directory,
-            const fastgltf::Asset& asset,
-            const std::optional<fastgltf::NormalTextureInfo>& textureInfo
-        );
-
-        [[nodiscard]] static Vk::TextureID LoadTextureInternal
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::TextureManager& textureManager,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view directory,
-            const fastgltf::Asset& asset,
-            usize textureIndex
+            const std::optional<T>& textureInfo,
+            const std::string_view defaultName,
+            const glm::u8vec4& defaultData
         );
     };
 }

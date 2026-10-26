@@ -19,4 +19,14 @@
 
 #include "taskflow/taskflow/taskflow.hpp"
 
+namespace TaskFlow
+{
+    class WorkerInterface : public tf::WorkerInterface
+    {
+    public:
+        void scheduler_prologue(tf::Worker& worker) override;
+        void scheduler_epilogue(tf::Worker& worker, std::exception_ptr ptr) override;
+    };
+}
+
 #endif

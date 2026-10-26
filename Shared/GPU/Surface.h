@@ -23,6 +23,13 @@ GLSL_NAMESPACE_BEGIN(GPU)
 
 struct GeometryInfo
 {
+    #ifdef __cplusplus
+    bool operator==(const GeometryInfo& other) const noexcept
+    {
+        return offset == other.offset && count == other.count;
+    }
+    #endif
+
     u32 offset;
     u32 count;
 };
@@ -30,8 +37,6 @@ struct GeometryInfo
 struct SurfaceInfo
 {
     GeometryInfo indexInfo;
-    GeometryInfo positionInfo;
-    GeometryInfo uvInfo;
     GeometryInfo vertexInfo;
 };
 

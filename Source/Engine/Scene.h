@@ -17,75 +17,26 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "Config.h"
+#include "FreeCamera.h"
 #include "Renderer/RenderObject.h"
-#include "Renderer/Objects/FreeCamera.h"
 #include "Renderer/IBL/IBLMaps.h"
-#include "Renderer/IBL/Generator.h"
-#include "Models/ModelManager.h"
-#include "Util/FrameCounter.h"
 #include "GPU/Lights.h"
 
 namespace Engine
 {
-    class Scene
+    struct Scene
     {
-    public:
-        Scene
-        (
-            const Engine::Config& config,
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::PipelineManager& pipelineManager,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Renderer::Objects::GlobalSamplers& samplers,
-            Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet,
-            Vk::StagingPool& stagingPool,
-            Renderer::IBL::Generator& iblGenerator,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        void Update
-        (
-            const Vk::CommandBuffer& cmdBuffer,
-            const Vk::PipelineManager& pipelineManager,
-            const Util::FrameCounter& frameCounter,
-            Engine::Inputs& inputs,
-            const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Renderer::Objects::GlobalSamplers& samplers,
-            Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet,
-            Vk::StagingPool& stagingPool,
-            Renderer::IBL::Generator& iblGenerator,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        void Destroy
-        (
-            const Vk::Context& context,
-            Models::ModelManager& modelManager,
-            Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
-        );
-
         std::vector<Renderer::RenderObject> renderObjects = {};
         GPU::DirLight                       sun           = {};
         std::vector<GPU::PointLight>        pointLights   = {};
         std::vector<GPU::SpotLight>         spotLights    = {};
-        Renderer::Objects::FreeCamera       camera        = {};
-        Renderer::IBL::IBLMaps              iblMaps       = {};
+        Engine::FreeCamera                  camera        = {};
+        Renderer::IBL::IBLID                iblMapsID     = 0;
 
+        // TODO: Better render object update flags
         // This does not account for render object internal changes
         // Only addition/deletion of render objects will update this
         bool haveRenderObjectsChanged = false;
-    private:
-        std::string            m_loadedHDRMapPath   = {};
-        std::string            m_loadedModelPath    = {};
-        Renderer::RenderObject m_loadedRenderObject = {};
-        GPU::PointLight        m_loadedPointLight   = {};
-        GPU::SpotLight         m_loadedSpotLight    = {};
     };
 }
 

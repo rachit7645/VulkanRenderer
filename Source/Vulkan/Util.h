@@ -20,11 +20,32 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
+#include "Engine/Scratch.h"
 #include "Util/Types.h"
 
 namespace Vk
 {
-    f64 GetTexelSize(VkFormat format);
+    [[nodiscard]] usize CalculatePhysicalDeviceScore
+    (
+        VkInstance instance,
+        VkPhysicalDevice physicalDevice,
+        VkSurfaceKHR surface,
+        const VkPhysicalDeviceProperties2& properties,
+        const VkPhysicalDeviceFeatures2& features,
+        Scratch::Allocator& scratchAllocator
+    );
+
+    [[nodiscard]] VkFormat FindSupportedFormat
+    (
+       VkPhysicalDevice physicalDevice,
+       const std::span<const VkFormat> candidates,
+       VkImageTiling tiling,
+       VkFormatFeatureFlags2 features
+    );
+
+    [[nodiscard]] f64 GetTexelSize(VkFormat format);
+
+    [[nodiscard]] VkDeviceSize GetImageSize(VkFormat format, u32 width, u32 height);
 
     void CheckResult(VkResult result, const std::string_view message);
 }

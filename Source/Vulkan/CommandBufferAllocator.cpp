@@ -74,7 +74,8 @@ namespace Vk
 
         if (!m_freedGlobalCommandBuffers.empty())
         {
-            cmdBuffer = m_freedGlobalCommandBuffers.front();
+            cmdBuffer = m_freedGlobalCommandBuffers.top();
+
             m_freedGlobalCommandBuffers.pop();
         }
         else
@@ -127,7 +128,7 @@ namespace Vk
 
         vkDestroyCommandPool(device, m_globalCommandPool, nullptr);
 
-        for (const auto commandPool : m_commandPools)
+        for (const VkCommandPool commandPool : m_commandPools)
         {
             Vk::CheckResult(vkResetCommandPool(device, commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT), "Failed to reset command pool!");
 

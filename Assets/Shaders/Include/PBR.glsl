@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,22 @@
 
 #include "GPU/Lights.h"
 #include "Math.glsl"
+#include "Constants.glsl"
 
 float IoRToReflectance(float ior)
 {
     float r = (ior - 1.0f) / (ior + 1.0f);
 
     return r * r;
+}
+
+// https://marmosetco.tumblr.com/post/81245981087
+float CalculateHorizonOcclusion(vec3 R, vec3 N)
+{
+    float horizon = saturate(1.0f + GBUFFER_HORIZON_FADE * dot(R, N));
+          horizon = horizon * horizon;
+
+    return horizon;
 }
 
 vec3 CalculateF0(vec3 albedo, float metallic, float reflectance)
@@ -46,6 +56,7 @@ float DistributionGGX(float NdotH, float a)
 }
 
 // Smith's Self Shadowing
+// Eric Heitz's Height-Correlated Visibility
 // V = G / (4 · NoL · NoV)
 float VisibilitySmithGGX(float NdotL, float NdotV, float a)
 {
@@ -91,6 +102,7 @@ vec3 CalculateLight
     float reflectance
 )
 {
+    // From DevSH's PBR Discussion
     // SingleScatterOut = F(H, L) * G(H, L, V) * D(H, ...) / (4 * V ⋅ N * L ⋅ N) + FresnelTransmissionThroughAllMicrofacets * (1 - FresnelTotalInternalReflection) * Lambertian
 
     vec3 F0 = CalculateF0(albedo, metallic, reflectance);
@@ -122,12 +134,11 @@ vec3 CalculateLight
     // 1 - FresnelTotalInternalReflection
     diffuse *= 1.0f - FresnelSchlick(F0, NdotV);
 
-    // Radiance is not a physically correct parameter, but we keep it for artist (me) control
     return (diffuse + specular) * NdotL * radiance;
 }
 
 // Schlick's Approximation for IBL
-float GeometrySchlickGGX_IBL(float NdotV, float roughness)
+float GeometrySchlickGGXIBL(float NdotV, float roughness)
 {
     float a = roughness;
     float k = (a * a) / 2.0f;
@@ -139,21 +150,30 @@ float GeometrySchlickGGX_IBL(float NdotV, float roughness)
 }
 
 // Smith's Self Shadowing for IBL
-float GeometrySmith_IBL(vec3 N, vec3 V, vec3 L, float roughness)
+float GeometrySmithIBL(vec3 N, vec3 V, vec3 L, float roughness)
 {
     float NdotV = max(dot(N, V), 0.0f);
     float NdotL = max(dot(N, L), 0.0f);
 
-    float ggx1 = GeometrySchlickGGX_IBL(NdotL, roughness);
-    float ggx2 = GeometrySchlickGGX_IBL(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGXIBL(NdotL, roughness);
+    float ggx2 = GeometrySchlickGGXIBL(NdotV, roughness);
 
     return ggx1 * ggx2;
 }
 
 // Schlick's Fresnel approximation with injected roughness parameter
-vec3 FresnelSchlick_IBL(vec3 F0, float cosTheta, float roughness)
+vec3 FresnelSchlickIBL(vec3 F0, float cosTheta, float roughness)
 {
     return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow5(saturate(1.0f - cosTheta));
+}
+
+// Moving Frostbite To PBR, Page 69
+vec3 CalculateSpecularDominantDirection(vec3 N, vec3 R, float roughness)
+{
+    float smoothness = saturate(1.0f - roughness);
+    float lerpFactor = smoothness * (roughness + sqrt(smoothness));
+
+    return mix(N, R, lerpFactor);
 }
 
 vec3 CalculateAmbient
@@ -164,6 +184,7 @@ vec3 CalculateAmbient
     float roughness,
     float metallic,
     float reflectance,
+    float horizon,
     vec3 irradiance,
     vec3 preFilter,
     vec2 brdf
@@ -173,10 +194,10 @@ vec3 CalculateAmbient
 
     float NdotV = abs(dot(N, V)) + 1e-5f;
 
-    vec3 F = FresnelSchlick_IBL(F0, NdotV, roughness);
+    vec3 F = FresnelSchlickIBL(F0, NdotV, roughness);
 
     vec3 diffuse  = irradiance * albedo;
-    vec3 specular = preFilter * (F * brdf.x + brdf.y);
+    vec3 specular = horizon * preFilter * (F * brdf.x + brdf.y);
 
     diffuse *= (1.0f - metallic);
     diffuse *= (1.0f - F) * (1.0f - F0); // This is probably wrong but....

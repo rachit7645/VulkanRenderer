@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Math.glsl"
 #include "MegaSet.glsl"
@@ -45,7 +46,16 @@ void main()
         return;
     }
 
-    vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.TileDepthsIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    uint tileIndex = (Constants.MaxTileID.x + 1) * tileID.y + tileID.x;
+
+    TileLightIndices indices;
+
+    indices.pointLightCount         = u16(0u);
+    indices.shadowedPointLightCount = u16(0u);
+    indices.spotLightCount          = u16(0u);
+    indices.shadowedSpotLightCount  = u16(0u);
+
+    vec2 viewportSize = vec2(textureSize(Textures[Constants.TileDepthsIndex], 0));
     vec2 pixelCenter  = vec2(tileID) + vec2(0.5f);
     vec2 uv           = pixelCenter / viewportSize;
 
@@ -53,6 +63,13 @@ void main()
 
     float minDepth = depths.r;
     float maxDepth = depths.g;
+
+    if (minDepth == 0.0f && minDepth == maxDepth)
+    {
+        Constants.TileLightIndices.indices[tileIndex] = indices;
+
+        return;
+    }
 
     vec2 minUV = vec2(tileID)     / viewportSize;
     vec2 maxUV = vec2(tileID + 1) / viewportSize;
@@ -82,58 +99,71 @@ void main()
         aabb.max = max(aabb.max, maxWorldPosition);
     }
 
-    TileLightIndices indices;
-
-    indices.pointLightCount         = 0;
-    indices.shadowedPointLightCount = 0;
-    indices.spotLightCount          = 0;
-    indices.shadowedSpotLightCount  = 0;
-
     for (uint i = 0; i < Constants.Scene.PointLights.count; ++i)
     {
+        if (indices.pointLightCount >= MAX_POINT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         PointLight light = Constants.Scene.PointLights.lights[i];
 
         if (Intersects(aabb, light))
         {
-            indices.pointLightIndices[indices.pointLightCount] = i;
+            indices.pointLightIndices[indices.pointLightCount] = u16(i);
             ++indices.pointLightCount;
         }
     }
 
     for (uint i = 0; i < Constants.Scene.ShadowedPointLights.count; ++i)
     {
+        if (indices.shadowedPointLightCount >= MAX_SHADOWED_POINT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         ShadowedPointLight light = Constants.Scene.ShadowedPointLights.lights[i];
 
         if (Intersects(aabb, light))
         {
-            indices.shadowedPointLightIndices[indices.shadowedPointLightCount] = i;
+            indices.shadowedPointLightIndices[indices.shadowedPointLightCount] = u16(i);
             ++indices.shadowedPointLightCount;
         }
     }
 
     for (uint i = 0; i < Constants.Scene.SpotLights.count; ++i)
     {
+        if (indices.spotLightCount >= MAX_SPOT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         SpotLight light = Constants.Scene.SpotLights.lights[i];
 
         if (Intersects(aabb, light))
         {
-            indices.spotLightIndices[indices.spotLightCount] = i;
+            indices.spotLightIndices[indices.spotLightCount] = u16(i);
             ++indices.spotLightCount;
         }
     }
 
     for (uint i = 0; i < Constants.Scene.ShadowedSpotLights.count; ++i)
     {
+        if (indices.shadowedSpotLightCount >= MAX_SHADOWED_SPOT_LIGHTS_PER_TILE)
+        {
+            break;
+        }
+
         ShadowedSpotLight light = Constants.Scene.ShadowedSpotLights.lights[i];
 
         if (Intersects(aabb, light))
         {
-            indices.shadowedSpotLightIndices[indices.shadowedSpotLightCount] = i;
+            indices.shadowedSpotLightIndices[indices.shadowedSpotLightCount] = u16(i);
             ++indices.shadowedSpotLightCount;
         }
     }
 
-    Constants.TileLightIndices.indices[(Constants.MaxTileID.x + 1) * tileID.y + tileID.x] = indices;
+    Constants.TileLightIndices.indices[tileIndex] = indices;
 }
 
 // AABB-Sphere
@@ -149,6 +179,7 @@ bool Intersects(AABB aabb, vec3 position, float range)
 }
 
 // AABB-Cone
+// https://bartwronski.com/2017/04/13/cull-that-cone/
 bool Intersects(AABB aabb, vec3 position, vec3 direction, float outerCutOff, float range)
 {
     vec3 center  = 0.5f * (aabb.max + aabb.min);
@@ -165,7 +196,7 @@ bool Intersects(AABB aabb, vec3 position, vec3 direction, float outerCutOff, flo
         return true;
     }
 
-    float angle        = 2.0f * outerCutOff;
+    float angle        = outerCutOff;
     float closestPoint = cos(angle) * sqrt(D) - diffDotDir * sin(angle);
 
     bool angleCull = closestPoint > sphereRadius;

@@ -18,22 +18,13 @@
 #define RENDER_OBJECT_H
 
 #include "Externals/GLM.h"
-#include "Models/ModelManager.h"
+#include "Models/ModelID.h"
 
 namespace Renderer
 {
     struct RenderObject
     {
-        void Destroy
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
-            Models::ModelManager& modelManager,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        Models::ModelID modelID  = 0;
+        Models::ModelID modelID  = {};
         glm::vec3       position = {};
         glm::vec3       rotation = {};
         glm::vec3       scale    = {1.0f, 1.0f, 1.0f};

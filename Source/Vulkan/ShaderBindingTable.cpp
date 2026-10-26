@@ -18,7 +18,7 @@
 
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
-#include "Util/Align.h"
+#include "Util/Memory.h"
 
 namespace Vk
 {
@@ -30,14 +30,14 @@ namespace Vk
         u32 missCount,
         u32 hitCount,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Shader Binding Table Build", glm::vec4(0.4126f, 0.7488f, 0.5581f, 1.0f));
 
-        const VkDeviceSize shaderGroupHandleSize      = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleSize;
-        const VkDeviceSize shaderGroupHandleAlignment = context.physicalDeviceRayTracingPipelineProperties.shaderGroupHandleAlignment;
-        const VkDeviceSize shaderGroupBaseAlignment   = context.physicalDeviceRayTracingPipelineProperties.shaderGroupBaseAlignment;
+        const VkDeviceSize shaderGroupHandleSize      = context.properties.shaderGroupHandleSize;
+        const VkDeviceSize shaderGroupHandleAlignment = context.properties.shaderGroupHandleAlignment;
+        const VkDeviceSize shaderGroupBaseAlignment   = context.properties.shaderGroupBaseAlignment;
 
         const u32          handleCount = 1 + missCount + hitCount;
         const VkDeviceSize handlesSize = handleCount * shaderGroupHandleSize;
@@ -75,7 +75,7 @@ namespace Vk
             0
         );
 
-        deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock] () mutable
+        deletionQueue.Push([&stagingPool, stagingMemoryBlock] () mutable
         {
             stagingPool.Free(stagingMemoryBlock);
         });
@@ -119,6 +119,7 @@ namespace Vk
 
         m_buffer = Vk::Buffer
         (
+            context.device,
             context.allocator,
             sbtSize,
             0,
@@ -165,8 +166,6 @@ namespace Vk
                 .size           = sbtSize
             }
         );
-
-        m_buffer.GetDeviceAddress(context.device);
 
         raygenRegion.deviceAddress = m_buffer.deviceAddress;
         missRegion.deviceAddress   = m_buffer.deviceAddress + raygenRegion.size;

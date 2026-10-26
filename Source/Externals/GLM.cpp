@@ -16,6 +16,8 @@
 
 #include "GLM.h"
 
+#include "Util/Assert.h"
+#include "Util/SIMD.h"
 #include "Util/Types.h"
 
 namespace glm
@@ -47,9 +49,9 @@ namespace glm
     {
         VkTransformMatrixKHR vkTransform = {};
 
-        for (usize row = 0; row < 3; ++row)
+        for (s32 row = 0; row < 3; ++row)
         {
-            for (usize col = 0; col < 4; ++col)
+            for (s32 col = 0; col < 4; ++col)
             {
                 vkTransform.matrix[row][col] = matrix[col][row];
             }
@@ -66,5 +68,10 @@ namespace glm
     VkExtent2D vk_cast(const uvec2& vector)
     {
         return {.width = vector.x, .height = vector.y};
+    }
+
+    f16vec2 glm_cast(const vec2& vector)
+    {
+        return {SIMD::ConvertF32ToF16(vector.x), SIMD::ConvertF32ToF16(vector.y)};
     }
 }

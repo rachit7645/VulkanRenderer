@@ -34,15 +34,15 @@ namespace Renderer::DearImGui
     {
         constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
 
-        const std::array colorFormats = {swapchain.imageFormat};
+        const std::array colorFormats = {swapchain.surfaceFormat.format};
         
-        pipelineManager.AddPipeline("DearImGui", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::DearImGui, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("ImGui/ImGui.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("ImGui/ImGui.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddBlendAttachment(
                 VK_TRUE,
@@ -58,28 +58,29 @@ namespace Renderer::DearImGui
                 VK_COLOR_COMPONENT_A_BIT
             )
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DearImGui::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
     }
 
     void RenderPass::Render
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Vk::Swapchain& swapchain,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Models::ModelManager& modelManager,
-        Util::DeletionQueue& deletionQueue
+        Vk::TextureManager& textureManager,
+        tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
+        Engine::DeletionQueue& deletionQueue
     )
     {
         ImGui::Render();
 
-        const auto drawData = ImGui::GetDrawData();
+        const auto* drawData = ImGui::GetDrawData();
 
         Vk::BeginLabel(cmdBuffer, "Dear ImGui", glm::vec4(0.9137f, 0.4745f, 0.9882f, 1.0f));
 
@@ -88,15 +89,16 @@ namespace Renderer::DearImGui
             RenderGui
             (
                 FIF,
-                device,
-                allocator,
                 cmdBuffer,
+                context,
                 pipelineManager,
                 swapchain,
                 samplers,
                 megaSet,
                 stagingPool,
-                modelManager,
+                textureManager,
+                executor,
+                scratchAllocator,
                 deletionQueue,
                 drawData
             );
@@ -129,20 +131,21 @@ namespace Renderer::DearImGui
     void RenderPass::RenderGui
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Vk::Swapchain& swapchain,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Models::ModelManager& modelManager,
-        Util::DeletionQueue& deletionQueue,
+        Vk::TextureManager& textureManager,
+        tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
+        Engine::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
     {
-        const auto& pipeline = pipelineManager.GetPipeline("DearImGui");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::DearImGui);
         
         const auto displaySize      = glm::vec2(drawData->DisplaySize.x,      drawData->DisplaySize.y);
         const auto displayPos       = glm::vec2(drawData->DisplayPos.x,       drawData->DisplayPos.y);
@@ -156,23 +159,24 @@ namespace Renderer::DearImGui
         UploadToBuffers
         (
             FIF,
-            device,
-            allocator,
             cmdBuffer,
+            context,
             currentVertexBuffer,
             currentIndexBuffer,
+            scratchAllocator,
             deletionQueue,
             drawData
         );
 
         UpdateTextures
         (
-            device,
-            allocator,
             cmdBuffer,
+            context,
             megaSet,
             stagingPool,
-            modelManager,
+            textureManager,
+            executor,
+            scratchAllocator,
             deletionQueue,
             drawData
         );
@@ -236,28 +240,21 @@ namespace Renderer::DearImGui
 
         vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
 
-        DearImGui::Constants constants = {};
-
-        constants.Vertices     = currentVertexBuffer.deviceAddress;
-        constants.Scale        = glm::vec2(2.0f) / displaySize;
-        constants.Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale);
-        constants.SamplerIndex = modelManager.textureManager.GetSampler(samplers.imguiSamplerID).descriptorID;
-
-        pipeline.PushConstants
-        (
-            cmdBuffer,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0,
-            offsetof(DearImGui::Constants, TextureIndex),
-            &constants
-        );
+        DearImGui::Constants constants =
+        {
+            .Vertices     = currentVertexBuffer.deviceAddress,
+            .Scale        = glm::vec2(2.0f) / displaySize,
+            .Translate    = glm::vec2(-1.0f) - (displayPos * constants.Scale),
+            .SamplerIndex = textureManager.GetSampler(samplers.imguiSamplerID).descriptorID,
+            .TextureIndex = 0
+        };
 
         pipeline.BindDescriptors(cmdBuffer, megaSet);
 
         s32 globalVertexOffset = 0;
         s32 globalIndexOffset  = 0;
 
-        for (const auto drawList : drawData->CmdLists)
+        for (const auto* drawList : drawData->CmdLists)
         {
             for (const auto& cmd : drawList->CmdBuffer)
             {
@@ -285,20 +282,34 @@ namespace Renderer::DearImGui
                 (
                     cmdBuffer,
                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                    constants
+                );
+
+                pipeline.PushConstants
+                (
+                    cmdBuffer,
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                     offsetof(Constants, TextureIndex),
                     sizeof(u32),
                     &constants.TextureIndex
                 );
 
-                vkCmdDrawIndexed
-                (
-                    cmdBuffer.handle,
-                    cmd.ElemCount,
-                    1,
-                    cmd.IdxOffset + globalIndexOffset,
-                    static_cast<s32>(cmd.VtxOffset) + globalVertexOffset,
-                    0
-                );
+                if (cmd.UserCallback != nullptr)
+                {
+                    cmd.UserCallback(drawList, &cmd);
+                }
+                else
+                {
+                    vkCmdDrawIndexed
+                    (
+                        cmdBuffer.handle,
+                        cmd.ElemCount,
+                        1,
+                        cmd.IdxOffset + globalIndexOffset,
+                        static_cast<s32>(cmd.VtxOffset) + globalVertexOffset,
+                        0
+                    );
+                }
             }
 
             globalVertexOffset += drawList->VtxBuffer.Size;
@@ -311,12 +322,12 @@ namespace Renderer::DearImGui
     void RenderPass::UploadToBuffers
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         Vk::Buffer& vertexBuffer,
         Vk::Buffer& indexBuffer,
-        Util::DeletionQueue& deletionQueue,
+        Scratch::Allocator& scratchAllocator,
+        Engine::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
     {
@@ -326,16 +337,17 @@ namespace Renderer::DearImGui
 
         if (vertexBuffer.size < vertexSize)
         {
-            Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
+            Vk::SetDebugName(context.device, vertexBuffer.handle, fmt::format("ImGuiPass/Deleted/VertexBuffer/{}", FIF));
 
-            deletionQueue.PushDeletor([allocator, vertexBuffer] () mutable
+            deletionQueue.Push([allocator = context.allocator, vertexBuffer] () mutable
             {
                 vertexBuffer.Destroy(allocator);
             });
 
             vertexBuffer = Vk::Buffer
             (
-                allocator,
+                context.device,
+                context.allocator,
                 vertexSize,
                 0,
                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -344,23 +356,22 @@ namespace Renderer::DearImGui
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            vertexBuffer.GetDeviceAddress(device);
-
-            Vk::SetDebugName(device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
+            Vk::SetDebugName(context.device, vertexBuffer.handle, fmt::format("ImGuiPass/VertexBuffer/{}", FIF));
         }
 
         if (indexBuffer.size < indexSize)
         {
-            Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
+            Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/Deleted/IndexBuffer/{}", FIF));
 
-            deletionQueue.PushDeletor([allocator, indexBuffer] () mutable
+            deletionQueue.Push([allocator = context.allocator, indexBuffer] () mutable
             {
                 indexBuffer.Destroy(allocator);
             });
 
             indexBuffer = Vk::Buffer
             (
-                allocator,
+                context.device,
+                context.allocator,
                 indexSize,
                 0,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -369,13 +380,13 @@ namespace Renderer::DearImGui
                 VMA_MEMORY_USAGE_AUTO
             );
 
-            Vk::SetDebugName(device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
+            Vk::SetDebugName(context.device, indexBuffer.handle, fmt::format("ImGuiPass/IndexBuffer/{}", FIF));
         }
 
-        auto vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.hostAddress);
-        auto indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.hostAddress);
+        auto* vertexDestination = static_cast<ImDrawVert*>(vertexBuffer.hostAddress);
+        auto* indexDestination  = static_cast<ImDrawIdx*>(indexBuffer.hostAddress);
 
-        for (const auto drawList : drawData->CmdLists)
+        for (const auto* drawList : drawData->CmdLists)
         {
             memcpy(vertexDestination, drawList->VtxBuffer.Data, drawList->VtxBuffer.Size * sizeof(ImDrawVert));
             memcpy(indexDestination,  drawList->IdxBuffer.Data, drawList->IdxBuffer.Size * sizeof(ImDrawIdx));
@@ -384,7 +395,7 @@ namespace Renderer::DearImGui
             indexDestination  += drawList->IdxBuffer.Size;
         }
 
-        Vk::BarrierWriter{}
+        Vk::ScratchBarrierWriter(scratchAllocator)
         .WriteBufferBarrier(
             vertexBuffer,
             Vk::BufferBarrier{
@@ -418,12 +429,13 @@ namespace Renderer::DearImGui
 
         if (needsManualFlushing)
         {
-            const std::array<VmaAllocation, 2> allocations = {vertexBuffer.allocation, indexBuffer.allocation};
-            const std::array<VkDeviceSize,  2> offsets     = {0, 0};
-            const std::array<VkDeviceSize,  2> sizes       = {vertexSize, indexSize};
+            constexpr std::array<VkDeviceSize,  2> offsets = {0, 0};
+
+            const std::array allocations = {vertexBuffer.allocation, indexBuffer.allocation};
+            const std::array sizes       = {vertexSize, indexSize};
 
             Vk::CheckResult(vmaFlushAllocations(
-                allocator,
+                context.allocator,
                 allocations.size(),
                 allocations.data(),
                 offsets.data(),
@@ -435,13 +447,14 @@ namespace Renderer::DearImGui
 
     void RenderPass::UpdateTextures
     (
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         Vk::MegaSet& megaSet,
         Vk::StagingPool& stagingPool,
-        Models::ModelManager& modelManager,
-        Util::DeletionQueue& deletionQueue,
+        Vk::TextureManager& textureManager,
+        tf::Executor& executor,
+        Scratch::Allocator& scratchAllocator,
+        Engine::DeletionQueue& deletionQueue,
         const ImDrawData* drawData
     )
     {
@@ -469,13 +482,14 @@ namespace Renderer::DearImGui
                     Logger::Error("Unsupported texture format! [ID={}]", texture->UniqueID);
                 }
 
-                const auto pixels = static_cast<u8*>(texture->GetPixels());
+                const auto* pixels = static_cast<u8*>(texture->GetPixels());
 
-                const auto id = modelManager.textureManager.AddTexture
+                const auto id = textureManager.LoadTexture
                 (
-                    device,
-                    allocator,
+                    context.device,
+                    context.allocator,
                     stagingPool,
+                    executor,
                     deletionQueue,
                     Vk::ImageUpload{
                         .type   = Vk::ImageUploadType::RAW,
@@ -509,19 +523,19 @@ namespace Renderer::DearImGui
                     std::memcpy(dstRow, srcRow, rowPitch);
                 }
 
-                modelManager.textureManager.UpdateTexture
+                textureManager.UpdateTexture
                 (
                     id,
-                    device,
-                    allocator,
+                    context.device,
+                    context.allocator,
                     stagingPool,
                     deletionQueue,
                     Vk::ImageUpdateRawMemory{
                         .update = {
-                            .offset = {texture->UpdateRect.x, texture->UpdateRect.y},
-                            .extent = {texture->UpdateRect.w, texture->UpdateRect.h}
+                            .offset = {.x     = texture->UpdateRect.x, .y      = texture->UpdateRect.y},
+                            .extent = {.width = texture->UpdateRect.w, .height = texture->UpdateRect.h}
                         },
-                        .data = data
+                        .data   = std::move(data)
                     }
                 );
 
@@ -532,11 +546,11 @@ namespace Renderer::DearImGui
             {
                 const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
 
-                modelManager.textureManager.DestroyTexture
+                textureManager.DestroyTexture
                 (
                     id,
-                    device,
-                    allocator,
+                    context.device,
+                    context.allocator,
                     megaSet,
                     deletionQueue
                 );
@@ -547,17 +561,13 @@ namespace Renderer::DearImGui
             }
         }
 
-        modelManager.Update
+        textureManager.Update
         (
+            context.device,
             cmdBuffer,
-            device,
-            allocator,
             megaSet,
-            stagingPool,
-            deletionQueue
+            scratchAllocator
         );
-
-        megaSet.Update(device);
 
         for (auto* texture : *drawData->Textures)
         {
@@ -568,7 +578,7 @@ namespace Renderer::DearImGui
 
             const auto id = std::bit_cast<Vk::TextureID>(texture->BackendUserData);
 
-            texture->SetTexID(modelManager.textureManager.GetTexture(id).descriptorID);
+            texture->SetTexID(textureManager.GetTexture(id).descriptorID);
             texture->SetStatus(ImTextureStatus_OK);
         }
     }

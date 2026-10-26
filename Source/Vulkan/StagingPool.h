@@ -60,6 +60,8 @@ namespace Vk
 
         struct StagingBuffer
         {
+            std::optional<StagingMemoryBlock> Allocate(VkDeviceSize size, VkDeviceSize alignment);
+
             Vk::Buffer                     buffer       = {};
             VmaVirtualBlock                virtualBlock = VK_NULL_HANDLE;
             std::vector<VirtualAllocation> allocations  = {};

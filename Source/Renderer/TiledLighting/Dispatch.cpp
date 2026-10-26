@@ -30,26 +30,26 @@ namespace Renderer::TiledLighting
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("TiledLighting/Bounds", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::TiledLightCullingBounds, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("TiledLighting/Bounds.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Bounds::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("TiledLighting/Culling", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::TiledLightCulling, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("TiledLighting/Culling.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Culling::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer
         (
             "TiledLighting/TileDepths",
-            Vk::FramebufferType::ColorRG_SFloat32,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
+            VK_FORMAT_R32G32_SFLOAT,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -61,9 +61,9 @@ namespace Renderer::TiledLighting
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -71,7 +71,7 @@ namespace Renderer::TiledLighting
         (
             "TiledLighting/TileDepths",
             "TiledLighting/TileDepthsView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -84,17 +84,16 @@ namespace Renderer::TiledLighting
     void Dispatch::Execute
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Tiled Lighting", glm::vec4(0.4098f, 0.2843f, 0.7599f, 1.0f));
@@ -112,9 +111,8 @@ namespace Renderer::TiledLighting
         Culling
         (
             FIF,
-            device,
-            allocator,
             cmdBuffer,
+            context,
             pipelineManager,
             framebufferManager,
             megaSet,
@@ -135,12 +133,12 @@ namespace Renderer::TiledLighting
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "Bounds", glm::vec4(0.6098f, 0.8423f, 0.3599f, 1.0f));
 
-        const auto& pipeline = pipelineManager.GetPipeline("TiledLighting/Bounds");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::TiledLightCullingBounds);
 
         const auto& tileDepths = framebufferManager.GetFramebuffer("TiledLighting/TileDepths");
 
@@ -214,33 +212,33 @@ namespace Renderer::TiledLighting
     void Dispatch::Culling
     (
         usize FIF,
-        VkDevice device,
-        VmaAllocator allocator,
         const Vk::CommandBuffer& cmdBuffer,
+        const Vk::Context& context,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
+        const Objects::Samplers& samplers,
         Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         Vk::BeginLabel(cmdBuffer, "Culling", glm::vec4(0.6984f, 0.3423f, 0.3599f, 1.0f));
 
         const auto& tileDepths = framebufferManager.GetFramebuffer("TiledLighting/TileDepths");
 
+        const usize tileCount = static_cast<usize>(tileDepths.image.width) * tileDepths.image.height;
+
         tileLightIndexBuffer.Update
         (
-            device,
-            allocator,
-            cmdBuffer,
-            tileDepths.image.width * tileDepths.image.height,
+            tileCount,
+            context.device,
+            context.allocator,
             deletionQueue
         );
 
-        tileLightIndexBuffer.resizableBuffer.buffer.Barrier
+        tileLightIndexBuffer.buffer.Barrier
         (
             cmdBuffer,
             Vk::BufferBarrier{
@@ -251,18 +249,18 @@ namespace Renderer::TiledLighting
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = tileLightIndexBuffer.resizableBuffer.buffer.size
+                .size           = tileLightIndexBuffer.buffer.size
             }
         );
 
-        const auto& pipeline = pipelineManager.GetPipeline("TiledLighting/Culling");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::TiledLightCulling);
 
         pipeline.Bind(cmdBuffer);
 
         const auto constants = Culling::Constants
         {
-            .Scene             = sceneBuffer.buffers[FIF].deviceAddress,
-            .TileLightIndices  = tileLightIndexBuffer.resizableBuffer.buffer.deviceAddress,
+            .Scene             = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+            .TileLightIndices  = tileLightIndexBuffer.buffer.deviceAddress,
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .TileDepthsIndex   = framebufferManager.GetFramebufferView("TiledLighting/TileDepthsView").sampledImageID,
             .MaxTileID         = glm::uvec2(tileDepths.image.width - 1, tileDepths.image.height - 1)
@@ -285,7 +283,7 @@ namespace Renderer::TiledLighting
             1
         );
 
-        tileLightIndexBuffer.resizableBuffer.buffer.Barrier
+        tileLightIndexBuffer.buffer.Barrier
         (
             cmdBuffer,
             Vk::BufferBarrier{
@@ -296,7 +294,7 @@ namespace Renderer::TiledLighting
                 .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                 .offset         = 0,
-                .size           = tileLightIndexBuffer.resizableBuffer.buffer.size
+                .size           = tileLightIndexBuffer.buffer.size
             }
         );
 

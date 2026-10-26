@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) 2023 - 2026 Rachit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#version 460
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_buffer_reference2    : enable
+#extension GL_EXT_scalar_block_layout  : enable
+
+#include "Debug/GenerateTiledLightingStatistics.h"
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint totalPointLightCount         = 0;
+    uint totalShadowedPointLightCount = 0;
+    uint totalSpotLightCount          = 0;
+    uint totalShadowedSpotLightCount  = 0;
+
+    for (uint y = 0; y < Constants.TileCount.y; ++y)
+    {
+        uint tileIndexBase = Constants.TileCount.x * y;
+
+        for (uint x = 0; x < Constants.TileCount.x; ++x)
+        {
+            uint tileIndex = tileIndexBase + x;
+
+            TileLightIndices tileLightIndices = Constants.TileLightIndices.indices[tileIndex];
+
+            totalPointLightCount         += tileLightIndices.pointLightCount;
+            totalShadowedPointLightCount += tileLightIndices.shadowedPointLightCount;
+            totalSpotLightCount          += tileLightIndices.spotLightCount;
+            totalShadowedSpotLightCount  += tileLightIndices.shadowedSpotLightCount;
+        }
+    }
+
+    uint totalLightCount  = 0;
+         totalLightCount += totalPointLightCount;
+         totalLightCount += totalShadowedPointLightCount;
+         totalLightCount += totalSpotLightCount;
+         totalLightCount += totalShadowedSpotLightCount;
+
+    uint tileCount = Constants.TileCount.y * Constants.TileCount.x;
+
+    uint maxTotalPointLights         = MAX_POINT_LIGHTS_PER_TILE          * tileCount;
+    uint maxTotalShadowedPointLights = MAX_SHADOWED_POINT_LIGHTS_PER_TILE * tileCount;
+    uint maxTotalSpotLights          = MAX_SPOT_LIGHTS_PER_TILE           * tileCount;
+    uint maxTotalShadowedSpotLights  = MAX_SHADOWED_SPOT_LIGHTS_PER_TILE  * tileCount;
+
+    uint maxTotalLightCount  = 0;
+         maxTotalLightCount += maxTotalPointLights;
+         maxTotalLightCount += maxTotalShadowedPointLights;
+         maxTotalLightCount += maxTotalSpotLights;
+         maxTotalLightCount += maxTotalShadowedSpotLights;
+
+    Constants.Statistics.averagePointLightsPerTile         = float(totalPointLightCount)         / float(tileCount);
+    Constants.Statistics.averageShadowedPointLightsPerTile = float(totalShadowedPointLightCount) / float(tileCount);
+    Constants.Statistics.averageSpotLightsPerTile          = float(totalSpotLightCount)          / float(tileCount);
+    Constants.Statistics.averageShadowedSpotLightsPerTile  = float(totalShadowedSpotLightCount)  / float(tileCount);
+    Constants.Statistics.averageLightsPerTile              = float(totalLightCount)              / float(tileCount);
+
+    Constants.Statistics.pointLightCoverage         = float(totalPointLightCount)         / float(maxTotalPointLights);
+    Constants.Statistics.shadowedPointLightCoverage = float(totalShadowedPointLightCount) / float(maxTotalShadowedPointLights);
+    Constants.Statistics.spotLightCoverage          = float(totalSpotLightCount)          / float(maxTotalSpotLights);
+    Constants.Statistics.shadowedSpotLightCoverage  = float(totalShadowedSpotLightCount)  / float(maxTotalShadowedSpotLights);
+    Constants.Statistics.lightCoverage              = float(totalLightCount)              / float(maxTotalLightCount);
+}

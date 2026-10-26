@@ -69,17 +69,46 @@ namespace Maths
         };
     }
 
-    std::vector<glm::vec2> GenerateHaltonSequence(usize N)
+    glm::vec3 SafeCross(const glm::vec3& A, const glm::vec3& B, const glm::vec3& fallback, f32 epsilon)
     {
-        std::vector<glm::vec2> sequence = {};
+        const glm::vec3 result = glm::cross(A, B);
 
-        sequence.reserve(N);
+        const f32 length = glm::length(result);
 
-        for (usize i = 0; i < N; ++i)
+        if (length < epsilon)
         {
-            sequence.emplace_back(Halton(i, 2), Halton(i, 3));
+            return fallback;
         }
 
-        return sequence;
+        return result;
+    }
+
+    inline glm::vec2 OctahedronWrap(const glm::vec2& vector)
+    {
+        return (1.0f - glm::abs(glm::vec2(vector.y, vector.x))) * glm::vec2(vector.x >= 0.0f ? 1.0f : -1.0f, vector.y >= 0.0f ? 1.0f : -1.0f);
+    }
+
+    glm::vec2 PackOctahedron(const glm::vec3& vector)
+    {
+        auto result = glm::vec2(vector.x, vector.y);
+
+        result /= abs(vector.x) + abs(vector.y) + abs(vector.z);
+
+        result = vector.z >= 0.0f ? result : Maths::OctahedronWrap(result);
+
+        return result;
+    }
+
+    // meshopt_quantizeSnorm
+    s32 QuantizeSNorm(f32 value, s32 bits)
+    {
+        const f32 scale = static_cast<f32>((1 << (bits - 1)) - 1);
+
+        const f32 round = (value >= 0.0f ? 0.5f : -0.5f);
+
+        value = (value >= -1.0f) ? value : -1.0f;
+        value = (value <= +1.0f) ? value : +1.0f;
+
+        return static_cast<s32>(value * scale + round);
     }
 }

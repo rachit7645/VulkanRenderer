@@ -26,17 +26,22 @@
 #include "ImageView.h"
 #include "Context.h"
 #include "Constants.h"
-#include "CommandBufferAllocator.h"
 
 namespace Vk
 {
     class Swapchain
     {
     public:
-        Swapchain(const glm::ivec2& size, const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
+        Swapchain
+        (
+            const glm::ivec2& size,
+            const Vk::Context& context,
+            Scratch::Allocator& allocator,
+            tf::Executor& executor
+        );
 
         bool IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context);
-        void RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
+        void RecreateSwapChain(const Vk::Context& context, Scratch::Allocator& allocator, tf::Executor& executor);
 
         void Destroy(VkDevice device);
 
@@ -44,27 +49,32 @@ namespace Vk
         VkResult AcquireSwapChainImage(VkDevice device, usize FIF);
 
         VkSwapchainKHR handle = VK_NULL_HANDLE;
-        VkExtent2D     extent = {};
 
-        VkFormat                   imageFormat = {};
-        std::vector<Vk::Image>     images      = {};
-        std::vector<Vk::ImageView> imageViews  = {};
-        u32                        imageIndex  = 0;
+        VkSurfaceFormatKHR surfaceFormat = {};
+        VkPresentModeKHR   presentMode   = VK_PRESENT_MODE_FIFO_KHR;
+        VkExtent2D         extent        = {};
+
+        std::vector<Vk::Image>     images       = {};
+        std::vector<Vk::ImageView> imageViews   = {};
+        std::vector<VkImageLayout> imageLayouts = {};
+
+        u32 imageIndex = 0;
 
         std::array<VkSemaphore, FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
 
         std::vector<VkSemaphore> renderFinishedSemaphores = {};
         std::vector<VkFence>     presentFences            = {};
     private:
-        void CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator);
-        void DestroySwapchain(VkDevice device);
+        void CreateSwapChain(const Vk::Context& context, Scratch::Allocator& allocator, tf::Executor& executor);
+        void DestroySwapchainResources(VkDevice device);
+        void ClearSwapchainResources();
 
         void CreateStaticSyncObjects(VkDevice device);
         void CreateSyncObjects(VkDevice device);
 
-        [[nodiscard]] VkSurfaceFormat2KHR ChooseSurfaceFormat() const;
+        [[nodiscard]] VkSurfaceFormatKHR ChooseSurfaceFormat() const;
         [[nodiscard]] VkPresentModeKHR ChoosePresentationMode() const;
-        [[nodiscard]] VkExtent2D ChooseSwapExtent(const glm::ivec2& size) const;
+        [[nodiscard]] VkExtent2D ChooseSwapchainExtent(const glm::uvec2& size) const;
         [[nodiscard]] u32 GetImageCount() const;
 
         Vk::SwapchainInfo m_swapChainInfo = {};

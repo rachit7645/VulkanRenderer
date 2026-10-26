@@ -35,7 +35,7 @@
 
 namespace DLSS
 {
-    void DebugCallback(const char* message, NVSDK_NGX_Logging_Level level, NVSDK_NGX_Feature feature);
+    void NVSDK_CONV DebugCallback(const char* message, NVSDK_NGX_Logging_Level level, NVSDK_NGX_Feature feature);
 
     constexpr auto PROJECT_ID            = "b33fcf5d-5bba-4094-ad26-2060f00bfdae";
     constexpr auto ENGINE_VERSION        = "0.0.0.1";

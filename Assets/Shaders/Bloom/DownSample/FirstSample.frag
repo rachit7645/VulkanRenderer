@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Constants.glsl"
 #include "Color.glsl"
@@ -32,7 +33,7 @@ vec3 SampleOffset(float x, float y);
 
 void main()
 {
-    vec2 srcTexelSize = 1.0f / vec2(textureSize(sampler2D(Textures[Constants.ImageIndex], Samplers[Constants.SamplerIndex]), 0));
+    vec2 srcTexelSize = 1.0f / vec2(textureSize(Textures[Constants.ImageIndex], 0));
     
     float x = srcTexelSize.x;
     float y = srcTexelSize.y;

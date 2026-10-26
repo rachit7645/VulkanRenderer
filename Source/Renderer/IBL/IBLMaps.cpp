@@ -20,17 +20,18 @@ namespace Renderer::IBL
 {
     void IBLMaps::Destroy
     (
-        const Vk::Context& context,
+        VkDevice device,
+        VmaAllocator allocator,
         Vk::TextureManager& textureManager,
         Vk::MegaSet& megaSet,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
         textureManager.DestroyTexture
         (
             skyboxID,
-            context.device,
-            context.allocator,
+            device,
+            allocator,
             megaSet,
             deletionQueue
         );
@@ -38,8 +39,8 @@ namespace Renderer::IBL
         textureManager.DestroyTexture
         (
             preFilterMapID,
-            context.device,
-            context.allocator,
+            device,
+            allocator,
             megaSet,
             deletionQueue
         );
@@ -47,15 +48,15 @@ namespace Renderer::IBL
         textureManager.DestroyTexture
         (
             irradianceMapID,
-            context.device,
-            context.allocator,
+            device,
+            allocator,
             megaSet,
             deletionQueue
         );
 
-        // Don't reset BRDF LUT ID
-        skyboxID        = 0;
-        preFilterMapID  = 0;
-        irradianceMapID = 0;
+        skyboxID        = {};
+        preFilterMapID  = {};
+        irradianceMapID = {};
+        brdfLutID       = {};
     }
 }

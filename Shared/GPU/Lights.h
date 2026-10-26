@@ -18,7 +18,6 @@
 #define LIGHTS_GLSL
 
 #include "GLSL.h"
-#include "AABB.h"
 
 #ifdef __cplusplus
 #include "Renderer/RenderConstants.h"
@@ -27,15 +26,15 @@
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
-GLSL_CONSTANT(u32, MAX_POINT_LIGHT_COUNT,          16)
-GLSL_CONSTANT(u32, MAX_SHADOWED_POINT_LIGHT_COUNT,  4)
-GLSL_CONSTANT(u32, MAX_SPOT_LIGHT_COUNT,           16)
-GLSL_CONSTANT(u32, MAX_SHADOWED_SPOT_LIGHT_COUNT,   4)
+GLSL_CONSTEXPR u32 MAX_POINT_LIGHT_COUNT          = 28;
+GLSL_CONSTEXPR u32 MAX_SHADOWED_POINT_LIGHT_COUNT =  4;
+GLSL_CONSTEXPR u32 MAX_SPOT_LIGHT_COUNT           = 28;
+GLSL_CONSTEXPR u32 MAX_SHADOWED_SPOT_LIGHT_COUNT  =  4;
 
 #ifdef __cplusplus
 
-const glm::uvec2 POINT_SHADOW_DIMENSIONS = {512, 512};
-const glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
+constexpr glm::uvec2 POINT_SHADOW_DIMENSIONS = {512,  512};
+constexpr glm::uvec2 SPOT_SHADOW_DIMENSIONS  = {1024, 1024};
 
 #endif
 
@@ -43,15 +42,15 @@ struct DirLight
 {
     GLSL_VEC3 direction;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
+    f32       intensity; // In Lux
 };
 
 struct PointLight
 {
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
-    f32       range;
+    f32       intensity; // In Candela
+    f32       range;     // In Meters
 };
 
 struct ShadowedPointLight
@@ -66,13 +65,18 @@ struct ShadowedPointLight
           range(pointLight.range),
           matrices()
     {
+        constexpr f32 ASPECT_RATIO = static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
+                                     static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y);
+
+        // TODO: This range is incorrect!
+        constexpr f32 FAR_PLANE = 1024.0f;
+
         auto projection = Maths::ProjectionReverseZ
         (
             glm::radians(90.0f),
-            static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.x) /
-            static_cast<f32>(GPU::POINT_SHADOW_DIMENSIONS.y),
+            ASPECT_RATIO,
             Renderer::NEAR_PLANE,
-            Renderer::FAR_PLANE
+            FAR_PLANE
         );
 
         projection[1][1] *= -1;
@@ -88,8 +92,8 @@ struct ShadowedPointLight
 
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
-    f32       range;
+    f32       intensity;   // In Candela
+    f32       range;       // In Meters
     GLSL_MAT4 matrices[6];
 };
 
@@ -97,10 +101,10 @@ struct SpotLight
 {
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
+    f32       intensity; // In Candela
     GLSL_VEC3 direction;
     GLSL_VEC2 cutOff;
-    f32       range;
+    f32       range;     // In Meters
 };
 
 struct ShadowedSpotLight
@@ -117,11 +121,13 @@ struct ShadowedSpotLight
           range(spotLight.range),
           matrix(glm::identity<glm::mat4>())
     {
+        constexpr f32 ASPECT_RATIO = static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.x) /
+                                     static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.y);
+
         auto projection = Maths::InfiniteProjectionReverseZ
         (
             2.0f * cutOff.y,
-            static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.x) /
-            static_cast<f32>(GPU::SPOT_SHADOW_DIMENSIONS.y),
+            ASPECT_RATIO,
             Renderer::NEAR_PLANE
         );
 
@@ -140,10 +146,10 @@ struct ShadowedSpotLight
 
     GLSL_VEC3 position;
     GLSL_VEC3 color;
-    GLSL_VEC3 intensity;
+    f32       intensity; // In Candela
     GLSL_VEC3 direction;
     GLSL_VEC2 cutOff;
-    f32       range;
+    f32       range;     // In Meters
     GLSL_MAT4 matrix;
 };
 
@@ -155,6 +161,44 @@ concept IsLightType = std::is_same_v<T, DirLight> ||
                       std::is_same_v<T, ShadowedPointLight> ||
                       std::is_same_v<T, SpotLight> ||
                       std::is_same_v<T, ShadowedSpotLight>;
+
+struct LightsBuffer
+{
+    GPU::DirLight           sun                                                      = {};
+    u32                     pointLightCount                                          = 0;
+    GPU::PointLight         pointLights[GPU::MAX_POINT_LIGHT_COUNT]                  = {};
+    u32                     shadowedPointLightCount                                  = 0;
+    GPU::ShadowedPointLight shadowedPointLights[GPU::MAX_SHADOWED_POINT_LIGHT_COUNT] = {};
+    u32                     spotLightCount                                           = 0;
+    GPU::SpotLight          spotLights[GPU::MAX_SPOT_LIGHT_COUNT]                    = {};
+    u32                     shadowedSpotLightCount                                   = 0;
+    GPU::ShadowedSpotLight  shadowedSpotLights[GPU::MAX_SHADOWED_SPOT_LIGHT_COUNT]   = {};
+    
+    static constexpr VkDeviceSize GetSunOffset()
+    {
+        return offsetof(GPU::LightsBuffer, sun);
+    }
+
+    static constexpr VkDeviceSize GetPointLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, pointLightCount);
+    }
+
+    static constexpr VkDeviceSize GetShadowedPointLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, shadowedPointLightCount);
+    }
+
+    static constexpr VkDeviceSize GetSpotLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, spotLightCount);
+    }
+
+    static constexpr VkDeviceSize GetShadowedSpotLightOffset()
+    {
+        return offsetof(GPU::LightsBuffer, shadowedSpotLightCount);
+    }
+};
 
 #endif
 
@@ -202,8 +246,8 @@ float CalculateAttenuation(vec3 position, float range, vec3 fragPosition)
 {
     float distance = length(position - fragPosition);
 
-    float N = saturate(1.0f - pow4(distance / max(range, 0.00001f)));
-    float D = max(distance * distance, 0.00001f);
+    float N = saturate(1.0f - pow4(distance / max(range, 1e-5f)));
+    float D = max(distance * distance, 1e-5f);
 
     float attenuation = N / D;
 
@@ -212,12 +256,14 @@ float CalculateAttenuation(vec3 position, float range, vec3 fragPosition)
 
 float CalculateSpotIntensity(vec3 L, vec3 direction, vec2 cutOff)
 {
-    float theta     = dot(L, normalize(-direction));
-    vec2  cutOffCos = cos(cutOff);
-    float epsilon   = cutOffCos.x - cutOffCos.y;
-    float intensity = smoothstep(0.0f, 1.0f, (theta - cutOffCos.y) / epsilon);
+    float cosTheta = dot(L, normalize(-direction));
+    float cosInner = cos(cutOff.x);
+    float cosOuter = cos(cutOff.y);
 
-    return intensity;
+    float epsilon   = max(cosInner - cosOuter, 1e-5f);
+    float intensity = saturate((cosTheta - cosOuter) / epsilon);
+
+    return intensity * intensity;
 }
 
 LightInfo GetLightInfo(DirLight light)

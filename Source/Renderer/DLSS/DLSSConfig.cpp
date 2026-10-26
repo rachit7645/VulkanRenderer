@@ -40,14 +40,18 @@ namespace Renderer::DLSS
 
         if (result != NVSDK_NGX_Result_Success)
         {
-            Logger::Error("Failed to initialize DLSS SDK! [Error={}]", static_cast<u64>(result));
+            isSupported = false;
+
+            return;
         }
 
         result = NVSDK_NGX_VULKAN_GetCapabilityParameters(&parameters);
 
         if (result != NVSDK_NGX_Result_Success)
         {
-            Logger::Error("Failed to initialize query capability parameters! [Error={}]", static_cast<u64>(result));
+            isSupported = false;
+
+            return;
         }
 
         s32 DLSSSupported = 0;
@@ -56,8 +60,6 @@ namespace Renderer::DLSS
 
         if (result != NVSDK_NGX_Result_Success || DLSSSupported == 0)
         {
-            Logger::Info("DLSS not available! Falling back to TAA! [Error={}]", static_cast<u64>(result));
-
             isSupported = false;
 
             return;
@@ -69,50 +71,83 @@ namespace Renderer::DLSS
 
     glm::uvec2 DLSSConfig::GetInternalResolution(const glm::uvec2& swapchainSize)
     {
+        if (!isSupported)
+        {
+            Logger::Error("{}\n", "DLSS is not supported!");
+        }
+
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("DLSS"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::Text("Optimal Resolution | [%u, %u]", optimalResolution.x, optimalResolution.y);
-                ImGui::Text("Min Resolution     | [%u, %u]", m_minResolution.x,   m_minResolution.y);
-                ImGui::Text("Max Resolution     | [%u, %u]", m_maxResolution.x,   m_maxResolution.y);
-
-                ImGui::Separator();
-
-                constexpr std::array DLSS_MODE_NAMES =
+                if (ImGui::CollapsingHeader("DLSS"))
                 {
-                    "Performance",
-                    "Balanced",
-                    "Quality",
-                    "Ultra Performance",
-                    "DLAA"
-                };
+                    ImGui::Text("Optimal Resolution | [%u, %u]", optimalResolution.x, optimalResolution.y);
+                    ImGui::Text("Min Resolution     | [%u, %u]", m_minResolution.x,   m_minResolution.y);
+                    ImGui::Text("Max Resolution     | [%u, %u]", m_maxResolution.x,   m_maxResolution.y);
 
-                constexpr std::array DLSS_MODE_VALUES =
-                {
-                    NVSDK_NGX_PerfQuality_Value_MaxPerf,
-                    NVSDK_NGX_PerfQuality_Value_Balanced,
-                    NVSDK_NGX_PerfQuality_Value_MaxQuality,
-                    NVSDK_NGX_PerfQuality_Value_UltraPerformance,
-                    NVSDK_NGX_PerfQuality_Value_DLAA
-                };
+                    ImGui::Separator();
 
-                s32 currentModeIndex = 0;
+                    usize allocatedVRAM      = 0;
+                    u32   optimizationLevel  = 0;
+                    u32   isDevSnippetBranch = 0;
 
-                for (s32 i = 0; i < static_cast<s32>(DLSS_MODE_VALUES.size()); ++i)
-                {
-                    if (DLSS_MODE_VALUES[i] == DLSSMode)
+                    const NVSDK_NGX_Result result =  NGX_DLSS_GET_STATS_2
+                    (
+                        parameters,
+                        &allocatedVRAM,
+                        &optimizationLevel,
+                        &isDevSnippetBranch
+                    );
+
+                    if (result != NVSDK_NGX_Result_Success)
                     {
-                        currentModeIndex = i;
-
-                        break;
+                        Logger::Error("Failed to query DLSS statistics! [Error={}]\n", static_cast<u64>(result));
                     }
-                }
 
-                if (ImGui::Combo("Mode", &currentModeIndex, DLSS_MODE_NAMES.data(), DLSS_MODE_NAMES.size()))
-                {
-                    DLSSMode                = DLSS_MODE_VALUES[currentModeIndex];
-                    m_haveParametersChanged = true;
+                    ImGui::Text("Allocated VRAM     | %llu bytes", allocatedVRAM);
+                    ImGui::Text("Optimization Level | %u",         optimizationLevel);
+                    ImGui::Text("Dev Branch         | %s",         isDevSnippetBranch ? "true" : "false");
+
+                    ImGui::Separator();
+
+                    constexpr std::array DLSS_MODE_NAMES =
+                    {
+                        "Performance",
+                        "Balanced",
+                        "Quality",
+                        "Ultra Performance",
+                        "DLAA"
+                    };
+
+                    constexpr std::array DLSS_MODE_VALUES =
+                    {
+                        NVSDK_NGX_PerfQuality_Value_MaxPerf,
+                        NVSDK_NGX_PerfQuality_Value_Balanced,
+                        NVSDK_NGX_PerfQuality_Value_MaxQuality,
+                        NVSDK_NGX_PerfQuality_Value_UltraPerformance,
+                        NVSDK_NGX_PerfQuality_Value_DLAA
+                    };
+
+                    constexpr s32 DLSS_MODE_COUNT = DLSS_MODE_VALUES.size();
+
+                    s32 currentModeIndex = 0;
+
+                    for (s32 i = 0; i < DLSS_MODE_COUNT; ++i)
+                    {
+                        if (DLSS_MODE_VALUES[i] == DLSSMode)
+                        {
+                            currentModeIndex = i;
+
+                            break;
+                        }
+                    }
+
+                    if (ImGui::Combo("Mode", &currentModeIndex, DLSS_MODE_NAMES.data(), DLSS_MODE_NAMES.size()))
+                    {
+                        DLSSMode                = DLSS_MODE_VALUES[currentModeIndex];
+                        m_haveParametersChanged = true;
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -169,9 +204,14 @@ namespace Renderer::DLSS
     (
         const Vk::CommandBuffer& cmdBuffer,
         const glm::uvec2& swapchainSize,
-        Util::DeletionQueue& deletionQueue
+        Engine::DeletionQueue& deletionQueue
     )
     {
+        if (!isSupported)
+        {
+            Logger::Error("{}\n", "DLSS is not supported!");
+        }
+
         if (!m_haveParametersChanged && handle != nullptr)
         {
             return;
@@ -179,9 +219,14 @@ namespace Renderer::DLSS
 
         if (handle != nullptr)
         {
-            deletionQueue.PushDeletor([_handle = handle] ()
+            deletionQueue.Push([_handle = handle] ()
             {
-                NVSDK_NGX_VULKAN_ReleaseFeature(_handle);
+                const NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_ReleaseFeature(_handle);
+
+                if (result != NVSDK_NGX_Result_Success)
+                {
+                    Logger::Error("Failed to release DLSS Feature! [Error={}]", static_cast<u64>(result));
+                }
             });
         }
 
@@ -219,11 +264,21 @@ namespace Renderer::DLSS
         m_haveParametersChanged = false;
     }
 
-    void DLSSConfig::Destroy(VkDevice device)
+    void DLSSConfig::Destroy(VkDevice device) const
     {
-        NVSDK_NGX_VULKAN_DestroyParameters(parameters);
+        if (!isSupported)
+        {
+            Logger::Error("{}\n", "DLSS is not supported!");
+        }
 
-        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_Shutdown1(device);
+        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_DestroyParameters(parameters);
+
+        if (result != NVSDK_NGX_Result_Success)
+        {
+            Logger::Error("Failed to destroy DLSS parameters! [Error={}]", static_cast<u64>(result));
+        }
+
+        result = NVSDK_NGX_VULKAN_Shutdown1(device);
 
         if (result != NVSDK_NGX_Result_Success)
         {

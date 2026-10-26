@@ -17,11 +17,9 @@
 #ifndef POST_PROCESS_PASS_H
 #define POST_PROCESS_PASS_H
 
-#include "Renderer/Buffers/ExposureBuffers.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Objects/Camera.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/PipelineManager.h"
 
 namespace Renderer::ToneMap
@@ -44,7 +42,7 @@ namespace Renderer::ToneMap
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
     };
 }

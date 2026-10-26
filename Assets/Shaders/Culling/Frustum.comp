@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
-#extension GL_EXT_debug_printf         : enable
 
 #include "Constants.glsl"
 #include "Culling/Frustum.h"
@@ -93,24 +92,24 @@ void main()
 
 bool IsVisible(Mesh mesh, Instance instance)
 {
-    AABB    aabb    = AABB_Transform(mesh.aabb, instance.transform);
-    vec3[8] corners = AABB_GetCorners(aabb);
+    AABB aabb = AABB_Transform(mesh.aabb, instance.transform);
+
+    // Why does everything need a different representation for AABBs
+    vec3 center  = 0.5f * (aabb.max + aabb.min);
+    vec3 extents = 0.5f * (aabb.max - aabb.min);
 
     for (uint i = 0; i < 6; ++i)
     {
         Plane plane = Constants.Frustum.planes[i];
 
-        uint outside = 0;
+        vec3 pVertex = center + vec3
+        (
+            plane.normal.x >= 0.0f ? extents.x : -extents.x,
+            plane.normal.y >= 0.0f ? extents.y : -extents.y,
+            plane.normal.z >= 0.0f ? extents.z : -extents.z
+        );
 
-        for (uint j = 0; j < 8; ++j)
-        {
-            if ((dot(plane.normal, corners[j]) + plane.distance) < 0.0f)
-            {
-                ++outside;
-            }
-        }
-
-        if (outside == 8)
+        if ((dot(plane.normal, pVertex) + plane.distance) < 0.0f)
         {
             return false;
         }

@@ -17,7 +17,7 @@
 #include "StagingPool.h"
 
 #include "Util.h"
-#include "Util/Align.h"
+#include "Util/Memory.h"
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 
@@ -25,7 +25,7 @@ namespace Vk
 {
     void StagingPool::Update(VmaAllocator allocator)
     {
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         if (m_stagingBuffers.size() <= 1)
         {
@@ -35,23 +35,24 @@ namespace Vk
         for (auto iter = m_stagingBuffers.begin(); iter != m_stagingBuffers.end(); )
         {
             const bool isVirtualBlockEmpty            = vmaIsVirtualBlockEmpty(iter->virtualBlock);
-            const bool isAllocationsEmpty             = iter->allocations.empty();
+            const bool areAllocationsEmpty            = iter->allocations.empty();
             const bool hasAtLeastOneStagingBufferLeft = m_stagingBuffers.size() > 1;
 
-            if (isVirtualBlockEmpty && isAllocationsEmpty && hasAtLeastOneStagingBufferLeft)
+            if (isVirtualBlockEmpty && areAllocationsEmpty && hasAtLeastOneStagingBufferLeft)
             {
                 iter->buffer.Destroy(allocator);
+                
                 vmaDestroyVirtualBlock(iter->virtualBlock);
 
                 iter = m_stagingBuffers.erase(iter);
             }
-            else if (isAllocationsEmpty ^ isVirtualBlockEmpty)
+            else if (areAllocationsEmpty ^ isVirtualBlockEmpty)
             {
                 Logger::Error
                 (
                     "Huh. How did we get here... Invalid allocation tracking! [Buffer={}] [Block={}]\n",
-                    std::bit_cast<void*>(iter->buffer.handle),
-                    std::bit_cast<void*>(iter->virtualBlock)
+                    reinterpret_cast<void*>(iter->buffer.handle),
+                    reinterpret_cast<void*>(iter->virtualBlock)
                 );
             }
             else
@@ -69,9 +70,9 @@ namespace Vk
         VkDeviceSize alignment
     )
     {
-        constexpr VkDeviceSize STAGING_BUFFER_SIZE = 128ull * 1024 * 1024;
+        constexpr VkDeviceSize STAGING_BUFFER_SIZE = Util::MiB(128ull);
 
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         if (size == 0)
         {
@@ -96,9 +97,10 @@ namespace Vk
 
             const auto buffer = Vk::Buffer
             (
+                device,
                 allocator,
                 stagingBufferSize,
-                0,
+                alignment,
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -112,7 +114,8 @@ namespace Vk
                 .pAllocationCallbacks = nullptr
             };
 
-            VmaVirtualBlock virtualBlock;
+            VmaVirtualBlock virtualBlock = VK_NULL_HANDLE;
+
             Vk::CheckResult(vmaCreateVirtualBlock(&createInfo, &virtualBlock), "Failed to create virtual block!");
 
             m_stagingBuffers.emplace_back(buffer, virtualBlock);
@@ -121,9 +124,15 @@ namespace Vk
         }
 
         // Allocation attempt #2
-        if (const auto stagingMemoryBlock = TryToAllocate(size, alignment); stagingMemoryBlock.has_value())
         {
-            return stagingMemoryBlock.value();
+            auto& stagingBuffer = m_stagingBuffers.back();
+
+            const auto stagingMemoryBlock = stagingBuffer.Allocate(size, alignment);
+
+            if (stagingMemoryBlock.has_value())
+            {
+                return stagingMemoryBlock.value();
+            }
         }
 
         Logger::Error("Failed to allocate staging block! [Size={}] [Alignment={}]\n", size, alignment);
@@ -131,7 +140,7 @@ namespace Vk
 
     void StagingPool::Free(const StagingMemoryBlock& stagingMemoryBlock)
     {
-        std::scoped_lock lock{m_mutex};
+        const std::scoped_lock lock{m_mutex};
 
         for (auto& stagingBuffer : m_stagingBuffers)
         {
@@ -156,7 +165,7 @@ namespace Vk
             Logger::Error
             (
                 "Allocation not found in matching buffer! [Buffer={}] [Offset={}] [Size={}]",
-                std::bit_cast<void*>(stagingMemoryBlock.buffer),
+                reinterpret_cast<void*>(stagingMemoryBlock.buffer),
                 stagingMemoryBlock.memoryBlock.offset,
                 stagingMemoryBlock.memoryBlock.size
             );
@@ -165,7 +174,7 @@ namespace Vk
         Logger::Error
         (
             "Allocation not found! [Buffer={}] [Offset={}] [Size={}]",
-            std::bit_cast<void*>(stagingMemoryBlock.buffer),
+            reinterpret_cast<void*>(stagingMemoryBlock.buffer),
             stagingMemoryBlock.memoryBlock.offset,
             stagingMemoryBlock.memoryBlock.size
         );
@@ -175,37 +184,11 @@ namespace Vk
     {
         for (auto& stagingBuffer : m_stagingBuffers)
         {
-            StagingPool::VirtualAllocation allocation = {};
+            const auto allocation = stagingBuffer.Allocate(size, alignment);
 
-            const VmaVirtualAllocationCreateInfo createInfo =
+            if (allocation.has_value())
             {
-                .size      = size,
-                .alignment = alignment,
-                .flags     = VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
-                .pUserData = nullptr
-            };
-
-            const VkResult result = vmaVirtualAllocate
-            (
-                stagingBuffer.virtualBlock,
-                &createInfo,
-                &allocation.handle,
-                &allocation.offset
-            );
-
-            if (result == VK_SUCCESS)
-            {
-                stagingBuffer.allocations.emplace_back(allocation);
-
-                return Vk::StagingMemoryBlock
-                {
-                    .buffer      = stagingBuffer.buffer.handle,
-                    .hostAddress = static_cast<u8*>(stagingBuffer.buffer.hostAddress) + allocation.offset,
-                    .memoryBlock = Vk::MemoryBlock{
-                        .offset = allocation.offset,
-                        .size   = size
-                    }
-                };
+                return allocation;
             }
         }
 
@@ -221,8 +204,8 @@ namespace Vk
                 Logger::Warning
                 (
                     "Not all allocations were freed! [Buffer={}] [Virtual Block={}] [Allocation Count={}]",
-                    std::bit_cast<void*>(stagingBuffer.buffer.handle),
-                    std::bit_cast<void*>(stagingBuffer.virtualBlock),
+                    reinterpret_cast<void*>(stagingBuffer.buffer.handle),
+                    reinterpret_cast<void*>(stagingBuffer.virtualBlock),
                     stagingBuffer.allocations.size()
                 );
             }
@@ -230,5 +213,43 @@ namespace Vk
             stagingBuffer.buffer.Destroy(allocator);
             vmaDestroyVirtualBlock(stagingBuffer.virtualBlock);
         }
+    }
+
+    std::optional<StagingMemoryBlock> StagingPool::StagingBuffer::Allocate(VkDeviceSize size, VkDeviceSize alignment)
+    {
+        StagingPool::VirtualAllocation allocation = {};
+
+        const VmaVirtualAllocationCreateInfo createInfo =
+        {
+            .size      = size,
+            .alignment = alignment,
+            .flags     = VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
+            .pUserData = nullptr
+        };
+
+        const VkResult result = vmaVirtualAllocate
+        (
+            virtualBlock,
+            &createInfo,
+            &allocation.handle,
+            &allocation.offset
+        );
+
+        if (result == VK_SUCCESS)
+        {
+            allocations.emplace_back(allocation);
+
+            return Vk::StagingMemoryBlock
+            {
+                .buffer      = buffer.handle,
+                .hostAddress = static_cast<u8*>(buffer.hostAddress) + allocation.offset,
+                .memoryBlock = Vk::MemoryBlock{
+                    .offset = allocation.offset,
+                    .size   = size
+                }
+            };
+        }
+
+        return std::nullopt;
     }
 }

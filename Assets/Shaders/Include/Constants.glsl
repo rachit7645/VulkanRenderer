@@ -27,52 +27,45 @@ const float INVERSE_PI     = 0.3183098861837906715377675267450f;
 const float INVERSE_TWO_PI = 0.1591549430918953357688837633725f;
 
 // Float limits
-const float FLOAT_MIN = 1.175494351e-38;
 const float FLOAT_MAX = 3.402823466e+38;
 
+// GBuffer Constants
+const float GBUFFER_HORIZON_FADE = 1.2f;
+
 // IBL Constants
-const float CONVOLUTION_SAMPLE_DELTA = 0.025f;
-const uint  BRDF_LUT_SAMPLE_COUNT    = 1024u;
+const uint IRRADIANCE_SAMPLE_COUNT = 1024u;
 
 // Point Shadow Constants
-const float POINT_SHADOW_BIAS = 0.15f;
+const float POINT_SHADOW_BIAS = 0.0001f;
 
 // Spot shadow constants
 const float SPOT_SHADOW_MIN_BIAS = 0.0001f;
 const float SPOT_SHADOW_MAX_BIAS = 0.001f;
 
 // RT Shadow Constants
-const float RT_SHADOW_MIN_BIAS = 0.0005f;
-const float RT_SHADOW_MAX_BIAS = 0.005f;
+const float RT_SHADOW_MIN_BIAS        = 0.0005f;
+const float RT_SHADOW_MAX_BIAS        = 0.005f;
+const uint  RT_SHADOW_RAY_COUNT       = 1;
+const float RT_SUN_ANGULAR_RADIUS     = radians(0.5f);
+const float RT_COS_SUN_ANGULAR_RADIUS = cos(RT_SUN_ANGULAR_RADIUS);
 
 // TAA Constants
 const float TAA_DEFAULT_HISTORY_BLEND_RATE = 0.1f;
 const float TAA_MIN_HISTORY_BLEND_RATE     = 0.015f;
 
 // VBAO Constants
-const uint VBAO_SLICE_COUNT  = 3;
-const uint VBAO_SAMPLE_COUNT = 3;
-const uint VBAO_SECTOR_COUNT = 32;
-
-const float VBAO_DEPTH_RANGE_SCALE_FACTOR  = 0.75f;
-const float VBAO_DEFAULT_RADIUS            = 0.5f;
-const float VBAO_DEFAULT_RADIUS_MULTIPLIER = 1.457f;
-const float VBAO_DEFAULT_FALLOFF_RANGE     = 0.615f;
-
-const float VBAO_EFFECT_RADIUS = VBAO_DEPTH_RANGE_SCALE_FACTOR * VBAO_DEFAULT_RADIUS * VBAO_DEFAULT_RADIUS_MULTIPLIER;
-const float VBAO_FALLOFF_RANGE = VBAO_DEFAULT_FALLOFF_RANGE * VBAO_EFFECT_RADIUS;
-const float VBAO_FALLOFF_FROM  = VBAO_EFFECT_RADIUS * (1.0f - VBAO_DEFAULT_FALLOFF_RANGE);
-
-const float VBAO_FALLOFF_MUL = -1.0f / VBAO_FALLOFF_RANGE;
-const float VBAO_FALLOFF_ADD = VBAO_FALLOFF_FROM / (VBAO_FALLOFF_RANGE) + 1.0f;
-
-const float VBAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET = 3.30f;
+const uint  VBAO_SLICE_COUNT               = 3;
+const uint  VBAO_SAMPLE_COUNT              = 3;
+const uint  VBAO_SECTOR_COUNT              = 32;
+const float VBAO_EFFECT_RADIUS             = 0.55f;
+const float VBAO_DEPTH_MIP_SAMPLING_OFFSET = 3.15f;
 
 // Auto-Exposure Constants
 const float HISTOGRAM_MIN_LUMINANCE               = 1.0f / 1024.0f;
 const float HISTOGRAM_MIN_LOG_LUMINANCE           = -10.0f;
-const float HISTOGRAM_MAX_LOG_LUMINANCE           = 16.0f;
+const float HISTOGRAM_MAX_LOG_LUMINANCE           = 20.0f;
 const float HISTOGRAM_LOG_LUMINANCE_RANGE         = -HISTOGRAM_MIN_LOG_LUMINANCE + HISTOGRAM_MAX_LOG_LUMINANCE;
 const float HISTOGRAM_INVERSE_LOG_LUMINANCE_RANGE = 1.0f / HISTOGRAM_LOG_LUMINANCE_RANGE;
+const float HISTOGRAM_LUMINANCE_EPSILON           = 0.005f;
 
 #endif

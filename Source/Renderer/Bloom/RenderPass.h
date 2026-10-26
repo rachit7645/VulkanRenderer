@@ -18,7 +18,7 @@
 #define BLOOM_PASS_H
 
 #include "Vulkan/FramebufferManager.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/PipelineManager.h"
 
 namespace Renderer::Bloom
@@ -42,8 +42,9 @@ namespace Renderer::Bloom
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
+
     private:
         void DownSample
         (
@@ -52,7 +53,7 @@ namespace Renderer::Bloom
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         void UpSample
@@ -62,7 +63,7 @@ namespace Renderer::Bloom
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         void Combine
@@ -72,7 +73,7 @@ namespace Renderer::Bloom
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         f32 m_filterRadius  = 0.005f;

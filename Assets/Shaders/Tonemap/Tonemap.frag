@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,7 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    vec3  hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
-    float exposure = texture(sampler2D(Textures[Constants.ExposureIndex],   Samplers[Constants.PointSamplerIndex]), vec2(0.0f)).r;
+    vec3 hdrColor = texture(sampler2D(Textures[Constants.SceneColorIndex], Samplers[Constants.PointSamplerIndex]), fragUV).rgb;
 
-    vec3 color = hdrColor * pow(2.0f, exposure);
-         color = ACESFitted(color);
-
-    outColor = vec4(color, 1.0f);
+    outColor = vec4(ACESFitted(hdrColor), 1.0f);
 }

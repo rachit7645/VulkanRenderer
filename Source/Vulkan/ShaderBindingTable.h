@@ -34,7 +34,7 @@ namespace Vk
             u32 missCount,
             u32 hitCount,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Destroy(VmaAllocator allocator);

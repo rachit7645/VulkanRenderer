@@ -23,7 +23,6 @@
 namespace Vk
 {
     CommandBuffer::CommandBuffer(VkDevice device, VkCommandPool cmdPool, VkCommandBufferLevel level)
-        : level(level)
     {
         const VkCommandBufferAllocateInfo allocInfo =
         {

@@ -21,6 +21,7 @@
 
 #include "Pipeline.h"
 #include "PipelineConfig.h"
+#include "PipelineID.h"
 #include "Externals/UnorderedDense.h"
 
 namespace Vk
@@ -28,23 +29,46 @@ namespace Vk
     class PipelineManager
     {
     public:
-        void AddPipeline(const std::string_view id, const Vk::PipelineConfig& config);
+        void AddPipeline(Vk::PipelineID id, const Vk::PipelineConfig& config);
 
-        void Update(VkDevice device, Util::DeletionQueue& deletionQueue);
+        void Update
+        (
+            VkDevice device,
+            Scratch::Allocator& scratchAllocator,
+            tf::Executor& executor,
+            Engine::DeletionQueue& deletionQueue
+        );
 
-        void Reload(const std::string_view id);
-        void ReloadAll();
-
-        [[nodiscard]] Vk::Pipeline& GetPipeline(const std::string_view id);
-        [[nodiscard]] const Vk::Pipeline& GetPipeline(const std::string_view id) const;
+        [[nodiscard]] const Vk::Pipeline& GetPipeline(Vk::PipelineID id) const;
 
         void ImGuiDisplay();
 
         void Destroy(VkDevice device);
     private:
-        ankerl::unordered_dense::map<std::string, Vk::Pipeline>       m_pipelines;
-        ankerl::unordered_dense::map<std::string, Vk::PipelineConfig> m_pipelineConfigs;
-        ankerl::unordered_dense::map<std::string, Vk::PipelineConfig> m_dirtyPipelineConfigs;
+        struct BuiltPipeline
+        {
+            Vk::PipelineID  id       = {};
+            Vk::Pipeline    pipeline = {};
+        };
+
+        PipelineManager::BuiltPipeline BuildPipeline
+        (
+            VkDevice device,
+            Vk::PipelineID id,
+            Vk::PipelineConfig& config
+        );
+
+        void RecompilePipelineShaders(Vk::PipelineID id);
+
+        [[nodiscard]] std::string_view GetPipelineName(Vk::PipelineID id) const;
+
+        ankerl::unordered_dense::map<Vk::PipelineID, Vk::Pipeline>       m_pipelines;
+        ankerl::unordered_dense::map<Vk::PipelineID, Vk::PipelineConfig> m_pipelineConfigs;
+        ankerl::unordered_dense::map<Vk::PipelineID, Vk::PipelineConfig> m_dirtyPipelineConfigs;
+        ankerl::unordered_dense::set<Vk::PipelineID>                     m_reloadRequests;
+
+        std::mutex m_pipelineConfigsMutex;
+        std::mutex m_dirtyPipelineConfigsMutex;
     };
 }
 

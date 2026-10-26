@@ -39,39 +39,39 @@ namespace Renderer::Bloom
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("Bloom/DownSample/FirstSample", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomDownSampleFirstSample, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",                VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/DownSample/FirstSample.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Bloom/DownSample/Regular", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomDownSample, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",             VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/DownSample/Regular.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DownSample::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Bloom/UpSample", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomUpSample, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",   VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/UpSample.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddBlendAttachment(
                 VK_TRUE,
@@ -87,29 +87,29 @@ namespace Renderer::Bloom
                 VK_COLOR_COMPONENT_A_BIT
             )
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UpSample::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Bloom/Combine", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::BloomCombine, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",  VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Bloom/Combine.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Combine::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer
         (
             "Bloom",
-            Vk::FramebufferType::ColorHDR,
-            Vk::FramebufferImageType::Array2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
-            [device, &framebufferManager, &megaSet] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent, Util::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
+            formatHelper.colorAttachmentFormatHDR,
+            VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            [device, &framebufferManager, &megaSet] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent, Engine::DeletionQueue& deletionQueue) -> Vk::FramebufferSize
             {
                 framebufferManager.DeleteFramebufferViews
                 (
@@ -133,7 +133,7 @@ namespace Renderer::Bloom
                     (
                         "Bloom",
                         fmt::format("BloomView/{}", mipLevel),
-                        Vk::FramebufferImageType::Single2D,
+                        VK_IMAGE_VIEW_TYPE_2D,
                         {
                             .baseMipLevel   = mipLevel,
                             .levelCount     = 1,
@@ -146,18 +146,18 @@ namespace Renderer::Bloom
                 return size;
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
         framebufferManager.AddFramebuffer
         (
             "FinalSceneColor",
-            Vk::FramebufferType::ColorHDR,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            formatHelper.colorAttachmentFormatHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -169,9 +169,9 @@ namespace Renderer::Bloom
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -179,7 +179,7 @@ namespace Renderer::Bloom
         (
             "FinalSceneColor",
             "FinalSceneColorView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -196,15 +196,18 @@ namespace Renderer::Bloom
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Bloom"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::DragFloat("Filter Radius", &m_filterRadius,  0.0005f,  0.0f, 0.1f, "%.4f");
-                ImGui::DragFloat("Strength",      &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
+                if (ImGui::CollapsingHeader("Bloom"))
+                {
+                    ImGui::DragFloat("Filter Radius", &m_filterRadius,  0.0005f,  0.0f, 0.1f, "%.4f");
+                    ImGui::DragFloat("Strength",      &m_bloomStrength, 0.00125f, 0.0f, 1.0f, "%.4f");
+                }
 
                 ImGui::EndMenu();
             }
@@ -254,17 +257,17 @@ namespace Renderer::Bloom
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "DownSample", {0.7796f, 0.3588f, 0.5518f, 1.0f});
 
-        const auto& downSampleFirstSamplePipeline = pipelineManager.GetPipeline("Bloom/DownSample/FirstSample");
-        const auto& downSampleRegularPipeline     = pipelineManager.GetPipeline("Bloom/DownSample/Regular");
+        const auto& downSampleFirstSamplePipeline = pipelineManager.GetPipeline(Vk::PipelineID::BloomDownSampleFirstSample);
+        const auto& downSampleRegularPipeline     = pipelineManager.GetPipeline(Vk::PipelineID::BloomDownSample);
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
-        auto srcView = framebufferManager.GetFramebufferView("ResolvedSceneColorView");
+        auto srcView = framebufferManager.GetFramebufferView("ExposedSceneColorView");
         auto dstView = framebufferManager.GetFramebufferView("BloomView/0");
 
         for (u32 mip = 0; mip < bloomBuffer.image.mipLevels; ++mip)
@@ -313,8 +316,8 @@ namespace Renderer::Bloom
                 .pNext                = nullptr,
                 .flags                = 0,
                 .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {mipWidth, mipHeight}
+                    .offset = {.x    =  0,        .y      = 0        },
+                    .extent = {.width = mipWidth, .height = mipHeight}
                 },
                 .layerCount           = 1,
                 .viewMask             = 0,
@@ -340,15 +343,15 @@ namespace Renderer::Bloom
 
             const VkRect2D scissor =
             {
-                .offset = {0, 0},
-                .extent = {mipWidth, mipHeight}
+                .offset = {.x    =  0,        .y      = 0        },
+                .extent = {.width = mipWidth, .height = mipHeight}
             };
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
             const auto constants = DownSample::Constants
             {
-                .SamplerIndex  = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+                .SamplerIndex  = textureManager.GetSampler(samplers.bloomDownsampleSamplerID).descriptorID,
                 .ImageIndex    = srcView.sampledImageID
             };
 
@@ -430,12 +433,12 @@ namespace Renderer::Bloom
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "UpSample", {0.8736f, 0.2598f, 0.7548f, 1.0f});
 
-        const auto& upsamplePipeline = pipelineManager.GetPipeline("Bloom/UpSample");
+        const auto& upsamplePipeline = pipelineManager.GetPipeline(Vk::PipelineID::BloomUpSample);
 
         const auto& bloomBuffer = framebufferManager.GetFramebuffer("Bloom");
 
@@ -491,8 +494,8 @@ namespace Renderer::Bloom
                 .pNext                = nullptr,
                 .flags                = 0,
                 .renderArea           = {
-                    .offset = {0, 0},
-                    .extent = {mipWidth, mipHeight}
+                    .offset = {.x    =  0,        .y      = 0        },
+                    .extent = {.width = mipWidth, .height = mipHeight}
                 },
                 .layerCount           = 1,
                 .viewMask             = 0,
@@ -518,15 +521,15 @@ namespace Renderer::Bloom
 
             const VkRect2D scissor =
             {
-                .offset = {0, 0},
-                .extent = {mipWidth, mipHeight}
+                .offset = {.x    =  0,        .y      = 0        },
+                .extent = {.width = mipWidth, .height = mipHeight}
             };
 
             vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
             const auto constants = UpSample::Constants
             {
-                .SamplerIndex  = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
+                .SamplerIndex  = textureManager.GetSampler(samplers.bloomUpsampleSamplerID).descriptorID,
                 .ImageIndex    = srcView.sampledImageID,
                 .FilterRadius  = m_filterRadius
             };
@@ -581,12 +584,12 @@ namespace Renderer::Bloom
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "Combine", {0.8736f, 0.4598f, 0.7548f, 1.0f});
 
-        const auto& combinePipeline = pipelineManager.GetPipeline("Bloom/Combine");
+        const auto& combinePipeline = pipelineManager.GetPipeline(Vk::PipelineID::BloomCombine);
 
         const auto& finalSceneColorView = framebufferManager.GetFramebufferView("FinalSceneColorView");
         const auto& finalSceneColor     = framebufferManager.GetFramebuffer(finalSceneColorView.framebuffer);
@@ -630,8 +633,8 @@ namespace Renderer::Bloom
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {finalSceneColor.image.width, finalSceneColor.image.height}
+                .offset = {.x     = 0,                           .y      = 0                           },
+                .extent = {.width = finalSceneColor.image.width, .height = finalSceneColor.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -659,8 +662,8 @@ namespace Renderer::Bloom
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {finalSceneColor.image.width, finalSceneColor.image.height}
+            .offset = {.x     = 0,                           .y      = 0                           },
+            .extent = {.width = finalSceneColor.image.width, .height = finalSceneColor.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -668,7 +671,7 @@ namespace Renderer::Bloom
         const auto constants = Combine::Constants
         {
             .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
-            .SceneColorIndex   = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("ExposedSceneColorView").sampledImageID,
             .BloomIndex        = framebufferManager.GetFramebufferView("BloomView/0").sampledImageID,
             .BloomStrength     = m_bloomStrength
         };

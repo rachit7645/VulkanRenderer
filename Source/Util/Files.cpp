@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "Files.h"
 #include "Log.h"
 
 #include <filesystem>
 #include <fstream>
 
-namespace filesystem = std::filesystem;
-
-namespace Util::Files
+namespace Files
 {
     constexpr auto ASSETS_DIRECTORY = "Assets/";
 
@@ -31,36 +28,54 @@ namespace Util::Files
         return fmt::format("{}{}{}", ASSETS_DIRECTORY, prefix, fileName);
     }
 
+    bool CreateDirectory(const std::string_view directory)
+    {
+        return std::filesystem::create_directory(std::filesystem::path(directory));
+    }
+
     std::string GetDirectory(const std::string_view path)
     {
-        return filesystem::path(path).parent_path().string();
+        return std::filesystem::path(path).parent_path().string();
     }
 
     usize GetSize(const std::string_view path)
     {
-        // This should always work
         static_assert(sizeof(usize) >= sizeof(std::uintmax_t), "How???");
-        return static_cast<usize>(filesystem::file_size(path));
+
+        return static_cast<usize>(std::filesystem::file_size(path));
     }
 
     std::string GetNameWithoutExtension(const std::string_view fileName)
     {
-        return filesystem::path(fileName).stem().string();
+        return std::filesystem::path(fileName).stem().string();
     }
 
     std::string GetExtension(const std::string_view fileName)
     {
-        return filesystem::path(fileName).extension().string();
+        return std::filesystem::path(fileName).extension().string();
+    }
+    
+    std::time_t GetLastWriteTime(const std::string_view fileName)
+    {
+        const auto path                     = std::filesystem::path(fileName);
+        const auto lastWriteTime            = std::filesystem::last_write_time(path);
+        const auto lastWriteTimeSystemClock = std::chrono::clock_cast<std::chrono::system_clock>(lastWriteTime);
+
+        return std::chrono::system_clock::to_time_t(lastWriteTimeSystemClock);
     }
 
     bool Exists(const std::string_view fileName)
     {
-        return filesystem::exists(filesystem::path(fileName));
+        return std::filesystem::exists(std::filesystem::path(fileName));
+    }
+
+    bool Remove(const std::string_view fileName)
+    {
+        return std::filesystem::remove(std::filesystem::path(fileName));
     }
 
     std::vector<u8> ReadBytes(const std::string_view path)
     {
-        // Open in binary mode
         auto bin = std::ifstream(path.data(), std::ios::binary | std::ios::in);
 
         if (!bin.is_open())
@@ -73,5 +88,32 @@ namespace Util::Files
         bin.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
 
         return binary;
+    }
+
+    void WriteBytes(const std::string_view path, const std::span<const u8> binary)
+    {
+        auto bin = std::ofstream(path.data(), std::ios::binary | std::ios::out);
+
+        if (!bin.is_open())
+        {
+            Logger::Error("Failed to load binary {}!\n", path);
+        }
+
+        bin.write(reinterpret_cast<const char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
+    }
+
+    std::vector<std::string> GetFilesInDirectory(const std::string_view path)
+    {
+        std::vector<std::string> files = {};
+
+        for (const auto& file : std::filesystem::recursive_directory_iterator(path))
+        {
+            if (std::filesystem::is_regular_file(file))
+            {
+                files.emplace_back(file.path().string());
+            }
+        }
+
+        return files;
     }
 }

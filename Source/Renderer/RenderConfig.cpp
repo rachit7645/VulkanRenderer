@@ -25,31 +25,83 @@ namespace Renderer
         : DLSSConfig{context}
     #endif
     {
-        rayTracing.isSupported = context.extensions.HasRayTracing();
-        rayTracing.isEnabled   = rayTracing.isSupported;
-
-        // If ray tracing is not available then it would be slower, so disable it
         multiQueue.isSupported = context.queueFamilies.HasAllFamilies();
-        multiQueue.isEnabled   = multiQueue.isSupported && rayTracing.isSupported;
+        multiQueue.isEnabled   = multiQueue.isSupported;
 
         #ifdef ENGINE_DLSS
+        // Validation issues workaround
+        constexpr bool FORCE_DISABLE_DLSS = false;
+
         DLSS.isSupported = DLSSConfig.isSupported;
-        DLSS.isEnabled   = DLSS.isSupported;
+        antiAliasingMode = (DLSS.isSupported && !FORCE_DISABLE_DLSS) ? AntiAliasingMode::DLSS : AntiAliasingMode::TAA;
+        DLSS.isEnabled   = antiAliasingMode == AntiAliasingMode::DLSS;
         #else
         DLSS.isSupported = false;
-        DLSS.isEnabled   = DLSS.isSupported;
+        DLSS.isEnabled   = false;
+        antiAliasingMode = AntiAliasingMode::TAA;
         #endif
+
+        m_currentAntiAliasingMode = static_cast<s32>(std::to_underlying(antiAliasingMode));
     }
 
     void RenderConfig::Update()
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Renderer Config"))
+            if (ImGui::BeginMenu("Renderer"))
             {
-                ImGui::Checkbox("Raytracing",  &rayTracing.isEnabled);
-                ImGui::Checkbox("Multi-Queue", &multiQueue.isEnabled);
-                ImGui::Checkbox("DLSS",        &DLSS.isEnabled);
+                if (ImGui::CollapsingHeader("Config"))
+                {
+                    ImGui::Checkbox("Multi-Queue", &multiQueue.isEnabled);
+
+                    ImGui::Separator();
+
+                    // Anti-aliasing mode selection
+                    {
+                        constexpr std::array ANTI_ALIASING_NAMES =
+                        {
+                            "None",
+                            "TAA",
+                            #ifdef ENGINE_DLSS
+                            "DLSS"
+                            #endif
+                        };
+
+                        constexpr std::array ANTI_ALIASING_MODES =
+                        {
+                            AntiAliasingMode::None,
+                            AntiAliasingMode::TAA,
+                            #ifdef ENGINE_DLSS
+                            AntiAliasingMode::DLSS
+                            #endif
+                        };
+
+                        #ifdef ENGINE_DLSS
+                        const s32 itemCount = DLSS.isSupported ? ANTI_ALIASING_NAMES.size() : ANTI_ALIASING_NAMES.size() - 1;
+                        #else
+                        constexpr s32 itemCount = ANTI_ALIASING_NAMES.size();
+                        #endif
+
+                        if (ImGui::Combo("Anti-Aliasing Mode", &m_currentAntiAliasingMode, ANTI_ALIASING_NAMES.data(), itemCount))
+                        {
+                            antiAliasingMode = ANTI_ALIASING_MODES[m_currentAntiAliasingMode];
+                        }
+
+                        #ifdef ENGINE_DLSS
+                        // This field is unused, but I'll keep it updated
+                        DLSS.isEnabled = antiAliasingMode == AntiAliasingMode::DLSS;
+                        #endif
+                    }
+
+                    ImGui::Separator();
+
+                    #ifdef ENGINE_DLSS
+                    if (antiAliasingMode != AntiAliasingMode::DLSS)
+                    #endif
+                    {
+                        ImGui::DragFloat("Resolution Scale", &resolutionScale, 0.01f, 0.1f, 0.0f);
+                    }
+                }
 
                 ImGui::EndMenu();
             }
@@ -62,7 +114,6 @@ namespace Renderer
 
     void RenderConfig::Validate()
     {
-        rayTracing.Validate();
         multiQueue.Validate();
         DLSS.Validate();
     }

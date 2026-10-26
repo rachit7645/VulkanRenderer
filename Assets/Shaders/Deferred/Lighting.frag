@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "PBR.glsl"
 #include "MegaSet.glsl"
-#include "Packing.glsl"
-#include "PointShadowMap.glsl"
-#include "SpotShadowMap.glsl"
+#include "Encoding.glsl"
+#include "ShadowMap.glsl"
 #include "TiledLighting/Common.h"
 #include "Deferred/Lighting.h"
 
@@ -34,11 +34,12 @@ layout(location = 0) out vec3 outColor;
 
 void main()
 {
-    vec2             viewportSize     = vec2(textureSize(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), 0));
-    uvec2            pixelCoord       = uvec2(viewportSize * fragUV);
-    uvec2            tileID           = pixelCoord / TILE_SIZE;
-    uvec2            tileCount        = Constants.MaxTileID + 1;
-    uint             tileIndex        = tileCount.x * tileID.y + tileID.x;
+    vec2  viewportSize = vec2(textureSize(Textures[Constants.SceneDepthIndex], 0));
+    uvec2 pixelCoord   = uvec2(viewportSize * fragUV);
+
+    uvec2 tileID    = pixelCoord / TILE_SIZE;
+    uint  tileIndex = Constants.TileCount.x * tileID.y + tileID.x;
+
     TileLightIndices tileLightIndices = Constants.TileLightIndices.indices[tileIndex];
 
     vec4  gAlbedoIoR  = texture(sampler2D(Textures[Constants.GAlbedoIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
@@ -46,17 +47,17 @@ void main()
     float reflectance = IoRToReflectance(UnpackIoR(gAlbedoIoR.a));
 
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    vec3 normal  = UnpackNormal(gNormal.rg);
+    vec3 normal  = UnpackNormalFromGBuffer(gNormal.rg);
 
-    vec4  gRghMtl   = texture(sampler2D(Textures[Constants.GRghMtlIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
-    float roughness = gRghMtl.r;
-    float metallic  = gRghMtl.g;
+    vec4  gRghMtlHrz = texture(sampler2D(Textures[Constants.GRghMtlIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV);
+    float roughness  = gRghMtlHrz.r;
+    float metallic   = gRghMtlHrz.g;
+    float horizon    = gRghMtlHrz.b;
 
     float depth         = texture(sampler2D(Textures[Constants.SceneDepthIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
     vec3  worldPosition = GetWorldPosition(Constants.Scene.currentMatrices, fragUV, depth);
 
-    vec3 toCamera  = normalize(Constants.Scene.cameraPosition - worldPosition);
-    vec3 reflected = normalize(reflect(-toCamera, normal));
+    vec3 toCamera = normalize(Constants.Scene.cameraPosition - worldPosition);
 
     vec3 Lo = vec3(0.0f);
 
@@ -170,11 +171,19 @@ void main()
         );
     }
 
-    vec3  irradiance       = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
-    uint  maxReflectionLod = textureQueryLevels(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]));
-    vec3  preFilter        = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), reflected, roughness * float(maxReflectionLod)).rgb;
-    vec2  brdf             = texture(sampler2D(Textures[Constants.BRDFLUTIndex], Samplers[Constants.IBLSamplerIndex]), vec2(max(dot(normal, toCamera), 0.0f), roughness)).rg;
-    float ao               = texture(sampler2D(Textures[Constants.AOIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
+    vec3 reflected = normalize(reflect(-toCamera, normal));
+
+    uint  maxReflectionLod          = textureQueryLevels(Cubemaps[Constants.PreFilterIndex]);
+    float prefilterLod              = roughness * float(maxReflectionLod);
+    vec3  dominantSpecularDirection = CalculateSpecularDominantDirection(normal, reflected, roughness);
+    vec3  preFilter                 = textureLod(samplerCube(Cubemaps[Constants.PreFilterIndex], Samplers[Constants.IBLSamplerIndex]), dominantSpecularDirection, prefilterLod).rgb;
+
+    vec3 irradiance = texture(samplerCube(Cubemaps[Constants.IrradianceIndex], Samplers[Constants.IBLSamplerIndex]), normal).rgb;
+
+    float NdotV = abs(dot(normal, toCamera)) + 1e-5f;
+    vec2  brdf  = texture(sampler2D(Textures[Constants.BRDFLUTIndex], Samplers[Constants.IBLSamplerIndex]), vec2(NdotV, roughness)).rg;
+
+    float ao = texture(sampler2D(Textures[Constants.AOIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).r;
 
     Lo += ao * CalculateAmbient
     (
@@ -184,14 +193,15 @@ void main()
         roughness,
         metallic,
         reflectance,
+        horizon,
         irradiance,
         preFilter,
         brdf
     );
 
-    vec3 emmisive = texture(sampler2D(Textures[Constants.GEmmisiveIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).rgb;
+    vec3 emissive = texture(sampler2D(Textures[Constants.GEmissiveIndex], Samplers[Constants.GBufferSamplerIndex]), fragUV).rgb;
 
-    Lo += emmisive;
+    Lo += emissive;
 
     outColor = Lo;
 }

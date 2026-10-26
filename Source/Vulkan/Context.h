@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef VK_CONTEXT_H
-#define VK_CONTEXT_H
+#ifndef VULKAN_CONTEXT_H
+#define VULKAN_CONTEXT_H
 
 #include <vulkan/vulkan.h>
 
 #include "DebugCallback.h"
 #include "QueueFamilies.h"
 #include "Extensions.h"
-#include "Util/Types.h"
-#include "Util/DeletionQueue.h"
+#include "Properties.h"
+#include "FormatHelper.h"
+#include "Engine/DeletionQueue.h"
+#include "Engine/Scratch.h"
 #include "Externals/VMA.h"
 #include "Externals/SDL.h"
 
@@ -32,41 +34,34 @@ namespace Vk
     class Context
     {
     public:
-        explicit Context(SDL_Window* window);
+        Context(SDL_Window* window, Scratch::Allocator& scratchAllocator);
 
         void Destroy();
 
         VkInstance   instance = VK_NULL_HANDLE;
         VkSurfaceKHR surface  = VK_NULL_HANDLE;
 
-        VkPhysicalDevice                                   physicalDevice                                = VK_NULL_HANDLE;
-        VkPhysicalDeviceLimits                             physicalDeviceLimits                          = {};
-        VkPhysicalDeviceVulkan12Properties                 physicalDeviceVulkan12Properties              = {};
-        VkPhysicalDeviceAccelerationStructurePropertiesKHR physicalDeviceAccelerationStructureProperties = {};
-        VkPhysicalDeviceRayTracingPipelinePropertiesKHR    physicalDeviceRayTracingPipelineProperties    = {};
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
         VkDevice device = VK_NULL_HANDLE;
 
-        Vk::QueueFamilies queueFamilies;
-        Vk::Extensions         extensions;
+        Vk::Properties    properties    = {};
+        Vk::QueueFamilies queueFamilies = {};
+        Vk::Extensions    extensions    = {};
+        Vk::FormatHelper  formatHelper  = {};
 
         VkQueue graphicsQueue = VK_NULL_HANDLE;
         VkQueue computeQueue  = VK_NULL_HANDLE;
 
         VmaAllocator allocator = VK_NULL_HANDLE;
+
+        std::string physicalDeviceName = "Device/Null";
     private:
-        void CreateInstance();
+        void CreateInstance(Scratch::Allocator& scratchAllocator);
         void CreateSurface(SDL_Window* window);
 
-        void PickPhysicalDevice();
-        void CreateLogicalDevice();
-
-        [[nodiscard]] usize CalculateScore
-        (
-            VkPhysicalDevice currentPhysicalDevice,
-            const VkPhysicalDeviceProperties2& propertySet,
-            const VkPhysicalDeviceFeatures2& featureSet
-        ) const;
+        void PickPhysicalDevice(Scratch::Allocator& allocator);
+        void CreateLogicalDevice(Scratch::Allocator& scratchAllocator);
 
         void CreateAllocator();
 
@@ -76,7 +71,7 @@ namespace Vk
         Vk::DebugCallback m_debugCallback;
         #endif
 
-        Util::DeletionQueue m_deletionQueue = {};
+        Engine::DeletionQueue m_deletionQueue = {};
     };
 }
 

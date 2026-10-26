@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,17 @@
 
 #extension GL_EXT_nonuniform_qualifier : enable
 
+// VK_DESCRIPTOR_TYPE_SAMPLER
 layout(set = 0, binding = 0) uniform sampler Samplers[];
 
+// VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
 layout(set = 0, binding = 1) uniform texture2D        Textures[];
 layout(set = 0, binding = 1) uniform utexture2D       UTextures[];
 layout(set = 0, binding = 1) uniform textureCube      Cubemaps[];
 layout(set = 0, binding = 1) uniform texture2DArray   TextureArrays[];
 layout(set = 0, binding = 1) uniform textureCubeArray CubemapArrays[];
 
+// VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
 layout(set = 0, binding = 2) uniform writeonly image2D  Images[];
 layout(set = 0, binding = 2) uniform writeonly uimage2D UImages[];
 

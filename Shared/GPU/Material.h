@@ -25,10 +25,10 @@
 
 GLSL_NAMESPACE_BEGIN(GPU)
 
-GLSL_ENUM_CLASS_BEGIN(MaterialFlags, u32)
-    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, None,        0u << 0u)
-    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, DoubleSided, 1u << 1u)
-    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u32, AlphaMasked, 1u << 2u)
+GLSL_ENUM_CLASS_BEGIN(MaterialFlags, u16)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u16, None,        0)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u16, DoubleSided, 1u << 0u)
+    GLSL_ENUM_CLASS_ENTRY(MaterialFlags, u16, AlphaMasked, 1u << 1u)
 GLSL_ENUM_CLASS_END
 
 struct Material
@@ -36,24 +36,21 @@ struct Material
     u32 albedoID;
     u32 normalID;
     u32 aoRghMtlID;
-    u32 emmisiveID;
-
-    u32 albedoUVMapID;
-    u32 normalUVMapID;
-    u32 aoRghMtlUVMapID;
-    u32 emmisiveUVMapID;
+    u32 emissiveID;
 
     GLSL_VEC4 albedoFactor;
     f32       roughnessFactor;
     f32       metallicFactor;
-    GLSL_VEC3 emmisiveFactor;
-    f32       emmisiveStrength;
+    GLSL_VEC3 emissiveFactor;
+    f32       emissiveStrength;
 
     f32 alphaCutOff;
 
     f32 ior;
 
-    GLSL_ENUM_CLASS_NAME(MaterialFlags, u32) flags;
+    u16 packedUVIDs;
+
+    GLSL_ENUM_CLASS_NAME(MaterialFlags, u16) flags;
 };
 
 #ifndef __cplusplus
@@ -78,30 +75,31 @@ bool Material_IsAlphaMasked(Material material)
     return Material_IsAlphaMasked(material.flags);
 }
 
-// Safe version, use with bad geometry
-vec3 Orthogonalize(vec3 T, vec3 N)
-{
-    vec3  TPerpendicular       = T - dot(T, N) * N;
-    float lengthTPerpendicular = length(TPerpendicular);
-
-    if (lengthTPerpendicular < 1e-5f)
-    {
-        vec3 reference = abs(N.z) < 0.999f ? vec3(0.0f, 0.0f, 1.0f) : vec3(1.0f, 0.0f, 0.0f);
-        TPerpendicular = normalize(cross(N, reference));
-    }
-    else
-    {
-        TPerpendicular /= lengthTPerpendicular;
-    }
-
-    return TPerpendicular;
-}
-
 vec3 GetNormalFromMap(vec3 normal, mat3 TBN)
 {
     normal = normal * 2.0f - 1.0f;
 
     return normalize(TBN * normal);
+}
+
+uint GetAlbedoUVID(uint packedUVIDs)
+{
+    return bitfieldExtract(packedUVIDs, 0, 4);
+}
+
+uint GetNormalUVID(uint packedUVIDs)
+{
+    return bitfieldExtract(packedUVIDs, 4, 4);
+}
+
+uint GetAORghMtlUVID(uint packedUVIDs)
+{
+    return bitfieldExtract(packedUVIDs, 8, 4);
+}
+
+uint GetEmissiveUVID(uint packedUVIDs)
+{
+    return bitfieldExtract(packedUVIDs, 12, 4);
 }
 
 #endif

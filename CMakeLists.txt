@@ -19,6 +19,10 @@ project(VulkanRenderer)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
 
+# C23 is required
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 # C++23 is required
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,6 +34,16 @@ find_package(KTX    REQUIRED)
 # Check for LTO
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
+
+# Only GCC/Clang are supported
+if (MSVC)
+    message(FATAL_ERROR "MSVC is not supported!")
+endif()
+
+# Force clang color output
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-fcolor-diagnostics)
+endif()
 
 # Sub-directories
 add_subdirectory(Externals)
@@ -43,17 +57,30 @@ add_executable(VulkanRenderer
 	Source/Engine/Application.cpp
 	Source/Engine/Window.cpp
 	Source/Engine/Inputs.cpp
-    Source/Engine/Scene.cpp
     Source/Engine/Config.cpp
+    Source/Engine/Cache.cpp
+    Source/Engine/Camera.cpp
+    Source/Engine/FreeCamera.cpp
+    Source/Engine/SceneEditor.cpp
+    Source/Engine/DeletionQueue.cpp
+    Source/Engine/FrameCounter.cpp
+    Source/Engine/Scratch.cpp
+    Source/Engine/Containers.cpp
     # Utility Sources
 	Source/Util/Files.cpp
 	Source/Util/Time.cpp
-	Source/Util/DeletionQueue.cpp
-	Source/Util/FrameCounter.cpp
 	Source/Util/Maths.cpp
     Source/Util/SIMD.cpp
     Source/Util/JSON.cpp
-	# Vulkan sources
+    Source/Util/String.cpp
+    Source/Util/Threads.cpp
+    Source/Util/WireframeSphere.cpp
+    Source/Util/Debug.cpp
+    Source/Util/WireframeCone.cpp
+    Source/Util/Log.cpp
+    Source/Util/Memory.cpp
+    Source/Util/Process.cpp
+    # Vulkan sources
 	Source/Vulkan/Extensions.cpp
 	Source/Vulkan/DebugCallback.cpp
 	Source/Vulkan/Context.cpp
@@ -80,32 +107,32 @@ add_executable(VulkanRenderer
     Source/Vulkan/ShaderBindingTable.cpp
     Source/Vulkan/DescriptorAllocator.cpp
     Source/Vulkan/CommandBufferAllocator.cpp
-    Source/Vulkan/ImmediateSubmit.cpp
     Source/Vulkan/GraphicsTimeline.cpp
     Source/Vulkan/ImageUploader.cpp
     Source/Vulkan/PipelineConfig.cpp
     Source/Vulkan/BarrierWriter.cpp
-    Source/Vulkan/VertexBuffer.cpp
-    Source/Vulkan/ResizableAllocator.cpp
+    Source/Vulkan/IndexBuffer.cpp
     Source/Vulkan/ComputeTimeline.cpp
     Source/Vulkan/PipelineManager.cpp
     Source/Vulkan/MemoryBlock.cpp
     Source/Vulkan/StagingPool.cpp
-    Source/Vulkan/ResizableBuffer.cpp
+    Source/Vulkan/Properties.cpp
+    Source/Vulkan/ImageDownloader.cpp
+    Source/Vulkan/SamplerID.cpp
+    Source/Vulkan/TextureID.cpp
+    Source/Vulkan/VertexBuffer.cpp
+    Source/Vulkan/ScratchPool.cpp
 	# Renderer sources
 	Source/Renderer/RenderManager.cpp
-    Source/Renderer/RenderObject.cpp
     Source/Renderer/RenderConfig.cpp
-    Source/Renderer/Jitter.cpp
+    # Renderer Util sources
+    Source/Renderer/Util/Jitter.cpp
     # Object sources
-    Source/Renderer/Objects/FreeCamera.cpp
-    Source/Renderer/Objects/Camera.cpp
-    Source/Renderer/Objects/GlobalSamplers.cpp
+    Source/Renderer/Objects/Samplers.cpp
     # Renderer Buffer sources
     Source/Renderer/Buffers/IndirectBuffer.cpp
     Source/Renderer/Buffers/MeshBuffer.cpp
     Source/Renderer/Buffers/SceneBuffer.cpp
-    Source/Renderer/Buffers/LightsBuffer.cpp
     Source/Renderer/Buffers/DrawCallBuffer.cpp
     Source/Renderer/Buffers/TileLightIndexBuffer.cpp
     Source/Renderer/Buffers/ExposureBuffers.cpp
@@ -120,6 +147,7 @@ add_executable(VulkanRenderer
     Source/Renderer/Lighting/RenderPass.cpp
     Source/Renderer/TAA/RenderPass.cpp
     Source/Renderer/SpotShadow/RenderPass.cpp
+    Source/Renderer/Debug/RenderPass.cpp
     # Compute Pass Sources
     Source/Renderer/Culling/Dispatch.cpp
     Source/Renderer/Culling/FrustumBuffer.cpp
@@ -135,10 +163,17 @@ add_executable(VulkanRenderer
 	Source/Models/Model.cpp
 	Source/Models/ModelManager.cpp
     Source/Models/Mesh.cpp
+    Source/Models/Material.cpp
+    Source/Models/LocalLights.cpp
+    Source/Models/ModelID.cpp
 	# External sources
 	Source/Externals/GLM.cpp
 	Source/Externals/VMA.cpp
     Source/Externals/STB.cpp
+    Source/Externals/FastGLTF.cpp
+    Source/Externals/SDL.cpp
+    Source/Externals/DLSSNoSDK.cpp
+    Source/Externals/Taskflow.cpp
 )
 
 # Precompiled Headers
@@ -153,7 +188,8 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/volk/volk.h
     # ImGui Headers
     Externals/imgui/imgui.h
-    Externals/imgui/backends/imgui_impl_sdl2.h
+    Externals/imgui/backends/imgui_impl_sdl3.h
+    Externals/implot/implot.h
     # KTX Headers
     <ktx.h>
     # FMT Headers
@@ -194,6 +230,11 @@ target_precompile_headers(VulkanRenderer PRIVATE
     Externals/openexr/src/lib/OpenEXR/ImfArray.h
     # Unordered Dense Headers
     Externals/unordered_dense/include/ankerl/unordered_dense.h
+    # lz4 Headers
+    Externals/lz4/lib/lz4.h
+    Externals/lz4/lib/lz4hc.h
+    # zstd Headers
+    Externals/zstd/lib/zstd.h
     # C++ STL Headers
     <map>
     <unordered_map>
@@ -221,29 +262,36 @@ target_precompile_headers(VulkanRenderer PRIVATE
     <variant>
     <list>
     <queue>
+    <stacktrace>
+    <expected>
     # C STL Headers
     <cstdint>
     <cstddef>
     <cstdlib>
     <cassert>
     <cmath>
+    <cstdio>
 )
 
 # Library includes
-target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Shared/)
-# No Vulkan prototypes
-target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
+target_include_directories(VulkanRenderer PRIVATE Source/ Externals/ Externals/taskflow/ Shared/)
+# Vulkan Options
+target_compile_definitions(VulkanRenderer PRIVATE VK_NO_PROTOTYPES)
+# GLM Options
+target_compile_definitions(VulkanRenderer PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_SILENT_WARNINGS GLM_FORCE_SIZE_T_LENGTH)
 
 # Compiler options
-if (MSVC)
-    target_compile_options(VulkanRenderer PRIVATE /O2   )
-    target_compile_options(VulkanRenderer PRIVATE /W4)
-    target_compile_options(VulkanRenderer PRIVATE /arch:AVX2)
+target_compile_options(VulkanRenderer PRIVATE -O3)
+target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c -mpclmul -mbmi -mbmi2 -mlzcnt)
+
+# Windows options
+if (WIN32)
     target_compile_definitions(VulkanRenderer PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
-else()
-    target_compile_options(VulkanRenderer PRIVATE -O3)
-    target_compile_options(VulkanRenderer PRIVATE -Wall -Wextra -Wpedantic)
-    target_compile_options(VulkanRenderer PRIVATE -mavx2 -mf16c)
+
+    # Disables the console window
+    # No console output will be available when this is enabled
+    # set_target_properties(VulkanRenderer PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
 # Debug config
@@ -273,14 +321,13 @@ if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Engine Debug Mode
     target_compile_definitions(VulkanRenderer PRIVATE ENGINE_DEBUG)
     # Engine Profile Mode
-    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_PROFILE)
+    target_compile_definitions(VulkanRenderer PRIVATE ENGINE_PROFILE TRACY_ENABLE)
+
+    # Detailed Callstack
+    # target_compile_definitions(VulkanRenderer PRIVATE TRACY_CALLSTACK=32)
 
     # Enable debug symbols
-    if (MSVC)
-        target_compile_options(VulkanRenderer PRIVATE /Zi)
-    else()
-        target_compile_options(VulkanRenderer PRIVATE -g)
-    endif()
+    target_compile_options(VulkanRenderer PRIVATE -g -fno-omit-frame-pointer)
 
     # Add Tracy
     target_link_libraries(VulkanRenderer TracyClient)
@@ -307,7 +354,9 @@ target_link_libraries(VulkanRenderer
     glm::glm
     OpenEXR::OpenEXR
     unordered_dense::unordered_dense
+    libzstd_shared
     DearImGui
+    lz4
 )
 
 if (DLSSAvailable)

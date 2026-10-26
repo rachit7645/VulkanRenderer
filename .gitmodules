@@ -16,9 +16,6 @@
 [submodule "STB"]
 	path = Externals/stb
 	url = https://github.com/nothings/stb.git
-[submodule "GLM"]
-	path = Externals/glm
-	url = https://github.com/g-truc/glm.git
 [submodule "Simple DirectMedia Layer"]
 	path = Externals/sdl
 	url = https://github.com/libsdl-org/SDL.git
@@ -40,3 +37,15 @@
 [submodule "DLSS SDK"]
 	path = Externals/dlss
 	url = https://github.com/NVIDIA/DLSS.git
+[submodule "GLM"]
+	path = Externals/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "ImPlot"]
+	path = Externals/implot
+	url = https://github.com/epezent/implot.git
+[submodule "lz4"]
+	path = Externals/lz4
+	url = https://github.com/lz4/lz4.git
+[submodule "zstd"]
+	path = Externals/zstd
+	url = https://github.com/facebook/zstd.git

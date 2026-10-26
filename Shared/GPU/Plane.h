@@ -27,11 +27,11 @@ struct Plane
     f32       distance;
 };
 
-GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)
+GLSL_BUFFER(FrustumBuffer, readonly)
 {
     #ifdef __cplusplus
     explicit FrustumBuffer(const glm::mat4& projectionView)
-        : planes()
+        : planes{}
     {
         // Left
         planes[0].normal.x = projectionView[0][3] + projectionView[0][0];
@@ -70,12 +70,12 @@ GLSL_SHADER_STORAGE_BUFFER(FrustumBuffer, readonly)
         planes[5].distance = projectionView[3][3] - projectionView[3][2];
 
         // Normalize all planes
-        for (auto& plane : planes)
+        for (auto& [normal, distance] : planes)
         {
-            const f32 length = glm::length(plane.normal);
+            const f32 length = glm::length(normal);
 
-            plane.normal   /= length;
-            plane.distance /= length;
+            normal   /= length;
+            distance /= length;
         }
     }
     #endif

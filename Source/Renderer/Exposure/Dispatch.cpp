@@ -16,9 +16,10 @@
 
 #include "Dispatch.h"
 
+#include "Exposure/Combine.h"
 #include "Exposure/Histogram.h"
 #include "Exposure/Average.h"
-#include "GPU/Constants.h"
+#include "Vulkan/Constants.h"
 #include "Vulkan/DebugUtils.h"
 #include "Externals/ImGui.h"
 
@@ -26,31 +27,49 @@ namespace Renderer::Exposure
 {
     Dispatch::Dispatch
     (
+        const Vk::FormatHelper& formatHelper,
         const Vk::MegaSet& megaSet,
         Vk::PipelineManager& pipelineManager,
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("Exposure/Histogram", Vk::PipelineConfig{}
+        constexpr std::array DYNAMIC_STATES = {VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT, VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+
+        const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
+
+        pipelineManager.AddPipeline(Vk::PipelineID::AutoExposureHistogram, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Exposure/Histogram.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Histogram::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("Exposure/Average", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::AutoExposureAverage, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("Exposure/Average.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Average::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
+
+        pipelineManager.AddPipeline(Vk::PipelineID::AutoExposureCombine, Vk::PipelineConfig{}
+           .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
+           .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
+           .AttachShader("Misc/Triangle.vert",    VK_SHADER_STAGE_VERTEX_BIT)
+           .AttachShader("Exposure/Combine.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
+           .SetDynamicStates(DYNAMIC_STATES)
+           .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+           .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
+           .AddDefaultBlendAttachment()
+           .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Combine::Constants))
+           .AddDescriptorLayout(megaSet.layout)
+       );
 
         framebufferManager.AddFramebuffer
         (
             "Exposure/Value",
-            Vk::FramebufferType::ColorR_SFloat32,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Storage | Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::TransferDestination,
+            VK_FORMAT_R32_SFLOAT,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             Vk::FramebufferSize{
                 .width       = 1,
                 .height      = 1,
@@ -58,9 +77,32 @@ namespace Renderer::Exposure
                 .arrayLayers = 1
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            }
+        );
+
+        framebufferManager.AddFramebuffer
+        (
+            "ExposedSceneColor",
+            formatHelper.colorAttachmentFormatHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            [] (ENGINE_UNUSED const VkExtent2D& renderExtent, const VkExtent2D& displayExtent) -> Vk::FramebufferSize
+            {
+                return
+                {
+                    .width       = displayExtent.width,
+                    .height      = displayExtent.height,
+                    .mipLevels   = 1,
+                    .arrayLayers = 1
+                };
+            },
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -68,7 +110,20 @@ namespace Renderer::Exposure
         (
             "Exposure/Value",
             "Exposure/ValueView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
+            Vk::FramebufferViewSize{
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1
+            }
+        );
+
+        framebufferManager.AddFramebufferView
+        (
+            "ExposedSceneColor",
+            "ExposedSceneColorView",
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -87,8 +142,9 @@ namespace Renderer::Exposure
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::ExposureBuffers& exposureBuffer,
-        const Objects::GlobalSamplers& samplers,
-        const Util::FrameCounter& frameCounter
+        const Objects::Samplers& samplers,
+        const Engine::FrameCounter& frameCounter,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Auto-Exposure", glm::vec4(0.5098f, 0.6843f, 0.7549f, 1.0f));
@@ -112,7 +168,18 @@ namespace Renderer::Exposure
             framebufferManager,
             megaSet,
             exposureBuffer,
-            frameCounter
+            frameCounter,
+            scratchAllocator
+        );
+
+        Combine
+        (
+            cmdBuffer,
+            pipelineManager,
+            framebufferManager,
+            megaSet,
+            textureManager,
+            samplers
         );
 
         Vk::EndLabel(cmdBuffer);
@@ -131,19 +198,21 @@ namespace Renderer::Exposure
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
         const Buffers::ExposureBuffers& exposureBuffer,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("Exposure"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::DragFloat("Adaptation Speed", &m_adaptationSpeed, 0.25f, 0.0f, 0.0f, "%.3f");
-                ImGui::DragFloat("Exposure Bias",    &m_exposureBias,    0.01f, 0.0f, 0.0f, "%.3f");
-
-                if (ImGui::Button("Reset Luminance"))
+                if (ImGui::CollapsingHeader("Exposure"))
                 {
-                    m_hasLuminanceBeenReset = false;
+                    ImGui::DragFloat("Adaptation Speed", &m_adaptationSpeed, 0.25f, 0.0f, 0.0f, "%.3f");
+
+                    if (ImGui::Button("Reset Luminance"))
+                    {
+                        m_hasLuminanceBeenReset = false;
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -154,7 +223,7 @@ namespace Renderer::Exposure
 
         Vk::BeginLabel(cmdBuffer, "Histogram", glm::vec4(0.7098f, 0.4843f, 0.549f, 1.0f));
 
-        const auto& histogramPipeline = pipelineManager.GetPipeline("Exposure/Histogram");
+        const auto& histogramPipeline = pipelineManager.GetPipeline(Vk::PipelineID::AutoExposureHistogram);
 
         const auto& sceneColor = framebufferManager.GetFramebuffer("FinalSceneColor");
 
@@ -249,12 +318,13 @@ namespace Renderer::Exposure
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Buffers::ExposureBuffers& exposureBuffer,
-        const Util::FrameCounter& frameCounter
+        const Engine::FrameCounter& frameCounter,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Average", glm::vec4(0.3098f, 0.4843f, 0.549f, 1.0f));
 
-        const auto& averagePipeline = pipelineManager.GetPipeline("Exposure/Average");
+        const auto& averagePipeline = pipelineManager.GetPipeline(Vk::PipelineID::AutoExposureAverage);
 
         const auto& exposureValueView = framebufferManager.GetFramebufferView("Exposure/ValueView");
 
@@ -263,7 +333,7 @@ namespace Renderer::Exposure
 
         if (!m_hasLuminanceBeenReset)
         {
-            Vk::BarrierWriter barrierWriter = {};
+            auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
             barrierWriter
             .WriteBufferBarrier(
@@ -298,16 +368,18 @@ namespace Renderer::Exposure
             )
             .Execute(cmdBuffer);
 
+            constexpr f32 MIDDLE_GRAY = 0.18f;
+
             vkCmdFillBuffer
             (
                 cmdBuffer.handle,
                 exposureBuffer.luminanceBuffer.handle,
                 0,
                 exposureBuffer.luminanceBuffer.size,
-                0
+                std::bit_cast<u32>(MIDDLE_GRAY)
             );
 
-            constexpr VkClearColorValue RESET = {.float32 = {1.0f, 0.0f, 0.0f, 0.0f}};
+            constexpr VkClearColorValue RESET = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}};
 
             const VkImageSubresourceRange subresourceRange =
             {
@@ -364,7 +436,7 @@ namespace Renderer::Exposure
             m_hasLuminanceBeenReset = true;
         }
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteBufferBarrier(
@@ -408,7 +480,6 @@ namespace Renderer::Exposure
             .ExposureImageIndex = exposureValueView.storageImageID,
             .PixelCount         = sceneColor.image.width * sceneColor.image.height,
             .TimeCoefficient    = 1.0f - std::exp(-frameCounter.frameDelta * m_adaptationSpeed),
-            .ExposureBias       = m_exposureBias,
             .CurrentFrame       = static_cast<u32>(FIF),
             .PreviousFrame      = static_cast<u32>((FIF + Vk::FRAMES_IN_FLIGHT - 1) % Vk::FRAMES_IN_FLIGHT)
         };
@@ -462,6 +533,146 @@ namespace Renderer::Exposure
             }
         )
         .Execute(cmdBuffer);
+
+        Vk::EndLabel(cmdBuffer);
+    }
+
+    void Dispatch::Combine
+    (
+        const Vk::CommandBuffer& cmdBuffer,
+        const Vk::PipelineManager& pipelineManager,
+        const Vk::FramebufferManager& framebufferManager,
+        const Vk::MegaSet& megaSet,
+        const Vk::TextureManager& textureManager,
+        const Objects::Samplers& samplers
+    )
+    {
+        Vk::BeginLabel(cmdBuffer, "Combine", {0.8736f, 0.4598f, 0.7548f, 1.0f});
+
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::AutoExposureCombine);
+
+        const auto& exposedSceneColorView = framebufferManager.GetFramebufferView("ExposedSceneColorView");
+        const auto& exposedSceneColor     = framebufferManager.GetFramebuffer(exposedSceneColorView.framebuffer);
+
+        exposedSceneColor.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .srcAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .dstAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = exposedSceneColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = exposedSceneColor.image.arrayLayers
+            }
+        );
+
+        const VkRenderingAttachmentInfo colorAttachmentInfo =
+        {
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext              = nullptr,
+            .imageView          = exposedSceneColorView.view.handle,
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_NONE,
+            .resolveImageView   = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {}
+        };
+
+        const VkRenderingInfo renderInfo =
+        {
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .pNext                = nullptr,
+            .flags                = 0,
+            .renderArea           = {
+                .offset = {.x     = 0,                             .y      = 0                             },
+                .extent = {.width = exposedSceneColor.image.width, .height = exposedSceneColor.image.height}
+            },
+            .layerCount           = 1,
+            .viewMask             = 0,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo,
+            .pDepthAttachment     = nullptr,
+            .pStencilAttachment   = nullptr
+        };
+
+        vkCmdBeginRendering(cmdBuffer.handle, &renderInfo);
+
+        pipeline.Bind(cmdBuffer);
+
+        const VkViewport viewport =
+        {
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = static_cast<f32>(exposedSceneColor.image.width),
+            .height   = static_cast<f32>(exposedSceneColor.image.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+
+        vkCmdSetViewportWithCount(cmdBuffer.handle, 1, &viewport);
+
+        const VkRect2D scissor =
+        {
+            .offset = {.x     = 0,                             .y      = 0                             },
+            .extent = {.width = exposedSceneColor.image.width, .height = exposedSceneColor.image.height}
+        };
+
+        vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
+
+        const auto constants = Combine::Constants
+        {
+            .PointSamplerIndex = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
+            .SceneColorIndex   = framebufferManager.GetFramebufferView("ResolvedSceneColorView").sampledImageID,
+            .ExposureIndex     = framebufferManager.GetFramebufferView("Exposure/ValueView").sampledImageID
+        };
+
+        pipeline.PushConstants
+        (
+            cmdBuffer,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            constants
+        );
+
+        pipeline.BindDescriptors(cmdBuffer, megaSet);
+
+        vkCmdDraw
+        (
+            cmdBuffer.handle,
+            3,
+            1,
+            0,
+            0
+        );
+
+        vkCmdEndRendering(cmdBuffer.handle);
+
+        exposedSceneColor.image.Barrier
+        (
+            cmdBuffer,
+            Vk::ImageBarrier{
+                .srcStageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                .srcAccessMask  = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .dstStageMask   = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask  = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .oldLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .newLayout      = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+                .baseMipLevel   = 0,
+                .levelCount     = exposedSceneColor.image.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = exposedSceneColor.image.arrayLayers
+            }
+        );
 
         Vk::EndLabel(cmdBuffer);
     }

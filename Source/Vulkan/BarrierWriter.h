@@ -22,6 +22,8 @@
 #include "Image.h"
 #include "Buffer.h"
 #include "Barrier.h"
+#include "Engine/Containers.h"
+#include "Engine/Scratch.h"
 
 namespace Vk
 {
@@ -35,10 +37,28 @@ namespace Vk
 
         BarrierWriter& Clear();
 
-        bool IsEmpty() const;
+        [[nodiscard]] bool IsEmpty() const;
     private:
         std::vector<VkBufferMemoryBarrier2> m_bufferBarriers;
         std::vector<VkImageMemoryBarrier2>  m_imageBarriers;
+    };
+
+    class ScratchBarrierWriter
+    {
+    public:
+        explicit ScratchBarrierWriter(Scratch::Allocator& scratchAllocator);
+
+        ScratchBarrierWriter& WriteBufferBarrier(const Vk::Buffer& buffer, const Vk::BufferBarrier& barrier);
+        ScratchBarrierWriter& WriteImageBarrier(const Vk::Image& image, const ImageBarrier& barrier);
+
+        void Execute(const Vk::CommandBuffer& cmdBuffer);
+
+        ScratchBarrierWriter& Clear();
+
+        [[nodiscard]] bool IsEmpty() const;
+    private:
+        Scratch::Vector<VkBufferMemoryBarrier2> m_bufferBarriers;
+        Scratch::Vector<VkImageMemoryBarrier2>  m_imageBarriers;
     };
 }
 

@@ -36,34 +36,19 @@ namespace Renderer::Culling
 
         void Destroy(VmaAllocator allocator);
 
-        void Frustum
+        void Execute
         (
+            usize FIF,
             usize frameIndex,
             const glm::mat4& projectionView,
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Buffers::MeshBuffer& meshBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
+            const Buffers::IndirectBuffer& indirectBuffer,
+            Scratch::Allocator& scratchAllocator
         );
     private:
-        bool NeedsDispatch(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer);
-
-        void PreDispatch
-        (
-            const glm::mat4& projectionView,
-            const Vk::CommandBuffer& cmdBuffer,
-            const Buffers::IndirectBuffer& indirectBuffer
-        );
-
-        void Execute(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer);
-
-        void PostDispatch(const Vk::CommandBuffer& cmdBuffer, const Buffers::IndirectBuffer& indirectBuffer);
-
-        static u32 GetWorkGroupCount(const Buffers::IndirectBuffer& indirectBuffer);
-
         Culling::FrustumBuffer m_frustumBuffer;
-
-        Vk::BarrierWriter m_barrierWriter = {};
     };
 }
 

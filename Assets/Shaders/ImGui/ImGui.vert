@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 #extension GL_EXT_buffer_reference2    : enable
 #extension GL_EXT_scalar_block_layout  : enable
 
-#include "Converter.glsl"
 #include "ImGui/DearImGui.h"
 
 layout(location = 0) out vec4 fragColor;
@@ -30,7 +29,7 @@ void main()
 {
     Vertex vertex = Constants.Vertices.vertices[gl_VertexIndex];
 
-    fragColor = UnpackRGBA8(vertex.color);
+    fragColor = unpackUnorm4x8(vertex.color);
     fragUV    = vertex.uv;
 
     gl_Position = vec4(vertex.position * Constants.Scale + Constants.Translate, 0.0f, 1.0f);

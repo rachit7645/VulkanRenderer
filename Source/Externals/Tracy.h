@@ -20,7 +20,6 @@
 #ifdef ENGINE_PROFILE
 
 #include "tracy/public/tracy/Tracy.hpp"
-#include "tracy/public/tracy/TracyVulkan.hpp"
 
 #endif
 

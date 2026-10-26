@@ -33,6 +33,7 @@ namespace Renderer::Buffers
         Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.handle,            "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/InstanceIndices");
         Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.drawCallBuffer.handle,      "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/DrawCalls");
         Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/AlphaMasked/DoubleSided/InstanceIndices");
+        Vk::SetDebugName(device, frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.handle, "IndirectBuffer/DrawCallBuffer/FrustumCulled/Debug/AABB/DrawCalls");
     }
 
     void IndirectBuffer::ComputeDrawCount(const Models::ModelManager& modelManager, const std::span<const Renderer::RenderObject> renderObjects)

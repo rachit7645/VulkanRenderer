@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ void main()
 {
     Mesh mesh = Constants.Meshes.meshes[fragDrawID];
 
-    float alpha  = texture(sampler2D(Textures[nonuniformEXT(mesh.material.albedoID)], Samplers[Constants.TextureSamplerIndex]), fragUV).a;
+    float alpha  = texture(nonuniformEXT(sampler2D(Textures[mesh.material.albedoID], Samplers[Constants.TextureSamplerIndex])), fragUV).a;
           alpha *= mesh.material.albedoFactor.a;
 
     if (alpha < mesh.material.alphaCutOff)
@@ -41,5 +41,7 @@ void main()
         discard;
     }
 
-    lightDistance = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
+    float D = length(fragPosition - Constants.Scene.ShadowedPointLights.lights[Constants.LightIndex].position);
+
+    lightDistance = D + fwidth(D);
 }

@@ -17,7 +17,7 @@
 #ifndef DESCRIPTOR_ALLOCATOR_H
 #define DESCRIPTOR_ALLOCATOR_H
 
-#include <queue>
+#include <stack>
 
 #include "Util/Types.h"
 
@@ -41,8 +41,9 @@ namespace Vk
     private:
         u32 m_maxDescriptorCount = 0;
 
-        Vk::DescriptorID             m_currentID = 0;
-        std::queue<Vk::DescriptorID> m_freeIDs   = {};
+        Vk::DescriptorID m_currentID = 0;
+
+        std::stack<Vk::DescriptorID, std::vector<Vk::DescriptorID>> m_freeIDs = {};
     };
 }
 

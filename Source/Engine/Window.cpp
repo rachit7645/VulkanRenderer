@@ -23,15 +23,7 @@ namespace Engine
 {
     Window::Window()
     {
-        Logger::Debug
-        (
-            "Initializing SDL3! [Version = {}.{}.{}]\n",
-            SDL_MAJOR_VERSION,
-            SDL_MINOR_VERSION,
-            SDL_MICRO_VERSION
-        );
-
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD))
         {
             Logger::Error("SDL_Init Failed: {}\n", SDL_GetError());
         }
@@ -59,13 +51,24 @@ namespace Engine
             Logger::Error("SDL_SetWindowRelativeMouseMode Failed: {}\n", SDL_GetError());
         }
 
-        inputs = Inputs(true);
+        if (!SDL_SetWindowFullscreen(handle, m_isFullscreen))
+        {
+            Logger::Error("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
+        }
+    }
+
+    void Window::ToggleFullScreen()
+    {
+        m_isFullscreen = !m_isFullscreen;
+
+        if (!SDL_SetWindowFullscreen(handle, m_isFullscreen))
+        {
+            Logger::Warning("SDL_SetWindowFullscreen Failed: {}\n", SDL_GetError());
+        }
     }
 
     void Window::Destroy()
     {
-        inputs.Destroy();
-
         SDL_DestroyWindow(handle);
         SDL_Quit();
     }

@@ -69,7 +69,7 @@ namespace Vk
 
         [[nodiscard]] PipelineConfig& SetDynamicStates(const std::span<const VkDynamicState> dynamicStates);
 
-        [[nodiscard]] PipelineConfig& SetIAState(VkPrimitiveTopology topology);
+        [[nodiscard]] PipelineConfig& SetInputAssemblyState(VkPrimitiveTopology topology);
 
         [[nodiscard]] PipelineConfig& SetRasterizerState
         (
@@ -79,7 +79,7 @@ namespace Vk
             VkPolygonMode polygonMode
         );
 
-        [[nodiscard]] PipelineConfig& SetDepthStencilState
+        [[nodiscard]] PipelineConfig& SetDepthState
         (
             VkBool32 depthTestEnable,
             VkBool32 depthWriteEnable,
@@ -103,7 +103,7 @@ namespace Vk
         [[nodiscard]] PipelineConfig& AddPushConstant(VkShaderStageFlags stages, u32 offset, u32 size);
         [[nodiscard]] PipelineConfig& AddDescriptorLayout(VkDescriptorSetLayout layout);
 
-        std::span<const PipelineShader> GetShaders() const;
+        [[nodiscard]] std::span<const PipelineShader> GetShaders() const;
 
         void Destroy(VkDevice device);
     private:
@@ -136,8 +136,8 @@ namespace Vk
         std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendStates = {};
         VkPipelineColorBlendStateCreateInfo              m_colorBlendInfo   = {};
 
-        std::vector<VkPushConstantRange>   m_pushConstantRanges = {};
-        std::vector<VkDescriptorSetLayout> m_descriptorLayouts  = {};
+        VkPushConstantRange   m_pushConstantRange = {};
+        VkDescriptorSetLayout m_descriptorLayout  = {};
     };
 }
 

@@ -28,13 +28,15 @@ namespace Engine
     public:
         Window();
 
+        void ToggleFullScreen();
+
         void Destroy();
 
         SDL_Window* handle = nullptr;
 
-        Inputs inputs;
-
         glm::ivec2 size = {1600, 900};
+    private:
+        bool m_isFullscreen = false;
     };
 }
 

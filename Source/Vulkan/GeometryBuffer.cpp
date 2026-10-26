@@ -16,7 +16,6 @@
 
 #include "GeometryBuffer.h"
 
-#include "Util/Log.h"
 #include "DebugUtils.h"
 #include "Models/Model.h"
 #include "GPU/Vertex.h"
@@ -25,24 +24,18 @@
 namespace Vk
 {
     GeometryBuffer::GeometryBuffer(const Vk::Context& context, Vk::StagingPool& stagingPool)
-        : indexBuffer(context.extensions),
-          positionBuffer(context.extensions),
-          uvBuffer(context.extensions),
-          vertexBuffer(context.extensions)
     {
         cubeBuffer = Vk::Buffer
         (
+            context.device,
             context.allocator,
             36 * sizeof(GPU::Position),
             0,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
-
-        cubeBuffer.GetDeviceAddress(context.device);
 
         SetupCubeUpload(context.device, context.allocator, stagingPool);
 
@@ -57,72 +50,44 @@ namespace Vk
     void GeometryBuffer::Update
     (
         const Vk::CommandBuffer& cmdBuffer,
-        VkDevice device,
-        VmaAllocator allocator,
+        const Vk::Context& context,
         Vk::StagingPool& stagingPool,
-        Util::DeletionQueue& deletionQueue
+        Scratch::Allocator& scratchAllocator,
+        Engine::DeletionQueue& deletionQueue
     )
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         if (!HasPendingUploads())
         {
             return;
         }
 
-        Vk::BeginLabel(cmdBuffer, "Geometry Transfer", {0.9882f, 0.7294f, 0.0118f, 1.0f});
+        Vk::BeginLabel(cmdBuffer, "GeometryBuffer::Update", {0.9882f, 0.7294f, 0.0118f, 1.0f});
 
-        Vk::BeginLabel(cmdBuffer, "Index Transfer", {0.8901f, 0.0549f, 0.3607f, 1.0f});
-
-        indexBuffer.FlushUploads
+        indexBuffer.Update
         (
             cmdBuffer,
-            device,
-            allocator,
+            context.device,
+            context.allocator,
+            scratchAllocator,
             deletionQueue
         );
 
-        Vk::EndLabel(cmdBuffer);
-
-        Vk::BeginLabel(cmdBuffer, "Position Transfer", {0.4039f, 0.0509f, 0.5215f, 1.0f});
-
-        positionBuffer.FlushUploads
+        vertexBuffer.Update
         (
             cmdBuffer,
-            device,
-            allocator,
+            context.device,
+            context.allocator,
+            scratchAllocator,
             deletionQueue
         );
-
-        Vk::EndLabel(cmdBuffer);
-
-        Vk::BeginLabel(cmdBuffer, "UV Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
-
-        uvBuffer.FlushUploads
-        (
-            cmdBuffer,
-            device,
-            allocator,
-            deletionQueue
-        );
-
-        Vk::EndLabel(cmdBuffer);
-
-        Vk::BeginLabel(cmdBuffer, "Vertex Transfer", {0.6117f, 0.0549f, 0.8901f, 1.0f});
-
-        vertexBuffer.FlushUploads
-        (
-            cmdBuffer,
-            device,
-            allocator,
-            deletionQueue
-        );
-
-        Vk::EndLabel(cmdBuffer);
 
         if (m_pendingCubeUpload.has_value())
         {
             Vk::BeginLabel(cmdBuffer, "Cube Transfer", {0.5117f, 0.0749f, 0.3901f, 1.0f});
-
-            constexpr VkDeviceSize VERTICES_SIZE = 36 * 3 * sizeof(f32);
 
             const VkBufferCopy2 copyRegion =
             {
@@ -156,38 +121,33 @@ namespace Vk
                     .srcQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamily = VK_QUEUE_FAMILY_IGNORED,
                     .offset         = 0,
-                    .size           = VERTICES_SIZE
+                    .size           = m_pendingCubeUpload->memoryBlock.size
                 }
             );
+
+            deletionQueue.Push([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
+            {
+                stagingPool.Free(stagingMemoryBlock);
+            });
+
+            m_pendingCubeUpload = std::nullopt;
 
             Vk::EndLabel(cmdBuffer);
         }
 
         Vk::EndLabel(cmdBuffer);
 
-        Vk::SetDebugName(device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer");
-        Vk::SetDebugName(device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
-        Vk::SetDebugName(device, GetUVBuffer().handle,       "GeometryBuffer/UVBuffer");
-        Vk::SetDebugName(device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
-
-        if (m_pendingCubeUpload.has_value())
-        {
-            deletionQueue.PushDeletor([&stagingPool, stagingMemoryBlock = m_pendingCubeUpload.value()] () mutable
-            {
-                stagingPool.Free(stagingMemoryBlock);
-            });
-
-            m_pendingCubeUpload = std::nullopt;
-        }
+        Vk::SetDebugName(context.device, GetIndexBuffer().handle,    "GeometryBuffer/IndexBuffer");
+        Vk::SetDebugName(context.device, GetPositionBuffer().handle, "GeometryBuffer/PositionBuffer");
+        Vk::SetDebugName(context.device, GetUVBuffer().handle,       "GeometryBuffer/UVBuffer");
+        Vk::SetDebugName(context.device, GetVertexBuffer().handle,   "GeometryBuffer/VertexBuffer");
     }
 
-    void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Util::DeletionQueue& deletionQueue)
+    void GeometryBuffer::Free(const GPU::SurfaceInfo& info, Engine::DeletionQueue& deletionQueue)
     {
-        deletionQueue.PushDeletor([this, info] ()
+        deletionQueue.Push([this, info] ()
         {
             indexBuffer.Free(info.indexInfo);
-            positionBuffer.Free(info.positionInfo);
-            uvBuffer.Free(info.uvInfo);
             vertexBuffer.Free(info.vertexInfo);
         });
     }
@@ -252,95 +212,48 @@ namespace Vk
         std::memcpy(m_pendingCubeUpload->hostAddress, CUBE_VERTICES.data(), VERTICES_SIZE);
     }
 
-    void GeometryBuffer::ImGuiDisplay() const
+    void GeometryBuffer::ImGuiDisplay(Scratch::Allocator& scratchAllocator)
     {
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Geometry Buffer"))
-            {
-                ImGui::Text("Buffer Name     | Count  | Used/Available/Allocated");
-                ImGui::Separator();
-
-                ImGui::Text
-                (
-                    "Index Buffer    | %u | %llu/%llu/%llu",
-                    indexBuffer.count,
-                    indexBuffer.count * sizeof(GPU::Index),
-                    GetIndexBuffer().size - (indexBuffer.count * sizeof(GPU::Index)),
-                    GetIndexBuffer().size
-                );
-
-                ImGui::Text
-                (
-                    "Position Buffer | %u | %llu/%llu/%llu",
-                    positionBuffer.count,
-                    positionBuffer.count * sizeof(GPU::Position),
-                    GetPositionBuffer().size - (positionBuffer.count * sizeof(GPU::Position)),
-                    GetPositionBuffer().size
-                );
-
-                ImGui::Text
-                (
-                    "UV Buffer       | %u | %llu/%llu/%llu",
-                    uvBuffer.count,
-                    uvBuffer.count * sizeof(GPU::UV),
-                    GetUVBuffer().size - (uvBuffer.count * sizeof(GPU::UV)),
-                    GetUVBuffer().size
-                );
-
-                ImGui::Text
-                (
-                    "Vertex Buffer   | %u | %llu/%llu/%llu",
-                    vertexBuffer.count,
-                    vertexBuffer.count * sizeof(GPU::Vertex),
-                    GetVertexBuffer().size - (vertexBuffer.count * sizeof(GPU::Vertex)),
-                    GetVertexBuffer().size
-                );
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMainMenuBar();
-        }
+        indexBuffer.ImGuiDisplay(scratchAllocator);
+        vertexBuffer.ImGuiDisplay(scratchAllocator);
     }
 
-    bool GeometryBuffer::HasPendingUploads() const
+    bool GeometryBuffer::HasPendingUploads()
     {
-        return indexBuffer.HasPendingUploads() || positionBuffer.HasPendingUploads() ||
-               uvBuffer.HasPendingUploads() || vertexBuffer.HasPendingUploads() ||
+        return indexBuffer.HasPendingUploads() || vertexBuffer.HasPendingUploads() ||
                m_pendingCubeUpload.has_value();
     }
 
     const Vk::Buffer& GeometryBuffer::GetIndexBuffer() const
     {
-        return indexBuffer.GetBuffer();
+        return indexBuffer.buffer;
     }
 
     const Vk::Buffer& GeometryBuffer::GetPositionBuffer() const
     {
-        return positionBuffer.GetBuffer();
+        return vertexBuffer.positionBuffer;
     }
 
     const Vk::Buffer& GeometryBuffer::GetUVBuffer() const
     {
-        return uvBuffer.GetBuffer();
+        return vertexBuffer.uvBuffer;
     }
 
     const Vk::Buffer& GeometryBuffer::GetVertexBuffer() const
     {
-        return vertexBuffer.GetBuffer();
+        return vertexBuffer.normalAndTangentBuffer;
     }
 
-    void GeometryBuffer::Destroy(VmaAllocator allocator)
+    void GeometryBuffer::Destroy(VmaAllocator allocator, Vk::StagingPool& stagingPool)
     {
         indexBuffer.Destroy(allocator);
-        positionBuffer.Destroy(allocator);
-        uvBuffer.Destroy(allocator);
         vertexBuffer.Destroy(allocator);
         cubeBuffer.Destroy(allocator);
 
         if (m_pendingCubeUpload.has_value())
         {
+            stagingPool.Free(m_pendingCubeUpload.value());
+
             m_pendingCubeUpload = std::nullopt;
         }
     }

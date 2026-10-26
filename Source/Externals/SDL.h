@@ -20,4 +20,11 @@
 #include "sdl/include/SDL3/SDL.h"
 #include "sdl/include/SDL3/SDL_vulkan.h"
 
+namespace SDL
+{
+    void SetHint(const char* name, const char* value);
+
+    std::span<const char* const> GetInstanceExtensions();
+}
+
 #endif

@@ -21,12 +21,10 @@
 
 namespace Util
 {
-    // Aliases
     using TimeClock = std::chrono::system_clock;
 
     std::string GetTime()
     {
-        // FIXME: why does this also print ms and us now
         return fmt::format("{:%T}", TimeClock::now());
     }
 }

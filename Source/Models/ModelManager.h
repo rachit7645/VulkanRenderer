@@ -18,6 +18,7 @@
 #define MODEL_MANAGER_H
 
 #include "Model.h"
+#include "ModelID.h"
 #include "Vulkan/TextureManager.h"
 #include "Vulkan/GeometryBuffer.h"
 #include "Vulkan/CommandBufferAllocator.h"
@@ -26,57 +27,54 @@
 
 namespace Models
 {
-    using ModelID = u64;
-
     class ModelManager
     {
     public:
-        explicit ModelManager(const Vk::Context& context, Vk::StagingPool& stagingPool);
+        [[nodiscard]] Models::ModelID Load(const std::string_view path);
 
-        void Destroy(VkDevice device, VmaAllocator allocator);
+        void Free(Models::ModelID id);
 
-        [[nodiscard]] Models::ModelID AddModel
-        (
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view path
-        );
-
-        void DestroyModel
-        (
-            ModelID id,
-            VkDevice device,
-            VmaAllocator allocator,
-            Vk::MegaSet& megaSet,
-            Util::DeletionQueue& deletionQueue
-        );
-
-        [[nodiscard]] const Model& GetModel(Models::ModelID id) const;
+        [[nodiscard]] bool         IsModelLoaded(Models::ModelID id) const;
+        [[nodiscard]] const Model* TryGetModel  (Models::ModelID id) const;
+        [[nodiscard]] const Model& GetModel     (Models::ModelID id) const;
 
         void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
-            VkDevice device,
-            VmaAllocator allocator,
+            const Vk::Context& context,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            Scratch::Allocator& scratchAllocator,
+            tf::Executor& executor,
+            Engine::DeletionQueue& deletionQueue
         );
 
         void ImGuiDisplay();
-
-        Vk::GeometryBuffer geometryBuffer;
-        Vk::TextureManager textureManager;
     private:
         struct ModelInfo
         {
-            Models::Model model;
+            Models::Model model          = {};
             u64           referenceCount = 0;
         };
 
-        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelInfo> m_modelMap;
+        struct ModelLoadInfo
+        {
+            std::string path;
+            u64         referenceCount = 0;
+        };
+
+        struct LoadedModel
+        {
+            Models::ModelID         id        = {};
+            ModelManager::ModelInfo modelInfo = {};
+        };
+
+        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelInfo>     m_loadedModels;
+        ankerl::unordered_dense::map<Models::ModelID, ModelManager::ModelLoadInfo> m_pendingModels;
+
+        std::vector<Models::ModelID> m_requestedModelDeletions;
     };
 }
 

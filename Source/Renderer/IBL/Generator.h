@@ -18,10 +18,13 @@
 #define IBL_PASS_H
 
 #include "IBLMaps.h"
-#include "Models/ModelManager.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Engine/Cache.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/FormatHelper.h"
+#include "Vulkan/GeometryBuffer.h"
+#include "Vulkan/ImageDownloader.h"
+#include "Vulkan/TextureManager.h"
 
 namespace Renderer::IBL
 {
@@ -37,31 +40,63 @@ namespace Renderer::IBL
             Vk::PipelineManager& pipelineManager
         );
 
-        IBL::IBLMaps Generate
+        void Update
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
-            Models::ModelManager& modelManager,
+            const Objects::Samplers& samplers,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view hdrMapAssetPath
+            Vk::ImageDownloader& imageDownloader,
+            tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
+
+        [[nodiscard]] IBL::IBLID GenerateIBL(const std::string_view hdrMapAssetPath);
+
+        void DestroyIBL(IBL::IBLID id);
+
+        IBL::IBLMaps GetIBLMaps(IBL::IBLID id);
 
         void Destroy(VmaAllocator allocator);
     private:
+        struct LoadedIBLMaps
+        {
+            IBL::IBLID   id      = 0;
+            IBL::IBLMaps iblMaps = {};
+        };
+
+        IBL::IBLMaps LoadIBLMaps
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Vk::Context& context,
+            const Objects::Samplers& samplers,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
+            Vk::MegaSet& megaSet,
+            Vk::StagingPool& stagingPool,
+            Vk::ImageDownloader& imageDownloader,
+            tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
+        );
+
         [[nodiscard]] Vk::TextureID LoadHDRMap
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::Context& context,
-            Models::ModelManager& modelManager,
+            Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Util::DeletionQueue& deletionQueue,
-            const std::string_view hdrMapAssetPath
+            tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateSkybox
@@ -69,12 +104,13 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
-            Models::ModelManager& modelManager,
+            const Objects::Samplers& samplers,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID hdrMapID,
-            Util::DeletionQueue& deletionQueue
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
         [[nodiscard]] Vk::TextureID GenerateIrradianceMap
@@ -82,9 +118,9 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
-            Models::ModelManager& modelManager,
+            const Objects::Samplers& samplers,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID
         );
@@ -94,27 +130,47 @@ namespace Renderer::IBL
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
-            const Vk::FormatHelper& formatHelper,
-            const Objects::GlobalSamplers& samplers,
-            Models::ModelManager& modelManager,
+            const Objects::Samplers& samplers,
+            const Vk::GeometryBuffer& geometryBuffer,
+            Vk::TextureManager& textureManager,
             Vk::MegaSet& megaSet,
             Vk::TextureID skyboxID,
-            Util::DeletionQueue& deletionQueue
+            Engine::DeletionQueue& deletionQueue
         );
 
-        [[nodiscard]] Vk::TextureID GenerateBRDFLUT
+        [[nodiscard]] Vk::TextureID ShrinkSkybox
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
+            Vk::TextureManager& textureManager,
+            Vk::MegaSet& megaSet,
+            Vk::TextureID skyboxID,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
+        );
+
+        [[nodiscard]] Vk::TextureID GenerateBRDFLookupTable
         (
             const Vk::CommandBuffer& cmdBuffer,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Context& context,
             Vk::TextureManager& textureManager,
-            Vk::MegaSet& megaSet
+            Vk::StagingPool& stagingPool,
+            Vk::MegaSet& megaSet,
+            Vk::ImageDownloader& imageDownloader,
+            tf::Executor& executor,
+            Engine::DeletionQueue& deletionQueue
         );
 
-        Vk::Buffer m_matrixBuffer;
+        Vk::Buffer m_matrixBuffer = {};
 
-        // Cache BRDF LUT
+        std::optional<std::string> m_pathToLoad = std::nullopt;
+
+        std::optional<Generator::LoadedIBLMaps> m_loadedIBLMaps = std::nullopt;
+
         std::optional<Vk::TextureID> m_brdfLutID = std::nullopt;
+
+        std::optional<IBL::IBLMaps> m_mapsToDestroy = std::nullopt;
     };
 }
 

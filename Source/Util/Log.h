@@ -19,11 +19,9 @@
 
 #include <string_view>
 #include <source_location>
-#include <cstdlib>
+#include <stacktrace>
 
-#include "Time.h"
 #include "Types.h"
-#include "Files.h"
 #include "Unused.h"
 #include "Externals/FMT.h"
 
@@ -31,56 +29,25 @@ namespace Logger
 {
     namespace Detail
     {
-        template <typename... Args>
         void Log
         (
-            FILE* file,
             const fmt::color& fgColor,
             const std::string_view type,
-            const std::source_location location,
+            const std::source_location& location,
             const std::string_view format,
-            Args&&... args
-        )
-        {
-            fmt::print
-            (
-                file,
-                fmt::fg(fgColor),
-                fmt::runtime(std::string("[{}] [{}] [{}:{}] ") + format.data()),
-                type,
-                Util::GetTime(),
-                Util::Files::GetName(location.file_name()),
-                location.line(),
-                std::forward<Args>(args)...
-            );
-        }
+            const fmt::format_args args
+        );
 
-        template <s32 ErrorCode = EXIT_FAILURE, typename... Args>
         [[noreturn]] void LogAndExit
         (
+            const s32 errorCode,
             const fmt::color& fgColor,
             const std::string_view type,
-            const std::source_location location,
+            const std::source_location& location,
+            const std::stacktrace& stacktrace,
             const std::string_view format,
-            Args&&... args
-        )
-        {
-            Log
-            (
-                stderr,
-                fgColor,
-                type,
-                location,
-                format,
-                std::forward<Args>(args)...
-            );
-
-            #ifdef ENGINE_DEBUG
-            while (true) {}
-            #else
-            std::exit(ErrorCode);
-            #endif
-        }
+            const fmt::format_args args
+        );
     }
 
     template <typename... Args>
@@ -90,17 +57,16 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-			const std::source_location location = std::source_location::current()
+			const std::source_location& location = std::source_location::current()
         )
         {
             Detail::Log
             (
-                stdout,
                 fmt::color::forest_green,
                 "INFO",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -112,17 +78,16 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-			const std::source_location location = std::source_location::current()
+			const std::source_location& location = std::source_location::current()
         )
         {
             Detail::Log
             (
-                stderr,
                 fmt::color::yellow,
                 "WARNING",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -134,18 +99,17 @@ namespace Logger
         (
             ENGINE_UNUSED const std::string_view format,
             ENGINE_UNUSED Args&&... args,
-            ENGINE_UNUSED const std::source_location location = std::source_location::current()
+            ENGINE_UNUSED const std::source_location& location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG
             Detail::Log
             (
-                stderr,
                 fmt::color::cyan,
                 "DEBUG",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
             #endif
         }
@@ -158,18 +122,17 @@ namespace Logger
         (
             ENGINE_UNUSED const std::string_view format,
             ENGINE_UNUSED Args&&... args,
-            ENGINE_UNUSED const std::source_location location = std::source_location::current()
+            ENGINE_UNUSED const std::source_location& location = std::source_location::current()
         )
         {
             #ifdef ENGINE_DEBUG
             Detail::Log
             (
-                stderr,
                 fmt::color::orange,
                 "VULKAN",
                 location,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
             #endif
         }
@@ -182,16 +145,21 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-			const std::source_location location = std::source_location::current()
+			const std::source_location& location = std::source_location::current(),
+			const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
-            Detail::LogAndExit<-1>
+            constexpr s32 ERROR_CODE = -1;
+
+            Detail::LogAndExit
             (
+                ERROR_CODE,
                 fmt::color::red,
                 "ERROR",
                 location,
+                stacktrace,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -203,16 +171,47 @@ namespace Logger
         (
             const std::string_view format,
             Args&&... args,
-            const std::source_location location = std::source_location::current()
+            const std::source_location& location = std::source_location::current(),
+            const std::stacktrace& stacktrace = std::stacktrace::current()
         )
         {
-            Detail::LogAndExit<-1>
+            constexpr s32 ERROR_CODE = -2;
+
+            Detail::LogAndExit
             (
+                ERROR_CODE,
                 fmt::color::orange_red,
                 "VKERROR",
                 location,
+                stacktrace,
                 format,
-                std::forward<Args>(args)...
+                fmt::make_format_args(args...)
+            );
+        }
+    };
+
+    template <typename... Args>
+    struct Assert
+    {
+        [[noreturn]] explicit Assert
+        (
+            const std::string_view format,
+            Args&&... args,
+            const std::source_location& location = std::source_location::current(),
+            const std::stacktrace& stacktrace = std::stacktrace::current()
+        )
+        {
+            constexpr s32 ERROR_CODE = -3;
+
+            Detail::LogAndExit
+            (
+                ERROR_CODE,
+                fmt::color::dark_red,
+                "ASSERT",
+                location,
+                stacktrace,
+                format,
+                fmt::make_format_args(args...)
             );
         }
     };
@@ -230,6 +229,8 @@ namespace Logger
     Error(std::string_view, Args&&...) -> Error<Args...>;
     template <typename... Args>
     VulkanError(std::string_view, Args&&...) -> VulkanError<Args...>;
+    template <typename... Args>
+    Assert(std::string_view, Args&&...) -> Assert<Args...>;
 }
 
 #endif

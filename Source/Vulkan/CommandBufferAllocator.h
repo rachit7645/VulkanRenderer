@@ -18,7 +18,7 @@
 #define COMMAND_BUFFER_ALLOCATOR_H
 
 #include <array>
-#include <queue>
+#include <stack>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -52,8 +52,8 @@ namespace Vk
         VkCommandPool                                   m_globalCommandPool = VK_NULL_HANDLE;
         std::array<VkCommandPool, Vk::FRAMES_IN_FLIGHT> m_commandPools      = {};
 
-        std::vector<Vk::CommandBuffer> m_allocatedGlobalCommandBuffers = {};
-        std::queue<Vk::CommandBuffer>  m_freedGlobalCommandBuffers     = {};
+        std::vector<Vk::CommandBuffer>                                m_allocatedGlobalCommandBuffers = {};
+        std::stack<Vk::CommandBuffer, std::vector<Vk::CommandBuffer>> m_freedGlobalCommandBuffers     = {};
 
         std::array<std::vector<CommandBufferState>, Vk::FRAMES_IN_FLIGHT> m_allocatedCommandBuffers = {};
     };

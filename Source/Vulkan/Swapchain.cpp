@@ -16,8 +16,6 @@
 
 #include "Swapchain.h"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #include "BarrierWriter.h"
 #include "DebugUtils.h"
 #include "ImmediateSubmit.h"
@@ -26,33 +24,42 @@
 
 namespace Vk
 {
-    Swapchain::Swapchain(const glm::ivec2& size, const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
+    Swapchain::Swapchain
+    (
+        const glm::ivec2& size,
+        const Vk::Context& context,
+        Scratch::Allocator& allocator,
+        tf::Executor& executor
+    )
     {
         if (!IsSurfaceValid(size, context))
         {
             Logger::Error("{}\n", "Invalid surface!");
         }
 
-        CreateSwapChain(context, cmdBufferAllocator);
+        CreateSwapChain(context, allocator, executor);
         CreateStaticSyncObjects(context.device);
     }
 
     bool Swapchain::IsSurfaceValid(const glm::ivec2& size, const Vk::Context& context)
     {
         m_swapChainInfo = SwapchainInfo(context.physicalDevice, context.surface);
-        extent          = ChooseSwapExtent(size);
+        extent          = ChooseSwapchainExtent(size);
 
         return extent.width != 0 && extent.height != 0;
     }
 
-    void Swapchain::RecreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
+    void Swapchain::RecreateSwapChain(const Vk::Context& context, Scratch::Allocator& allocator, tf::Executor& executor)
     {
-        DestroySwapchain(context.device);
-        CreateSwapChain(context, cmdBufferAllocator);
+        CreateSwapChain(context, allocator, executor);
     }
 
     VkResult Swapchain::Present(VkDevice device, VkQueue queue)
     {
+        #ifdef ENGINE_PROFILE
+        ZoneScoped;
+        #endif
+
         Vk::CheckResult(vkWaitForFences(
             device,
             1,
@@ -69,9 +76,9 @@ namespace Vk
             "Unable to reset fence!"
         );
 
-        const VkSwapchainPresentFenceInfoEXT fenceInfo =
+        const VkSwapchainPresentFenceInfoKHR fenceInfo =
         {
-            .sType          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT,
+            .sType          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_KHR,
             .pNext          = nullptr,
             .swapchainCount = 1,
             .pFences        = &presentFences[imageIndex]
@@ -113,24 +120,25 @@ namespace Vk
         );
     }
 
-    void Swapchain::CreateSwapChain(const Vk::Context& context, Vk::CommandBufferAllocator& cmdBufferAllocator)
+    void Swapchain::CreateSwapChain(const Vk::Context& context, Scratch::Allocator& allocator, tf::Executor& executor)
     {
-        const VkSurfaceFormat2KHR surfaceFormat = ChooseSurfaceFormat();
-        const VkPresentModeKHR    presentMode   = ChoosePresentationMode();
-              u32                 imageCount    = GetImageCount();
+        surfaceFormat = ChooseSurfaceFormat();
+        presentMode   = ChoosePresentationMode();
 
-        constexpr VkSwapchainPresentScalingCreateInfoEXT presentScalingCreateInfo =
+        u32 imageCount = GetImageCount();
+
+        constexpr VkSwapchainPresentScalingCreateInfoKHR presentScalingCreateInfo =
         {
-            .sType           = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
+            .sType           = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR,
             .pNext           = nullptr,
-            .scalingBehavior = VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT,
-            .presentGravityX = VK_PRESENT_GRAVITY_MIN_BIT_EXT,
-            .presentGravityY = VK_PRESENT_GRAVITY_MIN_BIT_EXT
+            .scalingBehavior = VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_KHR,
+            .presentGravityX = VK_PRESENT_GRAVITY_MIN_BIT_KHR,
+            .presentGravityY = VK_PRESENT_GRAVITY_MIN_BIT_KHR
         };
 
-        const VkSwapchainPresentModesCreateInfoEXT presentModesCreateInfo =
+        const VkSwapchainPresentModesCreateInfoKHR presentModesCreateInfo =
         {
-            .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
+            .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_KHR,
             .pNext            = &presentScalingCreateInfo,
             .presentModeCount = 1,
             .pPresentModes    = &presentMode
@@ -143,8 +151,8 @@ namespace Vk
             .flags                 = 0,
             .surface               = context.surface,
             .minImageCount         = imageCount,
-            .imageFormat           = surfaceFormat.surfaceFormat.format,
-            .imageColorSpace       = surfaceFormat.surfaceFormat.colorSpace,
+            .imageFormat           = surfaceFormat.format,
+            .imageColorSpace       = surfaceFormat.colorSpace,
             .imageExtent           = extent,
             .imageArrayLayers      = 1,
             .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -170,7 +178,41 @@ namespace Vk
 
         if (createInfo.oldSwapchain != VK_NULL_HANDLE)
         {
-            vkDestroySwapchainKHR(context.device, createInfo.oldSwapchain, nullptr);
+            executor.silent_async(
+            [
+                device = context.device,
+                swapchain = createInfo.oldSwapchain,
+                presentFences = this->presentFences,
+                imageViews = this->imageViews,
+                renderFinishedSemaphores = this->renderFinishedSemaphores
+            ]
+            {
+                Vk::CheckResult(vkWaitForFences(
+                    device,
+                    presentFences.size(),
+                    presentFences.data(),
+                    VK_TRUE,
+                    std::numeric_limits<u64>::max()),
+                    "Failed to wait for fences!"
+                );
+
+                for (auto& imageView : imageViews)
+                {
+                    imageView.Destroy(device);
+                }
+
+                for (const VkFence fence : presentFences)
+                {
+                    vkDestroyFence(device, fence, nullptr);
+                }
+
+                for (const VkSemaphore semaphore : renderFinishedSemaphores)
+                {
+                    vkDestroySemaphore(device, semaphore, nullptr);
+                }
+
+                vkDestroySwapchainKHR(device, swapchain, nullptr);
+            });
         }
 
         Vk::CheckResult(vkGetSwapchainImagesKHR(
@@ -186,37 +228,40 @@ namespace Vk
             Logger::Error
             (
                 "Failed to get any swapchain images! [handle={}] [device={}]\n",
-                std::bit_cast<void*>(handle),
-                std::bit_cast<void*>(context.device)
+                reinterpret_cast<void*>(handle),
+                reinterpret_cast<void*>(context.device)
             );
         }
 
-        auto _images = std::vector<VkImage>(imageCount);
+        auto imageHandles = Scratch::CreateVector<VkImage>(allocator);
+
+        imageHandles.resize(imageCount);
 
         Vk::CheckResult(vkGetSwapchainImagesKHR(
             context.device,
             handle,
             &imageCount,
-            _images.data()),
+            imageHandles.data()),
             "Failed to get swapchain images!"
         );
 
-        imageFormat = surfaceFormat.surfaceFormat.format;
+        ClearSwapchainResources();
 
-        images.resize(_images.size());
-        imageViews.resize(_images.size());
+        images.resize(imageHandles.size());
+        imageViews.resize(imageHandles.size());
+        imageLayouts.resize(imageHandles.size());
 
-        for (usize i = 0; i < _images.size(); ++i)
+        for (usize i = 0; i < imageHandles.size(); ++i)
         {
             images[i] = Vk::Image
             (
-                _images[i],
+                imageHandles[i],
                 extent.width,
                 extent.height,
                 1,
                 1,
                 1,
-                imageFormat,
+                surfaceFormat.format,
                 VK_IMAGE_ASPECT_COLOR_BIT
             );
 
@@ -225,7 +270,7 @@ namespace Vk
                 context.device,
                 images[i],
                 VK_IMAGE_VIEW_TYPE_2D,
-                {
+                VkImageSubresourceRange{
                     .aspectMask     = images[i].aspect,
                     .baseMipLevel   = 0,
                     .levelCount     = images[i].mipLevels,
@@ -234,45 +279,11 @@ namespace Vk
                 }
             );
 
+            imageLayouts[i] = VK_IMAGE_LAYOUT_UNDEFINED;
+
             Vk::SetDebugName(context.device, images[i].handle,     fmt::format("Swapchain/Image{}", i));
             Vk::SetDebugName(context.device, imageViews[i].handle, fmt::format("Swapchain/ImageView{}", i));
         }
-
-        // Transition for presentation
-        Vk::ImmediateSubmit
-        (
-            context.device,
-            context.graphicsQueue,
-            cmdBufferAllocator,
-            [&] (const Vk::CommandBuffer& cmdBuffer)
-            {
-                Vk::BarrierWriter barrierWriter = {};
-
-                for (const auto& image : images)
-                {
-                    barrierWriter.WriteImageBarrier
-                    (
-                        image,
-                        Vk::ImageBarrier{
-                            .srcStageMask    = VK_PIPELINE_STAGE_2_NONE,
-                            .srcAccessMask   = VK_ACCESS_2_NONE,
-                            .dstStageMask    = VK_PIPELINE_STAGE_2_NONE,
-                            .dstAccessMask   = VK_ACCESS_2_NONE,
-                            .oldLayout       = VK_IMAGE_LAYOUT_UNDEFINED,
-                            .newLayout       = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                            .srcQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                            .dstQueueFamily  = VK_QUEUE_FAMILY_IGNORED,
-                            .baseMipLevel    = 0,
-                            .levelCount      = image.mipLevels,
-                            .baseArrayLayer  = 0,
-                            .layerCount      = image.arrayLayers
-                        }
-                    );
-                }
-
-                barrierWriter.Execute(cmdBuffer);
-            }
-        );
 
         CreateSyncObjects(context.device);
     }
@@ -358,7 +369,7 @@ namespace Vk
         }
     }
 
-    VkSurfaceFormat2KHR Swapchain::ChooseSurfaceFormat() const
+    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat() const
     {
         const auto& formats = m_swapChainInfo.formats;
 
@@ -370,8 +381,8 @@ namespace Vk
             VK_FORMAT_B8G8R8A8_UNORM
         };
 
-        // Really, there's no way this is gonna happen lol
-        [[unlikely]] if (formats.empty())
+        // Really, there's no way this can happen
+        if (formats.empty()) [[unlikely]]
         {
             Logger::Error("{}\n", "No surface formats found!");
         }
@@ -381,19 +392,12 @@ namespace Vk
         {
             for (const auto& format2 : formats)
             {
-                const auto& surfaceFormat = format2.surfaceFormat;
+                const auto& currentSurfaceFormat = format2.surfaceFormat;
 
-                if (surfaceFormat.format == format &&
-                    surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                if (currentSurfaceFormat.format == format &&
+                    currentSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
                 {
-                    Logger::Debug
-                    (
-                        "Choosing surface format! [Format={}] [ColorSpace={}]\n",
-                        string_VkFormat(surfaceFormat.format),
-                        string_VkColorSpaceKHR(surfaceFormat.colorSpace)
-                    );
-
-                    return format2;
+                    return currentSurfaceFormat;
                 }
             }
         }
@@ -403,109 +407,58 @@ namespace Vk
         {
             if (format2.surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
             {
-                Logger::Debug
-                (
-                    "Choosing surface format! [Fallback #1] [Format={}] [ColorSpace={}]\n",
-                    string_VkFormat(format2.surfaceFormat.format),
-                    string_VkColorSpaceKHR(format2.surfaceFormat.colorSpace)
-                );
-
-                return format2;
+                return format2.surfaceFormat;
             }
         }
 
         // Fallback #2 -> Return first available format (probably won't work)
-        Logger::Debug
-        (
-            "Choosing surface format! [Fallback #2] [Format={}] [ColorSpace={}]\n",
-            string_VkFormat(formats[0].surfaceFormat.format),
-            string_VkColorSpaceKHR(formats[0].surfaceFormat.colorSpace)
-        );
-
-        return formats[0];
+        return formats[0].surfaceFormat;
     }
 
     VkPresentModeKHR Swapchain::ChoosePresentationMode() const
     {
         const auto& presentModes = m_swapChainInfo.presentModes;
 
-        // FIFO is guaranteed to be supported (Lame)
-        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        constexpr std::array PREFERRED_MODES = {VK_PRESENT_MODE_MAILBOX_KHR};
 
-        for (const auto availablePresentMode : presentModes)
+        // Really, there's no way this can happen
+        if (presentModes.empty()) [[unlikely]]
         {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            Logger::Error("{}\n", "No present modes found!");
+        }
+
+        for (const auto preferredPresentMode : PREFERRED_MODES)
+        {
+            for (const auto availablePresentMode : presentModes)
             {
-                presentMode = availablePresentMode;
-                break;
+                if (availablePresentMode == preferredPresentMode)
+                {
+                    return availablePresentMode;
+                }
             }
         }
 
-        Logger::Debug
-        (
-            "Choosing presentation mode! [PresentMode={}]\n",
-            string_VkPresentModeKHR(presentMode)
-        );
-
-        return presentMode;
+        // FIFO is guaranteed to be supported (Lame)
+        return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    void Swapchain::DestroySwapchain(VkDevice device)
+    VkExtent2D Swapchain::ChooseSwapchainExtent(const glm::uvec2& size) const
     {
-        Vk::CheckResult(vkWaitForFences(
-            device,
-            presentFences.size(),
-            presentFences.data(),
-            VK_TRUE,
-            std::numeric_limits<u64>::max()),
-            "Failed to wait for fences!"
-        );
-
-        for (auto& imageView : imageViews)
-        {
-            imageView.Destroy(device);
-        }
-
-        for (const auto fence : presentFences)
-        {
-            vkDestroyFence(device, fence, nullptr);
-        }
-
-        for (const auto semaphore : renderFinishedSemaphores)
-        {
-            vkDestroySemaphore(device, semaphore, nullptr);
-        }
-
-        images.clear();
-        imageViews.clear();
-    }
-
-    VkExtent2D Swapchain::ChooseSwapExtent(const glm::ivec2& size) const
-    {
-        const auto& capabilities = m_swapChainInfo.capabilities;
+        const auto& capabilities = m_swapChainInfo.capabilities.surfaceCapabilities;
 
         // Special Case: If current extent is not (0xFFFFFFFF, 0xFFFFFFFF), use surface size as swapchain extent
-        if (capabilities.surfaceCapabilities.currentExtent.width  != std::numeric_limits<u32>::max() &&
-            capabilities.surfaceCapabilities.currentExtent.height != std::numeric_limits<u32>::max())
+        if (capabilities.currentExtent.width  != std::numeric_limits<u32>::max() &&
+            capabilities.currentExtent.height != std::numeric_limits<u32>::max())
         {
-            Logger::Debug
-            (
-                "Choosing existing swap extent! [width={}] [height={}]\n",
-                capabilities.surfaceCapabilities.currentExtent.width,
-                capabilities.surfaceCapabilities.currentExtent.height
-            );
-
-            return capabilities.surfaceCapabilities.currentExtent;
+            return capabilities.currentExtent;
         }
 
-        const auto minSize = glm::ivec2(capabilities.surfaceCapabilities.minImageExtent.width, capabilities.surfaceCapabilities.minImageExtent.height);
-        const auto maxSize = glm::ivec2(capabilities.surfaceCapabilities.maxImageExtent.width, capabilities.surfaceCapabilities.maxImageExtent.height);
+        const auto minSize = glm::vk_cast(capabilities.minImageExtent);
+        const auto maxSize = glm::vk_cast(capabilities.maxImageExtent);
 
         const auto actualExtent = glm::clamp(size, minSize, maxSize);
 
-        Logger::Debug("Choosing swap extent! [X={}] [Y={}]\n", actualExtent.x, actualExtent.y);
-
-        return
+        return VkExtent2D
         {
             .width  = static_cast<u32>(actualExtent.x),
             .height = static_cast<u32>(actualExtent.y),
@@ -537,13 +490,51 @@ namespace Vk
         return imageCount;
     }
 
+    void Swapchain::DestroySwapchainResources(VkDevice device)
+    {
+        Vk::CheckResult(vkWaitForFences(
+            device,
+            presentFences.size(),
+            presentFences.data(),
+            VK_TRUE,
+            std::numeric_limits<u64>::max()),
+            "Failed to wait for fences!"
+        );
+
+        for (auto& imageView : imageViews)
+        {
+            imageView.Destroy(device);
+        }
+
+        for (const VkFence fence : presentFences)
+        {
+            vkDestroyFence(device, fence, nullptr);
+        }
+
+        for (const VkSemaphore semaphore : renderFinishedSemaphores)
+        {
+            vkDestroySemaphore(device, semaphore, nullptr);
+        }
+
+        ClearSwapchainResources();
+    }
+
+    void Swapchain::ClearSwapchainResources()
+    {
+        images.clear();
+        imageViews.clear();
+        imageLayouts.clear();
+        presentFences.clear();
+        renderFinishedSemaphores.clear();
+    }
+
     void Swapchain::Destroy(VkDevice device)
     {
-        DestroySwapchain(device);
+        DestroySwapchainResources(device);
 
         vkDestroySwapchainKHR(device, handle, nullptr);
 
-        for (const auto semaphore : imageAvailableSemaphores)
+        for (const VkSemaphore semaphore : imageAvailableSemaphores)
         {
             vkDestroySemaphore(device, semaphore, nullptr);
         }

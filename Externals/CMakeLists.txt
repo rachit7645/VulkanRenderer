@@ -19,15 +19,16 @@ project(Externals)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTOSupported OUTPUT LTOError)
 
-if (MSVC)
-    add_compile_options(/arch:AVX2)
-else()
-    add_compile_options(-mavx2 -mf16c)
-endif()
+# This is hacky but whatever
+add_compile_options(-w -mavx2 -mf16c -mpclmul -mbmi -mbmi2 -mlzcnt)
 
 # Install location
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 set(ENGINE_INSTALL_DIR   ${CMAKE_SOURCE_DIR}/Bin)
+
+# C23 is required
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # C++23 is required
 set(CMAKE_CXX_STANDARD 23)
@@ -40,7 +41,7 @@ function(engine_add_external directory)
     # Parse optional arguments
     set(options EXCLUDE_FROM_ALL ENABLE_LTO)
     set(oneValueArgs INSTALL_TARGET)
-    set(multiValueArgs "")
+    set(multiValueArgs COMPILE_OPTIONS)
     cmake_parse_arguments(PARSE_ARGV 1 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
     # Add subdirectory
@@ -50,20 +51,27 @@ function(engine_add_external directory)
         add_subdirectory(${directory})
     endif()
 
+    # Get target
+    if (ARG_INSTALL_TARGET)
+        # Get the actual target if it's an ALIAS
+        get_target_property(AliasedTarget ${ARG_INSTALL_TARGET} ALIASED_TARGET)
+
+        if (AliasedTarget)
+            set(ActualTarget ${AliasedTarget})
+        else()
+            set(ActualTarget ${ARG_INSTALL_TARGET})
+        endif()
+    endif()
+
     # Enable LTO
     if (ARG_ENABLE_LTO AND ARG_INSTALL_TARGET)
         if (LTOSupported)
-            # Get the actual target if it's an ALIAS
-            get_target_property(AliasedTarget ${ARG_INSTALL_TARGET} ALIASED_TARGET)
-
-            if (AliasedTarget)
-                set(ActualTarget ${AliasedTarget})
-            else()
-                set(ActualTarget ${ARG_INSTALL_TARGET})
-            endif()
-
             set_target_properties(${ActualTarget} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
+    endif()
+
+    if (ARG_COMPILE_OPTIONS AND ARG_INSTALL_TARGET)
+        target_compile_options(${ActualTarget} PRIVATE ${ARG_COMPILE_OPTIONS})
     endif()
 
     # Handle manual installation
@@ -95,37 +103,57 @@ set(GLM_ENABLE_SIMD_AVX2 ON CACHE BOOL "Enable AVX2" FORCE)
 
 # fmt Config
 set(FMT_INSTALL OFF CACHE BOOL "Disable fmt installation" FORCE)
+set(FMT_MODULE  OFF CACHE BOOL "Disable fmt modules"      FORCE)
 
 # fastgltf Config
-set(FASTGLTF_COMPILE_AS_CPP20 ON CACHE BOOL "Use C++20" FORCE)
+set(FASTGLTF_COMPILE_AS_CPP20 ON  CACHE BOOL "Use C++20"                     FORCE)
+set(FASTGLTF_ENABLE_INSTALL   OFF CACHE BOOL "Disable fastgltf installation" FORCE)
 
 # OpenEXR Config
-set(OPENEXR_INSTALL       OFF CACHE BOOL "Disable openexr installation"       FORCE)
-set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "Disable openexr tools installation" FORCE)
+set(OPENEXR_INSTALL        OFF CACHE BOOL "Disable openexr installation"       FORCE)
+set(OPENEXR_BUILD_TOOLS    OFF CACHE BOOL "Disable building openexr tools"     FORCE)
+set(OPENEXR_BUILD_EXAMPLES OFF CACHE BOOL "Disable building openexr examples"  FORCE)
+set(OPENEXR_INSTALL_TOOLS  OFF CACHE BOOL "Disable openexr tools installation" FORCE)
+
+# SIMD JSON Config
+set(SIMDJSON_EXCEPTIONS OFF CACHE BOOL "Disable SIMDJSON Exceptions" FORCE)
+
+# zstd Config
+set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "Disable building zstd programs"            FORCE)
+set(ZSTD_BUILD_SHARED   ON  CACHE BOOL "Build zstd as a shared library"            FORCE)
+set(ZSTD_BUILD_STATIC   OFF CACHE BOOL "Disable building zstd as a static library" FORCE)
+set(ZSTD_BUILD_TESTS    OFF CACHE BOOL "Disable building zstd tests"               FORCE)
 
 # External Libraries
-engine_add_external(vma                                                                          )
-engine_add_external(volk                                                                         )
-engine_add_external(unordered_dense                                                              )
-engine_add_external(glm                              ENABLE_LTO INSTALL_TARGET glm::glm          )
-engine_add_external(fmt                              ENABLE_LTO INSTALL_TARGET fmt::fmt          )
-engine_add_external(sdl             EXCLUDE_FROM_ALL            INSTALL_TARGET SDL3::SDL3-shared )
-engine_add_external(simdjson        EXCLUDE_FROM_ALL            INSTALL_TARGET simdjson::simdjson)
-engine_add_external(fastgltf        EXCLUDE_FROM_ALL            INSTALL_TARGET fastgltf::fastgltf)
-engine_add_external(openexr         EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR  )
+engine_add_external(vma)
+engine_add_external(volk)
+engine_add_external(unordered_dense)
+
+engine_add_external(glm ENABLE_LTO INSTALL_TARGET glm::glm)
+engine_add_external(fmt ENABLE_LTO INSTALL_TARGET fmt::fmt)
+
+engine_add_external(simdjson EXCLUDE_FROM_ALL INSTALL_TARGET simdjson::simdjson)
+engine_add_external(sdl      EXCLUDE_FROM_ALL INSTALL_TARGET SDL3::SDL3-shared )
+engine_add_external(fastgltf EXCLUDE_FROM_ALL INSTALL_TARGET fastgltf::fastgltf)
+
+engine_add_external(openexr          EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET OpenEXR::OpenEXR)
+engine_add_external(zstd/build/cmake EXCLUDE_FROM_ALL ENABLE_LTO INSTALL_TARGET libzstd_shared)
 
 # Vulkan Headers
 target_link_libraries(volk PRIVATE Vulkan::Headers)
 
+# ZSTD Export Symbols
+target_compile_definitions(libzstd_shared PRIVATE ZSTD_DLL_EXPORT=1)
+
 # Profile config
 if (CMAKE_BUILD_TYPE STREQUAL Profile)
     # Tracy Config
-    set(TRACY_ENABLE         ON CACHE BOOL "Enable Tracy"         FORCE)
-    set(TRACY_ON_DEMAND      ON CACHE BOOL "On-Demand Mode"       FORCE)
-    set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "Localhost Only Mode"  FORCE)
-    set(TRACY_CALLSTACK      ON CACHE BOOL "Enable Callstack"     FORCE)
+    set(TRACY_ENABLE         ON  CACHE BOOL "Enable Tracy"         FORCE)
+    set(TRACY_ON_DEMAND      ON  CACHE BOOL "On-Demand Mode"       FORCE)
+    set(TRACY_ONLY_LOCALHOST ON  CACHE BOOL "Localhost Only Mode"  FORCE)
+    set(TRACY_CALLSTACK      OFF CACHE BOOL "Enable Callstack"     FORCE)
 
-    # Add Tracy (Requires v0.11.1!)
+    # Add Tracy
     engine_add_external(tracy EXCLUDE_FROM_ALL INSTALL_TARGET TracyClient)
 endif()
 
@@ -137,7 +165,10 @@ add_library(DearImGui STATIC
 	imgui/imgui_widgets.cpp
 	imgui/backends/imgui_impl_sdl3.cpp
 	imgui/misc/cpp/imgui_stdlib.cpp
+    implot/implot.cpp
+    implot/implot_items.cpp
     # imgui/imgui_demo.cpp
+    # implot/implot_demo.cpp
 )
 
 # ImGui precompiled headers
@@ -148,37 +179,31 @@ target_precompile_headers(DearImGui PRIVATE
     imgui/imstb_rectpack.h
     imgui/imstb_truetype.h
     imgui/backends/imgui_impl_sdl3.h
+    implot/implot.h
+    implot/implot_internal.h
 )
 
-# SDL2 Includes
+# SDL3 Includes
 target_include_directories(DearImGui PRIVATE sdl/include/)
 # ImGUI Includes
-target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc)
+target_include_directories(DearImGui PUBLIC imgui/ imgui/backends imgui/misc implot/)
 # ImGui Defines
-target_compile_definitions(DearImGui PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
+target_compile_definitions(DearImGui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 IMGUI_DEFINE_MATH_OPERATORS=1 ImTextureID_Invalid=0xFFFFFFFFFFFFFFFFull)
 
 # Compiler options
-if (MSVC)
-    target_compile_options(DearImGui PRIVATE /w /O2)
+target_compile_options(DearImGui PRIVATE -w -O3)
+
+# Windows options
+if (WIN32)
     target_compile_definitions(DearImGui PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
-else()
-    target_compile_options(DearImGui PRIVATE -w -O3)
 endif()
 
 # Link libraries
 target_link_libraries(DearImGui SDL3::SDL3-shared)
 
-# Install Dear ImGui
-install(
-    TARGETS DearImGui
-    ARCHIVE DESTINATION ${ENGINE_INSTALL_DIR}
-    LIBRARY DESTINATION ${ENGINE_INSTALL_DIR}
-    RUNTIME DESTINATION ${ENGINE_INSTALL_DIR}
-)
-
-# DLSS SDK will only build on MSVC-Style Windows Compilers and Linux
+# On Windows, DLSS SDK will only build on Clang
 if (WIN32)
-    if (MSVC)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(DLSSAvailable ON)
     else()
         set(DLSSAvailable OFF)
@@ -204,7 +229,7 @@ if (DLSSAvailable)
         set(DLSS_DLL "${DLSS_ROOT}/lib/Windows_x86_64/rel/nvngx_dlss.dll")
         set(DLSS_LIB "${DLSS_ROOT}/lib/Windows_x86_64/x64/nvsdk_ngx_d.lib")
     else()
-        set(DLSS_DLL "${DLSS_ROOT}/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.5.3")
+        set(DLSS_DLL "${DLSS_ROOT}/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.9.1")
         set(DLSS_LIB "${DLSS_ROOT}/lib/Linux_x86_64/libnvsdk_ngx.a")
     endif()
 
@@ -220,3 +245,38 @@ if (DLSSAvailable)
     # Install DLSS
     install(IMPORTED_RUNTIME_ARTIFACTS DLSS)
 endif()
+
+# lz4 source files
+add_library(lz4 SHARED
+    lz4/lib/lz4.c
+    lz4/lib/lz4hc.c
+)
+
+# lz4 precompiled headers
+target_precompile_headers(lz4 PRIVATE
+    lz4/lib/lz4.h
+    lz4/lib/lz4hc.h
+)
+
+# Standard options
+target_compile_definitions(lz4 PRIVATE LZ4_DLL_EXPORT=1)
+
+# Compiler options
+target_compile_options(lz4 PRIVATE -w -O3)
+
+# Windows options
+if (WIN32)
+    target_compile_definitions(lz4 PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
+
+# LZ4 LTO
+if (LTOSupported)
+    set_target_properties(lz4 PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
+# Install
+install(
+    FILES $<TARGET_FILE:lz4>
+    DESTINATION ${ENGINE_INSTALL_DIR}
+    COMPONENT Runtime
+)

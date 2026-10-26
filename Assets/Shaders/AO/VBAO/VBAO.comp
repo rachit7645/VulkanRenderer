@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 - 2025 Rachit
+ * Copyright (c) 2023 - 2026 Rachit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,15 @@
 
 #version 460
 
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2    : enable
-#extension GL_EXT_scalar_block_layout  : enable
+#extension GL_GOOGLE_include_directive          : enable
+#extension GL_EXT_buffer_reference2             : enable
+#extension GL_EXT_scalar_block_layout           : enable
+#extension GL_EXT_samplerless_texture_functions : enable
 
 #include "Math.glsl"
 #include "Constants.glsl"
 #include "MegaSet.glsl"
-#include "Packing.glsl"
+#include "Encoding.glsl"
 #include "AO/VBAO/VBAO.h"
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -44,13 +45,13 @@ void main()
 {
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
 
-    vec2 viewportSize = vec2(textureSize(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex]), 0));
+    vec2 viewportSize = vec2(textureSize(Textures[Constants.PreFilterDepthIndex], 0));
     vec2 aspect       = viewportSize.yx / viewportSize.x;
     vec2 texelSize    = 1.0f / viewportSize;
     vec2 pixelCenter  = vec2(pixelCoord) + vec2(0.5f);
     vec2 uv           = pixelCenter * texelSize;
 
-    float depthMipLevels = float(textureQueryLevels(sampler2D(Textures[Constants.PreFilterDepthIndex], Samplers[Constants.PointSamplerIndex])));
+    float depthMipLevels = float(textureQueryLevels(Textures[Constants.PreFilterDepthIndex]));
 
     float depth  = CalculateNeighboringDepthDifferences(pixelCoord, viewportSize);
           depth += 0.00001f; // Add a small value to avoid depth precision issues
@@ -100,7 +101,7 @@ void main()
             vec2 sampleOffset = s * sampleMul;
             vec2 sampleUV     = uv - sampleOffset;
 
-            float sampleMipLevel = clamp(log2(length(sampleOffset * viewportSize)) - VBAO_DEFAULT_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, depthMipLevels - 1.0f);
+            float sampleMipLevel = clamp(log2(length(sampleOffset * viewportSize)) - VBAO_DEPTH_MIP_SAMPLING_OFFSET, 0.0f, depthMipLevels - 1.0f);
 
             vec3 samplePosition   = LoadAndReconstructViewSpacePosition(sampleUV, sampleMipLevel);
             vec3 sampleDifference = samplePosition - position;
@@ -137,7 +138,7 @@ void main()
 vec2 LoadNoise(ivec2 pixelCoord)
 {
     // Hilbert curve driving R2 (see https://www.shadertoy.com/view/3tB3z3)
-    uint index  = uint(texelFetch(usampler2D(UTextures[Constants.HilbertLUTIndex], Samplers[Constants.PointSamplerIndex]), pixelCoord % int(VBAO_HILBERT_WIDTH), 0).x);
+    uint index  = uint(texelFetch(UTextures[Constants.HilbertLUTIndex], pixelCoord % int(VBAO_HILBERT_WIDTH), 0).x);
          index += 288 * Constants.TemporalIndex;
 
     // R2 sequence - see http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
@@ -163,10 +164,12 @@ float CalculateNeighboringDepthDifferences(ivec2 pixelCoord, vec2 viewportSize)
     float slopeTopBottom = (edgeInfo.w - edgeInfo.z) * 0.5f;
     
     vec4 edgeInfoSlopeAdjusted = edgeInfo + vec4(slopeLeftRight, -slopeLeftRight, slopeTopBottom, -slopeTopBottom);
+
     edgeInfo = min(abs(edgeInfo), abs(edgeInfoSlopeAdjusted));
     
     float bias  = 0.25f;
-    float scale = depthCenter * 0.011f;
+    float scale = max(depthCenter * 0.011f, 1e-6f);
+
     edgeInfo = saturate((1.0f + bias) - edgeInfo / scale);
 
     imageStore(UImages[Constants.OutDepthDifferencesIndex], pixelCoord, uvec4(packUnorm4x8(edgeInfo), 0u, 0u, 0u));
@@ -178,7 +181,7 @@ vec3 LoadViewSpaceNormal(vec2 uv)
 {
     vec4 gNormal = texture(sampler2D(Textures[Constants.GNormalIndex], Samplers[Constants.PointSamplerIndex]), uv);
 
-    vec3 normal = UnpackNormal(gNormal.rg);
+    vec3 normal = UnpackNormalFromGBuffer(gNormal.rg);
          normal = mat3(Constants.Scene.currentMatrices.view) * normal;
          normal = normalize(normal);
 

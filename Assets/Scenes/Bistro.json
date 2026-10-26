@@ -8,22 +8,22 @@
         }
     ],
     "Sun": {
-        "Direction" : [0.19,  -0.97,   0.15 ],
-        "Color"     : [0.4784, 0.7372, 0.745],
-        "Intensity" : [15.0,   10.0,   10.0 ]
+        "Direction" : [0.19,  -0.97,  0.15 ],
+        "Color"     : [0.953,  0.884, 0.683],
+        "Intensity" : 12.0
     },
     "PointLights": [],
     "SpotLights" : [],
     "Camera" : {
         "FreeCamera" : {
-            "Position"    : [-10.19, 1.97, -0.73],
-            "Rotation"    : [ 5.16, -3.44,  0.0],
+            "Position"    : [-10.19, 1.97,  -0.73],
+            "Rotation"    : [ 2.86, -73.91,  0.0],
             "FOV"         : 80.0,
             "Speed"       : 15.0,
             "Sprint"      : 1.85,
-            "Sensitivity" : 100.0,
+            "Sensitivity" : 1.75,
             "Zoom"        : 45.0
         }
     },
-    "IBL" : "industrial_sunset_puresky_4k.exr"
+    "IBL" : "industrial_sunset_puresky_4k.ktx2"
 }

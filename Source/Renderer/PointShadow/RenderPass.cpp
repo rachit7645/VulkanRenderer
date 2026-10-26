@@ -40,39 +40,39 @@ namespace Renderer::PointShadow
 
         constexpr std::array COLOR_FORMATS = {VK_FORMAT_R32_SFLOAT};
         
-        pipelineManager.AddPipeline("PointShadow/Opaque", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::PointShadowOpaque, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
             .AttachShader("Shadows/PointShadow/Opaque.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Shadows/PointShadow/Opaque.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Opaque::Constants))
         );
 
-        pipelineManager.AddPipeline("PointShadow/AlphaMasked", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::PointShadowAlphaMasked, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, COLOR_FORMATS, formatHelper.depthFormat)
             .AttachShader("Shadows/PointShadow/AlphaMasked.vert", VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Shadows/PointShadow/AlphaMasked.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_POLYGON_MODE_FILL)
-            .SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
+            .SetDepthState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_GREATER)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AlphaMasked::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
             
         framebufferManager.AddFramebuffer
         (
             "PointShadowMap",
-            Vk::FramebufferType::ColorR_SFloat32,
-            Vk::FramebufferImageType::ArrayCube,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            VK_FORMAT_R32_SFLOAT,
+            VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             Vk::FramebufferSize{
                 .width       = GPU::POINT_SHADOW_DIMENSIONS.x,
                 .height      = GPU::POINT_SHADOW_DIMENSIONS.y,
@@ -80,18 +80,18 @@ namespace Renderer::PointShadow
                 .arrayLayers = 6 * GPU::MAX_SHADOWED_POINT_LIGHT_COUNT
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
         framebufferManager.AddFramebuffer
         (
             "PointShadowDepth",
-            Vk::FramebufferType::Depth,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            formatHelper.depthFormat,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             Vk::FramebufferSize{
                 .width       = GPU::POINT_SHADOW_DIMENSIONS.x,
                 .height      = GPU::POINT_SHADOW_DIMENSIONS.y,
@@ -99,9 +99,9 @@ namespace Renderer::PointShadow
                 .arrayLayers = 1
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -109,7 +109,7 @@ namespace Renderer::PointShadow
         (
             "PointShadowMap",
             "PointShadowMapView",
-            Vk::FramebufferImageType::ArrayCube,
+            VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -126,7 +126,7 @@ namespace Renderer::PointShadow
                 (
                     "PointShadowMap",
                     fmt::format("PointShadowMapView/Light{}/{}", i, j),
-                    Vk::FramebufferImageType::Single2D,
+                    VK_IMAGE_VIEW_TYPE_2D,
                     Vk::FramebufferViewSize{
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -141,7 +141,7 @@ namespace Renderer::PointShadow
         (
             "PointShadowDepth",
             "PointShadowDepthView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -159,30 +159,32 @@ namespace Renderer::PointShadow
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Models::ModelManager& modelManager,
+        const Vk::GeometryBuffer& geometryBuffer,
+        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::MeshBuffer& meshBuffer,
         const Buffers::IndirectBuffer& indirectBuffer,
-        const Objects::GlobalSamplers& samplers,
-        Culling::Dispatch& culling
+        const Objects::Samplers& samplers,
+        Culling::Dispatch& culling,
+        Scratch::Allocator& scratchAllocator
     ) const
     {
-        if (sceneBuffer.lightsBuffer.shadowedPointLights.empty())
+        if (sceneBuffer.shadowedPointLights.empty())
         {
             return;
         }
 
         Vk::BeginLabel(cmdBuffer, "Point Light Shadows", glm::vec4(0.4196f, 0.6488f, 0.9588f, 1.0f));
 
-        const auto& opaquePipeline      = pipelineManager.GetPipeline("PointShadow/Opaque");
-        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline("PointShadow/AlphaMasked");
+        const auto& opaquePipeline      = pipelineManager.GetPipeline(Vk::PipelineID::PointShadowOpaque);
+        const auto& alphaMaskedPipeline = pipelineManager.GetPipeline(Vk::PipelineID::PointShadowAlphaMasked);
 
         const auto& depthView = framebufferManager.GetFramebufferView("PointShadowDepthView");
 
         const auto& shadowMap = framebufferManager.GetFramebuffer("PointShadowMap");
         const auto& depth     = framebufferManager.GetFramebuffer(depthView.framebuffer);
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier
@@ -200,7 +202,7 @@ namespace Renderer::PointShadow
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+                .layerCount     = 6 * static_cast<u32>(sceneBuffer.shadowedPointLights.size())
             }
         )
         .WriteImageBarrier
@@ -237,15 +239,15 @@ namespace Renderer::PointShadow
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {shadowMap.image.width, shadowMap.image.height}
+            .offset = {.x     = 0,                     .y      = 0                     },
+            .extent = {.width = shadowMap.image.width, .height = shadowMap.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
 
-        modelManager.geometryBuffer.Bind(cmdBuffer);
+        geometryBuffer.Bind(cmdBuffer);
 
-        for (usize i = 0; i < sceneBuffer.lightsBuffer.shadowedPointLights.size(); ++i)
+        for (usize i = 0; i < sceneBuffer.shadowedPointLights.size(); ++i)
         {
             Vk::BeginLabel(cmdBuffer, fmt::format("Light #{}", i), glm::vec4(0.7146f, 0.2488f, 0.9388f, 1.0f));
 
@@ -253,14 +255,16 @@ namespace Renderer::PointShadow
             {
                 Vk::BeginLabel(cmdBuffer, fmt::format("Face #{}", face), glm::vec4(0.6146f, 0.8488f, 0.3388f, 1.0f));
 
-                culling.Frustum
+                culling.Execute
                 (
+                    FIF,
                     frameIndex,
-                    sceneBuffer.lightsBuffer.shadowedPointLights[i].matrices[face],
+                    sceneBuffer.shadowedPointLights[i].matrices[face],
                     cmdBuffer,
                     pipelineManager,
                     meshBuffer,
-                    indirectBuffer
+                    indirectBuffer,
+                    scratchAllocator
                 );
 
                 const auto shadowMapView = framebufferManager.GetFramebufferView(fmt::format("PointShadowMapView/Light{}/{}", i, face));
@@ -290,7 +294,7 @@ namespace Renderer::PointShadow
                     .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
                     .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-                    .clearValue         = {.depthStencil = {0.0f, 0x0}}
+                    .clearValue         = {.depthStencil = {.depth = 0.0f, .stencil = 0x0}}
                 };
 
                 const VkRenderingInfo renderInfo =
@@ -299,8 +303,8 @@ namespace Renderer::PointShadow
                     .pNext                = nullptr,
                     .flags                = 0,
                     .renderArea           = {
-                        .offset = {0, 0},
-                        .extent = {shadowMap.image.width, shadowMap.image.height}
+                        .offset = {.x     = 0,                     .y      = 0                     },
+                        .extent = {.width = shadowMap.image.width, .height = shadowMap.image.height}
                     },
                     .layerCount           = 1,
                     .viewMask             = 0,
@@ -326,11 +330,10 @@ namespace Renderer::PointShadow
 
                         const auto constants = Opaque::Constants
                         {
-                            .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                             .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress,
                             .LightIndex      = static_cast<u32>(i),
                             .FaceIndex       = static_cast<u32>(face)
                         };
@@ -364,11 +367,10 @@ namespace Renderer::PointShadow
 
                         const auto constants = Opaque::Constants
                         {
-                            .Scene           = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes          = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Scene           = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
                             .Instances       = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices = indirectBuffer.frustumCulledBuffers.opaqueDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions       = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .Positions       = geometryBuffer.GetPositionBuffer().deviceAddress,
                             .LightIndex      = static_cast<u32>(i),
                             .FaceIndex       = static_cast<u32>(face)
                         };
@@ -412,13 +414,13 @@ namespace Renderer::PointShadow
 
                         const auto constants = AlphaMasked::Constants
                         {
-                            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+                            .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                             .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                            .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                            .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+                            .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                            .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
                             .LightIndex          = static_cast<u32>(i),
                             .FaceIndex           = static_cast<u32>(face)
                         };
@@ -452,13 +454,13 @@ namespace Renderer::PointShadow
 
                         const auto constants = AlphaMasked::Constants
                         {
-                            .Scene               = sceneBuffer.buffers[FIF].deviceAddress,
-                            .Meshes              = meshBuffer.GetCurrentMeshBuffer(frameIndex).deviceAddress,
+                            .Scene               = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+                            .Meshes              = meshBuffer.meshBuffers[FIF].deviceAddress,
                             .Instances           = meshBuffer.GetCurrentInstanceBuffer(frameIndex).deviceAddress,
                             .InstanceIndices     = indirectBuffer.frustumCulledBuffers.alphaMaskedDoubleSidedBuffer.instanceIndexBuffer.deviceAddress,
-                            .Positions           = modelManager.geometryBuffer.GetPositionBuffer().deviceAddress,
-                            .UVs                 = modelManager.geometryBuffer.GetUVBuffer().deviceAddress,
-                            .TextureSamplerIndex = modelManager.textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
+                            .Positions           = geometryBuffer.GetPositionBuffer().deviceAddress,
+                            .UVs                 = geometryBuffer.GetUVBuffer().deviceAddress,
+                            .TextureSamplerIndex = textureManager.GetSampler(samplers.textureSamplerID).descriptorID,
                             .LightIndex          = static_cast<u32>(i),
                             .FaceIndex           = static_cast<u32>(face)
                         };
@@ -511,7 +513,7 @@ namespace Renderer::PointShadow
                 .baseMipLevel   = 0,
                 .levelCount     = shadowMap.image.mipLevels,
                 .baseArrayLayer = 0,
-                .layerCount     = 6 * static_cast<u32>(sceneBuffer.lightsBuffer.shadowedPointLights.size())
+                .layerCount     = 6 * static_cast<u32>(sceneBuffer.shadowedPointLights.size())
             }
         )
         .WriteImageBarrier

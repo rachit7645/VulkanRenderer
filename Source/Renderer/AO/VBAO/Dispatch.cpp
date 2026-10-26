@@ -22,6 +22,7 @@
 #include "Util/Log.h"
 #include "Vulkan/DebugUtils.h"
 #include "Externals/ImGui.h"
+#include "Renderer/Util/Jitter.h"
 
 namespace Renderer::AO::VBAO
 {
@@ -32,33 +33,33 @@ namespace Renderer::AO::VBAO
         Vk::FramebufferManager& framebufferManager
     )
     {
-        pipelineManager.AddPipeline("VBAO/DepthPreFilter", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::VBAODepthPreFilter, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/DepthPreFilter.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(DepthPreFilter::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("VBAO/Occlusion", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::VBAO, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
             .AttachShader("AO/VBAO/VBAO.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Occlusion::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
-        pipelineManager.AddPipeline("VBAO/Denoise", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::VBAOSpatialDenoise, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_COMPUTE)
-            .AttachShader("AO/VBAO/SpacialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
+            .AttachShader("AO/VBAO/SpatialDenoise.comp", VK_SHADER_STAGE_COMPUTE_BIT)
             .AddPushConstant(VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Denoise::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
 
         framebufferManager.AddFramebuffer
         (
             "VBAO/DepthMipChain",
-            Vk::FramebufferType::ColorR_SFloat32,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
+            VK_FORMAT_R32_SFLOAT,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -70,9 +71,9 @@ namespace Renderer::AO::VBAO
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -80,7 +81,7 @@ namespace Renderer::AO::VBAO
         (
             "VBAO/DepthMipChain",
             "VBAO/DepthMipChainView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = Occlusion::VBAO_DEPTH_MIP_LEVELS,
@@ -95,7 +96,7 @@ namespace Renderer::AO::VBAO
             (
                 "VBAO/DepthMipChain",
                 fmt::format("VBAO/DepthMipChainView/Mip{}", i),
-                Vk::FramebufferImageType::Single2D,
+                VK_IMAGE_VIEW_TYPE_2D,
                 Vk::FramebufferViewSize{
                     .baseMipLevel   = i,
                     .levelCount     = 1,
@@ -108,9 +109,9 @@ namespace Renderer::AO::VBAO
         framebufferManager.AddFramebuffer
         (
             "VBAO/DepthDifferences",
-            Vk::FramebufferType::ColorR_Uint32,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
+            VK_FORMAT_R32_UINT,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -122,9 +123,9 @@ namespace Renderer::AO::VBAO
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -132,7 +133,7 @@ namespace Renderer::AO::VBAO
         (
             "VBAO/DepthDifferences",
             "VBAO/DepthDifferencesView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -144,9 +145,9 @@ namespace Renderer::AO::VBAO
         framebufferManager.AddFramebuffer
         (
             "VBAO/NoisyAO",
-            Vk::FramebufferType::ColorR_Unorm16,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
+            VK_FORMAT_R16_UNORM,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -158,9 +159,9 @@ namespace Renderer::AO::VBAO
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -168,7 +169,7 @@ namespace Renderer::AO::VBAO
         (
             "VBAO/NoisyAO",
             "VBAO/NoisyAOView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -180,9 +181,9 @@ namespace Renderer::AO::VBAO
         framebufferManager.AddFramebuffer
         (
             "VBAO/Occlusion",
-            Vk::FramebufferType::ColorR_Unorm16,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Sampled | Vk::FramebufferUsage::Storage,
+            VK_FORMAT_R16_UNORM,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -194,9 +195,9 @@ namespace Renderer::AO::VBAO
                 };
             },
             Vk::FramebufferInitialState{
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -204,7 +205,7 @@ namespace Renderer::AO::VBAO
         (
             "VBAO/Occlusion",
             "VBAO/OcclusionView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -218,23 +219,28 @@ namespace Renderer::AO::VBAO
     (
         usize FIF,
         usize frameIndex,
+        const std::string_view sceneDepthID,
+        const std::string_view gNormalID,
         const Vk::CommandBuffer& cmdBuffer,
+        const Renderer::RenderConfig& renderConfig,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
-        const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
-        const std::string_view sceneDepthID,
-        const std::string_view gNormalID
+        const Buffers::SceneBuffer::Buffers& sceneBuffers,
+        const Objects::Samplers& samplers,
+        Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator
     )
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("VBAO"))
+            if (ImGui::BeginMenu("Effects"))
             {
-                ImGui::DragFloat("Power",     &m_finalValuePower, 0.05f,  0.0f, 0.0f, "%.4f");
-                ImGui::DragFloat("Thickness", &m_thickness,       0.005f, 0.0f, 1.0f, "%.4f");
+                if (ImGui::CollapsingHeader("VBAO"))
+                {
+                    ImGui::DragFloat("Power",     &m_finalValuePower, 0.05f,  0.0f, 0.0f, "%.4f");
+                    ImGui::DragFloat("Thickness", &m_thickness,       0.005f, 0.0f, 1.0f, "%.4f");
+                }
 
                 ImGui::EndMenu();
             }
@@ -246,27 +252,29 @@ namespace Renderer::AO::VBAO
 
         PreFilterDepth
         (
+            sceneDepthID,
             cmdBuffer,
             pipelineManager,
             framebufferManager,
             megaSet,
             textureManager,
-            samplers,
-            sceneDepthID
+            samplers
         );
 
         Occlusion
         (
             FIF,
             frameIndex,
+            gNormalID,
             cmdBuffer,
+            renderConfig,
             pipelineManager,
             framebufferManager,
             megaSet,
-            textureManager,
-            sceneBuffer,
+            sceneBuffers,
             samplers,
-            gNormalID
+            textureManager,
+            scratchAllocator
         );
 
         Denoise
@@ -284,18 +292,18 @@ namespace Renderer::AO::VBAO
 
     void Dispatch::PreFilterDepth
     (
+        const std::string_view sceneDepthID,
         const Vk::CommandBuffer& cmdBuffer,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers,
-        const std::string_view sceneDepthID
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "DepthPreFilter", glm::vec4(0.6098f, 0.2143f, 0.4529f, 1.0f));
 
-        const auto& depthPreFilterPipeline = pipelineManager.GetPipeline("VBAO/DepthPreFilter");
+        const auto& depthPreFilterPipeline = pipelineManager.GetPipeline(Vk::PipelineID::VBAODepthPreFilter);
 
         const auto& depthMipChain = framebufferManager.GetFramebuffer("VBAO/DepthMipChain");
 
@@ -374,24 +382,26 @@ namespace Renderer::AO::VBAO
     (
         usize FIF,
         usize frameIndex,
+        const std::string_view gNormalID,
         const Vk::CommandBuffer& cmdBuffer,
+        const Renderer::RenderConfig& renderConfig,
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
-        const Buffers::SceneBuffer& sceneBuffer,
-        const Objects::GlobalSamplers& samplers,
-        const std::string_view gNormalID
+        const Buffers::SceneBuffer::Buffers& sceneBuffers,
+        const Objects::Samplers& samplers,
+        Vk::TextureManager& textureManager,
+        Scratch::Allocator& scratchAllocator
     )
     {
         Vk::BeginLabel(cmdBuffer, "Occlusion", glm::vec4(0.6098f, 0.7143f, 0.4529f, 1.0f));
 
-        const auto& occlusionPipeline = pipelineManager.GetPipeline("VBAO/Occlusion");
+        const auto& occlusionPipeline = pipelineManager.GetPipeline(Vk::PipelineID::VBAO);
 
         const auto& noisyAO          = framebufferManager.GetFramebuffer("VBAO/NoisyAO");
         const auto& depthDifferences = framebufferManager.GetFramebuffer("VBAO/DepthDifferences");
 
-        Vk::BarrierWriter barrierWriter = {};
+        auto barrierWriter = Vk::ScratchBarrierWriter(scratchAllocator);
 
         barrierWriter
         .WriteImageBarrier(
@@ -432,9 +442,16 @@ namespace Renderer::AO::VBAO
 
         occlusionPipeline.Bind(cmdBuffer);
 
+        const usize phaseCount = Renderer::GetPhaseCount
+        (
+            renderConfig.antiAliasingMode,
+            framebufferManager.renderExtent,
+            framebufferManager.displayExtent
+        );
+
         const auto constants = Occlusion::Constants
         {
-            .Scene                    = sceneBuffer.buffers[FIF].deviceAddress,
+            .Scene                    = sceneBuffers.sceneBuffers[FIF].deviceAddress,
             .PointSamplerIndex        = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .LinearSamplerIndex       = textureManager.GetSampler(samplers.linearSamplerID).descriptorID,
             .HilbertLUTIndex          = textureManager.GetTexture(hilbertLUT).descriptorID,
@@ -442,7 +459,7 @@ namespace Renderer::AO::VBAO
             .PreFilterDepthIndex      = framebufferManager.GetFramebufferView("VBAO/DepthMipChainView").sampledImageID,
             .OutDepthDifferencesIndex = framebufferManager.GetFramebufferView("VBAO/DepthDifferencesView").storageImageID,
             .OutNoisyAOIndex          = framebufferManager.GetFramebufferView("VBAO/NoisyAOView").storageImageID,
-            .TemporalIndex            = static_cast<u32>(frameIndex % JITTER_SAMPLE_COUNT),
+            .TemporalIndex            = static_cast<u32>(frameIndex % phaseCount),
             .Thickness                = m_thickness
         };
 
@@ -510,12 +527,12 @@ namespace Renderer::AO::VBAO
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
         const Vk::TextureManager& textureManager,
-        const Objects::GlobalSamplers& samplers
+        const Objects::Samplers& samplers
     )
     {
         Vk::BeginLabel(cmdBuffer, "Denoise", glm::vec4(0.2098f, 0.2143f, 0.7859f, 1.0f));
 
-        const auto& denoisePipeline = pipelineManager.GetPipeline("VBAO/Denoise");
+        const auto& denoisePipeline = pipelineManager.GetPipeline(Vk::PipelineID::VBAOSpatialDenoise);
 
         const auto& occlusion = framebufferManager.GetFramebuffer("VBAO/Occlusion");
 

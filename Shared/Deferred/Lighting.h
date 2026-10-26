@@ -36,7 +36,7 @@ GLSL_PUSH_CONSTANT_BEGIN
     u32 GAlbedoIndex;
     u32 GNormalIndex;
     u32 GRghMtlIndex;
-    u32 GEmmisiveIndex;
+    u32 GEmissiveIndex;
     u32 SceneDepthIndex;
 
     u32 IrradianceIndex;
@@ -49,7 +49,7 @@ GLSL_PUSH_CONSTANT_BEGIN
 
     u32 AOIndex;
 
-    GLSL_UVEC2 MaxTileID;
+    GLSL_UVEC2 TileCount;
 } GLSL_PUSH_CONSTANT_END;
 
 GLSL_NAMESPACE_END

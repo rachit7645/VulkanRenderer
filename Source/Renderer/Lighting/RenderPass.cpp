@@ -16,8 +16,6 @@
 
 #include "RenderPass.h"
 
-#include "Util/Log.h"
-#include "Util/Ranges.h"
 #include "Renderer/Buffers/SceneBuffer.h"
 #include "Renderer/Depth/RenderPass.h"
 #include "Vulkan/DebugUtils.h"
@@ -37,25 +35,25 @@ namespace Renderer::Lighting
 
         const std::array colorFormats = {formatHelper.colorAttachmentFormatHDR};
 
-        pipelineManager.AddPipeline("Lighting", Vk::PipelineConfig{}
+        pipelineManager.AddPipeline(Vk::PipelineID::Lighting, Vk::PipelineConfig{}
             .SetPipelineType(VK_PIPELINE_BIND_POINT_GRAPHICS)
             .SetRenderingInfo(0, colorFormats, VK_FORMAT_UNDEFINED)
             .AttachShader("Misc/Triangle.vert",     VK_SHADER_STAGE_VERTEX_BIT)
             .AttachShader("Deferred/Lighting.frag", VK_SHADER_STAGE_FRAGMENT_BIT)
             .SetDynamicStates(DYNAMIC_STATES)
-            .SetIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
             .SetRasterizerState(VK_FALSE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_POLYGON_MODE_FILL)
             .AddDefaultBlendAttachment()
             .AddPushConstant(VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Lighting::Constants))
-            .AddDescriptorLayout(megaSet.descriptorLayout)
+            .AddDescriptorLayout(megaSet.layout)
         );
         
         framebufferManager.AddFramebuffer
         (
             "SceneColor",
-            Vk::FramebufferType::ColorHDR,
-            Vk::FramebufferImageType::Single2D,
-            Vk::FramebufferUsage::Attachment | Vk::FramebufferUsage::Sampled,
+            formatHelper.colorAttachmentFormatHDR,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             [] (const VkExtent2D& renderExtent, ENGINE_UNUSED const VkExtent2D& displayExtent) -> Vk::FramebufferSize
             {
                 return
@@ -66,10 +64,10 @@ namespace Renderer::Lighting
                     .arrayLayers = 1
                 };
             },
-            {
-                .dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-                .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            Vk::FramebufferInitialState{
+                .stageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .accessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+                .layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             }
         );
 
@@ -77,7 +75,7 @@ namespace Renderer::Lighting
         (
             "SceneColor",
             "SceneColorView",
-            Vk::FramebufferImageType::Single2D,
+            VK_IMAGE_VIEW_TYPE_2D,
             Vk::FramebufferViewSize{
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
@@ -94,16 +92,16 @@ namespace Renderer::Lighting
         const Vk::PipelineManager& pipelineManager,
         const Vk::FramebufferManager& framebufferManager,
         const Vk::MegaSet& megaSet,
-        const Vk::TextureManager& textureManager,
         const Buffers::SceneBuffer& sceneBuffer,
         const Buffers::TileLightIndexBuffer& tileLightIndexBuffer,
-        const Objects::GlobalSamplers& samplers,
-        const IBL::IBLMaps& iblMaps
+        const Objects::Samplers& samplers,
+        const IBL::IBLMaps& iblMaps,
+        Vk::TextureManager& textureManager
     )
     {
         Vk::BeginLabel(cmdBuffer, "Lighting", glm::vec4(0.6098f, 0.1843f, 0.7549f, 1.0f));
 
-        const auto& pipeline = pipelineManager.GetPipeline("Lighting");
+        const auto& pipeline = pipelineManager.GetPipeline(Vk::PipelineID::Lighting);
         
         const auto& colorAttachmentView = framebufferManager.GetFramebufferView("SceneColorView");
         const auto& colorAttachment     = framebufferManager.GetFramebuffer(colorAttachmentView.framebuffer);
@@ -147,8 +145,8 @@ namespace Renderer::Lighting
             .pNext                = nullptr,
             .flags                = 0,
             .renderArea           = {
-                .offset = {0, 0},
-                .extent = {colorAttachment.image.width, colorAttachment.image.height}
+                .offset = {.x     = 0,                           .y      = 0                           },
+                .extent = {.width = colorAttachment.image.width, .height = colorAttachment.image.height}
             },
             .layerCount           = 1,
             .viewMask             = 0,
@@ -176,8 +174,8 @@ namespace Renderer::Lighting
 
         const VkRect2D scissor =
         {
-            .offset = {0, 0},
-            .extent = {colorAttachment.image.width, colorAttachment.image.height}
+            .offset = {.x     = 0,                           .y      = 0                           },
+            .extent = {.width = colorAttachment.image.width, .height = colorAttachment.image.height}
         };
 
         vkCmdSetScissorWithCount(cmdBuffer.handle, 1, &scissor);
@@ -186,16 +184,16 @@ namespace Renderer::Lighting
 
         const auto constants = Lighting::Constants
         {
-            .Scene                   = sceneBuffer.buffers[FIF].deviceAddress,
-            .TileLightIndices        = tileLightIndexBuffer.resizableBuffer.buffer.deviceAddress,
+            .Scene                   = sceneBuffer.graphicsBuffers.sceneBuffers[FIF].deviceAddress,
+            .TileLightIndices        = tileLightIndexBuffer.buffer.deviceAddress,
             .GBufferSamplerIndex     = textureManager.GetSampler(samplers.pointSamplerID).descriptorID,
             .IBLSamplerIndex         = textureManager.GetSampler(samplers.iblSamplerID).descriptorID,
             .PointShadowSamplerIndex = textureManager.GetSampler(samplers.pointShadowSamplerID).descriptorID,
             .SpotShadowSamplerIndex  = textureManager.GetSampler(samplers.spotShadowSamplerID).descriptorID,
             .GAlbedoIndex            = framebufferManager.GetFramebufferView("GAlbedoIoRView").sampledImageID,
             .GNormalIndex            = framebufferManager.GetFramebufferView("GNormalView").sampledImageID,
-            .GRghMtlIndex            = framebufferManager.GetFramebufferView("GRoughnessMetallicView").sampledImageID,
-            .GEmmisiveIndex          = framebufferManager.GetFramebufferView("GEmmisiveView").sampledImageID,
+            .GRghMtlIndex            = framebufferManager.GetFramebufferView("GRoughnessMetallicHorizonView").sampledImageID,
+            .GEmissiveIndex          = framebufferManager.GetFramebufferView("GEmissiveView").sampledImageID,
             .SceneDepthIndex         = framebufferManager.GetFramebufferView("SceneDepthView").sampledImageID,
             .IrradianceIndex         = textureManager.GetTexture(iblMaps.irradianceMapID).descriptorID,
             .PreFilterIndex          = textureManager.GetTexture(iblMaps.preFilterMapID).descriptorID,
@@ -204,7 +202,7 @@ namespace Renderer::Lighting
             .PointShadowMapIndex     = framebufferManager.GetFramebufferView("PointShadowMapView").sampledImageID,
             .SpotShadowMapIndex      = framebufferManager.GetFramebufferView("SpotShadowMapView").sampledImageID,
             .AOIndex                 = framebufferManager.GetFramebufferView("VBAO/OcclusionView").sampledImageID,
-            .MaxTileID               = glm::uvec2(tileDepths.image.width - 1, tileDepths.image.height - 1)
+            .TileCount               = glm::uvec2(tileDepths.image.width, tileDepths.image.height)
         };
 
         pipeline.PushConstants

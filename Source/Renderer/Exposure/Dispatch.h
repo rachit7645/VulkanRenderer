@@ -18,8 +18,8 @@
 #define EXPOSURE_DISPATCH_H
 
 #include "Renderer/Buffers/ExposureBuffers.h"
-#include "Renderer/Objects/GlobalSamplers.h"
-#include "Util/FrameCounter.h"
+#include "Renderer/Objects/Samplers.h"
+#include "Engine/FrameCounter.h"
 #include "Vulkan/FramebufferManager.h"
 #include "Vulkan/MegaSet.h"
 #include "Vulkan/PipelineManager.h"
@@ -32,6 +32,7 @@ namespace Renderer::Exposure
     public:
         Dispatch
         (
+            const Vk::FormatHelper& formatHelper,
             const Vk::MegaSet& megaSet,
             Vk::PipelineManager& pipelineManager,
             Vk::FramebufferManager& framebufferManager
@@ -46,8 +47,9 @@ namespace Renderer::Exposure
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::ExposureBuffers& exposureBuffer,
-            const Objects::GlobalSamplers& samplers,
-            const Util::FrameCounter& frameCounter
+            const Objects::Samplers& samplers,
+            const Engine::FrameCounter& frameCounter,
+            Scratch::Allocator& scratchAllocator
         );
 
         void ResetLuminance();
@@ -60,7 +62,7 @@ namespace Renderer::Exposure
             const Vk::MegaSet& megaSet,
             const Vk::TextureManager& textureManager,
             const Buffers::ExposureBuffers& exposureBuffer,
-            const Objects::GlobalSamplers& samplers
+            const Objects::Samplers& samplers
         );
 
         void Average
@@ -71,12 +73,22 @@ namespace Renderer::Exposure
             const Vk::FramebufferManager& framebufferManager,
             const Vk::MegaSet& megaSet,
             const Buffers::ExposureBuffers& exposureBuffer,
-            const Util::FrameCounter& frameCounter
+            const Engine::FrameCounter& frameCounter,
+            Scratch::Allocator& scratchAllocator
+        );
+
+        void Combine
+        (
+            const Vk::CommandBuffer& cmdBuffer,
+            const Vk::PipelineManager& pipelineManager,
+            const Vk::FramebufferManager& framebufferManager,
+            const Vk::MegaSet& megaSet,
+            const Vk::TextureManager& textureManager,
+            const Objects::Samplers& samplers
         );
 
         bool m_hasLuminanceBeenReset = false;
-        f32  m_adaptationSpeed       = 1.1f;
-        f32  m_exposureBias          = 0.0f;
+        f32  m_adaptationSpeed       = 1.5f;
     };
 }
 

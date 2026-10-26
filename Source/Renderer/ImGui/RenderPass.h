@@ -18,7 +18,7 @@
 #define IMGUI_PASS_H
 
 #include "Models/ModelManager.h"
-#include "Renderer/Objects/GlobalSamplers.h"
+#include "Renderer/Objects/Samplers.h"
 #include "Vulkan/Constants.h"
 #include "Vulkan/PipelineManager.h"
 #include "Vulkan/Swapchain.h"
@@ -39,16 +39,17 @@ namespace Renderer::DearImGui
         void Render
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Swapchain& swapchain,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Models::ModelManager& modelManager,
-            Util::DeletionQueue& deletionQueue
+            Vk::TextureManager& textureManager,
+            tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue
         );
 
         void Destroy(VmaAllocator allocator);
@@ -56,40 +57,42 @@ namespace Renderer::DearImGui
         void RenderGui
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             const Vk::PipelineManager& pipelineManager,
             const Vk::Swapchain& swapchain,
-            const Objects::GlobalSamplers& samplers,
+            const Objects::Samplers& samplers,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Models::ModelManager& modelManager,
-            Util::DeletionQueue& deletionQueue,
+            Vk::TextureManager& textureManager,
+            tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 
         void UploadToBuffers
         (
             usize FIF,
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             Vk::Buffer& vertexBuffer,
             Vk::Buffer& indexBuffer,
-            Util::DeletionQueue& deletionQueue,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 
         void UpdateTextures
         (
-            VkDevice device,
-            VmaAllocator allocator,
             const Vk::CommandBuffer& cmdBuffer,
+            const Vk::Context& context,
             Vk::MegaSet& megaSet,
             Vk::StagingPool& stagingPool,
-            Models::ModelManager& modelManager,
-            Util::DeletionQueue& deletionQueue,
+            Vk::TextureManager& textureManager,
+            tf::Executor& executor,
+            Scratch::Allocator& scratchAllocator,
+            Engine::DeletionQueue& deletionQueue,
             const ImDrawData* drawData
         );
 

@@ -25,12 +25,12 @@
 
 namespace Vk
 {
-    enum DescriptorBinding : u32
+    enum class DescriptorBinding : u32
     {
-        MEGA_SET_SAMPLER_BINDING        = 0,
-        MEGA_SET_SAMPLED_IMAGES_BINDING = 1,
-        MEGA_SET_STORAGE_IMAGES_BINDING = 2,
-        MEGA_SET_BINDINGS_COUNT
+        Samplers      = 0,
+        SampledImages = 1,
+        StorageImages = 2,
+        Count
     };
 
     MegaSet::MegaSet(const Vk::Context& context)
@@ -39,9 +39,9 @@ namespace Vk
         constexpr u32 MAX_SAMPLED_IMAGES = 1 << 14;
         constexpr u32 MAX_STORAGE_IMAGES = 1 << 10;
         
-        const auto maxSamplers      = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers,      MAX_SAMPLERS);
-        const auto maxSampledImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
-        const auto maxStorageImages = std::min(context.physicalDeviceVulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
+        const auto maxSamplers      = std::min(context.properties.maxPerStageDescriptorUpdateAfterBindSamplers,      MAX_SAMPLERS);
+        const auto maxSampledImages = std::min(context.properties.maxPerStageDescriptorUpdateAfterBindSampledImages, MAX_SAMPLED_IMAGES);
+        const auto maxStorageImages = std::min(context.properties.maxPerStageDescriptorUpdateAfterBindStorageImages, MAX_STORAGE_IMAGES);
 
         const std::array poolSizes =
         {
@@ -80,7 +80,7 @@ namespace Vk
             "Failed to create mega set descriptor pool!"
         );
 
-        constexpr std::array<VkDescriptorBindingFlags, DescriptorBinding::MEGA_SET_BINDINGS_COUNT> bindingFlags =
+        constexpr std::array<VkDescriptorBindingFlags, std::to_underlying(DescriptorBinding::Count)> bindingFlags =
         {
             // Samplers
             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT,
@@ -102,7 +102,7 @@ namespace Vk
         {
             VkDescriptorSetLayoutBinding
             {
-                .binding            = DescriptorBinding::MEGA_SET_SAMPLER_BINDING,
+                .binding            = std::to_underlying(DescriptorBinding::Samplers),
                 .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLER,
                 .descriptorCount    = maxSamplers,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
@@ -110,7 +110,7 @@ namespace Vk
             },
             VkDescriptorSetLayoutBinding
             {
-                .binding            = DescriptorBinding::MEGA_SET_SAMPLED_IMAGES_BINDING,
+                .binding            = std::to_underlying(DescriptorBinding::SampledImages),
                 .descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                 .descriptorCount    = maxSampledImages,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
@@ -118,7 +118,7 @@ namespace Vk
             },
             VkDescriptorSetLayoutBinding
             {
-                .binding            = DescriptorBinding::MEGA_SET_STORAGE_IMAGES_BINDING,
+                .binding            = std::to_underlying(DescriptorBinding::StorageImages),
                 .descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
                 .descriptorCount    = maxStorageImages,
                 .stageFlags         = VK_SHADER_STAGE_ALL,
@@ -139,7 +139,7 @@ namespace Vk
             context.device,
             &createInfo,
             nullptr,
-            &descriptorLayout),
+            &layout),
             "Failed to create mega set layout!"
         );
 
@@ -149,14 +149,14 @@ namespace Vk
             .pNext              = nullptr,
             .descriptorPool     = m_descriptorPool,
             .descriptorSetCount = 1,
-            .pSetLayouts        = &descriptorLayout
+            .pSetLayouts        = &layout
         };
 
         Vk::CheckResult(vkAllocateDescriptorSets(
             context.device,
             &allocInfo,
-            &descriptorSet),
-            "Failed to allocate mega set"
+            &handle),
+            "Failed to allocate mega set!"
         );
 
         m_samplerAllocator      = Vk::DescriptorAllocator(maxSamplers);
@@ -164,8 +164,8 @@ namespace Vk
         m_storageImageAllocator = Vk::DescriptorAllocator(maxStorageImages);
 
         Vk::SetDebugName(context.device, m_descriptorPool, "MegaSet/DescriptorPool");
-        Vk::SetDebugName(context.device, descriptorLayout, "MegaSet/DescriptorLayout");
-        Vk::SetDebugName(context.device, descriptorSet,    "MegaSet/DescriptorSet");
+        Vk::SetDebugName(context.device, layout,           "MegaSet/DescriptorLayout");
+        Vk::SetDebugName(context.device, handle,           "MegaSet/DescriptorSet");
     }
 
     Vk::DescriptorID MegaSet::WriteSampler(const Vk::Sampler& sampler)
@@ -174,8 +174,8 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet,
-            DescriptorBinding::MEGA_SET_SAMPLER_BINDING,
+            handle,
+            std::to_underlying(DescriptorBinding::Samplers),
             id,
             sampler.handle,
             VK_NULL_HANDLE,
@@ -192,8 +192,8 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet,
-            DescriptorBinding::MEGA_SET_SAMPLED_IMAGES_BINDING,
+            handle,
+            std::to_underlying(DescriptorBinding::SampledImages),
             id,
             VK_NULL_HANDLE,
             imageView.handle,
@@ -210,8 +210,8 @@ namespace Vk
 
         m_writer.WriteImage
         (
-            descriptorSet,
-            DescriptorBinding::MEGA_SET_STORAGE_IMAGES_BINDING,
+            handle,
+            std::to_underlying(DescriptorBinding::StorageImages),
             id,
             VK_NULL_HANDLE,
             imageView.handle,
@@ -244,70 +244,71 @@ namespace Vk
 
     void MegaSet::ImGuiDisplay()
     {
-        if (ImGui::BeginMainMenuBar())
+        if (ImGui::CollapsingHeader("MegaSet"))
         {
-            if (ImGui::BeginMenu("MegaSet"))
+            if (ImGui::BeginTable("##MegaSetTable", 6, ImGuiTableFlags_Borders))
             {
-                ImGui::Text
-                (
-                    "%-8s | %-14s | %-10s | %-10s | %-4s | %-8s",
-                    "Binding",
-                    "Type",
-                    "Allocated",
-                    "Free Slots",
-                    "Used",
-                    "Max Count"
-                );
+                ImGui::TableSetupColumn("Binding");
+                ImGui::TableSetupColumn("Type");
+                ImGui::TableSetupColumn("Used");
+                ImGui::TableSetupColumn("Free Slots");
+                ImGui::TableSetupColumn("Allocated");
+                ImGui::TableSetupColumn("Max Count");
 
-                ImGui::Separator();
+                ImGui::TableSetupScrollFreeze(0, 0);
 
-                ImGui::Text
-                (
-                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    DescriptorBinding::MEGA_SET_SAMPLER_BINDING,
-                    "Sampler",
-                    m_samplerAllocator.GetAllocatedCount(),
-                    m_samplerAllocator.GetFreeSlotCount(),
-                    m_samplerAllocator.GetUsedCount(),
-                    m_samplerAllocator.GetMaxCount()
-                );
+                ImGui::TableHeadersRow();
 
-                ImGui::Separator();
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%u", std::to_underlying(DescriptorBinding::Samplers));
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Samplers");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%u", m_samplerAllocator.GetUsedCount());
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%u", m_samplerAllocator.GetFreeSlotCount());
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%u", m_samplerAllocator.GetAllocatedCount());
+                ImGui::TableSetColumnIndex(5);
+                ImGui::Text("%u", m_samplerAllocator.GetMaxCount());
 
-                ImGui::Text
-                (
-                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    DescriptorBinding::MEGA_SET_SAMPLED_IMAGES_BINDING,
-                    "Sampled Image",
-                    m_sampledImageAllocator.GetAllocatedCount(),
-                    m_sampledImageAllocator.GetFreeSlotCount(),
-                    m_sampledImageAllocator.GetUsedCount(),
-                    m_sampledImageAllocator.GetMaxCount()
-                );
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%u", std::to_underlying(DescriptorBinding::SampledImages));
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Sampled Images");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%u", m_sampledImageAllocator.GetUsedCount());
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%u", m_sampledImageAllocator.GetFreeSlotCount());
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%u", m_sampledImageAllocator.GetAllocatedCount());
+                ImGui::TableSetColumnIndex(5);
+                ImGui::Text("%u", m_sampledImageAllocator.GetMaxCount());
 
-                ImGui::Separator();
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%u", std::to_underlying(DescriptorBinding::StorageImages));
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Storage Image");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%u", m_storageImageAllocator.GetUsedCount());
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("%u", m_storageImageAllocator.GetFreeSlotCount());
+                ImGui::TableSetColumnIndex(4);
+                ImGui::Text("%u", m_storageImageAllocator.GetAllocatedCount());
+                ImGui::TableSetColumnIndex(5);
+                ImGui::Text("%u", m_storageImageAllocator.GetMaxCount());
 
-                ImGui::Text
-                (
-                    "%-8u | %-14s | %-10u | %-10u | %-4u | %-8u",
-                    DescriptorBinding::MEGA_SET_STORAGE_IMAGES_BINDING,
-                    "Storage Image",
-                    m_storageImageAllocator.GetAllocatedCount(),
-                    m_storageImageAllocator.GetFreeSlotCount(),
-                    m_storageImageAllocator.GetUsedCount(),
-                    m_storageImageAllocator.GetMaxCount()
-                );
-
-                ImGui::EndMenu();
+                ImGui::EndTable();
             }
-
-            ImGui::EndMainMenuBar();
         }
     }
 
     void MegaSet::Destroy(VkDevice device)
     {
         vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
     }
 }

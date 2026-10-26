@@ -26,6 +26,7 @@ namespace Renderer::Buffers
     {
         drawCallBuffer = Vk::Buffer
         (
+            device,
             allocator,
             sizeof(u32) + MAX_MESH_COUNT * sizeof(VkDrawIndexedIndirectCommand),
             0,
@@ -37,6 +38,7 @@ namespace Renderer::Buffers
 
         instanceIndexBuffer = Vk::Buffer
         (
+            device,
             allocator,
             MAX_MESH_COUNT * sizeof(u32),
             0,
@@ -45,9 +47,6 @@ namespace Renderer::Buffers
             0,
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
         );
-
-        drawCallBuffer.GetDeviceAddress(device);
-        instanceIndexBuffer.GetDeviceAddress(device);
     }
 
     void DrawCallBuffer::Destroy(VmaAllocator allocator)
